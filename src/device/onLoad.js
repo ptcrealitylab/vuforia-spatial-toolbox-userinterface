@@ -55,13 +55,10 @@
 createNameSpace("realityEditor.device");
 
 realityEditor.device.onload = function () {
-
-        //window.location.href = "of://kickoff";
-
-
+    
     realityEditor.gui.menus.init();
 
-   realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
+    realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
     realityEditor.gui.menus.on("main",["gui"]);
     globalStates.realityState= false;
 
@@ -86,10 +83,8 @@ realityEditor.device.onload = function () {
 	globalCanvas.canvas.height = globalStates.width;
 
 	globalCanvas.context = canvas.getContext('2d');
-
-	//if (globalStates.platform) {
-		window.location.href = "of://kickoff";
-	//	}
+    
+    window.webkit.messageHandlers.realityEditor.postMessage({functionName: "kickoff"});
 
 	globalCanvas.canvas.addEventListener("pointerdown", realityEditor.device.onCanvasPointerDown.bind(realityEditor.device), false);
 	ec++;

@@ -115,11 +115,7 @@ realityEditor.network.oldFormatToNew = function(thisObject, thisKey){
 
  
 realityEditor.network.addHeartbeatObject = function (beat) {
-    /*
-     if (globalStates.platform) {
-     window.location.href = "of://gotbeat_" + beat.id;
-     }
-     */
+
     var _this = this;
     if (beat.id) {
         if (!objects[beat.id]) {
@@ -844,9 +840,11 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             console.log("jetzt aber mal richtig hier!!", globalStates.extendedTracking);
 
             if (globalStates.extendedTracking === true) {
-                window.location.href = "of://extendedTrackingOn";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "extendedTrackingOn"});
+
             } else {
-                window.location.href = "of://extendedTrackingOff";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "extendedTrackingOff"});
+
             }
         }
 
@@ -856,13 +854,13 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
 
                 realityEditor.device.addEventHandlers();
                 globalStates.editingMode = true;
-
-                window.location.href = "of://developerOn";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "developerOn"});
                 globalMatrix.matrixtouchOn = "";
             } else {
                 realityEditor.device.removeEventHandlers();
                 globalStates.editingMode = false;
-                window.location.href = "of://developerOff";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "developerOff"});
+
             }
 
         }
@@ -870,11 +868,13 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
         if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
             if (msgContent.settings.setSettings.instantState) {
                 globalStates.instantState = true;
-                window.location.href = "of://instantOn";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "instantOn"});
+
 
             } else {
                 globalStates.instantState = false;
-                window.location.href = "of://instantOff";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "instantOff"});
+
             }
         }
 
@@ -882,11 +882,13 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
 
             if (msgContent.settings.setSettings.clearSkyState) {
                 globalStates.clearSkyState = true;
-                window.location.href = "of://clearSkyOn";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "clearSkyOn"});
+
 
             } else {
                 globalStates.clearSkyState = false;
-                window.location.href = "of://clearSkyOff";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "clearSkyOff"});
+
             }
         }
 
@@ -895,7 +897,8 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             console.log("received message in settings");
 
             if (msgContent.settings.setSettings.lockingToggle) {
-                window.location.href = "of://authenticateTouch";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "authenticateTouch"});
+
 
             } else {
                 globalStates.lockingMode = false;
@@ -915,12 +918,14 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             if (msgContent.settings.setSettings.realityState) {
                 realityEditor.gui.menus.on("reality",["realityGui"]);
                 globalStates.realityState = true;
-                window.location.href = "of://realityOn";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "realityOn"});
+
             } else {
                 realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
                 realityEditor.gui.menus.on("main",["gui"]);
                 globalStates.realityState = false;
-                window.location.href = "of://realityOff";
+                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "realityOff"});
+
             }
         }
     }
@@ -1055,8 +1060,6 @@ realityEditor.network.postLinkToServer = function(linkObject, objects){
     var thisOtherTempObject = objects[linkObject.objectB];
 
     var okForNewLink = this.checkForNetworkLoop(linkObject.objectA, linkObject.nodeA, linkObject.logicA, linkObject.objectB, linkObject.nodeB, linkObject.logicB);
-
-    //  window.location.href = "of://event_" + objects[globalProgram.objectA].visible;
     
     if (okForNewLink) {
         var thisKeyId = this.realityEditor.device.utilities.uuidTimeShort();
@@ -1283,7 +1286,6 @@ realityEditor.network.sendResetContent = function(object, node, type) {
 realityEditor.network.onElementLoad = function(objectKey, nodeKey) {
 
     globalStates.notLoading = false;
-    // window.location.href = "of://event_test_"+nodeKey;
 
     // cout("posting Msg");
     var nodes;

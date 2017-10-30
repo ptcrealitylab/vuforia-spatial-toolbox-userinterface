@@ -62,7 +62,6 @@ createNameSpace("realityEditor.gui.ar.lines");
  **/
 
 realityEditor.gui.ar.lines.deleteLines = function(x21, y21, x22, y22) {
-    // window.location.href = "of://gotsome";
     for (var keysome in objects) {
         if (!objects.hasOwnProperty(keysome)) {
             continue;

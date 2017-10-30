@@ -644,8 +644,8 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
     //realityEditor.gui.pocket.pocketOnMemoryCreationStop();
 	if (overlayDiv.style.backgroundImage !== '' && overlayDiv.style.backgroundImage !== 'none') {
 		overlayDiv.style.backgroundImage = 'none';
-		window.location.href = 'of://clearMemory';
-	}
+        window.webkit.messageHandlers.realityEditor.postMessage({functionName: "clearMemory"});
+    }
 
 	cout("documentPointerUp");
 

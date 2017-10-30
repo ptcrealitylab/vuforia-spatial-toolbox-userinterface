@@ -94,7 +94,8 @@ realityEditor.gui.settings.newDiscoveryTextLoad = function () {
 realityEditor.gui.settings.reloadUI = function () {
     if (this.states.externalState !== "" && this.states.externalState !== "http") {
         console.log("window.location.href = " + "of://loadNewUI" + this.states.externalState);
-        window.location.href = "of://loadNewUI" + this.states.externalState;
+        window.webkit.messageHandlers.realityEditor.postMessage({functionName: ("loadNewUI"+this.states.externalState)});
+
     }
 };
 
@@ -102,12 +103,12 @@ realityEditor.gui.settings.discovery = function () {
     if (!this.states.discoveryActive) {
         if (this.states.discoveryState !== "" && this.states.discoveryState !== "http") {
             console.log("window.location.href = " + "of://setDiscovery" + this.states.discoveryState);
-            window.location.href = "of://setDiscovery" + this.states.discoveryState;
+            window.webkit.messageHandlers.realityEditor.postMessage({functionName: ("setDiscovery"+this.states.discoveryState)});
             this.states.discoveryActive = true;
         }
     } else {
         console.log("window.location.href = " + "of://removeDiscovery");
-        window.location.href = "of://removeDiscovery";
+        window.webkit.messageHandlers.realityEditor.postMessage({functionName: ("removeDiscovery")});
         this.states.discoveryActive = false;
         this.states.discoveryState = "";
         document.getElementById("discoveryText").value = this.states.discoveryState;

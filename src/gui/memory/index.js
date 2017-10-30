@@ -281,7 +281,7 @@ MemoryContainer.prototype.onPointerUp = function() {
             });
 
             pendingMemorizations[objId || ''] = this;
-            window.location.href = 'of://memorize';
+            window.webkit.messageHandlers.realityEditor.postMessage({functionName: "memorize"});
             event.stopPropagation();
         }
         realityEditor.gui.menus.on("main",[]);
@@ -363,15 +363,12 @@ MemoryContainer.prototype.remember = function() {
     memoryBackground.innerHTML = '';
     memoryBackground.appendChild(this.backgroundImage);
 
-    var href = 'of://remember/';
+    var memoryData = JSON.stringify(
+        {id: this.memory.id, matrix: this.memory.matrix}
+    );
+    
+    window.webkit.messageHandlers.realityEditor.postMessage({functionName: "remember", data: memoryData});
 
-    if (this.memory) {
-        href += '?data=' + encodeURIComponent(JSON.stringify(
-                {id: this.memory.id, matrix: this.memory.matrix}
-            ));
-    }
-
-    window.location.href = href;
 
     realityEditor.gui.menus.on('main', ['freeze']);
     globalStates.freezeButtonState = true;
@@ -446,7 +443,7 @@ function removeMemoryBar() {
 
 function createMemory() {
     overlayDiv.classList.add('overlayMemory');
-    window.location.href = 'of://createMemory';
+    window.webkit.messageHandlers.realityEditor.postMessage({functionName: "createMemory"});
     realityEditor.gui.menus.on("bigPocket",[]);
    // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
 }
