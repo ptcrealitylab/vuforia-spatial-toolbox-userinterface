@@ -52,6 +52,10 @@
  * @desc
  **/
 
+function helloWorld(cb){
+ cb();
+}
+
 createNameSpace("realityEditor.device");
 
 realityEditor.device.onload = function () {
@@ -85,6 +89,11 @@ realityEditor.device.onload = function () {
 	globalCanvas.context = canvas.getContext('2d');
     
     window.webkit.messageHandlers.realityEditor.postMessage({functionName: "kickoff"});
+   
+    // reference implementation
+
+    setTimeout(realityEditor.app.getVuforiaReady(function(){console.log("pong")}), 5000);
+  
 
 	globalCanvas.canvas.addEventListener("pointerdown", realityEditor.device.onCanvasPointerDown.bind(realityEditor.device), false);
 	ec++;

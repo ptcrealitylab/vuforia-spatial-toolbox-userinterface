@@ -50,293 +50,46 @@
 /**********************************************************************************************************************
  ******************************************** global namespace *******************************************************
  **********************************************************************************************************************/
-/*
+
 var realityEditor = realityEditor || {
-		constructors: {
-			Object: {},
-			Link: {},
-			Node: {},
-			LogicNode: {},
-			LogicGUIState: {},
-			BlockLink: {},
-			Block: {},
-			EdgeBlock: {},
-			Data: {}
-		},
-		objects: {},
-		states: {},
+        app:{},
 		device: {
-            addEventHandlers: {},
-			onTouchDown: {},
-			onFalseTouchUp: {},
-			onTrueTouchUp: {},
-			onTouchEnter: {},
-			onTouchLeave: {},
-			onCanvasPointerDown: {},
-            onDocumentPointerMove: {},
-			onDocumentPointerUp: {},
-			onDocumentPointerDown: {},
-			onMultiTouchStart: {},
-			onMultiTouchMove: {},
-			onMultiTouchEnd: {},
-			onMultiTouchCanvasStart: {},
-			onMultiTouchCanvasMove: {},
-			setDeviceName: {},
-			setStates: {},
-			removeEventHandlers: {},
-            onload: {},
-            utilities: {
-				newURLTextLoad: {},
-				uuidTime: {},
-				uuidTimeShort: {},
-				randomIntInc: {}
-			}
-		},
-		network: {
-			addHeartbeatObject: {},
-			onAction: {},
-			onInternalPostMessage: {},
-			deleteData: {},
-			deleteLinkFromObject: {},
-			deleteBlockFromObject: {},
-			deleteBlockLinkFromObject: {},
-			getData: {},
-			postData: {},
-            postLinkToServer: {},
-			postNewLink: {},
-			postNewBlockLink: {},
-			postNewLogicNode: {},
-			postNewBlockPosition: {},
-			postNewBlock: {},
-			checkForNetworkLoop: {},
-            sendResetContent: {},
-            onElementLoad: {},
-			utilities: {
-				rename: {}
-			}
+		    security:{},
+            utilities: {}
 		},
 		gui: {
-			canvasCache: {},
-			domCache: {},
-            setup: {},
-			utilities: {
-				checkLineCross: {},
-				lineEq: {},
-				slopeCalc: {},
-				calculateX: {},
-				calculateY: {},
-				checkBetween: {}
-			},
 			ar: {
-				matrixStates: {},
-				setProjectionMatrix: {},
-				draw: {
-					update: {},
-					drawTransformed: {},
-					webkitTransformMatrix3d: {},
-					hideTransformed: {},
-					addElement: {},
-					killObjects: {},
-					onIframeLoad: {}
-				},
-				positioning: {
-					onScaleEvent: {}
-				},
-				lines: {
-					temporaryLink: {},
-					deleteLines: {},
-					drawAllLines: {},
-					drawInteractionLines: {},
-					drawLine: {},
-					drawDotLine: {},
-					drawGreen: {},
-					drawRed: {},
-					drawBlue: {},
-					drawYellow: {},
-					drawSimpleLine: {}
-				},
-				utilities: {
-                    timeSynchronizer: {},
-                    map: {},
-                    multiplyMatrix: {},
-					multiplyMatrix4: {},
-					copyMatrix: {},
-					invertMatrix: {},
-					toAxisAngle: {},
-					screenCoordinatesToMatrixXY: {},
-					insidePoly: {},
-                    estimateIntersection: {}
-				}
-			},
-			buttons: {
-				imageCache: {},
-				preload: {},
-                
-			},
-			pocket: {
-				pocketItem: {"pocket": new Objects()},
-				pocketItemId: "",
-                pocketButtonAction: {},
-				setPocketPosition: {},
-                pocketInit: {},
-                pocketShown: {},
-                pocketShow: {},
-                pocketHide: {},
-                pocketOnMemoryCreationStart: {},
-                pocketOnMemoryCreationStop: {},
-                pocketOnMemoryDeletionStart: {},
-                pocketOnMemoryDeletionStop: {}
-			},
-			settings: {
-				hideSettings: {},
-				showSettings: {},
-			},
-			crafting: {
-				logicStates: {},
-				updateGrid: {},
-				addDomElementForBlock: {},
-				redrawDataCrafting: {},
-				drawDataCraftingLine: {},
-				craftingBoardVisible: {},
-				craftingBoardHide: {},
-				blockMenuVisible: {},
-				blockMenuHide: {},
-				addDataCraftingEventListeners: {},
-				removeDataCraftingEventListeners: {},
-				resetCraftingBoard: {},
-				resetTempLogicState: {},
-				initializeDataCraftingGrid: {},
-				initLogicInOutBlocks: {},
-				utilities: {
-					toBlockJSON: {},
-					convertBlockLinkToServerFormat: {},
-					convertLogicToServerFormat: {},
-                    convertLinksFromServer: {}
-                },
-				blockMenu: {
-					initializeBlockMenu: {},
-					resetBlockMenu: {},
-					redisplayTabSelection: {},
-					redisplayBlockSelection: {}
-				},
-				grid: {
-					Grid: function (width, height) {
-					},
-					Cell: function (location) {
-					},
-					CellLocation: function (col, row) {
-					},
-					Route: function (cellLocations) {
-					},
-					RouteSegment: function (route, horz, vert) {
-					},
-					getCellForBlock: {},
-                    getBlockPixelWidth: {},
-					isBlockOutsideGrid: {},
-					convertGridPosToBlockPos: {},
-					convertBlockPosToGridPos: {},
-					addBlockLink: {},
-					blockWithID: {},
-					addBlock: {},
-					updateInOutLinks: {},
-                    isEdgePlaceholderLink: {},
-                    isEdgePlaceholderBlock: {},
-					isInOutBlock: {},
-					forEachLink: {},
-					setTempLink: {},
-					removeBlockLink: {},
-					removeBlock: {},
-					removeLinksForBlock: {},
-				},
-				eventHelper: {
-					getCellOverPointer: {},
-					getCellContents: {},
-					areCellsEqual: {},
-					areBlocksEqual: {},
-					convertToTempBlock: {},
-					moveBlockDomToPosition: {},
-					snapBlockToCellIfPossible: {},
-					offsetForItem: {},
-					canConnectBlocks: {},
-					canDrawLineFrom: {},
-					areBlocksTempConnected: {},
-					canPlaceBlockInCell: {},
-					styleBlockForHolding: {},
-					styleBlockForPlacement: {},
-					shouldUploadBlock: {},
-					shouldUploadBlockLink: {},
-					getServerObjectLogicKeys: {},
-					placeBlockInCell: {},
-					removePortBlocksIfNecessary: {},
-					getOutgoingLinks: {},
-					getIncomingLinks: {},
-					replacePortBlocksIfNecessary: {},
-					updateTempLinkOutlinesForBlock: {},
-					convertTempLinkOutlinesToLinks: {},
-					blocksExist: {},
-					resetTempLinkOutlines: {},
-					removeTappedContents: {},
-					createTempLink: {},
-					resetTempLink: {},
-					drawLinkLine: {},
-					resetLinkLine: {},
-					drawCutLine: {},
-					resetCutLine: {},
-					createLink: {},
-					cutIntersectingLinks: {},
-					getDomElementForBlock: {},
-					generateBlockGlobalId: {},
-					isPortBlock: {},
-					isInputBlock: {},
-					isOutputBlock: {},
-					addBlockFromMenu: {},
-					openBlockSettings: {},
-					handleBlockSettingsChange: {},
-					hideBlockSettings: {}
-				},
-				eventHandlers: {
-					onPointerDown: {},
-					onPointerMove: {},
-					onPointerUp: {}
-				}
-			},
-			memory: {
-				MemoryContainer: function (element) {
-				},
-				MemoryPointer: function (link, isObjectA) {
-				},
-				initMemoryBar: function () {
-				},
-				removeMemoryBar: function () {
-				},
-				receiveThumbnail: function (thumbnailUrl) {
-				},
-				addObjectMemory: function (obj) {
-				},
-				getMemoryWithId: function (id) {
-				},
-				getMemoryPointerWithId: function (id) {
-				},
-				memoryCanCreate: function () {
-				},
-				createMemoryWeb: function () {
-				},
-				removeMemoryWeb: function () {
-				}
-			},
-			advertisement: {
-				temporaryLink: {},
-				timeout: {},
-				links: {},
-				logic: {},
-				touchStart: {},
-				touchEnd: {},
 				draw: {},
-				reset: {}
-			}
-		}
+				positioning: {},
+				lines: {},
+				utilities: {}
+			},
+            crafting: {
+                blockMenu: {},
+                eventHandlers: {},
+                eventHelper: {},
+                grid: {},
+                utilities: {}
+            },
+            memory: {},
+            settings: {
+                logo:{}
+            },
+            buttons: {},
+            frames:{},
+            instantConnect:{},
+            menus:{},
+            pocket: {},
+            search:{},
+            utilities: {},
+            canvasCache: {},
+            domCache: {},
+            setup: {}
+		},
+        network: {
+            utilities: {}
+         }
 	};
-	*/
 
 /**
  * @desc This function generates all required namespaces and initializes a namespace if not existing.
