@@ -184,7 +184,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
-    window.webkit.messageHandlers.realityEditor.postMessage({functionName: "gotProjectionMatrix"});
+    realityEditor.app.appFunctionCall("gotProjectionMatrix", null, null);
 
 };
 

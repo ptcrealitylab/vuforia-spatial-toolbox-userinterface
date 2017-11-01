@@ -206,15 +206,13 @@ realityEditor.gui.buttons.freezeButtonUp = function(event) {
         globalStates.freezeButtonState = false;
         var memoryBackground = document.querySelector('.memoryBackground');
         memoryBackground.innerHTML = '';
-        window.webkit.messageHandlers.realityEditor.postMessage({functionName: "unfreeze"});
-
+        realityEditor.app.appFunctionCall("unfreeze", null, null);
 
     }
     else {
         realityEditor.gui.menus.buttonOn("default", ["freeze"]);
         globalStates.freezeButtonState = true;
-        window.webkit.messageHandlers.realityEditor.postMessage({functionName: "freeze"});
-
+        realityEditor.app.appFunctionCall("freeze", null, null);
     }
 };
 

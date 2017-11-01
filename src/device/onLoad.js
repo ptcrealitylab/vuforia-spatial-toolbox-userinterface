@@ -88,7 +88,7 @@ realityEditor.device.onload = function () {
 
 	globalCanvas.context = canvas.getContext('2d');
     
-    window.webkit.messageHandlers.realityEditor.postMessage({functionName: "kickoff"});
+    realityEditor.app.appFunctionCall("kickoff", null, null);
    
     // reference implementation
 

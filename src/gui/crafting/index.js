@@ -349,7 +349,7 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, nodeKey) {
 
     globalStates.freezeStateBeforeCrafting = globalStates.freezeButtonState;
     globalStates.freezeButtonState = true;
-    window.webkit.messageHandlers.realityEditor.postMessage({functionName: "freeze"});
+    realityEditor.app.appFunctionCall("freeze");
     globalStates.pocketButtonState = true;
     
     this.cout("craftingBoardVisible for object: " + objectKey + " and node: "+nodeKey);
@@ -391,15 +391,13 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
             
             realityEditor.gui.menus.buttonOff("default", ["freeze"]);
             globalStates.freezeButtonState = false;
-            window.webkit.messageHandlers.realityEditor.postMessage({functionName: "unfreeze"});
-
+            realityEditor.app.appFunctionCall("unfreeze");
 
         } else if (!globalStates.freezeButtonState && globalStates.freezeStateBeforeCrafting) {
             
             realityEditor.gui.menus.buttonOn("default", ["freeze"]);
             globalStates.freezeButtonState = true;
-            window.webkit.messageHandlers.realityEditor.postMessage({functionName: "freeze"});
-
+            realityEditor.app.appFunctionCall("freeze");
         }
     }
 
