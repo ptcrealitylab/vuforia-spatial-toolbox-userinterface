@@ -840,10 +840,10 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             console.log("jetzt aber mal richtig hier!!", globalStates.extendedTracking);
 
             if (globalStates.extendedTracking === true) {
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "extendedTrackingOn"});
+                realityEditor.app.appFunctionCall("extendedTrackingOn", null, null);
 
             } else {
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "extendedTrackingOff"});
+                realityEditor.app.appFunctionCall("extendedTrackingOff", null, null);
 
             }
         }
@@ -854,12 +854,12 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
 
                 realityEditor.device.addEventHandlers();
                 globalStates.editingMode = true;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "developerOn"});
+                realityEditor.app.appFunctionCall("developerOn", null, null);
                 globalMatrix.matrixtouchOn = "";
             } else {
                 realityEditor.device.removeEventHandlers();
                 globalStates.editingMode = false;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "developerOff"});
+                realityEditor.app.appFunctionCall("developerOff", null, null);
 
             }
 
@@ -868,12 +868,11 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
         if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
             if (msgContent.settings.setSettings.instantState) {
                 globalStates.instantState = true;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "instantOn"});
-
+                realityEditor.app.appFunctionCall("instantOn", null, null);
 
             } else {
                 globalStates.instantState = false;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "instantOff"});
+                realityEditor.app.appFunctionCall("instantOff", null, null);
 
             }
         }
@@ -882,12 +881,11 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
 
             if (msgContent.settings.setSettings.clearSkyState) {
                 globalStates.clearSkyState = true;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "clearSkyOn"});
-
+                realityEditor.app.appFunctionCall("clearSkyOn", null, null);
 
             } else {
                 globalStates.clearSkyState = false;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "clearSkyOff"});
+                realityEditor.app.appFunctionCall("clearSkyOff", null, null);
 
             }
         }
@@ -897,8 +895,7 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             console.log("received message in settings");
 
             if (msgContent.settings.setSettings.lockingToggle) {
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "authenticateTouch"});
-
+                realityEditor.app.appFunctionCall("authenticateTouch", null, null);
 
             } else {
                 globalStates.lockingMode = false;
@@ -918,14 +915,14 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             if (msgContent.settings.setSettings.realityState) {
                 realityEditor.gui.menus.on("reality",["realityGui"]);
                 globalStates.realityState = true;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "realityOn"});
+                realityEditor.app.appFunctionCall("realityOn", null, null);
 
             } else {
                 realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
                 realityEditor.gui.menus.on("main",["gui"]);
                 globalStates.realityState = false;
-                window.webkit.messageHandlers.realityEditor.postMessage({functionName: "realityOff"});
-
+                realityEditor.app.appFunctionCall("realityOff", null, null);
+                
             }
         }
     }

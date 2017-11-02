@@ -93,22 +93,21 @@ realityEditor.gui.settings.newDiscoveryTextLoad = function () {
 
 realityEditor.gui.settings.reloadUI = function () {
     if (this.states.externalState !== "" && this.states.externalState !== "http") {
-        console.log("window.location.href = " + "of://loadNewUI" + this.states.externalState);
-        window.webkit.messageHandlers.realityEditor.postMessage({functionName: ("loadNewUI"+this.states.externalState)});
-
+        console.log("loadNewUI" + this.states.externalState);
+        realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState}, null);
     }
 };
 
 realityEditor.gui.settings.discovery = function () {
     if (!this.states.discoveryActive) {
         if (this.states.discoveryState !== "" && this.states.discoveryState !== "http") {
-            console.log("window.location.href = " + "of://setDiscovery" + this.states.discoveryState);
-            window.webkit.messageHandlers.realityEditor.postMessage({functionName: ("setDiscovery"+this.states.discoveryState)});
+            console.log("setDiscovery" + this.states.discoveryState);
+            realityEditor.app.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState}, null);
             this.states.discoveryActive = true;
         }
     } else {
-        console.log("window.location.href = " + "of://removeDiscovery");
-        window.webkit.messageHandlers.realityEditor.postMessage({functionName: ("removeDiscovery")});
+        console.log("removeDiscovery");
+        realityEditor.app.appFunctionCall("removeDiscovery", null, null);
         this.states.discoveryActive = false;
         this.states.discoveryState = "";
         document.getElementById("discoveryText").value = this.states.discoveryState;
