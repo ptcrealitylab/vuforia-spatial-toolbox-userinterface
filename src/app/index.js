@@ -73,10 +73,16 @@ realityEditor.app.getScreenShot = function(size, callBack) {
 };
 
 // pauses the tracker
-realityEditor.app.setPause = function() {};
+realityEditor.app.setPause = function() {
+    this.appFunctionCall('setPause', null, null);
+
+};
 
 // resumes the tracker
-realityEditor.app.setResume = function() {};
+realityEditor.app.setResume = function() {
+    this.appFunctionCall('setResume', null, null);
+
+};
 
  /**
  **************UDP****************
@@ -131,14 +137,20 @@ realityEditor.app.getStorage = function (id, callBack) {
  **************Speech****************
   **/
 // starts the apple speech engine
-realityEditor.app.startSpeechRecording = function () {};
+realityEditor.app.startSpeechRecording = function () {
+    this.appFunctionCall('startSpeechRecording', null, null);
+
+};
 
 // stops the speech engine
-realityEditor.app.stopSpeechRecording = function () {};
+realityEditor.app.stopSpeechRecording = function () {
+    this.appFunctionCall('stopSpeechRecording', null, null);
+
+};
 
 //sends every individual word that was found one by one to the callback.
-realityEditor.app.getWords = function (callBack) {
-    this.appFunctionCall('getWords', null, 'realityEditor.app.callBack('+callBack+')');
+realityEditor.app.addSpeechListener = function (callBack) {
+    this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
 /**
