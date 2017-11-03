@@ -74,6 +74,7 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
             editingMode: globalStates.editingMode,
             clearSkyState: globalStates.clearSkyState,
             instantState: globalStates.instantState,
+            speechState: globalStates.speechState,
             externalState: globalStates.externalState,
             discoveryState: globalStates.discoveryState,
             settingsButton : globalStates.settingsButtonState,

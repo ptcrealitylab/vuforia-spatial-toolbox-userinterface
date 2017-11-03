@@ -453,7 +453,7 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (typeof thisAction.reloadObject !== "undefined") {
-console.log("gotdata");
+        console.log("gotdata");
         if(thisAction.reloadObject.object in objects) {
             this.getData('http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
 
@@ -798,6 +798,7 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             editingMode: globalStates.editingMode,
             clearSkyState: globalStates.clearSkyState,
             instantState: globalStates.instantState,
+            speechState: globalStates.speechState,
             externalState: globalStates.externalState,
             discoveryState: globalStates.discoveryState,
             settingsButton : globalStates.settingsButtonState,
@@ -874,6 +875,20 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
                 globalStates.instantState = false;
                 realityEditor.app.appFunctionCall("instantOff", null, null);
 
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.speechState !== "undefined") {
+            if (msgContent.settings.setSettings.speechState) {
+                globalStates.speechState = true;
+                realityEditor.app.addSpeechListener("realityEditor.device.speech.speechRecordingCallback");
+                realityEditor.app.startSpeechRecording();
+                // realityEditor.app.appFunctionCall("addSpeechListener", null, null);
+                // realityEditor.app.appFunctionCall("startSpeechRecording", null, null);
+            } else {
+                globalStates.speechState = false;
+                realityEditor.app.stopSpeechRecording();
+                // realityEditor.app.appFunctionCall("stopSpeechRecording", null, null);
             }
         }
 

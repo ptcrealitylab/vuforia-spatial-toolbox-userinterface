@@ -49,7 +49,7 @@ realityEditor.app.getDeviceReady = function(callBack) {
 // check if vuforia is ready and fires a callback once that’s the case
 realityEditor.app.getVuforiaReady = function(callBack){
     console.log("ping");
-    this.appFunctionCall('getVuforiaReady', null /*{testArg1: "hello", testArg2: 21}*/, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
 // adds a new marker and fires a callback with error or success
@@ -150,7 +150,7 @@ realityEditor.app.stopSpeechRecording = function () {
 
 //sends every individual word that was found one by one to the callback.
 realityEditor.app.addSpeechListener = function (callBack) {
-    this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**
@@ -173,6 +173,11 @@ realityEditor.app.appFunctionCall = function(functionName, arguments, callbackSt
     window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
 };
 
-realityEditor.app.callBack = function(callBack){
-    callBack(arguments);
+realityEditor.app.callBack = function(callBack, callbackArguments){
+    
+    if (callbackArguments) {
+        callBack.apply(null, callbackArguments);
+    } else {
+        callBack();
+    }
 };

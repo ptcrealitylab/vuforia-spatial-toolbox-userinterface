@@ -157,6 +157,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.editingMode = msg.getSettings.editingMode;
             this.states.clearSkyState = msg.getSettings.clearSkyState;
             this.states.instantState = msg.getSettings.instantState;
+            this.states.speechState = msg.getSettings.speechState;
             this.states.externalState = msg.getSettings.externalState;
             this.states.discoveryState = msg.getSettings.discoveryState;
             this.states.settingsButton = msg.getSettings.settingsButton;
@@ -167,6 +168,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
             this.setSettings("extendedTracking", this.states.extendedTracking);
             this.setSettings("instantState", this.states.instantState);
+            this.setSettings("speechState", this.states.speechState);
             this.setSettings("editingMode", this.states.editingMode);
             this.setSettings("clearSkyState", this.states.clearSkyState);
             this.setSettings("externalText", this.states.externalState);

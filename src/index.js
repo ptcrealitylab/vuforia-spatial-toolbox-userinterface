@@ -55,7 +55,8 @@ var realityEditor = realityEditor || {
         app:{},
 		device: {
 		    security:{},
-            utilities: {}
+            utilities: {},
+            speech: {}
 		},
 		gui: {
 			ar: {

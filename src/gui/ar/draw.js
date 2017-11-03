@@ -60,7 +60,7 @@ createNameSpace("realityEditor.gui.ar.draw");
 
 
 realityEditor.gui.ar.draw.update = function(visibleObjects) {
-    console.log("tip");
+    // console.log("tip");
 //    console.log(JSON.stringify(visibleObjects));
     this.ar.utilities.timeSynchronizer(timeCorrection);
     //disp = uiButtons.style.display;
