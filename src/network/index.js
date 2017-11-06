@@ -941,6 +941,10 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
             }
         }
     }
+    
+    if (msgContent.settings.functionName) {
+        realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
+    }
 };
 
 realityEditor.network.deleteData = function(url, content) {

@@ -79,11 +79,11 @@ realityEditor.gui.settings.updateLockUI = function() {
 };
 
 realityEditor.gui.settings.newURLTextLoad = function () {
-    this.states.externalState = encodeURIComponent(document.getElementById('externalText').value);
+    this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
 };
 
 realityEditor.gui.settings.newDiscoveryTextLoad = function () {
-    this.states.discoveryState = encodeURIComponent(document.getElementById('discoveryText').value);
+    this.states.discoveryState = document.getElementById('discoveryText').value; //encodeURIComponent(document.getElementById('discoveryText').value);
     this.states.discoveryActive = false;
 
     var buttonState = document.getElementById('discoveryButton');
@@ -91,10 +91,19 @@ realityEditor.gui.settings.newDiscoveryTextLoad = function () {
         buttonState.className = "btn btn-positive pull-right";
 };
 
+realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody) {
+    parent.postMessage(JSON.stringify({
+        settings: {
+            functionName: functionName,
+            messageBody: messageBody
+        }
+    }), "*");
+};
+
 realityEditor.gui.settings.reloadUI = function () {
     if (this.states.externalState !== "" && this.states.externalState !== "http") {
         console.log("loadNewUI" + this.states.externalState);
-        realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState}, null);
+        this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
     }
 };
 
@@ -102,12 +111,12 @@ realityEditor.gui.settings.discovery = function () {
     if (!this.states.discoveryActive) {
         if (this.states.discoveryState !== "" && this.states.discoveryState !== "http") {
             console.log("setDiscovery" + this.states.discoveryState);
-            realityEditor.app.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState}, null);
+            this.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState});
             this.states.discoveryActive = true;
         }
     } else {
         console.log("removeDiscovery");
-        realityEditor.app.appFunctionCall("removeDiscovery", null, null);
+        this.appFunctionCall("removeDiscovery", null);
         this.states.discoveryActive = false;
         this.states.discoveryState = "";
         document.getElementById("discoveryText").value = this.states.discoveryState;
