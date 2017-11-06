@@ -83,12 +83,88 @@ realityEditor.device.speech.createSpeechLink = function(objectA, nodeA, objectB,
     realityEditor.gui.instantConnect.draw(linkObject, "connected");
 };
 
+function getClosestNode() {
+    var closestObject = objects[globalLogic.farFrontElement]; // TODO: make sure this always gets set, not just when adding a logic node
+    var nodes = closestObject.nodes;
+    var screenCenter = [284, 160]; // TODO: calculate each time based on screen size
+    // var screenCenter = [0, 0];
+    var closestDistanceSquared = 100000;
+    var closestNodeKey;
+    for (var nodeKey in nodes) {
+        if (!nodes.hasOwnProperty(nodeKey)) continue;
+        var node = nodes[nodeKey];
+        
+        var element = document.getElementById("thisObject" + nodeKey);
+        var matrixString = window.getComputedStyle(element).webkitTransform;
+        if (matrixString.startsWith("transform3d")) {
+            var matrix = matrixString
+                .split('(')[1]
+                .split(')')[0]
+                .split(',')
+                .map(parseFloat);
+            node.temp = matrix;
+        }
+        
+        var dObject = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter);
+        // console.log(dObject);
+        var nodeOffset = {x: dObject[0] - node.x, y: dObject[1] - node.y};
+        var totalDistanceSquared =  nodeOffset.x * nodeOffset.x + nodeOffset.y * nodeOffset.y;
+        
+        // console.log(node.name, node.x + " -> " + nodeOffset.x, node.y + " -> " + nodeOffset.y, totalDistanceSquared);
+        
+        if (closestNodeKey) {
+            if (totalDistanceSquared < closestDistanceSquared) {
+                closestNodeKey = nodeKey;
+                closestDistanceSquared = totalDistanceSquared;
+            }
+        } else {
+            closestNodeKey = nodeKey;
+            closestDistanceSquared = totalDistanceSquared;
+        }
+    }
+    return closestNodeKey;
+}
+
+// realityEditor.device.speech.parseLocation = function(locationWords, contextObjectKey) {
+//    
+//     var contextObject = objects[contextObjectKey];
+//    
+//     console.log(locationWords);
+//    
+//     var nodeNames = Object.keys(contextObject.nodes).map( function(nodeKey) {
+//         return contextObject.nodes[nodeKey].name;
+//     });
+//    
+//     console.log(nodeNames);
+//    
+//     var mentionedNodeNames = getVocabInWords(nodeNames, locationWords);
+//     if (mentionedNodeNames.length > 0) {
+//         return {object: contextObjectKey, node: mentionedNodeNames[0]};
+//     }
+//
+//     if (locationWords.indexOf('this') > -1) {
+//         return {object: contextObjectKey};
+//     }
+//    
+//     if (locationWords.indexOf('that') > -1) {
+//         return {object: contextObjectKey};
+//     }
+//
+//     if (locationWords.indexOf(contextObject.name) > -1) {
+//         return {object: contextObjectKey};
+//     }
+//
+//     return {};
+// };
+
 realityEditor.device.speech.parsePhrase = function(phrase) {
     var locations = realityEditor.device.speech.extractLocation(phrase);
     var actions = realityEditor.device.speech.extractAction(phrase);
     var data = realityEditor.device.speech.extractData(phrase);
     
     console.log(locations, actions, data);
+    
+    // var parsedLocation = this.parseLocation(locations, globalLogic.farFrontElement);
     
     if (actions.indexOf('reset') > -1) {
         this.resetSpeechRecording();
@@ -102,39 +178,39 @@ realityEditor.device.speech.parsePhrase = function(phrase) {
     
     }
 
-    if (!globalStates.pendingSpeechLocationA) {
+    if (!globalStates.pendingSpeechObjectA) {
         if (locations.indexOf('this') > -1) {
-            globalStates.pendingSpeechLocationA = 'get random node on closest object';
+            globalStates.pendingSpeechObjectA = 'get random node on closest object';
             
             var visibleObjectKeys = this.getVisibleObjectKeys();
             if (visibleObjectKeys.length > 0) {
-                globalStates.pendingSpeechLocationA = visibleObjectKeys[0];
+                globalStates.pendingSpeechObjectA = visibleObjectKeys[0];
             }
             
         }
     }
     
-    if (!globalStates.pendingSpeechLocationB) {
+    if (!globalStates.pendingSpeechObjectB) {
         if (locations.indexOf('that') > -1) {
-            globalStates.pendingSpeechLocationB = 'get random node on new closest object';
+            globalStates.pendingSpeechObjectB = 'get random node on new closest object';
 
             var visibleObjectKeys = this.getVisibleObjectKeys();
             if (visibleObjectKeys.length > 0) {
-                globalStates.pendingSpeechLocationB = visibleObjectKeys[0];
+                globalStates.pendingSpeechObjectB = visibleObjectKeys[0];
             }
         }
     }
     
-    if (globalStates.pendingSpeechAction && globalStates.pendingSpeechLocationA && globalStates.pendingSpeechLocationB) {
+    if (globalStates.pendingSpeechAction && globalStates.pendingSpeechObjectA && globalStates.pendingSpeechObjectB) {
         // this.performAction(globalStates.)
         
         if (globalStates.pendingSpeechAction === 'connect') {
-            console.log('connect [' + globalStates.pendingSpeechLocationA + '] to [' + globalStates.pendingSpeechLocationB + '] - (performed by speech)');
+            console.log('connect [' + globalStates.pendingSpeechObjectA + '] to [' + globalStates.pendingSpeechObjectB + '] - (performed by speech)');
             
-            if (objects.hasOwnProperty(globalStates.pendingSpeechLocationA) && objects.hasOwnProperty(globalStates.pendingSpeechLocationB)) {
+            if (objects.hasOwnProperty(globalStates.pendingSpeechObjectA) && objects.hasOwnProperty(globalStates.pendingSpeechObjectB)) {
                 
-                var nodesOnA = objects[globalStates.pendingSpeechLocationA].nodes;
-                var nodesOnB = objects[globalStates.pendingSpeechLocationB].nodes;
+                var nodesOnA = objects[globalStates.pendingSpeechObjectA].nodes;
+                var nodesOnB = objects[globalStates.pendingSpeechObjectB].nodes;
                 
                 if (nodesOnA && nodesOnB) {
                     
@@ -144,7 +220,7 @@ realityEditor.device.speech.parsePhrase = function(phrase) {
                     var nodeB = Object.keys(nodesOnB).length > 0 ? Object.keys(nodesOnB)[nodeIndexB] : null;
                     
                     if (nodeA && nodeB) {
-                        this.createSpeechLink(globalStates.pendingSpeechLocationA, nodeA, globalStates.pendingSpeechLocationB, nodeB);
+                        this.createSpeechLink(globalStates.pendingSpeechObjectA, nodeA, globalStates.pendingSpeechObjectB, nodeB);
                     }
                 }
             }
@@ -160,8 +236,12 @@ realityEditor.device.speech.resetSpeechRecording = function() {
     console.log("RESET SPEECH RECORDING");
 
     globalStates.pendingSpeechAction = null;
-    globalStates.pendingSpeechLocationA = null;
-    globalStates.pendingSpeechLocationB = null;
+    
+    globalStates.pendingSpeechObjectA = null;
+    globalStates.pendingSpeechObjectB = null;
+    
+    globalStates.pendingSpeechNodeA = null;
+    globalStates.pendingSpeechNodeB = null;
 
     realityEditor.app.stopSpeechRecording();
     
@@ -190,6 +270,14 @@ realityEditor.device.speech.extractLocation = function(currentPhrase) {
         'this',
         'that'
     ];
+
+    // if (globalLogic.farFrontElement) {
+    //     var contextObject = objects[globalLogic.farFrontElement];
+    //     var nodeNames = Object.keys(contextObject.nodes).map( function(nodeKey) {
+    //         return contextObject.nodes[nodeKey].name;
+    //     });
+    //     vocabulary.push.apply(vocabulary, nodeNames);
+    // }
 
     return getVocabInWords(wordList, vocabulary);
 };

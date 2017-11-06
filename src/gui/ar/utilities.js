@@ -201,7 +201,7 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject
 	var angles = this.toAxisAngle(tempMatrix);
 
 	var angX = angles[0] * Math.sin(angles[2]) + angles[1] * Math.cos(angles[2]);
-	var angY = angles[0] * Math.cos(angles[2]) - angles[1] * Math.sin(angles[2]);
+	var angY = angles[0] * Math.cos(angles[2]) - angles[1] * Math.sin(angles[2]); // TODO: is this calculation correct? 
 
 	// calculate new x and y
 	var possitionX =  tempMatrix[14] * ((touch[0] - globalStates.height / 2) *(Math.abs(angX/2)+1));

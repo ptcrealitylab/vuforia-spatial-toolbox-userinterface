@@ -58,6 +58,8 @@ createNameSpace("realityEditor.gui.ar.draw");
  * @param visibleObjects
  **/
 
+nodeCounter = 0;
+
 
 realityEditor.gui.ar.draw.update = function(visibleObjects) {
     // console.log("tip");
@@ -204,6 +206,14 @@ realityEditor.gui.ar.draw.update = function(visibleObjects) {
         }
         this.ar.lines.drawInteractionLines();
         //  cout("drawlines");
+        
+        nodeCounter++;
+        if (nodeCounter > 20) {
+            var closestNode = getClosestNode();
+            console.log("closest node", closestNode);
+            nodeCounter = 0;
+        }
+        
     }
 
     // todo this is a test for the pocket
