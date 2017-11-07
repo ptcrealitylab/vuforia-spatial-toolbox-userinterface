@@ -87,6 +87,7 @@ var globalStates = {
     realityState: false,
 	externalState: "",
     discoveryState: "",
+    speechState: false,
 	sendMatrix3d: false,
 	sendAcl: false,
     

@@ -193,7 +193,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
             if (typeof realityEditor.gui.settings.logo !== "undefined" && this.states.settingsButton && !this.states.animationFrameRequested) {
                 this.states.animationFrameRequested = true;
-                window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
+                if (realityEditor.gui.settings.logo) {
+                    window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
+                }
             }
 
             if (!this.states.settingsButton) {

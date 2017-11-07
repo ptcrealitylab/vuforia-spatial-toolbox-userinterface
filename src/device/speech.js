@@ -80,38 +80,63 @@ realityEditor.device.speech.createSpeechLink = function(objectA, nodeA, objectB,
     
     realityEditor.network.postLinkToServer(linkObject, objects);
     // this.draw(linkObject, "connected");
-    realityEditor.gui.instantConnect.draw(linkObject, "connected");
+    // realityEditor.gui.instantConnect.draw(linkObject, "connected");
+    this.drawLink(linkObject);
 };
 
-function getClosestNode() {
-    var closestObject = objects[globalLogic.farFrontElement]; // TODO: make sure this always gets set, not just when adding a logic node
-    var nodes = closestObject.nodes;
+realityEditor.device.speech.getClosestObjectNodePair = function() {
+    var visibleObjectKeys = this.getVisibleObjectKeys();
+    if (visibleObjectKeys.length === 0) return null;
+
+    var objectNodeCombos = [];
+    var that = this;
+    // find best node on each visible object
+    visibleObjectKeys.forEach( function(objectKey) {
+        objectNodeCombos.push(that.getClosestNodeOnObject(objectKey));
+    });
+    
+    // choose the closest one
+    var closestDistance = objectNodeCombos[0];
+    var closestIndex = 0;
+    objectNodeCombos.forEach(function(elt, i) {
+        if (elt.distanceSquared < closestDistance) {
+            closestDistance = elt.distanceSquared;
+            closestIndex = i;
+        }
+    });
+    
+    return {
+        objectKey: objectNodeCombos[closestIndex].objectKey,
+        nodeKey: objectNodeCombos[closestIndex].nodeKey
+    }
+};
+
+realityEditor.device.speech.getClosestNodeOnObject = function(objectKey) {
+    var nodes = objects[objectKey].nodes;
     var screenCenter = [284, 160]; // TODO: calculate each time based on screen size
-    // var screenCenter = [0, 0];
-    var closestDistanceSquared = 100000;
+    var closestDistanceSquared = Math.POSITIVE_INFINITY;
     var closestNodeKey;
     for (var nodeKey in nodes) {
         if (!nodes.hasOwnProperty(nodeKey)) continue;
         var node = nodes[nodeKey];
-        
+
         var element = document.getElementById("thisObject" + nodeKey);
         var matrixString = window.getComputedStyle(element).webkitTransform;
-        if (matrixString.startsWith("transform3d")) {
-            var matrix = matrixString
+        if (matrixString.startsWith("matrix3d")) { // get the matrix from the transform3d string
+            var matrix = matrixString 
                 .split('(')[1]
                 .split(')')[0]
                 .split(',')
                 .map(parseFloat);
             node.temp = matrix;
         }
-        
+
         var dObject = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter);
-        // console.log(dObject);
         var nodeOffset = {x: dObject[0] - node.x, y: dObject[1] - node.y};
         var totalDistanceSquared =  nodeOffset.x * nodeOffset.x + nodeOffset.y * nodeOffset.y;
-        
+
         // console.log(node.name, node.x + " -> " + nodeOffset.x, node.y + " -> " + nodeOffset.y, totalDistanceSquared);
-        
+
         if (closestNodeKey) {
             if (totalDistanceSquared < closestDistanceSquared) {
                 closestNodeKey = nodeKey;
@@ -122,8 +147,55 @@ function getClosestNode() {
             closestDistanceSquared = totalDistanceSquared;
         }
     }
-    return closestNodeKey;
-}
+    return {
+        objectKey: objectKey,
+        nodeKey: closestNodeKey,
+        distanceSquared: closestDistanceSquared
+    };
+};
+
+// function getClosestNode() {
+//    
+//     var closestObject = objects[globalLogic.farFrontElement]; // TODO: make sure this always gets set, not just when adding a logic node
+//     var nodes = closestObject.nodes;
+//     var screenCenter = [284, 160]; // TODO: calculate each time based on screen size
+//     // var screenCenter = [0, 0];
+//     var closestDistanceSquared = 100000;
+//     var closestNodeKey;
+//     for (var nodeKey in nodes) {
+//         if (!nodes.hasOwnProperty(nodeKey)) continue;
+//         var node = nodes[nodeKey];
+//        
+//         var element = document.getElementById("thisObject" + nodeKey);
+//         var matrixString = window.getComputedStyle(element).webkitTransform;
+//         if (matrixString.startsWith("transform3d")) {
+//             var matrix = matrixString
+//                 .split('(')[1]
+//                 .split(')')[0]
+//                 .split(',')
+//                 .map(parseFloat);
+//             node.temp = matrix;
+//         }
+//        
+//         var dObject = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter);
+//         // console.log(dObject);
+//         var nodeOffset = {x: dObject[0] - node.x, y: dObject[1] - node.y};
+//         var totalDistanceSquared =  nodeOffset.x * nodeOffset.x + nodeOffset.y * nodeOffset.y;
+//        
+//         // console.log(node.name, node.x + " -> " + nodeOffset.x, node.y + " -> " + nodeOffset.y, totalDistanceSquared);
+//        
+//         if (closestNodeKey) {
+//             if (totalDistanceSquared < closestDistanceSquared) {
+//                 closestNodeKey = nodeKey;
+//                 closestDistanceSquared = totalDistanceSquared;
+//             }
+//         } else {
+//             closestNodeKey = nodeKey;
+//             closestDistanceSquared = totalDistanceSquared;
+//         }
+//     }
+//     return closestNodeKey;
+// }
 
 // realityEditor.device.speech.parseLocation = function(locationWords, contextObjectKey) {
 //    
@@ -185,6 +257,12 @@ realityEditor.device.speech.parsePhrase = function(phrase) {
             var visibleObjectKeys = this.getVisibleObjectKeys();
             if (visibleObjectKeys.length > 0) {
                 globalStates.pendingSpeechObjectA = visibleObjectKeys[0];
+
+                var closestPair = realityEditor.device.speech.getClosestObjectNodePair();
+                globalStates.pendingSpeechObjectA = closestPair.objectKey;
+                globalStates.pendingSpeechNodeA = closestPair.nodeKey;
+                
+                console.log("FROM NODE: " + objects[closestPair.objectKey].nodes[closestPair.nodeKey].name);
             }
             
         }
@@ -197,38 +275,92 @@ realityEditor.device.speech.parsePhrase = function(phrase) {
             var visibleObjectKeys = this.getVisibleObjectKeys();
             if (visibleObjectKeys.length > 0) {
                 globalStates.pendingSpeechObjectB = visibleObjectKeys[0];
+
+                var closestPair = realityEditor.device.speech.getClosestObjectNodePair();
+                globalStates.pendingSpeechObjectB = closestPair.objectKey;
+                globalStates.pendingSpeechNodeB = closestPair.nodeKey;
+
+                console.log("TO NODE: " + objects[closestPair.objectKey].nodes[closestPair.nodeKey].name);
             }
         }
     }
     
     if (globalStates.pendingSpeechAction && globalStates.pendingSpeechObjectA && globalStates.pendingSpeechObjectB) {
-        // this.performAction(globalStates.)
-        
+
         if (globalStates.pendingSpeechAction === 'connect') {
-            console.log('connect [' + globalStates.pendingSpeechObjectA + '] to [' + globalStates.pendingSpeechObjectB + '] - (performed by speech)');
-            
+            if (globalStates.pendingSpeechNodeA && globalStates.pendingSpeechNodeB) {
+                console.log('connect [' + globalStates.pendingSpeechObjectA + '-' + globalStates.pendingSpeechNodeA + '] to [' + globalStates.pendingSpeechObjectB + '-' + globalStates.pendingSpeechNodeB + '] - (performed by speech)');
+
+            }
+
             if (objects.hasOwnProperty(globalStates.pendingSpeechObjectA) && objects.hasOwnProperty(globalStates.pendingSpeechObjectB)) {
-                
-                var nodesOnA = objects[globalStates.pendingSpeechObjectA].nodes;
-                var nodesOnB = objects[globalStates.pendingSpeechObjectB].nodes;
-                
-                if (nodesOnA && nodesOnB) {
-                    
-                    var nodeIndexA = 0;
-                    var nodeIndexB = 0;
-                    var nodeA = Object.keys(nodesOnA).length > 0 ? Object.keys(nodesOnA)[nodeIndexA] : null;
-                    var nodeB = Object.keys(nodesOnB).length > 0 ? Object.keys(nodesOnB)[nodeIndexB] : null;
-                    
-                    if (nodeA && nodeB) {
-                        this.createSpeechLink(globalStates.pendingSpeechObjectA, nodeA, globalStates.pendingSpeechObjectB, nodeB);
-                    }
-                }
+                this.createSpeechLink(globalStates.pendingSpeechObjectA, globalStates.pendingSpeechNodeA, globalStates.pendingSpeechObjectB, globalStates.pendingSpeechNodeB);
             }
         }
         
         this.resetSpeechRecording();
         return;
     }
+    
+};
+
+realityEditor.device.speech.drawLink = function(link) {
+    var canvas = document.getElementById('testCanvas'),
+        ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#00ffff';
+    ctx.fillStyle = "#666666";
+    ctx.beginPath();
+    
+    ctx.lineTo(568, 0);
+    ctx.lineTo(568, 320);
+    ctx.lineTo(0, 320);
+    ctx.lineTo(0, 0);
+    
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#777777";
+    ctx.beginPath();
+    ctx.moveTo(506, 1);
+    ctx.lineTo(506, 320);
+    ctx.lineTo(200, 320);
+    ctx.lineTo(200, 1);
+    ctx.lineTo(506, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    var thisY = 93 + 50;
+    var thisWidth = 140;
+    var thisX = (320 / 2) - (thisWidth / 2) + 45;
+    
+    var my_gradient = ctx.createLinearGradient(58 + thisY, 0, 0 + thisY, 0);
+    my_gradient.addColorStop(0, "#777777");
+    my_gradient.addColorStop(1, "#00ff00");
+    ctx.fillStyle = my_gradient;
+
+    ctx.beginPath();
+    ctx.moveTo(58 + thisY, 0 + thisX);
+    ctx.lineTo(28 + thisY, 0 + thisX);
+    ctx.lineTo(0 + thisY, (thisWidth / 2) + thisX);
+    ctx.lineTo(28 + thisY, thisWidth + thisX);
+    ctx.lineTo(58 + thisY, thisWidth + thisX);
+
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#666666";
+    ctx.beginPath();
+    ctx.moveTo(200, 1);
+    ctx.lineTo(400, 1);
+    ctx.lineTo(400, 90);
+    ctx.lineTo(200, 90);
+
+    ctx.closePath();
+    ctx.stroke();
     
 };
 

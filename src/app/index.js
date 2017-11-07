@@ -138,20 +138,32 @@ realityEditor.app.getStorage = function (id, callBack) {
   **/
 // starts the apple speech engine
 realityEditor.app.startSpeechRecording = function () {
+    console.log("startSpeechRecording");
     this.appFunctionCall('startSpeechRecording', null, null);
 
 };
 
 // stops the speech engine
 realityEditor.app.stopSpeechRecording = function () {
+    console.log("stopSpeechRecording");
     this.appFunctionCall('stopSpeechRecording', null, null);
 
 };
 
 //sends every individual word that was found one by one to the callback.
 realityEditor.app.addSpeechListener = function (callBack) {
+    console.log("addSpeechListener");
     this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
+
+/**
+ **************Debugging****************
+ **/
+//sends every individual word that was found one by one to the callback.
+realityEditor.app.clearCache = function () {
+    this.appFunctionCall('clearCache', null, null);
+};
+
 
 /**
  **************UTILITIES****************
