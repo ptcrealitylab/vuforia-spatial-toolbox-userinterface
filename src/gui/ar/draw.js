@@ -207,31 +207,35 @@ realityEditor.gui.ar.draw.update = function(visibleObjects) {
         this.ar.lines.drawInteractionLines();
         //  cout("drawlines");
         
-        nodeCounter++;
-        if (nodeCounter > 20) {
+        if (globalStates.speechState) {
 
-            var closest = realityEditor.device.speech.getClosestObjectNodePair(); //getClosestNode();
-            
-            if (!closest) return;
+            nodeCounter++;
+            if (nodeCounter > 20) {
 
-            Object.keys(objects).forEach( function(objectKey) {
-                if (!objects.hasOwnProperty(objectKey)) return;
-                
-                Object.keys(objects[objectKey].nodes).forEach( function(nodeKey) {
-                    if (!objects[objectKey].nodes.hasOwnProperty(nodeKey)) return;
-                    
-                    var nodeDom = document.getElementById('thisObject' + nodeKey);
-                    if (nodeDom) {
-                        nodeDom.style.opacity = 1.0; //1.0;
-                    }
+                var closest = realityEditor.device.speech.getClosestObjectNodePair(); //getClosestNode();
+
+                if (!closest) return;
+
+                Object.keys(objects).forEach( function(objectKey) {
+                    if (!objects.hasOwnProperty(objectKey)) return;
+
+                    Object.keys(objects[objectKey].nodes).forEach( function(nodeKey) {
+                        if (!objects[objectKey].nodes.hasOwnProperty(nodeKey)) return;
+
+                        var nodeDom = document.getElementById('thisObject' + nodeKey);
+                        if (nodeDom) {
+                            nodeDom.style.opacity = 1.0; //1.0;
+                        }
+                    });
+
                 });
-                
-            });
+
+                // console.log("closest", closest);
+                document.getElementById('thisObject' + closest.nodeKey).style.opacity = 0.33; //opacity = 0.33;
+
+                nodeCounter = 0;
+            }
             
-            // console.log("closest", closest);
-            document.getElementById('thisObject' + closest.nodeKey).style.opacity = 0.33; //opacity = 0.33;
-            
-            nodeCounter = 0;
         }
         
     }
