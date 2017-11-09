@@ -212,7 +212,7 @@ realityEditor.gui.ar.draw.update = function(visibleObjects) {
             nodeCounter++;
             if (nodeCounter > 20) {
 
-                var closest = realityEditor.device.speech.getClosestObjectNodePair(); //getClosestNode();
+                var closest = realityEditor.device.speechProcessor.getClosestObjectNodePair(); //realityEditor.device.speech.getClosestObjectNodePair(); //getClosestNode();
 
                 if (!closest) return;
 

@@ -880,15 +880,16 @@ realityEditor.network.onSettingPostMessage = function(msgContent) {
 
         if (typeof msgContent.settings.setSettings.speechState !== "undefined") {
             if (msgContent.settings.setSettings.speechState) {
-                globalStates.speechState = true;
-                realityEditor.app.addSpeechListener("realityEditor.device.speech.speechRecordingCallback");
-                realityEditor.app.startSpeechRecording();
-                // realityEditor.app.appFunctionCall("addSpeechListener", null, null);
-                // realityEditor.app.appFunctionCall("startSpeechRecording", null, null);
+                if (!globalStates.speechState) {
+                    globalStates.speechState = true;
+                    realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");
+                    realityEditor.app.startSpeechRecording();
+                }
             } else {
-                globalStates.speechState = false;
-                realityEditor.app.stopSpeechRecording();
-                // realityEditor.app.appFunctionCall("stopSpeechRecording", null, null);
+                if (globalStates.speechState) {
+                    globalStates.speechState = false;
+                    realityEditor.app.stopSpeechRecording();
+                }
             }
         }
 
