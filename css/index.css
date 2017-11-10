@@ -816,13 +816,34 @@ Logic Interface CSS
 
 /* block settings */
 
-#blockSettingsContainer {
+.settingsContainer {
   background-color: #B7B7B7; /*#969696;*/
   position: absolute;
   left: 0;
   top: 0;
   width: 506px;
   height: 320px;
+}
+
+#nodeSettingsContainer {  
+  text-align: center;
+  padding-top: 100px;
+  line-height: 50px;
+  font-size: xx-large;
+  font-weight: 700;
+  color: #00ffff;
+}
+
+.saveNodeButton {
+    display: inline-block;
+    background-color: #B7B7B7;
+    border: 3px solid cyan;
+    width: 80px;
+    height: 80px;
+}
+
+.selectedNodeButton {
+    background-color: cyan;
 }
 
 /* block menu */

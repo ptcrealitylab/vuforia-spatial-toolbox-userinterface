@@ -678,6 +678,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     var craftingBoard = document.getElementById('craftingBoard');
     var blockSettingsContainer = document.createElement('iframe');
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');
+    blockSettingsContainer.setAttribute('class', 'settingsContainer');
 
     blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.object + "','" + keys.logic + "','" + keys.block + "','" + JSON.stringify(block.publicData) + "')");
     blockSettingsContainer.src = settingsUrl;
@@ -687,8 +688,88 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
+    var wasBlockSettingsOpen = false;
     var container = document.getElementById('blockSettingsContainer');
     if (container) {
         container.parentNode.removeChild(container);
+        wasBlockSettingsOpen = true;
     }
+    return wasBlockSettingsOpen;
+};
+
+realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
+    var craftingBoard = document.getElementById('craftingBoard');
+    var nodeSettingsContainer = document.createElement('div');
+    nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
+    nodeSettingsContainer.setAttribute('class', 'settingsContainer');
+    craftingBoard.appendChild(nodeSettingsContainer);
+
+    var currentEventNameText = document.createElement('div');
+    currentEventNameText.id = 'currentEventNameText';
+    currentEventNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
+    nodeSettingsContainer.appendChild(currentEventNameText);
+    
+    var saveButtonContainer = document.createElement('div');
+    saveButtonContainer.id = 'saveButtonContainer';
+    nodeSettingsContainer.appendChild(saveButtonContainer);
+
+    for (var i = 0; i < 5; i++) {
+        this.createSaveNodeButton(saveButtonContainer, i);
+    }
+    
+    this.resetNodeButtonSelections();
+
+    // nodeSettingsContainer.innerHTML = 'Current event name: <span id="currentEventNameText"></span> <br/>\n' +
+    //     '    <input type="text" id="eventNameTextField" placeholder="Enter new event name here"></input> <br/>\n' +
+    //     '    <button type="button" id="updateButton" onclick="function clicked(){var eventNameTextField = document.getElementById("eventNameTextField");\n' +
+    //     '        currentEventName = eventNameTextField.value;};">Update</button>';
+    
+    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+};
+
+realityEditor.gui.crafting.eventHelper.resetNodeButtonSelections = function() {
+
+    var saveButtonContainer = document.querySelector('#saveButtonContainer');
+    
+    var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
+    //
+    // var savedIndex = realityEditor.gui.memory.nodeMemories.states.memories.map( function(logicNodeObject) {
+    //     if (logicNodeObject) {
+    //         return logicNodeObject.name;
+    //     }
+    //     return null;
+    // }).indexOf(globalStates.currentLogic.name);
+
+
+    [].slice.call(saveButtonContainer.children).forEach(function(saveNodeButton, i) {
+        saveNodeButton.classList.remove('selectedNodeButton');
+        if (i === savedIndex) {
+            saveNodeButton.classList.add('selectedNodeButton');
+        }
+    });
+    
+};
+
+realityEditor.gui.crafting.eventHelper.createSaveNodeButton = function(nodeSettingsContainer, index) {
+    var saveNodeButton = document.createElement('button');
+    saveNodeButton.innerHTML = 'Save Node In Pocket ' + (index+1);
+    saveNodeButton.type = 'button';
+    saveNodeButton.className = 'saveNodeButton';
+    saveNodeButton.onclick = function() {
+        realityEditor.gui.memory.nodeMemories.addMemoryAtIndex(globalStates.currentLogic, index);
+        realityEditor.gui.crafting.eventHelper.resetNodeButtonSelections();
+        // var confirmation = document.createElement('div');
+        // confirmation
+    };
+    nodeSettingsContainer.appendChild(saveNodeButton);
+};
+
+realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
+    var wasBlockSettingsOpen = false;
+    var container = document.getElementById('nodeSettingsContainer');
+    if (container) {
+        container.parentNode.removeChild(container);
+        wasBlockSettingsOpen = true;
+    }
+    return wasBlockSettingsOpen;
 };

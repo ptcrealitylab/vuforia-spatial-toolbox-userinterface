@@ -167,8 +167,16 @@ realityEditor.gui.buttons.settingButtonUp = function(event) {
         realityEditor.gui.pocket.pocketHide();
 
         if (globalStates.guiState === "logic") {
-            realityEditor.gui.crafting.eventHelper.hideBlockSettings();
+            console.log(" LOGIC SETTINGS PRESSED ");
+            var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
             realityEditor.gui.menus.off("crafting", ["logicSetting"]);
+            if (!wasBlockSettingsOpen) {
+                var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
+                if (!wasNodeSettingsOpen) {
+                    console.log("Open Node Settings");
+                    realityEditor.gui.crafting.eventHelper.openNodeSettings();
+                }
+            }
             return;
         }
 

@@ -73,7 +73,9 @@ var realityEditor = realityEditor || {
                 grid: {},
                 utilities: {}
             },
-            memory: {},
+            memory: {
+			    nodeMemories: {}
+            },
             settings: {
                 logo:{}
             },

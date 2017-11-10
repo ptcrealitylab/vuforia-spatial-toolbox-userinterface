@@ -74,6 +74,7 @@ realityEditor.device.onload = function () {
 
 	realityEditor.gui.buttons.draw();
 	realityEditor.gui.memory.initMemoryBar();
+	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
 
 	console.log(globalStates.platform);
