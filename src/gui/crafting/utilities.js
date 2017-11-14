@@ -97,11 +97,12 @@ realityEditor.gui.crafting.utilities.convertLogicToServerFormat = function(logic
 
     // don't upload in/out blocks, those are always the same and live in the editor?
     logicServer["blocks"] = {};
-    logicServer["blockData"] = {}; // TODO: did I hide a bug by adding this line
+    // logicServer["blockData"] = {}; // TODO: did I hide a bug by adding this line
     for (var key in logic.blocks) {
         if (!logic.blocks.hasOwnProperty(key)) continue;
         if (!this.crafting.grid.isInOutBlock(key)) {
-            logicServer.blockData[key] = logic.blocks[key]; // TODO: this used to cause a bug
+            // logicServer.blockData[key] = logic.blocks[key]; // TODO: this used to cause a bug
+            logicServer.blocks[key] = logic.blocks[key]; // TODO: this used to cause a bug
         }
     }
     

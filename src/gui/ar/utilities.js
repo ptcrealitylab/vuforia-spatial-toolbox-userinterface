@@ -196,6 +196,8 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject
 		tempMatrix = this.copyMatrix(thisObject.begin);
 	else
 		tempMatrix = this.copyMatrix(thisObject.temp);
+	
+	// console.log(tempMatrix);
 
 	// calculate angles
 	var angles = this.toAxisAngle(tempMatrix);

@@ -827,14 +827,24 @@ Logic Interface CSS
 
 #nodeSettingsContainer {  
   text-align: center;
-  padding-top: 100px;
+  padding-top: 25px;
   line-height: 50px;
   font-size: xx-large;
   font-weight: 700;
   color: #00ffff;
 }
 
+#currentLogicNameText {
+    margin-bottom: -10px;
+}
+
+#saveButtonContainer {
+    position: relative;
+    width: 100%;
+}
+
 .saveNodeButton {
+    position: absolute;
     display: inline-block;
     background-color: #B7B7B7;
     border: 3px solid cyan;
@@ -844,6 +854,26 @@ Logic Interface CSS
 
 .selectedNodeButton {
     background-color: cyan;
+}
+
+.occupiedNodeButton {
+    background-color: rgba(255, 0, 55, 0.25);
+    border: 3px solid rgb(255, 0, 55);
+}
+
+#newNameTextField {
+    -webkit-user-select: auto;
+    line-height: 20px;
+}
+
+.saveNewNameButton {
+    line-height: 20px;
+    margin-bottom: 20px;
+}
+
+#logicNodeIcon {
+    width: 100px;
+    height: 100px;
 }
 
 /* block menu */

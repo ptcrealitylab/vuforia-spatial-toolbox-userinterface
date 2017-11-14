@@ -699,15 +699,66 @@ realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
 
 realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     var craftingBoard = document.getElementById('craftingBoard');
+    
     var nodeSettingsContainer = document.createElement('div');
     nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
     nodeSettingsContainer.setAttribute('class', 'settingsContainer');
     craftingBoard.appendChild(nodeSettingsContainer);
+    
+    var logicNodeIcon = document.createElement('img');
+    logicNodeIcon.src = '../../../svg/logicNode.svg';
+    logicNodeIcon.id = 'logicNodeIcon';
+    logicNodeIcon.width = '80px';
+    logicNodeIcon.height = '80px';
+    nodeSettingsContainer.appendChild(logicNodeIcon);
 
-    var currentEventNameText = document.createElement('div');
-    currentEventNameText.id = 'currentEventNameText';
-    currentEventNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
-    nodeSettingsContainer.appendChild(currentEventNameText);
+    var currentLogicNameText = document.createElement('div');
+    currentLogicNameText.id = 'currentLogicNameText';
+    currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
+    nodeSettingsContainer.appendChild(currentLogicNameText);
+    
+    // var renameForm = document.createElement('form');
+    // nodeSettingsContainer.appendChild(renameForm);
+
+    var newNameTextField = document.createElement('input');
+    newNameTextField.id = 'newNameTextField';
+    newNameTextField.type = 'text';
+    newNameTextField.placeholder = globalStates.currentLogic.name;
+    nodeSettingsContainer.appendChild(newNameTextField);
+
+    var saveNewNameButton = document.createElement('button');
+    saveNewNameButton.innerHTML = 'Rename Node';
+    saveNewNameButton.type = 'button';
+    saveNewNameButton.className = 'saveNewNameButton';
+    
+    saveNewNameButton.onclick = function() {
+        if (newNameTextField.value && newNameTextField.value !== '') {
+
+            console.log("set new name of logic node to " + globalStates.currentLogic.name);
+            globalStates.currentLogic.name = newNameTextField.value;
+            
+            // update label in node settings menu
+            currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
+            
+            // update node text label on AR view
+            globalDOMCach["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
+                JSON.stringify(
+                    {
+                        renameNode: newNameTextField.value
+                    })
+                , "*");
+            
+            // update model in pocket menu
+            var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
+            if (savedIndex > -1) {
+                realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
+                // update label in pocket menu
+                document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
+            }
+            
+        }
+    };
+    nodeSettingsContainer.appendChild(saveNewNameButton);
     
     var saveButtonContainer = document.createElement('div');
     saveButtonContainer.id = 'saveButtonContainer';
@@ -718,11 +769,6 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     }
     
     this.resetNodeButtonSelections();
-
-    // nodeSettingsContainer.innerHTML = 'Current event name: <span id="currentEventNameText"></span> <br/>\n' +
-    //     '    <input type="text" id="eventNameTextField" placeholder="Enter new event name here"></input> <br/>\n' +
-    //     '    <button type="button" id="updateButton" onclick="function clicked(){var eventNameTextField = document.getElementById("eventNameTextField");\n' +
-    //     '        currentEventName = eventNameTextField.value;};">Update</button>';
     
     realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
 };
@@ -731,20 +777,24 @@ realityEditor.gui.crafting.eventHelper.resetNodeButtonSelections = function() {
 
     var saveButtonContainer = document.querySelector('#saveButtonContainer');
     
+    var occupiedIndices = realityEditor.gui.memory.nodeMemories.states.memories.map(function(element){
+        return !!element;
+    });
+    console.log("occupied indices", occupiedIndices);
     var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
-    //
-    // var savedIndex = realityEditor.gui.memory.nodeMemories.states.memories.map( function(logicNodeObject) {
-    //     if (logicNodeObject) {
-    //         return logicNodeObject.name;
-    //     }
-    //     return null;
-    // }).indexOf(globalStates.currentLogic.name);
-
 
     [].slice.call(saveButtonContainer.children).forEach(function(saveNodeButton, i) {
         saveNodeButton.classList.remove('selectedNodeButton');
+        saveNodeButton.classList.remove('occupiedNodeButton');
+        saveNodeButton.innerHTML = 'Save Node in Pocket ' + (i+1);
+
         if (i === savedIndex) {
             saveNodeButton.classList.add('selectedNodeButton');
+            saveNodeButton.innerHTML = 'Saved in Pocket ' + (i+1);
+            
+        } else if (occupiedIndices[i]) {
+            saveNodeButton.classList.add('occupiedNodeButton');
+            saveNodeButton.innerHTML = 'Overwrite Pocket ' + (i+1);
         }
     });
     
@@ -752,9 +802,11 @@ realityEditor.gui.crafting.eventHelper.resetNodeButtonSelections = function() {
 
 realityEditor.gui.crafting.eventHelper.createSaveNodeButton = function(nodeSettingsContainer, index) {
     var saveNodeButton = document.createElement('button');
-    saveNodeButton.innerHTML = 'Save Node In Pocket ' + (index+1);
+    saveNodeButton.innerHTML = 'Save Node in Pocket ' + (index+1);
     saveNodeButton.type = 'button';
     saveNodeButton.className = 'saveNodeButton';
+    var buttonWidth = 80;
+    saveNodeButton.style.left = ((nodeSettingsContainer.clientWidth-(buttonWidth*5))/2) + (index * buttonWidth) + 'px';
     saveNodeButton.onclick = function() {
         realityEditor.gui.memory.nodeMemories.addMemoryAtIndex(globalStates.currentLogic, index);
         realityEditor.gui.crafting.eventHelper.resetNodeButtonSelections();

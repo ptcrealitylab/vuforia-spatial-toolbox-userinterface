@@ -114,6 +114,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
     var pocket;
     var palette;
+    var nodeMemoryBar;
 
     var inMemoryDeletion = false;
 
@@ -148,6 +149,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
+        nodeMemoryBar = document.querySelector('.nodeMemoryBar');
 
         // On touching an element-template, upload to currently visible object
         pocket.addEventListener('pointerdown', function(evt) {
@@ -263,8 +265,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         realityEditor.gui.menus.buttonOn('main', ['pocket']);
         if (globalStates.guiState === "node") {
             palette.style.display = 'none';
+            nodeMemoryBar.style.display = 'block';
         } else {
             palette.style.display = 'block';
+            nodeMemoryBar.style.display = 'none';
         }
         setPaletteElementDemo(true);
     }

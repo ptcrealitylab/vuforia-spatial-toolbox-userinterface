@@ -132,7 +132,7 @@ realityEditor.gui.ar.draw.update = function(visibleObjects) {
 
             var tempMatrix = [];
             var r = globalMatrix.r;
-           this.ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
+            this.ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
             this.ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
 
             //  var tempMatrix2 = multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix);

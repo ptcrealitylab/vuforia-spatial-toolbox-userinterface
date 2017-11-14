@@ -77,6 +77,11 @@ color: white"></div>
             if (msg.uiActionFeedback === 3)
                 svg.setAttribute("stroke", '#f9f90a');
         }
+        
+        if (typeof msg.renameNode !== "undefined") {
+            thisText.innerHTML = msg.renameNode;
+        }
+        
     }, false);
 </script>
 </body>

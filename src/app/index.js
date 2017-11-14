@@ -164,6 +164,8 @@ realityEditor.app.clearCache = function () {
     this.appFunctionCall('clearCache', null, null);
 };
 
+// global shortcut for clearing the cache
+cc = realityEditor.app.clearCache.bind(realityEditor.app);
 
 /**
  **************UTILITIES****************
