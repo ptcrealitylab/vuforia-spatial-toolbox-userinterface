@@ -271,6 +271,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             nodeMemoryBar.style.display = 'none';
         }
         setPaletteElementDemo(true);
+        realityEditor.gui.memory.nodeMemories.resetEventHandlers();
     }
 
     function setPaletteElementDemo(value) {

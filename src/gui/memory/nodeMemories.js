@@ -51,9 +51,11 @@
 createNameSpace("realityEditor.gui.memory.nodeMemories");
 
 realityEditor.gui.memory.nodeMemories.states = {
-    memories: []
+    memories: [],
+    eventListeners: []
 };
 
+// load any stored Logic Node memories from browser's local storage, and create DOM elements to visualize them
 realityEditor.gui.memory.nodeMemories.initMemoryBar = function() {
 
     this.states.memories = JSON.parse(window.localStorage.getItem('realityEditor.memory.nodeMemories.states.memories') || '[]');
@@ -65,38 +67,26 @@ realityEditor.gui.memory.nodeMemories.initMemoryBar = function() {
         memoryContainer.setAttribute('touch-action', 'none');
         memoryContainer.style.position = 'relative';
         memoryBar.appendChild(memoryContainer);
-
-        // var container = new MemoryContainer(memoryContainer);
-        // barContainers.push(container);
     }
     
     this.renderMemories();
 };
 
-// logic node object should contain:
-    // logic blocks, logic links, name, thumbnail
-realityEditor.gui.memory.nodeMemories.addMemory = function(logicNodeObject) {
-    
-    if (this.states.memories.length < 5) {
-
-        var simpleLogic = this.realityEditor.gui.crafting.utilities.convertLogicToServerFormat(logicNodeObject);
-        this.states.memories.push(simpleLogic);
-        
-    }
-    
-    this.renderMemories();
-    this.saveNodeMemories();
-    // window.localStorage.setItem('realityEditor.memory.nodeMemories.states.memories', JSON.stringify(this.states.memories));
-
-};
-
+// Save a Logic Node to a given index (must be between 1-5 as of now)
 realityEditor.gui.memory.nodeMemories.addMemoryAtIndex = function(logicNodeObject, index) {
     
+    // a Logic Node can only exist in one pocket at a time - remove it from previous if being added to another
     var previousIndex = this.getIndexOfLogic(logicNodeObject);
-    if (previousIndex != index) {
+    if (previousIndex !== index) {
         this.states.memories[previousIndex] = null;
     }
-    
+
+    // additional step to save the publicData and privateData of the blocks in the pocket,
+    //   because this data usually only resides on the server
+    var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logicNodeObject);
+    realityEditor.network.updateNodeBlocksSettingsData(keys.ip, keys.objectKey, keys.logicKey);
+
+    // convert logic node to a serializable object and assign it a new UUID
     if (index >= 0 && index < 5) {
         var simpleLogic = this.realityEditor.gui.crafting.utilities.convertLogicToServerFormat(logicNodeObject);
         simpleLogic.uuid = realityEditor.device.utilities.uuidTime();
@@ -105,21 +95,20 @@ realityEditor.gui.memory.nodeMemories.addMemoryAtIndex = function(logicNodeObjec
     
     this.renderMemories();
     this.saveNodeMemories();
-    // window.localStorage.setItem('realityEditor.memory.nodeMemories.states.memories', JSON.stringify(this.states.memories));
 };
 
+// saves each pocket logic node to the browser's local storage.
+// also does a second pass to ensure all links are serializable. // TODO: this shouldn't be necessary. Fix bug before it gets here.
 realityEditor.gui.memory.nodeMemories.saveNodeMemories = function() {
     
     // TODO: shouldn't need to do this each time if i correctly do it when the node gets added to the memory
     this.states.memories.forEach(function(logicNode) {
-        if (logicNode) {
-            if (logicNode.hasOwnProperty('links')) {
-                for (var linkKey in logicNode.links) {
-                    if (!logicNode.links.hasOwnProperty(linkKey)) continue;
-                    if (!!logicNode.links[linkKey].route) {
-                        console.log("eliminating routes");
-                        logicNode.links[linkKey] = realityEditor.gui.crafting.utilities.convertBlockLinkToServerFormat(logicNode.links[linkKey]);
-                    }
+        if (logicNode && logicNode.hasOwnProperty('links')) {
+            for (var linkKey in logicNode.links) {
+                if (!logicNode.links.hasOwnProperty(linkKey)) continue;
+                if (!!logicNode.links[linkKey].route) {
+                    console.log("eliminating routes");
+                    logicNode.links[linkKey] = realityEditor.gui.crafting.utilities.convertBlockLinkToServerFormat(logicNode.links[linkKey]);
                 }
             }
         }
@@ -128,6 +117,7 @@ realityEditor.gui.memory.nodeMemories.saveNodeMemories = function() {
     window.localStorage.setItem('realityEditor.memory.nodeMemories.states.memories', JSON.stringify(this.states.memories));
 };
 
+// Draws each saved Logic Node inside each pocket container DOM element
 realityEditor.gui.memory.nodeMemories.renderMemories = function() {
     
     var memoryBar = document.querySelector('.nodeMemoryBar');
@@ -142,7 +132,7 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
         // stop if there isn't anything to render
         if (!logicNodeObject) return;
 
-        // display contents
+        // display contents. currently this is a generic node image and the node's name // TODO: give custom icons
         memoryContainer.style.backgroundImage = 'url(/svg/logicNode.svg)';
         
         var nameText = document.createElement('div');
@@ -153,37 +143,28 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
         nameText.innerHTML = logicNodeObject.name;
         memoryContainer.appendChild(nameText);
         
-        realityEditor.gui.memory.nodeMemories.addClickListener(memoryContainer, logicNodeObject);
     });
-    
+
+    this.resetEventHandlers();
 };
 
+// create a new instance of the saved logic node template, add it to the DOM and upload to the server
 realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logicNodeObject) {
     console.log("drop logic onto object", logicNodeObject);
 
-    // var logicKey = logicNodeObject.uuid;
-    var logicKey = realityEditor.device.utilities.uuidTime();
-
     var addedLogic = new Logic();
 
-    // var keysToSkip = ['uuid', 'begin', 'data', 'lastEditor', 'visible', 'visibleEditing', 'x', 'y', 'temp'];
-    // for (var key in logicNodeObject) {
-    //     if (!logicNodeObject.hasOwnProperty(key)) continue;
-    //     if (keysToSkip.indexOf(key) > -1) continue;
-    //     addedLogic[key] = logicNodeObject[key];
-    // }
-
+    // copy over most properties from the saved pocket logic node
     var keysToCopyOver = ['blocks', 'iconImage', 'lastSetting', 'lastSettingBlock', 'links', 'lockPassword', 'lockType', 'name', 'nameInput', 'nameOutput'];
     keysToCopyOver.forEach( function(key) {
         addedLogic[key] = logicNodeObject[key];
     });
 
+    // give new logic node a new unique identifier so each copy is stored separately
+    var logicKey = realityEditor.device.utilities.uuidTime();
     addedLogic.uuid = logicKey;
-    // addedLogic.x = -300 + Math.random() * 600;
-    // addedLogic.y = -300 + Math.random() * 600;
-
-    console.log(addedLogic);
-
+    
+    // find the object to add the node to
     var closestObjectAndNode = realityEditor.device.speechProcessor.getClosestObjectNodePair();
     if (closestObjectAndNode) {
         var closestObjectKey = closestObjectAndNode.objectKey;
@@ -193,6 +174,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
         if(realityEditor.network.testVersion(closestObjectKey)>165) {
             closestObject.nodes[logicKey] = addedLogic;
 
+            // render it
             realityEditor.gui.ar.draw.addElement(closestObjectKey, logicKey, "nodes/logic/index.html", addedLogic, 'logic', globalStates);
 
             var _thisNode = document.getElementById("iframe" + logicKey); //TODO: where does this get created??
@@ -203,6 +185,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
 
             globalDOMCach[logicKey].objectId = closestObjectKey;
 
+            // send it to the server
             realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, logicKey, addedLogic);
 
             console.log("successfully added logic from pocket to object (" + closestObject.name + ")");
@@ -217,132 +200,122 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     console.log("couldn't add logic from pocket to any objects");
 };
 
-realityEditor.gui.memory.nodeMemories.addClickListener = function(memoryContainer, logicNodeObject) {
+// ensure there is a single drag handler on each memory container when the pocket is opened, so that they can only be dragged once.
+// the handler will be removed after you start dragging the node. this re-adds removed handlers when you re-open the pocket.
+realityEditor.gui.memory.nodeMemories.resetEventHandlers = function() {
     
-    // var touchedNode = null;
+    var memoryBar = document.querySelector('.nodeMemoryBar');
+    
+    var nodeMemories = realityEditor.gui.memory.nodeMemories;
+    var eventListeners = nodeMemories.states.eventListeners;
+    
+    [].slice.call(memoryBar.children).forEach(function(memoryContainer, i) {
+        
+        if (eventListeners[i]) {
+            memoryContainer.removeEventListener('pointermove', eventListeners[i], false);
+            eventListeners[i] = null;
+        }
 
-    // memoryContainer.addEventListener('pointerdown', function(evt) {
-    //     console.log('pointerdown on memoryContainer for logic node ' + logicNodeObject.name);
-    //     touchedNode = logicNodeObject.name;
-    // });
-    memoryContainer.addEventListener('pointermove', function(evt) {
+        nodeMemories.addDragListener(memoryContainer, nodeMemories.states.memories[i], i);
+    });
+};
+
+// hide the pocket and add a new logic node to the closest visible object, and start dragging it to move under the finger
+realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer, logicNodeObject, i) {
+    
+    var nodeMemories = realityEditor.gui.memory.nodeMemories;
+    var ar = realityEditor.gui.ar;
+    
+    // store each event listener in an array so that we can cancel them all later
+    nodeMemories.states.eventListeners[i] = function(evt) {
         console.log('pointermove on memoryContainer for logic node ' + logicNodeObject.name);
-        // if (touchedNode === logicNodeObject.name) {
-            realityEditor.gui.pocket.pocketHide();
-            console.log("move " + touchedNode + " to pointer position");
-            
-            var addedElement = realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket(logicNodeObject);
 
-            var objectKey = addedElement.objectKey;
-            var generalObject = objects[objectKey];
+        realityEditor.gui.pocket.pocketHide();
+        console.log("move " + logicNodeObject.name + " to pointer position");
 
-            // update matrix for object
+        var addedElement = nodeMemories.createLogicNodeFromPocket(logicNodeObject);
+
+        var objectKey = addedElement.objectKey;
+        var generalObject = objects[objectKey];
+        
+        // Get the transformation matrix for the Logic Node from either the object's UI (if it exists in the DOM), or
+        //   from one of its Nodes (one of the two situations must be true). If using the UI, refresh its matrix before
+        //   using it, since we are in the Node view it is out-of-date. If using a Node, afterwards adjust the center
+        //   by the Node's <x,y> offset within the object. 
+        
+        var element = document.getElementById('thisObject' + addedElement.objectKey);
+        var isNodeElement = false;
+        if (element) {
+            // Using UI. Refresh matrix.
             var tempMatrix = [];
             var r = globalMatrix.r;
-            realityEditor.gui.ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
-            realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
-            realityEditor.gui.ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCach, globalMatrix);         
-            realityEditor.gui.ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui");
+            ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
+            ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
+            ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCach, globalMatrix);
+            ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui");
         
-            // extract true matrix for object so node can be placed correctly on it
-            var element = document.getElementById('thisObject' + addedElement.objectKey);
-            if (element) {
-                var matrixString = element.style.cssText.split('transform: ')[1].split(';')[0];
-                if (matrixString.startsWith('matrix3d')) { // get the matrix from the transform3d string
-                    var matrix = matrixString
-                        .split('(')[1]
-                        .split(')')[0]
-                        .split(',')
-                        .map(parseFloat);
-                    objects[objectKey].temp = matrix;
-                }
+        } else {
+            // Using Node.
+            var potentialElements = [].slice.call(document.getElementById('GUI').children);
+            var elementsIDsForThisObject = potentialElements.map( function(element) {
+                return element.id;
+            }).filter( function(elementID) {
+                return elementID.startsWith('thisObject' + addedElement.objectKey);
+            });
+
+            if (elementsIDsForThisObject.length > 0) {
+                // extract true matrix for object so node can be placed correctly on it
+                element = document.getElementById(elementsIDsForThisObject[0]);
+                isNodeElement = true;
+            }
+        }
+            
+        if (element) {
+            // For now, the most reliable way to get the transformation matrix is to parse from CSS transform matrix3d
+            var matrixString = element.style.cssText.split('transform: ')[1].split(';')[0];
+            if (matrixString.startsWith('matrix3d')) { // converts transform string into matrix (array)
+                var matrix = matrixString
+                    .split('(')[1]
+                    .split(')')[0]
+                    .split(',')
+                    .map(parseFloat);
+                objects[objectKey].temp = matrix; // stores matrix in object so that screenCoordinatesToMatrixXY can read it
             }
             
-            var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(objects[addedElement.objectKey], [evt.clientX, evt.clientY]);
+            // get the projected touch point
+            var matrixTouch = ar.utilities.screenCoordinatesToMatrixXY(objects[addedElement.objectKey], [evt.clientX, evt.clientY]);
+
+            // adjust by node offset if necessary
+            if (isNodeElement) {
+                var referenceElement = objects[objectKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
+                matrixTouch[0] += referenceElement.x;
+                matrixTouch[1] += referenceElement.y;
+            }
+            
+            // set the Logic Node's position within the object
             addedElement.logicNode.x = matrixTouch[0];
             addedElement.logicNode.y = matrixTouch[1];
-            
+
+            // series of actions to begin dragging it immediately (copied from device.onTouchDown)
             globalProgram.objectA = false;
             globalProgram.nodeA = false;
             globalStates.editingNode = addedElement.logicNode.uuid;
-            //globalStates.editingMode = true;
-            console.log("hello");
             globalStates.editingModeObject = addedElement.objectKey;
             realityEditor.device.activateMultiTouch();
             realityEditor.device.activateNodeMove(addedElement.logicNode.uuid);
             realityEditor.gui.menus.on("bigTrash",[]);
-            
-            this.removeEventListener('pointermove')
-            // touchedNode = null;
-        // }
-    });
-    // memoryContainer.addEventListener('pointerup', function(evt) {
-    //     console.log('pointerup on memoryContainer for logic node ' + logicNodeObject.name);
-    // });
+        }
 
-    // memoryContainer.onclick = function() {
-    //     realityEditor.gui.pocket.pocketHide();
-    //     realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket(logicNodeObject);
-    //     // console.log("drop logic onto object", logicNodeObject);
-    //     //
-    //     // // var logicKey = logicNodeObject.uuid;
-    //     // var logicKey = realityEditor.device.utilities.uuidTime();
-    //     //
-    //     // var addedLogic = new Logic();
-    //     //
-    //     // // var keysToSkip = ['uuid', 'begin', 'data', 'lastEditor', 'visible', 'visibleEditing', 'x', 'y', 'temp'];
-    //     // // for (var key in logicNodeObject) {
-    //     // //     if (!logicNodeObject.hasOwnProperty(key)) continue;
-    //     // //     if (keysToSkip.indexOf(key) > -1) continue;
-    //     // //     addedLogic[key] = logicNodeObject[key];
-    //     // // }
-    //     //
-    //     // var keysToCopyOver = ['blocks', 'iconImage', 'lastSetting', 'lastSettingBlock', 'links', 'lockPassword', 'lockType', 'name', 'nameInput', 'nameOutput'];
-    //     // keysToCopyOver.forEach( function(key) {
-    //     //     addedLogic[key] = logicNodeObject[key];
-    //     // });
-    //     //
-    //     // addedLogic.uuid = logicKey;
-    //     // addedLogic.x = -300 + Math.random() * 600;
-    //     // addedLogic.y = -300 + Math.random() * 600;
-    //     //
-    //     // console.log(addedLogic);
-    //     //
-    //     // var closestObjectAndNode = realityEditor.device.speechProcessor.getClosestObjectNodePair();
-    //     // if (closestObjectAndNode) {
-    //     //     var closestObjectKey = closestObjectAndNode.objectKey;
-    //     //     var closestObject = objects[closestObjectKey];
-    //     //
-    //     //     // make sure that logic nodes only stick to 2.0 server version
-    //     //     if(realityEditor.network.testVersion(closestObjectKey)>165) {
-    //     //         closestObject.nodes[logicKey] = addedLogic;
-    //     //        
-    //     //         realityEditor.gui.ar.draw.addElement(closestObjectKey, logicKey, "nodes/logic/index.html", addedLogic, 'logic', globalStates);
-    //     //
-    //     //         var _thisNode = document.getElementById("iframe" + logicKey); //TODO: where does this get created??
-    //     //         if (_thisNode) {
-    //     //             if (_thisNode._loaded)
-    //     //                 realityEditor.network.onElementLoad(closestObjectKey, logicKey);
-    //     //         }
-    //     //
-    //     //         globalDOMCach[logicKey].objectId = closestObjectKey;
-    //     //
-    //     //         realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, logicKey, addedLogic);
-    //     //        
-    //     //         console.log("successfully added logic from pocket to object (" + closestObject.name + ")");
-    //     //         return;
-    //     //     }
-    //     // }
-    //     //
-    //     // console.log("couldn't add logic from pocket to any objects");
-    //
-    // }
+        // remove the touch event listener so that it doesn't fire twice and create two Logic Nodes by accident
+        memoryContainer.removeEventListener('pointermove', nodeMemories.states.eventListeners[i], false);
+        nodeMemories.states.eventListeners[i] = null;
+    };
+
+    memoryContainer.addEventListener('pointermove', nodeMemories.states.eventListeners[i], false);
 };
 
-realityEditor.gui.memory.nodeMemories.nodePocketDragHandler = function(evt) {
-    
-}
-
+// helper method to find out which pocket this Logic Node has already been saved into. Uses "name" to match
+// TODO: can cause overlaps if different programs have same name, but better than ID because each ID must be unique... is there a better solution?
 realityEditor.gui.memory.nodeMemories.getIndexOfLogic = function(logic) {
     return this.states.memories.map( function(logicNodeObject) {
         if (logicNodeObject) {

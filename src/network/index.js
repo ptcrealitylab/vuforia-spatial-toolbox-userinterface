@@ -1006,6 +1006,19 @@ realityEditor.network.deleteBlockLinkFromObject = function(ip, thisObjectKey, th
     this.deleteData('http://' + ip + ':' + httpPort + '/logic/' + thisObjectKey + "/" + thisLogicKey + "/link/" + thisBlockLinkKey+"/lastEditor/"+globalStates.tempUuid);
 };
 
+realityEditor.network.updateNodeBlocksSettingsData = function(ip, thisObjectKey, thisLogicKey) {
+    
+    this.getData('http://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/node/" + thisLogicKey, thisObjectKey, function (req, thisKey) {
+        for (var blockKey in req.blocks) {
+            if (!req.blocks.hasOwnProperty(blockKey)) continue;
+            if (req.blocks[blockKey].type === 'default') continue;
+
+            objects[thisObjectKey].nodes[thisLogicKey].blocks[blockKey].publicData = req.blocks[blockKey].publicData;
+            objects[thisObjectKey].nodes[thisLogicKey].blocks[blockKey].privateData = req.blocks[blockKey].privateData;
+        }
+    });
+};
+
 realityEditor.network.getData = function(url, thisKey, callback, thisNode) {
     if(!thisNode) thisNode = null;
     var _this = this;
@@ -1276,6 +1289,12 @@ realityEditor.network.sendResetContent = function(object, node, type) {
             return;
         }
     }
+
+    if (!tempThisObject) {
+        console.warn("Can't reset content of undefined object", object, node, type);
+        return;
+    }
+    
     var content = {};
     content.x = tempThisObject.x;
     content.y = tempThisObject.y;
