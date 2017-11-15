@@ -52,7 +52,8 @@ createNameSpace("realityEditor.gui.memory.nodeMemories");
 
 realityEditor.gui.memory.nodeMemories.states = {
     memories: [],
-    eventListeners: []
+    dragEventListeners: [],
+    upEventListeners: []
 };
 
 // load any stored Logic Node memories from browser's local storage, and create DOM elements to visualize them
@@ -207,17 +208,40 @@ realityEditor.gui.memory.nodeMemories.resetEventHandlers = function() {
     var memoryBar = document.querySelector('.nodeMemoryBar');
     
     var nodeMemories = realityEditor.gui.memory.nodeMemories;
-    var eventListeners = nodeMemories.states.eventListeners;
+    var dragEventListeners = nodeMemories.states.dragEventListeners;
+    var upEventListeners = nodeMemories.states.upEventListeners;
     
     [].slice.call(memoryBar.children).forEach(function(memoryContainer, i) {
         
-        if (eventListeners[i]) {
-            memoryContainer.removeEventListener('pointermove', eventListeners[i], false);
-            eventListeners[i] = null;
+        if (dragEventListeners[i]) {
+            memoryContainer.removeEventListener('pointermove', dragEventListeners[i], false);
+            dragEventListeners[i] = null;
+        }
+        
+        if (upEventListeners[i]) {
+            memoryContainer.removeEventListener('pointerup', upEventListeners[i], false);
+            upEventListeners[i] = null;
         }
 
-        nodeMemories.addDragListener(memoryContainer, nodeMemories.states.memories[i], i);
+        var overlay = document.getElementById('overlay');
+        if (overlay.storedLogicNode) { // TODO: make it faster by only adding the type of listeners it needs right now (but make sure to add the others when they become needed)
+            nodeMemories.addUpListener(memoryContainer, nodeMemories.states.memories[i], i);
+        } else {
+            nodeMemories.addDragListener(memoryContainer, nodeMemories.states.memories[i], i);
+        }
     });
+    
+    var pocket = document.querySelector('.pocket');
+    pocket.removeEventListener('pointerup', nodeMemories.touchUpHandler, false);
+    pocket.addEventListener('pointerup', nodeMemories.touchUpHandler, false);
+};
+
+realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
+    if (overlayDiv.storedLogicNode) {
+        overlay.storedLogicNode = null;
+        overlayDiv.classList.remove('overlayLogicNode');
+        overlayDiv.innerHTML = '';
+    }
 };
 
 // hide the pocket and add a new logic node to the closest visible object, and start dragging it to move under the finger
@@ -227,7 +251,13 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
     var ar = realityEditor.gui.ar;
     
     // store each event listener in an array so that we can cancel them all later
-    nodeMemories.states.eventListeners[i] = function(evt) {
+    nodeMemories.states.dragEventListeners[i] = function(evt) {
+        
+        if (document.getElementById('overlay').storedLogicNode) {
+            console.log("don't trigger drag events - we are carrying a logic node to save");
+            return;
+        }
+        
         console.log('pointermove on memoryContainer for logic node ' + logicNodeObject.name);
 
         realityEditor.gui.pocket.pocketHide();
@@ -303,15 +333,45 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             globalStates.editingModeObject = addedElement.objectKey;
             realityEditor.device.activateMultiTouch();
             realityEditor.device.activateNodeMove(addedElement.logicNode.uuid);
-            realityEditor.gui.menus.on("bigTrash",[]);
+            // realityEditor.gui.menus.on("bigTrash",[]);
+            realityEditor.gui.menus.on("trashOrSave", []);
         }
 
         // remove the touch event listener so that it doesn't fire twice and create two Logic Nodes by accident
-        memoryContainer.removeEventListener('pointermove', nodeMemories.states.eventListeners[i], false);
-        nodeMemories.states.eventListeners[i] = null;
+        memoryContainer.removeEventListener('pointermove', nodeMemories.states.dragEventListeners[i], false);
+        nodeMemories.states.dragEventListeners[i] = null;
     };
 
-    memoryContainer.addEventListener('pointermove', nodeMemories.states.eventListeners[i], false);
+    memoryContainer.addEventListener('pointermove', nodeMemories.states.dragEventListeners[i], false);
+};
+
+// if there is a pending logic node attached to the overlay waiting to be saved, store it in this memoryContainer
+realityEditor.gui.memory.nodeMemories.addUpListener = function(memoryContainer, previousLogicNodeObject, i) {
+    
+    var nodeMemories = realityEditor.gui.memory.nodeMemories;
+    
+    // store each event listener in an array so that we can cancel them all later
+    nodeMemories.states.upEventListeners[i] = function(evt) {
+
+        var overlay = document.getElementById("overlay");
+        if (overlay.storedLogicNode) {
+            console.log("add logic node " + overlay.storedLogicNode.name + " to memory container " + i + "(replacing " + (previousLogicNodeObject ? previousLogicNodeObject.name : "nothing") + ")");
+
+            nodeMemories.addMemoryAtIndex(overlay.storedLogicNode, i);
+
+            overlay.storedLogicNode = null; // TODO: add an up listener everywhere to remove this
+            overlayDiv.classList.remove('overlayLogicNode');
+            overlayDiv.innerHTML = '';
+            
+            nodeMemories.renderMemories();
+        }
+        
+        // remove the touch event listener so that it doesn't fire twice and create two Logic Nodes by accident
+        memoryContainer.removeEventListener('pointerup', nodeMemories.states.upEventListeners[i], false);
+        nodeMemories.states.upEventListeners[i] = null;
+    };
+    memoryContainer.addEventListener('pointerup', nodeMemories.states.upEventListeners[i], false);
+
 };
 
 // helper method to find out which pocket this Logic Node has already been saved into. Uses "name" to match

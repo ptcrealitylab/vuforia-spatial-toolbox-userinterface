@@ -60,6 +60,8 @@ realityEditor.gui.menus.buttons = {
     	back: {},
 		bigPocket: {},
     	bigTrash: {},
+        halfTrash: {},
+        halfPocket: {},
     	freeze:{},
 		logicPocket:{},
     	logicSetting:{},
@@ -90,6 +92,7 @@ realityEditor.gui.menus.menus = {
     crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
     bigTrash: {bigTrash: "red"},
     bigPocket: {bigPocket: "green"},
+    trashOrSave: {halfTrash: "red", halfPocket: "green"},
     locking: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue"},
     lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue"},
     realityInfo: {realityGui: "blue", realityInfo: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
@@ -449,6 +452,7 @@ realityEditor.gui.menus.pointerEnter = function(event) {
 
     realityEditor.gui.buttons.pocketButtonEnter(event);
     realityEditor.gui.buttons.bigPocketButtonEnter(event);
+    realityEditor.gui.buttons.halfPocketButtonEnter(event);
 
     realityEditor.gui.buttons.buttonActionEnter(event);
 };

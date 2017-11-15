@@ -450,7 +450,7 @@ body {
 }
 */
 
-.memoryContainer, #overlay.overlayMemory, .memory, .element-template {
+.memoryContainer, #overlay.overlayMemory, .memory, .element-template {      /* #overlay.overlayLogicNode */
     display: inline-block;
     margin: 0;
     padding: 0;
@@ -464,6 +464,15 @@ body {
 #overlay.overlayMemory {
     background-position: center center;
     background-size: cover;
+}
+
+#overlay.overlayLogicNode {
+    width: 100px;
+    height: 100px;
+    margin-left: -50px;
+    margin-top: -50px;
+    border-radius: 0px;
+    background-image: url("../svg/logicNode.svg");
 }
 
 .element-template {

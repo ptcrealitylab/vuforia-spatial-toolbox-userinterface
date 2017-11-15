@@ -384,6 +384,14 @@ realityEditor.gui.buttons.bigPocketButtonEnter = function(event) {
     realityEditor.gui.pocket.onBigPocketButtonEnter();
 };
 
+realityEditor.gui.buttons.halfPocketButtonEnter = function(event) {
+    if (event.button !== "halfPocket") {
+        return;
+    }
+    
+    realityEditor.gui.pocket.onHalfPocketButtonEnter();
+};
+
 /**
  *
  *   REALITY

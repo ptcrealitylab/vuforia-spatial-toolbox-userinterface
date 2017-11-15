@@ -262,6 +262,44 @@
     z-index: 20;
 }
 
+#halfTrashButton {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 60px;
+    height: 160px;
+    pointer-events:none;
+    visibility: hidden;
+}
+#halfTrashButtonDiv {
+    position: fixed;
+    top: 160px;
+    right: 0;
+    width: 60px;
+    height: 160px;
+    pointer-events:none;
+    visibility: hidden;
+    z-index: 20;
+}
+#halfPocketButton {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 60px;
+    height: 160px;
+    pointer-events: none;
+    visibility: hidden;
+}
+#halfPocketButtonDiv {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 60px;
+    height: 160px;
+    visibility: hidden;
+    z-index: 20;
+}
+
 /* REALITY */
 #realityGuiButtonDiv {
     position: fixed;

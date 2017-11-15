@@ -231,11 +231,21 @@ realityEditor.device.onTouchDown = function(evt) {
 							globalStates.editingNode = target.nodeId;
 							//globalStates.editingMode = true;
 							console.log("hello");
+
+                            // move element to front of nodes so that touches don't get blocked by other nodes
+                            var element = target.parentElement;
+                            if (element && element.id === "thisObject" + target.nodeId) {
+                                while(element.nextElementSibling && element.nextElementSibling.id !== 'craftingBoard') {
+                                    element.parentNode.insertBefore(element.nextElementSibling, element);
+                                }
+                            }
+							
 							globalStates.editingModeObject = target.objectId;
 							realityEditor.device.activateMultiTouch();
 							realityEditor.device.activateNodeMove(target.nodeId);
 							if (type === "logic") {
-								realityEditor.gui.menus.on("bigTrash",[]);
+								// realityEditor.gui.menus.on("bigTrash",[]);
+                                realityEditor.gui.menus.on("trashOrSave", []);
 							}
 							//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
 
@@ -360,24 +370,36 @@ realityEditor.device.onTrueTouchUp = function(evt){
 
     realityEditor.device.endTrash(target.nodeId);
 
-    if(target.type === 'logic' && evt.pageX >= (globalStates.height-60)){
+    if(target.type === 'logic' && evt.pageX >= (globalStates.height-60)) {
+        
+        if (evt.pageY < 160) {
+            console.log("...save node in pocket");
+            
+            // realityEditor.gui.pocket.pocketShow();
+            
+        } else {
+            console.log("...delete node");
 
-        for(var objectKey in objects){
-            var thisObject = objects[objectKey];
-            for (linkKey in thisObject.links){
-                var thisLink = thisObject.links[linkKey];
-                if(((thisLink.objectA === target.objectId) && (thisLink.nodeA === target.nodeId)) ||
-                    ((thisLink.objectB === target.objectId) && (thisLink.nodeB === target.nodeId))
-                ){
-                    delete thisLink;
-                    realityEditor.network.deleteLinkFromObject(thisObject.ip, objectKey, linkKey);
+            for(var objectKey in objects){
+                var thisObject = objects[objectKey];
+                for (linkKey in thisObject.links){
+                    var thisLink = thisObject.links[linkKey];
+                    if(((thisLink.objectA === target.objectId) && (thisLink.nodeA === target.nodeId)) ||
+                        ((thisLink.objectB === target.objectId) && (thisLink.nodeB === target.nodeId))
+                    ){
+                        delete thisLink;
+                        realityEditor.network.deleteLinkFromObject(thisObject.ip, objectKey, linkKey);
+                    }
                 }
             }
+
+            realityEditor.gui.ar.draw.deleteNode(target.objectId, target.nodeId);
+
+            realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.nodeId);
+            
         }
 
-        realityEditor.gui.ar.draw.deleteNode(target.objectId, target.nodeId);
 
-        realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.nodeId);
 
     } else if (target.type === 'logic' || target.type === 'node') {
         if (target.objectId !== "pocket") {
@@ -631,11 +653,14 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 	// todo why is this just hidden and not display none??
 
 	overlayDiv.style.display = "none";
-
+    
 	overlayDiv.classList.remove('overlayMemory');
+	overlayDiv.classList.remove('overlayLogicNode');
 	overlayDiv.classList.remove('overlayAction');
 	overlayDiv.classList.remove('overlayPositive');
 	overlayDiv.classList.remove('overlayNegative');
+
+    overlayDiv.innerHTML = '';
 
     if (globalStates.guiState !== "logic" && !globalStates.realityState) {
         realityEditor.gui.menus.on("main",[]);
@@ -708,7 +733,8 @@ realityEditor.device.onMultiTouchStart = function(evt) {
 		globalStates.editingModeKind = target.type;
 		globalStates.editingModeHaveObject = true;
 		if(target.type === "logic")
-        realityEditor.gui.menus.on("bigTrash",[]);
+        // realityEditor.gui.menus.on("bigTrash",[]);
+        realityEditor.gui.menus.on("trashOrSave", []);
 		//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
 	}
 	globalMatrix.matrixtouchOn = target.nodeId;

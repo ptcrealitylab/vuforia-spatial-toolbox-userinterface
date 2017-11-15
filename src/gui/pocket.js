@@ -246,9 +246,65 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
         toggleShown();
     }
+    
+    function onHalfPocketButtonEnter() {
+        // if (!isPocketWanted()) {
+        //     return;
+        // }
+        
+        if (!pocketButtonIsHalf()) {
+            return;
+        }
+        
+        // TODO: add any side effects here before showing pocket
+        
+        if (globalStates.editingNode) {
+            var logicNode = getLogicFromNodeKey(globalStates.editingNode);
+            if (logicNode) {
+                overlayDiv.classList.add('overlayLogicNode');
+
+                var nameText = document.createElement('div');
+                nameText.style.position = 'absolute';
+                nameText.style.top = '33px';
+                nameText.style.width = '100%';
+                nameText.style.textAlign = 'center';
+                nameText.innerHTML = logicNode.name;
+                overlayDiv.innerHTML = '';
+                overlayDiv.appendChild(nameText);
+                
+                overlayDiv.storedLogicNode = logicNode;
+            }
+        }
+        
+        if (pocketShown()) {
+            // // TODO(ben): is there a better place to do this?
+            overlayDiv.innerHTML = '';
+            overlayDiv.classList.remove('overlayLogicNode');
+        }
+        
+        toggleShown();
+    }
+    
+    function getLogicFromNodeKey(nodeKey) {
+        for (var objectKey in objects) {
+            if (!objects.hasOwnProperty(objectKey)) continue;
+            var object = objects[objectKey];
+            if (object.hasOwnProperty('nodes')) {
+                if (!object.nodes.hasOwnProperty(nodeKey)) continue;
+                if (!object.nodes[nodeKey].type === "logic") continue;
+                return object.nodes[nodeKey];
+            }
+
+        }
+        return null;
+    }
 
     function pocketButtonIsBig() {
         return realityEditor.gui.menus.getVisibility('bigPocket');
+    }
+    
+    function pocketButtonIsHalf() {
+        return realityEditor.gui.menus.getVisibility('halfPocket');
     }
 
     function toggleShown() {
@@ -336,5 +392,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     exports.onPocketButtonEnter = onPocketButtonEnter;
     exports.onPocketButtonUp = onPocketButtonUp;
     exports.onBigPocketButtonEnter = onBigPocketButtonEnter;
+    exports.onHalfPocketButtonEnter = onHalfPocketButtonEnter;
 
 }(realityEditor.gui.pocket));
