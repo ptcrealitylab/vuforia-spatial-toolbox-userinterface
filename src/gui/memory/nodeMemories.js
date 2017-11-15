@@ -241,6 +241,7 @@ realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
         overlay.storedLogicNode = null;
         overlayDiv.classList.remove('overlayLogicNode');
         overlayDiv.innerHTML = '';
+        realityEditor.gui.memory.nodeMemories.renderMemories();
     }
 };
 
