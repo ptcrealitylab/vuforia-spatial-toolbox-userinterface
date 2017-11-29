@@ -62,44 +62,51 @@ createNameSpace("realityEditor.gui.ar.lines");
  **/
 
 realityEditor.gui.ar.lines.deleteLines = function(x21, y21, x22, y22) {
-    for (var keysome in objects) {
-        if (!objects.hasOwnProperty(keysome)) {
-            continue;
-        }
 
-        var thisObject = objects[keysome];
-
-        for (var subKeysome in thisObject.links) {
-            if (!thisObject.links.hasOwnProperty(subKeysome)) {
+    // window.location.href = "of://gotsome";
+    for (var objectKey in objects) {
+        for (var frameKey in objects[objectKey].frames) {
+            
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            
+            if (!thisFrame) {
                 continue;
             }
-            var l = thisObject.links[subKeysome];
-            var oA = thisObject;
-            var oB = objects[l.objectB];
-
-            if (typeof(oA) === 'undefined' || typeof(oB) === 'undefined') {
+            
+           // var thisObject = realityEditor.getObject(objectKey);
+            
+            if (!thisFrame.objectVisible) {
                 continue;
             }
+            
+            for (var linkKey in thisFrame.links) {
+                if (!thisFrame.links.hasOwnProperty(linkKey)) {
+                    continue;
+                }
+                var l = thisFrame.links[linkKey];
+                var oA = thisFrame;
+                var oB = realityEditor.getFrame(l.objectB, l.frameB);
 
-            if (!oA.objectVisible && !oB.objectVisible) {
-                continue;
-            }
+                if (typeof(oA) === 'undefined' || typeof(oB) === 'undefined') {
+                    continue;
+                }
 
-            var bA = oA.nodes[l.nodeA];
-            var bB = oB.nodes[l.nodeB];
+                var bA = oA.nodes[l.nodeA];
+                var bB = oB.nodes[l.nodeB];
 
-            if (typeof(bA) === 'undefined' || typeof(bB) === 'undefined') {
-                continue; //should not be undefined
-            }
+                if (typeof(bA) === 'undefined' || typeof(bB) === 'undefined') {
+                    continue; //should not be undefined
+                }
 
-            if (this.realityEditor.gui.utilities.checkLineCross(bA.screenX, bA.screenY, bB.screenX, bB.screenY, x21, y21, x22, y22, globalCanvas.canvas.width, globalCanvas.canvas.height)) {
-                
-                if (realityEditor.device.security.isLinkActionAllowed(keysome, subKeysome, "delete")) {
-                    delete thisObject.links[subKeysome];
-                    this.cout("iam executing link deletion");
-                    //todo this is a work around to not crash the server. only temporarly for testing
-                    // if(l.logicA === false && l.logicB === false)
-                    realityEditor.network.deleteLinkFromObject(thisObject.ip, keysome, subKeysome);                    
+                if (this.realityEditor.gui.utilities.checkLineCross(bA.screenX, bA.screenY, bB.screenX, bB.screenY, x21, y21, x22, y22, globalCanvas.canvas.width, globalCanvas.canvas.height)) {
+
+                    if (realityEditor.device.security.isLinkActionAllowed(objectKey, frameKey, linkKey, "delete")) {
+                        delete thisFrame.links[linkKey];
+                        this.cout("iam executing link deletion");
+                        //todo this is a work around to not crash the server. only temporarly for testing
+                        // if(l.logicA === false && l.logicB === false)
+                        realityEditor.network.deleteLinkFromObject(thisObject.ip, objectKey, frameKey, linkKey);
+                    }
                 }
             }
         }
@@ -114,20 +121,22 @@ realityEditor.gui.ar.lines.deleteLines = function(x21, y21, x22, y22) {
  **/
 
 realityEditor.gui.ar.lines.drawAllLines = function (thisObject, context) {
+    if(!thisObject) return;
 	for (var subKey in thisObject.links) {
 		if (!thisObject.links.hasOwnProperty(subKey)) {
 			continue;
 		}
 		var l = thisObject.links[subKey];
 		var oA = thisObject;
+		var oB = realityEditor.getFrame(l.objectB, l.frameB);
 
 		if (isNaN(l.ballAnimationCount))
 			l.ballAnimationCount = 0;
 
-		if (!objects.hasOwnProperty(l.objectB)) {
+		if (!oB) {
 			continue;
 		}
-		var oB = objects[l.objectB];
+	
 		if (!oA.nodes.hasOwnProperty(l.nodeA)) {
 			continue;
 		}
@@ -219,7 +228,7 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 
 	if (globalProgram.objectA) {
 
-		var oA = objects[globalProgram.objectA];
+		var oA = realityEditor.getFrame(globalProgram.objectA, globalProgram.frameA);
 
 
 		var tempStart = oA.nodes[globalProgram.nodeA];
@@ -321,7 +330,7 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         context.fill();
     }
     linkObject.ballAnimationCount += (lineStartWeight * timeCorrector.delta)+speed;
-}
+};
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/

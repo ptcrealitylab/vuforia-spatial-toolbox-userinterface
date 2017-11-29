@@ -121,11 +121,11 @@ realityEditor.device.deactivateMultiTouch = function() {
 
 };
 
-realityEditor.device.endTrash = function(nodeID) {
+realityEditor.device.endTrash = function(nodeKey) {
 
 	realityEditor.device.deactivateMultiTouch();
 	if (!globalStates.editingMode) {
-		realityEditor.device.deactivateNodeMove(nodeID);
+		realityEditor.device.deactivateNodeMove(nodeKey);
 	}
 	setTimeout(function() {
         realityEditor.gui.menus.buttonOn("main",[]);
@@ -140,53 +140,55 @@ realityEditor.device.addEventHandlers = function() {
 
 	realityEditor.device.activateMultiTouch();
 
-    for (var thisKey in objects) {
-        var generalObject2 = objects[thisKey];
+    for (var objectKey in objects) {
+        for (var frameKey in objects[objectKey].frames) {
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
-        if (generalObject2.developer) {
+            if (objects[objectKey].developer) {
 
-            if (document.getElementById(thisKey)) {
-                var thisObject3 = document.getElementById(thisKey);
-                //  if (globalStates.guiState) {
-                thisObject3.style.visibility = "visible";
+                if (document.getElementById(objectKey)) {
+                    var thisObject3 = document.getElementById(objectKey);
+                    //  if (globalStates.guiState) {
+                    thisObject3.style.visibility = "visible";
 
-                var thisObject4 = document.getElementById("canvas" + thisKey);
-                thisObject4.style.display = "inline";
+                    var thisObject4 = document.getElementById("canvas" + objectKey);
+                    thisObject4.style.display = "inline";
 
-                // }
+                    // }
 
-                // thisObject3.className = "mainProgram";
+                    // thisObject3.className = "mainProgram";
 
-                thisObject3.addEventListener("touchstart", realityEditor.device.onMultiTouchStart.bind(realityEditor.device), false);
-                ec++;
-                thisObject3.addEventListener("touchmove", realityEditor.device.onMultiTouchMove.bind(realityEditor.device), false);
-                ec++;
-                thisObject3.addEventListener("touchend", realityEditor.device.onMultiTouchEnd.bind(realityEditor.device), false);
-                ec++;
-                //}
-            }
-
-            for (var thisSubKey in generalObject2.nodes) {
-			//	console.log("nodes: "+thisSubKey);
-				realityEditor.device.activateNodeMove(thisSubKey);
-            }
-
-            for (var frameKey in generalObject2.frames) {
-                var elt = document.getElementById(frameKey);
-                if (!elt) {
-                    continue;
+                    thisObject3.addEventListener("touchstart", realityEditor.device.onMultiTouchStart.bind(realityEditor.device), false);
+                    ec++;
+                    thisObject3.addEventListener("touchmove", realityEditor.device.onMultiTouchMove.bind(realityEditor.device), false);
+                    ec++;
+                    thisObject3.addEventListener("touchend", realityEditor.device.onMultiTouchEnd.bind(realityEditor.device), false);
+                    ec++;
+                    //}
                 }
-                elt.style.visibility = "visible";
 
-                var canvas = document.getElementById("canvas" + frameKey);
-                canvas.style.display = "inline";
+                for (var nodeKey in thisFrame.nodes) {
+                    //	console.log("nodes: "+thisSubKey);
+                    realityEditor.device.activateNodeMove(nodeKey);
+                }
 
-                elt.addEventListener("touchstart", realityEditor.device.onMultiTouchStart);
-                ec++;
-                elt.addEventListener("touchmove", realityEditor.device.onMultiTouchMove);
-                ec++;
-                elt.addEventListener("touchend", realityEditor.device.onMultiTouchEnd);
-                ec++;
+                for (var frameKey in thisFrame.frames) {
+                    var elt = document.getElementById(frameKey);
+                    if (!elt) {
+                        continue;
+                    }
+                    elt.style.visibility = "visible";
+
+                    var canvas = document.getElementById("canvas" + frameKey);
+                    canvas.style.display = "inline";
+
+                    elt.addEventListener("touchstart", realityEditor.device.onMultiTouchStart);
+                    ec++;
+                    elt.addEventListener("touchmove", realityEditor.device.onMultiTouchMove);
+                    ec++;
+                    elt.addEventListener("touchend", realityEditor.device.onMultiTouchEnd);
+                    ec++;
+                }
             }
         }
     }
@@ -210,25 +212,30 @@ realityEditor.device.onTouchDown = function(evt) {
     var target = evt.currentTarget;
 	console.log(target.nodeId);
 
-    if (!realityEditor.device.security.isNodeActionAllowed(target.objectId, target.nodeId, "edit")) {
+    if (!realityEditor.device.security.isNodeActionAllowed(target.objectId, target.frameId, target.nodeId, "edit")) {
         return;
     }
+    
+    var thisNode = realityEditor.getNode(target.objectId, target.frameId, target.nodeId);
     
 	if (!globalStates.editingMode) {
 		if (globalStates.guiState ==="node") {
 			if (!globalProgram.objectA) {
 				globalProgram.objectA = target.objectId;
+                globalProgram.frameA = target.frameId;
 				globalProgram.nodeA = target.nodeId;
 
-				var type = objects[target.objectId].nodes[target.nodeId].type;
+				var type = thisNode.type;
 
 				if (type === "logic" || type === "node") {
 
 					if(!globalStates.editingMode) {
 						this.touchTimer = setTimeout(function () {
 							globalProgram.objectA = false;
+                            globalProgram.frameA = false;
 							globalProgram.nodeA = false;
 							globalStates.editingNode = target.nodeId;
+                            globalStates.editingFrame = target.frameId;
 							//globalStates.editingMode = true;
 							console.log("hello");
 
@@ -267,8 +274,10 @@ realityEditor.device.onTouchDown = function(evt) {
 		}
 	} else {
 		globalStates.editingModeObject = target.objectId;
-		globalStates.editingModeLocation = target.nodeId;
+        globalStates.editingModeFrame = target.frameId;
+        globalStates.editingModeLocation = target.nodeId;
 		globalStates.editingModeKind = target.type;
+        globalStates.editingFrame = target.nodeId;
 		globalStates.editingNode = target.nodeId;
 		globalStates.editingModeHaveObject = true;
 	}
@@ -277,10 +286,13 @@ realityEditor.device.onTouchDown = function(evt) {
 
 realityEditor.device.beginTouchEditing = function(target) {
 	globalProgram.objectA = false;
+    globalProgram.frameA = false;
 	globalProgram.nodeA = false;
 
 	globalStates.editingNode = target.nodeId;
+    globalStates.editingFrame = target.frameId;
 	globalStates.editingModeObject = target.objectId;
+    globalStates.editingModeFrame = target.frameId;
 	globalStates.editingModeLocation = target.nodeId;
 	globalStates.editingModeKind = target.type;
 	globalStates.editingModeHaveObject = true;
@@ -288,7 +300,7 @@ realityEditor.device.beginTouchEditing = function(target) {
 	realityEditor.device.activateMultiTouch();
 	realityEditor.device.activateNodeMove(target.nodeId);
 	// Only display the trash can if it's something we can delete (a frame)
-	if (target.objectId !== target.nodeId) {
+	if (target.frameId !== target.nodeId) {
         realityEditor.gui.menus.on("bigTrash",[]);
 		//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
 	}
@@ -300,15 +312,16 @@ realityEditor.device.beginTouchEditing = function(target) {
 
 realityEditor.device.getEditingModeObject = function() {
     var objectId = globalStates.editingModeObject;
+    var frameId = globalStates.editingModeFrame;
     var nodeId = globalStates.editingModeLocation;
-    if (objectId !== nodeId) {
+    if (frameId !== nodeId) {
         if (globalStates.editingModeKind === 'ui') {
-            return objects[objectId].frames[nodeId];
+            return objects[objectId].frames[frameId].frames[nodeId];
         } else {
-            return objects[objectId].nodes[nodeId];
+            return objects[objectId].frames[frameId].nodes[nodeId];
         }
     } else {
-        return objects[objectId];
+        return objects[frameId];
     }
 };
 
@@ -322,6 +335,7 @@ realityEditor.device.getEditingModeObject = function() {
 realityEditor.device.onFalseTouchUp= function() {
 	if (globalStates.guiState ==="node") {
 		globalProgram.objectA = false;
+        globalProgram.frameA = false;
 		globalProgram.nodeA = false;
 		globalProgram.logicA = false;
 		globalProgram.logicSelector = 4;
@@ -343,23 +357,26 @@ realityEditor.device.onTrueTouchUp = function(evt){
 		if (globalProgram.objectA) {
 
 			if(target.nodeId === globalProgram.nodeA && target.type === "logic"){
-                if (realityEditor.device.security.isNodeActionAllowed(target.objectId, target.nodeId, "edit")) {
-                    realityEditor.gui.crafting.craftingBoardVisible(target.objectId, target.nodeId);
+                if (realityEditor.device.security.isNodeActionAllowed(target.objectId, target.frameId, target.nodeId, "edit")) {
+                    realityEditor.gui.crafting.craftingBoardVisible(target.objectId, target.frameId, target.nodeId);
                 }
 			}
 
 			globalProgram.objectB = target.objectId;
+            globalProgram.frameB = target.frameId;
 			globalProgram.nodeB = target.nodeId;
 
-            if (realityEditor.device.security.isNodeActionAllowed(target.objectId, target.nodeId, "create")) {
+            if (realityEditor.device.security.isNodeActionAllowed(target.objectId, target.frameId, target.nodeId, "create")) {
                 realityEditor.network.postLinkToServer(globalProgram, objects);
             }
 
 			// set everything back to false
 			globalProgram.objectA = false;
+            globalProgram.frameA = false;
 			globalProgram.nodeA = false;
 			globalProgram.logicA = false;
 			globalProgram.objectB = false;
+            globalProgram.frameB = false;
 			globalProgram.nodeB = false;
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
@@ -375,35 +392,31 @@ realityEditor.device.onTrueTouchUp = function(evt){
         if (evt.pageY < 160) {
             console.log("...save node in pocket");
             
-            // realityEditor.gui.pocket.pocketShow();
-            
         } else {
             console.log("...delete node");
 
             for(var objectKey in objects){
-                var thisObject = objects[objectKey];
-                for (linkKey in thisObject.links){
-                    var thisLink = thisObject.links[linkKey];
-                    if(((thisLink.objectA === target.objectId) && (thisLink.nodeA === target.nodeId)) ||
-                        ((thisLink.objectB === target.objectId) && (thisLink.nodeB === target.nodeId))
-                    ){
-                        delete thisLink;
-                        realityEditor.network.deleteLinkFromObject(thisObject.ip, objectKey, linkKey);
+                for (var frameKey in objects[objectKey].frames) {
+                    var thisObject = realityEditor.getFrame(objectKey, frameKey);
+                    for (linkKey in thisObject.links) {
+                        var thisLink = thisObject.links[linkKey];
+                        if (((thisLink.objectA === target.objectId) && (thisLink.frameA === target.frameId) && (thisLink.nodeA === target.nodeId)) ||
+                            ((thisLink.objectB === target.objectId) && (thisLink.frameB === target.frameId) && (thisLink.nodeB === target.nodeId))) {
+                            delete thisLink;
+                            realityEditor.network.deleteLinkFromObject(thisObject.ip, objectKey, frameKey, linkKey);
+                        }
                     }
                 }
             }
-
-            realityEditor.gui.ar.draw.deleteNode(target.objectId, target.nodeId);
-
-            realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.nodeId);
             
+            realityEditor.gui.ar.draw.deleteNode(target.objectId, target.frameId, target.nodeId);
+
+            realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
         }
-
-
 
     } else if (target.type === 'logic' || target.type === 'node') {
         if (target.objectId !== "pocket") {
-            realityEditor.network.sendResetContent(target.objectId, target.nodeId, target.type);
+            realityEditor.network.sendResetContent(target.objectId, target.frameId, target.nodeId, target.type);
         }
     }
 
@@ -424,7 +437,7 @@ realityEditor.device.onTouchEnter = function(evt) {
 		overlayDiv.classList.add('overlayAction');
 	} else {
 
-		if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.nodeId, 0)) {
+		if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA,globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0)) {
 			contentForFeedback = 2; // overlayImg.src = overlayImage[2].src;
 			overlayDiv.classList.add('overlayPositive');
 		}
@@ -514,7 +527,7 @@ realityEditor.device.onTouchMove = function(evt) {
 
 			var tempThisObject = null;
 			if (target.type === 'logic' || target.type === 'node') {
-				tempThisObject = objects[target.objectId].nodes[target.nodeId];
+				tempThisObject = realityEditor.getNode(target.objectId, target.frameId, target.nodeId);
 			} else {
 				tempThisObject = realityEditor.device.getEditingModeObject();
 			}
@@ -583,6 +596,8 @@ realityEditor.device.onDocumentPointerMove = function (evt) {
  * @param evt
  **/
 
+realityEditor.device.nodeCalculations = realityEditor.gui.ar.draw.nodeCalculations;
+    
 realityEditor.device.onDocumentPointerUp = function(evt) {
 
 	globalStates.pointerPosition = [-1, -1];
@@ -595,41 +610,43 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 
 		if (pocketItem.pocket.nodes[pocketItemId]) {
 
-			globalLogic.farFrontElement = "";
-			globalLogic.frontDepth = 10000000000;
-
-			for (var thisOtherKey in globalObjects) {
-				if (globalObjects[thisOtherKey][14] < globalLogic.frontDepth) {
-					globalLogic.frontDepth = globalObjects[thisOtherKey][14];
-					globalLogic.farFrontElement = thisOtherKey;
+			this.nodeCalculations.farFrontElement = "";
+			this.nodeCalculations.frontDepth = 10000000000;
+            
+			// todo this needs to be checked against the far front frame.
+			
+			for (var thisOtherKey in realityEditor.gui.ar.draw.visibleObjects) {
+				if (realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14] < this.nodeCalculations.frontDepth) {
+					this.nodeCalculations.frontDepth = realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14];
+					this.nodeCalculations.farFrontElement = thisOtherKey;
 				}
 			}
 
 			var thisItem = pocketItem.pocket.nodes[pocketItemId];
 
-			if (globalLogic.farFrontElement !== "" && thisItem.screenZ !== 2 && thisItem.screenZ) {
+			if (this.nodeCalculations.farFrontElement !== "" && thisItem.screenZ !== 2 && thisItem.screenZ) {
 
 				var logicCount = 0;
-				for(var key in objects[globalLogic.farFrontElement].nodes) {
-					if(objects[globalLogic.farFrontElement].nodes[key].type === "logic"){
+				for(var key in objects[this.nodeCalculations.farFrontElement].nodes) {
+					if(objects[this.nodeCalculations.farFrontElement].nodes[key].type === "logic"){
 						logicCount++;
 					}
 				}
 				thisItem.name = "LOGIC"+logicCount;
 
 				// make sure that logic nodes only stick to 2.0 server version
-                if(realityEditor.network.testVersion(globalLogic.farFrontElement)>165) {
-                    objects[globalLogic.farFrontElement].nodes[pocketItemId] = thisItem;
+                if(realityEditor.network.testVersion(this.nodeCalculations.farFrontElement)>165) {
+                    objects[this.nodeCalculations.farFrontElement].nodes[pocketItemId] = thisItem;
 
                     var _thisNode = document.getElementById("iframe" + pocketItemId);
                     if (_thisNode) {
                         if (_thisNode._loaded)
-                            realityEditor.network.onElementLoad(globalLogic.farFrontElement, pocketItemId);
+                            realityEditor.network.onElementLoad(this.nodeCalculations.farFrontElement, pocketItemId);
                     }
 
-                    globalDOMCach[pocketItemId].objectId = globalLogic.farFrontElement;
+                    globalDOMCach[pocketItemId].objectId = this.nodeCalculations.farFrontElement;
 
-                    realityEditor.network.postNewLogicNode(objects[globalLogic.farFrontElement].ip, globalLogic.farFrontElement, pocketItemId, thisItem);
+                    realityEditor.network.postNewLogicNode(objects[this.nodeCalculations.farFrontElement].ip, this.nodeCalculations.farFrontElement, pocketItemId, thisItem);
                 }
 
 			}
@@ -729,6 +746,7 @@ realityEditor.device.onMultiTouchStart = function(evt) {
 	if (globalStates.editingMode && evt.targetTouches.length === 1) {
 		console.log("--------------------------------"+target.objectId);
 		globalStates.editingModeObject = target.objectId;
+        globalStates.editingModeFrame = target.frameId;
 		globalStates.editingModeLocation = target.nodeId;
 		globalStates.editingModeKind = target.type;
 		globalStates.editingModeHaveObject = true;
@@ -737,8 +755,8 @@ realityEditor.device.onMultiTouchStart = function(evt) {
         realityEditor.gui.menus.on("trashOrSave", []);
 		//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
 	}
-	globalMatrix.matrixtouchOn = target.nodeId;
-	globalMatrix.copyStillFromMatrixSwitch = true;
+	realityEditor.gui.ar.draw.matrix.matrixtouchOn = target.nodeId;
+	realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 	cout("MultiTouchStart");
 };
 
@@ -833,7 +851,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 
 		// todo for now we just send nodes but no logic locations. ---- Became obsolete because the logic nodes are now normal nodes
 		//  if(globalStates.editingModeKind=== "node") {
-        if (globalStates.editingModeKind === 'ui' && globalStates.editingModeObject !== globalStates.editingModeLocation) {
+        if (globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame !== globalStates.editingModeLocation) {
             realityEditor.gui.frame.update(globalStates.editingModeObject, globalStates.editingModeLocation);
             // reposition all of this frame's nodes relative to their parent
             var object = objects[globalStates.editingModeObject];
@@ -853,13 +871,13 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 				realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
 			}
 		} else if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-			realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject + "/size/" + globalStates.editingModeLocation, content);
+			realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/size/", content, function (){});
 		}
 		// }
 
 		globalStates.editingModeHaveObject = false;
 		globalCanvas.hasContent = true;
-		globalMatrix.matrixtouchOn = "";
+		realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
 	}
 	cout("MultiTouchEnd");
 };
@@ -976,49 +994,51 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
 realityEditor.device.removeEventHandlers = function() {
 
 	realityEditor.device.deactivateMultiTouch();
-	for (var thisKey in objects) {
-		var generalObject2 = objects[thisKey];
-		if (generalObject2.developer) {
-			if (document.getElementById(thisKey)) {
-				var thisObject3 = document.getElementById(thisKey);
-				thisObject3.style.visibility = "hidden";
-				// this is a typo but maybe relevant?
-				//  thisObject3.className = "mainEditing";
+    for (var objectKey in objects) {
+        for (var frameKey in objects[objectKey].frame) {
+            var generalObject2 = realityEditor.getFrame(objectKey, frameKey);
+            if (realityEditor.getObject(objectKey).developer) {
+                if (document.getElementById(frameKey)) {
+                    var thisObject3 = document.getElementById(frameKey);
+                    thisObject3.style.visibility = "hidden";
+                    // this is a typo but maybe relevant?
+                    //  thisObject3.className = "mainEditing";
 
-				document.getElementById("canvas" + thisKey).style.display = "none";
+                    document.getElementById("canvas" + frameKey).style.display = "none";
 
-				thisObject3.removeEventListener("touchstart", realityEditor.device.onMultiTouchStart, false);
-				thisObject3.removeEventListener("touchmove", realityEditor.device.onMultiTouchMove, false);
-				thisObject3.removeEventListener("touchend", realityEditor.device.onMultiTouchEnd, false);
-				ec--;
-				ec--;
-				ec--;
-				//  }
-			}
-
-			for (var thisSubKey in generalObject2.nodes) {
-				realityEditor.device.deactivateNodeMove(thisSubKey);
-			}
-
-            for (var frameKey in generalObject2.frames) {
-                var elt = document.getElementById(frameKey);
-                if (!elt) {
-                    continue;
+                    thisObject3.removeEventListener("touchstart", realityEditor.device.onMultiTouchStart, false);
+                    thisObject3.removeEventListener("touchmove", realityEditor.device.onMultiTouchMove, false);
+                    thisObject3.removeEventListener("touchend", realityEditor.device.onMultiTouchEnd, false);
+                    ec--;
+                    ec--;
+                    ec--;
+                    //  }
                 }
-                elt.style.visibility = "hidden";
 
-                var canvas = document.getElementById("canvas" + frameKey);
-                canvas.style.display = "none";
+                for (var nodeKey in generalObject2.nodes) {
+                    realityEditor.device.deactivateNodeMove(nodeKey);
+                }
 
-                elt.removeEventListener("touchstart", realityEditor.device.onMultiTouchStart);
-                ec--;
-                elt.removeEventListener("touchmove", realityEditor.device.onMultiTouchMove);
-                ec--;
-                elt.removeEventListener("touchend", realityEditor.device.onMultiTouchEnd);
-                ec--;
+                for (var frameKey in generalObject2.frames) {
+                    var elt = document.getElementById(frameKey);
+                    if (!elt) {
+                        continue;
+                    }
+                    elt.style.visibility = "hidden";
+
+                    var canvas = document.getElementById("canvas" + frameKey);
+                    canvas.style.display = "none";
+
+                    elt.removeEventListener("touchstart", realityEditor.device.onMultiTouchStart);
+                    ec--;
+                    elt.removeEventListener("touchmove", realityEditor.device.onMultiTouchMove);
+                    ec--;
+                    elt.removeEventListener("touchend", realityEditor.device.onMultiTouchEnd);
+                    ec--;
+                }
             }
-		}
-	}
+        }
+    }
 
 	cout("removeEventHandlers");
 };

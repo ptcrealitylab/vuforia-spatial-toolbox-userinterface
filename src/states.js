@@ -103,6 +103,7 @@ var globalStates = {
 	logButtonState: false,
 	editingMode: false,
 	editingNode: false,
+    editingFrame: false,
 	guiURL: "",
 	newURLText: "",
 	platform: navigator.platform,
@@ -158,23 +159,22 @@ var globalLogic ={
 	rectPoints: [],
 	farFrontElement:"",
 	frontDepth: 1000000
-
-
 };
 
 var pocketItem  = {"pocket" : new Objects()};
+pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
 
 var globalDOMCach = {};
 
-var globalObjects = "";
-
 var globalProgram = {
 	objectA: false,
+    frameA: false,
 	nodeA: false,
 	logicA:false,
 	objectB: false,
+    frameB: false,
 	nodeB: false,
 	logicB:false,
 	logicSelector:4

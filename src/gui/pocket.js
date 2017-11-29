@@ -82,7 +82,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
 		var thisItem = pocketItem.pocket.nodes[pocketItemId];
 
-		if(globalLogic.farFrontElement==="") {
+		if(realityEditor.gui.draw.nodeCalculations.farFrontElement==="") {
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
 
@@ -156,7 +156,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
-            var objectIds = Object.keys(globalObjects);
+            var objectIds = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
             if (objectIds.length !== 1) {
                 return;
             }
@@ -167,10 +167,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var frame = new realityEditor.gui.frame.Frame(src, width, height);
 
             var tempMatrix = [];
-            var r = globalMatrix.r;
+            var r = realityEditor.gui.ar.draw.matrix.r;
 
             var arUtilities = realityEditor.gui.ar.utilities;
-            arUtilities.multiplyMatrix(globalObjects[objectIds[0]], globalStates.projectionMatrix, r);
+            arUtilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectIds[0]], globalStates.projectionMatrix, r);
             arUtilities.multiplyMatrix(rotateX, r, tempMatrix);
             parentObject.temp = tempMatrix;
             var matrixTouch = arUtilities.screenCoordinatesToMatrixXY(parentObject, [evt.clientX, evt.clientY]);

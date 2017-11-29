@@ -51,6 +51,9 @@
  ******************************************** global namespace *******************************************************
  **********************************************************************************************************************/
 
+
+var objects = {};
+
 var realityEditor = realityEditor || {
         app:{},
 		device: {
@@ -61,11 +64,14 @@ var realityEditor = realityEditor || {
 		},
 		gui: {
 			ar: {
-				draw: {},
-				positioning: {},
-				lines: {},
-				utilities: {}
-			},
+				draw: {
+                    visibleObjects : "",
+                    globalCanvas : {}
+				},
+                positioning: {},
+                lines: {},
+                utilities: {}
+            },
             crafting: {
                 blockMenu: {},
                 eventHandlers: {},
@@ -92,7 +98,7 @@ var realityEditor = realityEditor || {
 		},
         network: {
             utilities: {}
-         }
+        }
 	};
 
 /**
@@ -118,3 +124,71 @@ var createNameSpace = createNameSpace || function (namespace) {
 		}
 		return object;
 	};
+
+createNameSpace("realityEditor");
+
+realityEditor.objects = objects;
+
+// return the object
+realityEditor.getObject = function (object){
+    if(!object) return null;
+    if(!(object in this.objects)) return null;
+    return this.objects[object];
+};
+
+// return a frame located in the object
+realityEditor.getFrame = function (object, frame){
+    if(!object) return null;
+    if(!frame) return null;
+    if(!(object in this.objects)) return null;
+    if(!(frame in this.objects[object].frames)) return null;
+    return this.objects[object].frames[frame];
+};
+
+// return a node located in the object frame
+realityEditor.getNode = function (object, frame, node){
+    if(!object) return null;
+    if(!frame) return null;
+    if(!node) return null;
+    if(!(object in this.objects)) return null;
+    if(!(frame in this.objects[object].frames)) return null;
+    if(!(node in this.objects[object].frames[frame].nodes)) return null;
+    return this.objects[object].frames[frame].nodes[node];
+};
+
+// return a link located in a frame
+realityEditor.getLink = function (object, frame, link){
+    if(!object) return null;
+    if(!frame) return null;
+    if(!link) return null;
+    if(!(object in this.objects)) return null;
+    if(!(frame in this.objects[object].frames)) return null;
+    if(!(link in this.objects[object].frames[frame].links)) return null;
+    return this.objects[object].frames[frame].links[link];
+};
+
+realityEditor.getBlock = function (object, frame, node, block){
+    if(!object) return null;
+    if(!frame) return null;
+    if(!node) return null;
+    if(!block) return null;
+    if(!(object in this.objects)) return null;
+    if(!(frame in this.objects[object].frames)) return null;
+    if(!(node in this.objects[object].frames[frame].node)) return null;
+    if(!(block in this.objects[object].frames[frame].node[node].blocks)) return null;
+    return this.objects[object].frames[frame].node[node].block[block];
+};
+
+realityEditor.getBlockLink = function (object, frame, node, link){
+    if(!object) return null;
+    if(!frame) return null;
+    if(!node) return null;
+    if(!link) return null;
+    if(!(object in this.objects)) return null;
+    if(!(frame in this.objects[object].frames)) return null;
+    if(!(node in this.objects[object].frames[frame].node)) return null;
+    if(!(link in this.objects[object].frames[frame].node[node].links)) return null;
+    return this.objects[object].frames[frame].node[node].links[link];
+};
+
+
