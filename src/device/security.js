@@ -102,7 +102,7 @@ realityEditor.device.security.lockVisibleNodesAndLinks = function(lockType) {
             lockPassword: globalStates.lockPassword,
             lockType: lockType
         };
-        realityEditor.network.postNewLockToNode(objects[keys.objectKey].ip, keys.objectKey, keys.nodeKey, content);
+        realityEditor.network.postNewLockToNode(objects[keys.objectKey].ip, keys.objectKey, keys.frameKey, keys.nodeKey, content);
     });
 
     var visibleLinks = realityEditor.gui.ar.getVisibleLinks(visibleNodes);
@@ -113,7 +113,7 @@ realityEditor.device.security.lockVisibleNodesAndLinks = function(lockType) {
             lockPassword: globalStates.lockPassword,
             lockType: lockType
         };
-        realityEditor.network.postNewLockToLink(objects[keys.objectKey].ip, keys.objectKey, keys.linkKey, content);
+        realityEditor.network.postNewLockToLink(objects[keys.objectKey].ip, keys.objectKey, keys.frameKey, keys.linkKey, content);
     });
 };
 
@@ -122,14 +122,14 @@ realityEditor.device.security.unlockVisibleNodesAndLinks = function() {
     console.log("visibleNodes = ", visibleNodes);
 
     visibleNodes.forEach( function(keys) {
-        realityEditor.network.deleteLockFromNode(objects[keys.objectKey].ip, keys.objectKey, keys.nodeKey, globalStates.lockPassword);
+        realityEditor.network.deleteLockFromNode(objects[keys.objectKey].ip, keys.objectKey, keys.frameKey, keys.nodeKey, globalStates.lockPassword);
     });
 
     var visibleLinks = realityEditor.gui.ar.getVisibleLinks(visibleNodes);
     console.log("visibleLinks = ", visibleLinks);
 
     visibleLinks.forEach( function(keys) {
-        realityEditor.network.deleteLockFromLink(objects[keys.objectKey].ip, keys.objectKey, keys.linkKey, globalStates.lockPassword);
+        realityEditor.network.deleteLockFromLink(objects[keys.objectKey].ip, keys.objectKey, keys.frameKey, keys.linkKey, globalStates.lockPassword);
     });
 };
 
@@ -138,8 +138,8 @@ realityEditor.device.security.unlockVisibleNodesAndLinks = function() {
 
 
 // actionType = "edit", "create", "lock", "unlock"
-realityEditor.device.security.isNodeActionAllowed = function(objectKey, nodeKey, actionType) {
-    var node = objects[objectKey].nodes[nodeKey];
+realityEditor.device.security.isNodeActionAllowed = function(objectKey, frameKey, nodeKey, actionType) {
+    var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
     var lockPassword = node.lockPassword;
     var lockType = node.lockType;
     var isLocked = !!lockPassword && !!lockType;
@@ -155,8 +155,8 @@ realityEditor.device.security.isNodeActionAllowed = function(objectKey, nodeKey,
 
 // TODO: do we need separate methods for link and node, or are they equivalent?
 // actionType = "delete", "lock", "unlock"
-realityEditor.device.security.isLinkActionAllowed = function(objectKey, linkKey, actionType) {
-    var link = objects[objectKey].links[linkKey];
+realityEditor.device.security.isLinkActionAllowed = function(objectKey, frameKey, linkKey, actionType) {
+    var link = realityEditor.getLink(objectKey, frameKey, linkKey);
     var lockPassword = link.lockPassword;
     var lockType = link.lockType;
     var isLocked = !!lockPassword && !!lockType;
@@ -174,20 +174,23 @@ realityEditor.device.security.isLinkActionAllowed = function(objectKey, linkKey,
 // temporary method that can be called from the console to unlock all objects, in case they get locked by an inaccessible device
 realityEditor.device.security.debugUnlockAll = function() {
     for (var objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) continue;
+        for (var frameKey in objects[objectKey].frames) {
+            var thisframe = realityEditor.getFrame(objectKey, frameKey);
+            if (!thisframe) continue;
 
-        // unlock all nodes
-        for (var nodeKey in objects[objectKey].nodes) {
-            if (!objects[objectKey].nodes.hasOwnProperty(nodeKey)) continue;
+            // unlock all nodes
+            for (var nodeKey in thisframe.nodes) {
+                if (!thisframe.nodes.hasOwnProperty(nodeKey)) continue;
 
-            realityEditor.network.deleteLockFromNode(objects[objectKey].ip, objectKey, nodeKey, "DEBUG");
-        }
-        
-        // unlock all links
-        for (var linkKey in objects[objectKey].links) {
-            if (!objects[objectKey].links.hasOwnProperty(linkKey)) continue;
+                realityEditor.network.deleteLockFromNode(objects[objectKey].ip, objectKey, frameKey, nodeKey, "DEBUG");
+            }
 
-            realityEditor.network.deleteLockFromLink(objects[objectKey].ip, objectKey, linkKey, "DEBUG");
+            // unlock all links
+            for (var linkKey in thisframe.links) {
+                if (!thisframe.links.hasOwnProperty(linkKey)) continue;
+
+                realityEditor.network.deleteLockFromLink(objects[objectKey].ip, objectKey, frameKey, linkKey, "DEBUG");
+            }
         }
     }
 };

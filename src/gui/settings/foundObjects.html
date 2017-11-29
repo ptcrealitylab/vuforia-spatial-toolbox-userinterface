@@ -53,40 +53,66 @@
     window.addEventListener("message", function (e) {
 
         var msg = JSON.parse(e.data);
-
+     
         if (msg.getObjects) {
             realityEditor.gui.settings.getObjectsFunction(msg.getObjects);
         }
     });
 
     realityEditor.gui.settings.getObjectsFunction = function (msg) {
+      
         var appendText = '<div class="card"><ul class="table-view" id="objectList">';
 
-        for (var key in msg) {
-            appendText +=
-                '<li class="table-view-cell table-view-cell">' +
-                '<div style="width: 500px; display: inline-block">' +
+        for(var objectKey in msg){
+            appendText +=     '<li class="table-view-cell table-view-cell">';
+
+
+            appendText += '<div style="width: 500px; height: 30px; display: inline-block">'+
                 '<img class="media-object pull-left" src="../../../svg/object.svg" style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">' +
-                '<div style="display: inline-block; width: 130px; overflow: hidden; font-size: large">' + msg[key].name + '</div>' +
+                '<div style="display: inline-block; width: 130px; overflow: hidden; font-size: large">' + msg[objectKey].name + '</div>' +
                 '<div style="display: inline-block; width: 70px; text-align: center;">' +
-                '<span class="badge" style="font-size: large">' + msg[key].version + '</span>' +
+                '<span class="badge" style="font-size: large">' + msg[objectKey].version + '</span>' +
                 '</div>' +
                 '<div style="display: inline-block; width: 140px; text-align: center;">' +
-                '<span class="badge" style="font-size: large">' + msg[key].ip + '</span>' +
+                '<span class="badge" style="font-size: large">' + msg[objectKey].ip + '</span>' +
                 '</div>' +
                 '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
-                '<span class="badge" style="font-size: large">' + msg[key].nodes + '</span>' +
+                ' ' + //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].nodes + '</span>' +
                 '</div>' +
                 '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
-                '<span class="badge" style="font-size: large">' + msg[key].links + '</span>' +
-                '</div>' +
-                '</div>' +
-                '</li>';
+                ' ' + //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].links + '</span>' +
+                '</div>'+
+                '</div>';
+            
+            
+            
+            for(var frameKey in msg[objectKey].frames){
 
-            // document.getElementById("objectList").insertAdjacentHTML( 'beforeend', appendText);
+                appendText += '<div style="width: 500px; height: 30px; display: inline-block">'+
+                    '<img class="media-object pull-left" src="../../../svg/object.svg" style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">' +
+                    '<div style="display: inline-block; width: 130px; overflow: hidden; font-size: large">' + msg[objectKey].frames[frameKey].name + '</div>' +
+                    '<div style="display: inline-block; width: 70px; text-align: center;">' +
+                    //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].version + '</span>' +
+                     ' ' +
+                    '</div>' +
+                    '<div style="display: inline-block; width: 140px; text-align: center;">' +
+                    //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].ip + '</span>' +
+                    ' ' +
+                    '</div>' +
+                    '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
+                    '<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].nodes + '</span>' +
+                    '</div>' +
+                    '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
+                    '<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].links + '</span>' +
+                    '</div>'+
+                    '</div>';
+                   
+                
+            }
 
+            appendText += '</li>';
         }
-
+        
         appendText += '</ul></div>';
 
         document.getElementById("objectList").innerHTML = appendText;

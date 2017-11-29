@@ -108,7 +108,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
 
 
         for (var key in objects) {
-            if (!globalObjects.hasOwnProperty(key)) {
+            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(key)) {
                 continue;
             }
 

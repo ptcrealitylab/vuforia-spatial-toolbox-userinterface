@@ -51,7 +51,7 @@
 createNameSpace("realityEditor.gui.ar");
 
 realityEditor.gui.ar.timeCorrection = {delta: 0, now: 0, then: 0};
-realityEditor.gui.ar.globalObjects = "";
+realityEditor.gui.ar.realityEditor.gui.ar.draw.visibleObjects = "";
 realityEditor.gui.ar.timeForContentLoaded = 240; // temporary set to 1000x with the UI Recording mode for video recording
 
 /**********************************************************************************************************************
@@ -192,18 +192,22 @@ realityEditor.gui.ar.getVisibleNodes = function() {
     var visibleNodes = [];
 
     for (var objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) continue;
-        if (globalObjects.hasOwnProperty(objectKey)) { // this is a way to check which objects are currently visible
-            var thisObject = objects[objectKey];
+        for (var frameKey in objects[objectKey].frames) {
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            if (!thisFrame) continue;
+            if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // this is a way to check which objects are currently visible
+               // var thisObject = objects[objectKey];
 
-            for (var nodeKey in thisObject.nodes) {
-                if (!thisObject.nodes.hasOwnProperty(nodeKey)) continue;
+                for (var nodeKey in thisFrame.nodes) {
+                    if (!thisFrame.nodes.hasOwnProperty(nodeKey)) continue;
 
-                if (realityEditor.gui.ar.utilities.isNodeWithinScreen(thisObject, nodeKey)) {
-                    visibleNodes.push({
-                        objectKey: objectKey,
-                        nodeKey: nodeKey
-                    });
+                    if (realityEditor.gui.ar.utilities.isNodeWithinScreen(thisFrame, nodeKey)) {
+                        visibleNodes.push({
+                            objectKey: objectKey,
+                            frameKey: frameKey,
+                            nodeKey: nodeKey
+                        });
+                    }
                 }
             }
         }
@@ -218,21 +222,24 @@ realityEditor.gui.ar.getVisibleLinks = function(visibleNodes) {
     var visibleLinks = [];
 
     for (var objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) continue;
-        var thisObject = objects[objectKey];
-        
-        for (var linkKey in thisObject.links) {
-            if (!thisObject.links.hasOwnProperty(linkKey)) continue;
-            var thisLink = thisObject.links[linkKey];
+        for (var frameKey in objects[objectKey].frames) {
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            if (!thisFrame) continue;
+            
+            for (var linkKey in thisFrame.links) {
+                if (!thisFrame.links.hasOwnProperty(linkKey)) continue;
+                var thisLink = thisFrame.links[linkKey];
 
-            var isVisibleNodeA = visibleNodeKeys.indexOf(thisLink.nodeA) > -1;
-            var isVisibleNodeB = visibleNodeKeys.indexOf(thisLink.nodeB) > -1;
+                var isVisibleNodeA = visibleNodeKeys.indexOf(thisLink.nodeA) > -1;
+                var isVisibleNodeB = visibleNodeKeys.indexOf(thisLink.nodeB) > -1;
 
-            if (isVisibleNodeA || isVisibleNodeB) {
-                visibleLinks.push({
-                    objectKey: objectKey,
-                    linkKey: linkKey
-                });
+                if (isVisibleNodeA || isVisibleNodeB) {
+                    visibleLinks.push({
+                        objectKey: objectKey,
+                        frameKey: frameKey,
+                        linkKey: linkKey
+                    });
+                }
             }
         }
     }

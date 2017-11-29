@@ -269,7 +269,7 @@ MemoryContainer.prototype.onPointerUp = function() {
         overlayDiv.classList.remove('overlayMemory');
         overlayDiv.style.display = 'none';
         activeThumbnail = '';
-        var potentialObjects = Object.keys(globalObjects);
+        var potentialObjects = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
         if (potentialObjects.length !== 1) {
             console.warn('Memorization attempted with multiple objects');
         } else {
@@ -507,7 +507,7 @@ function getMemoryWithId(id) {
 
 function memoryCanCreate() {
     // Exactly one visible object
-    if (Object.keys(globalObjects).length !== 1 || typeof globalObjects.dummy !== 'undefined') {
+    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1 || typeof realityEditor.gui.ar.draw.visibleObjects.dummy !== 'undefined') {
         return false;
     }
     if (globalStates.freezeButtonState) {

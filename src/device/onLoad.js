@@ -59,7 +59,7 @@ function helloWorld(cb){
 createNameSpace("realityEditor.device");
 
 realityEditor.device.onload = function () {
-    
+
     realityEditor.gui.menus.init();
 
     realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
