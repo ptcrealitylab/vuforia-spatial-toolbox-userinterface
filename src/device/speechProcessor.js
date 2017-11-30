@@ -2,7 +2,8 @@ createNameSpace('realityEditor.device.speechProcessor');
 
 realityEditor.device.speechProcessor.states = {
     pendingWordData: [],
-    previousTranscription: null
+    previousTranscription: null,
+    highlightedLocation: null
 };
 
 realityEditor.device.speechProcessor.speechRecordingCallback = function(bestTranscription) {
@@ -118,6 +119,12 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
         }
     }
     
+    // provide visual feedback to show the user which node they highlighted
+    if (category === 'LOCATION') {
+        var location = this.resolveLocation(wordData);
+        this.highlightLocation(location);
+    }
+    
     return {
         word: wordData.word,
         index: wordData.index,
@@ -158,15 +165,21 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
     var actionPerformed = null;
     
     while (actionWords.length > 0) {
+
         var action = actionWords.shift();
 
+        if (action.word === 'stop' || action.word === 'reset') {
+            this.resetSpeechRecording();
+            return;
+        }
+        
         if (action.word === 'connect') {
             var locationsAfterAction = locationWords.filter(function(wordData) {
                 return wordData.index > action.index;
             });
             if (locationsAfterAction.length >= 2) {
-                var locationA = locationsAfterAction.shift(); //locationWords.shift();
-                var locationB = locationsAfterAction.shift(); //locationWords.shift();
+                var locationB = locationsAfterAction.pop(); //locationWords.shift();
+                var locationA = locationsAfterAction.pop(); //locationWords.shift();
                 console.log('connect ' + locationA.word + ' with ' + locationB.word);
                 
                 var linkLocationA = this.resolveLocation(locationA);
@@ -177,6 +190,8 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
             }
         }
 
+        // TODO: implement other voice commands
+        /*
         else if (action.word === 'disconnect') {
             if (locationWords.length >= 2) {
                 console.log('disconnect ' + locationWords.shift().word + ' with ' + locationWords.shift().word);
@@ -204,6 +219,7 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
                 actionPerformed = "set";
             }
         }
+        */
         
         else if (action.word === 'stop') {
             actionPerformed = 'stop';
@@ -242,6 +258,7 @@ realityEditor.device.speechProcessor.resetSpeechRecording = function() {
     console.log("RESET SPEECH RECORDING");
 
     this.states.pendingWordData = [];
+    this.resetPreviouslyHighlightedLocation(this.states.highlightedLocation);
 
     realityEditor.app.stopSpeechRecording();
 
@@ -372,4 +389,30 @@ realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey) {
         });
     }
     return nodeNamesAndKeys;
+};
+
+realityEditor.device.speechProcessor.highlightLocation = function(location) {
+    if (location && location.objectKey && location.nodeKey) {
+        var nodeDom = globalDOMCach["iframe" + location.nodeKey];
+        if (nodeDom) {
+            var contentForFeedback = 3;
+            nodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
+        }
+        
+        // reset previously highlighted location
+        this.resetPreviouslyHighlightedLocation(this.states.highlightedLocation);
+        this.states.highlightedLocation = location;
+    }
+};
+
+realityEditor.device.speechProcessor.resetPreviouslyHighlightedLocation = function() {
+    var previousLocation = this.states.highlightedLocation;
+    if (previousLocation && previousLocation.objectKey && previousLocation.nodeKey) {
+        var previousNodeDom = globalDOMCach["iframe" + previousLocation.nodeKey];
+        if (previousNodeDom) {
+            var contentForFeedback = 1;
+            nodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
+        }
+    }
+    this.states.highlightedLocation = null;
 };
