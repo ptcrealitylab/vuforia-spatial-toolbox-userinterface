@@ -6,7 +6,7 @@ realityEditor.device.speechProcessor.states = {
 };
 
 realityEditor.device.speechProcessor.speechRecordingCallback = function(bestTranscription) {
-    if (bestTranscription != realityEditor.device.speechProcessor.states.previousTranscription) {
+    if (bestTranscription !== realityEditor.device.speechProcessor.states.previousTranscription) {
         realityEditor.device.speechProcessor.parsePhrase(bestTranscription);
         realityEditor.device.speechProcessor.states.previousTranscription = bestTranscription;
     }
@@ -68,6 +68,7 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
     ];
     var nodeNames = this.getNodeNamesAndKeys(wordData.contextObject).map(function(node){return node.name;});
     locationVocab.push.apply(locationVocab, nodeNames);
+    console.log(locationVocab);
     
     // TODO: add object names for other objects around the room
     
@@ -104,6 +105,17 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
         category = 'DATA';
     } else if (pivotVocab.indexOf(wordData.word) > -1) {
         category = 'PIVOT';
+    }
+
+    // check if matched node with 2-word name
+    if (this.states.pendingWordData.length > 0) {
+        var previousWordData = this.states.pendingWordData[this.states.pendingWordData.length-1];
+        var complexName = previousWordData.word + " " + wordData.word;
+        if (locationVocab.indexOf(complexName) > -1) {
+            console.log("Matched node location: " + complexName);
+            this.states.pendingWordData.pop();
+            wordData.word = complexName;
+        }
     }
     
     return {
@@ -149,9 +161,12 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
         var action = actionWords.shift();
 
         if (action.word === 'connect') {
-            if (locationWords.length >= 2) {
-                var locationA = locationWords.shift();
-                var locationB = locationWords.shift();
+            var locationsAfterAction = locationWords.filter(function(wordData) {
+                return wordData.index > action.index;
+            });
+            if (locationsAfterAction.length >= 2) {
+                var locationA = locationsAfterAction.shift(); //locationWords.shift();
+                var locationB = locationsAfterAction.shift(); //locationWords.shift();
                 console.log('connect ' + locationA.word + ' with ' + locationB.word);
                 
                 var linkLocationA = this.resolveLocation(locationA);
@@ -202,6 +217,17 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
     }
     
 };
+
+// TODO: implement this to only perform each action after a 2 second delay at end of speech, rather than immediately,
+// TODO: ...this will allow nodes with multiple word names to be recognized as a whole instead of stopping at first word
+// var timeout;
+// function performSpeechActionUnlessNewWords(action, data) {
+//     clearTimeout(timeout);
+//     timeout = setTimeout(function() {
+//         // perform action passed in
+//     }, 2000);
+//     // clear previous timeout if it gets called again
+// }
 
 
 ////////////////////////////////////////////////////////////////////////////

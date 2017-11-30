@@ -223,7 +223,7 @@ realityEditor.gui.ar.draw.update = function(visibleObjects) {
                         if (!objects[objectKey].nodes.hasOwnProperty(nodeKey)) return;
 
                         var nodeDom = document.getElementById('thisObject' + nodeKey);
-                        if (nodeDom) {
+                        if (nodeDom && nodeDom.style.opacity !== 1.0) {
                             nodeDom.style.opacity = 1.0; //1.0;
                         }
                     });
@@ -231,11 +231,14 @@ realityEditor.gui.ar.draw.update = function(visibleObjects) {
                 });
 
                 // console.log("closest", closest);
-                document.getElementById('thisObject' + closest.nodeKey).style.opacity = 0.33; //opacity = 0.33;
+                var closestNodeDom = document.getElementById('thisObject' + closest.nodeKey);
+                if (closestNodeDom && closestNodeDom.style.opacity !== 0.33) {
+                    closestNodeDom.style.opacity = 0.33; // opacity = 0.33;
+                }
 
                 nodeCounter = 0;
             }
-            
+
         }
         
     }
