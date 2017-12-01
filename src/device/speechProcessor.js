@@ -29,6 +29,8 @@ realityEditor.device.speechProcessor.parsePhrase = function(phrase) {
     
     // 4. match against action recipes
     this.recipeMatcher(lastWordData);
+
+    this.updateSpeechConsole();
 };
 
 realityEditor.device.speechProcessor.lastWordExtractor = function(phrase) {
@@ -254,6 +256,16 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
 //     this.states.pendingWordData = [];
 // };
 
+realityEditor.device.speechProcessor.updateSpeechConsole = function() {
+    var consoleElement = document.getElementById('speechConsole'); //.style.display = 'none';
+    if (consoleElement) {
+        consoleElement.innerHTML = '';
+        this.states.pendingWordData.forEach(function(wordData) {
+            consoleElement.innerHTML += wordData.word + ' ';
+        });
+    }
+};
+
 realityEditor.device.speechProcessor.resetSpeechRecording = function() {
     console.log("RESET SPEECH RECORDING");
 
@@ -411,7 +423,7 @@ realityEditor.device.speechProcessor.resetPreviouslyHighlightedLocation = functi
         var previousNodeDom = globalDOMCach["iframe" + previousLocation.nodeKey];
         if (previousNodeDom) {
             var contentForFeedback = 1;
-            nodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
+            previousNodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
         }
     }
     this.states.highlightedLocation = null;

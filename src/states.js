@@ -66,6 +66,7 @@ var globalStates = {
 	moveDelay : 1000,
 	tempUuid : "0000",
 	debug: false,
+    debugSpeechConsole: false,
 	overlay: 0,
 	device: "",
 	// drawWithLines
