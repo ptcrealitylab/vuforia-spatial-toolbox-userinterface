@@ -132,6 +132,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
         if (!objects[beat.id]) {
             this.getData(beat.id, null, null, 'http://' + beat.ip + ':' + httpPort + '/object/' + beat.id, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey) {
+                    
+                    //TODO: DEBUG BEN REMOVE - THIS PREVENTS OLD OBJECTS WITHOUT FRAMES FROM BEING ADDED
+                    if (msg.version !== "3.0.0") return;
+                    
                     objects[objectKey] = msg;
                     
                     var thisObject = realityEditor.getObject(objectKey);
@@ -578,12 +582,15 @@ realityEditor.network.onInternalPostMessage = function (e) {
         msgContent = JSON.parse(e);
     }
 
+    // console.log("      onInternalPostMessage");
+    // console.log("frame: " + msgContent.frame + ", node: " + msgContent.node + ", width: " + msgContent.width);
+    // console.log("\n\n");
+
     if (typeof msgContent.settings !== "undefined") {
         realityEditor.network.onSettingPostMessage(msgContent);
         return;
     }
-
-
+    
     if (msgContent.resendOnElementLoad) {
         var elt = document.getElementById('iframe' + msgContent.nodeKey);
         if (elt) {
@@ -604,8 +611,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
         msgContent.node = msgContent.pos;
     }
     
-    var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+    // var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+    // var thisNode = realityEditor.getNode(msgContent.node);
+    // var activeVehicle = thisNode || thisFrame;
     
+        // TODO: bring this pack to make pocketItem part work
+        /*
     if (thisFrame) {
         if (msgContent.node && (msgContent.node in thisFrame.nodes)) {
             tempThisObject = thisFrame.nodes[msgContent.node];
@@ -623,6 +634,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
 
     } else return;
+    */
 
     // if (msgContent.node && msgContent.width && msgContent.height) {
     //     var thisMsgNode = document.getElementById(msgContent.node);
@@ -802,7 +814,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.beginTouchEditing !== "undefined") {
-        var element = document.getElementById(msgContent.node);
+        var activeKey = msgContent.node || msgContent.frame;
+        var element = document.getElementById(activeKey);
         realityEditor.device.beginTouchEditing(element);
     }
 

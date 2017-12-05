@@ -228,32 +228,26 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 
 	if (globalProgram.objectA) {
 
-		var oA = realityEditor.getFrame(globalProgram.objectA, globalProgram.frameA);
-
-
-		var tempStart = oA.nodes[globalProgram.nodeA];
+        var objectA = realityEditor.getObject(globalProgram.objectA);
+        var frameA = realityEditor.getFrame(globalProgram.objectA, globalProgram.frameA);
+		var nodeA = realityEditor.getNode(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA);
 
 		// this is for making sure that the line is drawn out of the screen... Don't know why this got lost somewhere down the road.
 		// linearize a non linear zBuffer
 
 		// map the linearized zBuffer to the final ball size
-		if (!oA.objectVisible) {
-			tempStart.screenX = globalStates.pointerPosition[0];
-			tempStart.screenY = -10;
-			tempStart.screenZ = 6;
-		} else {
-			if(tempStart.screenLinearZ)
-				tempStart.screenZ = tempStart.screenLinearZ;
+		if (!objectA.objectVisible) {
+            nodeA.screenX = globalStates.pointerPosition[0];
+            nodeA.screenY = -10;
+            nodeA.screenZ = 6;
+			
+		} else if(nodeA.screenLinearZ) {
+            nodeA.screenZ = nodeA.screenLinearZ;
 		}
 
-		var logicA;
-		if (globalProgram.logicA == null || globalProgram.logicA === false) {
-			logicA = 4;
-		} else {
-			logicA = globalProgram.logicA;
-		}
+		var logicA = globalProgram.logicA || 4;
 
-		this.drawLine(globalCanvas.context, [tempStart.screenX, tempStart.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], tempStart.screenZ, tempStart.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector);
+		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector);
 	}
 
 	if (globalStates.drawDotLine) {
