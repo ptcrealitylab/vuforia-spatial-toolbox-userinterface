@@ -321,7 +321,7 @@ realityEditor.device.getEditingModeObject = function() {
             return objects[objectId].frames[frameId].nodes[nodeId];
         }
     } else {
-        return objects[objectId];
+        return objects[frameId];
     }
 };
 
@@ -536,7 +536,6 @@ realityEditor.device.onTouchMove = function(evt) {
             tempThisObject.x = matrixTouch[0];
             tempThisObject.y = matrixTouch[1];
         }
-        //}
     }
 
     if(!globalStates.editingMode) {
@@ -593,7 +592,7 @@ realityEditor.device.onDocumentPointerMove = function (evt) {
  * @desc
  * @param evt
  **/
- 
+
 realityEditor.device.onDocumentPointerUp = function(evt) {
     
     var nodeCalculations = realityEditor.gui.ar.draw.nodeCalculations;
@@ -645,6 +644,7 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
                     globalDOMCach[pocketItemId].objectId = nodeCalculations.farFrontElement;
 
                     realityEditor.network.postNewLogicNode(objects[nodeCalculations.farFrontElement].ip, nodeCalculations.farFrontElement, pocketItemId, thisItem);
+                    
                 }
 
 			}

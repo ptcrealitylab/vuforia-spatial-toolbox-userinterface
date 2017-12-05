@@ -99,7 +99,7 @@ realityEditor.gui.ar.lines.deleteLines = function(x21, y21, x22, y22) {
                 }
 
                 if (this.realityEditor.gui.utilities.checkLineCross(bA.screenX, bA.screenY, bB.screenX, bB.screenY, x21, y21, x22, y22, globalCanvas.canvas.width, globalCanvas.canvas.height)) {
-
+                    
                     if (realityEditor.device.security.isLinkActionAllowed(objectKey, frameKey, linkKey, "delete")) {
                         delete thisFrame.links[linkKey];
                         this.cout("iam executing link deletion");

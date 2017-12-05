@@ -135,7 +135,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     
                     //TODO: DEBUG BEN REMOVE - THIS PREVENTS OLD OBJECTS WITHOUT FRAMES FROM BEING ADDED
                     if (msg.version !== "3.0.0") return;
-                    
+
                     objects[objectKey] = msg;
                     
                     var thisObject = realityEditor.getObject(objectKey);
@@ -624,6 +624,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             tempThisObject = thisFrame;
         }
 
+
     } else if (msgContent.frame in pocketItem) {
         if (msgContent.node === msgContent.object) {
             tempThisObject = pocketItem[msgContent.frame];
@@ -907,8 +908,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 }
             }
         }
-
-        // console.log("this",thisObjects);
         
         self.contentWindow.postMessage(JSON.stringify({getObjects: thisObjects}), "*");
     }
@@ -1177,6 +1176,7 @@ realityEditor.network.postData = function (url, body, callback) {
 };
 
 realityEditor.network.postLinkToServer = function (thisLink, objects) {
+
     var thisObjectA = realityEditor.getObject(thisLink.objectA);
     var thisFrameA = realityEditor.getFrame(thisLink.objectA, thisLink.frameA);
     var thisNodeA = realityEditor.getNode(thisLink.objectA, thisLink.frameA, thisLink.nodeA);
@@ -1184,6 +1184,7 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
     var thisObjectB = realityEditor.getObject(thisLink.objectB);
     var thisFrameB = realityEditor.getFrame(thisLink.objectB, thisLink.frameB);
     var thisNodeB = realityEditor.getNode(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
+
     
     var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB);
     
@@ -1194,7 +1195,7 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
         var color = "";
 
         if (thisLink.logicA !== false) {
-            
+
             if (thisLink.logicA === 0) color = "BLUE";
             if (thisLink.logicA === 1) color = "GREEN";
             if (thisLink.logicA === 2) color = "YELLOW";
@@ -1216,7 +1217,6 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
         } else {
             namesB = [thisObjectB.name, thisFrameB.name, thisNodeB.name];
         }
-        
 
         // this is for backword compatibility
         if (this.testVersion(thisLink.objectA) > 165) {
@@ -1409,8 +1409,8 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     }
 
     content.lastEditor = globalStates.tempUuid;
+    
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-        console.log('resize');
         var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/";
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
@@ -1475,7 +1475,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     globalDOMCach["iframe" + activeKey]._loaded = true;
     globalDOMCach["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
     this.cout("on_load");
-
+    
 };
 
 /**

@@ -145,6 +145,7 @@ realityEditor.device.security.isNodeActionAllowed = function(objectKey, frameKey
     if (!node) {
         return false;
     }
+
     var lockPassword = node.lockPassword;
     var lockType = node.lockType;
     var isLocked = !!lockPassword && !!lockType;
