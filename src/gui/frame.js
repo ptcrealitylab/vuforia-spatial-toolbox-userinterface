@@ -201,8 +201,11 @@ FrameTouchSynthesizer.prototype.onPointerEvent = function(event) {
 };
 
 FrameTouchSynthesizer.prototype.beginTouchEditing = function() {
-    var nodeKey = this.iframe.dataset.nodeKey;
-    realityEditor.device.beginTouchEditing(document.getElementById(nodeKey));
+    var activeKey = this.iframe.dataset.nodeKey;
+    if (!activeKey || activeKey === "null") {
+        activeKey = this.iframe.dataset.frameKey;
+    }
+    realityEditor.device.beginTouchEditing(document.getElementById(activeKey));
 };
 
 FrameTouchSynthesizer.prototype.remove = function() {

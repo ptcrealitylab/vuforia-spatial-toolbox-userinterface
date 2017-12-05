@@ -176,7 +176,12 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
             closestObject.nodes[logicKey] = addedLogic;
 
             // render it
-            realityEditor.gui.ar.draw.addElement(closestObjectKey, logicKey, "nodes/logic/index.html", addedLogic, 'logic', globalStates);
+            // realityEditor.gui.ar.draw.addElement(closestObjectKey, logicKey, "nodes/logic/index.html", addedLogic, 'logic', globalStates);
+            var nodeUrl = "nodes/logic/index.html";
+            var closestFrameKey = logicKey;
+            // TODO: closestObjectAndNode also needs to include frame now
+            realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', this.activeVehicle); //addedLogic);
+
 
             var _thisNode = document.getElementById("iframe" + logicKey); //TODO: where does this get created??
             if (_thisNode) {

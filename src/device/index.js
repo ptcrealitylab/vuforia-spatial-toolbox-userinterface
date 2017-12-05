@@ -321,7 +321,7 @@ realityEditor.device.getEditingModeObject = function() {
             return objects[objectId].frames[frameId].nodes[nodeId];
         }
     } else {
-        return objects[frameId];
+        return objects[objectId];
     }
 };
 
@@ -496,54 +496,52 @@ realityEditor.device.onTouchLeave = function(evt) {
 realityEditor.device.trashActivated = true;
 
 realityEditor.device.onTouchMove = function(evt) {
-	var target = evt.currentTarget;
-	//if(globalStates.editingMode == true) {
-	if(evt.pageX >= (globalStates.height-60)){
+    var target = evt.currentTarget;
+    
+    if(evt.pageX >= (globalStates.height-60)){
+        
+        if(!realityEditor.device.trashActivated) {
+            overlayDiv.classList.remove('overlayAction');
+            overlayDiv.classList.add('overlayNegative');
+            realityEditor.device.trashActivated = true;
+        }
 
+    } else {
+        
+        if(realityEditor.device.trashActivated) {
+            overlayDiv.classList.remove('overlayNegative');
+            overlayDiv.classList.add('overlayAction');
+            realityEditor.device.trashActivated = false;
+        }
 
+    }
 
-		if(!realityEditor.device.trashActivated) {
-			overlayDiv.classList.remove('overlayAction');
-			overlayDiv.classList.add('overlayNegative');
+    if(	globalStates.editingNode === target.nodeId) {
 
-			realityEditor.device.trashActivated = true;
-		}
+        globalStates.editingModeObjectX = evt.pageX;
+        globalStates.editingModeObjectY = evt.pageY;
 
-	} else {
-		if(realityEditor.device.trashActivated) {
+        var tempThisObject = null;
 
-			overlayDiv.classList.remove('overlayNegative');
-			overlayDiv.classList.add('overlayAction');
+        if (target.type === 'logic' || target.type === 'node') {
+            tempThisObject = realityEditor.getNode(target.objectId, target.frameId, target.nodeId);
+            
+        } else {
+            tempThisObject = realityEditor.device.getEditingModeObject();
+        }
 
-			realityEditor.device.trashActivated = false;
-		}
+        var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
 
-	}
+        if (matrixTouch) {
+            tempThisObject.x = matrixTouch[0];
+            tempThisObject.y = matrixTouch[1];
+        }
+        //}
+    }
 
-		if(	globalStates.editingNode === target.nodeId) {
-
-			globalStates.editingModeObjectX = evt.pageX;
-			globalStates.editingModeObjectY = evt.pageY;
-
-			var tempThisObject = null;
-			if (target.type === 'logic' || target.type === 'node') {
-				tempThisObject = realityEditor.getNode(target.objectId, target.frameId, target.nodeId);
-			} else {
-				tempThisObject = realityEditor.device.getEditingModeObject();
-			}
-
-			var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
-
-			if (matrixTouch) {
-				tempThisObject.x = matrixTouch[0];
-				tempThisObject.y = matrixTouch[1];
-			}
-			//}
-		}
-
-	if(!globalStates.editingMode) {
-		clearTimeout(realityEditor.device.touchTimer);
-	}
+    if(!globalStates.editingMode) {
+        clearTimeout(realityEditor.device.touchTimer);
+    }
 };
 
 /**********************************************************************************************************************
@@ -595,10 +593,10 @@ realityEditor.device.onDocumentPointerMove = function (evt) {
  * @desc
  * @param evt
  **/
-
-realityEditor.device.nodeCalculations = realityEditor.gui.ar.draw.nodeCalculations;
-    
+ 
 realityEditor.device.onDocumentPointerUp = function(evt) {
+    
+    var nodeCalculations = realityEditor.gui.ar.draw.nodeCalculations;
 
 	globalStates.pointerPosition = [-1, -1];
 
@@ -606,52 +604,52 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 	clearTimeout(realityEditor.device.touchTimer);
     
 	if (globalStates.pocketButtonDown) {
-		pocketItem.pocket.objectVisible = false;
+		pocketItem["pocket"].objectVisible = false;
 
-		if (pocketItem.pocket.nodes[pocketItemId]) {
+		if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
 
-			this.nodeCalculations.farFrontElement = "";
-			this.nodeCalculations.frontDepth = 10000000000;
+			nodeCalculations.farFrontElement = "";
+			nodeCalculations.frontDepth = 10000000000;
             
 			// todo this needs to be checked against the far front frame.
 			
 			for (var thisOtherKey in realityEditor.gui.ar.draw.visibleObjects) {
-				if (realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14] < this.nodeCalculations.frontDepth) {
-					this.nodeCalculations.frontDepth = realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14];
-					this.nodeCalculations.farFrontElement = thisOtherKey;
+				if (realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14] < nodeCalculations.frontDepth) {
+					nodeCalculations.frontDepth = realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14];
+					nodeCalculations.farFrontElement = thisOtherKey;
 				}
 			}
 
-			var thisItem = pocketItem.pocket.nodes[pocketItemId];
+			var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 
-			if (this.nodeCalculations.farFrontElement !== "" && thisItem.screenZ !== 2 && thisItem.screenZ) {
+			if (nodeCalculations.farFrontElement !== "" && thisItem.screenZ !== 2 && thisItem.screenZ) {
 
 				var logicCount = 0;
-				for(var key in objects[this.nodeCalculations.farFrontElement].nodes) {
-					if(objects[this.nodeCalculations.farFrontElement].nodes[key].type === "logic"){
+				for(var key in objects[nodeCalculations.farFrontElement].nodes) {
+					if(objects[nodeCalculations.farFrontElement].nodes[key].type === "logic"){
 						logicCount++;
 					}
 				}
 				thisItem.name = "LOGIC"+logicCount;
 
 				// make sure that logic nodes only stick to 2.0 server version
-                if(realityEditor.network.testVersion(this.nodeCalculations.farFrontElement)>165) {
-                    objects[this.nodeCalculations.farFrontElement].nodes[pocketItemId] = thisItem;
+                if(realityEditor.network.testVersion(nodeCalculations.farFrontElement)>165) {
+                    objects[nodeCalculations.farFrontElement].nodes[pocketItemId] = thisItem;
 
                     var _thisNode = document.getElementById("iframe" + pocketItemId);
                     if (_thisNode) {
                         if (_thisNode._loaded)
-                            realityEditor.network.onElementLoad(this.nodeCalculations.farFrontElement, pocketItemId);
+                            realityEditor.network.onElementLoad(nodeCalculations.farFrontElement, pocketItemId);
                     }
 
-                    globalDOMCach[pocketItemId].objectId = this.nodeCalculations.farFrontElement;
+                    globalDOMCach[pocketItemId].objectId = nodeCalculations.farFrontElement;
 
-                    realityEditor.network.postNewLogicNode(objects[this.nodeCalculations.farFrontElement].ip, this.nodeCalculations.farFrontElement, pocketItemId, thisItem);
+                    realityEditor.network.postNewLogicNode(objects[nodeCalculations.farFrontElement].ip, nodeCalculations.farFrontElement, pocketItemId, thisItem);
                 }
 
 			}
-			realityEditor.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem.pocket.nodes[pocketItemId], "logic");
-			delete pocketItem.pocket.nodes[pocketItemId];
+			realityEditor.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
+			delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 		}
 	}
 
@@ -741,19 +739,20 @@ realityEditor.device.onMultiTouchStart = function(evt) {
 		evt.preventDefault();
 	}
 	var target = evt.currentTarget;
-// generate action for all links to be reloaded after upload
+    // generate action for all links to be reloaded after upload
 
-	if (globalStates.editingMode && evt.targetTouches.length === 1) {
+	if (globalStates.editingMode && evt.targetTouches && evt.targetTouches.length === 1) {
 		console.log("--------------------------------"+target.objectId);
 		globalStates.editingModeObject = target.objectId;
         globalStates.editingModeFrame = target.frameId;
 		globalStates.editingModeLocation = target.nodeId;
 		globalStates.editingModeKind = target.type;
 		globalStates.editingModeHaveObject = true;
-		if(target.type === "logic")
-        // realityEditor.gui.menus.on("bigTrash",[]);
-        realityEditor.gui.menus.on("trashOrSave", []);
-		//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
+		if(target.type === "logic") {
+            // realityEditor.gui.menus.on("bigTrash",[]);
+            realityEditor.gui.menus.on("trashOrSave", []);
+            //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
+        }
 	}
 	realityEditor.gui.ar.draw.matrix.matrixtouchOn = target.nodeId;
 	realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
@@ -789,8 +788,6 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 		globalStates.editingModeObjectX = touch.pageX;
 		globalStates.editingModeObjectY = touch.pageY;
-
-
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 

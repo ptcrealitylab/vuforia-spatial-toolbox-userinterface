@@ -140,6 +140,11 @@ realityEditor.device.security.unlockVisibleNodesAndLinks = function() {
 // actionType = "edit", "create", "lock", "unlock"
 realityEditor.device.security.isNodeActionAllowed = function(objectKey, frameKey, nodeKey, actionType) {
     var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+    
+    // TODO: this shouldn't actually be necessary - why are we trying to perform an action on a node that doesn't exist?
+    if (!node) {
+        return false;
+    }
     var lockPassword = node.lockPassword;
     var lockType = node.lockType;
     var isLocked = !!lockPassword && !!lockType;

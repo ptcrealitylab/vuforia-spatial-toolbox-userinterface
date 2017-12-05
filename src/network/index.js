@@ -240,7 +240,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     objects[objectKey].uuid = objectKey;
 
                     for (var frameKey in objects[objectKey].frames) {
-                        objects[objectKey].frames[frameKey].uuis = frameKey;
+                        objects[objectKey].frames[frameKey].uuid = frameKey;
                         for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
                             objects[objectKey].frames[frameKey].nodes[nodeKey].uuid = nodeKey;
                         }
@@ -574,7 +574,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
     var msgContent = {};
     if (e.data) {
         msgContent = JSON.parse(e.data);
-
     } else {
         msgContent = JSON.parse(e);
     }
@@ -594,17 +593,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     var tempThisObject = {};
-    var thisVersionNumber;
-
-    if (!msgContent.version) {
-        thisVersionNumber = 0;
-    }
-    else {
-        thisVersionNumber = msgContent.version;
-    }
+    var thisVersionNumber = msgContent.version || 0; // defaults to 0 if no version included
 
     if (thisVersionNumber >= 170) {
-        if ((!msgContent.object) || (!msgContent.object)) return;
+        if ((!msgContent.object) || (!msgContent.object)) return; // TODO: is this a typo? checks identical condition twice
     } else {
         if ((!msgContent.obj) || (!msgContent.pos)) return;
         msgContent.object = msgContent.obj;
@@ -614,14 +606,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
     
     var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
     
-    if (thisFrame !== null) {
-        if (msgContent.node === msgContent.frame) {
-            tempThisObject = thisFrame;
-        } else if (msgContent.node in thisFrame.nodes) {
+    if (thisFrame) {
+        if (msgContent.node && (msgContent.node in thisFrame.nodes)) {
             tempThisObject = thisFrame.nodes[msgContent.node];
-        } else if (msgContent.node in thisFrame.frames) {
-            tempThisObject = thisFrame.frames[msgContent.node];
-        } else return;
+        } else {
+            tempThisObject = thisFrame;
+        }
 
     } else if (msgContent.frame in pocketItem) {
         if (msgContent.node === msgContent.object) {
@@ -634,20 +624,47 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     } else return;
 
+    // if (msgContent.node && msgContent.width && msgContent.height) {
+    //     var thisMsgNode = document.getElementById(msgContent.node);
+    //     var top = ((globalStates.width - msgContent.height) / 2);
+    //     var left = ((globalStates.height - msgContent.width) / 2);
+    //     thisMsgNode.style.width = msgContent.width;
+    //     thisMsgNode.style.height = msgContent.height;
+    //     thisMsgNode.style.top = top;
+    //     thisMsgNode.style.left = left;
+    //
+    //     thisMsgNode = document.getElementById("iframe" + msgContent.node);
+    //     thisMsgNode.style.width = msgContent.width;
+    //     thisMsgNode.style.height = msgContent.height;
+    //     thisMsgNode.style.top = top;
+    //     thisMsgNode.style.left = left;
+    //
+    //     if (tempThisObject.frameTouchSynthesizer) {
+    //         var cover = tempThisObject.frameTouchSynthesizer.cover;
+    //         cover.style.width = msgContent.width;
+    //         cover.style.height = msgContent.height;
+    //         cover.style.top = top;
+    //         cover.style.left = left;
+    //     }
+    //
+    // } 
+    
     if (msgContent.width && msgContent.height) {
-        var thisMsgNode = document.getElementById(msgContent.node);
+        var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+        var overlay = document.getElementById(activeKey);
+        var iFrame = document.getElementById('iframe' + activeKey);
+
         var top = ((globalStates.width - msgContent.height) / 2);
         var left = ((globalStates.height - msgContent.width) / 2);
-        thisMsgNode.style.width = msgContent.width;
-        thisMsgNode.style.height = msgContent.height;
-        thisMsgNode.style.top = top;
-        thisMsgNode.style.left = left;
+        overlay.style.width = msgContent.width;
+        overlay.style.height = msgContent.height;
+        overlay.style.top = top;
+        overlay.style.left = left;
 
-        thisMsgNode = document.getElementById("iframe" + msgContent.node);
-        thisMsgNode.style.width = msgContent.width;
-        thisMsgNode.style.height = msgContent.height;
-        thisMsgNode.style.top = top;
-        thisMsgNode.style.left = left;
+        iFrame.style.width = msgContent.width;
+        iFrame.style.height = msgContent.height;
+        iFrame.style.top = top;
+        iFrame.style.left = left;
 
         if (tempThisObject.frameTouchSynthesizer) {
             var cover = tempThisObject.frameTouchSynthesizer.cover;
@@ -657,63 +674,54 @@ realityEditor.network.onInternalPostMessage = function (e) {
             cover.style.left = left;
         }
     }
-
-    if (typeof msgContent.sendMatrix !== "undefined") {
-
-        if (msgContent.sendMatrix === true) {
-
-            if (tempThisObject.integerVersion >= 32) {
-
-                tempThisObject.sendMatrix = true;
-                document.getElementById("iframe" + msgContent.node).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
-            }
+    
+    if (msgContent.sendMatrix === true) {
+        if (tempThisObject.integerVersion >= 32) {
+            tempThisObject.sendMatrix = true;
+            document.getElementById("iframe" + msgContent.node).contentWindow.postMessage(
+                '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
         }
     }
 
+    if (msgContent.sendAcceleration === true) {
 
-    if (typeof msgContent.sendAcceleration !== "undefined") {
-        console.log(msgContent.sendAcceleration);
-        if (msgContent.sendAcceleration === true) {
+        if (tempThisObject.integerVersion >= 32) {
 
-            if (tempThisObject.integerVersion >= 32) {
+            tempThisObject.sendAcceleration = true;
 
-                tempThisObject.sendAcceleration = true;
+            if (globalStates.sendAcceleration === false) {
+                globalStates.sendAcceleration = true;
+                if (window.DeviceMotionEvent) {
+                    console.log("motion activated");
 
-                if (globalStates.sendAcceleration === false) {
-                    globalStates.sendAcceleration = true;
-                    if (window.DeviceMotionEvent) {
-                        console.log("motion activated");
+                    window.addEventListener("deviceorientation", function () {
 
-                        window.addEventListener("deviceorientation", function () {
+                    });
 
-                        });
+                    window.addEventListener("devicemotion", function (event) {
 
-                        window.addEventListener("devicemotion", function (event) {
+                        var thisState = globalStates.acceleration;
 
-                            var thisState = globalStates.acceleration;
+                        thisState.x = event.acceleration.x;
+                        thisState.y = event.acceleration.y;
+                        thisState.z = event.acceleration.z;
 
-                            thisState.x = event.acceleration.x;
-                            thisState.y = event.acceleration.y;
-                            thisState.z = event.acceleration.z;
+                        thisState.alpha = event.rotationRate.alpha;
+                        thisState.beta = event.rotationRate.beta;
+                        thisState.gamma = event.rotationRate.gamma;
 
-                            thisState.alpha = event.rotationRate.alpha;
-                            thisState.beta = event.rotationRate.beta;
-                            thisState.gamma = event.rotationRate.gamma;
+                        // Manhattan Distance :-D
+                        thisState.motion =
+                            Math.abs(thisState.x) +
+                            Math.abs(thisState.y) +
+                            Math.abs(thisState.z) +
+                            Math.abs(thisState.alpha) +
+                            Math.abs(thisState.beta) +
+                            Math.abs(thisState.gamma);
 
-                            // Manhattan Distance :-D
-                            thisState.motion =
-                                Math.abs(thisState.x) +
-                                Math.abs(thisState.y) +
-                                Math.abs(thisState.z) +
-                                Math.abs(thisState.alpha) +
-                                Math.abs(thisState.beta) +
-                                Math.abs(thisState.gamma);
-
-                        }, false);
-                    } else {
-                        console.log("DeviceMotionEvent is not supported");
-                    }
+                    }, false);
+                } else {
+                    console.log("DeviceMotionEvent is not supported");
                 }
             }
         }
@@ -739,7 +747,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.fullScreen === "boolean") {
-        // console.log("gotfullscreenmessage");
         if (msgContent.fullScreen === true) {
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
@@ -888,7 +895,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
-        console.log("this",thisObjects);
+        // console.log("this",thisObjects);
         
         self.contentWindow.postMessage(JSON.stringify({getObjects: thisObjects}), "*");
     }
@@ -1157,13 +1164,13 @@ realityEditor.network.postData = function (url, body, callback) {
 };
 
 realityEditor.network.postLinkToServer = function (thisLink, objects) {
-    var thisObjectA = realityEditor.getFrame(thisLink.objectA);
+    var thisObjectA = realityEditor.getObject(thisLink.objectA);
     var thisFrameA = realityEditor.getFrame(thisLink.objectA, thisLink.frameA);
-    var thisNodeA = realityEditor.getFrame(thisLink.objectA, thisLink.frameA, thisLink.nodeA);
+    var thisNodeA = realityEditor.getNode(thisLink.objectA, thisLink.frameA, thisLink.nodeA);
 
-    var thisObjectB = realityEditor.getFrame(thisLink.objectB);
+    var thisObjectB = realityEditor.getObject(thisLink.objectB);
     var thisFrameB = realityEditor.getFrame(thisLink.objectB, thisLink.frameB);
-    var thisNodeB = realityEditor.getFrame(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
+    var thisNodeB = realityEditor.getNode(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
     
     var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB);
     
@@ -1174,9 +1181,7 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
         var color = "";
 
         if (thisLink.logicA !== false) {
-
-            color = "";
-
+            
             if (thisLink.logicA === 0) color = "BLUE";
             if (thisLink.logicA === 1) color = "GREEN";
             if (thisLink.logicA === 2) color = "YELLOW";
@@ -1188,9 +1193,7 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
         }
 
         if (thisLink.logicB !== false) {
-
-            color = "";
-
+            
             if (thisLink.logicB === 0) color = "BLUE";
             if (thisLink.logicB === 1) color = "GREEN";
             if (thisLink.logicB === 2) color = "YELLOW";
@@ -1200,9 +1203,7 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
         } else {
             namesB = [thisObjectB.name, thisFrameB.name, thisNodeB.name];
         }
-
-        //console.log(this.testVersion(thisLink.objectA));
-
+        
 
         // this is for backword compatibility
         if (this.testVersion(thisLink.objectA) > 165) {
@@ -1240,7 +1241,7 @@ realityEditor.network.postLinkToServer = function (thisLink, objects) {
         // push new connection to objectA
         //todo this is a work around to not crash the server. only temporarly for testing
         //  if(globalProgram.logicA === false && globalProgram.logicB === false) {
-        this.postNewLink(thisObjectA.ip, thisLink.objectA, thisLink.frameA, linkKey, thisObjectA.links[linkKey]);
+        this.postNewLink(thisObjectA.ip, thisLink.objectA, thisLink.frameA, linkKey, thisFrameA.links[linkKey]);
         //  }
     }
 };
@@ -1249,7 +1250,8 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
     // generate action for all links to be reloaded after upload
     thisLink.lastEditor = globalStates.tempUuid;
     this.cout("sending Link");
-    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/addLink/", thisLink, function () {
+    this.postData('http://' + ip + ':' + httpPort + '/addLink/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey, thisLink, function (err, response) {
+        console.log(response);
     });
 };
 
@@ -1395,8 +1397,10 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
 
     content.lastEditor = globalStates.tempUuid;
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-        this.postData('http://' + objects[object].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/", content, function () {
-        });
+        console.log('resize');
+        var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/";
+        console.log('url endpoint = ' + urlEndpoint);
+        this.postData(urlEndpoint, content);
     }
 
 };
@@ -1413,22 +1417,22 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
 realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     realityEditor.gui.ar.draw.notLoading = false;
+    
+    if (nodeKey === "null") nodeKey = null;
 
     // cout("posting Msg");
-    var nodes;
     var version = 170;
     var object = realityEditor.getObject(objectKey);
-    if (!object) {
-        nodes = {};
-    } else {
-        nodes = object.nodes;
+    if (object) {
         version = object.integerVersion;
     }
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    var nodes = (!!frame) ? frame.nodes : {};
 
     var oldStyle = {
         obj: objectKey,
         pos: nodeKey,
-        objectValues: nodes,
+        objectValues: (!!object) ? object.nodes : {},
         interface: globalStates.interface
     };
 
@@ -1452,26 +1456,12 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     if (version < 170 && objectKey === nodeKey) {
         newStyle = oldStyle;
     }
-    globalDOMCach["iframe" + nodeKey]._loaded = true;
-    globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(
-        JSON.stringify(newStyle), '*');
+    
+    var activeKey = nodeKey || frameKey;
+    
+    globalDOMCach["iframe" + activeKey]._loaded = true;
+    globalDOMCach["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
     this.cout("on_load");
-
-    /*
-        globalStates.interface = interface;
-    
-        for (var objectKey in objects) {
-            if (objects[objectKey].visible) {
-                globalDOMCach["iframe" + objectKey].contentWindow.postMessage(JSON.stringify({interface: globalStates.interface}), "*");
-            }
-    
-            for (var nodeKey in objects[objectKey].nodes) {
-                if (objects[objectKey].nodes[nodeKey].visible) {
-                    globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify({interface: globalStates.interface}), "*");
-                }
-            }
-        }
-        */
 
 };
 

@@ -78,11 +78,11 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
-	if(pocketItem.pocket.nodes[pocketItemId]){
+	if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
 
-		var thisItem = pocketItem.pocket.nodes[pocketItemId];
+		var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 
-		if(realityEditor.gui.draw.nodeCalculations.farFrontElement==="") {
+		if(realityEditor.gui.ar.draw.nodeCalculations.farFrontElement==="") {
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
 

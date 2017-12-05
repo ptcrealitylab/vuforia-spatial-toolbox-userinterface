@@ -303,12 +303,12 @@ realityEditor.gui.buttons.pocketButtonEnter = function(event) {
     if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
         return;
     }
+    
+    if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
+        pocketItem["pocket"].objectVisible = false;
 
-    if (pocketItem.pocket.nodes[pocketItemId]) {
-        pocketItem.pocket.objectVisible = false;
-
-        this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem.pocket.nodes[pocketItemId], "logic");
-        delete pocketItem.pocket.nodes[pocketItemId];
+        this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
+        delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
     }
 };
 
@@ -337,11 +337,11 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
 
         pocketItemId = realityEditor.device.utilities.uuidTime();
         console.log(pocketItemId);
-        pocketItem.pocket.nodes[pocketItemId] = new Logic();
+        pocketItem["pocket"].frames["pocket"].nodes[pocketItemId] = new Logic();
 
-        var thisItem = pocketItem.pocket.nodes[pocketItemId];
+        var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 
-            thisItem.uuid = pocketItemId;
+        thisItem.uuid = pocketItemId;
 
         thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
         thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
@@ -353,7 +353,7 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         //}
         thisItem.loaded = false;
 
-        var thisObject = pocketItem.pocket;
+        var thisObject = pocketItem["pocket"];
         // this is a work around to set the state of an objects to not being visible.
         thisObject.objectId = "pocket";
         thisObject.name = "pocket";
@@ -370,7 +370,7 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         //
         //thisObject.visibleCounter = timeForContentLoaded;
 
-        //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem.pocket, "logic",globalStates);
+        //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
 
     }
     realityEditor.gui.pocket.setPocketPosition(event);

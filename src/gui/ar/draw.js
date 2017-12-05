@@ -144,64 +144,65 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.globalCanvas.hasContent = false;
     }
 
-    for (this.objectKey in objects) {
-        this.activeObject = realityEditor.getObject(this.objectKey);
+    for (var objectKey in objects) {
+        this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
-        if (this.visibleObjects.hasOwnProperty(this.objectKey)) {
+        if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.activeObject.objectVisible = true;
 
-            // this.activeObjectMatrix = multiplyMatrix(rotateX, multiplyMatrix(this.visibleObjects[this.objectKey], globalStates.projectionMatrix));
+            // this.activeObjectMatrix = multiplyMatrix(rotateX, multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix));
             this.activeObjectMatrix = [];
-            this.ar.utilities.multiplyMatrix(this.visibleObjects[this.objectKey], this.globalStates.projectionMatrix, this.matrix.r);
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
             this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
-            //  this.activeObjectMatrix2 = multiplyMatrix(this.visibleObjects[this.objectKey], globalStates.projectionMatrix);
+            //  this.activeObjectMatrix2 = multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix);
             //   document.getElementById("controls").innerHTML = (toAxisAngle(this.activeObjectMatrix2)[0]).toFixed(1)+" "+(toAxisAngle(this.activeObjectMatrix2)[1]).toFixed(1);
-
-            for (this.frameKey in objects[this.objectKey].frames) {
-                this.activeFrame = realityEditor.getFrame(this.objectKey, this.frameKey);
-                if (!this.activeFrame)  {
-                    console.log("break from frame: ",this.objectKey, this.frameKey);
-                    continue;   }
+            
+            for (var frameKey in objects[objectKey].frames) {
+                this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
+                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) { // TODO: BEN why is there a frame in each object with the same name as the object?
+                    // console.log("break from frame: ",objectKey, frameKey);
+                    continue;
+                }
                 // making sure that the node is always the object to draw
-                this.activeKey = this.frameKey;
+                this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
 
                 if (this.globalStates.guiState === "ui" || Object.keys(this.activeFrame.nodes).length === 0) {
-                    this.drawTransformed(this.visibleObjects, this.objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                    this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                         this.globalDOMCach, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout);
                     
-                    this.addElement("http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/",
-                        this.activeKey, this.objectKey, this.frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
+                    var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
+                    this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
                 }
                 else {
                   
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCach, this.cout);
                 }
 
-                for (this.nodeKey in this.activeFrame.nodes) {
-                    // if (!this.activeObject.nodes.hasOwnProperty(this.nodeKey)) { continue; }
+                for (var nodeKey in this.activeFrame.nodes) {
+                    // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) { continue; }
                     if (globalStates.guiState === "node" || globalStates.guiState === "logic") {
-                        this.activeNode = realityEditor.getNode(this.objectKey, this.frameKey, this.nodeKey);
-                        this.activeKey = this.nodeKey;
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                        this.activeKey = nodeKey;
                         this.activeVehicle = this.activeNode;
                         this.activeType = this.activeNode.type;
 
-                        this.drawTransformed(this.visibleObjects, this.objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                        this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                             this.globalDOMCach, this.globalStates, this.globalCanvas,
                             this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                             this.nodeCalculations, this.cout);
                         
-                        this.addElement("nodes/" + this.activeType + "/index.html",
-                            this.activeKey, this.objectKey, this.frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
+                        var nodeUrl = "nodes/" + this.activeType + "/index.html";
+                        this.addElement(nodeUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeVehicle);
 
                     } else {
-                        this.activeNode = realityEditor.getNode(this.objectKey, this.frameKey, this.nodeKey);
-                        this.activeKey = this.nodeKey;
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                        this.activeKey = nodeKey;
                         this.activeVehicle = this.activeNode;
                       //  this.activeType = this.activeNode.type;
                       
@@ -210,10 +211,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 }
 
                 /*
-                for (this.nodeKey in this.activeObject.frames) {
-                    this.activeNode = this.activeObject.frames[this.nodeKey];
+                for (nodeKey in this.activeObject.frames) {
+                    this.activeNode = this.activeObject.frames[nodeKey];
                     if (globalStates.guiState === "ui") {
-                          this.drawTransformed(this.visibleObjects, this.objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                          this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                         this.globalDOMCach, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
@@ -224,11 +225,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         } else {
                             keyedSrc += '?';
                         }
-                        keyedSrc += 'nodeKey=' + this.nodeKey;
+                        keyedSrc += 'nodeKey=' + nodeKey;
                         this.addElement(keyedSrc,
-                        this.activeKey, this.objectKey, this.frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
+                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
                     } else {
-                        this.hideTransformed(this.objectKey, this.nodeKey, this.activeNode, "ui");
+                        this.hideTransformed(objectKey, nodeKey, this.activeNode, "ui");
                     }
                 }
                 */
@@ -237,22 +238,22 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         else {
             this.activeObject.objectVisible = false;
 
-            for (this.frameKey in objects[this.objectKey].frames) {
-                this.activeFrame = realityEditor.getFrame(this.objectKey, this.frameKey);
+            for (var frameKey in objects[objectKey].frames) {
+                this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 if (!this.activeFrame) {
-                    console.log("break from frame: ", this.objectKey, this.frameKey);
+                    console.log("break from frame: ", objectKey, frameKey);
                     continue;
                 }
                 // making sure that the node is always the object to draw
-                this.activeKey = this.frameKey;
+                this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
             
                 this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCach, this.cout);
 
-                for (this.nodeKey in this.activeFrame.nodes) {
-                    this.activeNode = realityEditor.getNode(this.objectKey, this.frameKey, this.nodeKey);
-                    this.activeKey = this.nodeKey;
+                for (var nodeKey in this.activeFrame.nodes) {
+                    this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                    this.activeKey = nodeKey;
                     this.activeVehicle = this.activeNode;
                     this.activeType = this.activeNode.type;
                     // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
@@ -261,13 +262,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 }
 
                 /*
-                for (this.nodeKey in this.activeObject.frames) {
-                    this.activeNode = realityEditor.getNode(this.objectKey, this.frameKey, this.frameKey);
-                    this.activeKey = this.nodeKey;
+                for (nodeKey in this.activeObject.frames) {
+                    this.activeNode = realityEditor.getNode(objectKey, frameKey, frameKey);
+                    this.activeKey = nodeKey;
                     this.activeVehicle = this.activeNode;
                     this.activeType = this.activeNode.type;
                     
-                    this.hideTransformed(this.objectKey, this.nodeKey, this.activeObject.frames[this.nodeKey], "ui");
+                    this.hideTransformed(objectKey, nodeKey, this.activeObject.frames[nodeKey], "ui");
                 }
                 */
 
@@ -279,8 +280,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
     // draw all lines
     if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && !globalStates.editingMode) {
-        for (this.objectKey in objects) {
-            this.ar.lines.drawAllLines(realityEditor.getFrame(this.objectKey, this.frameKey), this.globalCanvas.context);
+        for (var objectKey in objects) {
+            this.ar.lines.drawAllLines(realityEditor.getFrame(objectKey, frameKey), this.globalCanvas.context);
         }
         this.ar.lines.drawInteractionLines();
         //  cout("drawlines");
@@ -332,8 +333,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.activeObject.visibleCounter = timeForContentLoaded;
         this.activeObject.objectVisible = true;
 
-        this.objectKey = "pocket";
-        this.frameKey = "pocket";
+        objectKey = "pocket";
+        frameKey = "pocket";
 
         this.activeObjectMatrix = [];
 
@@ -365,25 +366,25 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             ]
         }
 
-        for (this.nodeKey in this.activeObject.nodes) {
-            //console.log(document.getElementById("iframe"+ this.nodeKey));
-            this.activeNode = this.activeObject.nodes[this.nodeKey];
+        for (nodeKey in this.activeObject.nodes) {
+            //console.log(document.getElementById("iframe"+ nodeKey));
+            this.activeNode = this.activeObject.nodes[nodeKey];
 
             if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && this.activeType === "logic") {
-                this.activeKey = this.nodeKey;
+                this.activeKey = nodeKey;
                 this.activeVehicle = this.activeNode;
                 this.activeType = this.activeNode.type;
 
-                t    this.drawTransformed(this.visibleObjects, this.objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                t    this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                         this.globalDOMCach, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
 
                 this.addElement("nodes/" + this.activeType + "/index.html",
-                        this.activeKey, this.objectKey, this.frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
+                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
 
                 // } else {
-                // hideTransformed("pocket", this.nodeKey, this.activeNode, "logic");
+                // hideTransformed("pocket", nodeKey, this.activeNode, "logic");
                 // }
             }
         }
@@ -409,16 +410,21 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
  * @return
  **/
 
-realityEditor.gui.ar.draw.drawTransformed = 
-    function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCach, globalStates, globalCanvas, 
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCach, globalStates, globalCanvas, 
               activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
     if (notLoading !== activeKey && activeVehicle.loaded === true) {
         if (!activeVehicle.visible) {
             activeVehicle.visible = true;
-            globalDOMCach["object" + activeKey].style.display = 'inline';
-            globalDOMCach["iframe" + activeKey].style.visibility = 'visible';
-            globalDOMCach["iframe" + activeKey].contentWindow.postMessage(
+            
+            var container = globalDOMCach["object" + activeKey];
+            var iFrame = globalDOMCach["iframe" + activeKey];
+            var overlay = globalDOMCach[activeKey];
+            var canvas = globalDOMCach["canvas" + activeKey]
+            
+            container.style.display = 'inline';
+            iFrame.style.visibility = 'visible';
+            iFrame.contentWindow.postMessage(
                 JSON.stringify(
                     {
                         visibility: "visible",
@@ -428,37 +434,33 @@ realityEditor.gui.ar.draw.drawTransformed =
 
             if (activeType === "node") {
                 activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
-                globalDOMCach[activeKey].style.visibility = 'visible';
-                // document.getElementById("text" + activeKey).style.visibility = 'visible';
+                overlay.style.visibility = 'visible';
                 if (globalStates.editingMode) {
-                    globalDOMCach["canvas" + activeKey].style.display = 'inline';
+                    canvas.style.display = 'inline';
                 } else {
-                    globalDOMCach["canvas" + activeKey].style.display = 'none';
+                    canvas.style.display = 'none';
                 }
+                
             } else if (activeType === "ui") {
                 if (globalStates.editingMode) {
                     if (!activeVehicle.visibleEditing && activeVehicle.developer) {
                         activeVehicle.visibleEditing = true;
-                        globalDOMCach[activeKey].style.visibility = 'visible';
-                        // showEditingStripes(activeKey, true);
-                        globalDOMCach["canvas" + activeKey].style.display = 'inline';
-
-                        //document.getElementById(activeKey).className = "mainProgram";
+                        overlay.style.visibility = 'visible';
+                        canvas.style.display = 'inline';
                     }
                 } else {
-                    globalDOMCach["canvas" + activeKey].style.display = 'none';
+                    canvas.style.display = 'none';
                 }
             }
 
 
             else if (activeType === "logic") {
                 activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
-                globalDOMCach[activeKey].style.visibility = 'visible';
-                // document.getElementById("text" + activeKey).style.visibility = 'visible';
+                overlay.style.visibility = 'visible';
                 if (globalStates.editingMode) {
-                    globalDOMCach["canvas" + activeKey].style.display = 'inline';
+                    canvas.style.display = 'inline';
                 } else {
-                    globalDOMCach["canvas" + activeKey].style.display = 'none';
+                    canvas.style.display = 'none';
                 }
             }
 
@@ -482,8 +484,8 @@ realityEditor.gui.ar.draw.drawTransformed =
              }
              }*/
 
-            if (type === "logic" && objectKey!=="pocket"){
-                if(thisObject.animationScale ===1) {
+            if (activeType === "logic" && objectKey!=="pocket"){
+                if(thisObject.animationScale === 1) {
                     globalDOMCach["logic" + nodeKey].className = "mainEditing scaleOut";
                     thisObject.animationScale =0;
                 }
@@ -562,7 +564,7 @@ realityEditor.gui.ar.draw.drawTransformed =
 
                 if (activeVehicle.matrix.length < 13) {
                     utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-                    console.log(activeVehicle);
+                    // console.log(activeVehicle);
                     
                 } else {
                     utilities.multiplyMatrix(activeVehicle.matrix, activeObjectMatrix, matrix.r);
@@ -728,12 +730,241 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
  * @return
  **/
 
+realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, nodeKey, activeType, activeVehicle) {
+
+    var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+    
+    if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
+
+        console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
+        console.log("(active key is " + activeKey + ")");
+
+        this.notLoading = activeKey;
+        
+        // assign the element some default properties if they don't exist
+
+        if (typeof activeVehicle.frameSizeX === 'undefined') {
+            activeVehicle.frameSizeX = activeVehicle.width;
+        }
+
+        if (typeof activeVehicle.frameSizeY === 'undefined') {
+            activeVehicle.frameSizeY = activeVehicle.height;
+        }
+        
+        activeVehicle.animationScale = 0;
+        activeVehicle.loaded = true;
+        activeVehicle.visibleEditing = false;
+
+        if (typeof activeVehicle.begin !== "object") {
+            activeVehicle.begin = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
+        }
+
+        if (typeof activeVehicle.temp !== "object") {
+            activeVehicle.temp = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
+        }
+        
+        // Create DOM elements for everything associated with this frame/node
+
+        var domElements = createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
+        var addContainer = domElements.addContainer;
+        var addIframe = domElements.addIframe;
+        var addOverlay = domElements.addOverlay;
+        var addCanvas = domElements.addCanvas;
+
+        addOverlay.objectId = objectKey;
+        addOverlay.frameId = frameKey;
+        addOverlay.nodeId = nodeKey;
+        addOverlay.type = activeType;
+        
+        // todo the event handlers need to be bound to non animated ui elements for fast movements.
+        // todo the lines need to end at the center of the square.
+
+        if (activeType === "logic") {
+            var addLogic = createLogicElement(activeVehicle);
+            addOverlay.appendChild(addLogic);
+            globalDOMCach["logic" + activeKey] = addLogic;
+        }
+
+        // Finally, append all the created elements to the DOM in the correct order...
+        
+        document.getElementById("GUI").appendChild(addContainer);
+        addContainer.appendChild(addIframe);
+        
+        // If this is a frame, add a cover object for touch event synthesizing
+        if (activeVehicle.src) {
+            var cover = document.createElement('div');
+            cover.classList.add('main');
+            cover.style.visibility = 'visible';
+            cover.style.width = addIframe.style.width;
+            cover.style.height = addIframe.style.height;
+            cover.style.top = addIframe.style.top;
+            cover.style.left = addIframe.style.left;
+            activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+            addContainer.appendChild(cover);
+        }
+        
+        addContainer.appendChild(addOverlay);
+        addOverlay.appendChild(addCanvas);
+
+        globalDOMCach[addContainer.id] = addContainer;
+        globalDOMCach[addIframe.id] = addIframe;
+        globalDOMCach[addOverlay.id] = addOverlay;
+        globalDOMCach[addCanvas.id] = addCanvas;
+        
+        // Add touch event listeners
+        
+        addOverlay.addEventListener("pointerdown", realityEditor.device.onTouchDown.bind(realityEditor.device), false);
+        ec++;
+        addOverlay.addEventListener("pointerup", realityEditor.device.onTrueTouchUp.bind(realityEditor.device), false);
+        ec++;
+        addOverlay.addEventListener("pointerenter", realityEditor.device.onTouchEnter.bind(realityEditor.device), false);
+        ec++;
+        addOverlay.addEventListener("pointerleave", realityEditor.device.onTouchLeave.bind(realityEditor.device), false);
+        ec++;
+        addOverlay.addEventListener("pointermove", realityEditor.device.onTouchMove.bind(realityEditor.device), false);
+        ec++;
+
+        if (globalStates.editingMode) {
+            // todo this needs to be changed backword
+            // if (objects[objectKey].developer) {
+            addOverlay.addEventListener("touchstart", realityEditor.device.onMultiTouchStart.bind(realityEditor.device), false);
+            ec++;
+            addOverlay.addEventListener("touchmove", realityEditor.device.onMultiTouchMove.bind(realityEditor.device), false);
+            ec++;
+            addOverlay.addEventListener("touchend", realityEditor.device.onMultiTouchEnd.bind(realityEditor.device), false);
+            ec++;
+            // addOverlay.className = "mainProgram";
+            //  }
+        }
+
+        if (activeType === "node") {
+            addOverlay.style.visibility = "visible";
+        } else if (activeType === "logic") {
+            addOverlay.style.visibility = "visible";
+        } else {
+            addOverlay.style.visibility = "hidden";
+        }
+
+    }
+    
+};
+
+var createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
+
+    var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+
+    var addContainer = document.createElement('div');
+    addContainer.id = "object" + activeKey;
+    addContainer.className = "main";
+    addContainer.style.width = globalStates.height + "px";
+    addContainer.style.height = globalStates.width + "px";
+    addContainer.style.display = "none";
+    addContainer.style.border = 0;
+
+    var addIframe = document.createElement('iframe');
+    addIframe.id = "iframe" + activeKey;
+    addIframe.className = "main";
+    addIframe.frameBorder = 0;
+    addIframe.style.width = (activeVehicle.width || 0) + "px";
+    addIframe.style.height = (activeVehicle.height || 0) + "px";
+    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeY) / 2) + "px";
+    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeX) / 2) + "px";
+    addIframe.style.visibility = "hidden";
+    addIframe.src = iframeSrc;
+    addIframe.dataset.nodeKey = nodeKey;
+    addIframe.dataset.frameKey = frameKey;
+    addIframe.dataset.objectKey = objectKey;
+    addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
+
+    var addOverlay = document.createElement('div');
+    addOverlay.id = activeKey;
+    addOverlay.className = globalStates.editingMode ? "mainProgram" : "mainEditing";
+    addOverlay.frameBorder = 0;
+    addOverlay.style.width = activeVehicle.frameSizeX + "px";
+    addOverlay.style.height = activeVehicle.frameSizeY + "px";
+    addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeY) / 2) + "px";
+    addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeX) / 2) + "px";
+    addOverlay.style.visibility = "hidden";
+    addOverlay.style["touch-action"] = "none";
+
+    var addCanvas = document.createElement('canvas');
+    addCanvas.id = "canvas" + activeKey;
+    addCanvas.className = "mainCanvas";
+    addCanvas.style.width = "100%";
+    addCanvas.style.height = "100%";
+    
+    return {
+        addContainer: addContainer,
+        addIframe: addIframe,
+        addOverlay: addOverlay,
+        addCanvas: addCanvas
+    };
+};
+
+var createLogicElement = function(activeVehicle) {
+    var size = 200;
+    var addLogic = document.createElement('div');
+    addLogic.id = "logic" + activeKey;
+    addLogic.className = "mainEditing";
+    addLogic.style.width = size + "px";
+    addLogic.style.height = size + "px";
+    addLogic.style.left = ((activeVehicle.frameSizeX - size) / 2) + "px";
+    addLogic.style.top = ((activeVehicle.frameSizeY - size) / 2) + "px";
+    addLogic.style.visibility = "hidden";
+
+    var svgContainer = document.createElementNS('http://www.w3.org/2000/svg', "svg");
+    svgContainer.setAttributeNS(null, "viewBox", "0 0 100 100");
+
+    var svgElement = [];
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[0].setAttributeNS(null, "fill", "#00ffff");
+    svgElement[0].setAttributeNS(null, "d", "M50,0V50H0V30A30,30,0,0,1,30,0Z");
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[1].setAttributeNS(null, "fill", "#00ff00");
+    svgElement[1].setAttributeNS(null, "d", "M100,30V50H50V0H70A30,30,0,0,1,100,30Z");
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[2].setAttributeNS(null, "fill", "#ffff00");
+    svgElement[2].setAttributeNS(null, "d", "M100,50V70a30,30,0,0,1-30,30H50V50Z");
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[3].setAttributeNS(null, "fill", "#ff007c");
+    svgElement[3].setAttributeNS(null, "d", "M50,50v50H30A30,30,0,0,1,0,70V50Z");
+
+    for (var i = 0; i < svgElement.length; i++) {
+        svgContainer.appendChild(svgElement[i]);
+        svgElement[i].number = i;
+        svgElement[i].addEventListener('pointerenter', function () {
+            globalProgram.logicSelector = this.number;
+
+            if (globalProgram.nodeA === activeKey)
+                globalProgram.logicA = this.number;
+            else
+                globalProgram.logicB = this.number;
+
+            console.log(globalProgram.logicSelector);
+        });
+        addLogic.appendChild(svgContainer);
+    }
+    
+    return addLogic;
+};
+
+/*
 realityEditor.gui.ar.draw.addElement = function (thisUrl, activeKey, objectKey, frameKey, activeType, notLoading, activeVehicle, globalStates, globalDOMCach) {
 
     if (notLoading !== true && notLoading !== activeKey && activeVehicle.loaded !== true) {
-
-
-        console.log("did load object " + objectKey + ", node " + activeKey);
+        
+        console.log("did load object " + objectKey + ", node/frame " + activeKey);
 
         if (typeof activeVehicle.frameSizeX === 'undefined') {
             activeVehicle.frameSizeX = activeVehicle.width;
@@ -822,13 +1053,13 @@ realityEditor.gui.ar.draw.addElement = function (thisUrl, activeKey, objectKey, 
             addLogic.style.top = ((activeVehicle.frameSizeY - size) / 2) + "px";
             addLogic.style.visibility = "hidden";
             addLogic.className = "mainEditing";
-            /* addLogic.innerHTML =
-             '<svg id="SVG'+activeKey+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
-             '<path id="logic4" fill="#00ffff" d="M50,0V50H0V30A30,30,0,0,1,30,0Z"/>' +
-             '<path id="logic3" fill="#00ff00" d="M100,30V50H50V0H70A30,30,0,0,1,100,30Z"/>' +
-             '<path id="logic2" fill="#ff007c" d="M100,50V70a30,30,0,0,1-30,30H50V50Z"/>>' +
-             '<path id="logic1" fill="#ffff00" d="M50,50v50H30A30,30,0,0,1,0,70V50Z"/>' +
-             '</svg>';*/
+            // addLogic.innerHTML =
+            //  '<svg id="SVG'+activeKey+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+            //  '<path id="logic4" fill="#00ffff" d="M50,0V50H0V30A30,30,0,0,1,30,0Z"/>' +
+            //  '<path id="logic3" fill="#00ff00" d="M100,30V50H50V0H70A30,30,0,0,1,100,30Z"/>' +
+            //  '<path id="logic2" fill="#ff007c" d="M100,50V70a30,30,0,0,1-30,30H50V50Z"/>>' +
+            //  '<path id="logic1" fill="#ffff00" d="M50,50v50H30A30,30,0,0,1,0,70V50Z"/>' +
+            //  '</svg>';
 
             var svgContainer = document.createElementNS('http://www.w3.org/2000/svg', "svg");
             svgContainer.setAttributeNS(null, "viewBox", "0 0 100 100");
@@ -945,6 +1176,7 @@ realityEditor.gui.ar.draw.addElement = function (thisUrl, activeKey, objectKey, 
 
     }
 };
+*/
 
 /**
  * @desc
@@ -968,8 +1200,8 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
         delete globalDOMCach[activeKey];
 
         for (activeKey in activeVehicle.nodes) {
+            if (!activeVehicle.nodes.hasOwnProperty(activeKey)) continue;
             try {
-
                 globalDOMCach["object" + activeKey].parentNode.removeChild(globalDOMCach["object" + activeKey]);
                 delete globalDOMCach["object" + activeKey];
                 delete globalDOMCach["iframe" + activeKey];
