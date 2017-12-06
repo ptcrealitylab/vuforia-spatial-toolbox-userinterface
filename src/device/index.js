@@ -396,10 +396,11 @@ realityEditor.device.onTrueTouchUp = function(evt){
             console.log("...delete node");
 
             for(var objectKey in objects){
+                var thisObject = realityEditor.getObject(objectKey);
                 for (var frameKey in objects[objectKey].frames) {
-                    var thisObject = realityEditor.getFrame(objectKey, frameKey);
-                    for (linkKey in thisObject.links) {
-                        var thisLink = thisObject.links[linkKey];
+                    var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+                    for (linkKey in thisFrame.links) {
+                        var thisLink = thisFrame.links[linkKey];
                         if (((thisLink.objectA === target.objectId) && (thisLink.frameA === target.frameId) && (thisLink.nodeA === target.nodeId)) ||
                             ((thisLink.objectB === target.objectId) && (thisLink.frameB === target.frameId) && (thisLink.nodeB === target.nodeId))) {
                             delete thisLink;
