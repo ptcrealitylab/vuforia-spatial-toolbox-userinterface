@@ -266,55 +266,38 @@ realityEditor.gui.crafting.eventHelper.shouldUploadBlock = function(block) {
 //    //return (!this.crafting.grid.isEdgePlaceholderLink(blockLink)); // add links to surrounding instead of uploading itself
 //};
 
-// todo add: if (!_.hasOwnProperty(key)) continue;
-realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys = function(logic) {
+/**
+ * Returns all identifiers necessary to make an API request for the provided logic object
+ * @param logic - logic object
+ * @param block - optional param, if included it includes the block key in the return value
+ * @returns {ip, objectKey, frameKey, logicKey, (optional) blockKey}
+ */
+realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys = function(logic, block) {
 
     for (var objectKey in objects) {
-        var object = objects[objectKey];
-        for (var frameKey in object.frames) {
-            var frame = object.frames[frameKey];
-            for (var logicKey in frame.nodes) {
-                if (frame.nodes[logicKey].type === "logic") {
-                    if (frame.nodes[logicKey].uuid === logic.logicID) {
-                        return {
-                            ip: object.ip,
-                            objectKey: objectKey,
-                            frameKey: frameKey,
-                            logicKey: logicKey,
-                            blockKey: blockKey
+        if (!objects.hasOwnProperty(objectKey)) continue;
+        for (var frameKey in objects[objectKey].frames) {
+            if (!objects[objectKey].frames.hasOwnProperty(frameKey)) continue;
+            if (objects[objectKey].frames[frameKey].nodes.hasOwnProperty(logic.uuid)) {
+                var keys = {
+                    ip: objects[objectKey].ip,
+                    objectKey: objectKey,
+                    frameKey: frameKey,
+                    logicKey: logic.uuid
+                };
+                if (block) {
+                    for (var blockKey in logic.blocks){
+                        if(logic.blocks[blockKey] === block) { // TODO: give each block an id property to avoid search
+                            keys.blockKey = blockKey;
                         }
                     }
                 }
+                return keys;
             }
         }
     }
     return null;
 };
-
-// todo add: if (!_.hasOwnProperty(key)) continue;
-realityEditor.gui.crafting.eventHelper.getServerObjectBlockKeys = function(logic,block) {
-    for (var key in objects) {
-        var object = objects[key];
-        for (var logicKey in object.nodes) {
-            if(object.nodes[logicKey].type === "logic") {
-                if (object.nodes[logicKey] === logic) {
-                    for(var blockKey in logic.blocks){
-                        if(logic.blocks[blockKey] === block) {
-                            return {
-                                ip: objects[key].ip,
-                                object: key,
-                                logic: logicKey,
-                                block: blockKey
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return null;
-};
-
 
 realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cell) {
     var grid = globalStates.currentLogic.grid;
@@ -332,7 +315,7 @@ realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cel
 
         if (this.shouldUploadBlock(contents.block)) {
             var keys = this.getServerObjectLogicKeys(globalStates.currentLogic);
-            this.realityEditor.network.postNewBlockPosition(keys.ip, keys.objectKey, keys.logicKey, contents.block.globalId, {x: contents.block.x, y: contents.block.y});
+            this.realityEditor.network.postNewBlockPosition(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, contents.block.globalId, {x: contents.block.x, y: contents.block.y});
         }
 
         this.crafting.removeBlockDom(contents.block); // remove do so it can be re-rendered in the correct place
@@ -677,7 +660,7 @@ realityEditor.gui.crafting.eventHelper.addBlockFromMenu = function(blockJSON, po
 };
 
 realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
-    var keys = this.getServerObjectBlockKeys(globalStates.currentLogic, block);
+    var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
     var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.name + "/index.html";
     var craftingBoard = document.getElementById('craftingBoard');
     var blockSettingsContainer = document.createElement('iframe');

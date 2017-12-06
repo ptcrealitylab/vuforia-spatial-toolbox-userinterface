@@ -85,7 +85,7 @@ realityEditor.gui.memory.nodeMemories.addMemoryAtIndex = function(logicNodeObjec
     // additional step to save the publicData and privateData of the blocks in the pocket,
     //   because this data usually only resides on the server
     var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logicNodeObject);
-    realityEditor.network.updateNodeBlocksSettingsData(keys.ip, keys.objectKey, null, keys.logicKey); // TODO: BEN FRAME BUG - IMPLEMENT keys
+    realityEditor.network.updateNodeBlocksSettingsData(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey);
 
     // convert logic node to a serializable object and assign it a new UUID
     if (index >= 0 && index < 5) {
