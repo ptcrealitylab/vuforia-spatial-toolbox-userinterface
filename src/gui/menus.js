@@ -358,14 +358,14 @@ realityEditor.gui.buttons.sendInterfaces = function (interface) {
 
     for (var objectKey in objects) {
         if (objects[objectKey].visible) {
-            globalDOMCach["iframe" + objectKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+            globalDOMCache["iframe" + objectKey].contentWindow.postMessage(JSON.stringify(msg), "*");
 
 
         }
 
         for (var nodeKey in objects[objectKey].nodes) {
             if (objects[objectKey].nodes[nodeKey].visible) {
-                globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
             }
         }
     }

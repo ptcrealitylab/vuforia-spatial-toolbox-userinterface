@@ -425,7 +425,7 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
      **/
     
     function estimateIntersection(theObject, mCanvas, thisObject) {
-        var thisCanvas = globalDOMCach["canvas" + theObject];
+        var thisCanvas = globalDOMCache["canvas" + theObject];
         if(!mCanvas){
             if(!thisObject.hasCTXContent) {
                 thisObject.hasCTXContent = true;

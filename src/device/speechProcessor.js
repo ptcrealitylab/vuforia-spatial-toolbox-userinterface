@@ -405,7 +405,7 @@ realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey) {
 
 realityEditor.device.speechProcessor.highlightLocation = function(location) {
     if (location && location.objectKey && location.nodeKey) {
-        var nodeDom = globalDOMCach["iframe" + location.nodeKey];
+        var nodeDom = globalDOMCache["iframe" + location.nodeKey];
         if (nodeDom) {
             var contentForFeedback = 3;
             nodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
@@ -420,7 +420,7 @@ realityEditor.device.speechProcessor.highlightLocation = function(location) {
 realityEditor.device.speechProcessor.resetPreviouslyHighlightedLocation = function() {
     var previousLocation = this.states.highlightedLocation;
     if (previousLocation && previousLocation.objectKey && previousLocation.nodeKey) {
-        var previousNodeDom = globalDOMCach["iframe" + previousLocation.nodeKey];
+        var previousNodeDom = globalDOMCache["iframe" + previousLocation.nodeKey];
         if (previousNodeDom) {
             var contentForFeedback = 1;
             previousNodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");

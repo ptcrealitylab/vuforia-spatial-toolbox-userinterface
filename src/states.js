@@ -166,7 +166,7 @@ pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
 
-var globalDOMCach = {};
+var globalDOMCache = {};
 
 var globalProgram = {
 	objectA: false,

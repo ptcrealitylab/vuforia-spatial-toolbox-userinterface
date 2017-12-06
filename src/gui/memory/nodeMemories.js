@@ -189,7 +189,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
                     realityEditor.network.onElementLoad(closestObjectKey, logicKey);
             }
 
-            globalDOMCach[logicKey].objectId = closestObjectKey;
+            globalDOMCache[logicKey].objectId = closestObjectKey;
 
             // send it to the server
             realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, logicKey, addedLogic);
@@ -197,7 +197,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
             console.log("successfully added logic from pocket to object (" + closestObject.name + ")");
             return {
                 logicNode: addedLogic,
-                domElement: globalDOMCach[logicKey],
+                domElement: globalDOMCache[logicKey],
                 objectKey: closestObjectKey
             };
         }
@@ -287,7 +287,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             var r = globalMatrix.r;
             ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
             ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
-            ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCach, globalMatrix);
+            ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCache, globalMatrix);
             ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui");
         
         } else {

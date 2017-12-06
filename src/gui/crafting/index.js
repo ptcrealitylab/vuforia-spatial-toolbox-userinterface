@@ -345,15 +345,15 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
  * @desc
  **/
 
-realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, nodeKey) {
+realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, nodeKey) {
 
     globalStates.freezeStateBeforeCrafting = globalStates.freezeButtonState;
     globalStates.freezeButtonState = true;
     realityEditor.app.appFunctionCall("freeze");
     globalStates.pocketButtonState = true;
     
-    this.cout("craftingBoardVisible for object: " + objectKey + " and node: "+nodeKey);
-
+    this.cout("craftingBoardVisible for object: " + objectKey + ", frame: " + frameKey + " and node: "+nodeKey);
+    
     globalStates.guiState = "logic";
     document.getElementById("craftingBoard").style.visibility = "visible";
     document.getElementById("craftingBoard").style.display = "inline";
@@ -361,11 +361,13 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, nodeKey) {
     realityEditor.gui.menus.on("crafting", ["freeze"]);
     
     if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
+        
         var logic = new Logic();
         this.initializeDataCraftingGrid(logic);
+        
     } else {
         
-        var nodeLogic = objects[objectKey].nodes[nodeKey];
+        var nodeLogic = objects[objectKey].frames[frameKey].nodes[nodeKey];
         if (!nodeLogic.guiState) {
             console.log("adding new LogicGUIState");
             nodeLogic.guiState = new LogicGUIState();

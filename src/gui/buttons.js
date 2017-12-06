@@ -305,7 +305,8 @@ realityEditor.gui.buttons.pocketButtonEnter = function(event) {
     }
     
     if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
-        pocketItem["pocket"].objectVisible = false;
+        // pocketItem["pocket"].objectVisible = false;
+        realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
 
         this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
         delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
@@ -345,6 +346,8 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
 
         thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
         thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
+        
+        thisItem.screenZ = 1000;
 
         // else {
         // var matrixTouch =  screenCoordinatesToMatrixXY(thisItem, [evt.clientX,evt.clientY]);
@@ -357,7 +360,13 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         // this is a work around to set the state of an objects to not being visible.
         thisObject.objectId = "pocket";
         thisObject.name = "pocket";
-        thisObject.objectVisible = false;
+        
+        var thisFrame = thisObject.frames["pocket"];
+        thisFrame.objectId = "pocket";
+        thisFrame.name = "pocket";
+        
+        // thisObject.objectVisible = false;
+        realityEditor.gui.ar.draw.setObjectVisible(thisObject, false); // TODO: should this function encapsulate the following 7 lines too?
         thisObject.screenZ = 1000;
         thisObject.fullScreen = false;
         thisObject.sendMatrix = false;

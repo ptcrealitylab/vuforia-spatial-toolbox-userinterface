@@ -64,7 +64,7 @@ nodeCounter = 0;
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
 realityEditor.gui.ar.draw.visibleObjects = "";
 realityEditor.gui.ar.draw.globalStates = globalStates;
-realityEditor.gui.ar.draw.globalDOMCach = globalDOMCach;
+realityEditor.gui.ar.draw.globalDOMCache = globalDOMCache;
 realityEditor.gui.ar.draw.activeObject = {};
 realityEditor.gui.ar.draw.activeFrame = {};
 realityEditor.gui.ar.draw.activeNode = {};
@@ -150,7 +150,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
             this.activeObject.visibleCounter = timeForContentLoaded;
-            this.activeObject.objectVisible = true;
+            this.setObjectVisible(this.activeObject, true);
 
             // this.activeObjectMatrix = multiplyMatrix(rotateX, multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix));
             this.activeObjectMatrix = [];
@@ -172,7 +172,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                 if (this.globalStates.guiState === "ui" || Object.keys(this.activeFrame.nodes).length === 0) {
                     this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
-                        this.globalDOMCach, this.globalStates, this.globalCanvas,
+                        this.globalDOMCache, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout);
                     
@@ -180,7 +180,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
                 
                 } else {
-                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCach, this.cout);
+                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                 }
 
                 for (var nodeKey in this.activeFrame.nodes) {
@@ -193,7 +193,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                         this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
 
-                            this.globalDOMCach, this.globalStates, this.globalCanvas,
+                            this.globalDOMCache, this.globalStates, this.globalCanvas,
                             this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                             this.nodeCalculations, this.cout);
                         
@@ -207,7 +207,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         this.activeVehicle = this.activeNode;
                       //  this.activeType = this.activeNode.type;
                       
-                        this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCach, this.cout);
+                        this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                     }
                 }
 
@@ -217,7 +217,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     if (globalStates.guiState === "ui") {
                           this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
 
-                        this.globalDOMCach, this.globalStates, this.globalCanvas,
+                        this.globalDOMCache, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
                         
@@ -229,7 +229,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         }
                         keyedSrc += 'nodeKey=' + nodeKey;
                         this.addElement(keyedSrc,
-                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
+                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
                     } else {
                         this.hideTransformed(objectKey, nodeKey, this.activeNode, "ui");
 
@@ -239,7 +239,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             }
         }
         else {
-            this.activeObject.objectVisible = false;
+            // this.activeObject.objectVisible = false;
+            realityEditor.gui.ar.draw.setObjectVisible(this.activeObject, false);
 
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -252,7 +253,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
             
-                this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCach, this.cout);
+                this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
 
                 for (var nodeKey in this.activeFrame.nodes) {
                     this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
@@ -260,7 +261,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     this.activeVehicle = this.activeNode;
                     this.activeType = this.activeNode.type;
                     // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
-                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCach, this.cout);
+                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                 }
 
                 /*
@@ -275,7 +276,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 }
                 */
 
-                this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCach);
+                this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCache);
             }
         }
 
@@ -283,9 +284,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
     // draw all lines
     if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && !globalStates.editingMode) {
+        
         for (var objectKey in objects) {
-            this.ar.lines.drawAllLines(realityEditor.getFrame(objectKey, frameKey), this.globalCanvas.context);
+            if (!objects.hasOwnProperty(objectKey)) continue;
+            var object = objects[objectKey];
+            for (var frameKey in object.frames) {
+                if (!object.frames.hasOwnProperty(frameKey)) continue;
+                this.ar.lines.drawAllLines(realityEditor.getFrame(objectKey, frameKey), this.globalCanvas.context);
+            }
         }
+        
         this.ar.lines.drawInteractionLines();
         //  cout("drawlines");
         
@@ -380,12 +388,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                 t    this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
 
-                        this.globalDOMCach, this.globalStates, this.globalCanvas,
+                        this.globalDOMCache, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
 
                 this.addElement("nodes/" + this.activeType + "/index.html",
-                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCach);
+                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
 
                 // } else {
                 // hideTransformed("pocket", nodeKey, this.activeNode, "logic");
@@ -415,7 +423,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
  * @return
  **/
 
-realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCach, globalStates, globalCanvas, 
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, 
 
               activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
@@ -423,10 +431,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         if (!activeVehicle.visible) {
             activeVehicle.visible = true;
             
-            var container = globalDOMCach["object" + activeKey];
-            var iFrame = globalDOMCach["iframe" + activeKey];
-            var overlay = globalDOMCach[activeKey];
-            var canvas = globalDOMCach["canvas" + activeKey]
+            var container = globalDOMCache["object" + activeKey];
+            var iFrame = globalDOMCache["iframe" + activeKey];
+            var overlay = globalDOMCache[activeKey];
+            var canvas = globalDOMCache["canvas" + activeKey]
             
             container.style.display = 'inline';
             iFrame.style.visibility = 'visible';
@@ -482,21 +490,21 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
              if (globalStates.editingMode) {
              if (!activeVehicle.visibleEditing && activeVehicle.developer) {
              activeVehicle.visibleEditing = true;
-             globalDOMCach[activeKey].style.visibility = 'visible';
+             globalDOMCache[activeKey].style.visibility = 'visible';
              // showEditingStripes(activeKey, true);
-             globalDOMCach["canvas" + activeKey].style.display = 'inline';
+             globalDOMCache["canvas" + activeKey].style.display = 'inline';
 
              //document.getElementById(activeKey).className = "mainProgram";
              }
              } else {
-             globalDOMCach["canvas" + activeKey].style.display = 'none';
+             globalDOMCache["canvas" + activeKey].style.display = 'none';
              }
              }*/
 
-            if (activeType === "logic" && objectKey!=="pocket"){
-                if(thisObject.animationScale === 1) {
-                    globalDOMCach["logic" + nodeKey].className = "mainEditing scaleOut";
-                    thisObject.animationScale =0;
+            if (activeType === "logic" && objectKey !== "pocket") {
+                if(activeVehicle.animationScale === 1) {
+                    globalDOMCache["logic" + nodeKey].className = "mainEditing scaleOut";
+                    thisObject.animationScale = 0;
                 }
             }
 
@@ -586,10 +594,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 //   }
 
                 // console.log(activeKey);
-                // console.log(globalDOMCach["activeVehicle" + activeKey]);
-                // console.log(globalDOMCach["activeVehicle" + activeKey].visibility);
+                // console.log(globalDOMCache["activeVehicle" + activeKey]);
+                // console.log(globalDOMCache["activeVehicle" + activeKey].visibility);
                 // draw transformed
-                globalDOMCach["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+                globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
 
                 // this is for later
                 // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
@@ -613,7 +621,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     cout(thisMsg);
-                    globalDOMCach["iframe" + activeKey].contentWindow.postMessage(
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
                         JSON.stringify(thisMsg), '*');
                     //  console.log("I am here");
 
@@ -669,19 +677,19 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword) {
                         if (activeVehicle.animationScale === 0 && !globalStates.editingMode)
-                            globalDOMCach["logic" + activeKey].className = "mainEditing scaleIn";
+                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
                         activeVehicle.animationScale = 1;
                     }
                     else {
                         if (activeVehicle.animationScale === 1)
-                            globalDOMCach["logic" + activeKey].className = "mainEditing scaleOut";
+                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
                         activeVehicle.animationScale = 0;
                     }
 
                     // context.stroke();
                 } else {
                     if (activeVehicle.animationScale === 1) {
-                        globalDOMCach["logic" + activeKey].className = "mainEditing scaleOut";
+                        globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
                         activeVehicle.animationScale = 0;
                     }
                 }
@@ -692,11 +700,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
             if (activeType === "node" || activeType === "logic") {
                 if (!!activeVehicle.lockPassword && activeVehicle.lockType === "full") {
-                    globalDOMCach["iframe" + activeKey].style.opacity = 0.25;
+                    globalDOMCache["iframe" + activeKey].style.opacity = 0.25;
                 } else if (!!activeVehicle.lockPassword && activeVehicle.lockType === "half") {
-                    globalDOMCach["iframe" + activeKey].style.opacity = 0.75;
+                    globalDOMCache["iframe" + activeKey].style.opacity = 0.75;
                 } else {
-                    globalDOMCach["iframe" + activeKey].style.opacity = 1.0;
+                    globalDOMCache["iframe" + activeKey].style.opacity = 1.0;
                 }
             }
 
@@ -709,15 +717,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
  * @desc
  * @return
  **/
-
-realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, globalDOMCach, cout) {
+// TODO: used to be (objectKey, nodeKey, thisObject, type)... change invocations...
+realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle) {
 
 
  //   console.log(activeVehicle);
     if (activeVehicle.visible === true) {
-        globalDOMCach["object" + activeKey].style.display = 'none';
-        globalDOMCach["iframe" + activeKey].style.visibility = 'hidden';
-        globalDOMCach["iframe" + activeKey].contentWindow.postMessage(
+        globalDOMCache["object" + activeKey].style.display = 'none';
+        globalDOMCache["iframe" + activeKey].style.visibility = 'hidden';
+        globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
             JSON.stringify(
                 {
                     visibility: "hidden"
@@ -726,8 +734,8 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         activeVehicle.visible = false;
         activeVehicle.visibleEditing = false;
 
-        globalDOMCach[activeKey].style.visibility = 'hidden';
-        globalDOMCach["canvas" + activeKey].style.display = 'none';
+        globalDOMCache[activeKey].style.visibility = 'hidden';
+        globalDOMCache["canvas" + activeKey].style.display = 'none';
 
         cout("hideTransformed");
     }
@@ -798,9 +806,9 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         // todo the lines need to end at the center of the square.
 
         if (activeType === "logic") {
-            var addLogic = createLogicElement(activeVehicle);
+            var addLogic = createLogicElement(activeVehicle, activeKey);
             addOverlay.appendChild(addLogic);
-            globalDOMCach["logic" + activeKey] = addLogic;
+            globalDOMCache["logic" + activeKey] = addLogic;
         }
 
         // Finally, append all the created elements to the DOM in the correct order...
@@ -824,10 +832,10 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addContainer.appendChild(addOverlay);
         addOverlay.appendChild(addCanvas);
 
-        globalDOMCach[addContainer.id] = addContainer;
-        globalDOMCach[addIframe.id] = addIframe;
-        globalDOMCach[addOverlay.id] = addOverlay;
-        globalDOMCach[addCanvas.id] = addCanvas;
+        globalDOMCache[addContainer.id] = addContainer;
+        globalDOMCache[addIframe.id] = addIframe;
+        globalDOMCache[addOverlay.id] = addOverlay;
+        globalDOMCache[addCanvas.id] = addCanvas;
         
         // Add touch event listeners
         
@@ -920,7 +928,7 @@ var createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, active
     };
 };
 
-var createLogicElement = function(activeVehicle) {
+var createLogicElement = function(activeVehicle, activeKey) {
     var size = 200;
     var addLogic = document.createElement('div');
     addLogic.id = "logic" + activeKey;
@@ -974,28 +982,28 @@ var createLogicElement = function(activeVehicle) {
  * @return
  **/
 
-realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCach) {
+realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCache) {
 
     if (activeVehicle.visibleCounter > 0) {
         activeVehicle.visibleCounter--;
     } else if (activeVehicle.loaded) {
         activeVehicle.loaded = false;
 
-        globalDOMCach["object" + activeKey].parentNode.removeChild(globalDOMCach["object" + activeKey]);
-        delete globalDOMCach["object" + activeKey];
-        delete globalDOMCach["iframe" + activeKey];
-        delete globalDOMCach[activeKey];
-        delete globalDOMCach["canvas" + activeKey];
-        delete globalDOMCach[activeKey];
+        globalDOMCache["object" + activeKey].parentNode.removeChild(globalDOMCache["object" + activeKey]);
+        delete globalDOMCache["object" + activeKey];
+        delete globalDOMCache["iframe" + activeKey];
+        delete globalDOMCache[activeKey];
+        delete globalDOMCache["canvas" + activeKey];
+        delete globalDOMCache[activeKey];
 
         for (activeKey in activeVehicle.nodes) {
             if (!activeVehicle.nodes.hasOwnProperty(activeKey)) continue;
             try {
-                globalDOMCach["object" + activeKey].parentNode.removeChild(globalDOMCach["object" + activeKey]);
-                delete globalDOMCach["object" + activeKey];
-                delete globalDOMCach["iframe" + activeKey];
-                delete globalDOMCach[activeKey];
-                delete globalDOMCach["canvas" + activeKey];
+                globalDOMCache["object" + activeKey].parentNode.removeChild(globalDOMCache["object" + activeKey]);
+                delete globalDOMCache["object" + activeKey];
+                delete globalDOMCache["iframe" + activeKey];
+                delete globalDOMCache[activeKey];
+                delete globalDOMCache["canvas" + activeKey];
 
             } catch (err) {
                 this.cout("could not find any");
@@ -1011,25 +1019,39 @@ realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
     if (!thisFrame) return null;
 
     delete thisFrame.nodes[nodeId];
-    if (this.globalDOMCach["object" + nodeId]) {
-        if (this.globalDOMCach["object" + nodeId].parentNode) {
-            this.globalDOMCach["object" + nodeId].parentNode.removeChild(this.globalDOMCach["object" + nodeId]);
+    if (this.globalDOMCache["object" + nodeId]) {
+        if (this.globalDOMCache["object" + nodeId].parentNode) {
+            this.globalDOMCache["object" + nodeId].parentNode.removeChild(this.globalDOMCache["object" + nodeId]);
         }
-        delete this.globalDOMCach["object" + nodeId];
+        delete this.globalDOMCache["object" + nodeId];
     }
-    delete this.globalDOMCach["iframe" + nodeId];
-    delete this.globalDOMCach[nodeId];
-    delete this.globalDOMCach["canvas" + nodeId];
+    delete this.globalDOMCache["iframe" + nodeId];
+    delete this.globalDOMCache[nodeId];
+    delete this.globalDOMCache["canvas" + nodeId];
 
 };
 
 realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
 
     delete objects[objectId].frames[frameId];
-    this.globalDOMCach["object" + frameId].parentNode.removeChild(this.globalDOMCach["object" + frameId]);
-    delete this.globalDOMCach["object" + frameId];
-    delete this.globalDOMCach["iframe" + frameId];
-    delete this.globalDOMCach[frameId];
-    delete this.globalDOMCach["canvas" + frameId];
+    this.globalDOMCache["object" + frameId].parentNode.removeChild(this.globalDOMCache["object" + frameId]);
+    delete this.globalDOMCache["object" + frameId];
+    delete this.globalDOMCache["iframe" + frameId];
+    delete this.globalDOMCache[frameId];
+    delete this.globalDOMCache["canvas" + frameId];
 
+};
+
+/**
+ * Sets the objectVisible property of not only the object, but also all of its frames
+ * @param object - Object reference to the object whose property you wish to set
+ * @param shouldBeVisible - Boolean visible or not. Objects that are not visible do not render their interfaces, nodes, links.
+ */
+realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) {
+    if (!object) return;
+    object.objectVisible = shouldBeVisible;
+    for (var frameKey in object.frames) {
+        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        object.frames[frameKey].objectVisible = shouldBeVisible;
+    }
 };

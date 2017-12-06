@@ -130,65 +130,67 @@ createNameSpace("realityEditor");
 realityEditor.objects = objects;
 
 // return the object
-realityEditor.getObject = function (object){
-    if(!object) return null;
-    if(!(object in this.objects)) return null;
-    return this.objects[object];
+realityEditor.getObject = function (objectKey){
+    if(!objectKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    return this.objects[objectKey];
 };
 
 // return a frame located in the object
-realityEditor.getFrame = function (object, frame){
-    if(!object) return null;
-    if(!frame) return null;
-    if(!(object in this.objects)) return null;
-    if(!(frame in this.objects[object].frames)) return null;
-    return this.objects[object].frames[frame];
+realityEditor.getFrame = function (objectKey, frameKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    return this.objects[objectKey].frames[frameKey];
 };
 
 // return a node located in the object frame
-realityEditor.getNode = function (object, frame, node){
-    if(!object) return null;
-    if(!frame) return null;
-    if(!node) return null;
-    if(!(object in this.objects)) return null;
-    if(!(frame in this.objects[object].frames)) return null;
-    if(!(node in this.objects[object].frames[frame].nodes)) return null;
-    return this.objects[object].frames[frame].nodes[node];
+realityEditor.getNode = function (objectKey, frameKey, nodeKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodes)) return null;
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey];
 };
 
 // return a link located in a frame
-realityEditor.getLink = function (object, frame, link){
-    if(!object) return null;
-    if(!frame) return null;
-    if(!link) return null;
-    if(!(object in this.objects)) return null;
-    if(!(frame in this.objects[object].frames)) return null;
-    if(!(link in this.objects[object].frames[frame].links)) return null;
-    return this.objects[object].frames[frame].links[link];
+realityEditor.getLink = function (objectKey, frameKey, linkKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!linkKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(linkKey in this.objects[objectKey].frames[frameKey].links)) return null;
+    return this.objects[objectKey].frames[frameKey].links[linkKey];
 };
 
-realityEditor.getBlock = function (object, frame, node, block){
-    if(!object) return null;
-    if(!frame) return null;
-    if(!node) return null;
+// return a block in a logic node
+realityEditor.getBlock = function (objectKey, frameKey, nodeKey, block){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
     if(!block) return null;
-    if(!(object in this.objects)) return null;
-    if(!(frame in this.objects[object].frames)) return null;
-    if(!(node in this.objects[object].frames[frame].node)) return null;
-    if(!(block in this.objects[object].frames[frame].node[node].blocks)) return null;
-    return this.objects[object].frames[frame].node[node].block[block];
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
+    if(!(block in this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks)) return null;
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].block[block];
 };
 
-realityEditor.getBlockLink = function (object, frame, node, link){
-    if(!object) return null;
-    if(!frame) return null;
-    if(!node) return null;
-    if(!link) return null;
-    if(!(object in this.objects)) return null;
-    if(!(frame in this.objects[object].frames)) return null;
-    if(!(node in this.objects[object].frames[frame].node)) return null;
-    if(!(link in this.objects[object].frames[frame].node[node].links)) return null;
-    return this.objects[object].frames[frame].node[node].links[link];
+// return a block link in a logic node
+realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
+    if(!linkKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
+    if(!(linkKey in this.objects[objectKey].frames[frameKey].nodes[nodeKey].links)) return null;
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].links[linkKey];
 };
 
 

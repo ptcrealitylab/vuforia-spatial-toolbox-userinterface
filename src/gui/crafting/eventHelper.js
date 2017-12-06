@@ -269,16 +269,20 @@ realityEditor.gui.crafting.eventHelper.shouldUploadBlock = function(block) {
 // todo add: if (!_.hasOwnProperty(key)) continue;
 realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys = function(logic) {
 
-    for (var key in objects) {
-        var object = objects[key];
-        for (var logicKey in object.nodes) {
-            if(object.nodes[logicKey].type === "logic") {
-                if (object.nodes[logicKey].uuid === logic.uuid) {
-                    return {
-                        ip: objects[key].ip,
-                        objectKey: key,
-                        logicKey: logicKey,
-                        blockKey: logic
+    for (var objectKey in objects) {
+        var object = objects[objectKey];
+        for (var frameKey in object.frames) {
+            var frame = object.frames[frameKey];
+            for (var logicKey in frame.nodes) {
+                if (frame.nodes[logicKey].type === "logic") {
+                    if (frame.nodes[logicKey].uuid === logic.logicID) {
+                        return {
+                            ip: object.ip,
+                            objectKey: objectKey,
+                            frameKey: frameKey,
+                            logicKey: logicKey,
+                            blockKey: blockKey
+                        }
                     }
                 }
             }
@@ -741,7 +745,7 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
             currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
             
             // update node text label on AR view
-            globalDOMCach["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
+            globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
                 JSON.stringify( { renameNode: newNameTextField.value }) , "*");
             
             // update model and view for pocket menu

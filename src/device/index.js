@@ -448,7 +448,7 @@ realityEditor.device.onTouchEnter = function(evt) {
 		}
 	}
 
-	globalDOMCach["iframe" + target.nodeId].contentWindow.postMessage(
+	globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
 		JSON.stringify(
 			{
 				uiActionFeedback: contentForFeedback
@@ -479,8 +479,8 @@ realityEditor.device.onTouchLeave = function(evt) {
 
 	cout("leave");
 
-	if(globalDOMCach["iframe" + target.nodeId]) {
-		globalDOMCach["iframe" + target.nodeId].contentWindow.postMessage(
+	if(globalDOMCache["iframe" + target.nodeId]) {
+		globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
 			JSON.stringify(
 				{
 					uiActionFeedback: 1
@@ -588,6 +588,14 @@ realityEditor.device.onDocumentPointerMove = function (evt) {
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
+// TODO: implement this in a smart way that determines which frame is on top and closer to middle of view
+function getFarFrontFrame(objectKey) {
+    for (var frameKey in objects[objectKey].frames) {
+        return frameKey;
+    }
+    return null;
+}
+
 /**
  * @desc
  * @param evt
@@ -603,7 +611,8 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 	clearTimeout(realityEditor.device.touchTimer);
     
 	if (globalStates.pocketButtonDown) {
-		pocketItem["pocket"].objectVisible = false;
+		// pocketItem["pocket"].objectVisible = false;
+        realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
 
 		if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
 
@@ -616,6 +625,7 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 				if (realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14] < nodeCalculations.frontDepth) {
 					nodeCalculations.frontDepth = realityEditor.gui.ar.draw.visibleObjects[thisOtherKey][14];
 					nodeCalculations.farFrontElement = thisOtherKey;
+					nodeCalculations.farFrontFrame = getFarFrontFrame(thisOtherKey);
 				}
 			}
 
@@ -624,8 +634,8 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 			if (nodeCalculations.farFrontElement !== "" && thisItem.screenZ !== 2 && thisItem.screenZ) {
 
 				var logicCount = 0;
-				for(var key in objects[nodeCalculations.farFrontElement].nodes) {
-					if(objects[nodeCalculations.farFrontElement].nodes[key].type === "logic"){
+				for(var nodeKey in objects[nodeCalculations.farFrontElement].frames[nodeCalculations.farFrontFrame].nodes) {
+					if(objects[nodeCalculations.farFrontElement].frames[nodeCalculations.farFrontFrame].nodes[nodeKey].type === "logic"){
 						logicCount++;
 					}
 				}
@@ -633,22 +643,27 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 
 				// make sure that logic nodes only stick to 2.0 server version
                 if(realityEditor.network.testVersion(nodeCalculations.farFrontElement)>165) {
-                    objects[nodeCalculations.farFrontElement].nodes[pocketItemId] = thisItem;
+                    objects[nodeCalculations.farFrontElement].frames[nodeCalculations.farFrontFrame].nodes[pocketItemId] = thisItem;
 
                     var _thisNode = document.getElementById("iframe" + pocketItemId);
                     if (_thisNode) {
                         if (_thisNode._loaded)
-                            realityEditor.network.onElementLoad(nodeCalculations.farFrontElement, pocketItemId);
+                            realityEditor.network.onElementLoad(nodeCalculations.farFrontElement, nodeCalculations.farFrontFrame, pocketItemId);
                     }
+                    
+                    // TODO: it never gets added... maybe add globalDOMCache[pocketItemId] = // or something...
 
-                    globalDOMCach[pocketItemId].objectId = nodeCalculations.farFrontElement;
+                    // TODO: uncomment once I'm sure pocketItemId is actually in the DOM cache
+                    // globalDOMCache[pocketItemId].objectId = nodeCalculations.farFrontElement;
+                    // globalDOMCache[pocketItemId].frameId = nodeCalculations.farFrontFrame; // TODO: BEN is that necessary?
 
-                    realityEditor.network.postNewLogicNode(objects[nodeCalculations.farFrontElement].ip, nodeCalculations.farFrontElement, pocketItemId, thisItem);
+                    realityEditor.network.postNewLogicNode(objects[nodeCalculations.farFrontElement].ip, nodeCalculations.farFrontElement, nodeCalculations.farFrontFrame, pocketItemId, thisItem);
                     
                 }
 
 			}
-			realityEditor.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
+            // realityEditor.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
+            realityEditor.gui.ar.draw.hideTransformed(pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]);
 			delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 		}
 	}
@@ -824,7 +839,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		}
 		if (globalStates.editingNode) {
 			if ((!globalStates.editingMode) && globalStates.editingModeKind === 'ui') {
-				globalDOMCach[globalStates.editingNode].style.visibility = 'hidden';
+				globalDOMCache[globalStates.editingNode].style.visibility = 'hidden';
 			}
 			realityEditor.device.onTrueTouchUp(evt);
 		}

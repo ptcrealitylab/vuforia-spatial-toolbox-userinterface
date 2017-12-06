@@ -140,7 +140,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     
                     var thisObject = realityEditor.getObject(objectKey);
                     // this is a work around to set the state of an objects to not being visible.
-                    thisObject.objectVisible = false;
+                    realityEditor.gui.ar.draw.setObjectVisible(thisObject, false);
                     thisObject.screenZ = 1000;
                     thisObject.fullScreen = false;
                     thisObject.sendMatrix = false;
@@ -154,7 +154,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     for (var frameKey in objects[objectKey].frames) {
                        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
-                        thisFrame.objectVisible = false;
+                        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
                         thisFrame.screenZ = 1000;
                         thisFrame.fullScreen = false;
                         thisFrame.sendMatrix = false;
@@ -293,8 +293,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
                 origin.nodes[nodeKey].matrix = remote.nodes[nodeKey].matrix;
         }
 
-        if (globalDOMCach["iframe" + nodeKey]) {
-            if (globalDOMCach["iframe" + nodeKey]._loaded)
+        if (globalDOMCache["iframe" + nodeKey]) {
+            if (globalDOMCache["iframe" + nodeKey]._loaded)
                 realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
         }
     }
@@ -326,7 +326,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             oFrame.matrix = rFrame.matrix;
         }
 
-        if (globalDOMCach["iframe" + frameKey] && globalDOMCach["iframe" + frameKey]._loaded) {
+        if (globalDOMCache["iframe" + frameKey] && globalDOMCache["iframe" + frameKey]._loaded) {
             realityEditor.network.onElementLoad(thisKey, frameKey);
         }
 
@@ -417,8 +417,8 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
     } else {
         console.log("NO");
 
-        if (globalDOMCach["iframe" + nodeKey]) {
-            if (globalDOMCach["iframe" + nodeKey]._loaded)
+        if (globalDOMCache["iframe" + nodeKey]) {
+            if (globalDOMCache["iframe" + nodeKey]._loaded)
                 realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
         }
     }
@@ -1472,8 +1472,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     var activeKey = nodeKey || frameKey;
     
-    globalDOMCach["iframe" + activeKey]._loaded = true;
-    globalDOMCach["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
+    globalDOMCache["iframe" + activeKey]._loaded = true;
+    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
     this.cout("on_load");
     
 };

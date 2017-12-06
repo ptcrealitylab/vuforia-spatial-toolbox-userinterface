@@ -265,17 +265,20 @@ createNameSpace("realityEditor.gui.crafting.grid");
 //      -- GRID UTILITIES -- //
     
     Grid.prototype.parentLogic = function() {
-        for (var key in objects) {
-            var object = objects[key];
-            for (var logicKey in object.nodes) {
-                if (object.nodes[logicKey].type === "logic") {
-                    if (object.nodes[logicKey].uuid === this.logicID) {
-                        return object.nodes[logicKey];
+        for (var objectKey in objects) {
+            var object = objects[objectKey];
+            for (var frameKey in object.frames) {
+                var frame = object.frames[frameKey];
+                for (var logicKey in frame.nodes) {
+                    if (frame.nodes[logicKey].type === "logic") {
+                        if (frame.nodes[logicKey].uuid === this.logicID) {
+                            return frame.nodes[logicKey];
+                        }
                     }
                 }
             }
         }
-        console.log("ERROR: DIDN'T FIND LOGIC NODE FOR THIS GRID");
+        console.warn("ERROR: DIDN'T FIND LOGIC NODE FOR THIS GRID");
     };
 
 
