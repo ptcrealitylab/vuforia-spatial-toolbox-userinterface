@@ -71,14 +71,17 @@ function MemoryPointer(link, isObjectA) {
     this.connectedNodeKey = null;
     this.connectedFrame = null;
     this.connectedObject = null;
+    this.frameId = null;
 
     if (this.isObjectA) {
         this.object = objects[this.link.objectA];
+        this.frameId = this.link.frameA;
         this.connectedObject = objects[this.link.objectB];
         this.connectedNodeKey = this.link.nodeB;
         this.connectedFrame = this.connectedObject.frames[this.link.frameB];
     } else {
         this.object = objects[this.link.objectB];
+        this.frameId = this.link.frameB;
         this.connectedObject = objects[this.link.objectA];
         this.connectedNodeKey = this.link.nodeA;
         this.connectedFrame = this.connectedObject.frames[this.link.frameA];

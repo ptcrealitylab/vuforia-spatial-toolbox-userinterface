@@ -100,15 +100,23 @@ MemoryContainer.prototype.set = function(obj) {
     this.backgroundImage.src = image;
 
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
+    
+    var objectMatrix = [1,0,0,0,
+                        0,1,0,0,
+                        0,0,1,0,
+                        0,0,0,1];
+    
+    if (obj.memory && obj.memory.matrix) {
+        objectMatrix = obj.memory.matrix;
+    }
 
     this.memory = {
         id: obj.objectId,
         image: image,
         thumbnail: thumbnail,
-        matrix: obj.memory.matrix
+        matrix: objectMatrix //obj.memory.matrix
     };
     this.element.dataset.objectId = this.memory.id;
-
 
     if (!this.image) {
         var cachedImage = imageCache[thumbnail];
