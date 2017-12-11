@@ -151,31 +151,35 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
         // On touching an element-template, upload to currently visible object
         pocket.addEventListener('pointerdown', function(evt) {
-            if (!evt.target.classList.contains('element-template')) {
-                return;
-            }
-            var objectIds = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
-            if (objectIds.length !== 1) {
-                return;
-            }
-            var parentObject = objects[objectIds[0]];
-            var src = evt.target.dataset.src;
-            var width = evt.target.dataset.width;
-            var height = evt.target.dataset.height;
-            var frame = new realityEditor.gui.frame.Frame(src, width, height);
-
-            var tempMatrix = [];
-            var r = realityEditor.gui.ar.draw.matrix.r;
-
-            var arUtilities = realityEditor.gui.ar.utilities;
-            arUtilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectIds[0]], globalStates.projectionMatrix, r);
-            arUtilities.multiplyMatrix(rotateX, r, tempMatrix);
-            parentObject.temp = tempMatrix;
-            var matrixTouch = arUtilities.screenCoordinatesToMatrixXY(parentObject, [evt.clientX, evt.clientY]);
-            frame.x = matrixTouch[0];
-            frame.y = matrixTouch[1];
-            realityEditor.gui.frame.create(objectIds[0], frame);
-            pocketHide();
+            
+            console.log('these dont do anything anymore - uncomment frame.js');
+            
+            // TODO: reimplement widget frames (uncomment frame.js)
+            // if (!evt.target.classList.contains('element-template')) {
+            //     return;
+            // }
+            // var objectIds = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
+            // if (objectIds.length !== 1) {
+            //     return;
+            // }
+            // var parentObject = objects[objectIds[0]];
+            // var src = evt.target.dataset.src;
+            // var width = evt.target.dataset.width;
+            // var height = evt.target.dataset.height;
+            // var frame = new realityEditor.gui.frame.Frame(src, width, height);
+            //
+            // var tempMatrix = [];
+            // var r = realityEditor.gui.ar.draw.matrix.r;
+            //
+            // var arUtilities = realityEditor.gui.ar.utilities;
+            // arUtilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectIds[0]], globalStates.projectionMatrix, r);
+            // arUtilities.multiplyMatrix(rotateX, r, tempMatrix);
+            // parentObject.temp = tempMatrix;
+            // var matrixTouch = arUtilities.screenCoordinatesToMatrixXY(parentObject, [evt.clientX, evt.clientY]);
+            // frame.x = matrixTouch[0];
+            // frame.y = matrixTouch[1];
+            // realityEditor.gui.frame.create(objectIds[0], frame);
+            // pocketHide();
         });
 
         createPocketUIPalette();

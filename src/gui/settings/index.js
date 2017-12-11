@@ -102,7 +102,7 @@ realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody)
 
 realityEditor.gui.settings.reloadUI = function () {
     if (this.states.externalState !== "" && this.states.externalState !== "http") {
-        console.log("loadNewUI" + this.states.externalState);
+        console.log("loadNewUI: " + this.states.externalState);
         this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
     }
 };

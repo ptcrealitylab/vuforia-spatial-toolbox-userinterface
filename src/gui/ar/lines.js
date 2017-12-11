@@ -150,7 +150,7 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 
 		if (!frameB.objectVisible) {
 			if (frameB.memory) {
-				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(frameB.objectId);
+				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(frameB.objectId); // TODO: frameId or objectId?
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
 				}

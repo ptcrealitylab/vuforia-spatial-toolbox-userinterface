@@ -423,9 +423,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
  * @return
  **/
 
-realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, 
-
-              activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
     if (notLoading !== activeKey && activeVehicle.loaded === true) {
         if (!activeVehicle.visible) {
@@ -825,7 +823,8 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             cover.style.height = addIframe.style.height;
             cover.style.top = addIframe.style.top;
             cover.style.left = addIframe.style.left;
-            activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+            // TODO: reimplement widget frames (uncomment frame.js)
+            // activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
             addContainer.appendChild(cover);
         }
         

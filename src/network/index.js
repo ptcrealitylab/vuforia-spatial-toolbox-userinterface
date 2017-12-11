@@ -271,7 +271,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
-    origin.developer = remote.developer;
 
     if (remote.matrix) {
         origin.matrix = remote.matrix;
@@ -300,45 +299,46 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     }
 
 
-    var missingFrames = {};
-    for (var frameKey in origin.frames) {
-        missingFrames[frameKey] = true;
-    }
-
-    if (!remote.frames) {
-        remote.frames = {};
-    }
-
-    for (var frameKey in remote.frames) {
-        if (!origin.frames[frameKey]) {
-            origin.frames[frameKey] = remote.frames[frameKey];
-            continue;
-        }
-        missingFrames[frameKey] = false;
-        var oFrame = origin.frames[frameKey];
-        var rFrame = remote.frames[frameKey];
-        oFrame.x = rFrame.x;
-        oFrame.y = rFrame.y;
-        oFrame.scale = rFrame.scale;
-
-        oFrame.name = rFrame.name;
-        if (rFrame.matrix) {
-            oFrame.matrix = rFrame.matrix;
-        }
-
-        if (globalDOMCache["iframe" + frameKey] && globalDOMCache["iframe" + frameKey]._loaded) {
-            realityEditor.network.onElementLoad(thisKey, frameKey);
-        }
-
-    }
-
-    for (var frameKey in missingFrames) {
-        if (!missingFrames[frameKey]) {
-            continue;
-        }
-        // Frame was deleted on remote, let's delete it here
-        realityEditor.gui.frame.deleteLocally(origin.objectId, frameKey);
-    }
+    // TODO: reimplement widget frames (uncomment frame.js)
+    // var missingFrames = {};
+    // for (var frameKey in origin.frames) {
+    //     missingFrames[frameKey] = true;
+    // }
+    //
+    // if (!remote.frames) {
+    //     remote.frames = {};
+    // }
+    //
+    // for (var frameKey in remote.frames) {
+    //     if (!origin.frames[frameKey]) {
+    //         origin.frames[frameKey] = remote.frames[frameKey];
+    //         continue;
+    //     }
+    //     missingFrames[frameKey] = false;
+    //     var oFrame = origin.frames[frameKey];
+    //     var rFrame = remote.frames[frameKey];
+    //     oFrame.x = rFrame.x;
+    //     oFrame.y = rFrame.y;
+    //     oFrame.scale = rFrame.scale; // TODO: does developer property get set?
+    //
+    //     oFrame.name = rFrame.name;
+    //     if (rFrame.matrix) {
+    //         oFrame.matrix = rFrame.matrix;
+    //     }
+    //
+    //     if (globalDOMCache["iframe" + frameKey] && globalDOMCache["iframe" + frameKey]._loaded) {
+    //         realityEditor.network.onElementLoad(thisKey, frameKey);
+    //     }
+    //
+    // }
+    //
+    // for (var frameKey in missingFrames) {
+    //     if (!missingFrames[frameKey]) {
+    //         continue;
+    //     }
+    //     // Frame was deleted on remote, let's delete it here
+    //     realityEditor.gui.frame.deleteLocally(origin.objectId, frameKey);
+    // }
 };
 
 
@@ -952,12 +952,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             if (msgContent.settings.setSettings.editingMode) {
 
                 realityEditor.device.addEventHandlers();
-                globalStates.editingMode = true;
+                // globalStates.editingMode = true;
+                realityEditor.device.setEditingMode(true);
                 realityEditor.app.appFunctionCall("developerOn", null, null);
                 realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
             } else {
                 realityEditor.device.removeEventHandlers();
-                globalStates.editingMode = false;
+                // globalStates.editingMode = false;
+                realityEditor.device.setEditingMode(false);
                 realityEditor.app.appFunctionCall("developerOff", null, null);
 
             }

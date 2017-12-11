@@ -144,7 +144,7 @@ realityEditor.device.addEventHandlers = function() {
         for (var frameKey in objects[objectKey].frames) {
             var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
-            if (objects[objectKey].developer) {
+            if (thisFrame.developer) {
 
                 if (document.getElementById(objectKey)) {
                     var thisObject3 = document.getElementById(objectKey);
@@ -212,16 +212,19 @@ realityEditor.device.onTouchDown = function(evt) {
     var target = evt.currentTarget;
 	console.log(target.nodeId);
 
-    if (!realityEditor.device.security.isNodeActionAllowed(target.objectId, target.frameId, target.nodeId, "edit")) {
-        return;
+	if (target.nodeId) {
+        if (!realityEditor.device.security.isNodeActionAllowed(target.objectId, target.frameId, target.nodeId, "edit")) {
+            return;
+        }
     }
-    
-    var thisNode = realityEditor.getNode(target.objectId, target.frameId, target.nodeId);
     
 	if (!globalStates.editingMode) {
 		if (globalStates.guiState ==="node") {
 			if (!globalProgram.objectA) {
-				globalProgram.objectA = target.objectId;
+
+                var thisNode = realityEditor.getNode(target.objectId, target.frameId, target.nodeId);
+
+                globalProgram.objectA = target.objectId;
                 globalProgram.frameA = target.frameId;
 				globalProgram.nodeA = target.nodeId;
 
@@ -314,15 +317,24 @@ realityEditor.device.getEditingModeObject = function() {
     var objectId = globalStates.editingModeObject;
     var frameId = globalStates.editingModeFrame;
     var nodeId = globalStates.editingModeLocation;
-    if (frameId !== nodeId) {
-        if (globalStates.editingModeKind === 'ui') {
-            return objects[objectId].frames[frameId].frames[nodeId];
-        } else {
-            return objects[objectId].frames[frameId].nodes[nodeId];
-        }
+    
+    if (globalStates.editingModeKind === 'ui') {
+        return objects[objectId].frames[frameId];
+    } else if (globalStates.editingModeKind === 'node' || globalStates.editingModeKind === 'logic') {
+        return objects[objectId].frames[frameId].nodes[nodeId];
     } else {
-        return objects[frameId];
+        return objects[objectId];
     }
+    
+    // if (frameId !== nodeId) {
+    //     if (globalStates.editingModeKind === 'ui') {
+    //         return objects[objectId].frames[frameId].frames[nodeId];
+    //     } else {
+    //         return objects[objectId].frames[frameId].nodes[nodeId];
+    //     }
+    // } else {
+    //     return objects[frameId];
+    // }
 };
 
 /**********************************************************************************************************************
@@ -428,69 +440,75 @@ realityEditor.device.onTrueTouchUp = function(evt){
 
 realityEditor.device.onTouchEnter = function(evt) {
     var target = evt.currentTarget;
-	var contentForFeedback;
 
-	if (globalProgram.nodeA === this.id || globalProgram.nodeA === false) {
-		contentForFeedback = 3;
+    if (target.nodeId) {
+        var contentForFeedback;
 
-		// todo why is the globalDomCash not used?
+        if (globalProgram.nodeA === this.id || globalProgram.nodeA === false) {
+            contentForFeedback = 3;
 
-		overlayDiv.classList.add('overlayAction');
-	} else {
+            // todo why is the globalDomCash not used?
 
-		if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA,globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0)) {
-			contentForFeedback = 2; // overlayImg.src = overlayImage[2].src;
-			overlayDiv.classList.add('overlayPositive');
-		}
+            overlayDiv.classList.add('overlayAction');
+        } else {
 
-		else {
-			contentForFeedback = 0; // overlayImg.src = overlayImage[0].src;
-			overlayDiv.classList.add('overlayNegative');
-		}
-	}
+            if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA,globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0)) {
+                contentForFeedback = 2; // overlayImg.src = overlayImage[2].src;
+                overlayDiv.classList.add('overlayPositive');
+            }
 
-	globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
-		JSON.stringify(
-			{
-				uiActionFeedback: contentForFeedback
-			})
-		, "*");
+            else {
+                contentForFeedback = 0; // overlayImg.src = overlayImage[0].src;
+                overlayDiv.classList.add('overlayNegative');
+            }
+        }
 
-	//   document.getElementById('overlayImg').src = overlayImage[contentForFeedback].src;
+        globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
+            JSON.stringify(
+                {
+                    uiActionFeedback: contentForFeedback
+                })
+            , "*");
+
+        //   document.getElementById('overlayImg').src = overlayImage[contentForFeedback].src;
+    }
 };
 
 realityEditor.device.onTouchLeave = function(evt) {
     var target = evt.currentTarget;
-
-	if(!globalStates.editingMode) {
-		clearTimeout(realityEditor.device.touchTimer);
-
-		if(globalStates.editingNode) {
-			if (globalStates.editingModeKind === 'logic') {
-				realityEditor.device.endTrash(target.nodeId);
-			}
-		}
-	}
-
-	globalProgram.logicSelector = 4;
-
-	overlayDiv.classList.remove('overlayPositive');
-	overlayDiv.classList.remove('overlayNegative');
-	overlayDiv.classList.remove('overlayAction');
-
-	cout("leave");
-
-	if(globalDOMCache["iframe" + target.nodeId]) {
-		globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
-			JSON.stringify(
-				{
-					uiActionFeedback: 1
-				})
-			, "*");
-
-	}
+    
+    if (target.nodeId) {
 
 
+        if(!globalStates.editingMode) {
+            clearTimeout(realityEditor.device.touchTimer);
+
+            if(globalStates.editingNode) {
+                if (globalStates.editingModeKind === 'logic') {
+                    realityEditor.device.endTrash(target.nodeId);
+                }
+            }
+        }
+
+        globalProgram.logicSelector = 4;
+
+        overlayDiv.classList.remove('overlayPositive');
+        overlayDiv.classList.remove('overlayNegative');
+        overlayDiv.classList.remove('overlayAction');
+
+        cout("leave");
+
+        if(globalDOMCache["iframe" + target.nodeId]) {
+            globalDOMCache["iframe" + target.nodeId].contentWindow.postMessage(
+                JSON.stringify(
+                    {
+                        uiActionFeedback: 1
+                    })
+                , "*");
+
+        }        
+        
+    }
 
 };
 
@@ -529,6 +547,16 @@ realityEditor.device.onTouchMove = function(evt) {
             
         } else {
             tempThisObject = realityEditor.device.getEditingModeObject();
+            // tempThisObject.temp = realityEditor.gui.ar.draw.visibleObjects[target.objectId];
+            var unrotatedResult = [
+                1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
+            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[target.objectId], globalStates.projectionMatrix, unrotatedResult);
+            realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, tempThisObject.temp);
+
         }
 
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
@@ -865,24 +893,25 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// todo for now we just send nodes but no logic locations. ---- Became obsolete because the logic nodes are now normal nodes
 		//  if(globalStates.editingModeKind=== "node") {
         if (globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame !== globalStates.editingModeLocation) {
-            realityEditor.gui.frame.update(globalStates.editingModeObject, globalStates.editingModeLocation);
-            // reposition all of this frame's nodes relative to their parent
-            var object = objects[globalStates.editingModeObject];
-            var frameId = globalStates.editingModeLocation;
-            var frame = tempThisObject;
-
-            for (var nodeId in object.nodes) {
-                var node = object.nodes[nodeId];
-                if (node.frame !== frameId) {
-                    continue;
-                }
-                node.x = frame.x + (Math.random() - 0.5) * 160;
-                node.y = frame.y + (Math.random() - 0.5) * 160;
-            }
-
-			if (evt.pageX > window.innerWidth - 60) {
-				realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
-			}
+            // TODO: reimplement widget frames (uncomment frame.js)
+            // realityEditor.gui.frame.update(globalStates.editingModeObject, globalStates.editingModeLocation);
+            // // reposition all of this frame's nodes relative to their parent
+            // var object = objects[globalStates.editingModeObject];
+            // var frameId = globalStates.editingModeLocation;
+            // var frame = tempThisObject;
+            //
+            // for (var nodeId in object.nodes) {
+             //    var node = object.nodes[nodeId];
+             //    if (node.frame !== frameId) {
+             //        continue;
+             //    }
+             //    node.x = frame.x + (Math.random() - 0.5) * 160;
+             //    node.y = frame.y + (Math.random() - 0.5) * 160;
+            // }
+            //
+			// if (evt.pageX > window.innerWidth - 60) {
+			// 	realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
+			// }
 		} else if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
 			realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/size/", content, function (){});
 		}
@@ -953,13 +982,31 @@ realityEditor.device.setDeviceName = function(deviceName) {
 };
 
 /**
+ * updates editing mode and resets all frames' visible properties so they re-render with correct editing mode elements
+ * @param newEditingMode
+ */
+realityEditor.device.setEditingMode = function(newEditingMode) {
+    if (globalStates.editingMode !== newEditingMode) {
+        // reset all object's .visible property to false so they re-render with correct editing DOM elements
+        for (var objectKey in objects) {
+            if (!objects.hasOwnProperty(objectKey)) continue;
+            for (var frameKey in objects[objectKey].frames) {
+                if (!objects[objectKey].frames.hasOwnProperty(frameKey)) continue;
+                objects[objectKey].frames[frameKey].visible = false;
+                objects[objectKey].frames[frameKey].visibleEditing = false;
+            }
+        }
+    }
+    globalStates.editingMode = newEditingMode;
+};
+
+/**
  * @desc
  * @param developerState
  * @param extendedTrackingState
  * @param clearSkyState
  * @param externalState
  **/
-
 realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, externalState, discoveryState, realityState) {
 
     globalStates.extendedTrackingState = extendedTrackingState;
@@ -988,7 +1035,7 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
 
     if (developerState) {
         realityEditor.device.addEventHandlers();
-        globalStates.editingMode = true;
+        realityEditor.device.setEditingMode(true);
     }
 
     if (extendedTrackingState) {
@@ -1010,7 +1057,7 @@ realityEditor.device.removeEventHandlers = function() {
     for (var objectKey in objects) {
         for (var frameKey in objects[objectKey].frame) {
             var generalObject2 = realityEditor.getFrame(objectKey, frameKey);
-            if (realityEditor.getObject(objectKey).developer) {
+            if (realityEditor.getFrame(objectKey, frameKey).developer) {
                 if (document.getElementById(frameKey)) {
                     var thisObject3 = document.getElementById(frameKey);
                     thisObject3.style.visibility = "hidden";
