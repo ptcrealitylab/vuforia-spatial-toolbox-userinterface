@@ -83,14 +83,29 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 		var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 
 		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement === "") {
+		    
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
+			
 		} else {
+		    
 			if(thisItem.screenZ !== 2 && thisItem.screenZ) {
-
-				//  console.log(thisItem.screenZ);
-				// console.log(screenCoordinatesToMatrixXY(thisItem, [evt.clientX, evt.clientY]));
-				var matrixTouch = this.realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(thisItem, [evt.clientX, evt.clientY]);
+			    
+			    var objectKey = realityEditor.gui.ar.draw.nodeCalculations.farFrontElement;
+			    var frameKey = realityEditor.gui.ar.draw.nodeCalculations.farFrontFrame;
+                
+                var activeFrame = realityEditor.getFrame(objectKey, frameKey);
+                var unrotatedResult = [
+                    1, 0, 0, 0,
+                    0, -1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ];
+                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, unrotatedResult);
+                realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, activeFrame.temp);
+                
+                
+				var matrixTouch = this.realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeFrame, [evt.clientX, evt.clientY]);
 				// console.log(thisItem);
 				thisItem.x = matrixTouch[0];
 				thisItem.y = matrixTouch[1];

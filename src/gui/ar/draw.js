@@ -392,14 +392,23 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                 this.activeNode.width = 100;
                 this.activeNode.height = 100;
+                
+                // this.activeNode.loaded = true;
 
-                this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
+                var thisUrl = "nodes/" + this.activeType + "/index.html";
+                this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
+
+                // TODO: uncomment
+                console.log(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout)
+                //
+                this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
 
                 // this.drawTransformed(this.visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
                 // (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout)
 
-                var thisUrl = "nodes/" + this.activeType + "/index.html";
-                this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
+                // TODO: why was this afterwards?
+                // var thisUrl = "nodes/" + this.activeType + "/index.html";
+                // this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
 
                     // this.addElement("nodes/" + this.activeType + "/index.html",
                     // this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
@@ -859,7 +868,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         // Create DOM elements for everything associated with this frame/node
 
-        var domElements = createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
+        var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
         var addContainer = domElements.addContainer;
         var addIframe = domElements.addIframe;
         var addOverlay = domElements.addOverlay;
@@ -874,7 +883,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         // todo the lines need to end at the center of the square.
 
         if (activeType === "logic") {
-            var addLogic = createLogicElement(activeVehicle, activeKey);
+            var addLogic = this.createLogicElement(activeVehicle, activeKey);
             addOverlay.appendChild(addLogic);
             globalDOMCache["logic" + activeKey] = addLogic;
         }
@@ -936,6 +945,8 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             addOverlay.style.visibility = "visible";
         } else if (activeType === "logic") {
             addOverlay.style.visibility = "visible";
+            // addContainer.style.display = 'block';
+            // addIframe.style.visibility = 'visible';
         } else {
             addOverlay.style.visibility = "hidden";
         }
@@ -944,7 +955,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     
 };
 
-var createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
+realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
 
     var activeKey = (!!nodeKey) ? nodeKey : frameKey;
 
@@ -997,7 +1008,7 @@ var createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, active
     };
 };
 
-var createLogicElement = function(activeVehicle, activeKey) {
+realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey) {
     var size = 200;
     var addLogic = document.createElement('div');
     addLogic.id = "logic" + activeKey;

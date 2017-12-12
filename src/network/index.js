@@ -295,8 +295,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
         }
 
         if (globalDOMCache["iframe" + nodeKey]) {
-            if (globalDOMCache["iframe" + nodeKey]._loaded)
+            if (globalDOMCache["iframe" + nodeKey]._loaded) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+            }
         }
     }
 
