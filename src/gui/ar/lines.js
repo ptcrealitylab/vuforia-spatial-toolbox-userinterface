@@ -268,7 +268,7 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed) {
     if(!speed) speed = 1;
     var angle = Math.atan2((lineStartPoint[1] - lineEndPoint[1]), (lineStartPoint[0] - lineEndPoint[0]));
-    var possitionDelta = 0;
+    var positionDelta = 0;
     var length1 = lineEndPoint[0] - lineStartPoint[0];
     var length2 = lineEndPoint[1] - lineStartPoint[1];
     var lineVectorLength = Math.sqrt(length1 * length1 + length2 * length2);
@@ -296,19 +296,19 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
 
     if (linkObject.ballAnimationCount >= lineStartWeight * spacer)  linkObject.ballAnimationCount = 0;
 
-    while (possitionDelta + linkObject.ballAnimationCount < lineVectorLength) {
-        var ballPossition = possitionDelta + linkObject.ballAnimationCount;
+    while (positionDelta + linkObject.ballAnimationCount < lineVectorLength) {
+        var ballPosition = positionDelta + linkObject.ballAnimationCount;
 
-        ratio = this.ar.utilities.map(ballPossition, 0, lineVectorLength, 0, 1);
+        ratio = this.ar.utilities.map(ballPosition, 0, lineVectorLength, 0, 1);
         for (var i = 0; i < 3; i++) {
             newColor[i] = (Math.floor(parseInt(colors[startColor][i], 10) + (colors[endColor][i] - colors[startColor][i]) * ratio));
         }
 
-        var ballSize = this.ar.utilities.map(ballPossition, 0, lineVectorLength, lineStartWeight, lineEndWeight);
+        var ballSize = this.ar.utilities.map(ballPosition, 0, lineVectorLength, lineStartWeight, lineEndWeight);
 
-        var x__ = lineStartPoint[0] - Math.cos(angle) * ballPossition;
-        var y__ = lineStartPoint[1] - Math.sin(angle) * ballPossition;
-        possitionDelta += ballSize * spacer;
+        var x__ = lineStartPoint[0] - Math.cos(angle) * ballPosition;
+        var y__ = lineStartPoint[1] - Math.sin(angle) * ballPosition;
+        positionDelta += ballSize * spacer;
         context.beginPath();
         context.fillStyle = "rgba("+newColor+")";
         context.arc(x__, y__, ballSize, 0, mathPI);

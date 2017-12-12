@@ -73,6 +73,7 @@ var globalStates = {
 	ballDistance: 14,
 	ballSize: 6,
 	ballAnimationCount: 0,
+    nodeSpeechHighlightCounter: 0,
     
     width: window.innerHeight,
     height: window.innerWidth,

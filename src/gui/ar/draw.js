@@ -49,10 +49,6 @@
 
 createNameSpace("realityEditor.gui.ar.draw");
 
-
-
-nodeCounter = 0;
-
 /**********************************************************************************************************************
  ******************************************** update and draw the 3D Interface ****************************************
  **********************************************************************************************************************/
@@ -161,7 +157,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
-                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) { // TODO: BEN why is there a frame in each object with the same name as the object?
+                if (!this.activeFrame.hasOwnProperty('visualization')) { // TODO: temp fix
+                    this.activeFrame.visualization = "ar";
+                }
+                if (this.activeFrame.visualization !== "ar") {
+                    continue;
+                }
+                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) {
                     // console.log("break from frame: ",objectKey, frameKey);
                     continue;
                 }
@@ -299,8 +301,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         
         if (globalStates.speechState) {
 
-            nodeCounter++;
-            if (nodeCounter > 20) {
+            globalStates.nodeSpeechHighlightCounter++;
+            if (globalStates.nodeSpeechHighlightCounter > 20) {
 
                 var closest = realityEditor.device.speechProcessor.getClosestObjectNodePair(); //realityEditor.device.speech.getClosestObjectNodePair(); //getClosestNode();
 
@@ -326,7 +328,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     closestNodeDom.style.opacity = 0.33; // opacity = 0.33;
                 }
 
-                nodeCounter = 0;
+                globalStates.nodeSpeechHighlightCounter = 0;
             }
 
         }
@@ -334,39 +336,37 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 
     // todo this is a test for the pocket
-
-    // todo finishing up this
-/*
-    if (pocketItem.pocket.nodes[pocketItemId]) {
+    
+    /////*
+    
+    if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
+        
         this.activeObject = pocketItem["pocket"];
-        // if(  globalStates.pointerPosition[0]>0)
-        //console.log(this.activeObject);
         this.activeObject.visibleCounter = timeForContentLoaded;
         this.activeObject.objectVisible = true;
-
+        
         objectKey = "pocket";
         frameKey = "pocket";
-
+        
         this.activeObjectMatrix = [];
-
         this.nodeCalculations.farFrontElement = "";
+        this.nodeCalculations.farFrontFrame = "";
         this.nodeCalculations.frontDepth = 10000000000;
 
-        // todo this needs heavy work
+        // TODO: implement smarter way to find front
         for (var thisOtherKey in this.visibleObjects) {
             if (this.visibleObjects[thisOtherKey][14] < this.nodeCalculations.frontDepth) {
                 this.nodeCalculations.frontDepth = this.visibleObjects[thisOtherKey][14];
                 this.nodeCalculations.farFrontElement = thisOtherKey;
+                this.nodeCalculations.farFrontFrame = getFarFrontFrame(thisOtherKey);
             }
         }
 
-        if (this.nodeCalculations.farFrontElement in this.visibleObjects) {
-            // console.log(this.nodeCalculations.farFrontElement);
+        if (this.visibleObjects.hasOwnProperty(this.nodeCalculations.farFrontElement)) {
 
-            var r = this.matrix.r;
-            this.ar.utilities.multiplyMatrix(this.visibleObjects[this.nodeCalculations.farFrontElement], globalStates.projectionMatrix, r);
-            this.ar.utilities.multiplyMatrix(rotateX, r, this.activeObjectMatrix);
-
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[this.nodeCalculations.farFrontElement], globalStates.projectionMatrix, this.matrix.r);
+            this.ar.utilities.multiplyMatrix(rotateX, this.matrix.r, this.activeObjectMatrix);
+            
         } else {
 
             this.activeObjectMatrix = [
@@ -374,39 +374,117 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 0, 1, 0, 0,
                 0, 0, 1, 0,
                 0, 0, 0, 1
-            ]
-        }
+            ];
 
-        for (nodeKey in this.activeObject.nodes) {
-            //console.log(document.getElementById("iframe"+ nodeKey));
-            this.activeNode = this.activeObject.nodes[nodeKey];
+        }
+        
+        // for (var frameKey in this.activeObject.frames) {
+        this.activeFrame = this.activeObject.frames["pocket"];
+        
+        this.activeKey = pocketItemId;
+             
+        for (var nodeKey in this.activeFrame.nodes) {
+            
+            this.activeNode = this.activeFrame.nodes[nodeKey];
+            this.activeType = this.activeNode.type;
 
             if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && this.activeType === "logic") {
-                this.activeKey = nodeKey;
-                this.activeVehicle = this.activeNode;
-                this.activeType = this.activeNode.type;
 
-                t    this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                this.activeNode.width = 100;
+                this.activeNode.height = 100;
 
-                        this.globalDOMCache, this.globalStates, this.globalCanvas,
-                        this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                        this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
+                this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
 
-                this.addElement("nodes/" + this.activeType + "/index.html",
-                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
+                // this.drawTransformed(this.visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+                // (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout)
 
-                // } else {
-                // hideTransformed("pocket", nodeKey, this.activeNode, "logic");
+                var thisUrl = "nodes/" + this.activeType + "/index.html";
+                this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
 
-                // }
+                    // this.addElement("nodes/" + this.activeType + "/index.html",
+                    // this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
+
             }
+            
         }
+        
     }
-    */
-    /// todo Test
+    
+    /////*
 
-    if (this.globalStates.acceleration.motion != 0) {
-        this.globalStates.acceleration = {
+    // todo finishing up this
+
+//     /*
+//     if (pocketItem.pocket.nodes[pocketItemId]) {
+//         this.activeObject = pocketItem["pocket"];
+//         // if(  globalStates.pointerPosition[0]>0)
+//         //console.log(this.activeObject);
+//         this.activeObject.visibleCounter = timeForContentLoaded;
+//         this.activeObject.objectVisible = true;
+//
+//         objectKey = "pocket";
+//         frameKey = "pocket";
+//
+//         this.activeObjectMatrix = [];
+//
+//         this.nodeCalculations.farFrontElement = "";
+//         this.nodeCalculations.frontDepth = 10000000000;
+//
+//         // todo this needs heavy work
+//         for (var thisOtherKey in this.visibleObjects) {
+//             if (this.visibleObjects[thisOtherKey][14] < this.nodeCalculations.frontDepth) {
+//                 this.nodeCalculations.frontDepth = this.visibleObjects[thisOtherKey][14];
+//                 this.nodeCalculations.farFrontElement = thisOtherKey;
+//             }
+//         }
+// */
+//         // if (this.nodeCalculations.farFrontElement in this.visibleObjects) {
+//         //     // console.log(this.nodeCalculations.farFrontElement);
+//         //
+//         //     var r = this.matrix.r;
+//         //     this.ar.utilities.multiplyMatrix(this.visibleObjects[this.nodeCalculations.farFrontElement], globalStates.projectionMatrix, r);
+//         //     this.ar.utilities.multiplyMatrix(rotateX, r, this.activeObjectMatrix);
+//         //
+//         // } else {
+//         //
+//         //     this.activeObjectMatrix = [
+//         //         1, 0, 0, 0,
+//         //         0, 1, 0, 0,
+//         //         0, 0, 1, 0,
+//         //         0, 0, 0, 1
+//         //     ]
+//         // }
+//
+//         for (nodeKey in this.activeObject.nodes) {
+//             //console.log(document.getElementById("iframe"+ nodeKey));
+//             this.activeNode = this.activeObject.nodes[nodeKey];
+//
+//             if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && this.activeType === "logic") {
+//                 this.activeKey = nodeKey;
+//                 this.activeVehicle = this.activeNode;
+//                 this.activeType = this.activeNode.type;
+//
+//                 this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+//
+//                         this.globalDOMCache, this.globalStates, this.globalCanvas,
+//                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
+//                         this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
+//
+//                 this.addElement("nodes/" + this.activeType + "/index.html",
+//                         this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
+//
+//                 // } else {
+//                 // hideTransformed("pocket", nodeKey, this.activeNode, "logic");
+//
+//                 // }
+//             }
+//         }
+//     }
+//     */
+//     /// todo Test
+
+    if (globalStates.acceleration.motion != 0) {
+        globalStates.acceleration = {
             x: 0,
             y: 0,
             z: 0,
@@ -511,12 +589,17 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             // this needs a better solution
 
             if (activeVehicle.fullScreen !== true) {
+                
+                var positionData = activeVehicle;
+                if (activeType === "ui") {
+                    positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
+                }
 
                 matrix.r3 = [
-                    activeVehicle.scale, 0, 0, 0,
-                    0, activeVehicle.scale, 0, 0,
+                    positionData.scale, 0, 0, 0,
+                    0, positionData.scale, 0, 0,
                     0, 0, 1, 0,
-                    activeVehicle.x, activeVehicle.y, 0, 1
+                    positionData.x, positionData.y, 0, 1
                 ];
 
                 if (globalStates.editingMode || globalStates.editingNode === activeKey) {
@@ -526,7 +609,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
                     }
 
-
                     if (matrix.matrixtouchOn === activeKey) {
                         //if(globalStates.unconstrainedPositioning===true)
                         activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
@@ -535,38 +617,39 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                    
                         if (matrix.copyStillFromMatrixSwitch) {
                             matrix.visual = utilities.copyMatrix(activeObjectMatrix);
-                            if (typeof activeVehicle.matrix === "object")
-                                if (activeVehicle.matrix.length > 0)
-                                // activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
-                                {  utilities.multiplyMatrix(activeVehicle.matrix, activeVehicle.temp, activeVehicle.begin);}
-                                else
-                                { activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);}
-                            else
-                                    {  activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);};
+                            if (typeof positionData.matrix === "object") {
+                                if (positionData.matrix.length > 0) { 
+                                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                                } else {
+                                    activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                                }
+                            } else {
+                                activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                            }
 
-                            if (globalStates.unconstrainedPositioning === true)
-                            // activeVehicle.matrix = copyMatrix(multiplyMatrix(activeVehicle.begin, invertMatrix(activeVehicle.temp)));
-
-                                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), activeVehicle.matrix);
+                            if (globalStates.unconstrainedPositioning === true) {
+                                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                            }
 
                             matrix.copyStillFromMatrixSwitch = false;
                         }
 
-                        if (globalStates.unconstrainedPositioning === true)
+                        if (globalStates.unconstrainedPositioning === true) {
                             activeObjectMatrix = matrix.visual;
+                        }
 
                     }
 
-                    if (typeof activeVehicle.matrix[1] !== "undefined") {
-                        if (activeVehicle.matrix.length > 0) {
+                    if (typeof positionData.matrix[1] !== "undefined") {
+                        if (positionData.matrix.length > 0) {
                             if (globalStates.unconstrainedPositioning === false) {
                                 //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
-                                utilities.multiplyMatrix(activeVehicle.matrix, activeVehicle.temp, activeVehicle.begin);
+                                utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
                             }
                             
                             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
                             utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
-                            utilities.estimateIntersection(activeKey, matrix.r2, activeVehicle);
+                            utilities.estimateIntersection(activeKey, matrix.r2, activeVehicle); // TODO: make estimate intersection work
                         } else {
                             utilities.estimateIntersection(activeKey, null, activeVehicle);
                         }
@@ -577,23 +660,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
                 }
 
-                if (activeVehicle.matrix.length < 13) {
+                if (positionData.matrix.length < 13) {
                     utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
                     
                 } else {
-                    utilities.multiplyMatrix(activeVehicle.matrix, activeObjectMatrix, matrix.r);
+                    utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
                     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-
-                    // finalMatrix = multiplyMatrix(matrix.r3, multiplyMatrix(activeVehicle.matrix, activeObjectMatrix));
                 }
-            
-                //    else {
-                //        multiplyMatrix(matrix.r3, activeObjectMatrix,finalMatrix);
-                //   }
-
-                // console.log(activeKey);
-                // console.log(globalDOMCache["activeVehicle" + activeKey]);
-                // console.log(globalDOMCache["activeVehicle" + activeKey].visibility);
+   
                 // draw transformed
                 globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
 
@@ -619,9 +693,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     cout(thisMsg);
-                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
-                        JSON.stringify(thisMsg), '*');
-                    //  console.log("I am here");
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
 
                 }
             } else {
@@ -715,10 +787,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
  * @desc
  * @return
  **/
-// TODO: used to be (objectKey, nodeKey, thisObject, type)... change invocations...
-realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle) {
-
-
+realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, globalDOMCache, cout) {
+    
  //   console.log(activeVehicle);
     if (activeVehicle.visible === true) {
         globalDOMCache["object" + activeKey].style.display = 'none';
@@ -813,20 +883,20 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         document.getElementById("GUI").appendChild(addContainer);
         addContainer.appendChild(addIframe);
-        
-        // If this is a frame, add a cover object for touch event synthesizing
-        if (activeVehicle.src) {
-            var cover = document.createElement('div');
-            cover.classList.add('main');
-            cover.style.visibility = 'visible';
-            cover.style.width = addIframe.style.width;
-            cover.style.height = addIframe.style.height;
-            cover.style.top = addIframe.style.top;
-            cover.style.left = addIframe.style.left;
-            // TODO: reimplement widget frames (uncomment frame.js)
-            // activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-            addContainer.appendChild(cover);
-        }
+
+        // TODO: reimplement widget frames (uncomment frame.js)
+        // // If this is a frame, add a cover object for touch event synthesizing
+        // if (activeVehicle.src) {
+        //     var cover = document.createElement('div');
+        //     cover.classList.add('main');
+        //     cover.style.visibility = 'visible';
+        //     cover.style.width = addIframe.style.width;
+        //     cover.style.height = addIframe.style.height;
+        //     cover.style.top = addIframe.style.top;
+        //     cover.style.left = addIframe.style.left;
+        //     activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+        //     addContainer.appendChild(cover);
+        // }
         
         addContainer.appendChild(addOverlay);
         addOverlay.appendChild(addCanvas);

@@ -76,14 +76,6 @@ function Objects() {
 	this.protocol = "R1";
 	// The (t)arget (C)eck(S)um is a sum of the checksum values for the target files.
 	this.tcs = null;
-	// Reality Editor: This is used to possition the UI element within its x axis in 3D Space. Relative to Marker origin.
-	this.x = 0;
-	// Reality Editor: This is used to possition the UI element within its y axis in 3D Space. Relative to Marker origin.
-	this.y = 0;
-	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 1;
-	// Unconstrained positioning in 3D space
-	this.matrix = [];
 	// Used internally from the reality editor to indicate if an object should be rendered or not.
 	this.visible = false;
 	// Used internally from the reality editor to trigger the visibility of naming UI elements.
@@ -104,14 +96,28 @@ function Frame() {
     this.objectId = null;
     // The name for the object used for interfaces.
     this.name = "";
-    // Reality Editor: This is used to possition the UI element within its x axis in 3D Space. Relative to Marker origin.
-    this.x = 0;
-    // Reality Editor: This is used to possition the UI element within its y axis in 3D Space. Relative to Marker origin.
-    this.y = 0;
-    // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-    this.scale = 1;
-    // Unconstrained positioning in 3D space
-    this.matrix = [];
+    // which visualization mode it should use right now ("ar" or "screen")
+    this.visualization = "ar";
+    // position data for the ar visualization mode
+    this.ar = {
+        // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
+        x : 0,
+        // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
+        y : 0,
+        // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
+        scale : 1,
+        // Unconstrained positioning in 3D space
+        matrix : []
+    };
+    // position data for the screen visualization mode
+    this.screen = {
+        // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
+        x : 0,
+        // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
+        y : 0,
+        // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
+        scale : 1
+    };
     // Used internally from the reality editor to indicate if an object should be rendered or not.
     this.visible = false;
     // Used internally from the reality editor to trigger the visibility of naming UI elements.
@@ -178,9 +184,9 @@ function Node() {
 	this.name = "";
 	// the actual data of the node
 	this.data = new Data(); // todo maybe value
-	// Reality Editor: This is used to possition the UI element within its x axis in 3D Space. Relative to Marker origin.
+	// Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
 	this.x = 0;
-	// Reality Editor: This is used to possition the UI element within its y axis in 3D Space. Relative to Marker origin.
+	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
 	this.scale = 1;
@@ -208,9 +214,9 @@ function Logic() {
 	this.name = "";
 	// data for logic blocks. depending on the blockSize which one is used.
 	this.data = new Data();
-	// Reality Editor: This is used to possition the UI element within its x axis in 3D Space. Relative to Marker origin.
+	// Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
 	this.x = 0;
-	// Reality Editor: This is used to possition the UI element within its y axis in 3D Space. Relative to Marker origin.
+	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
 	this.scale = 1;

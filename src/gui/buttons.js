@@ -107,37 +107,45 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
         realityEditor.gui.menus.off("editing",["reset"]);
 
 
-        for (var key in objects) {
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(key)) {
+        for (var objectKey in objects) {
+            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
                 continue;
             }
 
-            var tempResetObject = objects[key];
+            var tempResetObject = objects[objectKey];
 
             if (globalStates.guiState ==="ui") {
-                tempResetObject.matrix = [];
+                
+                for (var frameKey in tempResetObject.frames) {
+                    
+                    var activeFrame = tempResetObject.frames[frameKey];
+                    
+                    var positionData = (activeFrame.visualization === 'ar') ? (activeFrame.ar) : (activeFrame.screen);
+                    positionData.matrix = [];
+                    positionData.x = 0;
+                    positionData.y = 0;
+                    positionData.scale = 1;
+                    realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
+                }
 
-                tempResetObject.x = 0;
-                tempResetObject.y = 0;
-                tempResetObject.scale = 1;
-
-                realityEditor.network.sendResetContent(key, key, "ui");
             }
 
-            if (globalStates.guiState ==="node") {
-                for (var subKey in tempResetObject.nodes) {
-                    var tempResetValue = tempResetObject.nodes[subKey];
-
-
-
-                    tempResetValue.matrix = [];
-
-                    // tempResetValue.x = randomIntInc(0, 200) - 100;
-                    // tempResetValue.y = randomIntInc(0, 200) - 100;
-                    tempResetValue.scale = 1;
-
-                    realityEditor.network.sendResetContent(key, subKey, tempResetValue.type);
+            if (globalStates.guiState === "node") {
+                for (var frameKey in tempResetObject.frames) {
+                    
+                    var activeFrame = tempResetObject.frames[frameKey];
+                    
+                    for (var nodeKey in activeFrame.nodes) {
+                        
+                        var activeNode = activeFrame.nodes[nodeKey];
+                        activeNode.matrix = [];
+                        activeNode.scale = 1;
+                        // tempResetValue.x = randomIntInc(0, 200) - 100;
+                        // tempResetValue.y = randomIntInc(0, 200) - 100;
+                        realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
+                    }
                 }
+
             }
 
         }
@@ -308,7 +316,7 @@ realityEditor.gui.buttons.pocketButtonEnter = function(event) {
         // pocketItem["pocket"].objectVisible = false;
         realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
 
-        this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
+        this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic"); // TODO: change arguments
         delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
     }
 };

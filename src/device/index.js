@@ -561,9 +561,13 @@ realityEditor.device.onTouchMove = function(evt) {
 
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
 
+        var positionData = tempThisObject;
+        if (tempThisObject.hasOwnProperty('visualization')) {
+            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
+        }
         if (matrixTouch) {
-            tempThisObject.x = matrixTouch[0];
-            tempThisObject.y = matrixTouch[1];
+            positionData.x = matrixTouch[0];
+            positionData.y = matrixTouch[1];
         }
     }
 
@@ -692,7 +696,7 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
 
 			}
             // realityEditor.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic");
-            realityEditor.gui.ar.draw.hideTransformed(pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]);
+            realityEditor.gui.ar.draw.hideTransformed(pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], globalDOMCache, cout);
 			delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 		}
 	}
@@ -837,9 +841,14 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 		var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
 
+        var positionData = tempThisObject;
+        if (tempThisObject.hasOwnProperty('visualization')) {
+            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
+        }
+        
 		if (matrixTouch) {
-			tempThisObject.x = matrixTouch[0];
-			tempThisObject.y = matrixTouch[1];
+			positionData.x = matrixTouch[0];
+			positionData.y = matrixTouch[1];
 		}
 	}
 
@@ -877,42 +886,49 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// this is where it should be send to the object..
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
+		
+		var positionData = tempThisObject;
+		if (tempThisObject.hasOwnProperty('visualization')) {
+		    positionData = (tempThisObject.visualization === "ar") ? tempThisObject.ar : tempThisObject.screen;
+        }
 
 		var content = {};
-		content.x = tempThisObject.x;
-		content.y = tempThisObject.y;
-		content.scale = tempThisObject.scale;
+		content.x = positionData.x;
+		content.y = positionData.y;
+		content.scale = positionData.scale;
 
 		if (globalStates.unconstrainedPositioning === true) {
-			realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp),tempThisObject.matrix);
-			content.matrix = tempThisObject.matrix;
+			realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+			content.matrix = positionData.matrix;
 
 		}
 		content.lastEditor = globalStates.tempUuid;
 
 		// todo for now we just send nodes but no logic locations. ---- Became obsolete because the logic nodes are now normal nodes
 		//  if(globalStates.editingModeKind=== "node") {
-        if (globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame !== globalStates.editingModeLocation) {
-            // TODO: reimplement widget frames (uncomment frame.js)
-            // realityEditor.gui.frame.update(globalStates.editingModeObject, globalStates.editingModeLocation);
-            // // reposition all of this frame's nodes relative to their parent
-            // var object = objects[globalStates.editingModeObject];
-            // var frameId = globalStates.editingModeLocation;
-            // var frame = tempThisObject;
-            //
-            // for (var nodeId in object.nodes) {
-             //    var node = object.nodes[nodeId];
-             //    if (node.frame !== frameId) {
-             //        continue;
-             //    }
-             //    node.x = frame.x + (Math.random() - 0.5) * 160;
-             //    node.y = frame.y + (Math.random() - 0.5) * 160;
-            // }
-            //
-			// if (evt.pageX > window.innerWidth - 60) {
-			// 	realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
-			// }
-		} else if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
+        // if (globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame !== globalStates.editingModeLocation) {
+         //    // TODO: reimplement widget frames (uncomment frame.js)
+         //    // realityEditor.gui.frame.update(globalStates.editingModeObject, globalStates.editingModeLocation);
+         //    // // reposition all of this frame's nodes relative to their parent
+         //    // var object = objects[globalStates.editingModeObject];
+         //    // var frameId = globalStates.editingModeLocation;
+         //    // var frame = tempThisObject;
+         //    //
+         //    // for (var nodeId in object.nodes) {
+         //     //    var node = object.nodes[nodeId];
+         //     //    if (node.frame !== frameId) {
+         //     //        continue;
+         //     //    }
+         //     //    node.x = frame.x + (Math.random() - 0.5) * 160;
+         //     //    node.y = frame.y + (Math.random() - 0.5) * 160;
+         //    // }
+         //    //
+		// 	// if (evt.pageX > window.innerWidth - 60) {
+		// 	// 	realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
+		// 	// }
+		// } else 
+		    
+        if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
 			realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/size/", content, function (){});
 		}
 		// }
@@ -946,7 +962,11 @@ realityEditor.device.onMultiTouchCanvasStart = function(evt) {
 		globalStates.editingScaledistance = Math.sqrt(Math.pow((globalStates.editingModeObjectX - globalStates.editingScaleX), 2) + Math.pow((globalStates.editingModeObjectY - globalStates.editingScaleY), 2));
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
-		globalStates.editingScaledistanceOld = tempThisObject.scale;
+        var positionData = tempThisObject;
+        if (tempThisObject.hasOwnProperty('visualization')) {
+            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
+        }
+		globalStates.editingScaledistanceOld = positionData.scale;
 	}
 	cout("MultiTouchCanvasStart");
 };

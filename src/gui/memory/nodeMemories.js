@@ -288,7 +288,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
             ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
             ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCache, globalMatrix);
-            ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui");
+            ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui"); // TODO: change arguments
         
         } else {
             // Using Node.

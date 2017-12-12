@@ -102,7 +102,7 @@ realityEditor.device.onload = function () {
 	document.addEventListener("pointermove", realityEditor.device.onDocumentPointerMove.bind(realityEditor.device), false);
 	ec++;
 	document.addEventListener("pointerdown", realityEditor.device.onDocumentPointerDown.bind(realityEditor.device), false);
-	//document.addEventListener("pointerdown", getPossition, false);
+	//document.addEventListener("pointerdown", getPosition, false);
 	ec++;
 	document.addEventListener("pointerup", realityEditor.device.onDocumentPointerUp.bind(realityEditor.device), false);
 	ec++;

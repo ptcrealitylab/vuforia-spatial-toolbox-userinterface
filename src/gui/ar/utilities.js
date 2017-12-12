@@ -206,8 +206,8 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject
 	var angY = angles[0] * Math.cos(angles[2]) - angles[1] * Math.sin(angles[2]); // TODO: is this calculation correct? 
 
 	// calculate new x and y
-	var possitionX =  tempMatrix[14] * ((touch[0] - globalStates.height / 2) *(Math.abs(angX/2)+1));
-	var possitionY = tempMatrix[14]  * ((touch[1] - globalStates.width / 2)*(Math.abs(angY/2)+1));
+	var positionX =  tempMatrix[14] * ((touch[0] - globalStates.height / 2) *(Math.abs(angX/2)+1));
+	var positionY = tempMatrix[14]  * ((touch[1] - globalStates.width / 2)*(Math.abs(angY/2)+1));
 
 	// replace old x and y with new
 
@@ -215,7 +215,7 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject
 		tempMatrix[0], tempMatrix[1], tempMatrix[2], tempMatrix[3],
 		tempMatrix[4], tempMatrix[5], tempMatrix[6], tempMatrix[7],
 		tempMatrix[8], tempMatrix[9], tempMatrix[10], tempMatrix[11],
-		possitionX, possitionY, tempMatrix[14], tempMatrix[15]
+		positionX, positionY, tempMatrix[14], tempMatrix[15]
 	];
 
 	// and multiply this manipulated matrix with its original inverted.

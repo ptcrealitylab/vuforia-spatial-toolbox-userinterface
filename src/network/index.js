@@ -147,9 +147,9 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     thisObject.sendAcceleration = false;
                     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
-                    if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
-                        thisObject.matrix = [];
-                    }
+                    // if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
+                    //     thisObject.matrix = [];
+                    // }
 
                     for (var frameKey in objects[objectKey].frames) {
                        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -162,23 +162,24 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
                         thisFrame.visible = false;
                         
-                        if (thisFrame.matrix === null || typeof thisFrame.matrix !== "object") {
-                            thisFrame.matrix = [];
+                        var positionData = thisFrame.visualization === "ar" ? thisFrame.ar : thisFrame.screen;
+                        
+                        if (positionData.matrix === null || typeof positionData.matrix !== "object") {
+                            positionData.matrix = [];
                         }
                         
-                        
                         for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
-                            thisObject = objects[objectKey].frames[frameKey].nodes[nodeKey];
-                            if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
-                                thisObject.matrix = [];
+                            var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
+                            if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
+                                thisNode.matrix = [];
                             }
-                            thisObject.loaded = false;
-                            thisObject.visible = false;
+                            thisNode.loaded = false;
+                            thisNode.visible = false;
 
-                            if (thisObject.type === "logic") {
-                                thisObject.guiState = new LogicGUIState();
+                            if (thisNode.type === "logic") {
+                                thisNode.guiState = new LogicGUIState();
                                 var container = document.getElementById('craftingBoard');
-                                thisObject.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, thisObject.uuid);
+                                thisNode.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, thisObject.uuid);
                                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
                             }
                         }
@@ -240,7 +241,6 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     }
                     */
 
-                
                     objects[objectKey].uuid = objectKey;
 
                     for (var frameKey in objects[objectKey].frames) {
@@ -268,6 +268,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
 realityEditor.network.updateObject = function (origin, remote, objectKey, frameKey) {
 
+    console.log(origin, remote, objectKey, frameKey);
+    
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -515,12 +517,15 @@ realityEditor.network.onAction = function (action) {
             // }
             // this.getData('http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
 
-                if (objects[thisKey].integerVersion < 170) {
-                    if (typeof req.objectValues !== "undefined")
-                        req.nodes = req.objectValues;
+                if (objects[objectKey].integerVersion < 170) {
+                    if (typeof res.objectValues !== "undefined") {
+                        res.nodes = res.objectValues;
+                    }
                 }
+                
+                console.log("updateObject", objects[objectKey], res, objectKey, frameKey);
 
-                realityEditor.network.updateObject(objects[thisKey], res, objectKey, frameKey);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey, frameKey);
 
                 _this.cout("got object");
 
@@ -1404,26 +1409,32 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         tempThisObject = realityEditor.getNode(objectKey, frameKey, nodeKey);
     }
     else if (type === "ui") {
-        if (object === nodeKey) {
-            tempThisObject = realityEditor.getObject(objectKey);
-        } else {
-            console.warn('Refusing to reset content of frame');
-            return;
-        }
+        // if (object === nodeKey) {
+        //     tempThisObject = realityEditor.getObject(objectKey);
+        // } else {
+        //     console.warn('Refusing to reset content of frame');
+        //     return;
+        // }
+        tempThisObject = realityEditor.getFrame(objectKey, frameKey);
     }
 
     if (!tempThisObject) {
-        console.warn("Can't reset content of undefined object", object, node, type);
+        console.warn("Can't reset content of undefined object", objectKey, frameKey, nodeKey, type);
         return;
     }
     
+    var positionData = tempThisObject;
+    if (tempThisObject.hasOwnProperty('visualization')) {
+        positionData = (tempThisObject.visualization === 'ar') ? (tempThisObject.ar) : (tempThisObject.screen);
+    }
+    
     var content = {};
-    content.x = tempThisObject.x;
-    content.y = tempThisObject.y;
-    content.scale = tempThisObject.scale;
+    content.x = positionData.x;
+    content.y = positionData.y;
+    content.scale = positionData.scale;
 
-    if (typeof tempThisObject.matrix === "object") {
-        content.matrix = tempThisObject.matrix;
+    if (typeof positionData.matrix === "object") {
+        content.matrix = positionData.matrix;
     }
 
     content.lastEditor = globalStates.tempUuid;

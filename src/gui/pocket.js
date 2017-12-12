@@ -82,11 +82,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
 		var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 
-		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement==="") {
+		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement === "") {
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
 		} else {
-			if(thisItem.screenZ !==2 && thisItem.screenZ) {
+			if(thisItem.screenZ !== 2 && thisItem.screenZ) {
 
 				//  console.log(thisItem.screenZ);
 				// console.log(screenCoordinatesToMatrixXY(thisItem, [evt.clientX, evt.clientY]));
