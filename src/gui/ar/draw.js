@@ -1015,8 +1015,8 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
     addLogic.className = "mainEditing";
     addLogic.style.width = size + "px";
     addLogic.style.height = size + "px";
-    addLogic.style.left = ((activeVehicle.frameSizeX - size) / 2) + "px";
-    addLogic.style.top = ((activeVehicle.frameSizeY - size) / 2) + "px";
+    addLogic.style.left = 0; //((activeVehicle.frameSizeX - size) / 2) + "px";
+    addLogic.style.top = 0; //((activeVehicle.frameSizeY - size) / 2) + "px";
     addLogic.style.visibility = "hidden";
 
     var svgContainer = document.createElementNS('http://www.w3.org/2000/svg', "svg");

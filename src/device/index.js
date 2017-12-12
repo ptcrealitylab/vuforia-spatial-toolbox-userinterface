@@ -686,9 +686,8 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
                     
                     // TODO: it never gets added... maybe add globalDOMCache[pocketItemId] = // or something...
 
-                    // TODO: uncomment once I'm sure pocketItemId is actually in the DOM cache
-                    // globalDOMCache[pocketItemId].objectId = nodeCalculations.farFrontElement;
-                    // globalDOMCache[pocketItemId].frameId = nodeCalculations.farFrontFrame; // TODO: BEN is that necessary?
+                    globalDOMCache[pocketItemId].objectId = nodeCalculations.farFrontElement;
+                    globalDOMCache[pocketItemId].frameId = nodeCalculations.farFrontFrame;
 
                     realityEditor.network.postNewLogicNode(objects[nodeCalculations.farFrontElement].ip, nodeCalculations.farFrontElement, nodeCalculations.farFrontFrame, pocketItemId, thisItem);
                     
