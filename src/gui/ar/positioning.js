@@ -62,14 +62,20 @@ realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
 	// cout(thisScale);
 
 	var tempThisObject = realityEditor.device.getEditingModeObject();
+	
+	var positionData = tempThisObject;
+	if (tempThisObject.hasOwnProperty('visualization')) {
+	    positionData = (tempThisObject.visualization === 'ar') ? (tempThisObject.ar) : (tempThisObject.screen);
+    }
 
 	if (thisScale < 0.2) {
         thisScale = 0.2;
     }
 
 	if (typeof thisScale === "number" && thisScale > 0) {
-		tempThisObject.scale = thisScale;
+        positionData.scale = thisScale;
 	}
+	
 	globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
 	//drawRed(globalCanvas.context, [globalStates.editingModeObjectX,globalStates.editingModeObjectY],[touch.pageX,touch.pageY],globalStates.editingScaledistance);
 	this.ar.lines.drawBlue(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], globalStates.editingScaledistance);
