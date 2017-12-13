@@ -359,7 +359,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         var thisNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
         
         if (thisNode) {
-            delete objects[thisKey].frames[frameKey].nodes[nodeKey];
+            delete objects[objectKey].frames[frameKey].nodes[nodeKey];
         }
         return;
     }
@@ -406,7 +406,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         this.utilities.syncLinksWithRemote(origin, remote.links);
     }
 
-    realityEditor.gui.crafting.updateGrid(objects[thisKey].nodes[nodeKey].grid);
+    realityEditor.gui.crafting.updateGrid(objects[objectKey].nodes[nodeKey].grid);
 
     if (globalStates.currentLogic) {
 
@@ -464,10 +464,10 @@ realityEditor.network.onAction = function (action) {
             // });
             // this.getData('http://' + objects[thisAction.reloadLink.object].ip + ':' + httpPort + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame, thisAction.reloadLink.object, function (req, thisKey, frameKey) {
 
-                var thisFrame = realityEditor.getFrame(thisKey, frameKey);
-                if (objects[thisKey].integerVersion < 170) {
+                var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+                if (objects[objectKey].integerVersion < 170) {
 
-                    realityEditor.network.oldFormatToNew(objects[thisKey], objectKey, frameKey);
+                    realityEditor.network.oldFormatToNew(objects[objectKey], objectKey, frameKey);
                     /*
                     objects[thisKey].links = req.links;
                     for (var linkKey in objects[thisKey].links) {
@@ -489,7 +489,7 @@ realityEditor.network.onAction = function (action) {
                     thisFrame.links = res.links;
                 }
 
-                objects[thisKey].uuid = objectKey;
+                objects[objectKey].uuid = objectKey;
                 thisFrame.uuid = frameKey;
 
                 for (var nodeKey in thisFrame.nodes) {
@@ -583,7 +583,7 @@ realityEditor.network.onAction = function (action) {
 
             // this.getData(url, id, function (req, thisKey) {
             _this.cout('received memory', res.memory);
-            objects[thisKey].memory = res.memory;
+            objects[objectKey].memory = res.memory;
             _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
     }

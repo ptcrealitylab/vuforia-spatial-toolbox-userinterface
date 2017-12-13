@@ -98,7 +98,7 @@ MemoryContainer.prototype.set = function(obj) {
     this.backgroundImage.classList.add('memoryBackgroundImage');
     this.backgroundImage.setAttribute('touch-action', 'none');
     this.backgroundImage.src = image;
-
+    
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
     
     var objectMatrix = [1,0,0,0,
@@ -366,10 +366,12 @@ MemoryContainer.prototype.remember = function() {
     }
 
     realityEditor.gui.pocket.pocketHide();
-
-    var memoryBackground = document.querySelector('.memoryBackground');
-    memoryBackground.innerHTML = '';
-    memoryBackground.appendChild(this.backgroundImage);
+    
+    if (this.backgroundImage) {
+        var memoryBackground = document.querySelector('.memoryBackground');
+        memoryBackground.innerHTML = '';
+        memoryBackground.appendChild(this.backgroundImage);
+    }
 
     var memoryData = JSON.stringify(
         {id: this.memory.id, matrix: this.memory.matrix}
