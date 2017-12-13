@@ -314,7 +314,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     Object.keys(objects[objectKey].nodes).forEach( function(nodeKey) {
                         if (!objects[objectKey].nodes.hasOwnProperty(nodeKey)) return;
 
-                        var nodeDom = document.getElementById('thisObject' + nodeKey);
+                        var nodeDom = document.getElementById('object' + nodeKey);
                         if (nodeDom && nodeDom.style.opacity !== 1.0) {
                             nodeDom.style.opacity = 1.0; //1.0;
                         }
@@ -323,7 +323,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 });
 
                 // console.log("closest", closest);
-                var closestNodeDom = document.getElementById('thisObject' + closest.nodeKey);
+                var closestNodeDom = document.getElementById('object' + closest.nodeKey);
                 if (closestNodeDom && closestNodeDom.style.opacity !== 0.33) {
                     closestNodeDom.style.opacity = 0.33; // opacity = 0.33;
                 }
@@ -336,8 +336,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 
     // todo this is a test for the pocket
-    
-    /////*
     
     if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
         
@@ -393,104 +391,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeNode.width = 100;
                 this.activeNode.height = 100;
                 
-                // this.activeNode.loaded = true;
-
                 var thisUrl = "nodes/" + this.activeType + "/index.html";
                 this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
-
-                // TODO: uncomment
-                console.log(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout)
-                //
+                
                 this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
-
-                // this.drawTransformed(this.visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
-                // (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout)
-
-                // TODO: why was this afterwards?
-                // var thisUrl = "nodes/" + this.activeType + "/index.html";
-                // this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
-
-                    // this.addElement("nodes/" + this.activeType + "/index.html",
-                    // this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
 
             }
             
         }
         
     }
-    
-    /////*
-
-    // todo finishing up this
-
-//     /*
-//     if (pocketItem.pocket.nodes[pocketItemId]) {
-//         this.activeObject = pocketItem["pocket"];
-//         // if(  globalStates.pointerPosition[0]>0)
-//         //console.log(this.activeObject);
-//         this.activeObject.visibleCounter = timeForContentLoaded;
-//         this.activeObject.objectVisible = true;
-//
-//         objectKey = "pocket";
-//         frameKey = "pocket";
-//
-//         this.activeObjectMatrix = [];
-//
-//         this.nodeCalculations.farFrontElement = "";
-//         this.nodeCalculations.frontDepth = 10000000000;
-//
-//         // todo this needs heavy work
-//         for (var thisOtherKey in this.visibleObjects) {
-//             if (this.visibleObjects[thisOtherKey][14] < this.nodeCalculations.frontDepth) {
-//                 this.nodeCalculations.frontDepth = this.visibleObjects[thisOtherKey][14];
-//                 this.nodeCalculations.farFrontElement = thisOtherKey;
-//             }
-//         }
-// */
-//         // if (this.nodeCalculations.farFrontElement in this.visibleObjects) {
-//         //     // console.log(this.nodeCalculations.farFrontElement);
-//         //
-//         //     var r = this.matrix.r;
-//         //     this.ar.utilities.multiplyMatrix(this.visibleObjects[this.nodeCalculations.farFrontElement], globalStates.projectionMatrix, r);
-//         //     this.ar.utilities.multiplyMatrix(rotateX, r, this.activeObjectMatrix);
-//         //
-//         // } else {
-//         //
-//         //     this.activeObjectMatrix = [
-//         //         1, 0, 0, 0,
-//         //         0, 1, 0, 0,
-//         //         0, 0, 1, 0,
-//         //         0, 0, 0, 1
-//         //     ]
-//         // }
-//
-//         for (nodeKey in this.activeObject.nodes) {
-//             //console.log(document.getElementById("iframe"+ nodeKey));
-//             this.activeNode = this.activeObject.nodes[nodeKey];
-//
-//             if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && this.activeType === "logic") {
-//                 this.activeKey = nodeKey;
-//                 this.activeVehicle = this.activeNode;
-//                 this.activeType = this.activeNode.type;
-//
-//                 this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
-//
-//                         this.globalDOMCache, this.globalStates, this.globalCanvas,
-//                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-//                         this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
-//
-//                 this.addElement("nodes/" + this.activeType + "/index.html",
-//                         this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
-//
-//                 // } else {
-//                 // hideTransformed("pocket", nodeKey, this.activeNode, "logic");
-//
-//                 // }
-//             }
-//         }
-//     }
-//     */
-//     /// todo Test
 
     if (globalStates.acceleration.motion != 0) {
         globalStates.acceleration = {

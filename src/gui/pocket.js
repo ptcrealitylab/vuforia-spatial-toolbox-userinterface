@@ -95,13 +95,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 			    var frameKey = realityEditor.gui.ar.draw.nodeCalculations.farFrontFrame;
                 
                 var activeFrame = realityEditor.getFrame(objectKey, frameKey);
-                var unrotatedResult = [
-                    1, 0, 0, 0,
-                    0, -1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1
-                ];
+                var unrotatedResult = realityEditor.gui.ar.utilities.newIdentityMatrix();
                 realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, unrotatedResult);
+                if (!activeFrame.temp) {
+                    activeFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                }
                 realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, activeFrame.temp);
                 
                 
@@ -276,7 +274,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         // TODO: add any side effects here before showing pocket
         
         if (globalStates.editingNode) {
-            var logicNode = getLogicFromNodeKey(globalStates.editingNode);
+            // var logicNode = getLogicFromNodeKey(globalStates.editingNode);
+            var logicNode = realityEditor.getNode(globalStates.editingModeObject, globalStates.editingFrame, globalStates.editingNode);
             if (logicNode) {
                 overlayDiv.classList.add('overlayLogicNode');
 
@@ -300,20 +299,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         }
         
         toggleShown();
-    }
-    
-    function getLogicFromNodeKey(nodeKey) {
-        for (var objectKey in objects) {
-            if (!objects.hasOwnProperty(objectKey)) continue;
-            var object = objects[objectKey];
-            if (object.hasOwnProperty('nodes')) {
-                if (!object.nodes.hasOwnProperty(nodeKey)) continue;
-                if (!object.nodes[nodeKey].type === "logic") continue;
-                return object.nodes[nodeKey];
-            }
-
-        }
-        return null;
     }
 
     function pocketButtonIsBig() {

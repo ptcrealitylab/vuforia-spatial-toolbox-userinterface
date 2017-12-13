@@ -101,10 +101,7 @@ MemoryContainer.prototype.set = function(obj) {
     
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
     
-    var objectMatrix = [1,0,0,0,
-                        0,1,0,0,
-                        0,0,1,0,
-                        0,0,0,1];
+    var objectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
     
     if (obj.memory && obj.memory.matrix) {
         objectMatrix = obj.memory.matrix;

@@ -280,6 +280,7 @@ realityEditor.device.speechProcessor.resetSpeechRecording = function() {
     }, 500);
 };
 
+// TODO: use one of these that uses frames too
 realityEditor.device.speechProcessor.getClosestObjectNodePair = function() {
     var visibleObjectKeys = this.getVisibleObjectKeys();
     if (visibleObjectKeys.length === 0) return null;
@@ -353,7 +354,7 @@ realityEditor.device.speechProcessor.getClosestNodeOnObject = function(objectKey
         if (!nodes.hasOwnProperty(nodeKey)) continue;
         var node = nodes[nodeKey];
 
-        var element = document.getElementById('thisObject' + nodeKey);
+        var element = document.getElementById('object' + nodeKey);
         if (!element) continue;
         
         var matrixString = window.getComputedStyle(element).webkitTransform;

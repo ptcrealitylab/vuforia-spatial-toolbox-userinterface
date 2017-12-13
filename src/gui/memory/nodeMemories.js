@@ -149,6 +149,7 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
     this.resetEventHandlers();
 };
 
+// TODO: ben look at this next...
 // create a new instance of the saved logic node template, add it to the DOM and upload to the server
 realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logicNodeObject) {
     console.log("drop logic onto object", logicNodeObject);
@@ -165,23 +166,54 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     var logicKey = realityEditor.device.utilities.uuidTime();
     addedLogic.uuid = logicKey;
     
+    // TODO: new method for closest object/frame:
+    var closestObjectKey = null;
+    var closestFrameKey = null;
+    // var frontDepth = 10000000000;
+
+    var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys();
+    if (visibleObjectKeys.length > 0) {
+        closestObjectKey = visibleObjectKeys[0];
+    }
+    if (closestObjectKey && objects[closestObjectKey] && Object.keys(objects[closestObjectKey].frames).length > 0) {
+        closestFrameKey = Object.keys(objects[closestObjectKey].frames)[0];
+    }
+    // visibleObjectKeys.forEach( function(objectKey) {
+    //     if (this.visibleObjects[thisOtherKey][14] < frontDepth) {
+    //         frontDepth = this.visibleObjects[thisOtherKey][14];
+    //         farFrontElement = thisOtherKey;
+    //         farFrontFrame = getFarFrontFrame(thisOtherKey);
+    //     }
+    // });
+    //
+    // for (var thisOtherKey in this.visibleObjects) {
+    //     if (this.visibleObjects[thisOtherKey][14] < frontDepth) {
+    //         frontDepth = this.visibleObjects[thisOtherKey][14];
+    //         farFrontElement = thisOtherKey;
+    //         farFrontFrame = getFarFrontFrame(thisOtherKey);
+    //     }
+    // }
+    console.log(closestObjectKey, closestFrameKey);
+    ///////
+    
     // find the object to add the node to
-    var closestObjectAndNode = realityEditor.device.speechProcessor.getClosestObjectNodePair();
-    if (closestObjectAndNode) {
-        var closestObjectKey = closestObjectAndNode.objectKey;
+    // var closestObjectAndNode = realityEditor.device.speechProcessor.getClosestObjectNodePair();
+    if (closestFrameKey) {
+        // var closestObjectKey = closestObjectAndNode.objectKey;
+        // var closestObject = objects[closestObjectKey];
         var closestObject = objects[closestObjectKey];
+        var closestFrame = closestObject.frames[closestFrameKey];
 
         // make sure that logic nodes only stick to 2.0 server version
         if(realityEditor.network.testVersion(closestObjectKey)>165) {
-            closestObject.nodes[logicKey] = addedLogic;
+            closestFrame.nodes[logicKey] = addedLogic;
 
             // render it
             // realityEditor.gui.ar.draw.addElement(closestObjectKey, logicKey, "nodes/logic/index.html", addedLogic, 'logic', globalStates);
             var nodeUrl = "nodes/logic/index.html";
-            var closestFrameKey = logicKey;
-            // TODO: closestObjectAndNode also needs to include frame now
-            realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', this.activeVehicle); //addedLogic);
-
+            
+            realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', addedLogic); //addedLogic);
+                                              //(thisUrl, objectKey, frameKey, nodeKey, activeType, activeVehicle)
 
             var _thisNode = document.getElementById("iframe" + logicKey); //TODO: where does this get created??
             if (_thisNode) {
@@ -192,18 +224,20 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
             globalDOMCache[logicKey].objectId = closestObjectKey;
 
             // send it to the server
-            realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, logicKey, addedLogic);
+            realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
 
-            console.log("successfully added logic from pocket to object (" + closestObject.name + ")");
+            console.log("successfully added logic from pocket to object (" + closestObject.name + ", " + closestFrame.name + ")");
             return {
                 logicNode: addedLogic,
                 domElement: globalDOMCache[logicKey],
-                objectKey: closestObjectKey
+                objectKey: closestObjectKey,
+                frameKey: closestFrameKey
             };
         }
     }
 
     console.log("couldn't add logic from pocket to any objects");
+    return null;
 };
 
 // ensure there is a single drag handler on each memory container when the pocket is opened, so that they can only be dragged once.
@@ -270,8 +304,11 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
         console.log("move " + logicNodeObject.name + " to pointer position");
 
         var addedElement = nodeMemories.createLogicNodeFromPocket(logicNodeObject);
+        
+        // TODO: handle cases where addedElement is null (couldn't find anywhere to add it)
 
         var objectKey = addedElement.objectKey;
+        var frameKey = addedElement.frameKey;
         var generalObject = objects[objectKey];
         
         // Get the transformation matrix for the Logic Node from either the object's UI (if it exists in the DOM), or
@@ -279,7 +316,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
         //   using it, since we are in the Node view it is out-of-date. If using a Node, afterwards adjust the center
         //   by the Node's <x,y> offset within the object. 
         
-        var element = document.getElementById('thisObject' + addedElement.objectKey);
+        var element = document.getElementById('object' + addedElement.objectKey);
         var isNodeElement = false;
         if (element) {
             // Using UI. Refresh matrix.
@@ -288,7 +325,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
             ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
             ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCache, globalMatrix);
-            ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui"); // TODO: change arguments
+            ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui"); // TODO: change arguments 
         
         } else {
             // Using Node.
@@ -296,12 +333,12 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             var elementsIDsForThisObject = potentialElements.map( function(element) {
                 return element.id;
             }).filter( function(elementID) {
-                return elementID.startsWith('thisObject' + addedElement.objectKey);
+                return elementID.startsWith('object' + addedElement.objectKey);
             });
 
             if (elementsIDsForThisObject.length > 0) {
                 // extract true matrix for object so node can be placed correctly on it
-                element = document.getElementById(elementsIDsForThisObject[0]);
+                element = document.getElementById(elementsIDsForThisObject.pop()); //document.getElementById(elementsIDsForThisObject[0]);
                 isNodeElement = true;
             }
         }
@@ -323,7 +360,10 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
 
             // adjust by node offset if necessary
             if (isNodeElement) {
-                var referenceElement = objects[objectKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
+                // var referenceElement = objects[objectKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
+                // var referenceElement = objects[objectKey].frames[frameKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
+                // var referenceElement = objects[objectKey].frames[objectKey + element.id.split(addedElement.objectKey)[1]];
+                var referenceElement = objects[objectKey].frames[frameKey].nodes[element.id.split('object')[1]]
                 matrixTouch[0] += referenceElement.x;
                 matrixTouch[1] += referenceElement.y;
             }

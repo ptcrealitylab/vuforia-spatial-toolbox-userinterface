@@ -256,6 +256,7 @@ realityEditor.gui.ar.utilities.insidePoly = function(point, vs) {
     return inside;
 };
 
+// TODO: update with actual screen width and height regardless of device
 realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey) {
     var thisNode = thisObject.nodes[nodeKey];
     var screenCorners = [
@@ -268,6 +269,16 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
     //console.log(thisNode.name, [thisNode.screenX, thisNode.screenY], isInsideScreen);
     return isInsideScreen;
 };
+
+realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
+    return [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ];
+};
+
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/
