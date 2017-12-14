@@ -379,7 +379,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.nodeB = target.nodeId;
 
             if (realityEditor.device.security.isNodeActionAllowed(target.objectId, target.frameId, target.nodeId, "create")) {
-                realityEditor.network.postLinkToServer(globalProgram, objects);
+                realityEditor.network.postLinkToServer(globalProgram);
             }
 
 			// set everything back to false

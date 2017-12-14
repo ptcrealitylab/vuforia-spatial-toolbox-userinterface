@@ -197,7 +197,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     ///////
     
     // find the object to add the node to
-    // var closestObjectAndNode = realityEditor.device.speechProcessor.getClosestObjectNodePair();
+    // var closestObjectAndNode = realityEditor.device.speechProcessor.getClosestObjectFrameNode();
     if (closestFrameKey) {
         // var closestObjectKey = closestObjectAndNode.objectKey;
         // var closestObject = objects[closestObjectKey];

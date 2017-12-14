@@ -193,4 +193,51 @@ realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
     return this.objects[objectKey].frames[frameKey].nodes[nodeKey].links[linkKey];
 };
 
+realityEditor.forEachObjectKey = function(callback){
+    for (var objectKey in objects) {
+        if (!objects.hasOwnProperty(objectKey)) continue;
+        callback(objectKey);
+    }
+};
+
+realityEditor.forEachObject = function(callback){
+    for (var objectKey in objects) {
+        var object = realityEditor.getObject(objectKey);
+        if (object) {
+            callback(object, objectKey);
+        }
+    }
+};
+
+realityEditor.forEachNodeInAllObjects = function(callback) {
+    for (var objectKey in objects) {
+        realityEditor.forEachNodeInObject(objectKey, callback);
+    }
+};
+
+realityEditor.forEachNodeInObject = function(objectKey, callback) {
+    var object = realityEditor.getObject(objectKey);
+    if (!object) return;
+    for (var frameKey in object.frames) {
+        realityEditor.forEachNodeInFrame(objectKey, frameKey, callback);
+    }
+};
+
+realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    if (!frame) return;
+    for (var nodeKey in frame.nodes) {
+        if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
+        callback(objectKey, frameKey, nodeKey);
+    }
+};
+
+realityEditor.forEachFrameInObject = function(objectKey, callback) {
+    var object = realityEditor.getObject(objectKey);
+    if (!object) return;
+    for (var frameKey in object.frames) {
+        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        callback(objectKey, frameKey);
+    }
+};
 

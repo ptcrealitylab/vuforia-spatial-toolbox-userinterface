@@ -297,35 +297,28 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
         
         this.ar.lines.drawInteractionLines();
-        //  cout("drawlines");
         
+        // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
         if (globalStates.speechState) {
 
             globalStates.nodeSpeechHighlightCounter++;
             if (globalStates.nodeSpeechHighlightCounter > 20) {
 
-                var closest = realityEditor.device.speechProcessor.getClosestObjectNodePair(); //realityEditor.device.speech.getClosestObjectNodePair(); //getClosestNode();
-
+                var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode(); //realityEditor.device.speech.getClosestObjectFrameNode(); //getClosestNode();
                 if (!closest) return;
-
-                Object.keys(objects).forEach( function(objectKey) {
-                    if (!objects.hasOwnProperty(objectKey)) return;
-
-                    Object.keys(objects[objectKey].nodes).forEach( function(nodeKey) {
-                        if (!objects[objectKey].nodes.hasOwnProperty(nodeKey)) return;
-
-                        var nodeDom = document.getElementById('object' + nodeKey);
-                        if (nodeDom && nodeDom.style.opacity !== 1.0) {
-                            nodeDom.style.opacity = 1.0; //1.0;
-                        }
-                    });
-
+                
+                // reset all other nodes to full opacity
+                realityEditor.forEachNodeInAllObjects( function(objectKey, frameKey, nodeKey) {
+                    var nodeDom = document.getElementById('object' + nodeKey);
+                    if (nodeDom && nodeDom.style.opacity !== "1") {
+                        nodeDom.style.opacity = "1";
+                    }
                 });
 
-                // console.log("closest", closest);
+                // highlight the closest one with semi-transparency
                 var closestNodeDom = document.getElementById('object' + closest.nodeKey);
-                if (closestNodeDom && closestNodeDom.style.opacity !== 0.33) {
-                    closestNodeDom.style.opacity = 0.33; // opacity = 0.33;
+                if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
+                    closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
                 }
 
                 globalStates.nodeSpeechHighlightCounter = 0;

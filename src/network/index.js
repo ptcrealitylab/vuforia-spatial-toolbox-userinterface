@@ -1199,7 +1199,7 @@ realityEditor.network.postData = function (url, body, callback) {
     request.send(params);
 };
 
-realityEditor.network.postLinkToServer = function (thisLink, objects) {
+realityEditor.network.postLinkToServer = function (thisLink) {
 
     var thisObjectA = realityEditor.getObject(thisLink.objectA);
     var thisFrameA = realityEditor.getFrame(thisLink.objectA, thisLink.frameA);

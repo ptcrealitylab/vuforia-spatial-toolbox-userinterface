@@ -30,7 +30,7 @@ realityEditor.device.speechProcessor.parsePhrase = function(phrase) {
     // 4. match against action recipes
     this.recipeMatcher(lastWordData);
 
-    this.updateSpeechConsole();
+    realityEditor.device.speechPerformer.updateSpeechConsole();
 };
 
 realityEditor.device.speechProcessor.lastWordExtractor = function(phrase) {
@@ -49,15 +49,16 @@ realityEditor.device.speechProcessor.lastWordExtractor = function(phrase) {
 
 realityEditor.device.speechProcessor.contextTagger = function(wordData) {
     
-    var context = this.getClosestObjectNodePair();
+    var context = this.getClosestObjectFrameNode();
     if (!context) {
-        context = {objectKey: null, nodeKey: null};
+        context = {objectKey: null, frameKey: null, nodeKey: null};
     }
     
     return {
         word: wordData.word,
         index: wordData.index,
         contextObject: context.objectKey,
+        contextFrame: context.frameKey,
         contextNode: context.nodeKey 
     };
     
@@ -69,8 +70,11 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
         'this',
         'that'
     ];
-    var nodeNames = this.getNodeNamesAndKeys(wordData.contextObject).map(function(node){return node.name;});
-    locationVocab.push.apply(locationVocab, nodeNames);
+    
+    if (wordData.contextObject && wordData.contextFrame) {
+        var nodeNamesAndKeys = this.getNodeNamesAndKeys(wordData.contextObject, wordData.contextFrame);
+        locationVocab.push.apply(locationVocab, nodeNamesAndKeys.map(function(elt) { return elt.name; }));
+    }
     console.log(locationVocab);
     
     // TODO: add object names for other objects around the room
@@ -124,13 +128,14 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
     // provide visual feedback to show the user which node they highlighted
     if (category === 'LOCATION') {
         var location = this.resolveLocation(wordData);
-        this.highlightLocation(location);
+        realityEditor.device.speechPerformer.highlightLocation(location);
     }
     
     return {
         word: wordData.word,
         index: wordData.index,
         contextObject: wordData.contextObject,
+        contextFrame: wordData.contextFrame,
         contextNode: wordData.contextNode,
         category: category // OR doesn't get given a category but gets put in a separate bucket depending on each
     };
@@ -171,7 +176,7 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
         var action = actionWords.shift();
 
         if (action.word === 'stop' || action.word === 'reset') {
-            this.resetSpeechRecording();
+            realityEditor.device.speechPerformer.resetSpeechRecording();
             return;
         }
         
@@ -229,7 +234,7 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
 
         if (actionPerformed) {
             // this.resetPendingWords();
-            this.resetSpeechRecording();
+            realityEditor.device.speechPerformer.resetSpeechRecording();
             return;
         }
     }
@@ -252,50 +257,60 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
 ///////////////////////////// Helper Methods ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
+// gets a random frame on the given object (or the first, if chooseRandom is false)
+realityEditor.device.speechProcessor.getFrameOnObject = function(objectKey, chooseRandom) {
+
+    var frameKeys = [];
+    realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
+        frameKeys.push(frameKey);
+    });
+    if (frameKeys.length === 0) return null;
+    var index = chooseRandom ? Math.floor(Math.random() * frameKeys.length) : 0;
+    // return realityEditor.getFrame(objectKey, frameKeys[index]);
+    return frameKeys[index];
+};
+
+// gets a random node on the given frame (or the first, if chooseRandom is false)
+realityEditor.device.speechProcessor.getNodeOnFrame = function(objectKey, frameKey, chooseRandom) {
+
+    var nodeKeys = this.getNodeNamesAndKeys(objectKey, frameKey).map(function(elt) {
+        return elt.key;
+    });
+    if (nodeKeys.length === 0) return null;
+    var index = chooseRandom ? Math.floor(Math.random() * nodeKeys.length) : 0;
+    return nodeKeys[index]; //realityEditor.getNode(objectKey, frameKey, nodeKeys[index]);
+
+};
+
+realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey, frameKey) {
+    var nodeNames = [];
+    realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
+        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+        nodeNames.push({name: node.name.toLowerCase(), key: nodeKey});
+    });
+    return nodeNames;
+};
+
+
 // realityEditor.device.speechProcessor.resetPendingWords = function() {
 //     this.states.pendingWordData = [];
 // };
 
-realityEditor.device.speechProcessor.updateSpeechConsole = function() {
-    var consoleElement = document.getElementById('speechConsole'); //.style.display = 'none';
-    if (consoleElement) {
-        consoleElement.innerHTML = '';
-        this.states.pendingWordData.forEach(function(wordData) {
-            consoleElement.innerHTML += wordData.word + ' ';
-        });
-    }
-};
-
-realityEditor.device.speechProcessor.resetSpeechRecording = function() {
-    console.log("RESET SPEECH RECORDING");
-
-    this.states.pendingWordData = [];
-    this.resetPreviouslyHighlightedLocation(this.states.highlightedLocation);
-
-    realityEditor.app.stopSpeechRecording();
-
-    setTimeout( function() {
-        realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback"); // already set
-        realityEditor.app.startSpeechRecording();
-    }, 500);
-};
-
 // TODO: use one of these that uses frames too
-realityEditor.device.speechProcessor.getClosestObjectNodePair = function() {
+realityEditor.device.speechProcessor.getClosestObjectFrameNode = function() {
     var visibleObjectKeys = this.getVisibleObjectKeys();
     if (visibleObjectKeys.length === 0) return null;
 
-    var objectNodeCombos = [];
     var that = this;
     // find best node on each visible object
-    visibleObjectKeys.forEach( function(objectKey) {
-        objectNodeCombos.push(that.getClosestNodeOnObject(objectKey));
+    var objectFrameNodeOptions = visibleObjectKeys.map( function(objectKey) {
+        return that.getClosestNodeOnObject(objectKey);
     });
 
     // choose the closest one
-    var closestDistance = objectNodeCombos[0];
+    var closestDistance = objectFrameNodeOptions[0].distanceSquared;
     var closestIndex = 0;
-    objectNodeCombos.forEach(function(elt, i) {
+    objectFrameNodeOptions.forEach(function(elt, i) {
         if (elt.distanceSquared < closestDistance) {
             closestDistance = elt.distanceSquared;
             closestIndex = i;
@@ -303,60 +318,65 @@ realityEditor.device.speechProcessor.getClosestObjectNodePair = function() {
     });
 
     return {
-        objectKey: objectNodeCombos[closestIndex].objectKey,
-        nodeKey: objectNodeCombos[closestIndex].nodeKey
+        objectKey: objectFrameNodeOptions[closestIndex].objectKey,
+        frameKey: objectFrameNodeOptions[closestIndex].frameKey,
+        nodeKey: objectFrameNodeOptions[closestIndex].nodeKey
     }
 };
 
 realityEditor.device.speechProcessor.resolveLocation = function(wordData) {
 
     var objectKey = null;
+    var frameKey = null;
     var nodeKey = null;
 
     if (wordData.word === "this" || wordData.word === "that") {
         objectKey = wordData.contextObject;
+        frameKey = wordData.contextFrame;
         nodeKey = wordData.contextNode;
 
     } else {
-        var nodeNamesAndKeys = this.getNodeNamesAndKeys(wordData.contextObject);
-        var nodeNames = nodeNamesAndKeys.map(function(node){ return node.name; });
+        var nodeNamesAndKeys = this.getNodeNamesAndKeys(wordData.contextObject, wordData.contextFrame);
+        var nodeNames = nodeNamesAndKeys.map(function(elt) {
+            return elt.name;
+        });
         var nodeNameIndex = nodeNames.indexOf(wordData.word);
         if (nodeNameIndex > -1) {
             objectKey = wordData.contextObject;
+            frameKey = wordData.contextFrame;
             nodeKey = nodeNamesAndKeys[nodeNameIndex].key;
         }
     }
 
     return {
         objectKey: objectKey,
+        frameKey: frameKey,
         nodeKey: nodeKey
     };
 };
 
 realityEditor.device.speechProcessor.getVisibleObjectKeys = function() {
     var visibleObjectKeys = [];
-    for (var key in objects) {
-        if (!objects.hasOwnProperty(key)) continue;
-        if (objects[key].objectVisible) {
-            visibleObjectKeys.push(key);
+    realityEditor.forEachObject( function(object, objectKey) {
+        if (object.objectVisible) {
+            visibleObjectKeys.push(objectKey);
         }
-        // console.log( objects[key].name, objects[key].visible );
-    }
+    });
     return visibleObjectKeys;
 };
 
 realityEditor.device.speechProcessor.getClosestNodeOnObject = function(objectKey) {
-    var nodes = objects[objectKey].nodes;
+    
     var screenCenter = [284, 160]; // TODO: calculate each time based on screen size
     var closestDistanceSquared = Math.POSITIVE_INFINITY;
+    var closestFrameKey = null;
     var closestNodeKey = null;
-    for (var nodeKey in nodes) {
-        if (!nodes.hasOwnProperty(nodeKey)) continue;
-        var node = nodes[nodeKey];
-
+    
+    realityEditor.forEachNodeInObject(objectKey, function (objectKey, frameKey, nodeKey) {
+        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
         var element = document.getElementById('object' + nodeKey);
-        if (!element) continue;
-        
+        if (!element) return;
+
         var matrixString = window.getComputedStyle(element).webkitTransform;
         if (matrixString.startsWith('matrix3d')) { // get the matrix from the transform3d string
             var matrix = matrixString
@@ -367,65 +387,28 @@ realityEditor.device.speechProcessor.getClosestNodeOnObject = function(objectKey
             node.temp = matrix;
         }
 
-        var dObject = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter);
-        var nodeOffset = {x: dObject[0] - node.x, y: dObject[1] - node.y};
-        var totalDistanceSquared =  nodeOffset.x * nodeOffset.x + nodeOffset.y * nodeOffset.y;
-
-        // console.log(node.name, node.x + ' -> ' + nodeOffset.x, node.y + ' -> ' + nodeOffset.y, totalDistanceSquared);
+        var screenCenterMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter);
+        var nodeOffsetToCenter = {x: screenCenterMatrixXY[0] - node.x, y: screenCenterMatrixXY[1] - node.y};
+        var totalDistanceSquared =  nodeOffsetToCenter.x * nodeOffsetToCenter.x + nodeOffsetToCenter.y * nodeOffsetToCenter.y;
 
         if (closestNodeKey) {
             if (totalDistanceSquared < closestDistanceSquared) {
                 closestNodeKey = nodeKey;
+                closestFrameKey = frameKey;
                 closestDistanceSquared = totalDistanceSquared;
             }
         } else {
             closestNodeKey = nodeKey;
+            closestFrameKey = frameKey;
             closestDistanceSquared = totalDistanceSquared;
         }
-    }
+        
+    });
+    
     return {
         objectKey: objectKey,
+        frameKey: closestFrameKey,
         nodeKey: closestNodeKey,
         distanceSquared: closestDistanceSquared
     };
-};
-
-realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey) {
-    var nodeNamesAndKeys = [];
-    if (objectKey && objects.hasOwnProperty(objectKey)) { // node names of closest object become available
-        var obj = objects[objectKey];
-        nodeNamesAndKeys = Object.keys(obj.nodes).map( function(nodeKey) {
-            return {
-                name: obj.nodes[nodeKey].name,
-                key: nodeKey
-            }; // TODO: what to do about node names with spaces? and numbers? --> also keep full transcription and check against version with spaces
-        });
-    }
-    return nodeNamesAndKeys;
-};
-
-realityEditor.device.speechProcessor.highlightLocation = function(location) {
-    if (location && location.objectKey && location.nodeKey) {
-        var nodeDom = globalDOMCache["iframe" + location.nodeKey];
-        if (nodeDom) {
-            var contentForFeedback = 3;
-            nodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
-        }
-        
-        // reset previously highlighted location
-        this.resetPreviouslyHighlightedLocation(this.states.highlightedLocation);
-        this.states.highlightedLocation = location;
-    }
-};
-
-realityEditor.device.speechProcessor.resetPreviouslyHighlightedLocation = function() {
-    var previousLocation = this.states.highlightedLocation;
-    if (previousLocation && previousLocation.objectKey && previousLocation.nodeKey) {
-        var previousNodeDom = globalDOMCache["iframe" + previousLocation.nodeKey];
-        if (previousNodeDom) {
-            var contentForFeedback = 1;
-            previousNodeDom.contentWindow.postMessage( JSON.stringify({ uiActionFeedback: contentForFeedback }) , "*");
-        }
-    }
-    this.states.highlightedLocation = null;
 };
