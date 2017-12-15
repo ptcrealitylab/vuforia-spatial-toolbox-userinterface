@@ -193,13 +193,12 @@ realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
     return this.objects[objectKey].frames[frameKey].nodes[nodeKey].links[linkKey];
 };
 
-realityEditor.forEachObjectKey = function(callback){
-    for (var objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) continue;
-        callback(objectKey);
-    }
-};
+// helper methods to cleanly iterate over all objects / frames / nodes
 
+/**
+ * Perform the callback with each (object, objectKey) pair for all objects
+ * @param callback 
+ */
 realityEditor.forEachObject = function(callback){
     for (var objectKey in objects) {
         var object = realityEditor.getObject(objectKey);
@@ -209,20 +208,36 @@ realityEditor.forEachObject = function(callback){
     }
 };
 
+/**
+ * Perform the callback on each (objectKey, frameKey, nodeKey) pair for all objects, frames, and nodes
+ * @param callback
+ */
 realityEditor.forEachNodeInAllObjects = function(callback) {
     for (var objectKey in objects) {
         realityEditor.forEachNodeInObject(objectKey, callback);
     }
 };
 
+/**
+ * Perform the callback on each (objectKey, frameKey, nodeKey) pair for the given object
+ * @param objectKey
+ * @param callback
+ */
 realityEditor.forEachNodeInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;
     for (var frameKey in object.frames) {
+        if (!object.frames.hasOwnProperty(frameKey)) continue;
         realityEditor.forEachNodeInFrame(objectKey, frameKey, callback);
     }
 };
 
+/**
+ * Perform the callback for each (objectKey, frameKey, nodeKey) pair for the given frame
+ * @param objectKey
+ * @param frameKey
+ * @param callback
+ */
 realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
     var frame = realityEditor.getFrame(objectKey, frameKey);
     if (!frame) return;
@@ -232,6 +247,11 @@ realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
     }
 };
 
+/**
+ * Perform the callback for each (objectKey, frameKey) pair for the given object
+ * @param objectKey
+ * @param callback
+ */
 realityEditor.forEachFrameInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;
