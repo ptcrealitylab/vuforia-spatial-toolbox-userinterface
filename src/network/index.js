@@ -134,7 +134,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 if (msg && objectKey) {
                     
                     //TODO: DEBUG BEN REMOVE - THIS PREVENTS OLD OBJECTS WITHOUT FRAMES FROM BEING ADDED
-                    if (msg.version !== "3.0.0") return;
+                    if (msg.version !== "3.0.0") return; // /*|| msg.ip === "192.168.1.7"*/) return;
 
                     objects[objectKey] = msg;
                     
@@ -269,7 +269,9 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 realityEditor.network.updateObject = function (origin, remote, objectKey, frameKey) {
 
     console.log(origin, remote, objectKey, frameKey);
-    
+
+    console.warn('updateObject: ' + frameKey);
+
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -277,31 +279,85 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     if (remote.matrix) {
         origin.matrix = remote.matrix;
     }
+    
+    // update each frame in the object
+    for (var frameKey in remote.frames) {
+        if (!origin.frames[frameKey]) {
+            origin.frames[frameKey] = remote.frames[frameKey];
 
-    for (var nodeKey in remote.nodes) {
-        if (!origin.nodes[nodeKey]) {
-            origin.nodes[nodeKey] = remote.nodes[nodeKey];
+            origin.frames[frameKey].width = 300;
+            origin.frames[frameKey].height = 300;
+
+            console.log('added new frame', origin.frames[frameKey]);
+            
+            var frameType = origin.frames[frameKey].type;
+            var frameUrl = '../../frames/' + frameType + '/index.html';
+            realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
+            
         } else {
+            origin.frames[frameKey].ar = remote.frames[frameKey].ar;
+            origin.frames[frameKey].screen = remote.frames[frameKey].screen;
+            origin.frames[frameKey].name = remote.frames[frameKey].name;
+            
+            // now update each node in the frame
+            var remoteNodes = remote.frames[frameKey].nodes;
+            var originNodes = origin.frames[frameKey].nodes;
+            
+            for (var nodeKey in remoteNodes) {
+                if (!originNodes[nodeKey]) {
+                    originNodes[nodeKey] = remoteNodes[nodeKey];
+                } else {
 
-            origin.nodes[nodeKey].x = remote.nodes[nodeKey].x;
-            origin.nodes[nodeKey].y = remote.nodes[nodeKey].y;
-            origin.nodes[nodeKey].scale = remote.nodes[nodeKey].scale;
+                    originNodes[nodeKey].x = remoteNodes[nodeKey].x;
+                    originNodes[nodeKey].y = remoteNodes[nodeKey].y;
+                    originNodes[nodeKey].scale = remoteNodes[nodeKey].scale;
 
-            origin.nodes[nodeKey].name = remote.nodes[nodeKey].name;
-            if (remote.nodes[nodeKey].text)
-                origin.nodes[nodeKey].text = remote.nodes[nodeKey].text;
-            if (remote.nodes[nodeKey].matrix)
-                origin.nodes[nodeKey].matrix = remote.nodes[nodeKey].matrix;
+                    originNodes[nodeKey].name = remoteNodes[nodeKey].name;
+                    if (remoteNodes[nodeKey].text) {
+                        originNodes[nodeKey].text = remoteNodes[nodeKey].text;
+                    }
+                    if (remoteNodes[nodeKey].matrix) {
+                        originNodes[nodeKey].matrix = remoteNodes[nodeKey].matrix;
+                    }
+                }
+
+                if (globalDOMCache["iframe" + nodeKey]) {
+                    if (globalDOMCache["iframe" + nodeKey]._loaded) {
+                        realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+                    }
+                }
+            }
         }
-
-        if (globalDOMCache["iframe" + nodeKey]) {
-            if (globalDOMCache["iframe" + nodeKey]._loaded) {
-                realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+        
+        if (globalDOMCache["iframe" + frameKey]) {
+            if (globalDOMCache["iframe" + frameKey]._loaded) {
+                realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
     }
 
-
+    // for (var nodeKey in remote.nodes) {
+    //     if (!origin.nodes[nodeKey]) {
+    //         origin.nodes[nodeKey] = remote.nodes[nodeKey];
+    //     } else {
+    //
+    //         origin.nodes[nodeKey].x = remote.nodes[nodeKey].x;
+    //         origin.nodes[nodeKey].y = remote.nodes[nodeKey].y;
+    //         origin.nodes[nodeKey].scale = remote.nodes[nodeKey].scale;
+    //
+    //         origin.nodes[nodeKey].name = remote.nodes[nodeKey].name;
+    //         if (remote.nodes[nodeKey].text)
+    //             origin.nodes[nodeKey].text = remote.nodes[nodeKey].text;
+    //         if (remote.nodes[nodeKey].matrix)
+    //             origin.nodes[nodeKey].matrix = remote.nodes[nodeKey].matrix;
+    //     }
+    //
+    //     if (globalDOMCache["iframe" + nodeKey]) {
+    //         if (globalDOMCache["iframe" + nodeKey]._loaded) {
+    //             realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+    //         }
+    //     }
+    // }
     // TODO: reimplement widget frames (uncomment frame.js)
     // var missingFrames = {};
     // for (var frameKey in origin.frames) {
@@ -587,6 +643,127 @@ realityEditor.network.onAction = function (action) {
             _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
     }
+    
+    if (thisAction.addFrame) {
+        console.log("addFrame");
+        
+        var thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
+        
+        if (thisObject) {
+            
+            var frame = new Frame();
+            
+            frame.objectId = thisAction.addFrame.objectID;
+            frame.name = thisAction.addFrame.name;
+            
+            function getPrimaryFrame(objectID) {
+                return {
+                    frameID: objectID+"zero",
+                    frame: realityEditor.getFrame(objectID, objectID+"zero")
+                };
+            }
+            
+            var primaryFrame = getPrimaryFrame(thisAction.addFrame.objectID);
+            
+            
+            var frameWidth = parseInt(globalDOMCache[primaryFrame.frameID].style.width);
+            var frameHeight = parseInt(globalDOMCache[primaryFrame.frameID].style.height);
+            var offsetX = primaryFrame.frame.ar.x;
+            var offsetY = primaryFrame.frame.ar.y;
+            
+            frame.ar.x = (thisAction.addFrame.x - frameWidth / 2 + offsetX) / 2 - 150; // 150 is frame.frameSizeX/2
+            frame.ar.y = (thisAction.addFrame.y - frameHeight / 2 + offsetY) / 2 - 150;
+            frame.ar.scale = thisAction.addFrame.scale;
+            
+            frame.location = thisAction.addFrame.location;
+            frame.src = thisAction.addFrame.src;
+            frame.type = thisAction.addFrame.type;
+            
+            
+            // set other properties
+            
+            frame.animationScale = 0;
+            frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            frame.frameSizeX = 300;
+            frame.frameSizeY = 300;
+            frame.width = 300;
+            frame.height = 300;
+            frame.loaded = false;
+            // frame.objectVisible = true;
+            frame.screen = {
+                x: frame.ar.x,
+                y: frame.ar.y,
+                scale: frame.ar.scale,
+                matrix: frame.ar.matrix
+            };
+            // frame.screenX = 0;
+            // frame.screenY = 0;
+            frame.screenZ = 1000;
+            frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+            // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+            frame.fullScreen = false;
+            frame.sendMatrix = false;
+            frame.sendAcceleration = false;
+            frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+            // thisFrame.visible = false;
+
+            thisObject.frames[thisAction.addFrame.frameID] = frame;
+            
+            // if (thisAction.addFrame.frame) { // && thisAction.addFrame.hasOwnProperty('name')) {
+                
+                // console.log(thisAction.addFrame.frame);
+                
+                // var thisFrame = JSON.parse(thisAction.addFrame.frame);
+                
+                //thisObject.frames[thisAction.addFrame.frameID] = thisAction.addFrame.frame;
+
+                // realityEditor.network.updateObject(objects[objectKey], res, objectKey, frameKey);
+
+            // }
+
+            // if (!origin.frames[frameKey]) {
+            //     origin.frames[frameKey] = remote.frames[frameKey];
+            //
+            //     origin.frames[frameKey].width = 300;
+            //     origin.frames[frameKey].height = 300;
+            //
+            //     console.log('added new frame', origin.frames[frameKey]);
+            //
+            //     var frameType = origin.frames[frameKey].type;
+            //     var frameUrl = '../../frames/' + frameType + '/index.html';
+            //     realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
+            // }
+            
+            
+        }
+        
+
+        // if (objects) {
+        //     var thisObject = objects[thisAction.addFrame.objectID];
+        //    
+        //    
+        //
+        //     var urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
+        //     this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
+        //
+        //         // }
+        //         // this.getData('http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
+        //
+        //         if (objects[objectKey].integerVersion < 170) {
+        //             if (typeof res.objectValues !== "undefined") {
+        //                 res.nodes = res.objectValues;
+        //             }
+        //         }
+        //
+        //         console.log("updateObject", objects[objectKey], res, objectKey, frameKey);
+        //
+        //
+        //         _this.cout("got object");
+        //
+        //     });
+        // }
+    }
 
     for (var key in thisAction) {
         this.cout("found action: " + JSON.stringify(key));
@@ -634,27 +811,40 @@ realityEditor.network.onInternalPostMessage = function (e) {
     // var thisNode = realityEditor.getNode(msgContent.node);
     // var activeVehicle = thisNode || thisFrame;
     
-        // TODO: bring this pack to make pocketItem part work
-        /*
-    if (thisFrame) {
-        if (msgContent.node && (msgContent.node in thisFrame.nodes)) {
-            tempThisObject = thisFrame.nodes[msgContent.node];
-        } else {
-            tempThisObject = thisFrame;
-        }
+    // var activeKey = null;
+    
+    if (msgContent.node) {
+        tempThisObject = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
+    } else if (msgContent.frame) {
+        tempThisObject = realityEditor.getFrame(msgContent.object, msgContent.frame);
+    } else if (msgContent.object) {
+        tempThisObject = realityEditor.getObject(msgContent.object);
+    }
+    
+    tempThisObject = tempThisObject || {};
+
+    // TODO: bring this pack to make pocketItem part work
+
+    /*
+if (thisFrame) {
+    if (msgContent.node && (msgContent.node in thisFrame.nodes)) {
+        tempThisObject = thisFrame.nodes[msgContent.node];
+    } else {
+        tempThisObject = thisFrame;
+    }
 
 
-    } else if (msgContent.frame in pocketItem) {
-        if (msgContent.node === msgContent.object) {
-            tempThisObject = pocketItem[msgContent.frame];
-        } else {
-            if (msgContent.node in pocketItem[msgContent.frame].nodes) {
-                tempThisObject = pocketItem[msgContent.frame].nodes[msgContent.node];
-            } else return;
-        }
+} else if (msgContent.frame in pocketItem) {
+    if (msgContent.node === msgContent.object) {
+        tempThisObject = pocketItem[msgContent.frame];
+    } else {
+        if (msgContent.node in pocketItem[msgContent.frame].nodes) {
+            tempThisObject = pocketItem[msgContent.frame].nodes[msgContent.node];
+        } else return;
+    }
 
-    } else return;
-    */
+} else return;
+*/
 
     // if (msgContent.node && msgContent.width && msgContent.height) {
     //     var thisMsgNode = document.getElementById(msgContent.node);
@@ -698,20 +888,22 @@ realityEditor.network.onInternalPostMessage = function (e) {
         iFrame.style.top = top;
         iFrame.style.left = left;
 
-        if (tempThisObject.frameTouchSynthesizer) {
-            var cover = tempThisObject.frameTouchSynthesizer.cover;
-            cover.style.width = msgContent.width;
-            cover.style.height = msgContent.height;
-            cover.style.top = top;
-            cover.style.left = left;
-        }
+        // if (tempThisObject.frameTouchSynthesizer) {
+        //     var cover = tempThisObject.frameTouchSynthesizer.cover;
+        //     cover.style.width = msgContent.width;
+        //     cover.style.height = msgContent.height;
+        //     cover.style.top = top;
+        //     cover.style.left = left;
+        // }
     }
     
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
-            document.getElementById("iframe" + msgContent.node).contentWindow.postMessage(
-                '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            
+            // TODO: what did this do? bring it back once i understand
+            // document.getElementById("iframe" + msgContent.node).contentWindow.postMessage(
+            //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
         }
     }
 

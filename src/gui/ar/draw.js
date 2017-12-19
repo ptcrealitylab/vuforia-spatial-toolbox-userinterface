@@ -731,7 +731,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     var activeKey = (!!nodeKey) ? nodeKey : frameKey;
     
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
-
+        
         console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
         console.log("(active key is " + activeKey + ")");
 
