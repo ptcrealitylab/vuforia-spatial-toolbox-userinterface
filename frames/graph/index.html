@@ -102,7 +102,7 @@
     var lastValue = 0;
     var oldWeight = 0.8;
 
-    var RENDER_DEBUG_STREAM = false;
+    var RENDER_DEBUG_STREAM = true;
 
     window.onload = function() {
 
@@ -148,6 +148,7 @@
     }
 
     function displayValue(msg) {
+        if (!msg.data || !(msg.data.value || msg.data.debug)) return;
 
         // draws random graph for preview icon
         if (msg.data.debug) {

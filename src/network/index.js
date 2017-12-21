@@ -290,9 +290,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
 
             console.log('added new frame', origin.frames[frameKey]);
             
-            var frameType = origin.frames[frameKey].type;
-            var frameUrl = '../../frames/' + frameType + '/index.html';
-            realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
+            // var frameType = origin.frames[frameKey].type;
+            // var frameUrl = '../../frames/' + frameType + '/index.html';
+            // realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
             
         } else {
             origin.frames[frameKey].ar = remote.frames[frameKey].ar;
@@ -656,6 +656,7 @@ realityEditor.network.onAction = function (action) {
             frame.objectId = thisAction.addFrame.objectID;
             frame.name = thisAction.addFrame.name;
             
+            // TODO: implement this in a more reusable way
             function getPrimaryFrame(objectID) {
                 return {
                     frameID: objectID+"zero",
@@ -665,29 +666,29 @@ realityEditor.network.onAction = function (action) {
             
             var primaryFrame = getPrimaryFrame(thisAction.addFrame.objectID);
             
-            
             var frameWidth = parseInt(globalDOMCache[primaryFrame.frameID].style.width);
             var frameHeight = parseInt(globalDOMCache[primaryFrame.frameID].style.height);
             var offsetX = primaryFrame.frame.ar.x;
             var offsetY = primaryFrame.frame.ar.y;
             
-            frame.ar.x = (thisAction.addFrame.x - frameWidth / 2 + offsetX) / 2 - 150; // 150 is frame.frameSizeX/2
-            frame.ar.y = (thisAction.addFrame.y - frameHeight / 2 + offsetY) / 2 - 150;
+            var interfaceSize = 300;
+            
+            frame.ar.x = (thisAction.addFrame.x - frameWidth / 2 + offsetX) / 2 - interfaceSize/2; // 150 is frame.frameSizeX/2
+            frame.ar.y = (thisAction.addFrame.y - frameHeight / 2 + offsetY) / 2 - interfaceSize/2;
             frame.ar.scale = thisAction.addFrame.scale;
             
             frame.location = thisAction.addFrame.location;
             frame.src = thisAction.addFrame.src;
             frame.type = thisAction.addFrame.type;
             
-            
             // set other properties
             
             frame.animationScale = 0;
             frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            frame.frameSizeX = 300;
-            frame.frameSizeY = 300;
-            frame.width = 300;
-            frame.height = 300;
+            frame.frameSizeX = interfaceSize;
+            frame.frameSizeY = interfaceSize;
+            frame.width = interfaceSize;
+            frame.height = interfaceSize;
             frame.loaded = false;
             // frame.objectVisible = true;
             frame.screen = {
@@ -707,6 +708,8 @@ realityEditor.network.onAction = function (action) {
             frame.sendAcceleration = false;
             frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
+            
+            // TODO: add nodes to frame
 
             thisObject.frames[thisAction.addFrame.frameID] = frame;
             
@@ -734,6 +737,15 @@ realityEditor.network.onAction = function (action) {
             //     var frameUrl = '../../frames/' + frameType + '/index.html';
             //     realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
             // }
+            
+            
+            // TODO: start unconstrained editing on the frame
+            
+            
+            globalStates.editingMode = true;
+            realityEditor.gui.ar.draw.matrix.matrixtouchOn = thisAction.addFrame.frameID; //target.nodeId;
+            realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+            
             
             
         }
@@ -1063,6 +1075,10 @@ if (thisFrame) {
             }
         }
     }
+    
+/*    if (typeof msgContent.finishedLoading !== 'undefined') {
+        console.log('~~~ iframe finished loading ~~~')
+    }*/
 
 };
 
@@ -1693,6 +1709,28 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     }
     
     var activeKey = nodeKey || frameKey;
+
+    // console.warn('TODO: get rid of hack to only add cover to zero frame');
+    // if (frame && activeKey === frameKey && frameKey.indexOf('zero') > -1) {  // TODO: fix
+    //    
+    //     var addIframe = globalDOMCache["iframe" + activeKey];
+    //     var addContainer = globalDOMCache["object" + activeKey];
+    //    
+    //     var cover = document.createElement('div');
+    //     cover.classList.add('main');
+    //     cover.style.visibility = 'visible';
+    //     cover.style.width = "2025px"; //addIframe.style.width; 
+    //     cover.style.height = "721px"; //addIframe.style.height;
+    //     cover.style.top = "-200.5px"; //addIframe.style.top;
+    //     cover.style.left = "-728.5px"; //addIframe.style.left;
+    //
+    //    // width: 2025px; height: ; visibility: hidden; top: ; left: ;
+    //    
+    //     frame.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+    //     addContainer.appendChild(cover);
+    //    
+    //     console.log(cover, addIframe);
+    // }
     
     globalDOMCache["iframe" + activeKey]._loaded = true;
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');

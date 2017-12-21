@@ -546,7 +546,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             matrix.copyStillFromMatrixSwitch = false;
                         }
 
-                        if (globalStates.unconstrainedPositioning === true) {
+                        if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
                             activeObjectMatrix = matrix.visual;
                         }
 
@@ -604,7 +604,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         thisMsg.acceleration = globalStates.acceleration;
                     }
 
-                    cout(thisMsg);
+                    // cout(thisMsg);
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
 
                 }
@@ -770,6 +770,13 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         }
         
         // Create DOM elements for everything associated with this frame/node
+        
+        var isUsingLocalFrame = false;
+        if (activeKey === frameKey && activeVehicle.type) {
+            console.log('change url to ../frames/' + activeVehicle.type + '/index.html');
+            thisUrl = '../../../frames/' + activeVehicle.type + '/index.html';
+            isUsingLocalFrame = true;
+        }
 
         var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
         var addContainer = domElements.addContainer;
@@ -781,6 +788,11 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addOverlay.frameId = frameKey;
         addOverlay.nodeId = nodeKey;
         addOverlay.type = activeType;
+        
+        if (isUsingLocalFrame) {
+            addIframe.style.width = '300px';
+            addIframe.style.height = '200px';
+        }
         
         // todo the event handlers need to be bound to non animated ui elements for fast movements.
         // todo the lines need to end at the center of the square.

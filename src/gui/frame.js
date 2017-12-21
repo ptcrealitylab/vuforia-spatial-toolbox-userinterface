@@ -39,8 +39,8 @@
 //  * License, v. 2.0. If a copy of the MPL was not distributed with this
 //  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //  */
-
-// TODO: reimplement widget frames (uncomment frame.js)
+//
+// // TODO: reimplement widget frames (uncomment frame.js)
 // createNameSpace("realityEditor.gui.frame");
 //
 // (function(realityEditor) {
@@ -216,28 +216,28 @@
 //     this.cover.removeEventListener('pointercancel', this.onPointerEvent);
 // };
 //
-// function Frame(src, width, height) {
-//     this.src = src;
-//     this.x = 0;
-//     this.y = 0;
-//     this.width = width;
-//     this.height = height;
-//     this.scale = 1;
-//     this.developer = true;
-//     this.matrix = [
-//         1, 0, 0, 0,
-//         0, 1, 0, 0,
-//         0, 0, 1, 0,
-//         0, 0, 0, 1
-//     ];
-// }
+// // function Frame(src, width, height) {
+// //     this.src = src;
+// //     this.x = 0;
+// //     this.y = 0;
+// //     this.width = width;
+// //     this.height = height;
+// //     this.scale = 1;
+// //     this.developer = true;
+// //     this.matrix = [
+// //         1, 0, 0, 0,
+// //         0, 1, 0, 0,
+// //         0, 0, 1, 0,
+// //         0, 0, 0, 1
+// //     ];
+// // }
 //
 // realityEditor.gui.frame = {
 //     create: create,
 //     update: update,
 //     delete: deleteFrame,
 //     deleteLocally: deleteLocally,
-//     Frame: Frame,
+//     // Frame: Frame,
 //     FrameTouchSynthesizer: FrameTouchSynthesizer
 // };
 //

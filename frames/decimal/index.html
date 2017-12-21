@@ -176,6 +176,8 @@
         };
 
         function displayValue(msg) {
+            if (!msg.data || !msg.data.value) return;
+            
             console.log("displayValue", msg);
             var value = msg.data.value;
 

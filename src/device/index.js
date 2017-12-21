@@ -218,7 +218,19 @@ realityEditor.device.onTouchDown = function(evt) {
         }
     }
     
-	if (!globalStates.editingMode) {
+	if (globalStates.editingMode) {
+	    
+        globalStates.editingModeObject = target.objectId;
+        globalStates.editingModeFrame = target.frameId;
+        globalStates.editingModeLocation = target.nodeId;
+        globalStates.editingModeKind = target.type;
+        globalStates.editingFrame = target.frameId;
+        globalStates.editingNode = target.nodeId;
+        globalStates.editingModeHaveObject = true;
+        realityEditor.gui.ar.draw.matrix.matrixtouchOn = target.nodeId || target.frameId;
+        realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+        
+    } else {
 		if (globalStates.guiState ==="node") {
 			if (!globalProgram.objectA) {
 
@@ -275,18 +287,14 @@ realityEditor.device.onTouchDown = function(evt) {
 				//   globalProgram.logicA = globalProgram.logicSelector;
 			}
 		}
-	} else {
-		globalStates.editingModeObject = target.objectId;
-        globalStates.editingModeFrame = target.frameId;
-        globalStates.editingModeLocation = target.nodeId;
-		globalStates.editingModeKind = target.type;
-        globalStates.editingFrame = target.nodeId;
-		globalStates.editingNode = target.nodeId;
-		globalStates.editingModeHaveObject = true;
 	}
 	cout("touchDown");
 };
 
+/**
+ * Triggered from the javascript API when you tap and hold on an object to begin to move it
+ * @param target
+ */
 realityEditor.device.beginTouchEditing = function(target) {
 	globalProgram.objectA = false;
     globalProgram.frameA = false;
@@ -535,7 +543,7 @@ realityEditor.device.onTouchMove = function(evt) {
 
     }
 
-    if(	globalStates.editingNode === target.nodeId) {
+    if( globalStates.editingNode && globalStates.editingNode === target.nodeId) {
 
         globalStates.editingModeObjectX = evt.pageX;
         globalStates.editingModeObjectY = evt.pageY;
@@ -801,7 +809,9 @@ realityEditor.device.onMultiTouchStart = function(evt) {
             //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
         }
 	}
-	realityEditor.gui.ar.draw.matrix.matrixtouchOn = target.nodeId;
+	
+	var activeKey = target.nodeId || target.frameId;
+	realityEditor.gui.ar.draw.matrix.matrixtouchOn = activeKey; //target.nodeId;
 	realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 	cout("MultiTouchStart");
 };
@@ -849,6 +859,12 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 			positionData.x = matrixTouch[0];
 			positionData.y = matrixTouch[1];
 		}
+		
+		console.log('unconstrained move');
+
+        if (globalStates.unconstrainedPositioning === true) {
+            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+        }
 	}
 
 	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 2) {
@@ -899,7 +915,6 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		if (globalStates.unconstrainedPositioning === true) {
 			realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
 			content.matrix = positionData.matrix;
-
 		}
 		content.lastEditor = globalStates.tempUuid;
 
@@ -953,7 +968,7 @@ realityEditor.device.onMultiTouchCanvasStart = function(evt) {
 	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
 
 //todo this will move in to the virtual pocket.
-		var touch = evt.touches[1];
+		var touch = evt.touches[0];
 
 
 		globalStates.editingScaleX = touch.pageX;
@@ -979,7 +994,7 @@ realityEditor.device.onMultiTouchCanvasMove = function(evt) {
 	evt.preventDefault();
 // generate action for all links to be reloaded after upload
 	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
-		var touch = evt.touches[1];
+		var touch = evt.touches[0];
 
 		//globalStates.editingModeObjectY
 		//globalStates.editingScaleX
@@ -1121,3 +1136,79 @@ realityEditor.device.removeEventHandlers = function() {
 
 	cout("removeEventHandlers");
 };
+
+
+/**
+ * Adds handlers that switch into effect when a new frame is created to continue dragging it
+ */
+// realityEditor.device.addFrameEventHandlers = function() {
+//     var frameParentDiv = document.querySelector('#GUI');
+//     frameParentDiv.addEventListener('pointermove', realityEditor.device.onFrameTouchMove.bind(realityEditor.device), false);
+//     console.log('added frame event handlers');
+// };
+//
+// realityEditor.device.onFrameTouchMove = function(evt) {
+//     console.log('onFrameTouchMove: ' + evt.pageX + ', ' + evt.pageY);
+// };
+
+/*
+realityEditor.device.addEventHandlers = function() {
+
+	realityEditor.device.activateMultiTouch();
+
+    for (var objectKey in objects) {
+        for (var frameKey in objects[objectKey].frames) {
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+
+            if (thisFrame.developer) {
+
+                if (document.getElementById(objectKey)) {
+                    var thisObject3 = document.getElementById(objectKey);
+                    //  if (globalStates.guiState) {
+                    thisObject3.style.visibility = "visible";
+
+                    var thisObject4 = document.getElementById("canvas" + objectKey);
+                    thisObject4.style.display = "inline";
+
+                    // }
+
+                    // thisObject3.className = "mainProgram";
+
+                    thisObject3.addEventListener("touchstart", realityEditor.device.onMultiTouchStart.bind(realityEditor.device), false);
+                    ec++;
+                    thisObject3.addEventListener("touchmove", realityEditor.device.onMultiTouchMove.bind(realityEditor.device), false);
+                    ec++;
+                    thisObject3.addEventListener("touchend", realityEditor.device.onMultiTouchEnd.bind(realityEditor.device), false);
+                    ec++;
+                    //}
+                }
+
+                for (var nodeKey in thisFrame.nodes) {
+                    //	console.log("nodes: "+thisSubKey);
+                    realityEditor.device.activateNodeMove(nodeKey);
+                }
+
+                for (var frameKey in thisFrame.frames) {
+                    var elt = document.getElementById(frameKey);
+                    if (!elt) {
+                        continue;
+                    }
+                    elt.style.visibility = "visible";
+
+                    var canvas = document.getElementById("canvas" + frameKey);
+                    canvas.style.display = "inline";
+
+                    elt.addEventListener("touchstart", realityEditor.device.onMultiTouchStart);
+                    ec++;
+                    elt.addEventListener("touchmove", realityEditor.device.onMultiTouchMove);
+                    ec++;
+                    elt.addEventListener("touchend", realityEditor.device.onMultiTouchEnd);
+                    ec++;
+                }
+            }
+        }
+    }
+
+    cout("addEventHandlers");
+};
+ */

@@ -40,8 +40,8 @@
 
 <div id="gaugeContainer" style="position: relative">
 
-    <img id="gauge" src="../resources/gauge-outline-1.svg">
-    <img id="needle" src="../resources/gauge-needle-2.svg">
+    <img id="gauge" src="gauge-outline.svg">
+    <img id="needle" src="gauge-needle.svg">
 
 
 </div>
@@ -50,6 +50,8 @@
 <script>
 
     function displayValue(msg) {
+        if (!msg.data || !msg.data.value) return;
+
         console.log("displayValue", msg);
         var value = msg.data.value;
         value = Math.abs(value); // displays negatives as absolute value

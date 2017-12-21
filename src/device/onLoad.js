@@ -112,6 +112,8 @@ realityEditor.device.onload = function () {
 		e.preventDefault();
 	});
 
+    // realityEditor.device.addFrameEventHandlers();
+
 	this.cout("onload");
 
 };
