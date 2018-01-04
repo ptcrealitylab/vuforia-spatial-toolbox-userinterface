@@ -477,10 +477,12 @@ realityEditor.gui.crafting.addDatacraftingEventListeners = function() {
     if (globalStates.currentLogic) {
         var datacraftingEventDiv = document.getElementById('datacraftingEventDiv');
         if (!datacraftingEventDiv) return;
-        datacraftingEventDiv.addEventListener("pointerdown", this.eventHandlers.onPointerDown.bind(this.eventHandlers));
-        document.addEventListener("pointermove", this.eventHandlers.onPointerMove.bind(this.eventHandlers));
-        datacraftingEventDiv.addEventListener("pointerup", this.eventHandlers.onPointerUp.bind(this.eventHandlers));
-        datacraftingEventDiv.addEventListener("pointercancel", this.eventHandlers.onPointerUp.bind(this.eventHandlers));
+
+        realityEditor.device.utilities.addBoundListener(datacraftingEventDiv, 'pointerdown', this.eventHandlers.onPointerDown, this.eventHandlers);
+        realityEditor.device.utilities.addBoundListener(document, 'pointermove', this.eventHandlers.onPointerMove, this.eventHandlers);
+        realityEditor.device.utilities.addBoundListener(datacraftingEventDiv, 'pointerup', this.eventHandlers.onPointerUp, this.eventHandlers);
+        realityEditor.device.utilities.addBoundListener(datacraftingEventDiv, 'pointercancel', this.eventHandlers.onPointerUp, this.eventHandlers);
+
     }
 };
 
@@ -488,10 +490,12 @@ realityEditor.gui.crafting.removeDatacraftingEventListeners = function() {
     if (globalStates.currentLogic) {
         var datacraftingEventDiv = document.getElementById('datacraftingEventDiv');
         if (!datacraftingEventDiv) return;
-        datacraftingEventDiv.removeEventListener("pointerdown", this.eventHandlers.onPointerDown);
-        document.removeEventListener("pointermove", this.eventHandlers.onPointerMove);
-        datacraftingEventDiv.removeEventListener("pointerup", this.eventHandlers.onPointerUp);
-        datacraftingEventDiv.removeEventListener("pointercancel", this.eventHandlers.onPointerUp);
+
+        realityEditor.device.utilities.removeBoundListener(datacraftingEventDiv, 'pointerdown', this.eventHandlers.onPointerDown);
+        realityEditor.device.utilities.removeBoundListener(document, 'pointermove', this.eventHandlers.onPointerMove);
+        realityEditor.device.utilities.removeBoundListener(datacraftingEventDiv, 'pointerup', this.eventHandlers.onPointerUp);
+        realityEditor.device.utilities.removeBoundListener(datacraftingEventDiv, 'pointercancel', this.eventHandlers.onPointerUp);
+
     }
 };
 

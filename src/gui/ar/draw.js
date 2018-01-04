@@ -831,27 +831,21 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         globalDOMCache[addCanvas.id] = addCanvas;
         
         // Add touch event listeners
-        
-        addOverlay.addEventListener("pointerdown", realityEditor.device.onTouchDown.bind(realityEditor.device), false);
-        ec++;
-        addOverlay.addEventListener("pointerup", realityEditor.device.onTrueTouchUp.bind(realityEditor.device), false);
-        ec++;
-        addOverlay.addEventListener("pointerenter", realityEditor.device.onTouchEnter.bind(realityEditor.device), false);
-        ec++;
-        addOverlay.addEventListener("pointerleave", realityEditor.device.onTouchLeave.bind(realityEditor.device), false);
-        ec++;
-        addOverlay.addEventListener("pointermove", realityEditor.device.onTouchMove.bind(realityEditor.device), false);
-        ec++;
+
+        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerleave', realityEditor.device.onTouchLeave, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointermove', realityEditor.device.onTouchMove, realityEditor.device);
 
         if (globalStates.editingMode) {
             // todo this needs to be changed backword
             // if (objects[objectKey].developer) {
-            addOverlay.addEventListener("touchstart", realityEditor.device.onMultiTouchStart.bind(realityEditor.device), false);
-            ec++;
-            addOverlay.addEventListener("touchmove", realityEditor.device.onMultiTouchMove.bind(realityEditor.device), false);
-            ec++;
-            addOverlay.addEventListener("touchend", realityEditor.device.onMultiTouchEnd.bind(realityEditor.device), false);
-            ec++;
+
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
+
             // addOverlay.className = "mainProgram";
             //  }
         }

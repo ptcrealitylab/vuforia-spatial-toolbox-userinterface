@@ -742,10 +742,11 @@ realityEditor.network.onAction = function (action) {
             // TODO: start unconstrained editing on the frame
             
             
+            /* TODO: uncomment to continue developing unconstrained editing of transferred frames 
             globalStates.editingMode = true;
             realityEditor.gui.ar.draw.matrix.matrixtouchOn = thisAction.addFrame.frameID; //target.nodeId;
             realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
-            
+            */
             
             
         }
