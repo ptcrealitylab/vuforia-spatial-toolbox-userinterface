@@ -552,6 +552,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     }
 
+                    var isFullyBehindPlane = false;
+
                     if (typeof positionData.matrix[1] !== "undefined") {
                         if (positionData.matrix.length > 0) {
                             if (globalStates.unconstrainedPositioning === false) {
@@ -561,14 +563,40 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             
                             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
                             utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
-                            utilities.estimateIntersection(activeKey, matrix.r2, activeVehicle); // TODO: make estimate intersection work
+                            isFullyBehindPlane = utilities.estimateIntersection(activeKey, matrix.r2, activeVehicle);
                         } else {
-                            utilities.estimateIntersection(activeKey, null, activeVehicle);
+                            isFullyBehindPlane = utilities.estimateIntersection(activeKey, null, activeVehicle);
                         }
 
                     } else {
 
-                        utilities.estimateIntersection(activeKey, null, activeVehicle);
+                        isFullyBehindPlane = utilities.estimateIntersection(activeKey, null, activeVehicle);
+                    }
+                    
+                    if (isFullyBehindPlane) {
+                        
+                        // this means it is a local frame
+                        if (globalStates.editingModeObject && globalStates.editingModeFrame && activeVehicle.type) {
+                            console.log('~~ !!!!! send to screen !!!!! ~~');
+
+                            this.killObjects(activeKey, activeVehicle, globalDOMCache);
+
+                            delete objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame];
+
+                            globalStates.editingModeFrame = null;
+                            globalStates.editingModeObject = null;
+                            globalStates.editingFrame = null;
+                            globalStates.editingModeHaveObject = false;
+                            
+                            return;
+                        }
+                        
+                        // if (globalStates.editingModeObject && globalStates.editingModeFrame) {
+                        //     var frame = 
+                        //     objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame].type
+
+                        // }
+
                     }
                 }
 
@@ -789,9 +817,12 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addOverlay.nodeId = nodeKey;
         addOverlay.type = activeType;
         
+        // TODO: figure out a better way to set size of local frames based on their properties rather than constants
         if (isUsingLocalFrame) {
             addIframe.style.width = '300px';
             addIframe.style.height = '200px';
+            addCanvas.style.width = '300px';
+            addCanvas.style.height = '200px';
         }
         
         // todo the event handlers need to be bound to non animated ui elements for fast movements.

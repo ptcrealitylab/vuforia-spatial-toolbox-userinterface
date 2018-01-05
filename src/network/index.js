@@ -484,6 +484,10 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
 };
 
+realityEditor.network.hideFrame = function() {
+    
+}
+
 realityEditor.network.onAction = function (action) {
     var _this = this;
     var thisAction;

@@ -435,11 +435,14 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
      * @return
      **/
     
-    function estimateIntersection(theObject, mCanvas, thisObject) {
-        var thisCanvas = globalDOMCache["canvas" + theObject];
+    function estimateIntersection(activeKey, mCanvas, activeVehicle) {
+        
+        var isFullyBehindPlane = false;
+        
+        var thisCanvas = globalDOMCache["canvas" + activeKey];
         if(!mCanvas){
-            if(!thisObject.hasCTXContent) {
-                thisObject.hasCTXContent = true;
+            if(!activeVehicle.hasCTXContent) {
+                activeVehicle.hasCTXContent = true;
                 var ctx = thisCanvas.getContext("2d");
                 var diagonalLineWidth = 22;
                 ctx.lineWidth = diagonalLineWidth;
@@ -453,7 +456,7 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
             }
             return null;
         } else {
-            thisObject.hasCTXContent = false;
+            activeVehicle.hasCTXContent = false;
         }
     
         if (globalStates.pointerPosition[0] === -1) return null;
@@ -524,6 +527,11 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
                 interceptPoints.push(corner);
             }
         });
+
+        if (interceptPoints.length === 4) {
+            // console.log('fully behind plane - send to screen!');
+            isFullyBehindPlane = true;
+        }
         
         var sortedPoints = sortPointsClockwise(interceptPoints);
     
@@ -573,6 +581,8 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     
         // Undo the clipping
         ctx.restore();
+        
+        return isFullyBehindPlane;
     }
     
     exports.estimateIntersection = estimateIntersection;

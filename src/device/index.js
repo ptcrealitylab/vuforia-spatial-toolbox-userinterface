@@ -58,9 +58,10 @@ realityEditor.device.activateNodeMove = function(nodeKey) {
     
     console.log('activateNodeMove');
 
+    var nodeOverlayElement = document.getElementById(nodeKey);
 	//globalStates.editingModeHaveObject = true;
-	if (document.getElementById(nodeKey)) {
-		var nodeOverlayElement = document.getElementById(nodeKey);
+	if (nodeOverlayElement) {
+		
 		if (nodeOverlayElement.type === 'ui') {
 			nodeOverlayElement.style.visibility = 'visible';
 		}
@@ -80,9 +81,10 @@ realityEditor.device.activateNodeMove = function(nodeKey) {
 realityEditor.device.deactivateNodeMove = function(nodeKey) {
 
     console.log('deactivateNodeMove');
-    
-    if (document.getElementById(nodeKey)) {
-		var nodeOverlayElement = document.getElementById(nodeKey);
+
+    var nodeOverlayElement = document.getElementById(nodeKey);
+    if (nodeOverlayElement) {
+        
 		if (nodeOverlayElement.type === 'ui') {
 			nodeOverlayElement.style.visibility = 'hidden';
 		}
@@ -134,6 +136,7 @@ realityEditor.device.addEventHandlers = function() {
 
             if (thisFrame.developer) {
 
+                // backwards compatibility - allows you to reposition objects without frames
                 if (document.getElementById(objectKey)) {
                     var thisObject3 = document.getElementById(objectKey);
                     //  if (globalStates.guiState) {
@@ -152,27 +155,29 @@ realityEditor.device.addEventHandlers = function() {
                     
                 }
 
+                // allows you to reposition nodes
                 for (var nodeKey in thisFrame.nodes) {
                     //	console.log("nodes: "+thisSubKey);
                     realityEditor.device.activateNodeMove(nodeKey);
                 }
 
-                // TODO: BEN delete the for loop header and see what happens -- this isnt actually iterating thru anything...
-                for (var frameKey in thisFrame.frames) {
-                    var elt = document.getElementById(frameKey);
-                    if (!elt) {
-                        continue;
-                    }
-                    elt.style.visibility = "visible";
-
-                    var canvas = document.getElementById("canvas" + frameKey);
-                    canvas.style.display = "inline";
+                // for (var frameKey in thisFrame.frames) {
+                
+                // allows you to reposition frames
+                var frameOverlayElement = document.getElementById(frameKey);
+                if (frameOverlayElement && frameKey.indexOf('zero') < 0) {
                     
-                    realityEditor.device.utilities.addBoundListener(elt, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
-                    realityEditor.device.utilities.addBoundListener(elt, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
-                    realityEditor.device.utilities.addBoundListener(elt, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
+                    frameOverlayElement.style.visibility = "visible";
+                    
+                    var frameCanvasElement = document.getElementById("canvas" + frameKey);
+                    frameCanvasElement.style.display = "inline";
+
+                    realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
+                    realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
+                    realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
 
                 }
+                // }
             }
         }
     }
