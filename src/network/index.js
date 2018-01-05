@@ -484,10 +484,6 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
 };
 
-realityEditor.network.hideFrame = function() {
-    
-}
-
 realityEditor.network.onAction = function (action) {
     var _this = this;
     var thisAction;
@@ -661,6 +657,7 @@ realityEditor.network.onAction = function (action) {
             frame.name = thisAction.addFrame.name;
             
             // TODO: implement this in a more reusable way
+            /*
             function getPrimaryFrame(objectID) {
                 return {
                     frameID: objectID+"zero",
@@ -674,11 +671,12 @@ realityEditor.network.onAction = function (action) {
             var frameHeight = parseInt(globalDOMCache[primaryFrame.frameID].style.height);
             var offsetX = primaryFrame.frame.ar.x;
             var offsetY = primaryFrame.frame.ar.y;
+            */
             
-            var interfaceSize = 300;
+            var interfaceSize = 300; // TODO: get size for added frames from their info, not a constant
             
-            frame.ar.x = (thisAction.addFrame.x - frameWidth / 2 + offsetX) / 2 - interfaceSize/2; // 150 is frame.frameSizeX/2
-            frame.ar.y = (thisAction.addFrame.y - frameHeight / 2 + offsetY) / 2 - interfaceSize/2;
+            frame.ar.x = thisAction.addFrame.x; //(thisAction.addFrame.x - frameWidth / 2 + offsetX) / 2 - interfaceSize/2; // 150 is frame.frameSizeX/2
+            frame.ar.y = thisAction.addFrame.y; //(thisAction.addFrame.y - frameHeight / 2 + offsetY) / 2 - interfaceSize/2;
             frame.ar.scale = thisAction.addFrame.scale;
             
             frame.location = thisAction.addFrame.location;
@@ -1296,6 +1294,12 @@ realityEditor.network.testVersion = function (objectKey) {
     } else {
         return thisObject.integerVersion;
     }
+};
+
+realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) {
+    this.cout("I am deleting a frame: " + ip);
+    var contents = {lastEditor: globalStates.tempUuid};
+    this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey, contents);
 };
 
 realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, linkKey) {

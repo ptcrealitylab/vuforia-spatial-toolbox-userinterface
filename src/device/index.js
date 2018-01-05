@@ -165,7 +165,7 @@ realityEditor.device.addEventHandlers = function() {
                 
                 // allows you to reposition frames
                 var frameOverlayElement = document.getElementById(frameKey);
-                if (frameOverlayElement && frameKey.indexOf('zero') < 0) {
+                if (frameOverlayElement) { //  && frameKey.indexOf('zero') < 0
                     
                     frameOverlayElement.style.visibility = "visible";
                     

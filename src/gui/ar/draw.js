@@ -173,10 +173,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 if (this.globalStates.guiState === "ui" || Object.keys(this.activeFrame.nodes).length === 0) {
-                    this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                    var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                         this.globalDOMCache, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                         this.nodeCalculations, this.cout);
+                    
+                    if (!continueUpdate) return;
                     
                     var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
                     this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
@@ -193,11 +195,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         this.activeVehicle = this.activeNode;
                         this.activeType = this.activeNode.type;
 
-                        this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                        var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
 
                             this.globalDOMCache, this.globalStates, this.globalCanvas,
                             this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                             this.nodeCalculations, this.cout);
+                        
+                        if (!continueUpdate) return;
                         
                         var nodeUrl = "nodes/" + this.activeType + "/index.html";
                         this.addElement(nodeUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeVehicle);
@@ -387,8 +391,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 var thisUrl = "nodes/" + this.activeType + "/index.html";
                 this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
                 
-                this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
+                var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
 
+                if (!continueUpdate) return;
+                
             }
             
         }
@@ -410,7 +416,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
 /**
  * @desc
- * @return
+ * @return {Boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
  **/
 
 realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
@@ -580,6 +586,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             console.log('~~ !!!!! send to screen !!!!! ~~');
 
                             this.killObjects(activeKey, activeVehicle, globalDOMCache);
+                            
+                            realityEditor.network.deleteFrameFromObject(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
 
                             delete objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame];
 
@@ -588,7 +596,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             globalStates.editingFrame = null;
                             globalStates.editingModeHaveObject = false;
                             
-                            return;
+                            return false;
                         }
                         
                         // if (globalStates.editingModeObject && globalStates.editingModeFrame) {
@@ -720,6 +728,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
         }
     }
+    
+    return true;
 
 };
 

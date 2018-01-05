@@ -427,6 +427,19 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
             oppositeCornerPairs.push([corner1, corner2]);
         }
     }
+
+    var blank = document.createElement('canvas');
+
+    /**
+     * Taken from https://stackoverflow.com/questions/17386707/how-to-check-if-a-canvas-is-blank
+     * @param canvas
+     * @returns {boolean}
+     */
+    function isCanvasBlank(canvas) {
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        return canvas.toDataURL() == blank.toDataURL();
+    }
     
     /**
      * @desc
@@ -441,7 +454,9 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         
         var thisCanvas = globalDOMCache["canvas" + activeKey];
         if(!mCanvas){
-            if(!activeVehicle.hasCTXContent) {
+            // if(!activeVehicle.hasCTXContent) {
+            //     activeVehicle.hasCTXContent = true;
+            if (!activeVehicle.hasCTXContent) { //} || isCanvasBlank(thisCanvas)) {
                 activeVehicle.hasCTXContent = true;
                 var ctx = thisCanvas.getContext("2d");
                 var diagonalLineWidth = 22;
@@ -454,12 +469,12 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
                     ctx.stroke();
                 }
             }
-            return null;
+            return;
         } else {
             activeVehicle.hasCTXContent = false;
         }
     
-        if (globalStates.pointerPosition[0] === -1) return null;
+        if (globalStates.pointerPosition[0] === -1) return;
         
         var corners = getCornersClockwise(thisCanvas);
         var out = [0, 0, 0, 0];
@@ -520,15 +535,20 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
             }
         });
     
+        var numBehindMarkerPlane = 0;
         // get corners, add in correct order so they get drawn clockwise
     
         corners.forEach(function (corner) {
             if (corner[2] < 0) {
                 interceptPoints.push(corner);
             }
+            
+            if (corner[2] < -100) {
+                numBehindMarkerPlane++;
+            }
         });
 
-        if (interceptPoints.length === 4) {
+        if (numBehindMarkerPlane === 4) { //interceptPoints.length
             // console.log('fully behind plane - send to screen!');
             isFullyBehindPlane = true;
         }
@@ -538,6 +558,7 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         // draws blue and purple diagonal lines to mask the image
         var ctx = thisCanvas.getContext("2d");
         ctx.clearRect(0, 0, thisCanvas.width, thisCanvas.height);
+        activeVehicle.hasCTXContent = false;
     
         var diagonalLineWidth = 22;
         ctx.lineWidth = diagonalLineWidth;
@@ -581,6 +602,8 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     
         // Undo the clipping
         ctx.restore();
+        
+        activeVehicle.hasCTXContent = true;
         
         return isFullyBehindPlane;
     }
