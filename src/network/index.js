@@ -1304,6 +1304,17 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey, contents);
 };
 
+realityEditor.network.sendFrameToScreen = function(ip, objectKey, frameKey, contents) {
+    //(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
+    this.cout("I am sending a frame to the screen: " + ip);
+    // var contents = {lastEditor: globalStates.tempUuid};
+    contents.lastEditor = globalStates.tempUuid;
+    this.postData('http://' + ip + ':' + httpPort + '/screen/' + objectKey + "/frames/" + frameKey, contents, function (err, response) {
+        console.log(err, response);
+    });
+};
+
+
 realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, linkKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a link: " + ip);
@@ -1335,7 +1346,6 @@ realityEditor.network.deleteBlockLinkFromObject = function (ip, objectKey, frame
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/link/" + linkKey + "/editor/" + globalStates.tempUuid + "/deleteBlockLink/");
 };
 
-// TODO: BEN FRAME BUG - update to use ip, objectKey, frameKey, nodeKey
 realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, frameKey, nodeKey) {
 
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/node/" + nodeKey;

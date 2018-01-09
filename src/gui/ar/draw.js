@@ -595,14 +595,39 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         isFullyBehindPlane = utilities.estimateIntersection(activeKey, null, activeVehicle);
                     }
                     
+                    // for frames that can transfer between AR and screen space, send this to a screen if it goes behind the marker plane
                     if (isFullyBehindPlane) {
                         
-                        // this means it is a local frame
+                        // having "activeVehicle.type" property this means it is a "local" frame (it can be sent to screen)
                         if (globalStates.editingModeObject && globalStates.editingModeFrame && activeVehicle.type) {
                             console.log('~~ !!!!! send to screen !!!!! ~~');
 
                             this.killObjects(activeKey, activeVehicle, globalDOMCache);
                             
+                            var pointerPosition = window.getComputedStyle(document.getElementById('overlay'));
+                            var transformMatrix = pointerPosition.transform.split(',');
+                            var xPos = parseInt(transformMatrix[12]);
+                            var yPos = parseInt(transformMatrix[13]);
+                            var frameZeroKey = objectKey + 'zero';
+                            var frameZero = realityEditor.getFrame(objectKey, frameZeroKey);
+                            
+                            var unrotatedResult = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, unrotatedResult);
+                            if (!frameZero.begin) {
+                                frameZero.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                            }
+                            realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, frameZero.begin);
+                            
+                            var cursorMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frameZero, [xPos, yPos]);
+                            
+                            console.log(cursorMatrixXY);
+                            
+                            var positionData = {
+                                x: cursorMatrixXY[0],
+                                y: cursorMatrixXY[1]
+                            };
+
+                            realityEditor.network.sendFrameToScreen(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame, positionData);
                             realityEditor.network.deleteFrameFromObject(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
 
                             delete objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame];
