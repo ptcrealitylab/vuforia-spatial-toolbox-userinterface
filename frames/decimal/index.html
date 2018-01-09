@@ -173,6 +173,11 @@
         window.onload = function() {
             // scale text to fit window width (50%)
             optimizedResize.scaleText(document.getElementById("decimalText"), 0.4);
+            
+            // give a default font size in case the previous one doesn't work
+            if (document.getElementById("decimalText").style.fontSize === '0px') {
+                document.getElementById("decimalText").style.fontSize = '71px';
+            }
         };
 
         function displayValue(msg) {

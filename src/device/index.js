@@ -103,13 +103,15 @@ realityEditor.device.deactivateNodeMove = function(nodeKey) {
 
 realityEditor.device.activateMultiTouch = function() {
     realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart, realityEditor.device);
-    realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchsmove', realityEditor.device.onMultiTouchCanvasMove, realityEditor.device);
+    realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchsmove', realityEditor.device.onMultiTouchCanvasMove, realityEditor.device); // TODO: is 'touchsmove' supposed to be 'touchmove'?
 };
 
 realityEditor.device.deactivateMultiTouch = function() {
     realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart);
     realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchsmove', realityEditor.device.onMultiTouchCanvasMove);
 };
+
+// TODO: we need the equivalent for 'deactivateNodeMove' for each frame, that gets triggered when leaving move move
 
 realityEditor.device.endTrash = function(nodeKey) {
 
@@ -123,69 +125,6 @@ realityEditor.device.endTrash = function(nodeKey) {
 	}, 0);
 	globalStates.editingNode = null;
 };
-
-
-
-realityEditor.device.addEventHandlers = function() {
-
-	realityEditor.device.activateMultiTouch();
-
-    for (var objectKey in objects) {
-        for (var frameKey in objects[objectKey].frames) {
-            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-
-            if (thisFrame.developer) {
-
-                // backwards compatibility - allows you to reposition objects without frames
-                if (document.getElementById(objectKey)) {
-                    var thisObject3 = document.getElementById(objectKey);
-                    //  if (globalStates.guiState) {
-                    thisObject3.style.visibility = "visible";
-
-                    var thisObject4 = document.getElementById("canvas" + objectKey);
-                    thisObject4.style.display = "inline";
-
-                    // }
-
-                    // thisObject3.className = "mainProgram";
-
-                    realityEditor.device.utilities.addBoundListener(thisObject3, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
-                    realityEditor.device.utilities.addBoundListener(thisObject3, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
-                    realityEditor.device.utilities.addBoundListener(thisObject3, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
-                    
-                }
-
-                // allows you to reposition nodes
-                for (var nodeKey in thisFrame.nodes) {
-                    //	console.log("nodes: "+thisSubKey);
-                    realityEditor.device.activateNodeMove(nodeKey);
-                }
-
-                // for (var frameKey in thisFrame.frames) {
-                
-                // allows you to reposition frames
-                var frameOverlayElement = document.getElementById(frameKey);
-                if (frameOverlayElement) { //  && frameKey.indexOf('zero') < 0
-                    
-                    frameOverlayElement.style.visibility = "visible";
-                    
-                    var frameCanvasElement = document.getElementById("canvas" + frameKey);
-                    frameCanvasElement.style.display = "inline";
-
-                    realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
-                    realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
-                    realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
-
-                }
-                // }
-            }
-        }
-    }
-
-    cout("addEventHandlers");
-};
-
-
 
 
 /**
@@ -1017,6 +956,7 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
                 if (!objects[objectKey].frames.hasOwnProperty(frameKey)) continue;
                 objects[objectKey].frames[frameKey].visible = false;
                 objects[objectKey].frames[frameKey].visibleEditing = false;
+                objects[objectKey].frames[frameKey].hasCTXContent = false;
             }
         }
     }
@@ -1074,50 +1014,69 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
  * @desc
  **/
 
+realityEditor.device.addEventHandlers = function() {
+
+    realityEditor.device.activateMultiTouch();
+    
+    realityEditor.forEachFrameInAllObjects( function (objectKey, frameKey) {
+
+        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+        var frameOverlayElement = document.getElementById(frameKey);
+
+        if (frameOverlayElement && thisFrame.developer) {
+
+            frameOverlayElement.style.visibility = "visible";
+            var frameCanvasElement = document.getElementById("canvas" + frameKey);
+            frameCanvasElement.style.display = "inline";
+
+            realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
+
+            for (var nodeKey in thisFrame.nodes) {
+                realityEditor.device.activateNodeMove(nodeKey);
+            }
+
+        }
+        
+    });
+
+    cout("addEventHandlers");
+};
+
+/**
+ * @desc
+ **/
+
 realityEditor.device.removeEventHandlers = function() {
 
 	realityEditor.device.deactivateMultiTouch();
-    for (var objectKey in objects) {
-        for (var frameKey in objects[objectKey].frame) {
-            var generalObject2 = realityEditor.getFrame(objectKey, frameKey);
-            if (realityEditor.getFrame(objectKey, frameKey).developer) {
-                if (document.getElementById(frameKey)) {
-                    var thisObject3 = document.getElementById(frameKey);
-                    thisObject3.style.visibility = "hidden";
-                    // this is a typo but maybe relevant?
-                    //  thisObject3.className = "mainEditing";
+	
+	realityEditor.forEachFrameInAllObjects( function (objectKey, frameKey) {
 
-                    document.getElementById("canvas" + frameKey).style.display = "none";
+        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+        var frameOverlayElement = document.getElementById(frameKey);
 
-                    realityEditor.device.utilities.removeBoundListener(thisObject3, 'touchstart', realityEditor.device.onMultiTouchStart);
-                    realityEditor.device.utilities.removeBoundListener(thisObject3, 'touchmove', realityEditor.device.onMultiTouchMove);
-                    realityEditor.device.utilities.removeBoundListener(thisObject3, 'touchend', realityEditor.device.onMultiTouchEnd);
-                    
-                    //  }
-                }
+        if (frameOverlayElement && thisFrame.developer) {
 
-                for (var nodeKey in generalObject2.nodes) {
-                    realityEditor.device.deactivateNodeMove(nodeKey);
-                }
+            frameOverlayElement.style.visibility = "hidden";
+            // this is a typo but maybe relevant?
+            //  frameOverlayElement.className = "mainEditing";
 
-                for (var frameKey in generalObject2.frames) {
-                    var elt = document.getElementById(frameKey);
-                    if (!elt) {
-                        continue;
-                    }
-                    elt.style.visibility = "hidden";
+            var frameCanvasElement = document.getElementById("canvas" + frameKey);
+            frameCanvasElement.style.display = "none";
 
-                    var canvas = document.getElementById("canvas" + frameKey);
-                    canvas.style.display = "none";
+            realityEditor.device.utilities.removeBoundListener(frameOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart);
+            realityEditor.device.utilities.removeBoundListener(frameOverlayElement, 'touchmove', realityEditor.device.onMultiTouchMove);
+            realityEditor.device.utilities.removeBoundListener(frameOverlayElement, 'touchend', realityEditor.device.onMultiTouchEnd);
 
-                    realityEditor.device.utilities.removeBoundListener(elt, 'touchstart', realityEditor.device.onMultiTouchStart);
-                    realityEditor.device.utilities.removeBoundListener(elt, 'touchmove', realityEditor.device.onMultiTouchMove);
-                    realityEditor.device.utilities.removeBoundListener(elt, 'touchend', realityEditor.device.onMultiTouchEnd);
-                    
-                }
+            for (var nodeKey in thisFrame.nodes) {
+                realityEditor.device.deactivateNodeMove(nodeKey);
             }
+            
         }
-    }
+        
+    });
 
 	cout("removeEventHandlers");
 };

@@ -248,6 +248,16 @@ realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
 };
 
 /**
+ * Perform the callback on each (objectKey, frameKey, nodeKey) pair for all objects, frames, and nodes
+ * @param callback
+ */
+realityEditor.forEachFrameInAllObjects = function(callback) {
+    for (var objectKey in objects) {
+        realityEditor.forEachFrameInObject(objectKey, callback);
+    }
+};
+
+/**
  * Perform the callback for each (objectKey, frameKey) pair for the given object
  * @param objectKey
  * @param callback

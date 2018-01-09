@@ -512,12 +512,28 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 if (activeType === "ui") {
                     positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
                 }
+                
+                var finalOffsetX = positionData.x;
+                var finalOffsetY = positionData.y;
+
+                // add node's position to its frame's position to gets its actual offset
+                if (activeType === "node" || activeType === "logic") {
+                    var nodeName = activeVehicle.name;
+                    var frameKey = activeKey.slice(0, -1 * nodeName.length);
+                    var frame = realityEditor.getFrame(objectKey, frameKey);
+                    if (frame) {
+                        var parentFramePositionData = (frame.visualization === "ar") ? (frame.ar) : (frame.screen);
+                        finalOffsetX += parentFramePositionData.x;
+                        finalOffsetY += parentFramePositionData.y;
+                    }
+                }
 
                 matrix.r3 = [
                     positionData.scale, 0, 0, 0,
                     0, positionData.scale, 0, 0,
                     0, 0, 1, 0,
-                    positionData.x, positionData.y, 0, 1
+                    // positionData.x, positionData.y, 0, 1
+                    finalOffsetX, finalOffsetY, 0, 1
                 ];
 
                 if (globalStates.editingMode || globalStates.editingNode === activeKey) {
@@ -828,12 +844,12 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addOverlay.type = activeType;
         
         // TODO: figure out a better way to set size of local frames based on their properties rather than constants
-        if (isUsingLocalFrame) {
-            addIframe.style.width = '300px';
-            addIframe.style.height = '200px';
-            addCanvas.style.width = '300px';
-            addCanvas.style.height = '200px';
-        }
+        // if (isUsingLocalFrame) {
+        //     addIframe.style.width = '300px';
+        //     addIframe.style.height = '200px';
+        //     addCanvas.style.width = '300px';
+        //     addCanvas.style.height = '200px';
+        // }
         
         // todo the event handlers need to be bound to non animated ui elements for fast movements.
         // todo the lines need to end at the center of the square.
@@ -882,6 +898,8 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         if (globalStates.editingMode) {
             // todo this needs to be changed backword
             // if (objects[objectKey].developer) {
+            
+            console.log('adding touch listeners specifically for repositioning');
 
             realityEditor.device.utilities.addBoundListener(addOverlay, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
             realityEditor.device.utilities.addBoundListener(addOverlay, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
@@ -923,8 +941,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || 0) + "px";
     addIframe.style.height = (activeVehicle.height || 0) + "px";
-    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeY) / 2) + "px";
-    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeX) / 2) + "px";
+    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeY) / 2) + "px"; // TODO: why is left dependent on height?
+    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeX) / 2) + "px"; // TODO: why is top dependent on width
     addIframe.style.visibility = "hidden";
     addIframe.src = iframeSrc;
     addIframe.dataset.nodeKey = nodeKey;

@@ -138,6 +138,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
                     objects[objectKey] = msg;
                     
+                    console.log(msg);
+                    
                     var thisObject = realityEditor.getObject(objectKey);
                     // this is a work around to set the state of an objects to not being visible.
                     realityEditor.gui.ar.draw.setObjectVisible(thisObject, false);
@@ -285,7 +287,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
 
-            origin.frames[frameKey].width = 300;
+            origin.frames[frameKey].width = 300; // TODO: why is this hard-coded?
             origin.frames[frameKey].height = 300;
 
             console.log('added new frame', origin.frames[frameKey]);
@@ -298,6 +300,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             origin.frames[frameKey].ar = remote.frames[frameKey].ar;
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
+            
+            console.log('updated frame');
             
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
@@ -485,6 +489,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 };
 
 realityEditor.network.onAction = function (action) {
+    console.log('onAction');
     var _this = this;
     var thisAction;
     if (typeof action === "object") {
@@ -655,29 +660,14 @@ realityEditor.network.onAction = function (action) {
             
             frame.objectId = thisAction.addFrame.objectID;
             frame.name = thisAction.addFrame.name;
-            
-            // TODO: implement this in a more reusable way
-            /*
-            function getPrimaryFrame(objectID) {
-                return {
-                    frameID: objectID+"zero",
-                    frame: realityEditor.getFrame(objectID, objectID+"zero")
-                };
-            }
-            
-            var primaryFrame = getPrimaryFrame(thisAction.addFrame.objectID);
-            
-            var frameWidth = parseInt(globalDOMCache[primaryFrame.frameID].style.width);
-            var frameHeight = parseInt(globalDOMCache[primaryFrame.frameID].style.height);
-            var offsetX = primaryFrame.frame.ar.x;
-            var offsetY = primaryFrame.frame.ar.y;
-            */
-            
-            var interfaceSize = 300; // TODO: get size for added frames from their info, not a constant
-            
-            frame.ar.x = thisAction.addFrame.x; //(thisAction.addFrame.x - frameWidth / 2 + offsetX) / 2 - interfaceSize/2; // 150 is frame.frameSizeX/2
-            frame.ar.y = thisAction.addFrame.y; //(thisAction.addFrame.y - frameHeight / 2 + offsetY) / 2 - interfaceSize/2;
+
+            var frameID = frame.objectId + frame.name;
+
+            frame.ar.x = thisAction.addFrame.x;
+            frame.ar.y = thisAction.addFrame.y;
             frame.ar.scale = thisAction.addFrame.scale;
+            frame.frameSizeX = thisAction.addFrame.frameSizeX;
+            frame.frameSizeY = thisAction.addFrame.frameSizeY;
             
             frame.location = thisAction.addFrame.location;
             frame.src = thisAction.addFrame.src;
@@ -687,10 +677,8 @@ realityEditor.network.onAction = function (action) {
             
             frame.animationScale = 0;
             frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            frame.frameSizeX = interfaceSize;
-            frame.frameSizeY = interfaceSize;
-            frame.width = interfaceSize;
-            frame.height = interfaceSize;
+            frame.width = frame.frameSizeX;
+            frame.height = frame.frameSizeY;
             frame.loaded = false;
             // frame.objectVisible = true;
             frame.screen = {
@@ -712,8 +700,22 @@ realityEditor.network.onAction = function (action) {
             // thisFrame.visible = false;
             
             // TODO: add nodes to frame
+            var nodeNames = thisAction.addFrame.nodeNames;
+            nodeNames.forEach(function(nodeName) {
+                var nodeUuid = frameID + nodeName;
+                frame.nodes[nodeUuid] = new Node();
+                var addedNode = frame.nodes[nodeUuid];
+                addedNode.name = nodeName;
+                addedNode.text = undefined;
+                addedNode.type = 'node';
+                // addedNode.x = realityEditor.utilities.randomIntInc(0, 200) - 100;
+                // addedNode.y = realityEditor.utilities.randomIntInc(0, 200) - 100;
+                addedNode.frameSizeX = 100;
+                addedNode.frameSizeY = 100;
 
-            thisObject.frames[thisAction.addFrame.frameID] = frame;
+            });
+            
+            thisObject.frames[frameID] = frame;
             
             // if (thisAction.addFrame.frame) { // && thisAction.addFrame.hasOwnProperty('name')) {
                 
