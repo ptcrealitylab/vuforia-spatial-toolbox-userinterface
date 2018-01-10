@@ -279,6 +279,10 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     ];
 };
 
+realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
+    return objectKey === globalFramePrefix;
+};
+
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/

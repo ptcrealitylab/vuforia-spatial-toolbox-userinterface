@@ -244,7 +244,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 */
             }
         }
-        else {
+        else if (this.activeObject.objectVisible) {
             // this.activeObject.objectVisible = false;
             realityEditor.gui.ar.draw.setObjectVisible(this.activeObject, false);
 
@@ -258,31 +258,114 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
-            
-                this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
 
-                for (var nodeKey in this.activeFrame.nodes) {
-                    this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
-                    this.activeKey = nodeKey;
-                    this.activeVehicle = this.activeNode;
-                    this.activeType = this.activeNode.type;
-                    // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
-                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
-                }
+                // disassociate a screen<->AR frame from the object if it is being moved in unconstrained editing
+                var preserveFrameGlobally = (globalStates.editingMode &&
+                    globalStates.unconstrainedPositioning &&
+                    globalStates.editingModeObject === this.activeObject.uuid &&
+                    globalStates.editingModeFrame === frameKey &&
+                    !!this.activeFrame.type);
+                
+                if (preserveFrameGlobally) {
 
-                /*
-                for (nodeKey in this.activeObject.frames) {
-                    this.activeNode = realityEditor.getNode(objectKey, frameKey, frameKey);
-                    this.activeKey = nodeKey;
-                    this.activeVehicle = this.activeNode;
-                    this.activeType = this.activeNode.type;
+                    // either make a clone of the data and the DOM and let the old version be killed
+                    // or preserve just the data and clone the DOM
+                    // or preserve just the DOM and clone the data
+                    // or preserve the DOM and the data but change some properties
+
+                    // seems best to keep the DOM because it's already loaded in the right place and has the touch listeners
+                    // if we keep the frame data object, we still need to remove it from the object and store it somewhere globally instead
                     
-                    this.hideTransformed(objectKey, nodeKey, this.activeObject.frames[nodeKey], "ui");
+                    var newFrameKey = globalFramePrefix + this.activeFrame.type + realityEditor.device.utilities.uuidTime();
 
+                    // temporarily disable links on server? maybe not... but may need to change their ids to find global...
+                    // ... no, just don't change the state of the frame on the server until it gets dropped somewhere,
+                    // then update everything at once then with the new state
+                    // this.activeFrame.location = 'global'; // TODO: is this the purpose of local vs global?
+                    this.activeFrame.name = newFrameKey;
+                    
+                    // rename nodes to fit the nested naming conventions for the new frame key  //TODO: update link location naming the same way?... or it might not matter for now... i'll see whether any bugs pop up if a global frame has links to it while being moved...
+                    var newNodes = {};
+                    for (var nodeKey in this.activeFrame.nodes) {
+                        if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) continue;
+                        var node = this.activeFrame.nodes[nodeKey];
+                        node.uuid = newFrameKey + node.name;
+                        newNodes[node.uuid] = node;
+                        delete this.activeFrame.nodes[nodeKey];
+                    }
+                    this.activeFrame.nodes = newNodes;
+
+                    this.activeFrame.objectId = null;
+
+                    this.activeFrame.objectVisible = true; // maybe good to do? not sure what the implications are
+                    
+                    this.activeFrame.uuid = newFrameKey;
+                    
+                    // add the frame to the globalFrames
+                    globalFrames[newFrameKey] = this.activeFrame;
+                    
+                    // remove the frame from its originating object
+                    delete objects[objectKey].frames[frameKey];
+
+                    // TODO: then rename its DOM elements to use these ids
+
+                    // re-assign ids to DOM elements
+                    globalDOMCache['object' + frameKey].id = 'object' + newFrameKey;
+                    globalDOMCache['iframe' + frameKey].id = 'iframe' + newFrameKey;
+                    globalDOMCache[frameKey].id = newFrameKey;
+                    globalDOMCache['canvas' + frameKey].id = 'canvas' + newFrameKey;
+
+                    // iframe also has a dataset of ids
+                    globalDOMCache['iframe' + frameKey].dataset = {
+                        frameKey: newFrameKey,
+                        nodeKey: "null",
+                        objectKey: "null"
+                    };
+
+                    // update their keys in the globalDOMCache 
+                    globalDOMCache['object' + newFrameKey] = globalDOMCache['object' + frameKey];
+                    globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + frameKey];
+                    globalDOMCache[newFrameKey] = globalDOMCache[frameKey];
+                    globalDOMCache['canvas' + newFrameKey] = globalDOMCache['canvas' + frameKey];
+                    delete globalDOMCache['object' + frameKey];
+                    delete globalDOMCache['iframe' + frameKey];
+                    delete globalDOMCache[frameKey];
+                    delete globalDOMCache['canvas' + frameKey];
+                    
+                    globalStates.editingModeObject = globalFramePrefix;
+                    globalStates.editingModeFrame = newFrameKey;
+                    globalStates.editingFrame = newFrameKey;
+                    
+                } else {
+
+                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
+
+                    for (var nodeKey in this.activeFrame.nodes) {
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                        this.activeKey = nodeKey;
+                        this.activeVehicle = this.activeNode;
+                        this.activeType = this.activeNode.type;
+                        // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
+                        this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
+                    }
+
+                    /*
+                    for (nodeKey in this.activeObject.frames) {
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, frameKey);
+                        this.activeKey = nodeKey;
+                        this.activeVehicle = this.activeNode;
+                        this.activeType = this.activeNode.type;
+                        
+                        this.hideTransformed(objectKey, nodeKey, this.activeObject.frames[nodeKey], "ui");
+    
+                    }
+                    */
+
+                    // this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCache); // TODO: this only kills last node, not the frames (because activeKey changes)
+                    this.killObjects(frameKey, this.activeFrame, this.globalDOMCache);
+                    
                 }
-                */
-
-                this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCache);
+                
             }
         }
 
@@ -400,8 +483,14 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
         
     }
+    
+    for (var frameKey in globalFrames) {
+        if (!globalFrames.hasOwnProperty(frameKey)) continue;
+        
+        console.log(frameKey + " is a global frame");
+    }
 
-    if (globalStates.acceleration.motion != 0) {
+    if (globalStates.acceleration.motion !== 0) {
         globalStates.acceleration = {
             x: 0,
             y: 0,

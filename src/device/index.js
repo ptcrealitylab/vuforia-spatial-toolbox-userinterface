@@ -249,28 +249,27 @@ realityEditor.device.beginTouchEditing = function(target) {
 	});
 };
 
+/**
+ * @returns {*} the object, frame, or node currently being edited (repositioned)
+ */
 realityEditor.device.getEditingModeObject = function() {
     var objectId = globalStates.editingModeObject;
     var frameId = globalStates.editingModeFrame;
     var nodeId = globalStates.editingModeLocation;
     
     if (globalStates.editingModeKind === 'ui') {
+        // edge case for editing frames dis-associated from any object
+        if (realityEditor.gui.ar.utilities.isGlobalFrame(objectId)) {
+            return globalFrames[frameId];
+        }
         return objects[objectId].frames[frameId];
+        
     } else if (globalStates.editingModeKind === 'node' || globalStates.editingModeKind === 'logic') {
         return objects[objectId].frames[frameId].nodes[nodeId];
+        
     } else {
         return objects[objectId];
     }
-    
-    // if (frameId !== nodeId) {
-    //     if (globalStates.editingModeKind === 'ui') {
-    //         return objects[objectId].frames[frameId].frames[nodeId];
-    //     } else {
-    //         return objects[objectId].frames[frameId].nodes[nodeId];
-    //     }
-    // } else {
-    //     return objects[frameId];
-    // }
 };
 
 /**********************************************************************************************************************
@@ -869,12 +868,23 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// 	// 	realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
 		// 	// }
 		// } else 
-		    
-        if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-			realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/size/", content, function (){});
-		}
-		// }
+        
+        if (realityEditor.gui.ar.utilities.isGlobalFrame(globalStates.editingModeObject)) {
+            
+            // TODO: try to drop the frame into an object underneath, or if there isn't one, return it to its starting position in its old object (need to remember this somewhere)
+            
+            // var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys();
 
+
+
+        } else {
+
+            if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
+                realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/size/", content, function (){});
+            }
+            
+        }
+        
 		globalStates.editingModeHaveObject = false;
 		globalCanvas.hasContent = true;
 		realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
