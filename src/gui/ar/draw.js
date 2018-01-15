@@ -829,7 +829,17 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                 }
                 
-                // move non-developer frames to the back so they don't steal touches from interactable frames
+                
+                // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
+                // but we want all of them to have a positive value so they are rendered in front of background canvas
+                // and frames with developer=false should have the lowest positive value
+                
+                if (finalMatrix[14] < 10) {
+                    finalMatrix[14] = 10;
+                }
+                finalMatrix[14] = 100 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+                
+                //move non-developer frames to the back so they don't steal touches from interactable frames
                 if (activeVehicle.developer === false) {
                     finalMatrix[14] = 100;
                 }
@@ -1091,12 +1101,14 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         // Add touch event listeners
 
-        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
-        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
-        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);
-        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerleave', realityEditor.device.onTouchLeave, realityEditor.device);
-        realityEditor.device.utilities.addBoundListener(addOverlay, 'pointermove', realityEditor.device.onTouchMove, realityEditor.device);
-
+        if (activeVehicle.developer) {
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerleave', realityEditor.device.onTouchLeave, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointermove', realityEditor.device.onTouchMove, realityEditor.device);
+        }
+        
         if (globalStates.editingMode && activeVehicle.developer) {
             // todo this needs to be changed backword
             // if (objects[objectKey].developer) {

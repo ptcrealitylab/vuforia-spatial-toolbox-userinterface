@@ -708,8 +708,8 @@ realityEditor.network.onAction = function (action) {
                 addedNode.name = nodeName;
                 addedNode.text = undefined;
                 addedNode.type = 'node';
-                // addedNode.x = realityEditor.utilities.randomIntInc(0, 200) - 100;
-                // addedNode.y = realityEditor.utilities.randomIntInc(0, 200) - 100;
+                addedNode.x = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
+                addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
                 addedNode.frameSizeX = 100;
                 addedNode.frameSizeY = 100;
 
