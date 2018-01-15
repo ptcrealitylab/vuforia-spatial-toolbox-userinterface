@@ -743,7 +743,7 @@ realityEditor.network.onAction = function (action) {
             // }
             
             
-            // TODO: start unconstrained editing on the frame
+            // TODO: start unconstrained editing on the frame -- try calling beginTouchEditing
             
             
             /* TODO: uncomment to continue developing unconstrained editing of transferred frames 

@@ -103,12 +103,12 @@ realityEditor.device.deactivateNodeMove = function(nodeKey) {
 
 realityEditor.device.activateMultiTouch = function() {
     realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart, realityEditor.device);
-    realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchsmove', realityEditor.device.onMultiTouchCanvasMove, realityEditor.device); // TODO: is 'touchsmove' supposed to be 'touchmove'?
+    realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchmove', realityEditor.device.onMultiTouchCanvasMove, realityEditor.device);
 };
 
 realityEditor.device.deactivateMultiTouch = function() {
     realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart);
-    realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchsmove', realityEditor.device.onMultiTouchCanvasMove);
+    realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchmove', realityEditor.device.onMultiTouchCanvasMove);
 };
 
 // TODO: we need the equivalent for 'deactivateNodeMove' for each frame, that gets triggered when leaving move move
@@ -789,7 +789,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 		}
 		
         if (globalStates.unconstrainedPositioning === true) {
-            console.log('unconstrained move');
+            // console.log('unconstrained move');
             realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
         }
 	}
@@ -873,9 +873,27 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             
             // TODO: try to drop the frame into an object underneath, or if there isn't one, return it to its starting position in its old object (need to remember this somewhere)
             
-            // var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys();
+            var closestObjectKey = null;
+            var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys(); // TODO: use valentin's new code for finding closest/frontmost
+            if (visibleObjectKeys.length > 0) {
+                closestObjectKey = visibleObjectKeys[0];
+            }
+            if (closestObjectKey && objects[closestObjectKey]) {
+                
+                console.log('there is an object to drop this frame onto');
+                var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
+                
+                var frame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                frame.ar.x = 0;
+                frame.ar.y = 0;
+                frame.ar.scale = 1;
+                frame.ar.matrix = []; //realityEditor.gui.ar.utilities.newIdentityMatrix();
 
+                globalStates.editingModeObject = null;
+                globalStates.editingModeFrame = null;
+                globalStates.editingFrame = null;
 
+            }
 
         } else {
 
@@ -1025,6 +1043,8 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
  **/
 
 realityEditor.device.addEventHandlers = function() {
+    
+    console.log("addEventHandlers");
 
     realityEditor.device.activateMultiTouch();
     
@@ -1060,7 +1080,9 @@ realityEditor.device.addEventHandlers = function() {
 
 realityEditor.device.removeEventHandlers = function() {
 
-	realityEditor.device.deactivateMultiTouch();
+    console.log("removeEventHandlers");
+
+    realityEditor.device.deactivateMultiTouch();
 	
 	realityEditor.forEachFrameInAllObjects( function (objectKey, frameKey) {
 

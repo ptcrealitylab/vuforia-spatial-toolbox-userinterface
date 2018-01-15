@@ -66,7 +66,7 @@ var boundListeners = {};
 var globalStates = {
 	moveDelay : 1000,
 	tempUuid : "0000",
-	debug: false,
+	debug: true,
     debugSpeechConsole: false,
 	overlay: 0,
 	device: "",
