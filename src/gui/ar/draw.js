@@ -766,6 +766,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             }
 
                             matrix.copyStillFromMatrixSwitch = false;
+                            
+                        } else if (globalStates.unconstrainedPositioning === true) {
+                            realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
                         }
 
                         if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
