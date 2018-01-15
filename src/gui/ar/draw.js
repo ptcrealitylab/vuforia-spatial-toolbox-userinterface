@@ -484,6 +484,16 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
 
     frame.uuid = newFrameKey;
 
+    // store a reference to where this frame came from, and the transform of that object, so that it
+    // can be placed correctly in another object space
+    frame.sourceObject = objectKey;
+    var screenFrameKey = objectKey + 'screen';
+    var sourceScreenFrame = realityEditor.getFrame(objectKey, screenFrameKey);
+    if (sourceScreenFrame) {
+        frame.sourceObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(sourceScreenFrame.mostRecentFinalMatrix);
+        // frame.sourceObjectMatrix = sourceScreenFrame.mostRecentFinalMatrix;
+    }
+
     // add the frame to the globalFrames
     globalFrames[newFrameKey] = frame;
 
@@ -537,6 +547,23 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey,
     frame.objectVisible = true; // maybe good to do? not sure what the implications are
 
     frame.uuid = newFrameKey;
+    
+    // TODO: calculate relative transformation between old object and new object
+    // if (frame.sourceObject && frame.sourceObjectMatrix) {
+    //     var newScreenFrame = realityEditor.getFrame(objectKey, objectKey + 'screen');
+    //     if (newScreenFrame && newScreenFrame.mostRecentFinalMatrix) {
+    //         // var newObjectMatrix = newScreenFrame.mostRecentFinalMatrix;
+    //         // console.log(frame.sourceObjectMatrix, newObjectMatrix, frame.matrix);
+    //
+    //         // if (globalStates.unconstrainedPositioning === true) {
+    //         //     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+    //         // }
+    //
+    //         var tempMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //         realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(newScreenFrame.mostRecentFinalMatrix), tempMatrix);
+    //         frame.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(tempMatrix);
+    //     }
+    // }
 
     // add the frame to the new object
     objects[objectKey].frames[newFrameKey] = frame;
@@ -628,6 +655,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         activeVehicle.visibleEditing = true;
                         overlay.style.visibility = 'visible';
                         canvas.style.display = 'inline';
+                        activeVehicle.hasCTXContent = false;
                     }
                 } else {
                     canvas.style.display = 'none';
@@ -837,12 +865,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 if (finalMatrix[14] < 10) {
                     finalMatrix[14] = 10;
                 }
-                finalMatrix[14] = 100 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+                finalMatrix[14] = 200 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
                 
                 //move non-developer frames to the back so they don't steal touches from interactable frames
                 if (activeVehicle.developer === false) {
                     finalMatrix[14] = 100;
                 }
+                
+                activeVehicle.mostRecentFinalMatrix = finalMatrix;
    
                 // draw transformed
                 globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
@@ -1055,14 +1085,6 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addOverlay.nodeId = nodeKey;
         addOverlay.type = activeType;
         
-        // TODO: figure out a better way to set size of local frames based on their properties rather than constants
-        // if (isUsingLocalFrame) {
-        //     addIframe.style.width = '300px';
-        //     addIframe.style.height = '200px';
-        //     addCanvas.style.width = '300px';
-        //     addCanvas.style.height = '200px';
-        // }
-        
         // todo the event handlers need to be bound to non animated ui elements for fast movements.
         // todo the lines need to end at the center of the square.
 
@@ -1100,31 +1122,8 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         globalDOMCache[addCanvas.id] = addCanvas;
         
         // Add touch event listeners
-
-        if (activeVehicle.developer) {
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointerleave', realityEditor.device.onTouchLeave, realityEditor.device);
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'pointermove', realityEditor.device.onTouchMove, realityEditor.device);
-        }
         
-        if (globalStates.editingMode && activeVehicle.developer) {
-            // todo this needs to be changed backword
-            // if (objects[objectKey].developer) {
-            
-            console.log('adding touch listeners specifically for repositioning');
-
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
-            realityEditor.device.utilities.addBoundListener(addOverlay, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
-
-            // addOverlay.className = "mainProgram";
-            //  }
-
-            // this.activeVehicle.hasCTXContent = false; // TODO: this didn't work
-
-        }
+        realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
 
         if (activeType === "node") {
             addOverlay.style.visibility = "visible";

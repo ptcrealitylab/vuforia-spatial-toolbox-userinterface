@@ -120,11 +120,12 @@ String.prototype.hashCode = function() {
 realityEditor.device.utilities.addBoundListener = function(element, eventType, functionReference, bindTarget) {
     var boundFunctionReference = functionReference.bind(bindTarget);
     var functionUUID = this.getEventUUID(element, eventType, functionReference);
-    if (!boundListeners.hasOwnProperty(functionUUID)) {
-        boundListeners[functionUUID] = boundFunctionReference;
-        element.addEventListener(eventType, boundFunctionReference, false);
-        ec++;
+    if (boundListeners.hasOwnProperty(functionUUID)) {
+        this.removeBoundListener(element, eventType, functionReference);
     }
+    boundListeners[functionUUID] = boundFunctionReference;
+    element.addEventListener(eventType, boundFunctionReference, false);
+    ec++;
 };
 
 realityEditor.device.utilities.getEventUUID = function(element, eventType, functionReference) {

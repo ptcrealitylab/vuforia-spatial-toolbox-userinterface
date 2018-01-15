@@ -1113,6 +1113,25 @@ realityEditor.device.removeEventHandlers = function() {
 	cout("removeEventHandlers");
 };
 
+realityEditor.device.addTouchListenersForElement = function(overlayDomElement, activeVehicle) {
+    
+    if (activeVehicle.developer) {
+        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerleave', realityEditor.device.onTouchLeave, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointermove', realityEditor.device.onTouchMove, realityEditor.device);
+
+        if (globalStates.editingMode) {
+            console.log('adding touch listeners specifically for repositioning');
+            realityEditor.device.utilities.addBoundListener(overlayDomElement, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(overlayDomElement, 'touchmove', realityEditor.device.onMultiTouchMove, realityEditor.device);
+            realityEditor.device.utilities.addBoundListener(overlayDomElement, 'touchend', realityEditor.device.onMultiTouchEnd, realityEditor.device);
+        }
+    }
+    
+};
+
 
 /**
  * Adds handlers that switch into effect when a new frame is created to continue dragging it
