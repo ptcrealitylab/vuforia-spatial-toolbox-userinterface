@@ -917,10 +917,10 @@ if (thisFrame) {
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
-            
-            // TODO: what did this do? bring it back once i understand
-            // document.getElementById("iframe" + msgContent.node).contentWindow.postMessage(
-            //     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+            // send the projection matrix into the iframe (e.g. for three.js to use)
+            document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
         }
     }
 
@@ -991,22 +991,26 @@ if (thisFrame) {
         if (msgContent.fullScreen === true) {
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
-            document.getElementById("object" + msgContent.node).style.webkitTransform =
+            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
-                '0, 0, 0, 1)';
+                '0, 0, ' + zIndex + ', 1)';
+            
+            globalDOMCache[tempThisObject.uuid].style.display = 'none';
 
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
+            globalDOMCache[tempThisObject.uuid].style.display = '';
         }
 
     } else if(typeof msgContent.fullScreen === "string") {
         if (msgContent.fullScreen === "sticky") {
 
             tempThisObject.fullScreen = "sticky";
-            document.getElementById("thisObject" + msgContent.node).style.webkitTransform =
+            document.getElementById("thisObject" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +

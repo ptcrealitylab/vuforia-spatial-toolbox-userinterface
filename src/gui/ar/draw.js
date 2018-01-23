@@ -549,21 +549,25 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey,
     frame.uuid = newFrameKey;
     
     // TODO: calculate relative transformation between old object and new object
-    // if (frame.sourceObject && frame.sourceObjectMatrix) {
-    //     var newScreenFrame = realityEditor.getFrame(objectKey, objectKey + 'screen');
-    //     if (newScreenFrame && newScreenFrame.mostRecentFinalMatrix) {
-    //         // var newObjectMatrix = newScreenFrame.mostRecentFinalMatrix;
-    //         // console.log(frame.sourceObjectMatrix, newObjectMatrix, frame.matrix);
-    //
-    //         // if (globalStates.unconstrainedPositioning === true) {
-    //         //     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
-    //         // }
-    //
-    //         var tempMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    //         realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(newScreenFrame.mostRecentFinalMatrix), tempMatrix);
-    //         frame.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(tempMatrix);
-    //     }
-    // }
+    if (frame.sourceObject && frame.sourceObjectMatrix) {
+        var newScreenFrame = realityEditor.getFrame(objectKey, objectKey + 'screen');
+        if (newScreenFrame && newScreenFrame.mostRecentFinalMatrix) {
+            // var newObjectMatrix = newScreenFrame.mostRecentFinalMatrix;
+            // console.log(frame.sourceObjectMatrix, newObjectMatrix, frame.matrix);
+
+            // if (globalStates.unconstrainedPositioning === true) {
+            //     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+            // }
+
+            var tempMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(newScreenFrame.mostRecentFinalMatrix), tempMatrix);
+            // realityEditor.gui.ar.utilities.multiplyMatrix(newScreenFrame.mostRecentFinalMatrix, realityEditor.gui.ar.utilities.invertMatrix(frame.begin), tempMatrix);
+            frame.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(tempMatrix);
+        }
+    }
+    
+    delete frame.sourceObject;
+    delete frame.sourceObjectMatrix;
 
     // add the frame to the new object
     objects[objectKey].frames[newFrameKey] = frame;
@@ -1181,6 +1185,9 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.visibility = "hidden";
     if (activeVehicle.developer) {
         addOverlay.style["touch-action"] = "none";
+    }
+    if (activeVehicle.fullScreen === true) {
+        addOverlay.style.display = 'none'; // TODO: is this the best way to move unconstrained editing into the three.js scene?
     }
 
     var addCanvas = document.createElement('canvas');

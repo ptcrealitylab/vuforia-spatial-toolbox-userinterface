@@ -776,7 +776,10 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 
-		var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
+        var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
+        // var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(tempThisObject, [touch.pageX, touch.pageY]);
+        
+        // console.log('x: ' + parseInt(matrixTouch[0]) + ' | ' + parseInt(matrixTouch2[0]) + ' ... y: ' + parseInt(matrixTouch[1]) + ' | ' + parseInt(matrixTouch2[1]));
 
         var positionData = tempThisObject;
         if (tempThisObject.hasOwnProperty('visualization')) {
@@ -883,11 +886,11 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 console.log('there is an object to drop this frame onto');
                 var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
                 
-                var frame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-                frame.ar.x = 0;
-                frame.ar.y = 0;
-                frame.ar.scale = 1;
-                frame.ar.matrix = []; //realityEditor.gui.ar.utilities.newIdentityMatrix();
+                // var frame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                // frame.ar.x = 0;
+                // frame.ar.y = 0;
+                // frame.ar.scale = 1;
+                // frame.ar.matrix = []; //realityEditor.gui.ar.utilities.newIdentityMatrix();
 
                 globalStates.editingModeObject = null;
                 globalStates.editingModeFrame = null;
