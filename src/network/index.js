@@ -999,6 +999,7 @@ if (thisFrame) {
                 '0, 0, ' + zIndex + ', 1)';
             
             globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none';
 
         }
         if (msgContent.fullScreen === false) {

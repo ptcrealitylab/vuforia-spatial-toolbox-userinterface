@@ -1101,6 +1101,11 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             globalDOMCache["logic" + activeKey] = addLogic;
         }
 
+        if (activeVehicle.fullScreen === true) {
+            addOverlay.style.display = 'none'; // TODO: is this the best way to move unconstrained editing into the three.js scene?
+            addIframe.style.pointerEvents = 'none';
+        }
+
         // Finally, append all the created elements to the DOM in the correct order...
         
         document.getElementById("GUI").appendChild(addContainer);
@@ -1185,9 +1190,6 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.visibility = "hidden";
     if (activeVehicle.developer) {
         addOverlay.style["touch-action"] = "none";
-    }
-    if (activeVehicle.fullScreen === true) {
-        addOverlay.style.display = 'none'; // TODO: is this the best way to move unconstrained editing into the three.js scene?
     }
 
     var addCanvas = document.createElement('canvas');
