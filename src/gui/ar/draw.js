@@ -1340,7 +1340,7 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
 
 // simulates drawing... TODO: simplify this and make it only work for frames? or maybe nodes too...
 
-realityEditor.gui.ar.draw.simulateDraw = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
 
     if (activeVehicle.fullScreen !== true) {
 

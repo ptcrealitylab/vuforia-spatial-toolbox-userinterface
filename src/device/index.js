@@ -495,7 +495,8 @@ realityEditor.device.onTouchMove = function(evt) {
         }
 
         realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY);
-        
+        var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY], );
+
         /*
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
 
