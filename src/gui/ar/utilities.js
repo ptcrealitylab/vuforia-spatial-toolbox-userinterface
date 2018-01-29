@@ -590,7 +590,7 @@ realityEditor.gui.ar.utilities.multiplyPointByMatrix4 = function(point, mat) {
 
 realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, screenX, screenY) {
 
-    // var overlayDomElement = globalDOMCache[frame.uuid];
+    var overlayDomElement = globalDOMCache[frame.uuid];
 
     // gauge1.ar.x = 87.52006490007885 - parseInt(framePalette2io9kdgazn9drgaugeDe73r895869u.style.left)
 
@@ -611,7 +611,13 @@ realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, scr
     overlayDomElement.style.webkitTransform = 'matrix3d(' + resultMatrix.toString() + ')';
     */
     
-    // reset x and y translation
+    // reset x and y translation so that eventual translation is relative to center of marker, not current frame position
+    
+    // var initialFramePosition = {
+    //     x: frame.ar.x,
+    //     y: frame.ar.y
+    // };
+    
     
     frame.ar.x = 0;
     frame.ar.y = 0;
@@ -620,14 +626,18 @@ realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, scr
     
     var draw = realityEditor.gui.ar.draw;
     // realityEditor.gui.ar.draw
-    draw.drawTransformed(draw.visibleObjects, frame.objectId, frame.uuid, 'ui', frame, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+    // draw.drawTransformed(draw.visibleObjects, frame.objectId, frame.uuid, 'ui', frame, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+    
+    var updatedCssMatrix = draw.simulateDraw(draw.visibleObjects, frame.objectId, frame.uuid, 'ui', frame, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
 
-    var results = this.solveProjectedCoordinatesInFrame(frame, screenX, screenY);
+    // overlayDomElement.parentElement.style.webkitTransform = updatedCssMatrix; //'matrix3d(' + previousMatrix3D.toString() + ')';
+
+    var results = this.solveProjectedCoordinatesInFrame(frame, screenX, screenY, updatedCssMatrix);
 
     // update the x and y with new translations. rendering with an updated css3D matrix will happen automatically.
     
-    frame.ar.x = results.point.x - results.left;
-    frame.ar.y = results.point.y - results.top;
+    frame.ar.x = results.point.x - results.left;// - initialFramePosition.x;
+    frame.ar.y = results.point.y - results.top;// - initialFramePosition.y;
     
     /*
     // translation[12] *= -1;
@@ -640,10 +650,10 @@ realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, scr
 
 // realityEditor.gui.ar.utilities.solveProjectedCoordinatesInFrame = function(frame, screenX, screenY) {
 
-realityEditor.gui.ar.utilities.solveProjectedCoordinatesInFrame = function(frame, screenX, screenY) {
+realityEditor.gui.ar.utilities.solveProjectedCoordinatesInFrame = function(frame, screenX, screenY, cssMatrixToUse) {
     
     var overlayDomElement = globalDOMCache[frame.uuid];
-    var point = this.solveProjectedCoordinates(overlayDomElement, screenX, screenY);
+    var point = this.solveProjectedCoordinates(overlayDomElement, screenX, screenY, cssMatrixToUse);
     var offsetLeft = parseInt(overlayDomElement.style.left);
     var offsetTop = parseInt(overlayDomElement.style.top);
     
@@ -654,12 +664,12 @@ realityEditor.gui.ar.utilities.solveProjectedCoordinatesInFrame = function(frame
     }
 };
 
-realityEditor.gui.ar.utilities.solveProjectedCoordinates = function(childDiv, screenX, screenY) {
+realityEditor.gui.ar.utilities.solveProjectedCoordinates = function(childDiv, screenX, screenY, cssMatrixToUse) {
     
     var dt = 0.1;
 
-    var p0 = this.convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, screenX, screenY, 0);
-    var p2 = this.convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, screenX, screenY, dt);
+    var p0 = this.convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, screenX, screenY, 0, cssMatrixToUse);
+    var p2 = this.convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, screenX, screenY, dt, cssMatrixToUse);
     
     console.log('first point = ', p0);
     console.log('second point = ', p2);
@@ -681,9 +691,9 @@ realityEditor.gui.ar.utilities.solveProjectedCoordinates = function(childDiv, sc
     }
 };
 
-realityEditor.gui.ar.utilities.convertScreenPointToLocalCoordinatesRelativeToDivParent = function (childDiv, screenX, screenY, screenZ) {
+realityEditor.gui.ar.utilities.convertScreenPointToLocalCoordinatesRelativeToDivParent = function (childDiv, screenX, screenY, screenZ, cssMatrixToUse) {
     
-    var transformationData = this.testPoints(childDiv);
+    var transformationData = this.testPoints(childDiv, cssMatrixToUse);
     var fullTx_flat = convertMatrixToEditorFormat(transformationData.fullTx);
     var fullTx_inverse_flat = this.invertMatrix(fullTx_flat);
     var fullTx_normalized_inverse_flat = this.normalizeMatrix(fullTx_inverse_flat);
@@ -702,7 +712,7 @@ realityEditor.gui.ar.utilities.convertLocalCoordinatesRelativeToDivParentToScree
 };
 
 
-realityEditor.gui.ar.utilities.testPoints = function(transformedDiv) {
+realityEditor.gui.ar.utilities.testPoints = function(transformedDiv, cssMatrixToUse) {
     // 1. Get the untransformed bounds of the transformed parent element in the document coordinate system.
     // 2. Get the untransformed bounds of the target element in the document coordinate system.
     // 3. Compute the target's untransformed bounds relative to the parent's untransformed bounds.
@@ -760,7 +770,7 @@ realityEditor.gui.ar.utilities.testPoints = function(transformedDiv) {
         }
 
         // (4) Get the CSS transform from the transformed parent
-        var tx = getTransform(txParent);
+        var tx = getTransform(txParent, cssMatrixToUse);
         console.log('Transform: ', tx);
 
         // (5) Get the CSS transform origin from the transformed parent - default is '50% 50%'
@@ -842,15 +852,19 @@ realityEditor.gui.ar.utilities.testPoints = function(transformedDiv) {
         console.log(str);
     }
 
-    function getTransform(ele)
+    function getTransform(ele, cssMatrixToUse)
     {
-        var st = window.getComputedStyle(ele, null);
-
-        var tr = st.getPropertyValue("-webkit-transform") ||
-            st.getPropertyValue("-moz-transform") ||
-            st.getPropertyValue("-ms-transform") ||
-            st.getPropertyValue("-o-transform") ||
-            st.getPropertyValue("transform");
+        var tr;
+        if (cssMatrixToUse) {
+            tr = cssMatrixToUse;
+        } else {
+            var st = window.getComputedStyle(ele, null);
+            tr = st.getPropertyValue("-webkit-transform") ||
+                st.getPropertyValue("-moz-transform") ||
+                st.getPropertyValue("-ms-transform") ||
+                st.getPropertyValue("-o-transform") ||
+                st.getPropertyValue("transform");
+        }
 
         var values = tr.split('(')[1],
             values = values.split(')')[0],

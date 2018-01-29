@@ -1333,3 +1333,126 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
         object.frames[frameKey].objectVisible = shouldBeVisible;
     }
 };
+
+
+
+
+
+// simulates drawing... TODO: simplify this and make it only work for frames? or maybe nodes too...
+
+realityEditor.gui.ar.draw.simulateDraw = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+
+    if (activeVehicle.fullScreen !== true) {
+
+        var positionData = activeVehicle;
+        if (activeType === "ui") {
+            positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
+        }
+
+        var finalOffsetX = positionData.x;
+        var finalOffsetY = positionData.y;
+
+        // add node's position to its frame's position to gets its actual offset
+        if (activeType === "node" || activeType === "logic") {
+            var nodeName = activeVehicle.name;
+            var frameKey = activeKey.slice(0, -1 * nodeName.length);
+            var frame = realityEditor.getFrame(objectKey, frameKey);
+            if (frame) {
+                var parentFramePositionData = (frame.visualization === "ar") ? (frame.ar) : (frame.screen);
+                finalOffsetX += parentFramePositionData.x;
+                finalOffsetY += parentFramePositionData.y;
+            }
+        }
+
+        matrix.r3 = [
+            positionData.scale, 0, 0, 0,
+            0, positionData.scale, 0, 0,
+            0, 0, 1, 0,
+            // positionData.x, positionData.y, 0, 1
+            finalOffsetX, finalOffsetY, 0, 1
+        ];
+
+        if (matrix.matrixtouchOn === activeKey) {
+            //if(globalStates.unconstrainedPositioning===true)
+            activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+
+            //  console.log(activeVehicle.temp);
+
+            if (matrix.copyStillFromMatrixSwitch) {
+                matrix.visual = utilities.copyMatrix(activeObjectMatrix);
+                if (typeof positionData.matrix === "object") {
+                    if (positionData.matrix.length > 0) {
+                        utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                    } else {
+                        activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                    }
+                } else {
+                    activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                }
+
+                if (globalStates.unconstrainedPositioning === true) {
+                    utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                }
+
+                matrix.copyStillFromMatrixSwitch = false;
+
+            } else if (globalStates.unconstrainedPositioning === true) {
+                realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+            }
+
+            if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
+                activeObjectMatrix = matrix.visual;
+            }
+
+        }
+        
+        if (typeof positionData.matrix[1] !== "undefined") {
+            if (positionData.matrix.length > 0) {
+                if (globalStates.unconstrainedPositioning === false) {
+                    //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
+                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                }
+
+                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+                utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+                utilities.estimateIntersection(activeKey, matrix.r2, activeVehicle);
+            } else {
+                utilities.estimateIntersection(activeKey, null, activeVehicle);
+            }
+
+        } else {
+            utilities.estimateIntersection(activeKey, null, activeVehicle);
+        }
+
+        if (positionData.matrix.length < 13) {
+            utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+
+        } else {
+            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+            utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+        }
+
+
+        // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
+        // but we want all of them to have a positive value so they are rendered in front of background canvas
+        // and frames with developer=false should have the lowest positive value
+
+        if (finalMatrix[14] < 10) {
+            finalMatrix[14] = 10;
+        }
+        finalMatrix[14] = 200 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+
+        //move non-developer frames to the back so they don't steal touches from interactable frames
+        if (activeVehicle.developer === false) {
+            finalMatrix[14] = 100;
+        }
+
+        activeVehicle.mostRecentFinalMatrix = finalMatrix;
+
+        // draw transformed
+        // globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+        
+        return 'matrix3d(' + finalMatrix.toString() + ')';
+
+    }
+};
