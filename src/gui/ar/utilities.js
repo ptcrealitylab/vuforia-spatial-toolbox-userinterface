@@ -320,11 +320,11 @@ realityEditor.gui.ar.utilities.extractRotationMatrix = function(transformationMa
     return rotationMatrix;
 };
 
-realityEditor.gui.ar.utilities.multiplyPointByTransformations = function(point, scale, rotate, translate) {
-
-
-
-};
+// realityEditor.gui.ar.utilities.multiplyPointByTransformations = function(point, scale, rotate, translate) {
+//
+//
+//
+// };
 
 
 /*
@@ -577,9 +577,20 @@ realityEditor.gui.ar.utilities.multiplyPointByMatrix4 = function(point, mat) {
     
 };
 
+// realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject, touch) {
+//    
+//     // if (thisObject.)
+//
+//     // var point = this.getLocalPointFromScreenPoint(thisObject, touch[0], touch[1]); 
+//     var point = this.getLocalPointFromScreenPointDiffOrigin(thisObject, touch[0], touch[1]);
+//     realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, screenX, screenY) {
+//        
+//     return [point.x, point.y];
+// };
+
 realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, screenX, screenY) {
 
-    var overlayDomElement = globalDOMCache[frame.uuid];
+    // var overlayDomElement = globalDOMCache[frame.uuid];
 
     // gauge1.ar.x = 87.52006490007885 - parseInt(framePalette2io9kdgazn9drgaugeDe73r895869u.style.left)
 
@@ -1048,7 +1059,8 @@ realityEditor.gui.ar.utilities.transposeMatrix = function(mat) {
 
     return r;
 };
-
+    
+    
 realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject, touch) {
 
     // var point = this.getLocalPointFromScreenPoint(thisObject, touch[0], touch[1]); 
@@ -1096,6 +1108,7 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY = function(thisObject
     //     return null;
 
 };
+
 
 realityEditor.gui.ar.utilities.visibleObjectMatrixToMVP = function(visibleObjectMatrix) {
     var unrotatedResult = [];

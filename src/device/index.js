@@ -494,6 +494,9 @@ realityEditor.device.onTouchMove = function(evt) {
 
         }
 
+        realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY);
+        
+        /*
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
 
         var positionData = tempThisObject;
@@ -504,6 +507,7 @@ realityEditor.device.onTouchMove = function(evt) {
             positionData.x = matrixTouch[0];
             positionData.y = matrixTouch[1];
         }
+        */
     }
 
     if(!globalStates.editingMode) {
@@ -776,6 +780,9 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 
+        realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY);
+        
+        /*
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
         // var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(tempThisObject, [touch.pageX, touch.pageY]);
         
@@ -790,6 +797,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 			positionData.x = matrixTouch[0];
 			positionData.y = matrixTouch[1];
 		}
+		*/
 		
         if (globalStates.unconstrainedPositioning === true) {
             // console.log('unconstrained move');
