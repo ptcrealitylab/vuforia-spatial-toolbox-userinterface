@@ -579,7 +579,7 @@ realityEditor.gui.ar.utilities.multiplyPointByMatrix4 = function(point, mat) {
 
 realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, screenX, screenY) {
 
-    // var overlayDomElement = globalDOMCache[frame.uuid];
+    var overlayDomElement = globalDOMCache[frame.uuid];
 
     // gauge1.ar.x = 87.52006490007885 - parseInt(framePalette2io9kdgazn9drgaugeDe73r895869u.style.left)
 
@@ -587,12 +587,44 @@ realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate = function(frame, scr
     // var matrixBefore = getTransform(overlayDomElement);
     // var r = [];
     // this.multiplyMatrix();
+    
+    /*
+    var previousMatrix3D = convertMatrixToEditorFormat(getTransform(overlayDomElement.parentElement));
+    console.log(previousMatrix3D);
+    
+    var resultMatrix = [];
+    var translation = this.newIdentityMatrix();
+    translation[12] = -1 * frame.ar.x * previousMatrix3D[15];
+    translation[13] = -1 * frame.ar.y * previousMatrix3D[15];
+    this.multiplyMatrix(previousMatrix3D, translation, resultMatrix);
+    overlayDomElement.style.webkitTransform = 'matrix3d(' + resultMatrix.toString() + ')';
+    */
+    
+    // reset x and y translation
+    
+    frame.ar.x = 0;
+    frame.ar.y = 0;
+    
+    // recompute css3D matrix for this frame
+    
+    var draw = realityEditor.gui.ar.draw;
+    // realityEditor.gui.ar.draw
+    draw.drawTransformed(draw.visibleObjects, frame.objectId, frame.uuid, 'ui', frame, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
 
     var results = this.solveProjectedCoordinatesInFrame(frame, screenX, screenY);
 
+    // update the x and y with new translations. rendering with an updated css3D matrix will happen automatically.
+    
     frame.ar.x = results.point.x - results.left;
     frame.ar.y = results.point.y - results.top;
-
+    
+    /*
+    // translation[12] *= -1;
+    // translation[13] *= -1;
+    // this.multiplyMatrix(resultMatrix, translation, resultMatrix);
+    overlayDomElement.style.webkitTransform = 'matrix3d(' + previousMatrix3D.toString() + ')';
+    */
+    
 };
 
 // realityEditor.gui.ar.utilities.solveProjectedCoordinatesInFrame = function(frame, screenX, screenY) {

@@ -880,23 +880,31 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys(); // TODO: use valentin's new code for finding closest/frontmost
             if (visibleObjectKeys.length > 0) {
                 closestObjectKey = visibleObjectKeys[0];
-            }
-            if (closestObjectKey && objects[closestObjectKey]) {
-                
-                console.log('there is an object to drop this frame onto');
-                var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
-                
-                // var frame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-                // frame.ar.x = 0;
-                // frame.ar.y = 0;
-                // frame.ar.scale = 1;
-                // frame.ar.matrix = []; //realityEditor.gui.ar.utilities.newIdentityMatrix();
+                if (closestObjectKey && objects[closestObjectKey]) {
 
-                globalStates.editingModeObject = null;
-                globalStates.editingModeFrame = null;
-                globalStates.editingFrame = null;
+                    console.log('there is an object to drop this frame onto');
+                    var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
+
+                    // var frame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                    // frame.ar.x = 0;
+                    // frame.ar.y = 0;
+                    // frame.ar.scale = 1;
+                    // frame.ar.matrix = []; //realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+                }
+            
+            } else {
+                
+                // TODO: if there are no visible objects, return the frame to its previous object
+                var frame = globalFrames[globalStates.editingModeFrame];
+                var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(frame.sourceObject, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
 
             }
+
+            globalStates.editingModeObject = null;
+            globalStates.editingModeFrame = null;
+            globalStates.editingFrame = null;
+            
 
         } else {
 

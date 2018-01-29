@@ -549,7 +549,7 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey,
     frame.uuid = newFrameKey;
     
     // TODO: calculate relative transformation between old object and new object
-    if (frame.sourceObject && frame.sourceObjectMatrix) {
+    if (frame.sourceObject && frame.sourceObjectMatrix && objectKey !== frame.sourceObject) {
         var newScreenFrame = realityEditor.getFrame(objectKey, objectKey + 'screen');
         if (newScreenFrame && newScreenFrame.mostRecentFinalMatrix) {
             // var newObjectMatrix = newScreenFrame.mostRecentFinalMatrix;
@@ -1169,8 +1169,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || 0) + "px";
     addIframe.style.height = (activeVehicle.height || 0) + "px";
-    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeY) / 2) + "px"; // TODO: why is left dependent on height?
-    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeX) / 2) + "px"; // TODO: why is top dependent on width
+    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
+    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addIframe.style.visibility = "hidden";
     addIframe.src = iframeSrc;
     addIframe.dataset.nodeKey = nodeKey;
@@ -1185,8 +1185,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.frameBorder = 0;
     addOverlay.style.width = activeVehicle.frameSizeX + "px";
     addOverlay.style.height = activeVehicle.frameSizeY + "px";
-    addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeY) / 2) + "px";
-    addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeX) / 2) + "px";
+    addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
+    addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addOverlay.style.visibility = "hidden";
     if (activeVehicle.developer) {
         addOverlay.style["touch-action"] = "none";
