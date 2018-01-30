@@ -74,7 +74,7 @@ realityEditor.gui.ar.utilities.map = function(x, in_min, in_max, out_min, out_ma
  * @desc This function multiplies one m16 matrix with a second m16 matrix
  * @param m2 origin matrix to be multiplied with
  * @param m1 second matrix that multiplies.
- * @return {Number|Array} m16 matrix result of the muliplication
+ * @return {Number|Array} m16 matrix result of the multiplication
  **/
 
 realityEditor.gui.ar.utilities.multiplyMatrix = function(m2, m1, r) {
@@ -103,9 +103,9 @@ realityEditor.gui.ar.utilities.multiplyMatrix = function(m2, m1, r) {
 };
 
 /**
- * @desc mutpliply m4 matrix with m16 matrix
- * @param  m1 origin m4 matrix
- * @param m2 m16 matrix to multiplay with
+ * @desc multiply m4 matrix with m16 matrix
+ * @param m1 origin m4 matrix
+ * @param m2 m16 matrix to multiply with
  * @return {Number|Array} is m16 matrix
  **/
 
@@ -174,47 +174,84 @@ realityEditor.gui.ar.utilities.invertMatrix = function (a) {
 	return b;
 };
 
-// realityEditor.gui.ar.utilities.scalarMultiplyVector = function(vector4, scalar) {
-//     var r = [];
-//     r[0] = vector4[0] * scalar;
-//     r[1] = vector4[1] * scalar;
-//     r[2] = vector4[2] * scalar;
-//     r[3] = vector4[3] * scalar;
-//     return r;
-// };
+/**
+ * Efficient method for multiplying each element in a length 4 array by the same number
+ * @param {Array.<Number>} vector4
+ * @param {Number} scalar
+ * @return {Array.<Number>}
+ */
+realityEditor.gui.ar.utilities.scalarMultiplyVector = function(vector4, scalar) {
+    var r = [];
+    r[0] = vector4[0] * scalar;
+    r[1] = vector4[1] * scalar;
+    r[2] = vector4[2] * scalar;
+    r[3] = vector4[3] * scalar;
+    return r;
+};
 
-// realityEditor.gui.ar.utilities.scalarMultiplyMatrix = function(matrix, scalar) {
-//     var r = [];
-//     r[0] = matrix[0] * scalar;
-//     r[1] = matrix[1] * scalar;
-//     r[2] = matrix[2] * scalar;
-//     r[3] = matrix[3] * scalar;
-//     r[4] = matrix[4] * scalar;
-//     r[5] = matrix[5] * scalar;
-//     r[6] = matrix[6] * scalar;
-//     r[7] = matrix[7] * scalar;
-//     r[8] = matrix[8] * scalar;
-//     r[9] = matrix[9] * scalar;
-//     r[10] = matrix[10] * scalar;
-//     r[11] = matrix[11] * scalar;
-//     r[12] = matrix[12] * scalar;
-//     r[13] = matrix[13] * scalar;
-//     r[14] = matrix[14] * scalar;
-//     r[15] = matrix[15] * scalar;
-//     return r;
-// };
+/**
+ * Efficient method for multiplying each element in a length 16 array by the same number
+ * @param {Array.<Number>} matrix
+ * @param {Number} scalar
+ * @return {Array.<Number>}
+ */
+realityEditor.gui.ar.utilities.scalarMultiplyMatrix = function(matrix, scalar) {
+    var r = [];
+    r[0] = matrix[0] * scalar;
+    r[1] = matrix[1] * scalar;
+    r[2] = matrix[2] * scalar;
+    r[3] = matrix[3] * scalar;
+    r[4] = matrix[4] * scalar;
+    r[5] = matrix[5] * scalar;
+    r[6] = matrix[6] * scalar;
+    r[7] = matrix[7] * scalar;
+    r[8] = matrix[8] * scalar;
+    r[9] = matrix[9] * scalar;
+    r[10] = matrix[10] * scalar;
+    r[11] = matrix[11] * scalar;
+    r[12] = matrix[12] * scalar;
+    r[13] = matrix[13] * scalar;
+    r[14] = matrix[14] * scalar;
+    r[15] = matrix[15] * scalar;
+    return r;
+};
 
+/**
+ * Divides every element in a vector or matrix by its last element so that the last element becomes 1.
+ * (see explanation of homogeneous coordinates http://robotics.stanford.edu/~birch/projective/node4.html)
+ * @param {Array.<Number>} matrix - can have any length (so it works for vectors and matrices)
+ * @return {Array.<Number>}
+ */
+realityEditor.gui.ar.utilities.perspectiveDivide = function(matrix) {
+    var lastElement = matrix[matrix.length-1];
+    var r = [];
+    for (var i = 0; i < matrix.length; i++) {
+        r[i] = matrix[i] / lastElement;
+    }
+    return r;
+};
+
+/**
+ * Helper function for printing a matrix in human-readable format
+ * @param {Array.<Number>} matrix
+ */
 realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix) {
-
     // Note that this assumes, row-major order, while CSS 3D matrices actually use column-major
+    // Interpret column-major matrices as the transpose of what is printed
+    
     console.log("[ " + matrix[0] + ", " + matrix[1] + ", " + matrix[2] + ", " + matrix[3] + ", \n" +
                 "  " + matrix[4] + ", " + matrix[5] + ", " + matrix[6] + ", " + matrix[7] + ", \n" +
                 "  " + matrix[8] + ", " + matrix[9] + ", " + matrix[10] + ", " + matrix[11] + ", \n" +
                 "  " + matrix[12] + ", " + matrix[13] + ", " + matrix[14] + ", " + matrix[15] + " ]" );
-    
 };
 
-realityEditor.gui.ar.utilities.insidePoly = function(point, vs) {
+/**
+ * Returns whether or not the given point is inside the polygon formed by the given vertices.
+ * @param {Array.<Number>} point - [x,y]
+ * @param {Array.<Array.<Number>>} vertices - [[x0, y0], [x1, y1], ... ]
+ * @return {boolean}
+ */
+realityEditor.gui.ar.utilities.insidePoly = function(point, vertices) {
     // ray-casting algorithm based on
     // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
     // Copyright (c) 2016 James Halliday
@@ -225,11 +262,11 @@ realityEditor.gui.ar.utilities.insidePoly = function(point, vs) {
     if(x <=0 || y <= 0) return false;
 
     var inside = false;
-    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-        var xi = vs[i][0], yi = vs[i][1];
-        var xj = vs[j][0], yj = vs[j][1];
+    for (var i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+        var xi = vertices[i][0], yi = vertices[i][1];
+        var xj = vertices[j][0], yj = vertices[j][1];
 
-        var intersect = ((yi > y) != (yj > y))
+        var intersect = ((yi > y) !== (yj > y))
             && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
         if (intersect) inside = !inside;
     }
@@ -237,20 +274,36 @@ realityEditor.gui.ar.utilities.insidePoly = function(point, vs) {
     return inside;
 };
 
-// TODO: update with actual screen width and height regardless of device
+/**
+ * Returns whether or not the given node's center is within the screen bounds
+ * @param {Frame} thisObject - frame containing the node // TODO: does this work with frames now or does it still expect an object?
+ * @param {string} nodeKey
+ * @return {boolean}
+ */
 realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey) {
     var thisNode = thisObject.nodes[nodeKey];
+
+    // This is correct, globalStates.height is actually the width (568), while globalStates.width is the height (320)
+    // noinspection JSSuspiciousNameCombination
+    var screenWidth = globalStates.height;
+    // noinspection JSSuspiciousNameCombination
+    var screenHeight = globalStates.width;
+    
     var screenCorners = [
         [0,0],
-        [568,0],
-        [568,320],
-        [0,320]
+        [screenWidth,0],
+        [screenWidth,screenHeight],
+        [0,screenHeight]
     ];
     var isInsideScreen = this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners, true);
     //console.log(thisNode.name, [thisNode.screenX, thisNode.screenY], isInsideScreen);
     return isInsideScreen;
 };
 
+/**
+ * Helper method for creating a new 4x4 identity matrix
+ * @return {Number[]}
+ */
 realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     return [
         1, 0, 0, 0,
@@ -260,40 +313,46 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     ];
 };
 
-realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
-    return objectKey === globalFramePrefix;
-};
-
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
 // @author Ben Reynolds
-// private helper functions for realityEditor.gui.ar.utilities.estimateIntersection
+// private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
 (function(exports) {
 
-    function screenCoordinatesToMatrixXY(thisObject, touch, absoluteNotRelative) {
+    /**
+     * 
+     * @param {Frame|Node} thisObject - 
+     * @param {Number} screenX - x coordinate on the screen plane
+     * @param {Number} screenY - y coordinate on the screen plane
+     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisObject's existing translation
+     * @return {{point, offsetLeft, offsetTop}}
+     */
+    function screenCoordinatesToMatrixXY(thisObject, screenX, screenY, relativeToMarker) {
 
         var positionData;
         var previousPosition;
         var updatedCssMatrix;
         
         // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
-        if (absoluteNotRelative) {
-            positionData = tempThisObject;
-            if (tempThisObject.hasOwnProperty('visualization')) {
-                positionData = (tempThisObject.visualization === "ar") ? tempThisObject.ar : tempThisObject.screen;
+        if (relativeToMarker) {
+            positionData = thisObject;
+            if (thisObject.hasOwnProperty('visualization')) {
+                positionData = (thisObject.visualization === "ar") ? thisObject.ar : thisObject.screen;
             }
-            previousPosition = {
-                x: positionData.x,
-                y: positionData.y
-            };
-            positionData.x = 0;
-            positionData.y = 0;
-            var draw = realityEditor.gui.ar.draw;
-            updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, frame.objectId, frame.uuid, 'ui', frame, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+            if (positionData.x !== 0 || positionData.y !== 0) {
+                previousPosition = {
+                    x: positionData.x,
+                    y: positionData.y
+                };
+                positionData.x = 0;
+                positionData.y = 0;
+                var draw = realityEditor.gui.ar.draw;
+                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisObject.objectId, thisObject.uuid, thisObject.type, thisObject, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+            }
         }
         
-        var projectedXY = solveProjectedCoordinatesInFrame(thisObject, screenX, screenY, updatedCssMatrix);
+        var results = solveProjectedCoordinatesInFrame(thisObject, screenX, screenY, updatedCssMatrix);
         
         // restore the frame's relative position that nothing visually changes due to this computation
         if (previousPosition) {
@@ -301,64 +360,41 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
             positionData.y = previousPosition.y;
         }
         
-        return [projectedXY.x, projectedXY.y];
+        return results; // [projectedXY.x, projectedXY.y]; // TODO: update invokers to use new data format { point: { x, y }, offsetLeft, offsetTop } 
     }
 
-    function moveFrameToScreenCoordinate(frame, screenX, screenY) {
-
-        frame.ar.x = 0;
-        frame.ar.y = 0;
-
-        // recompute css3D matrix for this frame
-
-        var draw = realityEditor.gui.ar.draw;
-        var updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, frame.objectId, frame.uuid, 'ui', frame, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
-
-        // solve projected touch relative to marker (0,0)
-
-        var results = solveProjectedCoordinatesInFrame(frame, screenX, screenY, updatedCssMatrix);
-
-        // update the x and y with new translations. rendering with an updated css3D matrix will happen automatically.
-
-        frame.ar.x = results.point.x - results.left;// - initialFramePosition.x;
-        frame.ar.y = results.point.y - results.top;// - initialFramePosition.y;
-
-    }
-
+    // TODO: does this work for things other than frames? should I make assumptions?
     function solveProjectedCoordinatesInFrame(frame, screenX, screenY, cssMatrixToUse) {
 
         var overlayDomElement = globalDOMCache[frame.uuid];
-        var projectedZ = 0; // You are looking for the x, y coordinates at z=0 on the frame
+        var projectedZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
         var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
-        var offsetLeft = parseInt(overlayDomElement.style.left);
-        var offsetTop = parseInt(overlayDomElement.style.top);
 
         return {
             point: point,
-            left: offsetLeft,
-            top: offsetTop
+            offsetLeft: parseInt(overlayDomElement.style.left),
+            offsetTop: parseInt(overlayDomElement.style.top)
         }
     }
 
     function solveProjectedCoordinates(childDiv, screenX, screenY, projectedZ, cssMatrixToUse) {
 
         // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
-        if (projectedZ === undefined) { projectedZ = 0; }
+        if (projectedZ === undefined) {
+            projectedZ = 0;
+        }
 
+        // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
         var dt = 0.1;
+        var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
+        var p2 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, (projectedZ + dt), cssMatrixToUse);
 
-        var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent_fast(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
-        var p2 = convertScreenPointToLocalCoordinatesRelativeToDivParent_fast(childDiv, childDiv.parentElement, screenX, screenY, (projectedZ + dt), cssMatrixToUse);
-        //
-        // console.log('first point = ', p0);
-        // console.log('second point = ', p2);
-
+        // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
+        
         var dx = (p2[0] - p0[0]) / dt;
         var dy = (p2[1] - p0[1]) / dt;
         var dz = (p2[2] - p0[2]) / dt;
-
-        var neededDt = (p0[2]) / dz;
-
+        var neededDt = (p0[2]) / dz; // TODO: make sure I don't divide by zero
         var x = p0[0] - dx * neededDt;
         var y = p0[1] - dy * neededDt;
         var z = p0[2] - dz * neededDt;
@@ -370,30 +406,32 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         }
     }
 
-    function convertScreenPointToLocalCoordinatesRelativeToDivParent_fast(childDiv, transformedDiv, screenX, screenY, screenZ, cssMatrixToUse) {
-        var originTranslationVector = getTransformOrigin_fast(transformedDiv);
-        var fullTx = computeTransformationData_fast(cssMatrixToUse, originTranslationVector);
+    function convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, transformedDiv, screenX, screenY, screenZ, cssMatrixToUse) {
+        
+        // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
+        if (!cssMatrixToUse) {
+            cssMatrixToUse = getTransform(transformedDiv);
+        }
+        
+        // translation matrix if the element has a different transform origin
+        var originTranslationVector = getTransformOrigin(transformedDiv);
+        
+        // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+        // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+        var fullTx = computeTransformMatrix(cssMatrixToUse, originTranslationVector);
+
+        // invert and normalize the matrix
         var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
-        var fullTx_normalized_inverse = perspectiveDivideMatrix(fullTx_inverse);
+        var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
+        
         var screenPoint = [screenX, screenY, screenZ, 1];
-        var resultingPoint = perspectiveDivideMatrix(transformVertex_fast(fullTx_normalized_inverse, screenPoint));
-        return resultingPoint;
-    }
-
-    function computeTransformationData_fast(cssMatrixToUse, originTranslationVector) {
-        var tranformationMatrix = getTransformFromCssMatrix_fast(cssMatrixToUse);
-        var fullTx = computeTransformMatrix_fast(tranformationMatrix, originTranslationVector);
-        return fullTx;
-    }
-
-    function getTransformFromCssMatrix_fast(cssMatrixToUse) {
-        return cssMatrixToUse.split('(')[1].split(')')[0].split(',').map(function(element) {
-            return parseFloat(element);
-        });
+        
+        // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+        return realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint));
     }
 
     // TODO: find out why we need to compute N = T^{-1}MT
-    function computeTransformMatrix_fast(tranformationMatrix, originTranslationVector)
+    function computeTransformMatrix(transformationMatrix, originTranslationVector)
     {
         var x = originTranslationVector[0];
         var y = originTranslationVector[1];
@@ -402,14 +440,33 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         var redoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
         var temp1 = [];
         var out = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(undoTranslationMatrix, tranformationMatrix, temp1);
+        realityEditor.gui.ar.utilities.multiplyMatrix(undoTranslationMatrix, transformationMatrix, temp1);
         realityEditor.gui.ar.utilities.multiplyMatrix(temp1, redoTranslationMatrix, out);
         return out;
     }
 
-    function getTransformOrigin_fast(element) {
-        var st = window.getComputedStyle(element, null);
+    function getTransform(ele) {
+        var st = window.getComputedStyle(ele, null);
+        tr = st.getPropertyValue("-webkit-transform") ||
+            st.getPropertyValue("-moz-transform") ||
+            st.getPropertyValue("-ms-transform") ||
+            st.getPropertyValue("-o-transform") ||
+            st.getPropertyValue("transform");
 
+        var values = tr.split('(')[1],
+            values = values.split(')')[0],
+            values = values.split(',');
+        
+        var out = [ 0, 0, 0, 1 ];
+        for (var i = 0; i < values.length; ++i) {
+            out[i] = parseFloat(values[i]);
+        }
+
+        return out;
+    }
+
+    function getTransformOrigin(element) {
+        var st = window.getComputedStyle(element, null);
         var tr = st.getPropertyValue("-webkit-transform-origin") ||
             st.getPropertyValue("-moz-transform-origin") ||
             st.getPropertyValue("-ms-transform-origin") ||
@@ -426,7 +483,7 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         return out;
     }
 
-    function transformVertex_fast(mat, vert) {
+    function transformVertex(mat, vert) {
         out = [0,0,0,0];
 
         for (var i = 0; i < 4; i++) {
@@ -440,22 +497,9 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         return out;
     }
 
-    function perspectiveDivideMatrix(matrix) {
-        var lastElement = matrix[matrix.length-1];
-        var r = [];
-        for (var i = 0; i < matrix.length; i++) {
-            r[i] = matrix[i] / lastElement;
-        }
-        return r;
-    }
-    
-    exports.moveFrameToScreenCoordinate = moveFrameToScreenCoordinate;
     exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
-    exports.perspectiveDivideMatrix = perspectiveDivideMatrix;
     
 }(realityEditor.gui.ar.utilities));
-
-
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/
@@ -515,57 +559,61 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
             [thisCanvas.width, thisCanvas.height, 0],
             [0, thisCanvas.height, 0]];
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
+     * 
+     * @param corner1
+     * @param corner2
+     * @return {boolean}
+     */
     
     function areCornersEqual(corner1, corner2) {
         return (corner1[0] === corner2[0] && corner1[1] === corner2[1]);
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
+     * 
+     * @param c1a
+     * @param c1b
+     * @param c2a
+     * @param c2b
+     * @return {boolean}
+     */
     
     function areCornerPairsIdentical(c1a, c1b, c2a, c2b) {
         return (areCornersEqual(c1a, c2a) && areCornersEqual(c1b, c2b));
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
+     * 
+     * @param c1a
+     * @param c1b
+     * @param c2a
+     * @param c2b
+     * @return {boolean}
+     */
     
     function areCornerPairsSymmetric(c1a, c1b, c2a, c2b) {
         return (areCornersEqual(c1a, c2b) && areCornersEqual(c1b, c2a));
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
+     * 
+     * @param corner1
+     * @param corner2
+     * @return {boolean}
+     */
     
     function areCornersAdjacent(corner1, corner2) {
         return (corner1[0] === corner2[0] || corner1[1] === corner2[1]);
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
+     * 
+     * @param corner1
+     * @param corner2
+     * @return {boolean}
+     */
     
     function areCornersOppositeZ(corner1, corner2) {
         var z1 = corner1[2];
@@ -573,14 +621,13 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         var oppositeSign = ((z1 * z2) < 0);
         return oppositeSign;
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
-    // makes sure we don't add symmetric pairs to list
+     * makes sure we don't add symmetric pairs to list
+     * @param cornerPair
+     * @param oppositeCornerPairs
+     */
+    
     function addCornerPairToOppositeCornerPairs(cornerPair, oppositeCornerPairs) {
         var corner1 = cornerPair[0];
         var corner2 = cornerPair[1];
@@ -615,31 +662,34 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
     function isCanvasBlank(canvas) {
         blank.width = canvas.width;
         blank.height = canvas.height;
-        return canvas.toDataURL() == blank.toDataURL();
+        return canvas.toDataURL() === blank.toDataURL();
     }
-    
+
     /**
-     * @desc
-     * @param
-     * @param
-     * @return
-     **/
+     * 
+     * @param activeKey
+     * @param mCanvas
+     * @param activeVehicle
+     * @return {boolean}
+     */
     
     function estimateIntersection(activeKey, mCanvas, activeVehicle) {
         
         var isFullyBehindPlane = false;
         
         var thisCanvas = globalDOMCache["canvas" + activeKey];
+        var diagonalLineWidth = 22;
+        var ctx = thisCanvas.getContext("2d");
+        var i;
+
         if(!mCanvas){
             // if(!activeVehicle.hasCTXContent) {
             //     activeVehicle.hasCTXContent = true;
             if (!activeVehicle.hasCTXContent) { //} || isCanvasBlank(thisCanvas)) {
                 activeVehicle.hasCTXContent = true;
-                var ctx = thisCanvas.getContext("2d");
-                var diagonalLineWidth = 22;
                 ctx.lineWidth = diagonalLineWidth;
                 ctx.strokeStyle = '#01FFFC';
-                for (var i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
+                for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
                     ctx.beginPath();
                     ctx.moveTo(i, -diagonalLineWidth / 2);
                     ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
@@ -698,15 +748,16 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
             var x2 = c2[0];
             var y2 = c2[1];
             var z2 = c2[2];
-    
+            var slope;
+            
             if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
                 // console.log("dx");
-                var slope = ((z2 - z1) / (x2 - x1));
+                slope = ((z2 - z1) / (x2 - x1));
                 var x_intercept = x1 - (z1 / slope);
                 interceptPoints.push([x_intercept, y1]);
             } else {
                 // console.log("dy");
-                var slope = ((z2 - z1) / (y2 - y1));
+                slope = ((z2 - z1) / (y2 - y1));
                 var y_intercept = y1 - (z1 / slope);
                 interceptPoints.push([x1, y_intercept]);
             }
@@ -733,14 +784,12 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         var sortedPoints = sortPointsClockwise(interceptPoints);
     
         // draws blue and purple diagonal lines to mask the image
-        var ctx = thisCanvas.getContext("2d");
         ctx.clearRect(0, 0, thisCanvas.width, thisCanvas.height);
         activeVehicle.hasCTXContent = false;
     
-        var diagonalLineWidth = 22;
         ctx.lineWidth = diagonalLineWidth;
         ctx.strokeStyle = '#01FFFC';
-        for (var i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
+        for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
             ctx.beginPath();
             ctx.moveTo(i, -diagonalLineWidth / 2);
             ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
@@ -766,11 +815,9 @@ realityEditor.gui.ar.utilities.isGlobalFrame = function(objectKey) {
         ctx.clip();
     
         // draw whatever needs to get masked here!
-    
-        var diagonalLineWidth = 22;
         ctx.lineWidth = diagonalLineWidth;
         ctx.strokeStyle = '#FF01FC';
-        for (var i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
+        for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
             ctx.beginPath();
             ctx.moveTo(i, -diagonalLineWidth / 2);
             ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);

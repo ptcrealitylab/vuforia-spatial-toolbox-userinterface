@@ -250,6 +250,15 @@ realityEditor.device.beginTouchEditing = function(target) {
 };
 
 /**
+ * Returns whether or not the object is the "global frame container" for when frames are dis-associated from a marker
+ * @param objectKey
+ * @return {boolean}
+ */
+realityEditor.device.isGlobalFrame = function(objectKey) {
+    return objectKey === globalFramePrefix;
+};
+
+/**
  * @returns {*} the object, frame, or node currently being edited (repositioned)
  */
 realityEditor.device.getEditingModeObject = function() {
@@ -259,7 +268,7 @@ realityEditor.device.getEditingModeObject = function() {
     
     if (globalStates.editingModeKind === 'ui') {
         // edge case for editing frames dis-associated from any object
-        if (realityEditor.gui.ar.utilities.isGlobalFrame(objectId)) {
+        if (this.isGlobalFrame(objectId)) {
             return globalFrames[frameId];
         }
         return objects[objectId].frames[frameId];
@@ -494,8 +503,8 @@ realityEditor.device.onTouchMove = function(evt) {
 
         }
 
-        realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY);
-        var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY], );
+        realityEditor.gui.ar.draw.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
+        // var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY], );
 
         /*
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
@@ -781,7 +790,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 
-        realityEditor.gui.ar.utilities.moveFrameToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY);
+        realityEditor.gui.ar.draw.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
         
         /*
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
@@ -799,6 +808,11 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 			positionData.y = matrixTouch[1];
 		}
 		*/
+
+        var positionData = tempThisObject;
+        if (tempThisObject.hasOwnProperty('visualization')) {
+            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
+        }
 		
         if (globalStates.unconstrainedPositioning === true) {
             // console.log('unconstrained move');
@@ -845,6 +859,10 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		if (tempThisObject.hasOwnProperty('visualization')) {
 		    positionData = (tempThisObject.visualization === "ar") ? tempThisObject.ar : tempThisObject.screen;
         }
+        
+        if (tempThisObject.currentTouchOffset) {
+		    tempThisObject.currentTouchOffset = null;
+        }
 
 		var content = {};
 		content.x = positionData.x;
@@ -881,7 +899,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// 	// }
 		// } else 
         
-        if (realityEditor.gui.ar.utilities.isGlobalFrame(globalStates.editingModeObject)) {
+        if (this.isGlobalFrame(globalStates.editingModeObject)) {
             
             // TODO: try to drop the frame into an object underneath, or if there isn't one, return it to its starting position in its old object (need to remember this somewhere)
             

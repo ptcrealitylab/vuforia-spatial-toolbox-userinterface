@@ -162,6 +162,11 @@ realityEditor.app.addSpeechListener = function (callBack) {
 //sends every individual word that was found one by one to the callback.
 realityEditor.app.clearCache = function () {
     this.appFunctionCall('clearCache', null, null);
+    console.log('clearing cache and force reloading...');
+    setTimeout(function() {
+        location.reload(true);
+        console.log('NOW');
+    }, 1000);
 };
 
 // global shortcut for clearing the cache

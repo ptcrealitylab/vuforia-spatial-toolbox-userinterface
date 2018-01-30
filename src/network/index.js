@@ -175,6 +175,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
                                 thisNode.matrix = [];
                             }
+                            thisNode.objectId = objectKey;
+                            thisNode.frameId = frameKey;
                             thisNode.loaded = false;
                             thisNode.visible = false;
 
@@ -268,6 +270,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
 };
 
+// TODO: why is frameKey passed in here? if we just iterate through all the frames anyways?
 realityEditor.network.updateObject = function (origin, remote, objectKey, frameKey) {
 
     console.log(origin, remote, objectKey, frameKey);
@@ -284,6 +287,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     
     // update each frame in the object
     for (var frameKey in remote.frames) {
+        if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
 
@@ -308,28 +312,37 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             var originNodes = origin.frames[frameKey].nodes;
             
             for (var nodeKey in remoteNodes) {
-                if (!originNodes[nodeKey]) {
-                    originNodes[nodeKey] = remoteNodes[nodeKey];
-                } else {
+                if (!remoteNodes.hasOwnProperty(nodeKey)) continue;
 
-                    originNodes[nodeKey].x = remoteNodes[nodeKey].x;
-                    originNodes[nodeKey].y = remoteNodes[nodeKey].y;
-                    originNodes[nodeKey].scale = remoteNodes[nodeKey].scale;
+                var originNode = originNodes[nodeKey];
+                var remoteNode = remoteNodes[nodeKey];
+                realityEditor.network.updateNode(originNode, remoteNode, objectKey, frameKey, nodeKey);
 
-                    originNodes[nodeKey].name = remoteNodes[nodeKey].name;
-                    if (remoteNodes[nodeKey].text) {
-                        originNodes[nodeKey].text = remoteNodes[nodeKey].text;
-                    }
-                    if (remoteNodes[nodeKey].matrix) {
-                        originNodes[nodeKey].matrix = remoteNodes[nodeKey].matrix;
-                    }
-                }
-
-                if (globalDOMCache["iframe" + nodeKey]) {
-                    if (globalDOMCache["iframe" + nodeKey]._loaded) {
-                        realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
-                    }
-                }
+                // if (!originNodes[nodeKey]) {
+                //     originNodes[nodeKey] = remoteNodes[nodeKey];
+                // } else {
+                //
+                //     originNodes[nodeKey].x = remoteNodes[nodeKey].x;
+                //     originNodes[nodeKey].y = remoteNodes[nodeKey].y;
+                //     originNodes[nodeKey].scale = remoteNodes[nodeKey].scale;
+                //
+                //     originNodes[nodeKey].name = remoteNodes[nodeKey].name;
+                //     originNodes[nodeKey].frameId = remoteNodes[nodeKey].frameId; // TODO: refactor every node update into a reusable function rather than reimplementing
+                //     originNodes[nodeKey].objectId = remoteNodes[nodeKey].objectId;
+                //
+                //     if (remoteNodes[nodeKey].text) {
+                //         originNodes[nodeKey].text = remoteNodes[nodeKey].text;
+                //     }
+                //     if (remoteNodes[nodeKey].matrix) {
+                //         originNodes[nodeKey].matrix = remoteNodes[nodeKey].matrix;
+                //     }
+                // }
+                //
+                // if (globalDOMCache["iframe" + nodeKey]) {
+                //     if (globalDOMCache["iframe" + nodeKey]._loaded) {
+                //         realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+                //     }
+                // }
             }
         }
         
@@ -434,6 +447,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         origin.y = remote.y;
         origin.scale = remote.scale;
         origin.name = remote.name;
+        origin.frameId = frameKey;
+        origin.objectId = objectKey;
+        
         if (remote.text) {
             origin.text = remote.text;
         }
@@ -705,6 +721,8 @@ realityEditor.network.onAction = function (action) {
                 var nodeUuid = frameID + nodeName;
                 frame.nodes[nodeUuid] = new Node();
                 var addedNode = frame.nodes[nodeUuid];
+                addedNode.objectId = thisAction.addFrame.objectID;
+                addedNode.frameId = frameID;
                 addedNode.name = nodeName;
                 addedNode.text = undefined;
                 addedNode.type = 'node';
