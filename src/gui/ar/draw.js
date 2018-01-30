@@ -1136,6 +1136,14 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         // Add touch event listeners
         
         realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
+        
+        if (globalStates.editingMode) {
+            if (activeKey === frameKey) {
+                realityEditor.device.addEventHandlersForFrame(objectKey, activeKey);
+            } else { //if (activeType === "node") {
+                realityEditor.device.activateNodeMove(activeKey);
+            }
+        }
 
         if (activeType === "node") {
             addOverlay.style.visibility = "visible";

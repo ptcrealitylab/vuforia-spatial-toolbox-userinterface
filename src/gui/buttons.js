@@ -70,36 +70,44 @@ realityEditor.gui.buttons.preload = function(array) {
  **/
 
 realityEditor.gui.buttons.guiButtonUp = function(event){
-		if(event.button !== "gui") return;
+    if(event.button !== "gui") return;
 
-        realityEditor.gui.menus.buttonOff("main",["logic","logicPocket","logicSetting","setting","pocket"]);
-        realityEditor.gui.menus.buttonOn("main",["gui"]);
+    realityEditor.gui.menus.buttonOff("main",["logic","logicPocket","logicSetting","setting","pocket"]);
+    realityEditor.gui.menus.buttonOn("main",["gui"]);
 
 
-        realityEditor.gui.pocket.pocketHide();
-        globalStates.guiState = "ui";
-        if (globalStates.guiState !== "logic") {
-            if (DEBUG_DATACRAFTING) {
-                realityEditor.gui.crafting.craftingBoardVisible(); // TODO: BEN DEBUG - revert to previous line
-            } else {
-                realityEditor.gui.crafting.craftingBoardHide();
-            }
+    realityEditor.gui.pocket.pocketHide();
+    globalStates.guiState = "ui";
+    if (globalStates.guiState !== "logic") {
+        if (DEBUG_DATACRAFTING) {
+            realityEditor.gui.crafting.craftingBoardVisible(); // TODO: BEN DEBUG - revert to previous line
+        } else {
+            realityEditor.gui.crafting.craftingBoardHide();
         }
+    }
 
-	};
+    if (globalStates.editingMode) {
+        realityEditor.device.addEventHandlers();
+    }
+
+};
 
 realityEditor.gui.buttons.logicButtonUp = function(event){
-        if(event.button !== "logic") return;
+    if(event.button !== "logic") return;
 
-        realityEditor.gui.menus.buttonOff("main",["gui","logicPocket","logicSetting","setting","pocket"]);
-        realityEditor.gui.menus.buttonOn("main",["logic"]);
+    realityEditor.gui.menus.buttonOff("main",["gui","logicPocket","logicSetting","setting","pocket"]);
+    realityEditor.gui.menus.buttonOn("main",["logic"]);
 
-        realityEditor.gui.pocket.pocketHide();
+    realityEditor.gui.pocket.pocketHide();
 
-        globalStates.guiState = "node";
+    globalStates.guiState = "node";
 
-        realityEditor.gui.crafting.craftingBoardHide();
-    };
+    realityEditor.gui.crafting.craftingBoardHide();
+
+    if (globalStates.editingMode) {
+        realityEditor.device.addEventHandlers();
+    }
+};
 
 realityEditor.gui.buttons.resetButtonUp = function(event) {
         if (event.button !== "reset") return;
