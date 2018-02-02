@@ -148,6 +148,8 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                         var activeNode = activeFrame.nodes[nodeKey];
                         activeNode.matrix = [];
                         activeNode.scale = 1;
+                        activeNode.x = 0;
+                        activeNode.y = 0;
                         // tempResetValue.x = randomIntInc(0, 200) - 100;
                         // tempResetValue.y = randomIntInc(0, 200) - 100;
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);

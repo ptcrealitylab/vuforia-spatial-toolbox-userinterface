@@ -172,7 +172,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
 
-                if (this.globalStates.guiState === "ui" || Object.keys(this.activeFrame.nodes).length === 0) {
+                if (this.globalStates.guiState === "ui") { // || Object.keys(this.activeFrame.nodes).length === 0) { // removed feature where UI shows in node view if no nodes... check with team that this is a good decision
                     var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                         this.globalDOMCache, this.globalStates, this.globalCanvas,
                         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
