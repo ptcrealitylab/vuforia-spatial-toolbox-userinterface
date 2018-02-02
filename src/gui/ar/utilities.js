@@ -446,12 +446,14 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     }
 
     function getTransform(ele) {
-        var st = window.getComputedStyle(ele, null);
-        tr = st.getPropertyValue("-webkit-transform") ||
-            st.getPropertyValue("-moz-transform") ||
-            st.getPropertyValue("-ms-transform") ||
-            st.getPropertyValue("-o-transform") ||
-            st.getPropertyValue("transform");
+        // var st = window.getComputedStyle(ele, null);
+        // tr = st.getPropertyValue("-webkit-transform") ||
+        //     st.getPropertyValue("-moz-transform") ||
+        //     st.getPropertyValue("-ms-transform") ||
+        //     st.getPropertyValue("-o-transform") ||
+        //     st.getPropertyValue("transform");
+        
+        tr = ele.style.webkitTransform;
 
         var values = tr.split('(')[1],
             values = values.split(')')[0],

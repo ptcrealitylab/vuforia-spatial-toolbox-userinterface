@@ -271,12 +271,24 @@ realityEditor.device.getEditingModeObject = function() {
         if (this.isGlobalFrame(objectId)) {
             return globalFrames[frameId];
         }
+        // edge case for pocket frames
+        if (objectId && objectId in pocketItem) {
+            return pocketItem[objectId].frames[frameId];
+        }
         return objects[objectId].frames[frameId];
         
     } else if (globalStates.editingModeKind === 'node' || globalStates.editingModeKind === 'logic') {
+        // edge case for pocket frames
+        if (objectId && objectId in pocketItem) {
+            return pocketItem[objectId].frames[frameId].nodes[nodeId];
+        }
         return objects[objectId].frames[frameId].nodes[nodeId];
         
     } else {
+        // edge case for pocket objects
+        if (objectId && objectId in pocketItem) {
+            return pocketItem[objectId];
+        }
         return objects[objectId];
     }
 };
@@ -1154,7 +1166,7 @@ realityEditor.device.removeEventHandlers = function() {
 
 realityEditor.device.addTouchListenersForElement = function(overlayDomElement, activeVehicle) {
     
-    if (activeVehicle.developer) {
+    if (activeVehicle.developer || (activeVehicle.type === 'node' || activeVehicle.type === 'logic')) {
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);

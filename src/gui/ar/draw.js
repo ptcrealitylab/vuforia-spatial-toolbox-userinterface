@@ -806,7 +806,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     if (isFullyBehindPlane) {
                         
                         // having "activeVehicle.type" property this means it is a "local" frame (it can be sent to screen)
-                        if (globalStates.editingModeObject && globalStates.editingModeFrame && activeVehicle.type) {
+                        if (globalStates.editingModeObject && globalStates.editingModeFrame && globalStates.editingModeKind === 'ui' && activeVehicle.type) { // TODO: rename frame 'type' because it overlaps with node 'type'
                             console.log('~~ !!!!! send to screen !!!!! ~~');
 
                             this.killObjects(activeKey, activeVehicle, globalDOMCache);
@@ -868,6 +868,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
                 // but we want all of them to have a positive value so they are rendered in front of background canvas
                 // and frames with developer=false should have the lowest positive value
+
+                activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
+
+                // finalMatrix[14] *= -1;
                 
                 if (finalMatrix[14] < 10) {
                     finalMatrix[14] = 10;
@@ -888,7 +892,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
                 activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
                 activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
-                activeVehicle.screenZ = finalMatrix[14];
+                // activeVehicle.screenZ = finalMatrix[14];
 
             }
             if (activeType === "ui") {

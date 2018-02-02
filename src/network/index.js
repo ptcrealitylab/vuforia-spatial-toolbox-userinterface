@@ -856,6 +856,17 @@ realityEditor.network.onInternalPostMessage = function (e) {
         tempThisObject = realityEditor.getObject(msgContent.object);
     }
     
+    // make it work for pocket items too
+    if (!tempThisObject && msgContent.object &&  msgContent.object in pocketItem) {
+        if (msgContent.node && msgContent.frame) {
+            tempThisObject = pocketItem[msgContent.object].frames[msgContent.frame].nodes[msgContent.node];
+        } else if (msgContent.frame) {
+            tempThisObject = pocketItem[msgContent.object].frames[msgContent.frame];
+        } else {
+            tempThisObject = pocketItem[msgContent.object];
+        }
+    }
+    
     tempThisObject = tempThisObject || {};
 
     // TODO: bring this pack to make pocketItem part work

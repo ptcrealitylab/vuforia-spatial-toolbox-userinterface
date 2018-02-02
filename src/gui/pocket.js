@@ -81,6 +81,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 	if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
 
 		var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+		
+		var pocketDomElement = globalDOMCache['object' + thisItem.uuid];
+		if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
 
 		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement === "") {
 		    
@@ -90,29 +93,15 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 		} else {
 		    
 			if(thisItem.screenZ !== 2 && thisItem.screenZ) {
-			    
-			    var objectKey = realityEditor.gui.ar.draw.nodeCalculations.farFrontElement;
-			    var frameKey = realityEditor.gui.ar.draw.nodeCalculations.farFrontFrame;
                 
-                var activeFrame = realityEditor.getFrame(objectKey, frameKey);
-                var unrotatedResult = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, unrotatedResult);
-                if (!activeFrame.temp) {
-                    activeFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                }
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, activeFrame.temp);
+                var centerOffsetX = thisItem.frameSizeX / 2;
+                var centerOffsetY = thisItem.frameSizeY / 2;
                 
-                
-				var matrixTouch = this.realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeFrame, [evt.clientX, evt.clientY]);
-				// console.log(thisItem);
-				thisItem.x = matrixTouch[0];
-				thisItem.y = matrixTouch[1];
+                realityEditor.gui.ar.draw.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
 
 			}
 		}
-        
-		//  pocketItem.pocket.x = evt.clientX;
-		// pocketItem.pocket.y = evt.clientY;
+		
 	}
 };
 
