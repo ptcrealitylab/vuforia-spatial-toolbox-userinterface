@@ -74,10 +74,12 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
 
     realityEditor.gui.menus.buttonOff("main",["logic","logicPocket","logicSetting","setting","pocket"]);
     realityEditor.gui.menus.buttonOn("main",["gui"]);
-
-
+    
     realityEditor.gui.pocket.pocketHide();
+    
     globalStates.guiState = "ui";
+    realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
+    
     if (globalStates.guiState !== "logic") {
         if (DEBUG_DATACRAFTING) {
             realityEditor.gui.crafting.craftingBoardVisible(); // TODO: BEN DEBUG - revert to previous line
@@ -101,6 +103,7 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
     realityEditor.gui.pocket.pocketHide();
 
     globalStates.guiState = "node";
+    realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
 
     realityEditor.gui.crafting.craftingBoardHide();
 
@@ -128,7 +131,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     
                     var activeFrame = tempResetObject.frames[frameKey];
                     
-                    var positionData = (activeFrame.visualization === 'ar') ? (activeFrame.ar) : (activeFrame.screen);
+                    var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
                     positionData.matrix = [];
                     positionData.x = 0;
                     positionData.y = 0;

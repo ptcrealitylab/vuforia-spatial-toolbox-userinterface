@@ -58,10 +58,7 @@ createNameSpace("realityEditor.gui.ar.positioning");
 realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
 
     var tempThisObject = realityEditor.device.getEditingModeObject();
-    var positionData = tempThisObject;
-    if (tempThisObject.hasOwnProperty('visualization')) {
-        positionData = (tempThisObject.visualization === 'ar') ? (tempThisObject.ar) : (tempThisObject.screen);
-    }
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
     
 	var thisRadius = Math.sqrt(Math.pow((globalStates.editingModeObjectX - touch.pageX), 2) + Math.pow((globalStates.editingModeObjectY - touch.pageY), 2));
 	if (!globalStates.editingScaleDistance) {
@@ -104,10 +101,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 
     var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
 
-    var positionData = activeVehicle;
-    if (activeVehicle.hasOwnProperty('visualization')) {
-        positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
-    }
+    var positionData = this.getPositionData(activeVehicle);
 
     var newPosition = {
         x: results.point.x - results.offsetLeft,
@@ -143,4 +137,12 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 
     }
 
+};
+
+realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
+    var positionData = activeVehicle;
+    if (activeVehicle.hasOwnProperty('visualization')) {
+        positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
+    }
+    return positionData;
 };

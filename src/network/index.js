@@ -134,7 +134,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 if (msg && objectKey) {
                     
                     //TODO: DEBUG BEN REMOVE - THIS PREVENTS OLD OBJECTS WITHOUT FRAMES FROM BEING ADDED
-                    if (msg.version !== "3.0.0") return; // /*|| msg.ip === "192.168.1.7"*/) return;
+                    if (msg.version !== "3.0.0" || msg.ip !== "192.168.1.4") return; // /*|| msg.ip === "192.168.1.7"*/) return;
 
                     objects[objectKey] = msg;
                     
@@ -164,8 +164,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
                         thisFrame.visible = false;
                         
-                        var positionData = thisFrame.visualization === "ar" ? thisFrame.ar : thisFrame.screen;
-                        
+                        var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
+
                         if (positionData.matrix === null || typeof positionData.matrix !== "object") {
                             positionData.matrix = [];
                         }
@@ -1688,10 +1688,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         return;
     }
     
-    var positionData = tempThisObject;
-    if (tempThisObject.hasOwnProperty('visualization')) {
-        positionData = (tempThisObject.visualization === 'ar') ? (tempThisObject.ar) : (tempThisObject.screen);
-    }
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
     
     var content = {};
     content.x = positionData.x;

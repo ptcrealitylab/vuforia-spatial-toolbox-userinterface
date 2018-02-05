@@ -336,10 +336,8 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         
         // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
         if (relativeToMarker) {
-            positionData = thisObject;
-            if (thisObject.hasOwnProperty('visualization')) {
-                positionData = (thisObject.visualization === "ar") ? thisObject.ar : thisObject.screen;
-            }
+            positionData = realityEditor.gui.ar.positioning.getPositionData(thisObject);
+
             if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
                 previousPosition = {
                     x: positionData.x,
@@ -510,7 +508,7 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
  **********************************************************************************************************************/
 
 // @author Ben Reynolds
-// private helper functions for realityEditor.gui.ar.utilities.estimateIntersection
+// private helper functions for realityEditor.gui.ar.utilities.drawMarkerPlaneIntersection
 (function(exports) {
     
     /**
@@ -669,6 +667,41 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         blank.height = canvas.height;
         return canvas.toDataURL() === blank.toDataURL();
     }
+    
+    function hasBeenUnconstrainedPositioned(matrix) {
+        var approximateMatrix = matrix.map(function(elt) {
+            return parseFloat(elt.toFixed(3)); // round to prevent floating point precision errors
+        });
+        return !(approximateMatrix[0] === 1 &&
+                approximateMatrix[1] === 0 &&
+                approximateMatrix[2] === 0 &&
+                approximateMatrix[3] === 0 &&
+                approximateMatrix[4] === 0 &&
+                approximateMatrix[5] === 1 &&
+                approximateMatrix[6] === 0 &&
+                approximateMatrix[7] === 0 &&
+                approximateMatrix[8] === 0 &&
+                approximateMatrix[9] === 0 &&
+                approximateMatrix[10] === 1 &&
+                approximateMatrix[11] === 0 &&
+                approximateMatrix[12] === 0 &&
+                approximateMatrix[13] === 0 &&
+                approximateMatrix[14] === 0 &&
+                approximateMatrix[15] === 1);
+        
+    }
+    
+    function renderDefaultCanvas(activeVehicle, thisCanvas, diagonalLineWidth, ctx) {
+        activeVehicle.hasCTXContent = true;
+        ctx.lineWidth = diagonalLineWidth;
+        ctx.strokeStyle = '#01FFFC';
+        for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
+            ctx.beginPath();
+            ctx.moveTo(i, -diagonalLineWidth / 2);
+            ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
+            ctx.stroke();
+        }
+    }
 
     /**
      * 
@@ -678,7 +711,7 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
      * @return {boolean}
      */
     
-    function estimateIntersection(activeKey, mCanvas, activeVehicle) {
+    function drawMarkerPlaneIntersection(activeKey, mCanvas, activeVehicle) {
         
         var isFullyBehindPlane = false;
         
@@ -687,26 +720,33 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         var ctx = thisCanvas.getContext("2d");
         var i;
 
-        if(!mCanvas){
+        if(!mCanvas) { // || !activeVehicle.hasCTXContent){
             // if(!activeVehicle.hasCTXContent) {
             //     activeVehicle.hasCTXContent = true;
             if (!activeVehicle.hasCTXContent) { //} || isCanvasBlank(thisCanvas)) {
-                activeVehicle.hasCTXContent = true;
-                ctx.lineWidth = diagonalLineWidth;
-                ctx.strokeStyle = '#01FFFC';
-                for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
-                    ctx.beginPath();
-                    ctx.moveTo(i, -diagonalLineWidth / 2);
-                    ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
-                    ctx.stroke();
-                }
+                renderDefaultCanvas(activeVehicle, thisCanvas, diagonalLineWidth, ctx);
+                // activeVehicle.hasCTXContent = true;
+                // ctx.lineWidth = diagonalLineWidth;
+                // ctx.strokeStyle = '#01FFFC';
+                // for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(i, -diagonalLineWidth / 2);
+                //     ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
+                //     ctx.stroke();
+                // }
             }
             return;
         } else {
             activeVehicle.hasCTXContent = false;
         }
     
-        if (globalStates.pointerPosition[0] === -1) return;
+        if (globalStates.pointerPosition[0] === -1 && activeVehicle.hasCTXContent) return; // TODO: why did I put this here?
+        
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        if (!hasBeenUnconstrainedPositioned(positionData.matrix)) {
+            renderDefaultCanvas(activeVehicle, thisCanvas, diagonalLineWidth, ctx);
+            return;
+        }
         
         var corners = getCornersClockwise(thisCanvas);
         var out = [0, 0, 0, 0];
@@ -833,10 +873,11 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         ctx.restore();
         
         activeVehicle.hasCTXContent = true;
+        // activeVehicle.forceRedrawRepositionOnce = 
         
         return isFullyBehindPlane;
     }
     
-    exports.estimateIntersection = estimateIntersection;
+    exports.drawMarkerPlaneIntersection = drawMarkerPlaneIntersection;
 
 }(realityEditor.gui.ar.utilities));

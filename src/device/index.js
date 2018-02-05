@@ -491,7 +491,8 @@ realityEditor.device.onTouchMove = function(evt) {
 
     }
 
-    if( globalStates.editingNode && globalStates.editingNode === target.nodeId) {
+    // if we're dragging a node and not scaling it, move it to the new touch location
+    if( globalStates.editingNode && globalStates.editingNode === target.nodeId && !globalStates.editingScaleDistance) {
 
         globalStates.editingModeObjectX = evt.pageX;
         globalStates.editingModeObjectY = evt.pageY;
@@ -516,20 +517,7 @@ realityEditor.device.onTouchMove = function(evt) {
         }
 
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
-        // var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY], );
 
-        /*
-        var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY]);
-
-        var positionData = tempThisObject;
-        if (tempThisObject.hasOwnProperty('visualization')) {
-            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
-        }
-        if (matrixTouch) {
-            positionData.x = matrixTouch[0];
-            positionData.y = matrixTouch[1];
-        }
-        */
     }
 
     if(!globalStates.editingMode) {
@@ -803,28 +791,8 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
-        
-        /*
-        var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
-        // var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(tempThisObject, [touch.pageX, touch.pageY]);
-        
-        // console.log('x: ' + parseInt(matrixTouch[0]) + ' | ' + parseInt(matrixTouch2[0]) + ' ... y: ' + parseInt(matrixTouch[1]) + ' | ' + parseInt(matrixTouch2[1]));
-
-        var positionData = tempThisObject;
-        if (tempThisObject.hasOwnProperty('visualization')) {
-            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
-        }
-        
-		if (matrixTouch) {
-			positionData.x = matrixTouch[0];
-			positionData.y = matrixTouch[1];
-		}
-		*/
-
-        var positionData = tempThisObject;
-        if (tempThisObject.hasOwnProperty('visualization')) {
-            positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
-        }
+                
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
 		
         if (globalStates.unconstrainedPositioning === true) {
             // console.log('unconstrained move');
@@ -875,11 +843,18 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 		
-		var positionData = tempThisObject;
-		if (tempThisObject.hasOwnProperty('visualization')) {
-		    positionData = (tempThisObject.visualization === "ar") ? tempThisObject.ar : tempThisObject.screen;
+		if (!tempThisObject) {
+            globalStates.editingModeObject = null;
+            globalStates.editingModeFrame = null;
+            globalStates.editingFrame = null;
+            globalStates.editingModeHaveObject = false;
+            globalCanvas.hasContent = true;
+            realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
+            return;
         }
-        
+		
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
+
         if (tempThisObject.currentTouchOffset) {
 		    tempThisObject.currentTouchOffset = null;
         }
@@ -1038,15 +1013,18 @@ realityEditor.device.setDeviceName = function(deviceName) {
 realityEditor.device.setEditingMode = function(newEditingMode) {
     if (globalStates.editingMode !== newEditingMode) {
         // reset all object's .visible property to false so they re-render with correct editing DOM elements
-        for (var objectKey in objects) {
-            if (!objects.hasOwnProperty(objectKey)) continue;
-            for (var frameKey in objects[objectKey].frames) {
-                if (!objects[objectKey].frames.hasOwnProperty(frameKey)) continue;
-                objects[objectKey].frames[frameKey].visible = false;
-                objects[objectKey].frames[frameKey].visibleEditing = false;
-                objects[objectKey].frames[frameKey].hasCTXContent = false;
-            }
-        }
+        // for (var objectKey in objects) {
+        //     if (!objects.hasOwnProperty(objectKey)) continue;
+        //     for (var frameKey in objects[objectKey].frames) {
+        //         if (!objects[objectKey].frames.hasOwnProperty(frameKey)) continue;
+        //         objects[objectKey].frames[frameKey].visible = false;
+        //         objects[objectKey].frames[frameKey].visibleEditing = false;
+        //         objects[objectKey].frames[frameKey].hasCTXContent = false;
+        //     }
+        // }
+
+        realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
+        realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
     }
     globalStates.editingMode = newEditingMode;
 };
