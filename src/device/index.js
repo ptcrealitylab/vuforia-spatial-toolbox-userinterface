@@ -515,7 +515,7 @@ realityEditor.device.onTouchMove = function(evt) {
 
         }
 
-        realityEditor.gui.ar.draw.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
         // var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [evt.pageX, evt.pageY], );
 
         /*
@@ -802,7 +802,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 
-        realityEditor.gui.ar.draw.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
         
         /*
         var matrixTouch = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(tempThisObject, [touch.pageX, touch.pageY]);
@@ -833,6 +833,10 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 	}
 
 	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 2) {
+
+        globalStates.editingModeObjectX = evt.touches[0].pageX; //touch.pageX;
+        globalStates.editingModeObjectY = evt.touches[0].pageY; //touch.pageY;
+	    
 		realityEditor.gui.ar.positioning.onScaleEvent(evt.touches[1]);
 	}
 
@@ -848,6 +852,10 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 	if (evt.preventDefault) {
 		evt.preventDefault();
 	}
+	
+	if (globalStates.editingScaleDistance) {
+	    globalStates.editingScaleDistance = null;
+    }
 
 // generate action for all links to be reloaded after upload
 	if (globalStates.editingModeHaveObject) {
@@ -971,6 +979,7 @@ realityEditor.device.onMultiTouchCanvasStart = function(evt) {
 
 	evt.preventDefault();
 // generate action for all links to be reloaded after upload
+    /*
 	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
 
 //todo this will move in to the virtual pocket.
@@ -979,15 +988,16 @@ realityEditor.device.onMultiTouchCanvasStart = function(evt) {
 
 		globalStates.editingScaleX = touch.pageX;
 		globalStates.editingScaleY = touch.pageY;
-		globalStates.editingScaledistance = Math.sqrt(Math.pow((globalStates.editingModeObjectX - globalStates.editingScaleX), 2) + Math.pow((globalStates.editingModeObjectY - globalStates.editingScaleY), 2));
+		globalStates.editingScaleDistance = Math.sqrt(Math.pow((globalStates.editingModeObjectX - globalStates.editingScaleX), 2) + Math.pow((globalStates.editingModeObjectY - globalStates.editingScaleY), 2));
 
 		var tempThisObject = realityEditor.device.getEditingModeObject();
         var positionData = tempThisObject;
         if (tempThisObject.hasOwnProperty('visualization')) {
             positionData = (tempThisObject.visualization === "ar") ? (tempThisObject.ar) : (tempThisObject.screen);
         }
-		globalStates.editingScaledistanceOld = positionData.scale;
+        globalStates.editingScaleDistanceOld = positionData.scale;
 	}
+	*/
 	cout("MultiTouchCanvasStart");
 };
 

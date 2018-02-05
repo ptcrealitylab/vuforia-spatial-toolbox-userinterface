@@ -56,17 +56,21 @@ createNameSpace("realityEditor.gui.ar.positioning");
  **/
 
 realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
+
+    var tempThisObject = realityEditor.device.getEditingModeObject();
+    var positionData = tempThisObject;
+    if (tempThisObject.hasOwnProperty('visualization')) {
+        positionData = (tempThisObject.visualization === 'ar') ? (tempThisObject.ar) : (tempThisObject.screen);
+    }
+    
 	var thisRadius = Math.sqrt(Math.pow((globalStates.editingModeObjectX - touch.pageX), 2) + Math.pow((globalStates.editingModeObjectY - touch.pageY), 2));
-	var thisScale = (thisRadius - globalStates.editingScaledistance) / 300 + globalStates.editingScaledistanceOld;
+	if (!globalStates.editingScaleDistance) {
+	    globalStates.editingScaleDistance = thisRadius;
+	    globalStates.editingStartScale = positionData.scale;
+    }
+	var thisScale = globalStates.editingStartScale + (thisRadius - globalStates.editingScaleDistance) / 300;// + globalStates.editingScaleDistance;
 
 	// cout(thisScale);
-
-	var tempThisObject = realityEditor.device.getEditingModeObject();
-	
-	var positionData = tempThisObject;
-	if (tempThisObject.hasOwnProperty('visualization')) {
-	    positionData = (tempThisObject.visualization === 'ar') ? (tempThisObject.ar) : (tempThisObject.screen);
-    }
 
 	if (thisScale < 0.2) {
         thisScale = 0.2;
@@ -77,10 +81,10 @@ realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
 	}
 	
 	globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
-	//drawRed(globalCanvas.context, [globalStates.editingModeObjectX,globalStates.editingModeObjectY],[touch.pageX,touch.pageY],globalStates.editingScaledistance);
-	this.ar.lines.drawBlue(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], globalStates.editingScaledistance);
+	//drawRed(globalCanvas.context, [globalStates.editingModeObjectX,globalStates.editingModeObjectY],[touch.pageX,touch.pageY],globalStates.editingScaleDistance);
+	this.ar.lines.drawBlue(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], globalStates.editingScaleDistance);
 
-	if (thisRadius < globalStates.editingScaledistance) {
+	if (thisRadius < globalStates.editingScaleDistance) {
 
 		this.ar.lines.drawRed(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], thisRadius);
 
@@ -89,4 +93,54 @@ realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
 
 	}
 	this.cout("scaleEvent");
+};
+
+realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
+
+    // var initialTouchOffset = realityEditor.gui.ar.utilities.getLocalOffset(activeVehicle, screenX, screenY);
+
+    // var overlayDomElement = globalDOMCache[activeVehicle.uuid];
+    // var vehicleCornerScreenPosition = realityEditor.gui.ar.utilities.getScreenCoordinateWithinDiv(overlayDomElement, 0, 0);
+
+    var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+
+    var positionData = activeVehicle;
+    if (activeVehicle.hasOwnProperty('visualization')) {
+        positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
+    }
+
+    var newPosition = {
+        x: results.point.x - results.offsetLeft,
+        y: results.point.y - results.offsetTop
+    };
+
+    // if (results) {
+    //     positionData.x = results.point.x - results.offsetLeft; // - initialTouchOffset.x;// - vehicleCornerScreenPosition[0];// - results.offsetLeft;// - initialFramePosition.x;  // TODO: put an offset based on touch position relative to frame div
+    //     positionData.y = results.point.y - results.offsetTop; // - initialTouchOffset.y;// - vehicleCornerScreenPosition[1];// - results.offsetTop;// - initialFramePosition.y;
+    // }
+
+    if (useTouchOffset) {
+
+        var changeInPosition = {
+            x: newPosition.x - positionData.x,
+            y: newPosition.y - positionData.y
+        };
+
+        if (!activeVehicle.currentTouchOffset) {
+            activeVehicle.currentTouchOffset = changeInPosition;
+            console.log('set touch offset: ');
+            console.log(changeInPosition);
+        } else {
+            positionData.x = newPosition.x - activeVehicle.currentTouchOffset.x;
+            positionData.y = newPosition.y - activeVehicle.currentTouchOffset.y;
+        }
+
+    } else {
+
+        activeVehicle.currentTouchOffset = null;
+        positionData.x = newPosition.x;
+        positionData.y = newPosition.y;
+
+    }
+
 };

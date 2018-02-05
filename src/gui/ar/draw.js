@@ -1346,56 +1346,6 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
     }
 };
 
-realityEditor.gui.ar.draw.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
-    
-    // var initialTouchOffset = realityEditor.gui.ar.utilities.getLocalOffset(activeVehicle, screenX, screenY);
-    
-    // var overlayDomElement = globalDOMCache[activeVehicle.uuid];
-    // var vehicleCornerScreenPosition = realityEditor.gui.ar.utilities.getScreenCoordinateWithinDiv(overlayDomElement, 0, 0);
-
-    var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
-
-    var positionData = activeVehicle;
-    if (activeVehicle.hasOwnProperty('visualization')) {
-        positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
-    }
-    
-    var newPosition = {
-        x: results.point.x - results.offsetLeft,
-        y: results.point.y - results.offsetTop
-    };
-
-    // if (results) {
-    //     positionData.x = results.point.x - results.offsetLeft; // - initialTouchOffset.x;// - vehicleCornerScreenPosition[0];// - results.offsetLeft;// - initialFramePosition.x;  // TODO: put an offset based on touch position relative to frame div
-    //     positionData.y = results.point.y - results.offsetTop; // - initialTouchOffset.y;// - vehicleCornerScreenPosition[1];// - results.offsetTop;// - initialFramePosition.y;
-    // }
-    
-    if (useTouchOffset) {
-
-        var changeInPosition = {
-            x: newPosition.x - positionData.x,
-            y: newPosition.y - positionData.y
-        };
-
-        if (!activeVehicle.currentTouchOffset) {
-            activeVehicle.currentTouchOffset = changeInPosition;
-            console.log('set touch offset: ');
-            console.log(changeInPosition);
-        } else {
-            positionData.x = newPosition.x - activeVehicle.currentTouchOffset.x;
-            positionData.y = newPosition.y - activeVehicle.currentTouchOffset.y;
-        }
-        
-    } else {
-        
-        activeVehicle.currentTouchOffset = null;
-        positionData.x = newPosition.x;
-        positionData.y = newPosition.y;
-        
-    }
-
-};
-
 // simulates drawing... TODO: simplify this and make it only work for frames? or maybe nodes too...
 
 realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {

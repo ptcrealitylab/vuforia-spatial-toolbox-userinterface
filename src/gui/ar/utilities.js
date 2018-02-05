@@ -340,13 +340,15 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
             if (thisObject.hasOwnProperty('visualization')) {
                 positionData = (thisObject.visualization === "ar") ? thisObject.ar : thisObject.screen;
             }
-            if (positionData.x !== 0 || positionData.y !== 0) {
+            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
                 previousPosition = {
                     x: positionData.x,
-                    y: positionData.y
+                    y: positionData.y,
+                    scale: positionData.scale
                 };
                 positionData.x = 0;
                 positionData.y = 0;
+                positionData.scale = 1;
                 var draw = realityEditor.gui.ar.draw;
                 updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisObject.objectId, thisObject.uuid, thisObject.type, thisObject, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
             }
@@ -358,6 +360,7 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         if (previousPosition) {
             positionData.x = previousPosition.x;
             positionData.y = previousPosition.y;
+            positionData.scale = previousPosition.scale;
         }
         
         return results; // [projectedXY.x, projectedXY.y]; // TODO: update invokers to use new data format { point: { x, y }, offsetLeft, offsetTop } 

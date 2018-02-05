@@ -257,8 +257,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             objects[objectKey].frames[frameKey].links[linkKey].uuid = linkKey;
                         }
                     }
-                    
-                    _this.cout(JSON.stringify(objects[objectKey]));
+
+                        _this.cout(JSON.stringify(objects[objectKey]));
 
                     // todo this needs to be looked at
                     _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
@@ -678,6 +678,7 @@ realityEditor.network.onAction = function (action) {
             frame.name = thisAction.addFrame.name;
 
             var frameID = frame.objectId + frame.name;
+            frame.uuid = frameID;
 
             frame.ar.x = thisAction.addFrame.x;
             frame.ar.y = thisAction.addFrame.y;
