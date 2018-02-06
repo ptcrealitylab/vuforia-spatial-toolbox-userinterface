@@ -296,6 +296,7 @@
     right: 0px;
     width: 60px;
     height: 160px;
+    /*pointer-events: none;*/
     visibility: hidden;
     z-index: 20;
 }

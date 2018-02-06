@@ -124,20 +124,24 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
             }
 
             var tempResetObject = objects[objectKey];
+            
+            var i;
 
             if (globalStates.guiState ==="ui") {
-                
+
+                i = 0;
                 for (var frameKey in tempResetObject.frames) {
-                    
                     var activeFrame = tempResetObject.frames[frameKey];
-                    
                     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
                     positionData.matrix = [];
-                    positionData.x = 0;
-                    positionData.y = 0;
+                    positionData.x = i * 50;
+                    positionData.y = i * 50;
                     positionData.scale = 1;
                     realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
+                    i += 1;
                 }
+                
+                realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
 
             }
 
@@ -146,18 +150,21 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     
                     var activeFrame = tempResetObject.frames[frameKey];
                     
+                    i = 0;
                     for (var nodeKey in activeFrame.nodes) {
-                        
                         var activeNode = activeFrame.nodes[nodeKey];
                         activeNode.matrix = [];
                         activeNode.scale = 1;
-                        activeNode.x = 0;
-                        activeNode.y = 0;
+                        activeNode.x = i * 50;
+                        activeNode.y = i * 50;
                         // tempResetValue.x = randomIntInc(0, 200) - 100;
                         // tempResetValue.y = randomIntInc(0, 200) - 100;
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
+                        i += 1;
                     }
                 }
+
+                realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
 
             }
 

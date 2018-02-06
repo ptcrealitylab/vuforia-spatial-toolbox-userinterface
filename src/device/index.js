@@ -122,8 +122,8 @@ realityEditor.device.endTrash = function(nodeKey) {
 	setTimeout(function() {
         realityEditor.gui.menus.buttonOn("main",[]);
 		//realityEditor.gui.pocket.pocketOnMemoryDeletionStop();
-	}, 0);
-	globalStates.editingNode = null;
+        globalStates.editingNode = null;
+    }, 0);
 };
 
 
@@ -179,6 +179,7 @@ realityEditor.device.onTouchDown = function(evt) {
 							globalProgram.nodeA = false;
 							globalStates.editingNode = target.nodeId;
                             globalStates.editingFrame = target.frameId;
+                            
 							//globalStates.editingMode = true;
 							console.log("hello");
 
@@ -307,7 +308,7 @@ realityEditor.device.onFalseTouchUp= function() {
 		globalProgram.nodeA = false;
 		globalProgram.logicA = false;
 		globalProgram.logicSelector = 4;
-	}
+    }
 	globalCanvas.hasContent = true;
 	cout("falseTouchUp");
 };
@@ -348,7 +349,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.nodeB = false;
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
-		}
+        }
 	}
 
 	globalCanvas.hasContent = true;
@@ -430,7 +431,7 @@ realityEditor.device.onTouchEnter = function(evt) {
     }
 };
 
-realityEditor.device.onTouchLeave = function(evt) {
+realityEditor.device.onTouchOut = function(evt) {
     var target = evt.currentTarget;
     
     if (target.nodeId) {
@@ -1158,7 +1159,7 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerdown', realityEditor.device.onTouchDown, realityEditor.device);
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerup', realityEditor.device.onTrueTouchUp, realityEditor.device);
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerenter', realityEditor.device.onTouchEnter, realityEditor.device);
-        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerleave', realityEditor.device.onTouchLeave, realityEditor.device);
+        realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointerout', realityEditor.device.onTouchOut, realityEditor.device);
         realityEditor.device.utilities.addBoundListener(overlayDomElement, 'pointermove', realityEditor.device.onTouchMove, realityEditor.device);
 
         if (globalStates.editingMode) {

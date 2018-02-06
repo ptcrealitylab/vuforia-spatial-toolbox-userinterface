@@ -355,22 +355,65 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
                 objects[objectKey].temp = matrix; // stores matrix in object so that screenCoordinatesToMatrixXY can read it
             }
             
-            // get the projected touch point
-            var matrixTouch = ar.utilities.screenCoordinatesToMatrixXY(objects[addedElement.objectKey], [evt.clientX, evt.clientY]);
+            // // get the projected touch point
+            // var matrixTouch = ar.utilities.screenCoordinatesToMatrixXY(objects[addedElement.objectKey], [evt.clientX, evt.clientY]);
 
-            // adjust by node offset if necessary
-            if (isNodeElement) {
-                // var referenceElement = objects[objectKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
-                // var referenceElement = objects[objectKey].frames[frameKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
-                // var referenceElement = objects[objectKey].frames[objectKey + element.id.split(addedElement.objectKey)[1]];
-                var referenceElement = objects[objectKey].frames[frameKey].nodes[element.id.split('object')[1]]
-                matrixTouch[0] += referenceElement.x;
-                matrixTouch[1] += referenceElement.y;
-            }
+            // var objects[addedElement.objectKey];
             
-            // set the Logic Node's position within the object
-            addedElement.logicNode.x = matrixTouch[0];
-            addedElement.logicNode.y = matrixTouch[1];
+            // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(/*addedElement.logicNode*/, evt.clientX, evt.clientY, true);
+            
+            var frameToPlaceOn = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
+
+            var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frameToPlaceOn, screenX, screenY, true);
+
+            var positionData = realityEditor.gui.ar.positioning.getPositionData(addedElement.logicNode);
+
+            var newPosition = {
+                x: results.point.x - results.offsetLeft,
+                y: results.point.y - results.offsetTop
+            };
+
+            // if (results) {
+            //     positionData.x = results.point.x - results.offsetLeft; // - initialTouchOffset.x;// - vehicleCornerScreenPosition[0];// - results.offsetLeft;// - initialFramePosition.x;  // TODO: put an offset based on touch position relative to frame div
+            //     positionData.y = results.point.y - results.offsetTop; // - initialTouchOffset.y;// - vehicleCornerScreenPosition[1];// - results.offsetTop;// - initialFramePosition.y;
+            // }
+
+            // if (useTouchOffset) {
+            //
+            //     var changeInPosition = {
+            //         x: newPosition.x - positionData.x,
+            //         y: newPosition.y - positionData.y
+            //     };
+            //
+            //     if (!activeVehicle.currentTouchOffset) {
+            //         activeVehicle.currentTouchOffset = changeInPosition;
+            //         console.log('set touch offset: ');
+            //         console.log(changeInPosition);
+            //     } else {
+            //         positionData.x = newPosition.x - activeVehicle.currentTouchOffset.x;
+            //         positionData.y = newPosition.y - activeVehicle.currentTouchOffset.y;
+            //     }
+            //
+            // } else {
+
+            // addedElement.logicNode.currentTouchOffset = { x: 0, y: 0 };
+            positionData.x = newPosition.x;
+            positionData.y = newPosition.y;
+
+            
+            //     // adjust by node offset if necessary
+            // if (isNodeElement) {
+            //     // var referenceElement = objects[objectKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
+            //     // var referenceElement = objects[objectKey].frames[frameKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
+            //     // var referenceElement = objects[objectKey].frames[objectKey + element.id.split(addedElement.objectKey)[1]];
+            //     var referenceElement = objects[objectKey].frames[frameKey].nodes[element.id.split('object')[1]];
+            //     matrixTouch[0] += referenceElement.x;
+            //     matrixTouch[1] += referenceElement.y;
+            // }
+            //
+            // // set the Logic Node's position within the object
+            // addedElement.logicNode.x = matrixTouch[0];
+            // addedElement.logicNode.y = matrixTouch[1];
 
             // series of actions to begin dragging it immediately (copied from device.onTouchDown)
             globalProgram.objectA = false;

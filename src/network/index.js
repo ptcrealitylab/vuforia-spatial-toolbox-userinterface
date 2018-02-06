@@ -134,7 +134,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 if (msg && objectKey) {
                     
                     //TODO: DEBUG BEN REMOVE - THIS PREVENTS OLD OBJECTS WITHOUT FRAMES FROM BEING ADDED
-                    if (msg.version !== "3.0.0" || msg.ip !== "192.168.1.4") return; // /*|| msg.ip === "192.168.1.7"*/) return;
+                    if (msg.version !== "3.0.0") return; // /*|| msg.ip === "192.168.1.7"*/) return;
 
                     objects[objectKey] = msg;
                     
@@ -1643,7 +1643,9 @@ realityEditor.network.checkForNetworkLoop = function (objectAKey, frameAKey, nod
 
         function searchL(objectA, frameA, nodeA, objectB, frameB, nodeB) {
             var thisFrame = realityEditor.getFrame(objectB, frameB);
-
+            // TODO: make sure that these links dont get created in the first place - or that they get deleted / rerouted when destination frame changes
+            if (!thisFrame) return;
+            
             for (var key in thisFrame.links) {  // this is within the frame
                 // this.cout(objectB);
                 var Bn = thisFrame.links[key];  // this is the link to work with

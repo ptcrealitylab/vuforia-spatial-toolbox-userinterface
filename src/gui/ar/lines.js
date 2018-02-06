@@ -75,9 +75,9 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
                 continue;
             }
              
-            if (!thisFrame.objectVisible) {
-                continue;
-            }
+            // if (!thisFrame.objectVisible) {
+            //     continue;
+            // }
             
             for (var linkKey in thisFrame.links) {
                 if (!thisFrame.links.hasOwnProperty(linkKey)) continue;
@@ -86,7 +86,7 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
                 var frameA = thisFrame;
                 var frameB = realityEditor.getFrame(link.objectB, link.frameB);
                 
-                if (!frameA || !frameB) {
+                if (!frameA || !frameB || (!frameA.objectVisible && !frameB.objectVisible)) {
                     continue;
                 }
 
@@ -149,8 +149,9 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameB.objectVisible) {
-			if (frameB.memory) {
-				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(frameB.objectId); // TODO: frameId or objectId?
+            var objectB = realityEditor.getObject(link.objectB);
+            if (objectB.memory) {
+				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
 				}
@@ -169,8 +170,9 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameA.objectVisible) {
-			if (frameA.memory) {
-				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(frameA.objectId);
+            var objectA = realityEditor.getObject(link.objectA);
+            if (objectA.memory) {
+				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
 				}
@@ -291,8 +293,8 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     var colors = [[0,255,255], // Blue
         [0,255,0],   // Green
         [255,255,0], // Yellow
-        [255,0,124],
-        [255,255,255]];// Red
+        [255,0,124], // Red
+        [255,255,255]]; // White
 
     if (linkObject.ballAnimationCount >= lineStartWeight * spacer)  linkObject.ballAnimationCount = 0;
 

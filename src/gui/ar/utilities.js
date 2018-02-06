@@ -371,10 +371,19 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         var projectedZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
         var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
 
+        var left = parseInt(overlayDomElement.style.left);
+        if (isNaN(left)) {
+            left = 0;
+        }
+        var top = parseInt(overlayDomElement.style.top);
+        if (isNaN(top)) {
+            top = 0;
+        }
+        
         return {
             point: point,
-            offsetLeft: parseInt(overlayDomElement.style.left),
-            offsetTop: parseInt(overlayDomElement.style.top)
+            offsetLeft: left,
+            offsetTop: top
         }
     }
 
