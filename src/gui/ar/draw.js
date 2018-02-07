@@ -1086,7 +1086,16 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         var isUsingLocalFrame = false;
         if (activeKey === frameKey && activeVehicle.type) {
             // console.log('change url to ../frames/' + activeVehicle.type + '/index.html');
-            thisUrl = '../../../frames/' + activeVehicle.type + '/index.html';
+
+            // This line loads frame locally from userinterface/frames directory - fast but can't connect to sockets
+            // thisUrl = '../../../frames/' + activeVehicle.type + '/index.html';
+            
+            // This line loads frame from server instance - can connect to sockets like we want!
+            var object = realityEditor.getObject(objectKey);
+            // var frameHttpPort = 3032;
+            // http://localhost:3033/frames/gauge.html
+            thisUrl = 'http://' + object.ip + ':' + httpPort + '/frames/' + activeVehicle.type + '.html';
+            
             isUsingLocalFrame = true;
         }
 

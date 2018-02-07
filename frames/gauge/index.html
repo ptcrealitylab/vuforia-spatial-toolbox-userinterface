@@ -34,6 +34,8 @@
 
     </style>
 
+    <script src="../reality-slider/object.js"></script>
+
 </head>
 
 <body>
@@ -49,24 +51,34 @@
 
 <script>
 
-    function displayValue(msg) {
-        if (!msg.data || !msg.data.value) return;
+    // function displayValue(msg) {
+    //     if (!msg.data || !msg.data.value) return;
+    //
+    //     console.log("displayValue", msg);
+    //     var value = msg.data.value;
+    //     value = Math.abs(value); // displays negatives as absolute value
+    //     var needle = document.getElementById("needle");
+    //     var rotationFromValue = value * 180.0;
+    //     needle.style.transform = "rotate(" + rotationFromValue + "deg)";
+    // }
+    //
+    // if (window.addEventListener) {
+    //     // For standards-compliant web browsers
+    //     window.addEventListener("message", displayValue, false);
+    // }
+    // else {
+    //     window.attachEvent("message", displayValue);
+    // }
 
-        console.log("displayValue", msg);
-        var value = msg.data.value;
-        value = Math.abs(value); // displays negatives as absolute value
+    var hybridObject = new HybridObject();
+    hybridObject.addReadListener('value', function(e) {
+        // displayValue({data: {value: e}});
+
+        var value = Math.abs(e); // displays negatives as absolute value
         var needle = document.getElementById("needle");
         var rotationFromValue = value * 180.0;
         needle.style.transform = "rotate(" + rotationFromValue + "deg)";
-    }
-
-    if (window.addEventListener) {
-        // For standards-compliant web browsers
-        window.addEventListener("message", displayValue, false);
-    }
-    else {
-        window.attachEvent("message", displayValue);
-    }
+    });
 
 </script>
 
