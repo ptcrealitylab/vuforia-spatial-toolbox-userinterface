@@ -94,11 +94,11 @@
         if (value > 1) {
             value = 1;
         }
-        
-        setUIValue(value);
 
         properties.value = value;
 
+        setUIValue(properties.value);
+        
         hybridObject.write('value', properties.value);
     }
     
@@ -151,7 +151,7 @@
     
     var hybridObject = new HybridObject();
     hybridObject.addReadListener('value', function(e) {
-        console.log('received value ' + e);
+        // console.log('received value ' + e);
         setUIValue(value);
         properties.value = value;
         // hybridObject.write('value', properties.value);

@@ -139,6 +139,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     objects[objectKey] = msg;
                     
                     console.log(msg);
+
+                    realityEditor.gui.pocket.createPocketUIPalette();
                     
                     var thisObject = realityEditor.getObject(objectKey);
                     // this is a work around to set the state of an objects to not being visible.
