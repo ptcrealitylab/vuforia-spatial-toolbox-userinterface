@@ -233,10 +233,10 @@ FrameTouchSynthesizer.prototype.remove = function() {
 // }
 
 realityEditor.gui.frame = {
-    create: create,
-    update: update,
-    delete: deleteFrame,
-    deleteLocally: deleteLocally,
+    // create: create,
+    // update: update,
+    // delete: deleteFrame,
+    // deleteLocally: deleteLocally,
     // Frame: Frame,
     FrameTouchSynthesizer: FrameTouchSynthesizer
 };

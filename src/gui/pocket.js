@@ -190,7 +190,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 var frame = new Frame();
 
                 frame.objectId = closestObjectKey;
-                frame.name = evt.target.dataset.name;
+                frame.name = evt.target.dataset.name + realityEditor.device.utilities.uuidTime();
 
                 var frameID = frame.objectId + frame.name;
                 frame.uuid = frameID;
@@ -203,7 +203,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
                 frame.location = 'local';
                 frame.src = 'editor';
-                frame.type = frame.name;
+                frame.type = evt.target.dataset.name;
 
                 // set other properties
 

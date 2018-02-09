@@ -1129,8 +1129,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         document.getElementById("GUI").appendChild(addContainer);
         addContainer.appendChild(addIframe);
 
-        // TODO: reimplement widget frames (uncomment frame.js)
-        // // If this is a frame, add a cover object for touch event synthesizing
+        // If this is a frame, add a cover object for touch event synthesizing
         // if (activeVehicle.src) {
         //     var cover = document.createElement('div');
         //     cover.classList.add('main');
