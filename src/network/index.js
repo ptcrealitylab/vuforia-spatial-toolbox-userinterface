@@ -132,9 +132,6 @@ realityEditor.network.addHeartbeatObject = function (beat) {
         if (!objects[beat.id]) {
             this.getData(beat.id, null, null, 'http://' + beat.ip + ':' + httpPort + '/object/' + beat.id, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey) {
-                    
-                    //TODO: DEBUG BEN REMOVE - THIS PREVENTS OLD OBJECTS WITHOUT FRAMES FROM BEING ADDED
-                    if (msg.version !== "3.0.0") return; // /*|| msg.ip === "192.168.1.7"*/) return;
 
                     objects[objectKey] = msg;
                     
@@ -718,7 +715,6 @@ realityEditor.network.onAction = function (action) {
             frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
             
-            // TODO: add nodes to frame
             var nodeNames = thisAction.addFrame.nodeNames;
             nodeNames.forEach(function(nodeName) {
                 var nodeUuid = frameID + nodeName;
