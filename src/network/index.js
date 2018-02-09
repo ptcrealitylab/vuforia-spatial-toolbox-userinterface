@@ -1341,6 +1341,12 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey, contents);
 };
 
+realityEditor.network.postNewFrame = function(ip, objectKey, contents) {
+    this.cout("I am adding a frame: " + ip);
+    contents.lastEditor = globalStates.tempUuid;
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/addFrame/", contents);
+};
+
 realityEditor.network.sendFrameToScreen = function(ip, objectKey, frameKey, contents) {
     //(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
     this.cout("I am sending a frame to the screen: " + ip);

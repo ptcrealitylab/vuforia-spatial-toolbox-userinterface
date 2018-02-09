@@ -367,7 +367,9 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     // TODO: does this work for things other than frames? should I make assumptions?
     function solveProjectedCoordinatesInFrame(frame, screenX, screenY, cssMatrixToUse) {
 
-        var overlayDomElement = globalDOMCache[frame.uuid];
+        var elementUuid = frame.uuid || frame.frameId + frame.name;
+        var overlayDomElement = globalDOMCache[elementUuid];
+        
         var projectedZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
         var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
 
