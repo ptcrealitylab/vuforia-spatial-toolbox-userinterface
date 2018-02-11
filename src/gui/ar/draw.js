@@ -721,8 +721,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 // add node's position to its frame's position to gets its actual offset
                 if (activeType === "node" || activeType === "logic") {
-                    var nodeName = activeVehicle.name;
-                    var frameKey = activeKey.slice(0, -1 * nodeName.length);
+                    var frameKey = activeVehicle.frameId;
                     var frame = realityEditor.getFrame(objectKey, frameKey);
                     if (frame) {
                         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
@@ -1088,13 +1087,13 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             // console.log('change url to ../frames/' + activeVehicle.type + '/index.html');
 
             // This line loads frame locally from userinterface/frames directory - fast but can't connect to sockets
-            // thisUrl = '../../../frames/' + activeVehicle.type + '/index.html';
+            thisUrl = '../../../frames/' + activeVehicle.type + '.html';
             
             // This line loads frame from server instance - can connect to sockets like we want!
-            var object = realityEditor.getObject(objectKey);
+            // var object = realityEditor.getObject(objectKey);
             // var frameHttpPort = 3032;
             // http://localhost:3033/frames/gauge.html
-            thisUrl = 'http://' + object.ip + ':' + httpPort + '/frames/' + activeVehicle.type + '.html';
+            // thisUrl = 'http://' + object.ip + ':' + httpPort + '/frames/' + activeVehicle.type + '.html';
             
             isUsingLocalFrame = true;
         }
@@ -1130,17 +1129,17 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addContainer.appendChild(addIframe);
 
         // If this is a frame, add a cover object for touch event synthesizing
-        if (activeVehicle.src) {
-            var cover = document.createElement('div');
-            cover.classList.add('main');
-            cover.style.visibility = 'visible';
-            cover.style.width = addIframe.style.width;
-            cover.style.height = addIframe.style.height;
-            cover.style.top = addIframe.style.top;
-            cover.style.left = addIframe.style.left;
-            activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-            addContainer.appendChild(cover);
-        }
+        // if (activeVehicle.src) {
+        //     var cover = document.createElement('div');
+        //     cover.classList.add('main');
+        //     cover.style.visibility = 'visible';
+        //     cover.style.width = addIframe.style.width;
+        //     cover.style.height = addIframe.style.height;
+        //     cover.style.top = addIframe.style.top;
+        //     cover.style.left = addIframe.style.left;
+        //     activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+        //     addContainer.appendChild(cover);
+        // }
         
         addContainer.appendChild(addOverlay);
         addOverlay.appendChild(addCanvas);
@@ -1372,8 +1371,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
         // add node's position to its frame's position to gets its actual offset
         if (activeType === "node" || activeType === "logic") {
-            var nodeName = activeVehicle.name;
-            var frameKey = activeKey.slice(0, -1 * nodeName.length);
+            var frameKey = activeVehicle.frameId;
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame) {
                 var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);

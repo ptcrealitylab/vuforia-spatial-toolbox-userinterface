@@ -163,6 +163,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
                         thisFrame.visible = false;
                         
+                        if (typeof thisFrame.developer === 'undefined') {
+                            thisFrame.developer = true;
+                        }
+                        
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
 
                         if (positionData.matrix === null || typeof positionData.matrix !== "object") {

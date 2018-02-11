@@ -116,8 +116,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     var palette;
     var nodeMemoryBar;
     
-    var serverIP;
-
     var inMemoryDeletion = false;
 
     var realityElements = [
@@ -506,32 +504,15 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     function pocketShown() {
         return pocket.classList.contains('pocketShown');
     }
-    
-    function setPocketServerIP() {
-        var objectKeys = Object.keys(objects);
-        if (objectKeys.length > 0) {
-            serverIP = objects[objectKeys[0]].ip;
-        } else {
-            // serverIP = 'localhost';
-            console.warn('pocket needs an IP to load frames from');
-        }
-    }
 
     function createPocketUIPalette() {
-        if (serverIP) { // has already been created
-            return;
-        } else {
-            setPocketServerIP();
-            if (!serverIP) {
-                return;
-            } 
-        }
+
         for (var i = 0; i<realityElements.length; i++){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
-            // container.dataset.src = 'thirdPartyCode/bower_components/' + element.name + '/index.html';
-            container.dataset.src = 'http://' + serverIP + ':' + httpPort + '/frames/' + element.name + '.html';
+            var thisUrl = '../../frames/' + element.name + '.html';
+            container.dataset.src = thisUrl;
 
             container.dataset.name = element.name;
             container.dataset.width = element.width;
@@ -540,8 +521,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
             var elt = document.createElement('iframe');
             elt.classList.add('palette-element');
-            // elt.src = 'thirdPartyCode/bower_components/' + element.name + '/index.html?demo=true';
-            elt.src = 'http://' + serverIP + ':' + httpPort + '/frames/' + element.name + '.html';
+            elt.src = thisUrl;
 
             container.appendChild(elt);
             palette.appendChild(container);

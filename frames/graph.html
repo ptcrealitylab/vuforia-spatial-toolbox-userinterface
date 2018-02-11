@@ -27,6 +27,8 @@
 
     </style>
 
+    <script src="resources/object-frames.js"></script>
+
 </head>
 
 <body>
@@ -102,7 +104,7 @@
     var lastValue = 0;
     var oldWeight = 0.8;
 
-    var RENDER_DEBUG_STREAM = true;
+    var RENDER_DEBUG_STREAM = false;
 
     window.onload = function() {
 
@@ -147,21 +149,20 @@
         }
     }
 
-    function displayValue(msg) {
-        if (!msg.data || !(msg.data.value || msg.data.debug)) return;
+    function displayValue(value) {
 
-        // draws random graph for preview icon
-        if (msg.data.debug) {
-            for (var i = 0; i < NUM_TO_STORE; i++) {
-                var newValue = Math.random();
-                var weightedValue = oldWeight * lastValue + (1.0 - oldWeight) * newValue;
-                displayValue({data: {value: weightedValue}});
-                lastValue = weightedValue;
-            }
-            return;
-        }
-
-        var value = msg.data.value;
+        // // draws random graph for preview icon
+        // if (msg.data.debug) {
+        //     for (var i = 0; i < NUM_TO_STORE; i++) {
+        //         var newValue = Math.random();
+        //         var weightedValue = oldWeight * lastValue + (1.0 - oldWeight) * newValue;
+        //         displayValue({data: {value: weightedValue}});
+        //         lastValue = weightedValue;
+        //     }
+        //     return;
+        // }
+        //
+        // var value = msg.data.value;
         addDatapoint(value);
         renderGraph();
     }
@@ -182,13 +183,10 @@
         ctx.stroke();
     }
 
-    if (window.addEventListener) {
-        // For standards-compliant web browsers
-        window.addEventListener("message", displayValue, false);
-    }
-    else {
-        window.attachEvent("message", displayValue);
-    }
+    var hybridObject = new HybridObject();
+    hybridObject.addReadListener('value', function(e) {
+        displayValue(e);
+    });
 
 </script>
 

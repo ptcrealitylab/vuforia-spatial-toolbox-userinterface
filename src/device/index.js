@@ -1105,7 +1105,7 @@ realityEditor.device.addEventHandlersForFrame = function(objectKey, frameKey) {
     var thisFrame = realityEditor.getFrame(objectKey, frameKey);
     var frameOverlayElement = document.getElementById(frameKey);
 
-    if (frameOverlayElement && thisFrame.developer) {
+    if (frameOverlayElement && (typeof frameOverlayElement.objectId !== 'undefined') && thisFrame.developer) {
 
         frameOverlayElement.style.visibility = "visible";
         var frameCanvasElement = document.getElementById("canvas" + frameKey);
@@ -1136,7 +1136,7 @@ realityEditor.device.removeEventHandlers = function() {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
         var frameOverlayElement = document.getElementById(frameKey);
 
-        if (frameOverlayElement && thisFrame.developer) {
+        if (frameOverlayElement && (typeof frameOverlayElement.objectId !== 'undefined') && thisFrame.developer) {
 
             frameOverlayElement.style.visibility = "hidden";
             // this is a typo but maybe relevant?

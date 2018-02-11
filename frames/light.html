@@ -45,14 +45,17 @@
         /*}*/
 
     </style>
+
+    <script src="resources/object-frames.js"></script>
+
 </head>
 
 <body>
 
     <div id="lightContainer" style="position: relative; text-align: center;">
 
-        <img id="lightOn" class="light on" src="light-on.svg">
-        <img id="lightOff" class="light off" src="light-off.svg">
+        <img id="lightOn" class="light on" src="resources/light-on.svg">
+        <img id="lightOff" class="light off" src="resources/light-off.svg">
 
     </div>
 
@@ -62,11 +65,7 @@
 
     <script>
 
-        function displayValue(msg) {
-            if (!msg.data || !msg.data.value) return;
-
-            console.log("displayValue", msg);
-            var value = msg.data.value;
+        function displayValue(value) {
 
             if (value <= 0) {
                 document.getElementById("lightOn").style.display = "none";
@@ -82,13 +81,10 @@
             }
         }
 
-        if (window.addEventListener) {
-            // For standards-compliant web browsers
-            window.addEventListener("message", displayValue, false);
-        }
-        else {
-            window.attachEvent("message", displayValue);
-        }
+        var hybridObject = new HybridObject();
+        hybridObject.addReadListener('value', function(e) {
+            displayValue(e);
+        });
 
     </script>
 

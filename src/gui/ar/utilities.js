@@ -348,7 +348,8 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
                 positionData.y = 0;
                 positionData.scale = 1;
                 var draw = realityEditor.gui.ar.draw;
-                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisObject.objectId, thisObject.uuid, thisObject.type, thisObject, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                var elementUuid = thisObject.uuid || thisObject.frameId + thisObject.name;
+                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisObject.objectId, elementUuid, thisObject.type, thisObject, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
             }
         }
         

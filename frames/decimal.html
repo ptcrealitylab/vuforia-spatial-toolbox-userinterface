@@ -70,6 +70,9 @@
         }
 
     </style>
+
+    <script src="resources/object-frames.js"></script>
+
 </head>
 
 <body>
@@ -173,18 +176,9 @@
         window.onload = function() {
             // scale text to fit window width (50%)
             optimizedResize.scaleText(document.getElementById("decimalText"), 0.4);
-            
-            // give a default font size in case the previous one doesn't work
-            if (document.getElementById("decimalText").style.fontSize === '0px') {
-                document.getElementById("decimalText").style.fontSize = '71px';
-            }
         };
 
-        function displayValue(msg) {
-            if (!msg.data || !msg.data.value) return;
-            
-            console.log("displayValue", msg);
-            var value = msg.data.value;
+        function displayValue(value) {
 
             var panelContents = document.getElementById("decimalText");
 
@@ -205,13 +199,10 @@
 
         }
 
-        if (window.addEventListener) {
-            // For standards-compliant web browsers
-            window.addEventListener("message", displayValue, false);
-        }
-        else {
-            window.attachEvent("message", displayValue);
-        }
+        var hybridObject = new HybridObject();
+        hybridObject.addReadListener('value', function(e) {
+            displayValue(e);
+        });
 
     </script>
 

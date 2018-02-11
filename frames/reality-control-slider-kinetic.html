@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>reality-slider</title>
     <style>
         path {
             stroke-width: 6px;
@@ -22,7 +22,9 @@
             fill: #00ff00;
         }
     </style>
-    <script src="object.js"></script>
+    <script src="resources/object-frames.js"></script>
+    <script src="resources/pep.min.js"></script>
+
 </head>
 <body>
 <svg id="container" width="206" height="526" version="1.1" xmlns="http://www.w3.org/2000/svg" touch-action="none">
@@ -46,7 +48,6 @@
 
 </svg>
 
-<script src="../../thirdPartyCode/pep.min.js"></script>
 <script>
     
     var container = document.querySelector('#container');
@@ -65,13 +66,13 @@
     var deadzone = 10;
     var arrowLevel0 = 160;
     var arrowLevel1 = 210;
-    
+
     function onPointerDown(e) {
         e.preventDefault();
         pointers[e.pointerId] = true;
         onPointerMove(e);
     }
-    
+
     function onPointerMove(e) {
         e.preventDefault();
         if (!pointers[e.pointerId]) {
@@ -86,7 +87,7 @@
             absY = 0;
             dY = 0;
         }
-        
+
         var value = dY / height + 0.5;
         if (value < 0) {
             value = 0;
@@ -95,16 +96,19 @@
             value = 1;
         }
 
-        properties.value = value;
+        // value = 1 - value;
 
-        setUIValue(properties.value);
-        
+        properties.value = value;
+        renderProperties();
+
         hybridObject.write('value', properties.value);
     }
-    
-    function setUIValue(value) {
-        
-        var dY = (value - 0.5) * height;
+
+    function renderProperties() {
+
+        // value = 1 - value;
+
+        var dY = (properties.value - 0.5) * height;
         var absY = Math.abs(dY);
 
         activation.setAttribute('height', absY);
@@ -132,7 +136,7 @@
         if (absY > arrowLevel1) {
             arrow1.classList.add('active');
         }
-        
+
     }
 
     function onPointerUp(e) {
@@ -151,50 +155,14 @@
     
     var hybridObject = new HybridObject();
     hybridObject.addReadListener('value', function(e) {
-        // console.log('received value ' + e);
-        setUIValue(value);
-        properties.value = value;
-        // hybridObject.write('value', properties.value);
+        properties.value = e;
+        renderProperties();
     });
     
-    // function setupRealityNode() {
-    //     var isDemoMode = window.location.search.indexOf('demo=true') >= 0;
-    //
-    //     var hybridObject;
-    //     if ((typeof HybridObject === 'undefined') || isDemoMode) {
-    //         console.warn('HybridObject undefined or isDemoMode');
-    //         hybridObject = {
-    //             addReadListener: function() {},
-    //             write: function() {},
-    //             sendCreateNode: function() {}
-    //         };
-    //     } else {
-    //         hybridObject = new HybridObject();
-    //     }
-    //    
-    //    
-    //     function realityNodeReady() {
-    //         window.addEventListener('message', function(msg) {
-    //             var data = JSON.parse(msg.data);
-    //             if (!data.hasOwnProperty('demo')) {
-    //                 return;
-    //             }
-    //             if (data.demo) {
-    //                 this.startDemonstrating();
-    //             } else {
-    //                 this.stopDemonstrating();
-    //             }
-    //         });
-    //
-    //         hybridObject.sendCreateNode(this.name);
-    //     }
-    //    
-    //     realityNodeReady();
-    //    
-    // }
-    
-    // setupRealityNode();
-    
+</script>
+<script src="resources/demonstration.js"></script>
+<script>
+    setupDemonstrationScripts();
 </script>
 
 </body>
