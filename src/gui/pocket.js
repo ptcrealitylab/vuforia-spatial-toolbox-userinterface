@@ -522,7 +522,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
-            var thisUrl = '../../frames/' + element.name + '.html';
+            var thisUrl = 'frames/' + element.name + '.html';
             container.dataset.src = thisUrl;
 
             container.dataset.name = element.name;

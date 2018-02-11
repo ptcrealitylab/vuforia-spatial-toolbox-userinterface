@@ -1102,7 +1102,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             // console.log('change url to ../frames/' + activeVehicle.type + '/index.html');
 
             // This line loads frame locally from userinterface/frames directory - fast but can't connect to sockets
-            thisUrl = '../../../frames/' + activeVehicle.type + '.html';
+            thisUrl = 'frames/' + activeVehicle.type + '.html';
             
             // This line loads frame from server instance - can connect to sockets like we want!
             // var object = realityEditor.getObject(objectKey);
