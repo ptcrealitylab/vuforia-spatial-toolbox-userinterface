@@ -246,9 +246,18 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     addedNode.frameSizeY = 100;
 
                 });
+                
+                frame.positionOnLoad = {
+                    pageX: evt.pageX,
+                    pageY: evt.pageY
+                };
 
                 closestObject.frames[frameID] = frame;
+
+                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY);
                 
+                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate()
+
                 // send it to the server
                 // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
                 realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
@@ -283,7 +292,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             
         });
 
-        // createPocketUIPalette();
+        createPocketUIPalette();
 		pocketHide();
     }
     
@@ -551,8 +560,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     exports.pocketShow = pocketShow;
     exports.pocketHide = pocketHide;
     
-    exports.createPocketUIPalette = createPocketUIPalette;
-
     exports.onPocketButtonEnter = onPocketButtonEnter;
     exports.onPocketButtonUp = onPocketButtonUp;
     exports.onBigPocketButtonEnter = onBigPocketButtonEnter;

@@ -114,9 +114,7 @@
 
         var dY = -1 * (properties.value - 0.5) * height;
         var absY = Math.abs(dY);
-
-        console.log(dY + ' -> ' + properties.value);
-
+        
         activation.setAttribute('height', absY);
 
         container.querySelectorAll('path.active').forEach(function(path) {

@@ -273,7 +273,7 @@ realityEditor.device.onTouchDown = function(evt) {
  * Triggered from the javascript API when you tap and hold on an object to begin to move it
  * @param target
  */
-realityEditor.device.beginTouchEditing = function(target) {
+realityEditor.device.beginTouchEditing = function(target, source) {
 	globalProgram.objectA = false;
     globalProgram.frameA = false;
 	globalProgram.nodeA = false;
@@ -285,7 +285,10 @@ realityEditor.device.beginTouchEditing = function(target) {
 	globalStates.editingModeLocation = target.nodeId;
 	globalStates.editingModeKind = target.type;
 	globalStates.editingModeHaveObject = true;
-	globalStates.tempEditingMode = true;
+	
+	if (source !== 'pocket') {
+        globalStates.tempEditingMode = true;
+    }
 
 	realityEditor.device.activateMultiTouch();
 	if (target.nodeId) {
@@ -404,7 +407,19 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
         }
-	}
+	
+	} else if (globalStates.guiState === 'ui') {
+        if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode) {
+            this.deactivateFrameMove(globalStates.editingFrame);
+            var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
+            // realityEditor.device.deactivateMultiTouch();
+            globalStates.editingFrame = null;
+            globalStates.editingModeFrame = null;
+            globalStates.editingModeHaveObject = false;
+            globalStates.editingModeKind = null;
+            globalStates.editingModeObject = null;
+        }
+    }
 
 	globalCanvas.hasContent = true;
 
@@ -573,6 +588,13 @@ realityEditor.device.onTouchMove = function(evt) {
 
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
 
+    // drag and reposition a frame from the pocket
+    } else if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode) {
+        
+        console.log('move pocket frame!');
+        var frame = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY, true);
+        
     }
 
     if(!globalStates.editingMode) {

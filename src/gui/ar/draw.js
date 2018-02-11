@@ -713,6 +713,17 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             // this needs a better solution
 
             if (activeVehicle.fullScreen !== true) {
+
+                // set initial position correctly
+                if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
+                    activeVehicle.currentTouchOffset = {
+                        x: activeVehicle.frameSizeX/2,
+                        y: activeVehicle.frameSizeY/2
+                    };
+                    realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
+                    delete activeVehicle.positionOnLoad;
+                    realityEditor.device.beginTouchEditing(globalDOMCache[activeKey], 'pocket');
+                }
                 
                 var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
@@ -871,10 +882,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 // finalMatrix[14] *= -1;
                 
+                var isCurrentlyInteractingElement = globalStates.editingModeFrame === activeKey || globalStates.editingNode === activeKey;
+                
+                var activeElementZIncrease = isCurrentlyInteractingElement ? 100 : 0;
+
                 if (finalMatrix[14] < 10) {
                     finalMatrix[14] = 10;
                 }
-                finalMatrix[14] = 200 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+                finalMatrix[14] = 200 + activeElementZIncrease + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
                 
                 //move non-developer frames to the back so they don't steal touches from interactable frames
                 if (activeVehicle.developer === false) {
@@ -1170,6 +1185,11 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         } else {
             addOverlay.style.visibility = "hidden";
         }
+        
+        // if (typeof activeVehicle.positionOnLoad !== 'undefined') {
+        //     realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY);
+        //     delete activeVehicle.positionOnLoad;
+        // }
 
     }
     
