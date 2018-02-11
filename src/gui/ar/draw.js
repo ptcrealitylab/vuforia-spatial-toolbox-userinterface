@@ -633,7 +633,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             var container = globalDOMCache["object" + activeKey];
             var iFrame = globalDOMCache["iframe" + activeKey];
             var overlay = globalDOMCache[activeKey];
-            var canvas = globalDOMCache["canvas" + activeKey]
+            var canvas = globalDOMCache["canvas" + activeKey];
             
             container.style.display = 'inline';
             iFrame.style.visibility = 'visible';
@@ -656,7 +656,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
                 
             } else if (activeType === "ui") {
-                if (globalStates.editingMode) {
+                if (globalStates.editingMode || globalStates.tempEditingMode) {
                     if (!activeVehicle.visibleEditing && activeVehicle.developer) {
                         activeVehicle.visibleEditing = true;
                         overlay.style.visibility = 'visible';

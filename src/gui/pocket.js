@@ -154,8 +154,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         },
         {
             name: 'reality-sensor-digital',
-            width: 52,
-            height: 52,
+            width: 100,
+            height: 100,
             nodeNames: [
                 'value'
             ]
@@ -278,7 +278,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             // frame.x = matrixTouch[0];
             // frame.y = matrixTouch[1];
             // realityEditor.gui.frame.create(objectIds[0], frame);
-            // pocketHide();
+            
+            pocketHide();
+            
         });
 
         // createPocketUIPalette();

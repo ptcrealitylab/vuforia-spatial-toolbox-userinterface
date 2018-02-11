@@ -59,6 +59,7 @@ var timeForContentLoaded = 600; // temporary set to 1000x with the UI Recording 
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 
+// noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
 /**********************************************************************************************************************
  ******************************************** global variables  *******************************************************
  **********************************************************************************************************************/
@@ -104,6 +105,7 @@ var globalStates = {
 	freezeButtonState: false,
 	logButtonState: false,
 	editingMode: false,
+    tempEditingMode: false,
 	editingNode: false,
     editingFrame: false,
 	guiURL: "",

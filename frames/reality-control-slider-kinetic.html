@@ -88,7 +88,7 @@
             dY = 0;
         }
 
-        var value = dY / height + 0.5;
+        var value = 1.0 - (dY / height + 0.5);
         if (value < 0) {
             value = 0;
         }
@@ -108,8 +108,10 @@
 
         // value = 1 - value;
 
-        var dY = (properties.value - 0.5) * height;
+        var dY = -1 * (properties.value - 0.5) * height;
         var absY = Math.abs(dY);
+
+        console.log(dY + ' -> ' + properties.value);
 
         activation.setAttribute('height', absY);
 

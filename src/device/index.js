@@ -101,6 +101,48 @@ realityEditor.device.deactivateNodeMove = function(nodeKey) {
 	}
 };
 
+realityEditor.device.activateFrameMove = function(frameKey) {
+
+    console.log('activateFrameMove');
+
+    var frameOverlayElement = document.getElementById(frameKey);
+    //globalStates.editingModeHaveObject = true;
+    if (frameOverlayElement) {
+
+        if (frameOverlayElement.type === 'ui') {
+            frameOverlayElement.style.visibility = 'visible';
+        }
+
+        //frameOverlayElement.className = "mainProgram";
+        var frameCanvasElement = document.getElementById("canvas" + frameKey);
+        frameCanvasElement.style.display = "inline";
+
+        var frame = realityEditor.getFrame(frameOverlayElement.objectId, frameKey);
+        frame.hasCTXContent = false;
+        frame.visible = false;
+        frame.visibleEditing = false;
+
+        realityEditor.gui.ar.draw.utilities.drawMarkerPlaneIntersection(frameKey, null, frame);
+    }
+};
+
+realityEditor.device.deactivateFrameMove = function(frameKey) {
+
+    console.log('deactivateFrameMove');
+
+    var frameOverlayElement = document.getElementById(frameKey);
+    //globalStates.editingModeHaveObject = true;
+    if (frameOverlayElement) {
+
+        if (frameOverlayElement.type === 'ui') {
+            frameOverlayElement.style.visibility = 'hidden';
+        }
+
+        var frameCanvasElement = document.getElementById("canvas" + frameKey);
+        frameCanvasElement.style.display = "none";
+    }
+};
+
 realityEditor.device.activateMultiTouch = function() {
     realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart, realityEditor.device);
     realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchmove', realityEditor.device.onMultiTouchCanvasMove, realityEditor.device);
@@ -243,18 +285,23 @@ realityEditor.device.beginTouchEditing = function(target) {
 	globalStates.editingModeLocation = target.nodeId;
 	globalStates.editingModeKind = target.type;
 	globalStates.editingModeHaveObject = true;
+	globalStates.tempEditingMode = true;
 
 	realityEditor.device.activateMultiTouch();
-	realityEditor.device.activateNodeMove(target.nodeId);
+	if (target.nodeId) {
+        realityEditor.device.activateNodeMove(target.nodeId);
+    } else {
+	    realityEditor.device.activateFrameMove(target.frameId);
+    }
 	// Only display the trash can if it's something we can delete (a frame)
 	if (target.frameId !== target.nodeId) {
         realityEditor.gui.menus.on("bigTrash",[]);
 		//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
 	}
 
-	realityEditor.device.onMultiTouchStart({
-		currentTarget: target
-	});
+	// realityEditor.device.onMultiTouchStart({
+	// 	currentTarget: target
+	// });
 };
 
 /**
@@ -745,7 +792,7 @@ realityEditor.device.onMultiTouchStart = function(evt) {
 	var target = evt.currentTarget;
     // generate action for all links to be reloaded after upload
 
-	if (globalStates.editingMode && evt.targetTouches && evt.targetTouches.length === 1) {
+	if ((globalStates.editingMode || globalStates.tempEditingMode) && evt.targetTouches && evt.targetTouches.length === 1) {
 		console.log("--------------------------------"+target.objectId);
 		globalStates.editingModeObject = target.objectId;
         globalStates.editingModeFrame = target.frameId;
@@ -789,7 +836,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 	// cout(globalStates.editingModeHaveObject + " " + globalStates.editingMode + " " + globalStates.editingModeHaveObject + " " + globalStates.editingMode);
 
-	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
+	if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && (evt.targetTouches.length === 1 || (evt.pageX && evt.pageY))) {
 
 		var touch = evt.touches[0];
 
@@ -808,7 +855,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
         }
 	}
 
-	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 2) {
+	if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && evt.targetTouches.length === 2) {
 
         globalStates.editingModeObjectX = evt.touches[0].pageX; //touch.pageX;
         globalStates.editingModeObjectY = evt.touches[0].pageY; //touch.pageY;
@@ -833,7 +880,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 	    globalStates.editingScaleDistance = null;
     }
 
-// generate action for all links to be reloaded after upload
+    // generate action for all links to be reloaded after upload
 	if (globalStates.editingModeHaveObject) {
 		if (globalStates.editingMode) {
             realityEditor.gui.menus.on("main",[]);
@@ -901,6 +948,29 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// 	// 	realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
 		// 	// }
 		// } else 
+        
+        if (globalStates.tempEditingMode && globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame) {
+            if (evt.pageX > window.innerWidth - 60) {
+                
+                console.log('~~ delete frame ~~');
+                
+                var thisObject = realityEditor.getObject(tempThisObject.objectId);
+                var thisFrame = realityEditor.getFrame(tempThisObject.objectId, tempThisObject.uuid);
+
+                realityEditor.gui.ar.draw.killObjects(tempThisObject.uuid, thisFrame, globalDOMCache);
+                
+                realityEditor.network.deleteFrameFromObject(thisObject.ip, tempThisObject.objectId, tempThisObject.uuid);
+
+                delete thisObject.frames[tempThisObject.uuid];
+
+                globalStates.editingModeFrame = null;
+                globalStates.editingModeObject = null;
+                globalStates.editingFrame = null;
+                globalStates.editingModeHaveObject = false;
+
+                return false;
+            }
+        }
         
         if (this.isGlobalFrame(globalStates.editingModeObject)) {
             

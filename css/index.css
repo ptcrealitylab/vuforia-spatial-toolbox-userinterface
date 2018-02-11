@@ -88,6 +88,7 @@ body {
     border-width: 0px;
     /*-webkit-user-select: none;    Disable selection/Copy of UIWebView */
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    -webkit-touch-callout: none;
 }
 
 .mainProgram {

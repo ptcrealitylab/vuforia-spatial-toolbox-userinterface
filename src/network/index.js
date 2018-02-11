@@ -1087,7 +1087,7 @@ if (thisFrame) {
 
     if (typeof msgContent.touchEvent !== "undefined") {
         var event = msgContent.touchEvent;
-        var target = document.getElementById(msgContent.node);
+        var target = document.getElementById(msgContent.frame);
         if (!target) {
             return;
         }
@@ -1101,15 +1101,26 @@ if (thisFrame) {
             }
         };
         if (event.type === 'touchmove') {
-            if (overlayDiv.style.display !== 'inline') {
-                realityEditor.device.onDocumentPointerDown(fakeEvent);
-            }
-            realityEditor.device.onDocumentPointerMove(fakeEvent);
-            realityEditor.device.onTouchMove(fakeEvent);
+            // if (overlayDiv.style.display !== 'inline') {
+            //     // overlayDiv.style.display = "inline";
+            //     realityEditor.device.onDocumentPointerDown(fakeEvent);
+            // //     realityEditor.device.onMultiTouchStart(fakeEvent);
+            // }
+            
+            // var frameCanvasElement = document.getElementById('canvas' + msgContent.frame);
+            // if (frameCanvasElement.style.display !== 'inline') {
+            //     frameCanvasElement.style.display = "inline";
+            // }
+            
+            // realityEditor.device.onDocumentPointerMove(fakeEvent);
+            // realityEditor.device.onTouchMove(fakeEvent);
+            realityEditor.device.onMultiTouchMove(fakeEvent);
         } else if (event.type === 'touchend') {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
-            var frame = document.getElementById('iframe' + msgContent.node);
+            globalStates.tempEditingMode = false;
+            realityEditor.device.deactivateFrameMove(msgContent.frame);
+            var frame = document.getElementById('iframe' + msgContent.frame);
             if (frame) {
                 frame.contentWindow.postMessage(JSON.stringify({
                     stopTouchEditing: true

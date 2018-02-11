@@ -123,7 +123,7 @@
         }
         
         properties.valueX = limit(dX / width + 0.5);
-        properties.valueY = limit(dY / height + 0.5);
+        properties.valueY = limit(1.0 - (dY / height + 0.5));
         renderProperties();
 
         hybridObject.write('valueX', properties.valueX);
@@ -133,7 +133,7 @@
     function renderProperties() {
 
         var dX = (properties.valueX - 0.5) * width;
-        var dY = (properties.valueY - 0.5) * height;
+        var dY = -1 * (properties.valueY - 0.5) * height;
         var absX = Math.abs(dX);
         var absY = Math.abs(dY);
         

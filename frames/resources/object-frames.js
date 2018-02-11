@@ -524,6 +524,7 @@
         y: 0
     };
     var touchMoveTolerance = 100;
+    var moveDelay = 1000; // set value to match globalStates.moveDelay
 
     function getTouchX(event) {
         return event.changedTouches[0].screenX;
@@ -546,75 +547,78 @@
             }
         }), '*');
     }
+    
+    window.onload = function() {
+        document.body.addEventListener('touchstart', function() {
+            if (touchTimer) {
+                return;
+            }
 
-    // document.body.addEventListener('touchstart', function() {
-    //     if (touchTimer) {
-    //         return;
-    //     }
-    //
-    //     startCoords.x = getTouchX(event);
-    //     startCoords.y = getTouchY(event);
-    //
-    //     touchTimer = setTimeout(function() {
-    //         parent.postMessage(JSON.stringify({
-    //             version: realityObject.version,
-    //             node: realityObject.node,
-    //             object: realityObject.object,
-    //             beginTouchEditing: true
-    //         }), '*');
-    //         sendTouchEvents = true;
-    //         touchTimer = null;
-    //     }, globalStates.moveDelay);
-    // });
-    //
-    // document.body.addEventListener('touchmove', function(event) {
-    //     if (sendTouchEvents) {
-    //         sendTouchEvent(event);
-    //     } else if (touchTimer) {
-    //         var dx = getTouchX(event) - startCoords.x;
-    //         var dy = getTouchY(event) - startCoords.y;
-    //         if (dx * dx + dy * dy > touchMoveTolerance) {
-    //             clearTimeout(touchTimer);
-    //             touchTimer = null;
-    //         }
-    //     }
-    // });
-    //
-    // document.body.addEventListener('touchend', function(event) {
-    //     if (sendTouchEvents) {
-    //         sendTouchEvent(event);
-    //     }
-    //     clearTimeout(touchTimer);
-    //     touchTimer = null;
-    // });
-    //
-    // window.addEventListener('message', function (msg) {
-    //     var msgContent = JSON.parse(msg.data);
-    //     if (msgContent.stopTouchEditing) {
-    //         sendTouchEvents = false;
-    //     }
-    //
-    //     if (msgContent.event) {
-    //         var eventData = msgContent.event;
-    //         var event = new PointerEvent(eventData.type, {
-    //             view: window,
-    //             bubbles: true,
-    //             cancelable: true
-    //         });
-    //         event.pointerId = eventData.pointerId;
-    //         event.pointerType = eventData.pointerType;
-    //         event.x = eventData.x;
-    //         event.y = eventData.y;
-    //         event.clientX = eventData.x;
-    //         event.clientY = eventData.y;
-    //         event.pageX = eventData.x;
-    //         event.pageY = eventData.y;
-    //         event.screenX = eventData.x;
-    //         event.screenY = eventData.y;
-    //         var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
-    //         elt.dispatchEvent(event);
-    //     }
-    // });
+            startCoords.x = getTouchX(event);
+            startCoords.y = getTouchY(event);
+
+            touchTimer = setTimeout(function() {
+                parent.postMessage(JSON.stringify({
+                    version: realityObject.version,
+                    node: realityObject.node,
+                    frame: realityObject.frame,
+                    object: realityObject.object,
+                    beginTouchEditing: true
+                }), '*');
+                sendTouchEvents = true;
+                touchTimer = null;
+            }, moveDelay);
+        });
+
+        document.body.addEventListener('touchmove', function(event) {
+            if (sendTouchEvents) {
+                sendTouchEvent(event);
+            } else if (touchTimer) {
+                var dx = getTouchX(event) - startCoords.x;
+                var dy = getTouchY(event) - startCoords.y;
+                if (dx * dx + dy * dy > touchMoveTolerance) {
+                    clearTimeout(touchTimer);
+                    touchTimer = null;
+                }
+            }
+        });
+
+        document.body.addEventListener('touchend', function(event) {
+            if (sendTouchEvents) {
+                sendTouchEvent(event);
+            }
+            clearTimeout(touchTimer);
+            touchTimer = null;
+        });
+
+        window.addEventListener('message', function (msg) {
+            var msgContent = JSON.parse(msg.data);
+            if (msgContent.stopTouchEditing) {
+                sendTouchEvents = false;
+            }
+
+            if (msgContent.event) {
+                var eventData = msgContent.event;
+                var event = new PointerEvent(eventData.type, {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                });
+                event.pointerId = eventData.pointerId;
+                event.pointerType = eventData.pointerType;
+                event.x = eventData.x;
+                event.y = eventData.y;
+                event.clientX = eventData.x;
+                event.clientY = eventData.y;
+                event.pageX = eventData.x;
+                event.pageY = eventData.y;
+                event.screenX = eventData.x;
+                event.screenY = eventData.y;
+                var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+                elt.dispatchEvent(event);
+            }
+        });
+    };
 
     exports.realityObject = realityObject;
     exports.HybridObject = HybridObject;
