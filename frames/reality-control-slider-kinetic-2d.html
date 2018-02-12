@@ -106,7 +106,7 @@
 
     function onPointerMove(e) {
         e.preventDefault();
-        if (!pointers[e.pointerId]) {
+        if (!pointers[e.pointerId] || sendTouchEvents) {
             return;
         }
 

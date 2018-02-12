@@ -1,3 +1,4 @@
+var sendTouchEvents = false;
 (function(exports) {
 
     if (typeof exports.realityObject !== 'undefined') {
@@ -518,7 +519,7 @@
     };
 
     var touchTimer = null;
-    var sendTouchEvents = false;
+    // var sendTouchEvents = false;
     var startCoords = {
         x: 0,
         y: 0
