@@ -989,6 +989,21 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 var thisObject = realityEditor.getObject(tempThisObject.objectId);
                 var thisFrame = realityEditor.getFrame(tempThisObject.objectId, tempThisObject.uuid);
 
+                // TODO: delete links to and from this object from their respective servers
+                realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+                    var tempObject = realityEditor.getObject(objectKey);
+                    var tempFrame = realityEditor.getFrame(objectKey, frameKey);
+                    for (var linkKey in tempFrame.links) {
+                        if (!tempFrame.links.hasOwnProperty(linkKey)) continue;
+                        var link = tempFrame.links[linkKey];
+                        // console.log(link);
+                        if (link.frameA === thisFrame.uuid || link.frameB === thisFrame.uuid) {
+                            // console.log("should be deleted");
+                            realityEditor.network.deleteLinkFromObject(tempObject.ip, objectKey, frameKey, linkKey);
+                        }
+                    }
+                });
+
                 realityEditor.gui.ar.draw.killObjects(tempThisObject.uuid, thisFrame, globalDOMCache);
                 
                 realityEditor.network.deleteFrameFromObject(thisObject.ip, tempThisObject.objectId, tempThisObject.uuid);
