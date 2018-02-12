@@ -1056,7 +1056,14 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
         } else {
 
             if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-                realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/nodeSize/", content, function (){});
+                var urlEndpoint;
+                if (globalStates.editingModeKind === 'node' || globalStates.editingModeKind === 'logic') {
+                    urlEndpoint = 'http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject + "/frame/" + globalStates.editingModeFrame + "/node/" + globalStates.editingModeLocation + "/nodeSize/";
+                } else {
+                    urlEndpoint = 'http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject + "/frame/" + globalStates.editingModeFrame + "/node/" + globalStates.editingModeLocation + "/size/";
+                }
+                console.log('url endpoint = ' + urlEndpoint);
+                realityEditor.network.postData(urlEndpoint, content);
             }
             
         }
