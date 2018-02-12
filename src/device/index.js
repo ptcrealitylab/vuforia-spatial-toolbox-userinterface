@@ -407,9 +407,17 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
         }
+
+        globalStates.editingNode = null;
+        globalStates.editingModeLocation = null;
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        globalStates.editingModeHaveObject = false;
+        globalStates.editingModeKind = null;
+        globalStates.editingModeObject = null;
 	
 	} else if (globalStates.guiState === 'ui') {
-        if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode) {
+        if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
             this.deactivateFrameMove(globalStates.editingFrame);
             var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
             // realityEditor.device.deactivateMultiTouch();
@@ -422,6 +430,8 @@ realityEditor.device.onTrueTouchUp = function(evt){
     }
 
 	globalCanvas.hasContent = true;
+
+    realityEditor.gui.ar.draw.matrix.matrixtouchOn = '';
 
     realityEditor.device.endTrash(target.nodeId);
 
@@ -589,7 +599,7 @@ realityEditor.device.onTouchMove = function(evt) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
 
     // drag and reposition a frame from the pocket
-    } else if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode) {
+    } else if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
         
         console.log('move pocket frame!');
         var frame = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
@@ -971,7 +981,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// 	// }
 		// } else 
         
-        if (globalStates.tempEditingMode && globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame) {
+        if (globalStates.tempEditingMode && globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame && globalStates.guiState === 'ui') {
             if (evt.pageX > window.innerWidth - 60) {
                 
                 console.log('~~ delete frame ~~');
