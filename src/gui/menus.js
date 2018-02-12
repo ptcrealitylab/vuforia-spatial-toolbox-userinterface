@@ -382,6 +382,7 @@ realityEditor.gui.menus.pointerDown = function(event) {
 //console.log("Down on: "+event.button);
 
     realityEditor.gui.buttons.pocketButtonDown(event);
+    realityEditor.gui.buttons.resetButtonDown(event);
 
 };
 
@@ -393,6 +394,7 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.guiButtonUp(event);
     realityEditor.gui.buttons.logicButtonUp(event);
     realityEditor.gui.buttons.resetButtonUp(event);
+    globalStates.isResetButtonDown = false;
     realityEditor.gui.buttons.unconstrainedButtonUp(event);
     realityEditor.gui.buttons.settingButtonUp(event);
     realityEditor.gui.buttons.freezeButtonUp(event);

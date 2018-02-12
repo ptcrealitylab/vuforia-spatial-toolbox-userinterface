@@ -1099,16 +1099,20 @@ if (thisFrame) {
             }
         };
         if (event.type === 'touchmove') {
-            // if (overlayDiv.style.display !== 'inline') {
-            //     // overlayDiv.style.display = "inline";
-            //     realityEditor.device.onDocumentPointerDown(fakeEvent);
-            // //     realityEditor.device.onMultiTouchStart(fakeEvent);
-            // }
+            if (overlayDiv.style.display !== 'inline') {
+                // overlayDiv.style.display = "inline";
+                realityEditor.device.onDocumentPointerDown(fakeEvent);
+            //     realityEditor.device.onMultiTouchStart(fakeEvent);
+            }
             
             // var frameCanvasElement = document.getElementById('canvas' + msgContent.frame);
             // if (frameCanvasElement.style.display !== 'inline') {
             //     frameCanvasElement.style.display = "inline";
             // }
+
+            globalStates.pointerPosition = [event.x, event.y];
+            // Translate up 6px to be above pocket layer
+            overlayDiv.style.transform = 'translate3d(' + event.x + 'px,' + event.y + 'px,6px)';
             
             // realityEditor.device.onDocumentPointerMove(fakeEvent);
             // realityEditor.device.onTouchMove(fakeEvent);

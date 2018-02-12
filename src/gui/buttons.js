@@ -112,11 +112,17 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
     }
 };
 
+realityEditor.gui.buttons.resetButtonDown = function(event) {
+    if (event.button !== "reset") return;
+    globalStates.isResetButtonDown = true;
+};
+
 realityEditor.gui.buttons.resetButtonUp = function(event) {
         if (event.button !== "reset") return;
 
         realityEditor.gui.menus.off("editing",["reset"]);
 
+        if (!globalStates.isResetButtonDown) return;
 
         for (var objectKey in objects) {
             if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {

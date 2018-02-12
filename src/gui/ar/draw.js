@@ -263,6 +263,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                 // TODO: maybe add some tolerance for shaky recognition so it doesnt immediately take it if the marker just flickers
                 // disassociate a screen<->AR frame from the object if it is being moved in unconstrained editing
+                
+                /*
                 var preserveFrameGlobally = (globalStates.editingMode &&
                     globalStates.unconstrainedPositioning &&
                     globalStates.editingModeObject === this.activeObject.uuid &&
@@ -270,6 +272,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     globalStates.guiState === 'ui' &&
                     !globalStates.editingNode &&
                     !!this.activeFrame.type);
+                    */
+                
+                // TODO: BEN re-enable feature when ready to move frames between objects
+                var preserveFrameGlobally = false;
                 
                 if (preserveFrameGlobally) {
                     
