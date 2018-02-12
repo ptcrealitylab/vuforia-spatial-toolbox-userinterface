@@ -1056,7 +1056,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
         } else {
 
             if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-                realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/size/", content, function (){});
+                realityEditor.network.postData('http://' + objects[globalStates.editingModeObject].ip + ':' + httpPort + '/object/' + globalStates.editingModeObject +"/frame/"+ globalStates.editingModeFrame +"/node/" + globalStates.editingModeLocation +"/nodeSize/", content, function (){});
             }
             
         }

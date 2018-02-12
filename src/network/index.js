@@ -1725,7 +1725,12 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     content.lastEditor = globalStates.tempUuid;
     
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-        var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/";
+        var urlEndpoint;
+        if (type === 'node' || type === 'logic') {
+            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/nodeSize/";
+        } else {
+            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/";
+        }
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
     }
