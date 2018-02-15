@@ -38,19 +38,20 @@ color: #ffffff"></div>
 
         var msg = JSON.parse(e.data);
 
-        if (typeof msg.node !== "undefined" && typeof msg.object !== "undefined") {
+        if (typeof msg.node !== "undefined" && typeof msg.frame !== "undefined" && typeof msg.object !== "undefined") {
             parent.postMessage(
-                  //  {data :
-                            JSON.stringify({
+                    //  {data :
+                    JSON.stringify({
                         version: 170,
                         node: msg.node,
+                        frame: msg.frame,
                         object: msg.object,
                         height: document.body.scrollHeight,
                         width: document.body.scrollWidth,
                         sendMatrix: false,
                         fullScreen: false
-                   // })
-        })
+                        // })
+                    })
                     // this needs to contain the final interface source
                     , "*");
             if(msg.nodes[msg.node]) {

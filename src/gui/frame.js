@@ -40,6 +40,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+// TODO: reimplement widget frames (uncomment frame.js)
 createNameSpace("realityEditor.gui.frame");
 
 (function(realityEditor) {
@@ -201,8 +202,11 @@ FrameTouchSynthesizer.prototype.onPointerEvent = function(event) {
 };
 
 FrameTouchSynthesizer.prototype.beginTouchEditing = function() {
-    var nodeKey = this.iframe.dataset.nodeKey;
-    realityEditor.device.beginTouchEditing(document.getElementById(nodeKey));
+    var activeKey = this.iframe.dataset.nodeKey;
+    if (!activeKey || activeKey === "null") {
+        activeKey = this.iframe.dataset.frameKey;
+    }
+    realityEditor.device.beginTouchEditing(document.getElementById(activeKey));
 };
 
 FrameTouchSynthesizer.prototype.remove = function() {
@@ -212,28 +216,28 @@ FrameTouchSynthesizer.prototype.remove = function() {
     this.cover.removeEventListener('pointercancel', this.onPointerEvent);
 };
 
-function Frame(src, width, height) {
-    this.src = src;
-    this.x = 0;
-    this.y = 0;
-    this.width = width;
-    this.height = height;
-    this.scale = 1;
-    this.developer = true;
-    this.matrix = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ];
-}
+// function Frame(src, width, height) {
+//     this.src = src;
+//     this.x = 0;
+//     this.y = 0;
+//     this.width = width;
+//     this.height = height;
+//     this.scale = 1;
+//     this.developer = true;
+//     this.matrix = [
+//         1, 0, 0, 0,
+//         0, 1, 0, 0,
+//         0, 0, 1, 0,
+//         0, 0, 0, 1
+//     ];
+// }
 
 realityEditor.gui.frame = {
-    create: create,
-    update: update,
-    delete: deleteFrame,
-    deleteLocally: deleteLocally,
-    Frame: Frame,
+    // create: create,
+    // update: update,
+    // delete: deleteFrame,
+    // deleteLocally: deleteLocally,
+    // Frame: Frame,
     FrameTouchSynthesizer: FrameTouchSynthesizer
 };
 

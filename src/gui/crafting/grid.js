@@ -265,17 +265,20 @@ createNameSpace("realityEditor.gui.crafting.grid");
 //      -- GRID UTILITIES -- //
     
     Grid.prototype.parentLogic = function() {
-        for (var key in objects) {
-            var object = objects[key];
-            for (var logicKey in object.nodes) {
-                if (object.nodes[logicKey].type === "logic") {
-                    if (object.nodes[logicKey].uuid === this.logicID) {
-                        return object.nodes[logicKey];
+        for (var objectKey in objects) {
+            var object = objects[objectKey];
+            for (var frameKey in object.frames) {
+                var frame = object.frames[frameKey];
+                for (var logicKey in frame.nodes) {
+                    if (frame.nodes[logicKey].type === "logic") {
+                        if (frame.nodes[logicKey].uuid === this.logicID) {
+                            return frame.nodes[logicKey];
+                        }
                     }
                 }
             }
         }
-        console.log("ERROR: DIDN'T FIND LOGIC NODE FOR THIS GRID");
+        console.warn("ERROR: DIDN'T FIND LOGIC NODE FOR THIS GRID");
     };
 
 
@@ -996,7 +999,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
 
     function uploadLinkIfNecessary(blockLink, linkKey) {
         var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
-        realityEditor.network.postNewBlockLink(keys.ip, keys.objectKey, keys.logicKey, linkKey, blockLink);
+        realityEditor.network.postNewBlockLink(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, linkKey, blockLink);
     }
 
     function blockWithID(globalID, logic) {
@@ -1030,7 +1033,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
 
         if (realityEditor.gui.crafting.eventHelper.shouldUploadBlock(block)) {
             var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
-            realityEditor.network.postNewBlock(keys.ip, keys.objectKey, keys.logicKey, block.globalId, block);
+            realityEditor.network.postNewBlock(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, block.globalId, block);
         }
 
         return block;
@@ -1093,7 +1096,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
     function removeBlockLink(linkKey) {
         //if (realityEditor.gui.crafting.eventHelper.shouldUploadBlockLink(globalStates.currentLogic.links[linkKey])) {
             var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
-            realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.logicKey, linkKey);
+            realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, linkKey);
         //} else {
         //    deleteSurroundingBlockLinksFromServer(linkKey);
         //}
@@ -1108,7 +1111,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
         }
         if (realityEditor.gui.crafting.eventHelper.shouldUploadBlock(logic.blocks[blockID])) {
             var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
-            realityEditor.network.deleteBlockFromObject(keys.ip, keys.objectKey, keys.logicKey, blockID);
+            realityEditor.network.deleteBlockFromObject(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, blockID);
         }
         delete logic.guiState.blockDomElements[blockID];
         delete logic.blocks[blockID];
@@ -1121,7 +1124,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
             if (link.nodeA === blockID || link.nodeB === blockID) {
                 //if (realityEditor.gui.crafting.eventHelper.shouldUploadBlockLink(link)) {
                     var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
-                    realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.logicKey, linkKey);
+                    realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, linkKey);
                 //} else {
                 //    deleteSurroundingBlockLinksFromServer(linkKey);
                 //}
@@ -1136,7 +1139,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
         var surroundingLinks = getLinksSurroundingEdgeLink(edgeLink);
         if (surroundingLinks.length > 0) {
             surroundingLinks.forEach( function(link) {
-                realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.logicKey, edgeBlockLinkKey(link));
+                realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, edgeBlockLinkKey(link));
             });
         }
     }

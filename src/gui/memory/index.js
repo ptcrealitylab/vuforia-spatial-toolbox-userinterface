@@ -98,17 +98,22 @@ MemoryContainer.prototype.set = function(obj) {
     this.backgroundImage.classList.add('memoryBackgroundImage');
     this.backgroundImage.setAttribute('touch-action', 'none');
     this.backgroundImage.src = image;
-
+    
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
+    
+    var objectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    
+    if (obj.memory && obj.memory.matrix) {
+        objectMatrix = obj.memory.matrix;
+    }
 
     this.memory = {
         id: obj.objectId,
         image: image,
         thumbnail: thumbnail,
-        matrix: obj.memory.matrix
+        matrix: objectMatrix //obj.memory.matrix
     };
     this.element.dataset.objectId = this.memory.id;
-
 
     if (!this.image) {
         var cachedImage = imageCache[thumbnail];
@@ -269,7 +274,7 @@ MemoryContainer.prototype.onPointerUp = function() {
         overlayDiv.classList.remove('overlayMemory');
         overlayDiv.style.display = 'none';
         activeThumbnail = '';
-        var potentialObjects = Object.keys(globalObjects);
+        var potentialObjects = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
         if (potentialObjects.length !== 1) {
             console.warn('Memorization attempted with multiple objects');
         } else {
@@ -358,10 +363,12 @@ MemoryContainer.prototype.remember = function() {
     }
 
     realityEditor.gui.pocket.pocketHide();
-
-    var memoryBackground = document.querySelector('.memoryBackground');
-    memoryBackground.innerHTML = '';
-    memoryBackground.appendChild(this.backgroundImage);
+    
+    if (this.backgroundImage) {
+        var memoryBackground = document.querySelector('.memoryBackground');
+        memoryBackground.innerHTML = '';
+        memoryBackground.appendChild(this.backgroundImage);
+    }
 
     var memoryData = JSON.stringify(
         {id: this.memory.id, matrix: this.memory.matrix}
@@ -507,7 +514,7 @@ function getMemoryWithId(id) {
 
 function memoryCanCreate() {
     // Exactly one visible object
-    if (Object.keys(globalObjects).length !== 1 || typeof globalObjects.dummy !== 'undefined') {
+    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1 || typeof realityEditor.gui.ar.draw.visibleObjects.dummy !== 'undefined') {
         return false;
     }
     if (globalStates.freezeButtonState) {
@@ -519,7 +526,7 @@ function memoryCanCreate() {
     if (globalStates.settingsButtonState) {
         return false;
     }
-    if (globalStates.editingMode || globalStates.editingNode) {
+    if (globalStates.editingMode || globalStates.editingNode || globalStates.tempEditingMode) {
         return false;
     }
     if (globalStates.guiState === 'ui') {

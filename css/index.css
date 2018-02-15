@@ -97,7 +97,8 @@ body {
     padding: 0;
     z-index: 2;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-
+    width: 100%;
+    height: 100%;
 }
 
 
@@ -450,7 +451,7 @@ body {
 }
 */
 
-.memoryContainer, #overlay.overlayMemory, .memory, .element-template {
+.memoryContainer, #overlay.overlayMemory, .memory, .element-template {      /* #overlay.overlayLogicNode */
     display: inline-block;
     margin: 0;
     padding: 0;
@@ -464,6 +465,15 @@ body {
 #overlay.overlayMemory {
     background-position: center center;
     background-size: cover;
+}
+
+#overlay.overlayLogicNode {
+    width: 100px;
+    height: 100px;
+    margin-left: -50px;
+    margin-top: -50px;
+    border-radius: 0px;
+    background-image: url("../svg/logicNode.svg");
 }
 
 .element-template {
@@ -816,13 +826,60 @@ Logic Interface CSS
 
 /* block settings */
 
-#blockSettingsContainer {
+.settingsContainer {
   background-color: #B7B7B7; /*#969696;*/
   position: absolute;
   left: 0;
   top: 0;
   width: 506px;
   height: 320px;
+}
+
+#nodeSettingsContainer {  
+  text-align: center;
+  padding-top: 25px;
+  line-height: 50px;
+  font-size: xx-large;
+  font-weight: 700;
+  color: #00ffff;
+}
+
+#currentLogicNameText {
+    margin: 20px;
+}
+
+#renameContainer {
+    margin-bottom: 30px;
+    font-size: 10pt;
+}
+
+#newNameTextField {
+    -webkit-user-select: auto;
+    line-height: 30px;
+    border: 3px solid cyan;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: none;
+    height: 45px;
+    -webkit-appearance: none;
+    padding-top: 5px;
+    font-size: 18px;
+}
+
+.saveNewNameButton {
+    border: 3px solid cyan;
+    background-color: rgba(0, 255, 255, 0.5);
+    line-height: 30px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    height: 45px;
+    margin-left: -5px;
+    font-size: 18px;
+}
+
+#logicNodeIcon {
+    width: 100px;
+    height: 100px;
 }
 
 /* block menu */
@@ -1015,3 +1072,11 @@ Logic Interface CSS
     pointer-events: none;
 }
 
+#speechConsole {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}

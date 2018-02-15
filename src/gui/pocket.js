@@ -78,30 +78,30 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
-	if(pocketItem.pocket.nodes[pocketItemId]){
+	if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
 
-		var thisItem = pocketItem.pocket.nodes[pocketItemId];
+		var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+		
+		var pocketDomElement = globalDOMCache['object' + thisItem.uuid];
+		if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
 
-		if(globalLogic.farFrontElement==="") {
+		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement === "") {
+		    
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
-
-		}
-		else {
-			if(thisItem.screenZ !==2 && thisItem.screenZ) {
-
-				//  console.log(thisItem.screenZ);
-				// console.log(screenCoordinatesToMatrixXY(thisItem, [evt.clientX, evt.clientY]));
-				var matrixTouch = this.realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(thisItem, [evt.clientX, evt.clientY]);
-				// console.log(thisItem);
-				thisItem.x = matrixTouch[0];
-				thisItem.y = matrixTouch[1];
+			
+		} else {
+		    
+			if(thisItem.screenZ !== 2 && thisItem.screenZ) {
+                
+                var centerOffsetX = thisItem.frameSizeX / 2;
+                var centerOffsetY = thisItem.frameSizeY / 2;
+                
+                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
 
 			}
 		}
-        
-		//  pocketItem.pocket.x = evt.clientX;
-		// pocketItem.pocket.y = evt.clientY;
+		
 	}
 };
 
@@ -114,73 +114,253 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
     var pocket;
     var palette;
-
+    var nodeMemoryBar;
+    
     var inMemoryDeletion = false;
 
     var realityElements = [
         {
             name: 'reality-control-slider-kinetic',
             width: 206,
-            height: 526
+            height: 526,
+            nodeNames: [
+                'value'
+            ]
         },
         {
             name: 'reality-control-slider-kinetic-2d',
             width: 526,
-            height: 526
+            height: 526,
+            nodeNames: [
+                'valueX',
+                'valueY'
+            ]
         },
         {
             name: 'reality-sensor-graph',
             width: 304,
-            height: 304
+            height: 304,
+            nodeNames: [
+                'value'
+            ]
         },
         {
             name: 'reality-sensor-linear',
             width: 204,
-            height: 52
+            height: 52,
+            nodeNames: [
+                'value'
+            ]
         },
         {
             name: 'reality-sensor-digital',
-            width: 52,
-            height: 52
+            width: 100,
+            height: 100,
+            nodeNames: [
+                'value'
+            ]
         }
     ];
 
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
+        nodeMemoryBar = document.querySelector('.nodeMemoryBar');
 
         // On touching an element-template, upload to currently visible object
         pocket.addEventListener('pointerdown', function(evt) {
+            
+            
+            // TODO: reimplement widget frames (uncomment frame.js)
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
-            var objectIds = Object.keys(globalObjects);
-            if (objectIds.length !== 1) {
-                return;
+
+            var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys();
+            var closestObjectKey;
+            if (visibleObjectKeys.length > 0) {
+                closestObjectKey = visibleObjectKeys[0];
             }
-            var parentObject = objects[objectIds[0]];
-            var src = evt.target.dataset.src;
-            var width = evt.target.dataset.width;
-            var height = evt.target.dataset.height;
-            var frame = new realityEditor.gui.frame.Frame(src, width, height);
+            var closestObject = realityEditor.getObject(closestObjectKey);
+            // make sure that the frames only sticks to 2.0 server version
+            if (closestObject && closestObject.integerVersion > 165) {
 
-            var tempMatrix = [];
-            var r = globalMatrix.r;
+                var frame = new Frame();
 
-            var arUtilities = realityEditor.gui.ar.utilities;
-            arUtilities.multiplyMatrix(globalObjects[objectIds[0]], globalStates.projectionMatrix, r);
-            arUtilities.multiplyMatrix(rotateX, r, tempMatrix);
-            parentObject.temp = tempMatrix;
-            var matrixTouch = arUtilities.screenCoordinatesToMatrixXY(parentObject, [evt.clientX, evt.clientY]);
-            frame.x = matrixTouch[0];
-            frame.y = matrixTouch[1];
-            realityEditor.gui.frame.create(objectIds[0], frame);
+                frame.objectId = closestObjectKey;
+                frame.name = evt.target.dataset.name + realityEditor.device.utilities.uuidTime();
+
+                var frameID = frame.objectId + frame.name;
+                frame.uuid = frameID;
+
+                frame.ar.x = 0;
+                frame.ar.y = 0;
+                frame.ar.scale = 1;
+                frame.frameSizeX = evt.target.dataset.width;
+                frame.frameSizeY = evt.target.dataset.height;
+
+                frame.location = 'local';
+                frame.src = 'editor';
+                frame.type = evt.target.dataset.name;
+
+                // set other properties
+
+                frame.animationScale = 0;
+                frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                frame.width = frame.frameSizeX;
+                frame.height = frame.frameSizeY;
+                frame.loaded = false;
+                // frame.objectVisible = true;
+                frame.screen = {
+                    x: frame.ar.x,
+                    y: frame.ar.y,
+                    scale: frame.ar.scale,
+                    matrix: frame.ar.matrix
+                };
+                // frame.screenX = 0;
+                // frame.screenY = 0;
+                frame.screenZ = 1000;
+                frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+                // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+                frame.fullScreen = false;
+                frame.sendMatrix = false;
+                frame.sendAcceleration = false;
+                frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+                // thisFrame.visible = false;
+
+                // TODO: add nodes to frame
+                var nodeNames = evt.target.dataset.nodeNames.split(',');
+                nodeNames.forEach(function(nodeName) {
+                    var nodeUuid = frameID + nodeName;
+                    frame.nodes[nodeUuid] = new Node();
+                    var addedNode = frame.nodes[nodeUuid];
+                    addedNode.objectId = closestObjectKey;
+                    addedNode.frameId = frameID;
+                    addedNode.name = nodeName;
+                    addedNode.text = undefined;
+                    addedNode.type = 'node';
+                    addedNode.x = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
+                    addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
+                    addedNode.frameSizeX = 100;
+                    addedNode.frameSizeY = 100;
+
+                });
+                
+                frame.positionOnLoad = {
+                    pageX: evt.pageX,
+                    pageY: evt.pageY
+                };
+
+                closestObject.frames[frameID] = frame;
+
+                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY);
+                
+                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate()
+
+                // send it to the server
+                // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
+                realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
+
+            } else {
+                console.warn('there aren\'t any visible objects to place this frame on!');
+            }
+            
+            // var objectIds = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
+            // if (objectIds.length !== 1) {
+            //     return;
+            // }
+            // var parentObject = objects[objectIds[0]];
+            // var src = evt.target.dataset.src;
+            // var width = evt.target.dataset.width;
+            // var height = evt.target.dataset.height;
+            // var frame = new realityEditor.gui.frame.Frame(src, width, height);
+            //
+            // var tempMatrix = [];
+            // var r = realityEditor.gui.ar.draw.matrix.r;
+            //
+            // var arUtilities = realityEditor.gui.ar.utilities;
+            // arUtilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectIds[0]], globalStates.projectionMatrix, r);
+            // arUtilities.multiplyMatrix(rotateX, r, tempMatrix);
+            // parentObject.temp = tempMatrix;
+            // var matrixTouch = arUtilities.screenCoordinatesToMatrixXY(parentObject, [evt.clientX, evt.clientY]);
+            // frame.x = matrixTouch[0];
+            // frame.y = matrixTouch[1];
+            // realityEditor.gui.frame.create(objectIds[0], frame);
+            
             pocketHide();
+            
         });
 
         createPocketUIPalette();
 		pocketHide();
     }
+    
+    // function addFrameToObject() {
+    //     var frame = new Frame();
+    //
+    //     frame.objectId = thisAction.addFrame.objectID;
+    //     frame.name = thisAction.addFrame.name;
+    //
+    //     var frameID = frame.objectId + frame.name;
+    //     frame.uuid = frameID;
+    //
+    //     frame.ar.x = thisAction.addFrame.x;
+    //     frame.ar.y = thisAction.addFrame.y;
+    //     frame.ar.scale = thisAction.addFrame.scale;
+    //     frame.frameSizeX = thisAction.addFrame.frameSizeX;
+    //     frame.frameSizeY = thisAction.addFrame.frameSizeY;
+    //
+    //     frame.location = thisAction.addFrame.location;
+    //     frame.src = thisAction.addFrame.src;
+    //     frame.type = thisAction.addFrame.type;
+    //
+    //     // set other properties
+    //
+    //     frame.animationScale = 0;
+    //     frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //     frame.width = frame.frameSizeX;
+    //     frame.height = frame.frameSizeY;
+    //     frame.loaded = false;
+    //     // frame.objectVisible = true;
+    //     frame.screen = {
+    //         x: frame.ar.x,
+    //         y: frame.ar.y,
+    //         scale: frame.ar.scale,
+    //         matrix: frame.ar.matrix
+    //     };
+    //     // frame.screenX = 0;
+    //     // frame.screenY = 0;
+    //     frame.screenZ = 1000;
+    //     frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //
+    //     // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+    //     frame.fullScreen = false;
+    //     frame.sendMatrix = false;
+    //     frame.sendAcceleration = false;
+    //     frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+    //     // thisFrame.visible = false;
+    //
+    //     // TODO: add nodes to frame
+    //     var nodeNames = thisAction.addFrame.nodeNames;
+    //     nodeNames.forEach(function(nodeName) {
+    //         var nodeUuid = frameID + nodeName;
+    //         frame.nodes[nodeUuid] = new Node();
+    //         var addedNode = frame.nodes[nodeUuid];
+    //         addedNode.objectId = thisAction.addFrame.objectID;
+    //         addedNode.frameId = frameID;
+    //         addedNode.name = nodeName;
+    //         addedNode.text = undefined;
+    //         addedNode.type = 'node';
+    //         addedNode.x = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
+    //         addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
+    //         addedNode.frameSizeX = 100;
+    //         addedNode.frameSizeY = 100;
+    //
+    //     });
+    //
+    //     thisObject.frames[frameID] = frame;
+    // }
 
     function isPocketWanted() {
         if (pocketShown()) {
@@ -244,9 +424,52 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
         toggleShown();
     }
+    
+    function onHalfPocketButtonEnter() {
+        // if (!isPocketWanted()) {
+        //     return;
+        // }
+        
+        if (!pocketButtonIsHalf()) {
+            return;
+        }
+        
+        // TODO: add any side effects here before showing pocket
+        
+        if (globalStates.editingNode) {
+            // var logicNode = getLogicFromNodeKey(globalStates.editingNode);
+            var logicNode = realityEditor.getNode(globalStates.editingModeObject, globalStates.editingFrame, globalStates.editingNode);
+            if (logicNode) {
+                overlayDiv.classList.add('overlayLogicNode');
+
+                var nameText = document.createElement('div');
+                nameText.style.position = 'absolute';
+                nameText.style.top = '33px';
+                nameText.style.width = '100%';
+                nameText.style.textAlign = 'center';
+                nameText.innerHTML = logicNode.name;
+                overlayDiv.innerHTML = '';
+                overlayDiv.appendChild(nameText);
+                
+                overlayDiv.storedLogicNode = logicNode;
+            }
+        }
+        
+        if (pocketShown()) {
+            // // TODO(ben): is there a better place to do this?
+            overlayDiv.innerHTML = '';
+            overlayDiv.classList.remove('overlayLogicNode');
+        }
+        
+        toggleShown();
+    }
 
     function pocketButtonIsBig() {
         return realityEditor.gui.menus.getVisibility('bigPocket');
+    }
+    
+    function pocketButtonIsHalf() {
+        return realityEditor.gui.menus.getVisibility('halfPocket');
     }
 
     function toggleShown() {
@@ -263,10 +486,13 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         realityEditor.gui.menus.buttonOn('main', ['pocket']);
         if (globalStates.guiState === "node") {
             palette.style.display = 'none';
+            nodeMemoryBar.style.display = 'block';
         } else {
             palette.style.display = 'block';
+            nodeMemoryBar.style.display = 'none';
         }
         setPaletteElementDemo(true);
+        realityEditor.gui.memory.nodeMemories.resetEventHandlers();
     }
 
     function setPaletteElementDemo(value) {
@@ -275,6 +501,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var elt = paletteElements[i];
             // TODO(hobinjk): stringify is not required except for legacy reasons
             elt.contentWindow.postMessage(JSON.stringify({demo: value}), '*');
+            // elt.contentWindow.postMessage({demo: value}, '*');
+
         }
     }
 
@@ -289,18 +517,22 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function createPocketUIPalette() {
+
         for (var i = 0; i<realityElements.length; i++){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
-            container.dataset.src = 'thirdPartyCode/bower_components/' + element.name + '/index.html';
+            var thisUrl = 'frames/' + element.name + '.html';
+            container.dataset.src = thisUrl;
 
+            container.dataset.name = element.name;
             container.dataset.width = element.width;
             container.dataset.height = element.height;
+            container.dataset.nodeNames = element.nodeNames;
 
             var elt = document.createElement('iframe');
             elt.classList.add('palette-element');
-            elt.src = 'thirdPartyCode/bower_components/' + element.name + '/index.html?demo=true';
+            elt.src = thisUrl;
 
             container.appendChild(elt);
             palette.appendChild(container);
@@ -327,9 +559,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     exports.pocketShown = pocketShown;
     exports.pocketShow = pocketShow;
     exports.pocketHide = pocketHide;
-
+    
     exports.onPocketButtonEnter = onPocketButtonEnter;
     exports.onPocketButtonUp = onPocketButtonUp;
     exports.onBigPocketButtonEnter = onBigPocketButtonEnter;
+    exports.onHalfPocketButtonEnter = onHalfPocketButtonEnter;
 
 }(realityEditor.gui.pocket));

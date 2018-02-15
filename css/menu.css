@@ -7,8 +7,8 @@
     top: 18px;*/
 
     /* this is a hack for adding the interface in front of the transformed web interface */
-    -webkit-transform: translateZ(10px);
-    z-index: 10;
+    -webkit-transform: translateZ(1000px);
+    z-index: 1000;
 }
 #mainButton {
     position: fixed;
@@ -258,6 +258,45 @@
     right: 0px;
     width: 60px;
     height: 320px;
+    visibility: hidden;
+    z-index: 20;
+}
+
+#halfTrashButton {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 60px;
+    height: 160px;
+    pointer-events:none;
+    visibility: hidden;
+}
+#halfTrashButtonDiv {
+    position: fixed;
+    top: 160px;
+    right: 0;
+    width: 60px;
+    height: 160px;
+    pointer-events:none;
+    visibility: hidden;
+    z-index: 20;
+}
+#halfPocketButton {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 60px;
+    height: 160px;
+    pointer-events: none;
+    visibility: hidden;
+}
+#halfPocketButtonDiv {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 60px;
+    height: 160px;
+    /*pointer-events: none;*/
     visibility: hidden;
     z-index: 20;
 }

@@ -135,7 +135,7 @@ realityEditor.gui.instantConnect = {
             A.logicB = B.logic;
             A.namesB[0] = B.names[0];
             A.namesB[1] = B.names[1];
-            realityEditor.network.postLinkToServer(A, objects);
+            realityEditor.network.postLinkToServer(A);
             this.draw(A, "connected");
             this.reset();
 

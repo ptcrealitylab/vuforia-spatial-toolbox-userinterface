@@ -266,51 +266,38 @@ realityEditor.gui.crafting.eventHelper.shouldUploadBlock = function(block) {
 //    //return (!this.crafting.grid.isEdgePlaceholderLink(blockLink)); // add links to surrounding instead of uploading itself
 //};
 
-// todo add: if (!_.hasOwnProperty(key)) continue;
-realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys = function(logic) {
+/**
+ * Returns all identifiers necessary to make an API request for the provided logic object
+ * @param logic - logic object
+ * @param block - optional param, if included it includes the block key in the return value
+ * @returns {ip, objectKey, frameKey, logicKey, (optional) blockKey}
+ */
+realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys = function(logic, block) {
 
-    for (var key in objects) {
-        var object = objects[key];
-        for (var logicKey in object.nodes) {
-            if(object.nodes[logicKey].type === "logic") {
-                if (object.nodes[logicKey].uuid === logic.uuid) {
-                    return {
-                        ip: objects[key].ip,
-                        objectKey: key,
-                        logicKey: logicKey,
-                        blockKey: logic
-                    }
-                }
-            }
-        }
-    }
-    return null;
-};
-
-// todo add: if (!_.hasOwnProperty(key)) continue;
-realityEditor.gui.crafting.eventHelper.getServerObjectBlockKeys = function(logic,block) {
-    for (var key in objects) {
-        var object = objects[key];
-        for (var logicKey in object.nodes) {
-            if(object.nodes[logicKey].type === "logic") {
-                if (object.nodes[logicKey] === logic) {
-                    for(var blockKey in logic.blocks){
-                        if(logic.blocks[blockKey] === block) {
-                            return {
-                                ip: objects[key].ip,
-                                object: key,
-                                logic: logicKey,
-                                block: blockKey
-                            }
+    for (var objectKey in objects) {
+        if (!objects.hasOwnProperty(objectKey)) continue;
+        for (var frameKey in objects[objectKey].frames) {
+            if (!objects[objectKey].frames.hasOwnProperty(frameKey)) continue;
+            if (objects[objectKey].frames[frameKey].nodes.hasOwnProperty(logic.uuid)) {
+                var keys = {
+                    ip: objects[objectKey].ip,
+                    objectKey: objectKey,
+                    frameKey: frameKey,
+                    logicKey: logic.uuid
+                };
+                if (block) {
+                    for (var blockKey in logic.blocks){
+                        if(logic.blocks[blockKey] === block) { // TODO: give each block an id property to avoid search
+                            keys.blockKey = blockKey;
                         }
                     }
                 }
+                return keys;
             }
         }
     }
     return null;
 };
-
 
 realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cell) {
     var grid = globalStates.currentLogic.grid;
@@ -328,7 +315,7 @@ realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cel
 
         if (this.shouldUploadBlock(contents.block)) {
             var keys = this.getServerObjectLogicKeys(globalStates.currentLogic);
-            this.realityEditor.network.postNewBlockPosition(keys.ip, keys.objectKey, keys.logicKey, contents.block.globalId, {x: contents.block.x, y: contents.block.y});
+            this.realityEditor.network.postNewBlockPosition(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, contents.block.globalId, {x: contents.block.x, y: contents.block.y});
         }
 
         this.crafting.removeBlockDom(contents.block); // remove do so it can be re-rendered in the correct place
@@ -673,11 +660,12 @@ realityEditor.gui.crafting.eventHelper.addBlockFromMenu = function(blockJSON, po
 };
 
 realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
-    var keys = this.getServerObjectBlockKeys(globalStates.currentLogic, block);
+    var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
     var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.name + "/index.html";
     var craftingBoard = document.getElementById('craftingBoard');
     var blockSettingsContainer = document.createElement('iframe');
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');
+    blockSettingsContainer.setAttribute('class', 'settingsContainer');
 
     blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.object + "','" + keys.logic + "','" + keys.block + "','" + JSON.stringify(block.publicData) + "')");
     blockSettingsContainer.src = settingsUrl;
@@ -687,8 +675,82 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
+    var wasBlockSettingsOpen = false;
     var container = document.getElementById('blockSettingsContainer');
     if (container) {
         container.parentNode.removeChild(container);
+        wasBlockSettingsOpen = true;
     }
+    return wasBlockSettingsOpen;
+};
+
+realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
+    var craftingBoard = document.getElementById('craftingBoard');
+    
+    var nodeSettingsContainer = document.createElement('div');
+    nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
+    nodeSettingsContainer.setAttribute('class', 'settingsContainer');
+    craftingBoard.appendChild(nodeSettingsContainer);
+    
+    var logicNodeIcon = document.createElement('img');
+    logicNodeIcon.src = '../../../svg/logicNode.svg';
+    logicNodeIcon.id = 'logicNodeIcon';
+    logicNodeIcon.width = '80px';
+    logicNodeIcon.height = '80px';
+    nodeSettingsContainer.appendChild(logicNodeIcon);
+
+    var currentLogicNameText = document.createElement('div');
+    currentLogicNameText.id = 'currentLogicNameText';
+    currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
+    nodeSettingsContainer.appendChild(currentLogicNameText);
+    
+    var renameContainer = document.createElement('div');
+    renameContainer.id = 'renameContainer';
+    nodeSettingsContainer.appendChild(renameContainer);
+
+    var newNameTextField = document.createElement('input');
+    newNameTextField.id = 'newNameTextField';
+    newNameTextField.type = 'text';
+    newNameTextField.placeholder = globalStates.currentLogic.name; // TODO: change to suggest the name of the last block you added
+    renameContainer.appendChild(newNameTextField);
+
+    var saveNewNameButton = document.createElement('button');
+    saveNewNameButton.innerHTML = 'Rename Node';
+    saveNewNameButton.type = 'button';
+    saveNewNameButton.className = 'saveNewNameButton';
+    saveNewNameButton.onclick = function() {
+        if (newNameTextField.value && newNameTextField.value !== '') {
+
+            console.log("set new name of logic node to " + globalStates.currentLogic.name);
+            globalStates.currentLogic.name = newNameTextField.value;
+            
+            // update label in node settings menu
+            currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
+            
+            // update node text label on AR view
+            globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
+                JSON.stringify( { renameNode: newNameTextField.value }) , "*");
+            
+            // update model and view for pocket menu
+            var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
+            if (savedIndex > -1) {
+                realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
+                document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
+            }
+            
+        }
+    };
+    renameContainer.appendChild(saveNewNameButton);
+    
+    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+};
+
+realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
+    var wasBlockSettingsOpen = false;
+    var container = document.getElementById('nodeSettingsContainer');
+    if (container) {
+        container.parentNode.removeChild(container);
+        wasBlockSettingsOpen = true;
+    }
+    return wasBlockSettingsOpen;
 };

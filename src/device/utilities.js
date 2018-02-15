@@ -103,3 +103,46 @@ realityEditor.device.utilities.uuidTimeShort = function () {
 realityEditor.device.utilities.randomIntInc = function(min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min);
 };
+
+// ----- Utilities for adding and removing events in a stable way ----- //
+
+String.prototype.hashCode = function() {
+    var hash = 0, i, chr;
+    if (this.length === 0) return hash;
+    for (i = 0; i < this.length; i++) {
+        chr   = this.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+};
+
+realityEditor.device.utilities.addBoundListener = function(element, eventType, functionReference, bindTarget) {
+    var boundFunctionReference = functionReference.bind(bindTarget);
+    var functionUUID = this.getEventUUID(element, eventType, functionReference);
+    if (boundListeners.hasOwnProperty(functionUUID)) {
+        this.removeBoundListener(element, eventType, functionReference);
+    }
+    boundListeners[functionUUID] = boundFunctionReference;
+    element.addEventListener(eventType, boundFunctionReference, false);
+    ec++;
+};
+
+realityEditor.device.utilities.getEventUUID = function(element, eventType, functionReference) {
+    return element.id + '_' + eventType + '_' + functionReference.toString().hashCode();
+};
+
+// function getBoundListener(element, eventType, functionReference) {
+//     var functionUUID = getEventUUID(element, eventType, functionReference);
+//     return boundListeners[functionUUID];
+// }
+
+realityEditor.device.utilities.removeBoundListener = function(element, eventType, functionReference) {
+    var functionUUID = this.getEventUUID(element, eventType, functionReference);
+    var boundFunctionReference = boundListeners[functionUUID];
+    if (boundFunctionReference) {
+        element.removeEventListener(eventType, boundFunctionReference, false);
+        delete boundListeners[functionUUID];
+        ec--;
+    }
+};

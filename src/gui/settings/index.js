@@ -79,11 +79,11 @@ realityEditor.gui.settings.updateLockUI = function() {
 };
 
 realityEditor.gui.settings.newURLTextLoad = function () {
-    this.states.externalState = encodeURIComponent(document.getElementById('externalText').value);
+    this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
 };
 
 realityEditor.gui.settings.newDiscoveryTextLoad = function () {
-    this.states.discoveryState = encodeURIComponent(document.getElementById('discoveryText').value);
+    this.states.discoveryState = document.getElementById('discoveryText').value; //encodeURIComponent(document.getElementById('discoveryText').value);
     this.states.discoveryActive = false;
 
     var buttonState = document.getElementById('discoveryButton');
@@ -91,10 +91,19 @@ realityEditor.gui.settings.newDiscoveryTextLoad = function () {
         buttonState.className = "btn btn-positive pull-right";
 };
 
+realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody) {
+    parent.postMessage(JSON.stringify({
+        settings: {
+            functionName: functionName,
+            messageBody: messageBody
+        }
+    }), "*");
+};
+
 realityEditor.gui.settings.reloadUI = function () {
     if (this.states.externalState !== "" && this.states.externalState !== "http") {
-        console.log("loadNewUI" + this.states.externalState);
-        realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState}, null);
+        console.log("loadNewUI: " + this.states.externalState);
+        this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
     }
 };
 
@@ -102,12 +111,12 @@ realityEditor.gui.settings.discovery = function () {
     if (!this.states.discoveryActive) {
         if (this.states.discoveryState !== "" && this.states.discoveryState !== "http") {
             console.log("setDiscovery" + this.states.discoveryState);
-            realityEditor.app.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState}, null);
+            this.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState});
             this.states.discoveryActive = true;
         }
     } else {
         console.log("removeDiscovery");
-        realityEditor.app.appFunctionCall("removeDiscovery", null, null);
+        this.appFunctionCall("removeDiscovery", null);
         this.states.discoveryActive = false;
         this.states.discoveryState = "";
         document.getElementById("discoveryText").value = this.states.discoveryState;
@@ -157,6 +166,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.editingMode = msg.getSettings.editingMode;
             this.states.clearSkyState = msg.getSettings.clearSkyState;
             this.states.instantState = msg.getSettings.instantState;
+            this.states.speechState = msg.getSettings.speechState;
             this.states.externalState = msg.getSettings.externalState;
             this.states.discoveryState = msg.getSettings.discoveryState;
             this.states.settingsButton = msg.getSettings.settingsButton;
@@ -167,6 +177,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
             this.setSettings("extendedTracking", this.states.extendedTracking);
             this.setSettings("instantState", this.states.instantState);
+            this.setSettings("speechState", this.states.speechState);
             this.setSettings("editingMode", this.states.editingMode);
             this.setSettings("clearSkyState", this.states.clearSkyState);
             this.setSettings("externalText", this.states.externalState);
@@ -182,7 +193,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
             if (typeof realityEditor.gui.settings.logo !== "undefined" && this.states.settingsButton && !this.states.animationFrameRequested) {
                 this.states.animationFrameRequested = true;
-                window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
+                if (realityEditor.gui.settings.logo && typeof(realityEditor.gui.settings.logo.step) === 'function') {
+                    window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
+                }
             }
 
             if (!this.states.settingsButton) {

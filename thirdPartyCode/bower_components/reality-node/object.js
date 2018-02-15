@@ -254,7 +254,7 @@ function HybridObject() {
      ************************************************************
      */
 
-    this.getPossitionX = function () {
+    this.getPositionX = function () {
         return realityObject.modelViewMatrix[12];
     };
 
@@ -262,7 +262,7 @@ function HybridObject() {
      ************************************************************
      */
 
-    this.getPossitionY = function () {
+    this.getPositionY = function () {
         return realityObject.modelViewMatrix[13];
     };
 
@@ -270,7 +270,7 @@ function HybridObject() {
      ************************************************************
      */
 
-    this.getPossitionZ = function () {
+    this.getPositionZ = function () {
         return realityObject.modelViewMatrix[14];
     };
 

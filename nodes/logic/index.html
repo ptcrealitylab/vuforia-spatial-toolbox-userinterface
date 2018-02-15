@@ -42,12 +42,13 @@ color: white"></div>
 
         var msg = JSON.parse(e.data);
 
-        if (typeof msg.node !== "undefined" && typeof msg.object !== "undefined") {
+        if (typeof msg.node !== "undefined" && typeof msg.frame !== "undefined" && typeof msg.object !== "undefined") {
             parent.postMessage(
                     //  {data :
                     JSON.stringify({
                         version: 170,
                         node: msg.node,
+                        frame: msg.frame,
                         object: msg.object,
                         height: document.body.scrollHeight,
                         width: document.body.scrollWidth,
@@ -77,6 +78,11 @@ color: white"></div>
             if (msg.uiActionFeedback === 3)
                 svg.setAttribute("stroke", '#f9f90a');
         }
+        
+        if (typeof msg.renameNode !== "undefined") {
+            thisText.innerHTML = msg.renameNode;
+        }
+        
     }, false);
 </script>
 </body>

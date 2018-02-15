@@ -49,7 +49,7 @@ realityEditor.app.getDeviceReady = function(callBack) {
 // check if vuforia is ready and fires a callback once that’s the case
 realityEditor.app.getVuforiaReady = function(callBack){
     console.log("ping");
-    this.appFunctionCall('getVuforiaReady', null /*{testArg1: "hello", testArg2: 21}*/, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
 // adds a new marker and fires a callback with error or success
@@ -138,20 +138,39 @@ realityEditor.app.getStorage = function (id, callBack) {
   **/
 // starts the apple speech engine
 realityEditor.app.startSpeechRecording = function () {
+    console.log("startSpeechRecording");
     this.appFunctionCall('startSpeechRecording', null, null);
 
 };
 
 // stops the speech engine
 realityEditor.app.stopSpeechRecording = function () {
+    console.log("stopSpeechRecording");
     this.appFunctionCall('stopSpeechRecording', null, null);
 
 };
 
 //sends every individual word that was found one by one to the callback.
 realityEditor.app.addSpeechListener = function (callBack) {
-    this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+')');
+    console.log("addSpeechListener");
+    this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
+
+/**
+ **************Debugging****************
+ **/
+//sends every individual word that was found one by one to the callback.
+realityEditor.app.clearCache = function () {
+    this.appFunctionCall('clearCache', null, null);
+    console.log('clearing cache and force reloading...');
+    setTimeout(function() {
+        location.reload(true);
+        console.log('NOW');
+    }, 1000);
+};
+
+// global shortcut for clearing the cache
+cc = realityEditor.app.clearCache.bind(realityEditor.app);
 
 /**
  **************UTILITIES****************
@@ -173,6 +192,11 @@ realityEditor.app.appFunctionCall = function(functionName, arguments, callbackSt
     window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
 };
 
-realityEditor.app.callBack = function(callBack){
-    callBack(arguments);
+realityEditor.app.callBack = function(callBack, callbackArguments){
+    
+    if (callbackArguments) {
+        callBack.apply(null, callbackArguments);
+    } else {
+        callBack();
+    }
 };

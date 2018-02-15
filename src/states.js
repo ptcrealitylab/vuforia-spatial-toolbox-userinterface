@@ -57,7 +57,9 @@ var uiButtons;
 var httpPort = 8080;
 var timeForContentLoaded = 600; // temporary set to 1000x with the UI Recording mode for video recording
 var timeCorrection = {delta: 0, now: 0, then: 0};
+var boundListeners = {};
 
+// noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
 /**********************************************************************************************************************
  ******************************************** global variables  *******************************************************
  **********************************************************************************************************************/
@@ -66,12 +68,14 @@ var globalStates = {
 	moveDelay : 1000,
 	tempUuid : "0000",
 	debug: false,
+    debugSpeechConsole: false,
 	overlay: 0,
 	device: "",
 	// drawWithLines
 	ballDistance: 14,
 	ballSize: 6,
 	ballAnimationCount: 0,
+    nodeSpeechHighlightCounter: 0,
     
     width: window.innerHeight,
     height: window.innerWidth,
@@ -87,6 +91,7 @@ var globalStates = {
     realityState: false,
 	externalState: "",
     discoveryState: "",
+    speechState: false,
 	sendMatrix3d: false,
 	sendAcl: false,
     
@@ -100,7 +105,9 @@ var globalStates = {
 	freezeButtonState: false,
 	logButtonState: false,
 	editingMode: false,
+    tempEditingMode: false,
 	editingNode: false,
+    editingFrame: false,
 	guiURL: "",
 	newURLText: "",
 	platform: navigator.platform,
@@ -156,23 +163,25 @@ var globalLogic ={
 	rectPoints: [],
 	farFrontElement:"",
 	frontDepth: 1000000
-
-
 };
 
 var pocketItem  = {"pocket" : new Objects()};
+pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
+var globalFrames = {};
+var globalFramesDOMCache = {};
+var globalFramePrefix = '__GLOBAL__';
 
-var globalDOMCach = {};
-
-var globalObjects = "";
+var globalDOMCache = {};
 
 var globalProgram = {
 	objectA: false,
+    frameA: false,
 	nodeA: false,
 	logicA:false,
 	objectB: false,
+    frameB: false,
 	nodeB: false,
 	logicB:false,
 	logicSelector:4

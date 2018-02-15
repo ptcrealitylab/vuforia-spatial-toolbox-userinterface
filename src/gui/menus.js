@@ -60,6 +60,8 @@ realityEditor.gui.menus.buttons = {
     	back: {},
 		bigPocket: {},
     	bigTrash: {},
+        halfTrash: {},
+        halfPocket: {},
     	freeze:{},
 		logicPocket:{},
     	logicSetting:{},
@@ -90,6 +92,7 @@ realityEditor.gui.menus.menus = {
     crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
     bigTrash: {bigTrash: "red"},
     bigPocket: {bigPocket: "green"},
+    trashOrSave: {halfTrash: "red", halfPocket: "green"},
     locking: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue"},
     lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue"},
     realityInfo: {realityGui: "blue", realityInfo: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
@@ -355,14 +358,14 @@ realityEditor.gui.buttons.sendInterfaces = function (interface) {
 
     for (var objectKey in objects) {
         if (objects[objectKey].visible) {
-            globalDOMCach["iframe" + objectKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+            globalDOMCache["iframe" + objectKey].contentWindow.postMessage(JSON.stringify(msg), "*");
 
 
         }
 
         for (var nodeKey in objects[objectKey].nodes) {
             if (objects[objectKey].nodes[nodeKey].visible) {
-                globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
             }
         }
     }
@@ -379,6 +382,7 @@ realityEditor.gui.menus.pointerDown = function(event) {
 //console.log("Down on: "+event.button);
 
     realityEditor.gui.buttons.pocketButtonDown(event);
+    realityEditor.gui.buttons.resetButtonDown(event);
 
 };
 
@@ -390,6 +394,7 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.guiButtonUp(event);
     realityEditor.gui.buttons.logicButtonUp(event);
     realityEditor.gui.buttons.resetButtonUp(event);
+    globalStates.isResetButtonDown = false;
     realityEditor.gui.buttons.unconstrainedButtonUp(event);
     realityEditor.gui.buttons.settingButtonUp(event);
     realityEditor.gui.buttons.freezeButtonUp(event);
@@ -449,6 +454,7 @@ realityEditor.gui.menus.pointerEnter = function(event) {
 
     realityEditor.gui.buttons.pocketButtonEnter(event);
     realityEditor.gui.buttons.bigPocketButtonEnter(event);
+    realityEditor.gui.buttons.halfPocketButtonEnter(event);
 
     realityEditor.gui.buttons.buttonActionEnter(event);
 };

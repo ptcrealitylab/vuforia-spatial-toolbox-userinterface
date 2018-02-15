@@ -51,19 +51,27 @@
  ******************************************** global namespace *******************************************************
  **********************************************************************************************************************/
 
+
+var objects = {};
+
 var realityEditor = realityEditor || {
         app:{},
 		device: {
 		    security:{},
-            utilities: {}
+            utilities: {},
+            speechProcessor: {},
+            speechPerformer: {}
 		},
 		gui: {
 			ar: {
-				draw: {},
-				positioning: {},
-				lines: {},
-				utilities: {}
-			},
+				draw: {
+                    visibleObjects : "",
+                    globalCanvas : {}
+				},
+                positioning: {},
+                lines: {},
+                utilities: {}
+            },
             crafting: {
                 blockMenu: {},
                 eventHandlers: {},
@@ -71,7 +79,9 @@ var realityEditor = realityEditor || {
                 grid: {},
                 utilities: {}
             },
-            memory: {},
+            memory: {
+			    nodeMemories: {}
+            },
             settings: {
                 logo:{}
             },
@@ -88,7 +98,7 @@ var realityEditor = realityEditor || {
 		},
         network: {
             utilities: {}
-         }
+        }
 	};
 
 /**
@@ -114,3 +124,150 @@ var createNameSpace = createNameSpace || function (namespace) {
 		}
 		return object;
 	};
+
+createNameSpace("realityEditor");
+
+realityEditor.objects = objects;
+
+// return the object
+realityEditor.getObject = function (objectKey){
+    if(!objectKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    return this.objects[objectKey];
+};
+
+// return a frame located in the object
+realityEditor.getFrame = function (objectKey, frameKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    return this.objects[objectKey].frames[frameKey];
+};
+
+// return a node located in the object frame
+realityEditor.getNode = function (objectKey, frameKey, nodeKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodes)) return null;
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey];
+};
+
+// return a link located in a frame
+realityEditor.getLink = function (objectKey, frameKey, linkKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!linkKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(linkKey in this.objects[objectKey].frames[frameKey].links)) return null;
+    return this.objects[objectKey].frames[frameKey].links[linkKey];
+};
+
+// return a block in a logic node
+realityEditor.getBlock = function (objectKey, frameKey, nodeKey, block){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
+    if(!block) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
+    if(!(block in this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks)) return null;
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].block[block];
+};
+
+// return a block link in a logic node
+realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
+    if(!linkKey) return null;
+    if(!(objectKey in this.objects)) return null;
+    if(!(frameKey in this.objects[objectKey].frames)) return null;
+    if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
+    if(!(linkKey in this.objects[objectKey].frames[frameKey].nodes[nodeKey].links)) return null;
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].links[linkKey];
+};
+
+// helper methods to cleanly iterate over all objects / frames / nodes
+
+/**
+ * Perform the callback with each (object, objectKey) pair for all objects
+ * @param callback 
+ */
+realityEditor.forEachObject = function(callback){
+    for (var objectKey in objects) {
+        var object = realityEditor.getObject(objectKey);
+        if (object) {
+            callback(object, objectKey);
+        }
+    }
+};
+
+/**
+ * Perform the callback on each (objectKey, frameKey, nodeKey) pair for all objects, frames, and nodes
+ * @param callback
+ */
+realityEditor.forEachNodeInAllObjects = function(callback) {
+    for (var objectKey in objects) {
+        realityEditor.forEachNodeInObject(objectKey, callback);
+    }
+};
+
+/**
+ * Perform the callback on each (objectKey, frameKey, nodeKey) pair for the given object
+ * @param objectKey
+ * @param callback
+ */
+realityEditor.forEachNodeInObject = function(objectKey, callback) {
+    var object = realityEditor.getObject(objectKey);
+    if (!object) return;
+    for (var frameKey in object.frames) {
+        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        realityEditor.forEachNodeInFrame(objectKey, frameKey, callback);
+    }
+};
+
+/**
+ * Perform the callback for each (objectKey, frameKey, nodeKey) pair for the given frame
+ * @param objectKey
+ * @param frameKey
+ * @param callback
+ */
+realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    if (!frame) return;
+    for (var nodeKey in frame.nodes) {
+        if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
+        callback(objectKey, frameKey, nodeKey);
+    }
+};
+
+/**
+ * Perform the callback on each (objectKey, frameKey, nodeKey) pair for all objects, frames, and nodes
+ * @param callback
+ */
+realityEditor.forEachFrameInAllObjects = function(callback) {
+    for (var objectKey in objects) {
+        realityEditor.forEachFrameInObject(objectKey, callback);
+    }
+};
+
+/**
+ * Perform the callback for each (objectKey, frameKey) pair for the given object
+ * @param objectKey
+ * @param callback
+ */
+realityEditor.forEachFrameInObject = function(objectKey, callback) {
+    var object = realityEditor.getObject(objectKey);
+    if (!object) return;
+    for (var frameKey in object.frames) {
+        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        callback(objectKey, frameKey);
+    }
+};
+

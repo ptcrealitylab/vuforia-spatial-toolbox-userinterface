@@ -59,7 +59,7 @@ function helloWorld(cb){
 createNameSpace("realityEditor.device");
 
 realityEditor.device.onload = function () {
-    
+
     realityEditor.gui.menus.init();
 
     realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
@@ -74,6 +74,7 @@ realityEditor.device.onload = function () {
 
 	realityEditor.gui.buttons.draw();
 	realityEditor.gui.memory.initMemoryBar();
+	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
 
 	console.log(globalStates.platform);
@@ -101,7 +102,7 @@ realityEditor.device.onload = function () {
 	document.addEventListener("pointermove", realityEditor.device.onDocumentPointerMove.bind(realityEditor.device), false);
 	ec++;
 	document.addEventListener("pointerdown", realityEditor.device.onDocumentPointerDown.bind(realityEditor.device), false);
-	//document.addEventListener("pointerdown", getPossition, false);
+	//document.addEventListener("pointerdown", getPosition, false);
 	ec++;
 	document.addEventListener("pointerup", realityEditor.device.onDocumentPointerUp.bind(realityEditor.device), false);
 	ec++;
@@ -110,6 +111,8 @@ realityEditor.device.onload = function () {
 	overlayDiv.addEventListener('touchstart', function (e) {
 		e.preventDefault();
 	});
+
+    // realityEditor.device.addFrameEventHandlers();
 
 	this.cout("onload");
 

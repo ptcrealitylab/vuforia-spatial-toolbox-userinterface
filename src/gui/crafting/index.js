@@ -345,15 +345,15 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
  * @desc
  **/
 
-realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, nodeKey) {
+realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, nodeKey) {
 
     globalStates.freezeStateBeforeCrafting = globalStates.freezeButtonState;
     globalStates.freezeButtonState = true;
     realityEditor.app.appFunctionCall("freeze");
     globalStates.pocketButtonState = true;
     
-    this.cout("craftingBoardVisible for object: " + objectKey + " and node: "+nodeKey);
-
+    this.cout("craftingBoardVisible for object: " + objectKey + ", frame: " + frameKey + " and node: "+nodeKey);
+    
     globalStates.guiState = "logic";
     document.getElementById("craftingBoard").style.visibility = "visible";
     document.getElementById("craftingBoard").style.display = "inline";
@@ -361,11 +361,13 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, nodeKey) {
     realityEditor.gui.menus.on("crafting", ["freeze"]);
     
     if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
+        
         var logic = new Logic();
         this.initializeDataCraftingGrid(logic);
+        
     } else {
         
-        var nodeLogic = objects[objectKey].nodes[nodeKey];
+        var nodeLogic = objects[objectKey].frames[frameKey].nodes[nodeKey];
         if (!nodeLogic.guiState) {
             console.log("adding new LogicGUIState");
             nodeLogic.guiState = new LogicGUIState();
@@ -475,10 +477,12 @@ realityEditor.gui.crafting.addDatacraftingEventListeners = function() {
     if (globalStates.currentLogic) {
         var datacraftingEventDiv = document.getElementById('datacraftingEventDiv');
         if (!datacraftingEventDiv) return;
-        datacraftingEventDiv.addEventListener("pointerdown", this.eventHandlers.onPointerDown.bind(this.eventHandlers));
-        document.addEventListener("pointermove", this.eventHandlers.onPointerMove.bind(this.eventHandlers));
-        datacraftingEventDiv.addEventListener("pointerup", this.eventHandlers.onPointerUp.bind(this.eventHandlers));
-        datacraftingEventDiv.addEventListener("pointercancel", this.eventHandlers.onPointerUp.bind(this.eventHandlers));
+
+        realityEditor.device.utilities.addBoundListener(datacraftingEventDiv, 'pointerdown', this.eventHandlers.onPointerDown, this.eventHandlers);
+        realityEditor.device.utilities.addBoundListener(document, 'pointermove', this.eventHandlers.onPointerMove, this.eventHandlers);
+        realityEditor.device.utilities.addBoundListener(datacraftingEventDiv, 'pointerup', this.eventHandlers.onPointerUp, this.eventHandlers);
+        realityEditor.device.utilities.addBoundListener(datacraftingEventDiv, 'pointercancel', this.eventHandlers.onPointerUp, this.eventHandlers);
+
     }
 };
 
@@ -486,10 +490,12 @@ realityEditor.gui.crafting.removeDatacraftingEventListeners = function() {
     if (globalStates.currentLogic) {
         var datacraftingEventDiv = document.getElementById('datacraftingEventDiv');
         if (!datacraftingEventDiv) return;
-        datacraftingEventDiv.removeEventListener("pointerdown", this.eventHandlers.onPointerDown);
-        document.removeEventListener("pointermove", this.eventHandlers.onPointerMove);
-        datacraftingEventDiv.removeEventListener("pointerup", this.eventHandlers.onPointerUp);
-        datacraftingEventDiv.removeEventListener("pointercancel", this.eventHandlers.onPointerUp);
+
+        realityEditor.device.utilities.removeBoundListener(datacraftingEventDiv, 'pointerdown', this.eventHandlers.onPointerDown);
+        realityEditor.device.utilities.removeBoundListener(document, 'pointermove', this.eventHandlers.onPointerMove);
+        realityEditor.device.utilities.removeBoundListener(datacraftingEventDiv, 'pointerup', this.eventHandlers.onPointerUp);
+        realityEditor.device.utilities.removeBoundListener(datacraftingEventDiv, 'pointercancel', this.eventHandlers.onPointerUp);
+
     }
 };
 

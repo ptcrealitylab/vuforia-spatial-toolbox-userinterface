@@ -57,265 +57,594 @@ createNameSpace("realityEditor.gui.ar.draw");
  * @desc main update loop called 30 fps with an array of found transformation matrices
  * @param visibleObjects
  **/
+realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
+realityEditor.gui.ar.draw.visibleObjects = "";
+realityEditor.gui.ar.draw.globalStates = globalStates;
+realityEditor.gui.ar.draw.globalDOMCache = globalDOMCache;
+realityEditor.gui.ar.draw.activeObject = {};
+realityEditor.gui.ar.draw.activeFrame = {};
+realityEditor.gui.ar.draw.activeNode = {};
+realityEditor.gui.ar.draw.activeVehicle = {};
+realityEditor.gui.ar.draw.activeObjectMatrix = [];
+realityEditor.gui.ar.draw.finalMatrix = [];
+realityEditor.gui.ar.draw.rotateX = rotateX;
+realityEditor.gui.ar.draw.nodeCalculations = {
+    size: 0,
+    x: 0,
+    y: 0,
+    rectPoints: [],
+    farFrontElement: "",
+    frontDepth: 1000000
+};
+realityEditor.gui.ar.draw.matrix = {
+    temp: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    begin: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    end: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    r: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    r2: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    r3 :[
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    matrixtouchOn: false,
+    copyStillFromMatrixSwitch: false
+};
+realityEditor.gui.ar.draw.objectKey = "";
+realityEditor.gui.ar.draw.frameKey = "";
+realityEditor.gui.ar.draw.nodeKey = "";
+realityEditor.gui.ar.draw.activeKey = "";
+realityEditor.gui.ar.draw.type = "";
+realityEditor.gui.ar.draw.notLoading = "";
+realityEditor.gui.ar.draw.utilities = realityEditor.gui.ar.utilities;
 
-
-realityEditor.gui.ar.draw.update = function(visibleObjects) {
-    console.log("tip");
+realityEditor.gui.ar.draw.update = function (visibleObjects) {
+    
 //    console.log(JSON.stringify(visibleObjects));
     this.ar.utilities.timeSynchronizer(timeCorrection);
-    //disp = uiButtons.style.display;
-    //uiButtons.style.display = 'none';
 
     if (globalStates.guiState === "logic") {
-        // todo maybe animation frame
-        this.gui.crafting.redrawDataCrafting();
+        this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
 
-    globalObjects = visibleObjects;
+    this.visibleObjects = visibleObjects;
 
-    var thisGlobalCanvas = globalCanvas;
-    if (thisGlobalCanvas.hasContent === true) {
-        thisGlobalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
-        thisGlobalCanvas.hasContent = false;
-    }
-
-    var thisGlobalStates = globalStates;
-
-    var thisGlobalLogic = globalLogic;
-    var thisGlobalDOMCach = globalDOMCach;
-    var thisGlobalMatrix = globalMatrix;
-
-    for (var objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) {
-            continue;
-        }
-
-        if (objects[objectKey].fullScreen === "sticky") {
-
-            if (objects[objectKey].stickiness) {
-                if (!(objectKey in globalObjects)) {
-                    globalObjects[objectKey] = [
-                        1, 0, 0, 0,
-                        0, 1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0, 1
-                    ]
-                }
-            }
-
-            for (thisKey in globalObjects) {
-                if (thisKey !== objectKey) {
-                    delete globalObjects[thisKey];
-                }
-            }
-        }
+    if (this.globalCanvas.hasContent === true) {
+        this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);
+        this.globalCanvas.hasContent = false;
     }
 
     for (var objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) {
-            continue;
-        }
+        this.activeObject = realityEditor.getObject(objectKey);
+        if (!this.activeObject) { continue; }
+        if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
-        var generalObject = objects[objectKey];
+            this.activeObject.visibleCounter = timeForContentLoaded;
+            this.setObjectVisible(this.activeObject, true);
 
-        //if(  globalStates.pointerPosition[0]>0)
-        //console.log(generalObject);
-        // I changed this to has property.
-        if (globalObjects.hasOwnProperty(objectKey)) {
+            // this.activeObjectMatrix = multiplyMatrix(rotateX, multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix));
+            this.activeObjectMatrix = [];
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
+            this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
+            //  this.activeObjectMatrix2 = multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix);
+            //   document.getElementById("controls").innerHTML = (toAxisAngle(this.activeObjectMatrix2)[0]).toFixed(1)+" "+(toAxisAngle(this.activeObjectMatrix2)[1]).toFixed(1);
+            
+            for (var frameKey in objects[objectKey].frames) {
+                this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
+                if (!this.activeFrame.hasOwnProperty('visualization')) { // TODO: temp fix
+                    this.activeFrame.visualization = "ar";
+                }
+                if (this.activeFrame.visualization !== "ar") {
+                    continue;
+                }
+                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) {
+                    // console.log("break from frame: ",objectKey, frameKey);
+                    continue;
+                }
+                // making sure that the node is always the object to draw
+                this.activeKey = frameKey;
+                this.activeVehicle = this.activeFrame;
+                this.activeType = "ui";
 
-            generalObject.visibleCounter = timeForContentLoaded;
-            generalObject.objectVisible = true;
+                if (this.globalStates.guiState === "ui") { // || Object.keys(this.activeFrame.nodes).length === 0) { // removed feature where UI shows in node view if no nodes... check with team that this is a good decision
+                    var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                        this.globalDOMCache, this.globalStates, this.globalCanvas,
+                        this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
+                        this.nodeCalculations, this.cout);
+                    
+                    if (!continueUpdate) return;
+                    
+                    var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
+                    this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
 
-            // tempMatrix = multiplyMatrix(rotateX, multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix));
-
-            var tempMatrix = [];
-            var r = globalMatrix.r;
-           this.ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
-            this.ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
-
-            //  var tempMatrix2 = multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix);
-
-            //   document.getElementById("controls").innerHTML = (toAxisAngle(tempMatrix2)[0]).toFixed(1)+" "+(toAxisAngle(tempMatrix2)[1]).toFixed(1);
-
-            if (globalStates.guiState ==="ui" || Object.keys(generalObject.nodes).length === 0) {
-                this.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", thisGlobalStates, thisGlobalCanvas, thisGlobalLogic, thisGlobalDOMCach, thisGlobalMatrix);
-                this.addElement(objectKey, objectKey, "http://" + generalObject.ip + ":" + httpPort + "/obj/" + generalObject.name + "/", generalObject, "ui", thisGlobalStates);
-            }
-            else {
-                this.hideTransformed(objectKey, objectKey, generalObject, "ui");
-            }
-
-            var generalNode;
-            for (nodeKey in generalObject.nodes) {
-                // if (!generalObject.nodes.hasOwnProperty(nodeKey)) { continue; }
-
-                generalNode = generalObject.nodes[nodeKey];
-
-                if (globalStates.guiState ==="node" || globalStates.guiState === "logic") {
-                    this.drawTransformed(objectKey, nodeKey, generalNode, tempMatrix, generalNode.type, thisGlobalStates, thisGlobalCanvas, thisGlobalLogic, thisGlobalDOMCach, thisGlobalMatrix);
-
-                    this.addElement(objectKey, nodeKey, "nodes/" + generalNode.type + "/index.html", generalNode, generalNode.type, thisGlobalStates);
+                    // TODO: set repositioning DOM elements present if in editing mode and developer true
 
                 } else {
-                    this.hideTransformed(objectKey, nodeKey, generalNode, generalNode.type);
+                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                 }
-            }
 
-            for (var nodeKey in generalObject.frames) {
-                generalNode = generalObject.frames[nodeKey];
-                if (globalStates.guiState === "ui") {
-                    this.drawTransformed(objectKey, nodeKey, generalNode, tempMatrix, "ui", thisGlobalStates, thisGlobalCanvas, thisGlobalLogic, thisGlobalDOMCach, thisGlobalMatrix);
-                    var keyedSrc = generalNode.src;
-                    if (keyedSrc.indexOf('?') >= 0) {
-                        keyedSrc += '&';
+                for (var nodeKey in this.activeFrame.nodes) {
+                    // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) { continue; }
+                    if (globalStates.guiState === "node" || globalStates.guiState === "logic") {
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                        this.activeKey = nodeKey;
+                        this.activeVehicle = this.activeNode;
+                        this.activeType = this.activeNode.type;
+
+                        var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+
+                            this.globalDOMCache, this.globalStates, this.globalCanvas,
+                            this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
+                            this.nodeCalculations, this.cout);
+                        
+                        if (!continueUpdate) return;
+                        
+                        var nodeUrl = "nodes/" + this.activeType + "/index.html";
+                        this.addElement(nodeUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeVehicle);
+
                     } else {
-                        keyedSrc += '?';
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                        this.activeKey = nodeKey;
+
+                        this.activeVehicle = this.activeNode;
+                      //  this.activeType = this.activeNode.type;
+                      
+                        this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                     }
-                    keyedSrc += 'nodeKey=' + nodeKey;
-                    this.addElement(objectKey, nodeKey, keyedSrc, generalNode, "ui", thisGlobalStates);
-                } else {
-                    this.hideTransformed(objectKey, nodeKey, generalNode, "ui");
                 }
+
+                /*
+                for (nodeKey in this.activeObject.frames) {
+                    this.activeNode = this.activeObject.frames[nodeKey];
+                    if (globalStates.guiState === "ui") {
+                          this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+
+                        this.globalDOMCache, this.globalStates, this.globalCanvas,
+                        this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
+                        this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
+                        
+                        var keyedSrc = this.activeNode.src;
+                        if (keyedSrc.indexOf('?') >= 0) {
+                            keyedSrc += '&';
+                        } else {
+                            keyedSrc += '?';
+                        }
+                        keyedSrc += 'nodeKey=' + nodeKey;
+                        this.addElement(keyedSrc,
+                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
+                    } else {
+                        this.hideTransformed(objectKey, nodeKey, this.activeNode, "ui");
+
+                    }
+                }
+                */
             }
         }
-        else {
-            generalObject.objectVisible = false;
+        else if (this.activeObject.objectVisible) {
+            // this.activeObject.objectVisible = false;
+            realityEditor.gui.ar.draw.setObjectVisible(this.activeObject, false);
 
-            this.hideTransformed(objectKey, objectKey, generalObject, "ui");
+            for (var frameKey in objects[objectKey].frames) {
+                this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
+                if (!this.activeFrame) {
+                    console.log("break from frame: ", objectKey, frameKey);
+                    continue;
+                }
+                // making sure that the node is always the object to draw
+                this.activeKey = frameKey;
+                this.activeVehicle = this.activeFrame;
+                this.activeType = "ui";
 
-            for (var nodeKey in generalObject.nodes) {
-                // if (!generalObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
-                this.hideTransformed(objectKey, nodeKey, generalObject.nodes[nodeKey], generalObject.nodes[nodeKey].type);
+                // TODO: maybe add some tolerance for shaky recognition so it doesnt immediately take it if the marker just flickers
+                // disassociate a screen<->AR frame from the object if it is being moved in unconstrained editing
+                
+                /*
+                var preserveFrameGlobally = (globalStates.editingMode &&
+                    globalStates.unconstrainedPositioning &&
+                    globalStates.editingModeObject === this.activeObject.uuid &&
+                    globalStates.editingModeFrame === frameKey &&
+                    globalStates.guiState === 'ui' &&
+                    !globalStates.editingNode &&
+                    !!this.activeFrame.type);
+                    */
+                
+                // TODO: BEN re-enable feature when ready to move frames between objects
+                var preserveFrameGlobally = false;
+                
+                if (preserveFrameGlobally) {
+                    
+                    realityEditor.gui.ar.draw.moveFrameToGlobalSpace(objectKey, frameKey, this.activeFrame);
+                    
+                } else {
+
+                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
+
+                    for (var nodeKey in this.activeFrame.nodes) {
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                        this.activeKey = nodeKey;
+                        this.activeVehicle = this.activeNode;
+                        this.activeType = this.activeNode.type;
+                        // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
+                        this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
+                    }
+
+                    /*
+                    for (nodeKey in this.activeObject.frames) {
+                        this.activeNode = realityEditor.getNode(objectKey, frameKey, frameKey);
+                        this.activeKey = nodeKey;
+                        this.activeVehicle = this.activeNode;
+                        this.activeType = this.activeNode.type;
+                        
+                        this.hideTransformed(objectKey, nodeKey, this.activeObject.frames[nodeKey], "ui");
+    
+                    }
+                    */
+
+                    // this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCache); // TODO: this only kills last node, not the frames (because activeKey changes)
+                    this.killObjects(frameKey, this.activeFrame, this.globalDOMCache);
+                    
+                }
+                
             }
-
-            for (var nodeKey in generalObject.frames) {
-                this.hideTransformed(objectKey, nodeKey, generalObject.frames[nodeKey], "ui");
-            }
-
-            this.killObjects(objectKey, generalObject);
         }
 
     }
 
     // draw all lines
-    if ( (globalStates.guiState ==="node"|| globalStates.guiState === "logic") && !globalStates.editingMode) {
+    if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && !globalStates.editingMode) {
+        
         for (var objectKey in objects) {
-            this.ar.lines.drawAllLines(objects[objectKey], thisGlobalCanvas.context);
+            if (!objects.hasOwnProperty(objectKey)) continue;
+            var object = objects[objectKey];
+            for (var frameKey in object.frames) {
+                if (!object.frames.hasOwnProperty(frameKey)) continue;
+                this.ar.lines.drawAllLines(realityEditor.getFrame(objectKey, frameKey), this.globalCanvas.context);
+            }
         }
+        
         this.ar.lines.drawInteractionLines();
-        //  cout("drawlines");
+        
+        // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
+        if (globalStates.speechState) {
+
+            globalStates.nodeSpeechHighlightCounter++;
+            if (globalStates.nodeSpeechHighlightCounter > 20) {
+
+                var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode(); //realityEditor.device.speech.getClosestObjectFrameNode(); //getClosestNode();
+                if (!closest) return;
+                
+                // reset all other nodes to full opacity
+                realityEditor.forEachNodeInAllObjects( function(objectKey, frameKey, nodeKey) {
+                    var nodeDom = document.getElementById('object' + nodeKey);
+                    if (nodeDom && nodeDom.style.opacity !== "1") {
+                        nodeDom.style.opacity = "1";
+                    }
+                });
+
+                // highlight the closest one with semi-transparency
+                var closestNodeDom = document.getElementById('object' + closest.nodeKey);
+                if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
+                    closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
+                }
+
+                globalStates.nodeSpeechHighlightCounter = 0;
+            }
+
+        }
+        
     }
 
     // todo this is a test for the pocket
-
-    // todo finishing up this
-
-    if(pocketItem.pocket.nodes[pocketItemId]) {
-        var generalObject = pocketItem["pocket"];
-        // if(  globalStates.pointerPosition[0]>0)
-        //console.log(generalObject);
-        generalObject.visibleCounter = timeForContentLoaded;
-        generalObject.objectVisible = true;
-
-        var generalNode;
+    
+    if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
+        
+        this.activeObject = pocketItem["pocket"];
+        this.activeObject.visibleCounter = timeForContentLoaded;
+        this.activeObject.objectVisible = true;
+        
         objectKey = "pocket";
+        frameKey = "pocket";
+        
+        this.activeObjectMatrix = [];
+        this.nodeCalculations.farFrontElement = "";
+        this.nodeCalculations.farFrontFrame = "";
+        this.nodeCalculations.frontDepth = 10000000000;
 
-        var thisMatrix = [];
-
-        globalLogic.farFrontElement = "";
-        globalLogic.frontDepth = 10000000000;
-
-        for (var thisOtherKey in globalObjects) {
-            if (globalObjects[thisOtherKey][14] < globalLogic.frontDepth) {
-                globalLogic.frontDepth = globalObjects[thisOtherKey][14];
-                globalLogic.farFrontElement = thisOtherKey;
+        // TODO: implement smarter way to find front
+        for (var thisOtherKey in this.visibleObjects) {
+            if (this.visibleObjects[thisOtherKey][14] < this.nodeCalculations.frontDepth) {
+                this.nodeCalculations.frontDepth = this.visibleObjects[thisOtherKey][14];
+                this.nodeCalculations.farFrontElement = thisOtherKey;
+                this.nodeCalculations.farFrontFrame = getFarFrontFrame(thisOtherKey);
             }
         }
 
-        if (globalLogic.farFrontElement in globalObjects) {
-            // console.log(globalLogic.farFrontElement);
+        if (this.visibleObjects.hasOwnProperty(this.nodeCalculations.farFrontElement)) {
 
-            var r = globalMatrix.r;
-            this.ar.utilities.multiplyMatrix(globalObjects[globalLogic.farFrontElement], globalStates.projectionMatrix, r);
-            this.ar.utilities.multiplyMatrix(rotateX, r, thisMatrix);
-
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[this.nodeCalculations.farFrontElement], globalStates.projectionMatrix, this.matrix.r);
+            this.ar.utilities.multiplyMatrix(rotateX, this.matrix.r, this.activeObjectMatrix);
+            
         } else {
 
-            thisMatrix = [
+            this.activeObjectMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
                 0, 0, 0, 1
-            ]
+            ];
+
         }
+        
+        // for (var frameKey in this.activeObject.frames) {
+        this.activeFrame = this.activeObject.frames["pocket"];
+        
+        this.activeKey = pocketItemId;
+             
+        for (var nodeKey in this.activeFrame.nodes) {
+            
+            this.activeNode = this.activeFrame.nodes[nodeKey];
+            this.activeType = this.activeNode.type;
 
-        for (var nodeKey in generalObject.nodes) {
-            //console.log(document.getElementById("iframe"+ nodeKey));
-            generalNode = generalObject.nodes[nodeKey];
+            if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && this.activeType === "logic") {
 
-            if ( (globalStates.guiState === "node" || globalStates.guiState === "logic") && generalNode.type === "logic") {
-                this.drawTransformed(objectKey, nodeKey, generalNode,
-                    thisMatrix, generalNode.type, globalStates, globalCanvas, globalLogic, globalDOMCach, globalMatrix);
+                this.activeNode.width = 100;
+                this.activeNode.height = 100;
+                
+                var thisUrl = "nodes/" + this.activeType + "/index.html";
+                this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
+                
+                var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
 
-                this.addElement(objectKey, nodeKey, "nodes/" + generalNode.type + "/index.html", generalNode, generalNode.type, globalStates);
-
-                /* } else {
-                 hideTransformed("pocket", nodeKey, generalNode, "logic");
-                 }*/
+                if (!continueUpdate) return;
+                
             }
+            
         }
+        
     }
-    /// todo Test
+    
+    /* // TODO: any updates to global frames should happen here
+    for (var frameKey in globalFrames) {
+        if (!globalFrames.hasOwnProperty(frameKey)) continue;
+        
+        console.log(frameKey + " is a global frame");
+    }
+    */
 
-    if(globalStates.acceleration.motion!= 0){
+    if (globalStates.acceleration.motion !== 0) {
         globalStates.acceleration = {
-            x : 0,
-            y : 0,
-            z : 0,
+            x: 0,
+            y: 0,
+            z: 0,
             alpha: 0,
             beta: 0,
             gamma: 0,
-            motion:0
+            motion: 0
         }
     }
 };
 
 /**
+ * Removes a frame from its associated object and places it instead in the globalFrames object.
+ * Updates the DOM elements and data for the frame so that they stay present even if the original object disappears.
+ * @param objectKey - uuid of the object the frame is attached to
+ * @param frameKey - uuid of the frame
+ * @param frame - reference to the frame itself
+ */
+realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey, frame) {
+
+    // either make a clone of the data and the DOM and let the old version be killed
+    // or preserve just the data and clone the DOM
+    // or preserve just the DOM and clone the data
+    // or preserve the DOM and the data but change some properties
+
+    // seems best to keep the DOM because it's already loaded in the right place and has the touch listeners
+    // if we keep the frame data object, we still need to remove it from the object and store it somewhere globally instead
+
+    var newFrameKey = globalFramePrefix + frame.type + realityEditor.device.utilities.uuidTime(); // TODO: maybe use old UUID instead of generating another
+
+    // temporarily disable links on server? maybe not... but may need to change their ids to find global...
+    // ... no, just don't change the state of the frame on the server until it gets dropped somewhere,
+    // then update everything at once then with the new state
+    // frame.location = 'global'; // TODO: is this the purpose of local vs global?
+    frame.name = newFrameKey;
+
+    // rename nodes to fit the nested naming conventions for the new frame key  //TODO: update link location naming the same way?... or it might not matter for now... i'll see whether any bugs pop up if a global frame has links to it while being moved...
+    var newNodes = {};
+    for (var nodeKey in frame.nodes) {
+        if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
+        var node = frame.nodes[nodeKey];
+        node.uuid = newFrameKey + node.name;
+        newNodes[node.uuid] = node;
+        delete frame.nodes[nodeKey];
+    }
+    frame.nodes = newNodes;
+
+    frame.objectId = null;
+
+    frame.objectVisible = true; // maybe good to do? not sure what the implications are
+
+    frame.uuid = newFrameKey;
+
+    // store a reference to where this frame came from, and the transform of that object, so that it
+    // can be placed correctly in another object space
+    frame.sourceObject = objectKey;
+    var screenFrameKey = objectKey + 'screen';
+    var sourceScreenFrame = realityEditor.getFrame(objectKey, screenFrameKey);
+    if (sourceScreenFrame) {
+        frame.sourceObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(sourceScreenFrame.mostRecentFinalMatrix);
+        // frame.sourceObjectMatrix = sourceScreenFrame.mostRecentFinalMatrix;
+    }
+
+    // add the frame to the globalFrames
+    globalFrames[newFrameKey] = frame;
+
+    // remove the frame from its originating object
+    delete objects[objectKey].frames[frameKey];
+
+    // update the DOM elements for the frame with new ids
+    this.updateFrameElements(frameKey, newFrameKey);
+
+    globalStates.editingModeObject = globalFramePrefix;
+    globalStates.editingModeFrame = newFrameKey;
+    globalStates.editingFrame = newFrameKey;
+
+    return newFrameKey;
+};
+
+// TODO: a lot of this violates DRY with the moveFrameToGlobalSpace function ... find a way to generalize and combine them
+/**
+ * Takes a frame from the globalFrames and moves it to the frames property of the specified object.
+ * Updates the DOM elements and data of the frame to be attached to the new object rather than the global namespace.
+ * @param objectKey - uuid of the object that the frame should be moved to
+ * @param frameKey - the frame's key within globalFrames
+ * @param frame - a reference to the global frame itself
+ */
+realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey, frame) {
+    
+    console.log(objectKey, frameKey, frame);
+    
+    // TODO: we need to store the frame's old objectKey and frameKey so that we can update the server to re-point links here when it gets dropped onto a new object
+    // TODO: how will we update other servers (different IPs) to know when this node changes its address?)
+    // TODO: should our server store a forwarding table that reroutes incoming packets for nodes flagged as moved?
+    
+    var newFrameKey = objectKey + frame.type + realityEditor.device.utilities.uuidTime(); // maybe generate this a different way, but should work for now
+
+    // frame.location = 'global'; // TODO: is this the purpose of local vs global?
+    frame.name = newFrameKey;
+
+    // rename nodes to fit the nested naming conventions for the new frame key  //TODO: update link location naming the same way?... or it might not matter for now... i'll see whether any bugs pop up if a global frame has links to it while being moved...
+    var newNodes = {};
+    for (var nodeKey in frame.nodes) {
+        if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
+        var node = frame.nodes[nodeKey];
+        node.uuid = newFrameKey + node.name;
+        newNodes[node.uuid] = node;
+        delete frame.nodes[nodeKey];
+    }
+    frame.nodes = newNodes;
+
+    frame.objectId = objectKey;
+
+    frame.objectVisible = true; // maybe good to do? not sure what the implications are
+
+    frame.uuid = newFrameKey;
+    
+    // TODO: calculate relative transformation between old object and new object
+    if (frame.sourceObject && frame.sourceObjectMatrix && objectKey !== frame.sourceObject) {
+        var newScreenFrame = realityEditor.getFrame(objectKey, objectKey + 'screen');
+        if (newScreenFrame && newScreenFrame.mostRecentFinalMatrix) {
+            // var newObjectMatrix = newScreenFrame.mostRecentFinalMatrix;
+            // console.log(frame.sourceObjectMatrix, newObjectMatrix, frame.matrix);
+
+            // if (globalStates.unconstrainedPositioning === true) {
+            //     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+            // }
+
+            var tempMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(newScreenFrame.mostRecentFinalMatrix), tempMatrix);
+            // realityEditor.gui.ar.utilities.multiplyMatrix(newScreenFrame.mostRecentFinalMatrix, realityEditor.gui.ar.utilities.invertMatrix(frame.begin), tempMatrix);
+            frame.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(tempMatrix);
+        }
+    }
+    
+    delete frame.sourceObject;
+    delete frame.sourceObjectMatrix;
+
+    // add the frame to the new object
+    objects[objectKey].frames[newFrameKey] = frame;
+
+    // remove the frame from globalFrames
+    delete globalFrames[frameKey];
+
+    // update the DOM elements for the frame with new ids
+    this.updateFrameElements(frameKey, newFrameKey);
+
+    globalStates.editingModeObject = objectKey;
+    globalStates.editingModeFrame = newFrameKey;
+    globalStates.editingFrame = newFrameKey;
+
+    // TODO: update server state all at once then with the new state when this finishes
+    
+    return newFrameKey;
+};
+
+/**
+ * Updates the DOM elements for this frame with new id and dataset, including updating the globalDOMCache
+ * @param frameKey - old uuid
+ * @param newFrameKey - new uuid
+ */
+realityEditor.gui.ar.draw.updateFrameElements = function(frameKey, newFrameKey) {
+    // re-assign ids to DOM elements
+    globalDOMCache['object' + frameKey].id = 'object' + newFrameKey;
+    globalDOMCache['iframe' + frameKey].id = 'iframe' + newFrameKey;
+    globalDOMCache[frameKey].id = newFrameKey;
+    globalDOMCache['canvas' + frameKey].id = 'canvas' + newFrameKey;
+
+    // iframe also has a dataset of ids
+    globalDOMCache['iframe' + frameKey].dataset = {
+        frameKey: newFrameKey,
+        nodeKey: "null",
+        objectKey: "null"
+    };
+
+    // update their keys in the globalDOMCache 
+    globalDOMCache['object' + newFrameKey] = globalDOMCache['object' + frameKey];
+    globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + frameKey];
+    globalDOMCache[newFrameKey] = globalDOMCache[frameKey];
+    globalDOMCache['canvas' + newFrameKey] = globalDOMCache['canvas' + frameKey];
+    delete globalDOMCache['object' + frameKey];
+    delete globalDOMCache['iframe' + frameKey];
+    delete globalDOMCache[frameKey];
+    delete globalDOMCache['canvas' + frameKey];
+}
+
+/**
  * @desc
- * @param objectKey
- * @param nodeKey
- * @param thisObject
- * @param thisTransform2
- * @return
+ * @return {Boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
  **/
 
-var finalMatrixTransform2;
-var thisTransform = [];
-var thisKey;
-var thisSubKey;
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+    //console.log(JSON.stringify(activeObjectMatrix));
+    if (notLoading !== activeKey && activeVehicle.loaded === true) {
+        if (!activeVehicle.visible) {
+            activeVehicle.visible = true;
+            
+            var container = globalDOMCache["object" + activeKey];
+            var iFrame = globalDOMCache["iframe" + activeKey];
+            var overlay = globalDOMCache[activeKey];
+            var canvas = globalDOMCache["canvas" + activeKey];
+            
+            container.style.display = 'inline';
+            iFrame.style.visibility = 'visible';
+            iFrame.contentWindow.postMessage(
 
-realityEditor.gui.ar.draw.drawTransformed = function (objectKey, nodeKey, thisObject, thisTransform2, type, globalStates, globalCanvas, globalLogic, globalDOMCach, globalMatrix) {
-
-
-    var objectKey = objectKey;
-    var nodeKey = nodeKey;
-    var thisObject = thisObject;
-    var thisTransform2 = thisTransform2;
-    var type = type;
-    var globalCanvas = globalCanvas;
-    var globalStates = globalStates;
-    var globalLogic = globalLogic;
-    var globalDOMCach = globalDOMCach;
-    var globalMatrix = globalMatrix;
-
-    //console.log(JSON.stringify(thisTransform2));
-
-    if (globalStates.notLoading !== nodeKey && thisObject.loaded === true) {
-        if (!thisObject.visible) {
-            thisObject.visible = true;
-            globalDOMCach["thisObject" + nodeKey].style.display = 'inline';
-            globalDOMCach["iframe" + nodeKey].style.visibility = 'visible';
-            globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(
                 JSON.stringify(
                     {
                         visibility: "visible",
@@ -323,209 +652,306 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, nodeKey, thisOb
                         search: realityEditor.gui.search.getSearch()
                     }), '*');
 
-            if (type === "node") {
-                thisObject.temp = this.ar.utilities.copyMatrix(thisTransform2);
-                globalDOMCach[nodeKey].style.visibility = 'visible';
-                // document.getElementById("text" + nodeKey).style.visibility = 'visible';
+            if (activeType === "node") {
+                activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                overlay.style.visibility = 'visible';
                 if (globalStates.editingMode) {
-                    globalDOMCach["canvas" + nodeKey].style.display = 'inline';
+                    canvas.style.display = 'inline';
                 } else {
-                    globalDOMCach["canvas" + nodeKey].style.display = 'none';
+                    canvas.style.display = 'none';
                 }
-            } else if (type === "ui") {
-                if (globalStates.editingMode) {
-                    if (!thisObject.visibleEditing && thisObject.developer) {
-                        thisObject.visibleEditing = true;
-                        globalDOMCach[nodeKey].style.visibility = 'visible';
-                        // showEditingStripes(nodeKey, true);
-                        globalDOMCach["canvas" + nodeKey].style.display = 'inline';
-
-                        //document.getElementById(nodeKey).className = "mainProgram";
+                
+            } else if (activeType === "ui") {
+                if (globalStates.editingMode || globalStates.tempEditingMode) {
+                    if (!activeVehicle.visibleEditing && activeVehicle.developer) {
+                        activeVehicle.visibleEditing = true;
+                        overlay.style.visibility = 'visible';
+                        canvas.style.display = 'inline';
+                        activeVehicle.hasCTXContent = false;
                     }
                 } else {
-                    globalDOMCach["canvas" + nodeKey].style.display = 'none';
+                    canvas.style.display = 'none';
+
                 }
             }
 
 
-            else if (type === "logic") {
-                thisObject.temp = this.ar.utilities.copyMatrix(thisTransform2);
-                globalDOMCach[nodeKey].style.visibility = 'visible';
-                // document.getElementById("text" + nodeKey).style.visibility = 'visible';
+            else if (activeType === "logic") {
+                activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                overlay.style.visibility = 'visible';
                 if (globalStates.editingMode) {
-                    globalDOMCach["canvas" + nodeKey].style.display = 'inline';
+                    canvas.style.display = 'inline';
                 } else {
-                    globalDOMCach["canvas" + nodeKey].style.display = 'none';
+                    canvas.style.display = 'none';
+
                 }
             }
 
             /*
-             else if (type === "logic") {
+             else if (activeType === "logic") {
 
 
-             thisObject.temp = copyMatrix(thisTransform2);
+             activeVehicle.temp = copyMatrix(activeObjectMatrix);
 
              if (globalStates.editingMode) {
-             if (!thisObject.visibleEditing && thisObject.developer) {
-             thisObject.visibleEditing = true;
-             globalDOMCach[nodeKey].style.visibility = 'visible';
-             // showEditingStripes(nodeKey, true);
-             globalDOMCach["canvas" + nodeKey].style.display = 'inline';
+             if (!activeVehicle.visibleEditing && activeVehicle.developer) {
+             activeVehicle.visibleEditing = true;
+             globalDOMCache[activeKey].style.visibility = 'visible';
+             // showEditingStripes(activeKey, true);
+             globalDOMCache["canvas" + activeKey].style.display = 'inline';
 
-             //document.getElementById(nodeKey).className = "mainProgram";
+             //document.getElementById(activeKey).className = "mainProgram";
              }
              } else {
-             globalDOMCach["canvas" + nodeKey].style.display = 'none';
+             globalDOMCache["canvas" + activeKey].style.display = 'none';
              }
              }*/
 
-            if (type === "logic" && objectKey!=="pocket"){
-                if(thisObject.animationScale ===1) {
-                    globalDOMCach["logic" + nodeKey].className = "mainEditing scaleOut";
-                    thisObject.animationScale =0;
+            if (activeType === "logic" && objectKey !== "pocket") {
+                if(activeVehicle.animationScale === 1) {
+                    globalDOMCache["logic" + nodeKey].className = "mainEditing scaleOut";
+                    thisObject.animationScale = 0;
                 }
             }
 
         }
-        if (thisObject.visible) {
+        if (activeVehicle.visible) {
             // this needs a better solution
-            if (!thisObject.fullScreen) {
 
-                finalMatrixTransform2 = [
-                    thisObject.scale, 0, 0, 0,
-                    0, thisObject.scale, 0, 0,
+            if (activeVehicle.fullScreen !== true) {
+
+                // set initial position correctly
+                if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
+                    activeVehicle.currentTouchOffset = {
+                        x: activeVehicle.frameSizeX/2,
+                        y: activeVehicle.frameSizeY/2
+                    };
+                    realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
+                    delete activeVehicle.positionOnLoad;
+                    realityEditor.device.beginTouchEditing(globalDOMCache[activeKey], 'pocket');
+                }
+                
+                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+
+                var finalOffsetX = positionData.x;
+                var finalOffsetY = positionData.y;
+
+                // add node's position to its frame's position to gets its actual offset
+                if (activeType === "node" || activeType === "logic") {
+                    var frameKey = activeVehicle.frameId;
+                    var frame = realityEditor.getFrame(objectKey, frameKey);
+                    if (frame) {
+                        var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+                        finalOffsetX += parentFramePositionData.x;
+                        finalOffsetY += parentFramePositionData.y;
+                    }
+                }
+
+                matrix.r3 = [
+                    positionData.scale, 0, 0, 0,
+                    0, positionData.scale, 0, 0,
                     0, 0, 1, 0,
-                    thisObject.x, thisObject.y, 0, 1
+                    // positionData.x, positionData.y, 0, 1
+                    finalOffsetX, finalOffsetY, 0, 1
                 ];
 
-                if (globalStates.editingMode || globalStates.editingNode === nodeKey) {
+                if (globalStates.editingMode || globalStates.editingNode === activeKey) {
 
                     // todo test if this can be made touch related
-                    if (type === "logic") {
-                        thisObject.temp = this.ar.utilities.copyMatrix(thisTransform2);
+                    if (activeType === "logic") {
+                        activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
                     }
 
-
-                    if (globalMatrix.matrixtouchOn === nodeKey) {
+                    if (matrix.matrixtouchOn === activeKey) {
                         //if(globalStates.unconstrainedPositioning===true)
-                        thisObject.temp = this.ar.utilities.copyMatrix(thisTransform2);
+                        activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
 
-                        //  console.log(thisObject.temp);
-
-                        if (globalMatrix.copyStillFromMatrixSwitch) {
-                            globalMatrix.visual = this.ar.utilities.copyMatrix(thisTransform2);
-                            if (typeof thisObject.matrix === "object")
-                                if (thisObject.matrix.length > 0)
-                                // thisObject.begin = copyMatrix(multiplyMatrix(thisObject.matrix, thisObject.temp));
-                                    this.ar.utilities.multiplyMatrix(thisObject.matrix, thisObject.temp, thisObject.begin);
-
-                                else
-                                    thisObject.begin = this.ar.utilities.copyMatrix(thisObject.temp);
-                            else
-                                thisObject.begin = this.ar.utilities.copyMatrix(thisObject.temp);
-
-                            if (globalStates.unconstrainedPositioning === true)
-                            // thisObject.matrix = copyMatrix(multiplyMatrix(thisObject.begin, invertMatrix(thisObject.temp)));
-
-                                this.ar.utilities.multiplyMatrix(thisObject.begin,  this.ar.utilities.invertMatrix(thisObject.temp), thisObject.matrix);
-
-                            globalMatrix.copyStillFromMatrixSwitch = false;
-                        }
-
-                        if (globalStates.unconstrainedPositioning === true)
-                            thisTransform2 = globalMatrix.visual;
-
-                    }
-
-                    if (typeof thisObject.matrix[1] !== "undefined") {
-                        if (thisObject.matrix.length > 0) {
-                            if (globalStates.unconstrainedPositioning === false) {
-                                //thisObject.begin = copyMatrix(multiplyMatrix(thisObject.matrix, thisObject.temp));
-                                this.ar.utilities.multiplyMatrix(thisObject.matrix, thisObject.temp, thisObject.begin);
+                        //  console.log(activeVehicle.temp);
+                   
+                        if (matrix.copyStillFromMatrixSwitch) {
+                            matrix.visual = utilities.copyMatrix(activeObjectMatrix);
+                            if (typeof positionData.matrix === "object") {
+                                if (positionData.matrix.length > 0) { 
+                                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                                } else {
+                                    activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                                }
+                            } else {
+                                activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
                             }
 
-                            var r = globalMatrix.r, r2 = globalMatrix.r2;
-                            this.ar.utilities.multiplyMatrix(thisObject.begin,  this.ar.utilities.invertMatrix(thisObject.temp), r);
-                            this.ar.utilities.multiplyMatrix(finalMatrixTransform2, r, r2);
-                            this.ar.utilities.estimateIntersection(nodeKey, r2, thisObject);
+                            if (globalStates.unconstrainedPositioning === true) {
+                                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                            }
+
+                            matrix.copyStillFromMatrixSwitch = false;
+                            
+                        } else if (globalStates.unconstrainedPositioning === true) {
+                            realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                        }
+
+                        if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
+                            activeObjectMatrix = matrix.visual;
+                        }
+
+                    }
+
+                    var isFullyBehindPlane = false;
+
+                    if (typeof positionData.matrix[1] !== "undefined") {
+                        if (positionData.matrix.length > 0) {
+                            if (globalStates.unconstrainedPositioning === false) {
+                                //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
+                                utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                            }
+                            
+                            utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+                            utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+                            isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
                         } else {
-                            this.ar.utilities.estimateIntersection(nodeKey, null, thisObject);
+                            isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
                         }
 
                     } else {
 
-                        this.ar.utilities.estimateIntersection(nodeKey, null, thisObject);
+                        isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
+                    }
+                    
+                    // for frames that can transfer between AR and screen space, send this to a screen if it goes behind the marker plane
+                    if (isFullyBehindPlane) {
+                        
+                        // having "activeVehicle.type" property this means it is a "local" frame (it can be sent to screen)
+                        if (globalStates.editingModeObject && globalStates.editingModeFrame && globalStates.editingModeKind === 'ui' && activeVehicle.type && globalStates.guiState === 'ui') { // TODO: rename frame 'type' because it overlaps with node 'type'
+                            console.log('~~ !!!!! send to screen !!!!! ~~');
+
+                            this.killObjects(activeKey, activeVehicle, globalDOMCache);
+                            
+                            var pointerPosition = window.getComputedStyle(document.getElementById('overlay'));
+                            var transformMatrix = pointerPosition.transform.split(',');
+                            var xPos = parseInt(transformMatrix[12]);
+                            var yPos = parseInt(transformMatrix[13]);
+                            var screenFrameKey = objectKey + 'screen';
+                            var screenFrame = realityEditor.getFrame(objectKey, screenFrameKey);
+                            
+                            var unrotatedResult = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, unrotatedResult);
+                            if (!screenFrame.begin) {
+                                screenFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                            }
+                            realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, screenFrame.begin);
+                            
+                            var cursorMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(screenFrame, [xPos, yPos]);
+                            
+                            console.log(cursorMatrixXY);
+                            
+                            var positionData = {
+                                x: cursorMatrixXY[0],
+                                y: cursorMatrixXY[1]
+                            };
+
+                            realityEditor.network.sendFrameToScreen(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame, positionData);
+                            realityEditor.network.deleteFrameFromObject(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
+
+                            delete objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame];
+
+                            globalStates.editingModeFrame = null;
+                            globalStates.editingModeObject = null;
+                            globalStates.editingFrame = null;
+                            globalStates.editingModeHaveObject = false;
+                            
+                            return false;
+                        }
+                        
+                        // if (globalStates.editingModeObject && globalStates.editingModeFrame) {
+                        //     var frame = 
+                        //     objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame].type
+
+                        // }
+
                     }
                 }
 
-                if (thisObject.matrix.length < 13) {
-
-                    this.ar.utilities.multiplyMatrix(finalMatrixTransform2, thisTransform2, thisTransform);
+                if (positionData.matrix.length < 13) {
+                    utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+                    
                 } else {
-                    var r = globalMatrix.r;
-                    this.ar.utilities.multiplyMatrix(thisObject.matrix, thisTransform2, r);
-                    this.ar.utilities.multiplyMatrix(finalMatrixTransform2, r, thisTransform);
-
-                    // thisTransform = multiplyMatrix(finalMatrixTransform2, multiplyMatrix(thisObject.matrix, thisTransform2));
+                    utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+                    utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                 }
+                
+                
+                // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
+                // but we want all of them to have a positive value so they are rendered in front of background canvas
+                // and frames with developer=false should have the lowest positive value
 
-                //    else {
-                //        multiplyMatrix(finalMatrixTransform2, thisTransform2,thisTransform);
-                //   }
+                activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
-                // console.log(nodeKey);
-                // console.log(globalDOMCach["thisObject" + nodeKey]);
-                // console.log(globalDOMCach["thisObject" + nodeKey].visibility);
+                // finalMatrix[14] *= -1;
+                
+                var isCurrentlyInteractingElement = globalStates.editingModeFrame === activeKey || globalStates.editingNode === activeKey;
+                
+                var activeElementZIncrease = isCurrentlyInteractingElement ? 100 : 0;
 
-                this.webkitTransformMatrix3d(globalDOMCach["thisObject" + nodeKey], thisTransform);
+                if (finalMatrix[14] < 10) {
+                    finalMatrix[14] = 10;
+                }
+                finalMatrix[14] = 200 + activeElementZIncrease + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+                
+                //move non-developer frames to the back so they don't steal touches from interactable frames
+                if (activeVehicle.developer === false) {
+                    finalMatrix[14] = 100;
+                }
+                
+                activeVehicle.mostRecentFinalMatrix = finalMatrix;
+   
+                // draw transformed
+                globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
 
                 // this is for later
-                // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  thisTransform[3][2] it is now thisTransform[3][3]
-                thisObject.screenX = thisTransform[12] / thisTransform[15] + (globalStates.height / 2);
-                thisObject.screenY = thisTransform[13] / thisTransform[15] + (globalStates.width / 2);
-                thisObject.screenZ = thisTransform[14];
+                // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
+                activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
+                activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
+                // activeVehicle.screenZ = finalMatrix[14];
 
             }
-            if (type === "ui") {
+            if (activeType === "ui") {
 
-                if (thisObject.sendMatrix === true || thisObject.sendAcceleration === true) {
+                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true) {
 
                     var thisMsg = {};
 
-                    if(thisObject.sendMatrix === true) {
-                        thisMsg.modelViewMatrix = globalObjects[objectKey];
+                    if (activeVehicle.sendMatrix === true) {
+                        thisMsg.modelViewMatrix = visibleObjects[objectKey];
                     }
 
-                    if(thisObject.sendAcceleration === true) {
+                    if (activeVehicle.sendAcceleration === true) {
                         thisMsg.acceleration = globalStates.acceleration;
                     }
 
-                    this.cout(thisMsg);
-                    globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(
-                        JSON.stringify(thisMsg), '*');
-                    //  console.log("I am here");
+                    // cout(thisMsg);
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
 
                 }
             } else {
 
-                thisObject.screenLinearZ = (((10001 - (20000 / thisObject.screenZ)) / 9999) + 1) / 2;
+                activeVehicle.screenLinearZ = (((10001 - (20000 / activeVehicle.screenZ)) / 9999) + 1) / 2;
                 // map the linearized zBuffer to the final ball size
-                thisObject.screenLinearZ = this.ar.utilities.map(thisObject.screenLinearZ, 0.996, 1, 50, 1);
-
+                activeVehicle.screenLinearZ = utilities.map(activeVehicle.screenLinearZ, 0.996, 1, 50, 1);
+                
             }
 
 
-            if (type === "logic" && objectKey!=="pocket"){
+            if (activeType === "logic" && objectKey !== "pocket") {
 
                 if (globalStates.pointerPosition[0] > -1 && globalProgram.objectA) {
 
-                    var size = (thisObject.screenLinearZ * 40) * thisObject.scale;
-                    var x = thisObject.screenX;
-                    var y = thisObject.screenY;
+                    var size = (activeVehicle.screenLinearZ * 40) * activeVehicle.scale;
+                    var x = activeVehicle.screenX;
+                    var y = activeVehicle.screenY;
 
                     globalCanvas.hasContent = true;
 
-                    globalLogic.rectPoints = [
+                    nodeCalculations.rectPoints = [
                         [x - (-1 * size), y - (-0.42 * size)],
                         [x - (-1 * size), y - (0.42 * size)],
                         [x - (-0.42 * size), y - (size)],
@@ -539,318 +965,342 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, nodeKey, thisOb
                      context.setLineDash([]);
                      // context.restore();
                      context.beginPath();
-                     context.moveTo(globalLogic.rectPoints[0][0], globalLogic.rectPoints[0][1]);
-                     context.lineTo(globalLogic.rectPoints[1][0], globalLogic.rectPoints[1][1]);
-                     context.lineTo(globalLogic.rectPoints[2][0], globalLogic.rectPoints[2][1]);
-                     context.lineTo(globalLogic.rectPoints[3][0], globalLogic.rectPoints[3][1]);
-                     context.lineTo(globalLogic.rectPoints[4][0], globalLogic.rectPoints[4][1]);
-                     context.lineTo(globalLogic.rectPoints[5][0], globalLogic.rectPoints[5][1]);
-                     context.lineTo(globalLogic.rectPoints[6][0], globalLogic.rectPoints[6][1]);
-                     context.lineTo(globalLogic.rectPoints[7][0], globalLogic.rectPoints[7][1]);
+                     context.moveTo(nodeCalculations.rectPoints[0][0], nodeCalculations.rectPoints[0][1]);
+                     context.lineTo(nodeCalculations.rectPoints[1][0], nodeCalculations.rectPoints[1][1]);
+                     context.lineTo(nodeCalculations.rectPoints[2][0], nodeCalculations.rectPoints[2][1]);
+                     context.lineTo(nodeCalculations.rectPoints[3][0], nodeCalculations.rectPoints[3][1]);
+                     context.lineTo(nodeCalculations.rectPoints[4][0], nodeCalculations.rectPoints[4][1]);
+                     context.lineTo(nodeCalculations.rectPoints[5][0], nodeCalculations.rectPoints[5][1]);
+                     context.lineTo(nodeCalculations.rectPoints[6][0], nodeCalculations.rectPoints[6][1]);
+                     context.lineTo(nodeCalculations.rectPoints[7][0], nodeCalculations.rectPoints[7][1]);
                      context.closePath();
 
-                     if (globalLogic.farFrontElement === nodeKey) {
+                     if (nodeCalculations.farFrontElement === activeKey) {
                      context.strokeStyle = "#ff0000";
                      } else {
                      context.strokeStyle = "#f0f0f0";
                      }*/
-                    if (this.ar.utilities.insidePoly(globalStates.pointerPosition, globalLogic.rectPoints) && !thisObject.lockPassword) {
-                        if(thisObject.animationScale ===0 && !globalStates.editingMode) {
-                            globalDOMCach["logic" + nodeKey].className = "mainEditing scaleIn";
-                            thisObject.animationScale = 1;
-                        }
+
+                    if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword) {
+                        if (activeVehicle.animationScale === 0 && !globalStates.editingMode)
+                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
+                        activeVehicle.animationScale = 1;
                     }
                     else {
-                        if(thisObject.animationScale ===1) {
-                            globalDOMCach["logic" + nodeKey].className = "mainEditing scaleOut";
-                            thisObject.animationScale = 0;
-                        }
+                        if (activeVehicle.animationScale === 1)
+                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
+                        activeVehicle.animationScale = 0;
                     }
 
                     // context.stroke();
-                } else{
-                    if(thisObject.animationScale ===1) {
-                        globalDOMCach["logic" + nodeKey].className = "mainEditing scaleOut";
-                        thisObject.animationScale =0;
+                } else {
+                    if (activeVehicle.animationScale === 1) {
+                        globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
+                        activeVehicle.animationScale = 0;
                     }
                 }
             }
-            
-            
+
+
             // temporary UI styling to visualize locks
-            
-            if (type === "node" || type === "logic") {
-                if (!!thisObject.lockPassword && thisObject.lockType === "full") {
-                    globalDOMCach["iframe" + nodeKey].style.opacity = 0.25;
-                } else if (!!thisObject.lockPassword && thisObject.lockType === "half") {
-                    globalDOMCach["iframe" + nodeKey].style.opacity = 0.75;
+
+            if (activeType === "node" || activeType === "logic") {
+                if (!!activeVehicle.lockPassword && activeVehicle.lockType === "full") {
+                    globalDOMCache["iframe" + activeKey].style.opacity = 0.25;
+                } else if (!!activeVehicle.lockPassword && activeVehicle.lockType === "half") {
+                    globalDOMCache["iframe" + activeKey].style.opacity = 0.75;
                 } else {
-                    globalDOMCach["iframe" + nodeKey].style.opacity = 1.0;
+                    globalDOMCache["iframe" + activeKey].style.opacity = 1.0;
                 }
             }
 
         }
     }
+    
+    return true;
 
-};
-
-realityEditor.gui.ar.draw.webkitTransformMatrix3d = function (thisDom, thisTransform) {
-    thisDom.style.webkitTransform = 'matrix3d(' +
-        thisTransform.toString() + ')';
 };
 
 /**
  * @desc
- * @param objectKey
- * @param nodeKey
- * @param thisObject
  * @return
  **/
-
-realityEditor.gui.ar.draw.hideTransformed = function (objectKey, nodeKey, thisObject, type) {
-    if (thisObject.visible === true) {
-        globalDOMCach["thisObject" + nodeKey].style.display = 'none';
-        globalDOMCach["iframe" + nodeKey].style.visibility = 'hidden';
-        globalDOMCach["iframe" + nodeKey].contentWindow.postMessage(
+realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, globalDOMCache, cout) {
+    
+ //   console.log(activeVehicle);
+    if (activeVehicle.visible === true) {
+        globalDOMCache["object" + activeKey].style.display = 'none';
+        globalDOMCache["iframe" + activeKey].style.visibility = 'hidden';
+        globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
             JSON.stringify(
                 {
                     visibility: "hidden"
                 }), '*');
 
-        thisObject.visible = false;
-        thisObject.visibleEditing = false;
+        activeVehicle.visible = false;
+        activeVehicle.visibleEditing = false;
+        activeVehicle.hasCTXContent = false;
+        
+        // activeVehicle is a frame if it has nodes...
+        // if (activeVehicle.hasOwnProperty('nodes')) {
+        //     // realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
+        // }
 
-        globalDOMCach[nodeKey].style.visibility = 'hidden';
-        globalDOMCach["canvas" + nodeKey].style.display = 'none';
+        globalDOMCache[activeKey].style.visibility = 'hidden';
+        globalDOMCache["canvas" + activeKey].style.display = 'none';
 
-        this.cout("hideTransformed");
+        cout("hideTransformed");
     }
 };
 
 /**
  * @desc
- * @param objectKey
- * @param nodeKey
- * @param thisUrl
- * @param thisObject
  * @return
  **/
 
-realityEditor.gui.ar.draw.addElement = function (objectKey, nodeKey, thisUrl, thisObject, type, globalStates) {
+realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, nodeKey, activeType, activeVehicle) {
 
-    if (globalStates.notLoading !== true && globalStates.notLoading !== nodeKey && thisObject.loaded !== true) {
+    var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+    
+    if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
+        
+        console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
+        // console.log("(active key is " + activeKey + ")");
 
+        this.notLoading = activeKey;
+        
+        // assign the element some default properties if they don't exist
 
-
-        console.log("did load object " + objectKey + ", node " + nodeKey);
-
-        if (typeof thisObject.frameSizeX === 'undefined') {
-            thisObject.frameSizeX = thisObject.width;
+        if (typeof activeVehicle.frameSizeX === 'undefined') {
+            activeVehicle.frameSizeX = activeVehicle.width;
         }
 
-        if (typeof thisObject.frameSizeY === 'undefined') {
-            thisObject.frameSizeY = thisObject.height;
+        if (typeof activeVehicle.frameSizeY === 'undefined') {
+            activeVehicle.frameSizeY = activeVehicle.height;
         }
+        
+        activeVehicle.animationScale = 0;
+        activeVehicle.loaded = true;
+        activeVehicle.visibleEditing = false;
 
-        thisObject.animationScale =0;
-        thisObject.loaded = true;
-        thisObject.visibleEditing = false;
-        globalStates.notLoading = nodeKey;
-
-        if (typeof thisObject.begin !== "object") {
-            thisObject.begin = [
+        if (typeof activeVehicle.begin !== "object") {
+            activeVehicle.begin = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
                 0, 0, 0, 1
             ];
-
         }
 
-        if (typeof thisObject.temp !== "object") {
-            thisObject.temp = [
+        if (typeof activeVehicle.temp !== "object") {
+            activeVehicle.temp = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
                 0, 0, 0, 1
             ];
+        }
+        
+        // Create DOM elements for everything associated with this frame/node
+        
+        var isUsingLocalFrame = false;
+        if (activeKey === frameKey && activeVehicle.type) {
+            // console.log('change url to ../frames/' + activeVehicle.type + '/index.html');
 
+            // This line loads frame locally from userinterface/frames directory - fast but can't connect to sockets
+            thisUrl = 'frames/' + activeVehicle.type + '.html';
+            
+            // This line loads frame from server instance - can connect to sockets like we want!
+            // var object = realityEditor.getObject(objectKey);
+            // var frameHttpPort = 3032;
+            // http://localhost:3033/frames/gauge.html
+            // thisUrl = 'http://' + object.ip + ':' + httpPort + '/frames/' + activeVehicle.type + '.html';
+            
+            isUsingLocalFrame = true;
         }
 
-        var addContainer = document.createElement('div');
-        addContainer.id = "thisObject" + nodeKey;
-        addContainer.style.width = globalStates.height + "px";
-        addContainer.style.height = globalStates.width + "px";
-        addContainer.style.display = "none";
-        addContainer.style.border = 0;
-        // addContainer.setAttribute("background-color", "lightblue");
+        var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
+        var addContainer = domElements.addContainer;
+        var addIframe = domElements.addIframe;
+        var addOverlay = domElements.addOverlay;
+        var addCanvas = domElements.addCanvas;
 
-        addContainer.className = "main";
-
-        var addIframe = document.createElement('iframe');
-        addIframe.id = "iframe" + nodeKey;
-        addIframe.frameBorder = 0;
-        addIframe.style.width = (thisObject.width || 0) + "px";
-        addIframe.style.height = (thisObject.height || 0) + "px";
-        addIframe.style.left = ((globalStates.height - thisObject.frameSizeY) / 2) + "px";
-        addIframe.style.top = ((globalStates.width - thisObject.frameSizeX) / 2) + "px";
-        addIframe.style.visibility = "hidden";
-        addIframe.src = thisUrl;
-        addIframe.dataset.nodeKey = nodeKey;
-        addIframe.dataset.objectKey = objectKey;
-        addIframe.className = "main";
-        addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + nodeKey + '")');
-        addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
-
-        var addOverlay = document.createElement('div');
-        // addOverlay.style.backgroundColor = "red";
-        addOverlay.id = nodeKey;
-        addOverlay.frameBorder = 0;
-        addOverlay.style.width = thisObject.frameSizeX + "px";
-        addOverlay.style.height = thisObject.frameSizeY + "px";
-        addOverlay.style.left = ((globalStates.height - thisObject.frameSizeY) / 2) + "px";
-        addOverlay.style.top = ((globalStates.width - thisObject.frameSizeX) / 2) + "px";
-        addOverlay.style.visibility = "hidden";
-        addOverlay.className = "mainEditing";
-
+        addOverlay.objectId = objectKey;
+        addOverlay.frameId = frameKey;
+        addOverlay.nodeId = nodeKey;
+        addOverlay.type = activeType;
+        
         // todo the event handlers need to be bound to non animated ui elements for fast movements.
         // todo the lines need to end at the center of the square.
 
-
-        if(type=== "logic") {
-            var addLogic;
-            var size = 200;
-            addLogic = document.createElement('div');
-            // addOverlay.style.backgroundColor = "red";
-            addLogic.id = "logic" + nodeKey;
-            addLogic.style.width = size + "px";
-            // addOverlay.style.height = thisObject.frameSizeY + "px";
-            addLogic.style.height = size + "px";
-            addLogic.style.left = ((thisObject.frameSizeX - size) / 2) + "px";
-            addLogic.style.top = ((thisObject.frameSizeY- size) / 2) + "px";
-            addLogic.style.visibility = "hidden";
-            addLogic.className = "mainEditing";
-            /* addLogic.innerHTML =
-             '<svg id="SVG'+nodeKey+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
-             '<path id="logic4" fill="#00ffff" d="M50,0V50H0V30A30,30,0,0,1,30,0Z"/>' +
-             '<path id="logic3" fill="#00ff00" d="M100,30V50H50V0H70A30,30,0,0,1,100,30Z"/>' +
-             '<path id="logic2" fill="#ff007c" d="M100,50V70a30,30,0,0,1-30,30H50V50Z"/>>' +
-             '<path id="logic1" fill="#ffff00" d="M50,50v50H30A30,30,0,0,1,0,70V50Z"/>' +
-             '</svg>';*/
-
-            var svgContainer = document.createElementNS('http://www.w3.org/2000/svg', "svg");
-            svgContainer.setAttributeNS(null,"viewBox", "0 0 100 100");
-
-            var svgElement=[];
-            svgElement.push(document.createElementNS("http://www.w3.org/2000/svg","path"));
-            svgElement[0].setAttributeNS(null,"fill","#00ffff");
-            svgElement[0].setAttributeNS(null,"d","M50,0V50H0V30A30,30,0,0,1,30,0Z");
-            svgElement.push(document.createElementNS("http://www.w3.org/2000/svg","path"));
-            svgElement[1].setAttributeNS(null,"fill","#00ff00");
-            svgElement[1].setAttributeNS(null,"d","M100,30V50H50V0H70A30,30,0,0,1,100,30Z");
-            svgElement.push(document.createElementNS("http://www.w3.org/2000/svg","path"));
-            svgElement[2].setAttributeNS(null,"fill","#ffff00");
-            svgElement[2].setAttributeNS(null,"d","M100,50V70a30,30,0,0,1-30,30H50V50Z");
-            svgElement.push(document.createElementNS("http://www.w3.org/2000/svg","path"));
-            svgElement[3].setAttributeNS(null,"fill","#ff007c");
-            svgElement[3].setAttributeNS(null,"d","M50,50v50H30A30,30,0,0,1,0,70V50Z");
-
-            for (var i=0;i<svgElement.length;i++){
-                svgContainer.appendChild(svgElement[i]);
-                svgElement[i].number = i;
-                svgElement[i].addEventListener('pointerenter', function(){
-                    globalProgram.logicSelector = this.number;
-
-                    if(globalProgram.nodeA === nodeKey)
-                        globalProgram.logicA = this.number;
-                    else
-                        globalProgram.logicB = this.number;
-
-                    console.log(globalProgram.logicSelector);
-                });
-                addLogic.appendChild(svgContainer);
-
-                addOverlay.appendChild(addLogic);
-                globalDOMCach["logic" + nodeKey] = addLogic;
-
-            };
+        if (activeType === "logic") {
+            var addLogic = this.createLogicElement(activeVehicle, activeKey);
+            addOverlay.appendChild(addLogic);
+            globalDOMCache["logic" + activeKey] = addLogic;
         }
 
-        var addCanvas = document.createElement('canvas');
-        addCanvas.id = "canvas" + nodeKey;
-        addCanvas.style.width = "100%";
-        addCanvas.style.height = "100%";
-        addCanvas.className = "mainCanvas";
+        if (activeVehicle.fullScreen === true) {
+            addOverlay.style.display = 'none'; // TODO: is this the best way to move unconstrained editing into the three.js scene?
+            addIframe.style.pointerEvents = 'none';
+        }
 
+        // Finally, append all the created elements to the DOM in the correct order...
+        
         document.getElementById("GUI").appendChild(addContainer);
-
         addContainer.appendChild(addIframe);
 
         // If this is a frame, add a cover object for touch event synthesizing
-        if (thisObject.src) {
-            var cover = document.createElement('div');
-            cover.classList.add('main');
-            cover.style.visibility = 'visible';
-            cover.style.width = addIframe.style.width;
-            cover.style.height = addIframe.style.height;
-            cover.style.top = addIframe.style.top;
-            cover.style.left = addIframe.style.left;
-            thisObject.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-            addContainer.appendChild(cover);
-        }
-
-        addOverlay.appendChild(addCanvas);
+        // if (activeVehicle.src) {
+        //     var cover = document.createElement('div');
+        //     cover.classList.add('main');
+        //     cover.style.visibility = 'visible';
+        //     cover.style.width = addIframe.style.width;
+        //     cover.style.height = addIframe.style.height;
+        //     cover.style.top = addIframe.style.top;
+        //     cover.style.left = addIframe.style.left;
+        //     activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+        //     addContainer.appendChild(cover);
+        // }
+        
         addContainer.appendChild(addOverlay);
+        addOverlay.appendChild(addCanvas);
 
-        globalDOMCach["thisObject" + nodeKey] = addContainer;
-        globalDOMCach["iframe" + nodeKey] = addIframe;
-        globalDOMCach[nodeKey] = addOverlay;
-        globalDOMCach["canvas" + nodeKey] = addCanvas;
-
-        var theObject = addOverlay;
-        globalDOMCach[nodeKey].style["touch-action"] = "none";
-
-        globalDOMCach[nodeKey].addEventListener("pointerdown", realityEditor.device.onTouchDown.bind(realityEditor.device), false);
-        ec++;
-        globalDOMCach[nodeKey].addEventListener("pointerup", realityEditor.device.onTrueTouchUp.bind(realityEditor.device), false);
-        ec++;
-        theObject.addEventListener("pointerenter", realityEditor.device.onTouchEnter.bind(realityEditor.device), false);
-        ec++;
-
-        theObject.addEventListener("pointerleave", realityEditor.device.onTouchLeave.bind(realityEditor.device), false);
-        ec++;
-
-        theObject.addEventListener("pointermove", realityEditor.device.onTouchMove.bind(realityEditor.device), false);
-        ec++;
-
+        globalDOMCache[addContainer.id] = addContainer;
+        globalDOMCache[addIframe.id] = addIframe;
+        globalDOMCache[addOverlay.id] = addOverlay;
+        globalDOMCache[addCanvas.id] = addCanvas;
+        
+        // Add touch event listeners
+        
+        realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
+        
         if (globalStates.editingMode) {
-            // todo this needs to be changed backword
-            // if (objects[objectKey].developer) {
-            theObject.addEventListener("touchstart", realityEditor.device.onMultiTouchStart.bind(realityEditor.device), false);
-            ec++;
-            theObject.addEventListener("touchmove", realityEditor.device.onMultiTouchMove.bind(realityEditor.device), false);
-            ec++;
-            theObject.addEventListener("touchend", realityEditor.device.onMultiTouchEnd.bind(realityEditor.device), false);
-            ec++;
-            theObject.className = "mainProgram";
-            //  }
+            if (activeKey === frameKey) {
+                realityEditor.device.addEventHandlersForFrame(objectKey, activeKey);
+            } else { //if (activeType === "node") {
+                realityEditor.device.activateNodeMove(activeKey);
+            }
         }
-        theObject.objectId = objectKey;
-        theObject.nodeId = nodeKey;
-        theObject.type = type;
 
-        if (type === "node") {
-            theObject.style.visibility = "visible";
-            // theObject.style.display = "initial";
-        } else if (type === "logic") {
-            theObject.style.visibility = "visible";
+        if (activeType === "node") {
+            addOverlay.style.visibility = "visible";
+        } else if (activeType === "logic") {
+            addOverlay.style.visibility = "visible";
+            // addContainer.style.display = 'block';
+            // addIframe.style.visibility = 'visible';
+        } else {
+            addOverlay.style.visibility = "hidden";
         }
-        else {
-            theObject.style.visibility = "hidden";
-            //theObject.style.display = "none";
-        }
+        
+        // if (typeof activeVehicle.positionOnLoad !== 'undefined') {
+        //     realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY);
+        //     delete activeVehicle.positionOnLoad;
+        // }
 
     }
+    
+};
+
+realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
+
+    var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+
+    var addContainer = document.createElement('div');
+    addContainer.id = "object" + activeKey;
+    addContainer.className = "main";
+    addContainer.style.width = globalStates.height + "px";
+    addContainer.style.height = globalStates.width + "px";
+    addContainer.style.display = "none";
+    addContainer.style.border = 0;
+
+    var addIframe = document.createElement('iframe');
+    addIframe.id = "iframe" + activeKey;
+    addIframe.className = "main";
+    addIframe.frameBorder = 0;
+    addIframe.style.width = (activeVehicle.width || 0) + "px";
+    addIframe.style.height = (activeVehicle.height || 0) + "px";
+    addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
+    addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
+    addIframe.style.visibility = "hidden";
+    addIframe.src = iframeSrc;
+    addIframe.dataset.nodeKey = nodeKey;
+    addIframe.dataset.frameKey = frameKey;
+    addIframe.dataset.objectKey = objectKey;
+    addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
+
+    var addOverlay = document.createElement('div');
+    addOverlay.id = activeKey;
+    addOverlay.className = (globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram";
+    addOverlay.frameBorder = 0;
+    addOverlay.style.width = activeVehicle.frameSizeX + "px";
+    addOverlay.style.height = activeVehicle.frameSizeY + "px";
+    addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
+    addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
+    addOverlay.style.visibility = "hidden";
+    if (activeVehicle.developer) {
+        addOverlay.style["touch-action"] = "none";
+    }
+
+    var addCanvas = document.createElement('canvas');
+    addCanvas.id = "canvas" + activeKey;
+    addCanvas.className = "mainCanvas";
+    addCanvas.style.width = "100%";
+    addCanvas.style.height = "100%";
+    
+    return {
+        addContainer: addContainer,
+        addIframe: addIframe,
+        addOverlay: addOverlay,
+        addCanvas: addCanvas
+    };
+};
+
+realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey) {
+    var size = 200;
+    var addLogic = document.createElement('div');
+    addLogic.id = "logic" + activeKey;
+    addLogic.className = "mainEditing";
+    addLogic.style.width = size + "px";
+    addLogic.style.height = size + "px";
+    addLogic.style.left = 0; //((activeVehicle.frameSizeX - size) / 2) + "px";
+    addLogic.style.top = 0; //((activeVehicle.frameSizeY - size) / 2) + "px";
+    addLogic.style.visibility = "hidden";
+
+    var svgContainer = document.createElementNS('http://www.w3.org/2000/svg', "svg");
+    svgContainer.setAttributeNS(null, "viewBox", "0 0 100 100");
+
+    var svgElement = [];
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[0].setAttributeNS(null, "fill", "#00ffff");
+    svgElement[0].setAttributeNS(null, "d", "M50,0V50H0V30A30,30,0,0,1,30,0Z");
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[1].setAttributeNS(null, "fill", "#00ff00");
+    svgElement[1].setAttributeNS(null, "d", "M100,30V50H50V0H70A30,30,0,0,1,100,30Z");
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[2].setAttributeNS(null, "fill", "#ffff00");
+    svgElement[2].setAttributeNS(null, "d", "M100,50V70a30,30,0,0,1-30,30H50V50Z");
+    svgElement.push(document.createElementNS("http://www.w3.org/2000/svg", "path"));
+    svgElement[3].setAttributeNS(null, "fill", "#ff007c");
+    svgElement[3].setAttributeNS(null, "d", "M50,50v50H30A30,30,0,0,1,0,70V50Z");
+
+    for (var i = 0; i < svgElement.length; i++) {
+        svgContainer.appendChild(svgElement[i]);
+        svgElement[i].number = i;
+        svgElement[i].addEventListener('pointerenter', function () {
+            globalProgram.logicSelector = this.number;
+
+            if (globalProgram.nodeA === activeKey)
+                globalProgram.logicA = this.number;
+            else
+                globalProgram.logicB = this.number;
+
+            console.log(globalProgram.logicSelector);
+        });
+        addLogic.appendChild(svgContainer);
+    }
+    
+    return addLogic;
 };
 
 /**
@@ -860,61 +1310,220 @@ realityEditor.gui.ar.draw.addElement = function (objectKey, nodeKey, thisUrl, th
  * @return
  **/
 
-realityEditor.gui.ar.draw.killObjects = function (objectKey, thisObject) {
+realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCache) {
 
-    if (thisObject.visibleCounter > 0) {
-        thisObject.visibleCounter--;
-    } else if (thisObject.loaded) {
-        thisObject.loaded = false;
+    if (activeVehicle.visibleCounter > 0) {
+        activeVehicle.visibleCounter--;
+    } else if (activeVehicle.loaded) {
+        activeVehicle.loaded = false;
 
-        globalDOMCach["thisObject" + objectKey].parentNode.removeChild(globalDOMCach["thisObject" + objectKey]);
-        delete globalDOMCach["thisObject" + objectKey];
-        delete globalDOMCach["iframe" + objectKey];
-        delete globalDOMCach[objectKey];
-        delete globalDOMCach["canvas" + objectKey];
+        globalDOMCache["object" + activeKey].parentNode.removeChild(globalDOMCache["object" + activeKey]);
+        delete globalDOMCache["object" + activeKey];
+        delete globalDOMCache["iframe" + activeKey];
+        delete globalDOMCache[activeKey];
+        delete globalDOMCache["canvas" + activeKey];
+        delete globalDOMCache[activeKey];
 
-        delete  globalDOMCach[objectKey];
-
-        for (var nodeKey in thisObject.nodes) {
+        for (activeKey in activeVehicle.nodes) {
+            if (!activeVehicle.nodes.hasOwnProperty(activeKey)) continue;
             try {
-
-                globalDOMCach["thisObject" + nodeKey].parentNode.removeChild(globalDOMCach["thisObject" + nodeKey]);
-                delete   globalDOMCach["thisObject" + nodeKey];
-                delete  globalDOMCach["iframe" + nodeKey];
-                delete globalDOMCach[nodeKey];
-                delete globalDOMCach["canvas" + nodeKey];
+                globalDOMCache["object" + activeKey].parentNode.removeChild(globalDOMCache["object" + activeKey]);
+                delete globalDOMCache["object" + activeKey];
+                delete globalDOMCache["iframe" + activeKey];
+                delete globalDOMCache[activeKey];
+                delete globalDOMCache["canvas" + activeKey];
 
             } catch (err) {
                 this.cout("could not find any");
             }
-            thisObject.nodes[nodeKey].loaded = false;
+            activeVehicle.nodes[activeKey].loaded = false;
         }
         this.cout("killObjects");
     }
 };
 
-realityEditor.gui.ar.draw.deleteNode = function (objectId, nodeId) {
+realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
+    var thisFrame = realityEditor.getFrame(objectId, frameId);
+    if (!thisFrame) return null;
 
-    delete objects[objectId].nodes[nodeId];
-    if (globalDOMCach["thisObject" + nodeId]) {
-        if (globalDOMCach["thisObject" + nodeId].parentNode) {
-            globalDOMCach["thisObject" + nodeId].parentNode.removeChild(globalDOMCach["thisObject" + nodeId]);
+    delete thisFrame.nodes[nodeId];
+    if (this.globalDOMCache["object" + nodeId]) {
+        if (this.globalDOMCache["object" + nodeId].parentNode) {
+            this.globalDOMCache["object" + nodeId].parentNode.removeChild(this.globalDOMCache["object" + nodeId]);
         }
-        delete globalDOMCach["thisObject" + nodeId];
+        delete this.globalDOMCache["object" + nodeId];
     }
-    delete globalDOMCach["iframe" + nodeId];
-    delete globalDOMCach[nodeId];
-    delete globalDOMCach["canvas" + nodeId];
+    delete this.globalDOMCache["iframe" + nodeId];
+    delete this.globalDOMCache[nodeId];
+    delete this.globalDOMCache["canvas" + nodeId];
 
 };
 
 realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
 
     delete objects[objectId].frames[frameId];
-    globalDOMCach["thisObject" + frameId].parentNode.removeChild(globalDOMCach["thisObject" + frameId]);
-    delete globalDOMCach["thisObject" + frameId];
-    delete globalDOMCach["iframe" + frameId];
-    delete globalDOMCach[frameId];
-    delete globalDOMCach["canvas" + frameId];
+    this.globalDOMCache["object" + frameId].parentNode.removeChild(this.globalDOMCache["object" + frameId]);
+    delete this.globalDOMCache["object" + frameId];
+    delete this.globalDOMCache["iframe" + frameId];
+    delete this.globalDOMCache[frameId];
+    delete this.globalDOMCache["canvas" + frameId];
 
 };
+
+/**
+ * Sets the objectVisible property of not only the object, but also all of its frames
+ * @param object - Object reference to the object whose property you wish to set
+ * @param shouldBeVisible - Boolean visible or not. Objects that are not visible do not render their interfaces, nodes, links.
+ */
+realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) {
+    if (!object) return;
+    object.objectVisible = shouldBeVisible;
+    for (var frameKey in object.frames) {
+        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        object.frames[frameKey].objectVisible = shouldBeVisible;
+    }
+};
+
+// simulates drawing... TODO: simplify this and make it only work for frames? or maybe nodes too...
+
+realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+
+    if (activeVehicle.fullScreen !== true) {
+        
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+
+        var finalOffsetX = positionData.x;
+        var finalOffsetY = positionData.y;
+
+        // add node's position to its frame's position to gets its actual offset
+        if (activeType === "node" || activeType === "logic") {
+            var frameKey = activeVehicle.frameId;
+            var frame = realityEditor.getFrame(objectKey, frameKey);
+            if (frame) {
+                var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+                finalOffsetX += parentFramePositionData.x;
+                finalOffsetY += parentFramePositionData.y;
+            }
+        }
+
+        matrix.r3 = [
+            positionData.scale, 0, 0, 0,
+            0, positionData.scale, 0, 0,
+            0, 0, 1, 0,
+            // positionData.x, positionData.y, 0, 1
+            finalOffsetX, finalOffsetY, 0, 1
+        ];
+
+        if (matrix.matrixtouchOn === activeKey) {
+            //if(globalStates.unconstrainedPositioning===true)
+            activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+
+            //  console.log(activeVehicle.temp);
+
+            if (matrix.copyStillFromMatrixSwitch) {
+                matrix.visual = utilities.copyMatrix(activeObjectMatrix);
+                if (typeof positionData.matrix === "object") {
+                    if (positionData.matrix.length > 0) {
+                        utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                    } else {
+                        activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                    }
+                } else {
+                    activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                }
+
+                if (globalStates.unconstrainedPositioning === true) {
+                    utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                }
+
+                matrix.copyStillFromMatrixSwitch = false;
+
+            } else if (globalStates.unconstrainedPositioning === true) {
+                realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+            }
+
+            if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
+                activeObjectMatrix = matrix.visual;
+            }
+
+        }
+        
+        if (typeof positionData.matrix[1] !== "undefined") {
+            if (positionData.matrix.length > 0) {
+                if (globalStates.unconstrainedPositioning === false) {
+                    //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
+                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                }
+
+                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+                utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+                utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
+            } else {
+                utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
+            }
+
+        } else {
+            utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
+        }
+
+        if (positionData.matrix.length < 13) {
+            utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+
+        } else {
+            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+            utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+        }
+
+
+        // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
+        // but we want all of them to have a positive value so they are rendered in front of background canvas
+        // and frames with developer=false should have the lowest positive value
+
+        if (finalMatrix[14] < 10) {
+            finalMatrix[14] = 10;
+        }
+        finalMatrix[14] = 200 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+
+        //move non-developer frames to the back so they don't steal touches from interactable frames
+        if (activeVehicle.developer === false) {
+            finalMatrix[14] = 100;
+        }
+
+        activeVehicle.mostRecentFinalMatrix = finalMatrix;
+
+        // draw transformed
+        // globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+        
+        // return 'matrix3d(' + finalMatrix.toString() + ')';
+        
+        return finalMatrix;
+
+    }
+};
+
+realityEditor.gui.ar.draw.resetNodeRepositionCanvases = function() {
+    realityEditor.forEachNodeInAllObjects(function(objectKey, frameKey, nodeKey) {
+        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+        node.hasCTXContent = false;
+        node.visible = false;
+        node.visibleEditing = false;
+        // node.forceRedrawRepositionOnce = true;
+        //         objects[objectKey].frames[frameKey].visible = false;
+        //         objects[objectKey].frames[frameKey].visibleEditing = false;
+        //         objects[objectKey].frames[frameKey].hasCTXContent = false;
+    });
+};
+
+realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        var frame = realityEditor.getFrame(objectKey, frameKey);
+        frame.hasCTXContent = false;
+        frame.visible = false;
+        frame.visibleEditing = false;
+        // frame.forceRedrawRepositionOnce = true;
+        //         objects[objectKey].frames[frameKey].visible = false;
+        //         objects[objectKey].frames[frameKey].visibleEditing = false;
+        //         objects[objectKey].frames[frameKey].hasCTXContent = false;
+    });
+};
+
