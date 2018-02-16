@@ -140,9 +140,9 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     var activeFrame = tempResetObject.frames[frameKey];
                     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
                     positionData.matrix = [];
-                    positionData.x = i * 50;
-                    positionData.y = i * 50;
-                    positionData.scale = 1;
+                    positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    positionData.scale = 0.2;
                     realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
                     i += 1;
                 }
@@ -160,11 +160,9 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
                         activeNode.matrix = [];
-                        activeNode.scale = 1;
-                        activeNode.x = i * 50;
-                        activeNode.y = i * 50;
-                        // tempResetValue.x = randomIntInc(0, 200) - 100;
-                        // tempResetValue.y = randomIntInc(0, 200) - 100;
+                        activeNode.scale = 0.2;
+                        activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                        activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
                         i += 1;
                     }
@@ -381,6 +379,10 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
         thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
         
+        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+        var closestObject = realityEditor.getObject(closestObjectKey);
+        
+        thisItem.scale = closestObject.averageScale;
         thisItem.screenZ = 1000;
 
         // else {

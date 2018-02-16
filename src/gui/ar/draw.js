@@ -746,7 +746,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         finalOffsetY += parentFramePositionData.y;
                     }
                 }
-
+                
                 matrix.r3 = [
                     positionData.scale, 0, 0, 0,
                     0, positionData.scale, 0, 0,
@@ -945,7 +945,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 if (globalStates.pointerPosition[0] > -1 && globalProgram.objectA) {
 
-                    var size = (activeVehicle.screenLinearZ * 40) * activeVehicle.scale;
+                    var size = (activeVehicle.screenLinearZ * 40) * (activeVehicle.scale);
                     var x = activeVehicle.screenX;
                     var y = activeVehicle.screenY;
 

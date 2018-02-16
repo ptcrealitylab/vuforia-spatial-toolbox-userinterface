@@ -259,6 +259,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         }
                     }
 
+                    realityEditor.gui.ar.utilities.setAvarageScale(objects[objectKey]);
+
                         _this.cout(JSON.stringify(objects[objectKey]));
 
                     // todo this needs to be looked at
@@ -1725,6 +1727,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     content.lastEditor = globalStates.tempUuid;
     
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
+        realityEditor.gui.ar.utilities.setAvarageScale(objects[objectKey]);
         var urlEndpoint;
         if (type === 'node' || type === 'logic') {
             urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/nodeSize/";
@@ -1734,6 +1737,8 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
     }
+
+  
 
 };
 

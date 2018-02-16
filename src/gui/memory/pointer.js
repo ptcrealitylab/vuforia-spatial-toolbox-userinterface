@@ -194,7 +194,7 @@ MemoryPointer.prototype.updateForceSimulation = function() {
     }
 
     this.force.alpha(1);
-    this.force.force('link').distance((this.connectedNode.screenLinearZ || 5) * 30);
+    this.force.force('link').distance((this.connectedNode.screenLinearZ || 5) * (20*this.connectedObject.averageScale));
     this.force.tick();
 
     this.x = this.simNode.x + this.connectedNode.screenX;
@@ -209,9 +209,7 @@ MemoryPointer.prototype.draw = function() {
     }
 
     this.lastDraw = Date.now();
-
-    var cvZ = this.connectedNode.screenLinearZ || 10;
-    var scale = cvZ / 10;
+    var scale = (this.connectedNode.screenLinearZ*this.connectedObject.averageScale) /10;
 
     var tol = 60 * scale;
 

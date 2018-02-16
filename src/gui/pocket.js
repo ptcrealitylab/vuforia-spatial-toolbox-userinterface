@@ -175,13 +175,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
-
-            var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys();
-            var closestObjectKey;
-            if (visibleObjectKeys.length > 0) {
-                closestObjectKey = visibleObjectKeys[0];
-            }
+            
+            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
             var closestObject = realityEditor.getObject(closestObjectKey);
+            
+            
             // make sure that the frames only sticks to 2.0 server version
             if (closestObject && closestObject.integerVersion > 165) {
 
@@ -195,9 +193,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
-                frame.ar.scale = 1;
+                frame.ar.scale = closestObject.averageScale;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
+
+                console.log("closest Frame", closestObject.averageScale);
 
                 frame.location = 'local';
                 frame.src = 'editor';
@@ -244,6 +244,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
                     addedNode.frameSizeX = 100;
                     addedNode.frameSizeY = 100;
+                    addedNode.scale = closestObject.averageScale;
+                    console.log("closest Node", closestObject.averageScale);
 
                 });
                 

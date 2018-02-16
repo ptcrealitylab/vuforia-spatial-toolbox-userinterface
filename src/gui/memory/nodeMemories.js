@@ -167,17 +167,16 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     addedLogic.uuid = logicKey;
     
     // TODO: new method for closest object/frame:
-    var closestObjectKey = null;
+ 
     var closestFrameKey = null;
-    // var frontDepth = 10000000000;
-
-    var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys();
-    if (visibleObjectKeys.length > 0) {
-        closestObjectKey = visibleObjectKeys[0];
+    var closestObjectKey = null;
+  
+     var objectKeys = realityEditor.gui.ar.getClosestFrame();
+    if(objectKeys[1] !== null) {
+        closestFrameKey = objectKeys[1];
+        closestObjectKey = objectKeys[0];
     }
-    if (closestObjectKey && objects[closestObjectKey] && Object.keys(objects[closestObjectKey].frames).length > 0) {
-        closestFrameKey = Object.keys(objects[closestObjectKey].frames)[0];
-    }
+    
     // visibleObjectKeys.forEach( function(objectKey) {
     //     if (this.visibleObjects[thisOtherKey][14] < frontDepth) {
     //         frontDepth = this.visibleObjects[thisOtherKey][14];
@@ -193,7 +192,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     //         farFrontFrame = getFarFrontFrame(thisOtherKey);
     //     }
     // }
-    console.log(closestObjectKey, closestFrameKey);
+
     ///////
     
     // find the object to add the node to

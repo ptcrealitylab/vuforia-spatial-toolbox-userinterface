@@ -313,6 +313,26 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     ];
 };
 
+realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
+  var amount = 0;
+  var sum = 0;
+//  if(!object.frames) return;
+  for(var frameKey in object.frames){
+     // if(!object.frames[frameKey].ar.size) continue;
+      amount++;
+      sum = sum+ object.frames[frameKey].ar.scale;
+     // if(!object.frames[frameKey].nodes) continue;
+      for(var nodeKey in object.frames[frameKey].nodes){
+        //  if(!object.frames[frameKey].nodes) continue;
+          amount++;
+          sum = sum+ object.frames[frameKey].nodes[nodeKey].scale; 
+      }
+  }
+    object.averageScale = sum/amount;
+};
+
+
+
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
@@ -893,3 +913,49 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     exports.drawMarkerPlaneIntersection = drawMarkerPlaneIntersection;
 
 }(realityEditor.gui.ar.utilities));
+
+/**
+ * @desc Returns a matrix that has the correct positioning of an object in real world space.
+ * It is not multiplied by the projection matrix. It only works for getting the real distance to an object.
+ * @param {Array} matrix of the object
+ * @param {Object} object that is used for calculation
+ * @return {Array} calculated array
+ **/
+
+realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
+    var intermediateMatrix = [];
+    var intermediateMatrix2 = [];
+    var correctedMatrix = [];
+    var obj = {};
+    
+    if(object.ar) obj = object.ar;
+    else obj = object;
+    
+    var possitionMatrix = [
+        obj.scale, 0, 0, 0,
+        0, obj.scale, 0, 0,
+        0, 0, 1, 0,
+        obj.x, obj.y, 0, 1
+    ];
+
+    this.multiplyMatrix(realityEditor.gui.ar.draw.rotateX, matrix, intermediateMatrix2);
+
+    if (obj.matrix.length < 13) {
+        this.multiplyMatrix(possitionMatrix, intermediateMatrix2, correctedMatrix);
+
+    } else {
+        this.multiplyMatrix(obj.matrix, matrix, intermediateMatrix);
+        this.multiplyMatrix(possitionMatrix, intermediateMatrix, correctedMatrix);
+    }
+    return correctedMatrix;
+};
+
+/**
+ * @desc Returns the distance of a 3D point.
+ * @param {Array} matrix of the point
+ * @return {Number} distance
+ **/
+
+realityEditor.gui.ar.utilities.distance = function (matrix) {
+    return   Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+};
