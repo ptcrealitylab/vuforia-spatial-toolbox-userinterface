@@ -88,7 +88,12 @@ function Objects() {
 	// Stores all the links that emerge from within the object. If a IOPoint has new data,
 	// the server looks through the Links to find if the data has influence on other IOPoints or Objects.
 	this.frames = {};
-	// The arrangement of nodes for crafting.
+    // which visualization mode it should use right now ("ar" or "screen")
+    this.visualization = "ar";
+
+    this.zone = "";
+
+    this.averageScale = 0.2;
 }
 
 function Frame() {
@@ -105,7 +110,7 @@ function Frame() {
         // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
         y : 0,
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-        scale : 1,
+        scale : 0.2,
         // Unconstrained positioning in 3D space
         matrix : []
     };
@@ -116,7 +121,7 @@ function Frame() {
         // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
         y : 0,
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-        scale : 1
+        scale : 0.2
     };
     // Used internally from the reality editor to indicate if an object should be rendered or not.
     this.visible = false;
@@ -193,7 +198,7 @@ function Node() {
 	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 1;
+	this.scale = 0.2;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
 	// defines the nodeInterface that is used to process data of this type. It also defines the visual representation
@@ -223,7 +228,7 @@ function Logic() {
 	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 1;
+	this.scale = 0.2;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
 

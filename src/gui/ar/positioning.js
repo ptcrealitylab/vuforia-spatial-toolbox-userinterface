@@ -69,8 +69,8 @@ realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
 
 	// cout(thisScale);
 
-	if (thisScale < 0.2) {
-        thisScale = 0.2;
+	if (thisScale < 0.002) {
+        thisScale = 0.002;
     }
 
 	if (typeof thisScale === "number" && thisScale > 0) {

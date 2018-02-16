@@ -247,3 +247,86 @@ realityEditor.gui.ar.getVisibleLinks = function(visibleNodes) {
     console.log("visibleLinks = ", visibleLinks);
     return visibleLinks;
 };
+
+/**
+ * @desc Object reference
+ **/
+
+realityEditor.gui.ar.objects = objects;
+
+/**
+ * @desc This function returns the closest visible object relative to the camera.
+ * @return {String|Array} [ObjectName, null, null]
+ **/
+
+realityEditor.gui.ar.getClosestObject = function () {
+    var object = null;
+    var frame = null;
+    var node = null;
+    var closest = 10000000000;
+    var distance = 10000000000;
+
+
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+        if (distance < closest) {
+            object = objectKey;
+            closest = distance;
+        }
+    }
+    return [object, frame, node];
+};
+
+/**
+ * @desc This function returns the closest visible frame relative to the camera.
+ * @return {String|Array} [ObjectName, null, null]
+ **/
+
+realityEditor.gui.ar.getClosestFrame = function () {
+    var object = null;
+    var frame = null;
+    var node = null;
+    var closest = 10000000000;
+    var distance = 10000000000;
+
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        for(var frameKey in this.objects[objectKey].frames) {
+            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey]));
+            if (distance < closest) {
+                object = objectKey;
+                frame = frameKey;
+                closest = distance;
+            }
+
+        }
+    }
+    return [object, frame, node];
+};
+
+/**
+ * @desc This function returns the closest visible node relative to the camera.
+ * @return {String|Array} [ObjectName, null, null]
+ **/
+
+realityEditor.gui.ar.getClosestNode = function () {
+    var object = null;
+    var frame = null;
+    var node = null;
+    var closest = 10000000000;
+    var distance = 10000000000;
+
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        for(var frameKey in this.objects[objectKey].frames) {
+            for(var nodeKey in this.objects[objectKey].frames[frameKey].nodes) {
+                distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey].nodes[nodeKey]));
+                if (distance < closest) {
+                    object = objectKey;
+                    frame = frameKey;
+                    node = nodeKey;
+                    closest = distance;
+                }
+            }
+        }
+    }
+    return [object, frame, node];
+};

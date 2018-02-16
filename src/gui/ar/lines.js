@@ -127,6 +127,10 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		var link = thisFrame.links[linkKey];
 		var frameA = thisFrame;
 		var frameB = realityEditor.getFrame(link.objectB, link.frameB);
+        var objectA = realityEditor.getObject(link.objectA);
+        var objectB = realityEditor.getObject(link.objectB);
+        var nodeASize = 0;
+        var nodeBSize = 0;
 
 		if (isNaN(link.ballAnimationCount)) {
             link.ballAnimationCount = 0;
@@ -149,7 +153,6 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameB.objectVisible) {
-            var objectB = realityEditor.getObject(link.objectB);
             if (objectB.memory) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
 				if (!memoryPointer) {
@@ -167,10 +170,10 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 			}
 			nodeB.screenZ = nodeA.screenZ;
 			nodeB.screenLinearZ = nodeA.screenLinearZ;
+			nodeBSize = objectA.averageScale;
 		}
 
 		if (!frameA.objectVisible) {
-            var objectA = realityEditor.getObject(link.objectA);
             if (objectA.memory) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
 				if (!memoryPointer) {
@@ -186,12 +189,17 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 			}
 			nodeA.screenZ = nodeB.screenZ;
 			nodeA.screenLinearZ = nodeB.screenLinearZ;
+			nodeASize = objectB.averageScale
 		}
+		if(!nodeASize) nodeASize = objectA.averageScale;
+        if(!nodeBSize) nodeBSize = objectB.averageScale;
 
 		// linearize a non linear zBuffer (see index.js)
-		var nodeAScreenZ =   nodeA.screenLinearZ;
-		var nodeBScreenZ = nodeB.screenLinearZ;
-
+		var nodeAScreenZ =   nodeA.screenLinearZ*(nodeASize*1.5);
+		var nodeBScreenZ = nodeB.screenLinearZ*(nodeBSize*1.5);
+		
+		//console.log(nodeBScreenZ, nodeAScreenZ);
+		
 		var logicA;
 		if (link.logicA == null || link.logicA === false) {
 			logicA = 4;
@@ -235,7 +243,7 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
             nodeA.screenZ = 6;
 			
 		} else if(nodeA.screenLinearZ) {
-            nodeA.screenZ = nodeA.screenLinearZ;
+            nodeA.screenZ = nodeA.screenLinearZ*objectA.averageScale;
 		}
 
 		var logicA = globalProgram.logicA || 4;
