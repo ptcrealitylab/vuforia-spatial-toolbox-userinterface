@@ -9,6 +9,12 @@ realityEditor.gui.settings.setSettings = function (id, state) {
         }
         return;
     }
+    if (id === "zoneText") {
+        if (state !== "") {
+            document.getElementById(id).value = state;
+        }
+        return;
+    }
 
     if (id === "discoveryText") {
 
@@ -82,6 +88,10 @@ realityEditor.gui.settings.newURLTextLoad = function () {
     this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
 };
 
+realityEditor.gui.settings.newZoneTextLoad = function () {
+    this.states.zoneState = document.getElementById('zoneText').value; //encodeURIComponent(document.getElementById('externalText').value);
+};
+
 realityEditor.gui.settings.newDiscoveryTextLoad = function () {
     this.states.discoveryState = document.getElementById('discoveryText').value; //encodeURIComponent(document.getElementById('discoveryText').value);
     this.states.discoveryActive = false;
@@ -145,6 +155,30 @@ realityEditor.gui.settings.newLockTextLoad = function () {
     console.log("lockPassword = " + this.states.lockPassword);
 };
 
+document.addEventListener('input',
+        function (e) {
+    
+            var msg = {};
+            msg.settings = {};
+            msg.settings.setSettings = {};
+            if (e.target.id === "zoneText") {
+                realityEditor.gui.settings.states.zoneText = encodeURIComponent(document.getElementById(e.target.id).value);
+                msg.settings.setSettings[e.target.id] = realityEditor.gui.settings.states.zoneText;
+                console.log(msg);
+                parent.postMessage(JSON.stringify(msg), "*");
+            }
+        }
+    );
+
+
+
+
+
+
+
+
+
+
 realityEditor.gui.settings.loadSettingsPost = function () {
     parent.postMessage(
         //  Gett all the Setting states.
@@ -172,6 +206,8 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.settingsButton = msg.getSettings.settingsButton;
             this.states.lockingMode = msg.getSettings.lockingMode;
             this.states.lockPassword = msg.getSettings.lockPassword;
+            this.states.zoneState = msg.getSettings.zoneState;
+            this.states.zoneText = msg.getSettings.zoneText;
 
             this.states.realityState = msg.getSettings.realityState;
 
@@ -184,6 +220,8 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.setSettings("discoveryText", this.states.discoveryState);
             this.setSettings("lockingToggle", this.states.lockingMode);
             this.setSettings("lockText", this.states.lockPassword);
+            this.setSettings("zoneState", this.states.zoneState);
+            this.setSettings("zoneText", this.states.zoneText);
             
             //if (!this.states.lockingMode) {
             //    document.getElementById('lockingToggle').firstChild.style.transform = "translate3d(0px, 0px, 0px);";
@@ -226,11 +264,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 
                 msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
                 realityEditor.gui.settings.updateLockUI();
-
-                //if (id === "lockingToggle") {
-                //    document.getElementById("lockText").disabled = e.detail.isActive;
-                    //console.log("change text disabled " + document.getElementById("lockText").disabled);
-                //}
             }
             parent.postMessage(JSON.stringify(msg), "*");
         }

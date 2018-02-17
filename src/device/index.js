@@ -1168,7 +1168,7 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
  * @param clearSkyState
  * @param externalState
  **/
-realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, externalState, discoveryState, realityState) {
+realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, externalState, discoveryState, realityState, zoneText, zoneState) {
 
     globalStates.extendedTrackingState = extendedTrackingState;
     globalStates.developerState = developerState;
@@ -1178,7 +1178,9 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
     globalStates.externalState = externalState;
     globalStates.discoveryState = discoveryState;
     globalStates.realityState = realityState;
-
+    globalStates.zoneText = zoneText;
+    globalStates.zoneState = zoneState;
+    
     if (globalStates.clearSkyState) {
         document.getElementById("UIButtons").classList.add('clearSky');
     } else {
