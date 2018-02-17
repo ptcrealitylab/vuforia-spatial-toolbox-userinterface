@@ -1163,7 +1163,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 settingsButton : globalStates.settingsButtonState,
                 lockingMode: globalStates.lockingMode,
                 lockPassword: globalStates.lockPassword,
-                realityState: globalStates.realityState
+                realityState: globalStates.realityState,
+                zoneText: globalStates.zoneText,
+                zoneState: globalStates.zoneState
             }
         }), "*");
     }
@@ -1203,6 +1205,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
      */
 
     if (msgContent.settings.setSettings) {
+        
         if (typeof msgContent.settings.setSettings.extendedTracking !== "undefined") {
 
             globalStates.extendedTracking = msgContent.settings.setSettings.extendedTracking;
@@ -1237,6 +1240,22 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
         }
 
+        if (typeof msgContent.settings.setSettings.zoneText !== "undefined") {
+                realityEditor.app.appFunctionCall("zoneText", msgContent.settings.setSettings, null);
+        }
+
+        if (typeof msgContent.settings.setSettings.zoneState !== "undefined") {
+            if (msgContent.settings.setSettings.zoneState) {
+                globalStates.zoneState = true;
+                realityEditor.app.appFunctionCall("zoneOn", null, null);
+
+            } else {
+                globalStates.zoneState = false;
+                realityEditor.app.appFunctionCall("zoneOff", null, null);
+
+            }
+        }
+        
         if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
             if (msgContent.settings.setSettings.instantState) {
                 globalStates.instantState = true;

@@ -83,6 +83,8 @@ var globalStates = {
 	UIOffMode: false,
 	settingsButtonState: false,
 	extendedTracking: false,
+    zoneText: "",
+    zoneState: false,
 	currentLogic: null,
 
 	extendedTrackingState: false,
