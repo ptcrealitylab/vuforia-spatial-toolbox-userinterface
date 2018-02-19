@@ -306,6 +306,11 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
 
     if (linkObject.ballAnimationCount >= lineStartWeight * spacer)  linkObject.ballAnimationCount = 0;
 
+    context.beginPath();
+    context.fillStyle = "rgba("+newColor+")";
+    context.arc(lineStartPoint[0],lineStartPoint[1], lineStartWeight, 0, 2*Math.PI);
+    context.fill();
+    
     while (positionDelta + linkObject.ballAnimationCount < lineVectorLength) {
         var ballPosition = positionDelta + linkObject.ballAnimationCount;
 
@@ -325,23 +330,25 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         context.fill();
     }
 
-    context.globalCompositeOperation = 'destination-out';
-   realityEditor.gui.ar.lines.transform(context, lineStartPoint, realityEditor.getNode(linkObject.objectA, linkObject.frameA, linkObject.nodeA));
-   realityEditor.gui.ar.lines.transform(context, lineEndPoint, realityEditor.getNode(linkObject.objectB, linkObject.frameB, linkObject.nodeB));
-    context.globalCompositeOperation = 'source-over';
-    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.beginPath();
+    context.fillStyle = "rgba("+newColor+")";
+    context.arc(lineEndPoint[0],lineEndPoint[1], lineEndWeight, 0, 2*Math.PI);
+    context.fill();
+    
     linkObject.ballAnimationCount += (lineStartWeight * timeCorrector.delta)+speed;
 };
 
-realityEditor.gui.ar.lines.transform = function (cxt, position, object){
+realityEditor.gui.ar.lines.transform = function (cxt, weight, object){
     var n = object;
     if(!n) return;
-    var m = n.mostRecentFinalMatrix;
+  /*  var m = n.mostRecentFinalMatrix;
     var offset =  m[15];
     var xx =n.scale;
+  
+    */
     cxt.beginPath();
-    cxt.setTransform((m[0]/offset)*xx, (m[1]/offset)*xx, (m[4]/offset)*xx,(m[5]/offset)*xx, n.screenX,n.screenY);
-    cxt.arc(0, 0, 120, 0, 2*Math.PI);
+   // cxt.setTransform((m[0]/offset)*xx, (m[1]/offset)*xx, (m[4]/offset)*xx,(m[5]/offset)*xx, n.screenX,n.screenY);
+    cxt.arc(n.screenX,n.screenY, weight, 0, 2*Math.PI);
     cxt.fill();
     
 
