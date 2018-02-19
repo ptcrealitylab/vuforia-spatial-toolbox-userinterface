@@ -315,7 +315,7 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         }
 
         var ballSize = this.ar.utilities.map(ballPosition, 0, lineVectorLength, lineStartWeight, lineEndWeight);
-
+        
         var x__ = lineStartPoint[0] - Math.cos(angle) * ballPosition;
         var y__ = lineStartPoint[1] - Math.sin(angle) * ballPosition;
         positionDelta += ballSize * spacer;
@@ -324,9 +324,28 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         context.arc(x__, y__, ballSize, 0, mathPI);
         context.fill();
     }
+
+    context.globalCompositeOperation = 'destination-out';
+   realityEditor.gui.ar.lines.transform(context, lineStartPoint, realityEditor.getNode(linkObject.objectA, linkObject.frameA, linkObject.nodeA));
+   realityEditor.gui.ar.lines.transform(context, lineEndPoint, realityEditor.getNode(linkObject.objectB, linkObject.frameB, linkObject.nodeB));
+    context.globalCompositeOperation = 'source-over';
+    context.setTransform(1, 0, 0, 1, 0, 0);
     linkObject.ballAnimationCount += (lineStartWeight * timeCorrector.delta)+speed;
 };
 
+realityEditor.gui.ar.lines.transform = function (cxt, position, object){
+    var n = object;
+    if(!n) return;
+    var m = n.mostRecentFinalMatrix;
+    var offset =  m[15];
+    var xx =n.scale;
+    cxt.beginPath();
+    cxt.setTransform((m[0]/offset)*xx, (m[1]/offset)*xx, (m[4]/offset)*xx,(m[5]/offset)*xx, n.screenX,n.screenY);
+    cxt.arc(0, 0, 120, 0, 2*Math.PI);
+    cxt.fill();
+    
+
+};
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
