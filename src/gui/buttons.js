@@ -103,7 +103,14 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
     realityEditor.gui.pocket.pocketHide();
 
     globalStates.guiState = "node";
-    realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
+
+    // alternative to realityEditor.gui.ar.draw.resetNodeRepositionCanvases() without the side effects of node getting stuck on screen
+    realityEditor.forEachNodeInAllObjects(function(objectKey, frameKey, nodeKey) {
+        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+        node.hasCTXContent = false;
+        // node.visible = false;
+        // node.visibleEditing = false;
+    });
 
     realityEditor.gui.crafting.craftingBoardHide();
 
