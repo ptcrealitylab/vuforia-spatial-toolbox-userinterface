@@ -76,17 +76,20 @@ realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
 	if (typeof thisScale === "number" && thisScale > 0) {
         positionData.scale = thisScale;
 	}
-	
-	globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
+
+    var circleCenterX = globalStates.editingModeObjectCenterX || globalStates.editingModeObjectX;
+    var circleCenterY = globalStates.editingModeObjectCenterY || globalStates.editingModeObjectY;
+
+    globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
 	//drawRed(globalCanvas.context, [globalStates.editingModeObjectX,globalStates.editingModeObjectY],[touch.pageX,touch.pageY],globalStates.editingScaleDistance);
-	this.ar.lines.drawBlue(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], globalStates.editingScaleDistance);
+	this.ar.lines.drawBlue(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], globalStates.editingScaleDistance);
 
 	if (thisRadius < globalStates.editingScaleDistance) {
 
-		this.ar.lines.drawRed(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], thisRadius);
+		this.ar.lines.drawRed(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], thisRadius);
 
 	} else {
-		this.ar.lines.drawGreen(globalCanvas.context, [globalStates.editingModeObjectX, globalStates.editingModeObjectY], [touch.pageX, touch.pageY], thisRadius);
+		this.ar.lines.drawGreen(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], thisRadius);
 
 	}
 	this.cout("scaleEvent");

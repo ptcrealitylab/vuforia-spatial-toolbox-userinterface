@@ -146,11 +146,14 @@ realityEditor.device.deactivateFrameMove = function(frameKey) {
 realityEditor.device.activateMultiTouch = function() {
     realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart, realityEditor.device);
     realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchmove', realityEditor.device.onMultiTouchCanvasMove, realityEditor.device);
+    realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchend', realityEditor.device.onMultiTouchCanvasEnd, realityEditor.device);
 };
 
 realityEditor.device.deactivateMultiTouch = function() {
-    realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart);
-    realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchmove', realityEditor.device.onMultiTouchCanvasMove);
+    // there doesnt seem to be a reason to remove these, because the functions already check to make sure they're in an ok state to perform multi touch
+    // realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchstart', realityEditor.device.onMultiTouchCanvasStart);
+    // realityEditor.device.utilities.removeBoundListener(globalCanvas.canvas, 'touchmove', realityEditor.device.onMultiTouchCanvasMove);
+    // realityEditor.device.utilities.addBoundListener(globalCanvas.canvas, 'touchend', realityEditor.device.onMultiTouchCanvasEnd, realityEditor.device);
 };
 
 // TODO: we need the equivalent for 'deactivateNodeMove' for each frame, that gets triggered when leaving move move
@@ -859,34 +862,83 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
 // generate action for all links to be reloaded after upload
 
-	// cout(globalStates.editingModeHaveObject + " " + globalStates.editingMode + " " + globalStates.editingModeHaveObject + " " + globalStates.editingMode);
-
-	if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && (evt.targetTouches.length === 1 || (evt.pageX && evt.pageY))) {
-
-		var touch = evt.touches[0];
-
-		globalStates.editingModeObjectX = touch.pageX;
-		globalStates.editingModeObjectY = touch.pageY;
-
-		var tempThisObject = realityEditor.device.getEditingModeObject();
-
+    // if you do a pinch gesture with both fingers on the frame, scale it and move it with the touches
+    if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 2) {
+        var firstTouch = evt.touches[0];
+        globalStates.editingModeObjectX = firstTouch.pageX;
+        globalStates.editingModeObjectY = firstTouch.pageY;
+        globalStates.editingModeObjectCenterX = firstTouch.pageX;
+        globalStates.editingModeObjectCenterY = firstTouch.pageY;
+        var tempThisObject = realityEditor.device.getEditingModeObject();
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
-                
         var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
-		
         if (globalStates.unconstrainedPositioning === true) {
-            // console.log('unconstrained move');
             realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
         }
-	}
+        var secondTouch = evt.touches[1];
+        realityEditor.gui.ar.positioning.onScaleEvent(secondTouch);
+    
+    } else {
 
-	if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && evt.targetTouches.length === 2) {
+        // otherwise, if you just have one finger on the screen, move the frame you're on if you can
 
-        globalStates.editingModeObjectX = evt.touches[0].pageX; //touch.pageX;
-        globalStates.editingModeObjectY = evt.touches[0].pageY; //touch.pageY;
-	    
-		realityEditor.gui.ar.positioning.onScaleEvent(evt.touches[1]);
-	}
+        // cout(globalStates.editingModeHaveObject + " " + globalStates.editingMode + " " + globalStates.editingModeHaveObject + " " + globalStates.editingMode);
+        if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.touches.length === 1) {
+            // if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && (evt.targetTouches.length === 1 || (evt.pageX && evt.pageY))) {
+            var touch = evt.touches[0];
+
+            globalStates.editingModeObjectX = touch.pageX;
+            globalStates.editingModeObjectY = touch.pageY;
+            globalStates.editingModeObjectCenterX = touch.pageX;
+            globalStates.editingModeObjectCenterY = touch.pageY;
+
+            var tempThisObject = realityEditor.device.getEditingModeObject();
+
+            // TODO: re-enable to move frame while scaling
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
+
+            var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
+
+            if (globalStates.unconstrainedPositioning === true) {
+                // console.log('unconstrained move');
+                realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+            }
+        }
+
+        // if you have two fingers on the screen (one on the frame, one on the canvas) then just scale it
+        
+        else if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && evt.touches.length === 2) {
+            //
+            // globalStates.editingModeObjectX = evt.touches[0].pageX; //touch.pageX;
+            // globalStates.editingModeObjectY = evt.touches[0].pageY; //touch.pageY;
+            //
+            // realityEditor.gui.ar.positioning.onScaleEvent(evt.touches[1]);
+
+            var frameTouch;
+            var canvasTouch;
+            [].slice.call(evt.touches).forEach(function(touch){
+                if (touch.target.id === evt.targetTouches[0].id) {
+                    frameTouch = touch;
+                } else {
+                    canvasTouch = touch;
+                }
+            });
+
+            if (frameTouch) {
+                globalStates.editingModeObjectX = frameTouch.pageX;
+                globalStates.editingModeObjectY = frameTouch.pageY;
+            }
+
+            // canvasTouch.pageX 
+
+            if (canvasTouch) {
+                realityEditor.gui.ar.positioning.onScaleEvent(canvasTouch);
+            }
+        }
+        
+    }
+
+	
 
 	cout("MultiTouchMove");
 };
@@ -903,6 +955,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 	
 	if (globalStates.editingScaleDistance) {
 	    globalStates.editingScaleDistance = null;
+        globalStates.editingModeObjectCenterX = null;
+        globalStates.editingModeObjectCenterY = null;
     }
 
     // generate action for all links to be reloaded after upload
@@ -1110,14 +1164,37 @@ realityEditor.device.onMultiTouchCanvasMove = function(evt) {
 	evt.preventDefault();
 // generate action for all links to be reloaded after upload
 	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
-		var touch = evt.touches[0];
+        // var touch = evt.touches[0];
+        var touch = evt.targetTouches[0];
 
-		//globalStates.editingModeObjectY
-		//globalStates.editingScaleX
-		realityEditor.gui.ar.positioning.onScaleEvent(touch);
+        // var canvasTouch;
+        // [].slice.call(evt.touches).forEach(function(touch){
+        //     console.log(touch.target);
+        //     if (touch.target.id === 'canvas') {
+        //         canvasTouch = touch;
+        //     }
+        // });
+        //
+        // if (canvasTouch) {
+        //     realityEditor.gui.ar.positioning.onScaleEvent(canvasTouch);
+        // }
+        
+        realityEditor.gui.ar.positioning.onScaleEvent(touch);
 
 	}
 	cout("MultiTouchCanvasMove");
+};
+
+realityEditor.device.onMultiTouchCanvasEnd = function(evt) {
+    evt.preventDefault();
+    if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 0) {
+        if (globalStates.editingScaleDistance) {
+            globalStates.editingScaleDistance = null;
+            globalStates.editingModeObjectCenterX = null;
+            globalStates.editingModeObjectCenterY = null;
+        }
+    }
+    cout("MultiTouchCanvasEnd");
 };
 
 
