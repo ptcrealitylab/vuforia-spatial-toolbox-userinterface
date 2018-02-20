@@ -221,6 +221,7 @@
     ready();
 
     var hybridObject = new HybridObject();
+    hybridObject.setMoveDelay(3000);
     hybridObject.addReadListener('valueX', function(e) {
         properties.valueX = e;
         renderProperties();

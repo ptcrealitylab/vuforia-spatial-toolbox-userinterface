@@ -23,6 +23,7 @@ var sendTouchEvents = false;
         socketIoUrl: '',
         style: document.createElement('style'),
         messageCallBacks: {},
+        moveDelay: 1000,
         version: 170
     };
 
@@ -296,6 +297,10 @@ var sendTouchEvents = false;
             return realityObject.modelViewMatrix;
         };
 
+        this.setMoveDelay = function(delayInMilliseconds) {
+            realityObject.moveDelay = delayInMilliseconds
+        };
+
         if (typeof io !== 'undefined') {
             this.injectIo();
         } else {
@@ -525,7 +530,6 @@ var sendTouchEvents = false;
         y: 0
     };
     var touchMoveTolerance = 100;
-    var moveDelay = 1000; // set value to match globalStates.moveDelay
 
     function getTouchX(event) {
         return event.changedTouches[0].screenX;
@@ -568,7 +572,7 @@ var sendTouchEvents = false;
                 }), '*');
                 sendTouchEvents = true;
                 touchTimer = null;
-            }, moveDelay);
+            }, realityObject.moveDelay);
         });
 
         document.body.addEventListener('touchmove', function(event) {
