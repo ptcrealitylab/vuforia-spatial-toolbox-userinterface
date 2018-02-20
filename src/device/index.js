@@ -847,16 +847,22 @@ realityEditor.device.onMultiTouchStart = function(evt) {
 
 realityEditor.device.onMultiTouchMove = function(evt) {
     console.log('onMultiTouchMove');
+    if (!evt.hasOwnProperty('touches') && (evt.hasOwnProperty('pageX') || evt.hasOwnProperty('pageY'))) {
+        evt.touches = [{}];
+        evt.targetTouches = [{}];
+    }
 	if(evt.pageX) {
-		evt.touches = [{},{}];
+		// evt.touches = [{},{}];
 		evt.touches[0].pageX = evt.pageX;
-		evt.targetTouches = [1,1];
+		// evt.targetTouches = [1,1];
+        evt.targetTouches[0].pageX = evt.pageX;
 	}
 	if(evt.pageY) {
-		evt.touches = [{},{}];
+		// evt.touches = [{},{}];
 		evt.touches[0].pageY = evt.pageY;
-		evt.targetTouches = [1,1];
-	}
+		// evt.targetTouches = [1,1];
+        evt.targetTouches[0].pageY = evt.pageY;
+    }
 
 	evt.preventDefault();
 
@@ -883,7 +889,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
         // otherwise, if you just have one finger on the screen, move the frame you're on if you can
 
         // cout(globalStates.editingModeHaveObject + " " + globalStates.editingMode + " " + globalStates.editingModeHaveObject + " " + globalStates.editingMode);
-        if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.touches.length === 1) {
+        if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && evt.touches.length === 1) {
             // if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && (evt.targetTouches.length === 1 || (evt.pageX && evt.pageY))) {
             var touch = evt.touches[0];
 
@@ -937,9 +943,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
         }
         
     }
-
-	
-
+    
 	cout("MultiTouchMove");
 };
 
