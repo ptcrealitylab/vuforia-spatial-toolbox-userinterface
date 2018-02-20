@@ -903,7 +903,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
                 
                 activeVehicle.mostRecentFinalMatrix = finalMatrix;
-   
+                activeVehicle.originMatrix = activeObjectMatrix;
                 // draw transformed
                 globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
 

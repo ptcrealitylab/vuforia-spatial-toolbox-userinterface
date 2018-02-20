@@ -306,6 +306,11 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
 
     if (linkObject.ballAnimationCount >= lineStartWeight * spacer)  linkObject.ballAnimationCount = 0;
 
+    context.beginPath();
+    context.fillStyle = "rgba("+newColor+")";
+    context.arc(lineStartPoint[0],lineStartPoint[1], lineStartWeight, 0, 2*Math.PI);
+    context.fill();
+    
     while (positionDelta + linkObject.ballAnimationCount < lineVectorLength) {
         var ballPosition = positionDelta + linkObject.ballAnimationCount;
 
@@ -315,7 +320,7 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         }
 
         var ballSize = this.ar.utilities.map(ballPosition, 0, lineVectorLength, lineStartWeight, lineEndWeight);
-
+        
         var x__ = lineStartPoint[0] - Math.cos(angle) * ballPosition;
         var y__ = lineStartPoint[1] - Math.sin(angle) * ballPosition;
         positionDelta += ballSize * spacer;
@@ -324,9 +329,30 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         context.arc(x__, y__, ballSize, 0, mathPI);
         context.fill();
     }
+
+    context.beginPath();
+    context.fillStyle = "rgba("+newColor+")";
+    context.arc(lineEndPoint[0],lineEndPoint[1], lineEndWeight, 0, 2*Math.PI);
+    context.fill();
+    
     linkObject.ballAnimationCount += (lineStartWeight * timeCorrector.delta)+speed;
 };
 
+realityEditor.gui.ar.lines.transform = function (cxt, weight, object){
+    var n = object;
+    if(!n) return;
+  /*  var m = n.mostRecentFinalMatrix;
+    var offset =  m[15];
+    var xx =n.scale;
+  
+    */
+    cxt.beginPath();
+   // cxt.setTransform((m[0]/offset)*xx, (m[1]/offset)*xx, (m[4]/offset)*xx,(m[5]/offset)*xx, n.screenX,n.screenY);
+    cxt.arc(n.screenX,n.screenY, weight, 0, 2*Math.PI);
+    cxt.fill();
+    
+
+};
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
