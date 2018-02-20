@@ -257,14 +257,7 @@ realityEditor.device.onTouchDown = function(evt) {
 				// if(this.type === "logic")
 				//   globalProgram.logicA = globalProgram.logicSelector;
 			}
-		} else if (globalStates.guiState === 'ui') {
-
-            console.log('touchdown on frame');
-            this.touchTimer = setTimeout(function () {
-                console.log('holding down on frame');
-            }, globalStates.moveDelay);
-            
-        }
+		}
 	}
 	cout("touchDown");
 };
