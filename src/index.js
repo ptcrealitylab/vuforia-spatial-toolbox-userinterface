@@ -60,7 +60,8 @@ var realityEditor = realityEditor || {
 		    security:{},
             utilities: {},
             speechProcessor: {},
-            speechPerformer: {}
+            speechPerformer: {},
+            touchInputs : {}
 		},
 		gui: {
 			ar: {
@@ -90,6 +91,7 @@ var realityEditor = realityEditor || {
             instantConnect:{},
             menus:{},
             pocket: {},
+            screenExtension : {},
             search:{},
             utilities: {},
             canvasCache: {},

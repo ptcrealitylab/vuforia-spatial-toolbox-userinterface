@@ -25,12 +25,14 @@ function TouchProcessor(touchDiv) {
 
     function onTouchDown(event) {
         processTouchEvent('touchdown', event.pageX, event.pageY);
+       
     }    
     function onTouchMove(event) {
         processTouchEvent('touchmove', event.pageX, event.pageY);
     }    
     function onTouchUp(event) {
         processTouchEvent('touchup', event.pageX, event.pageY);
+  
     }
 
     function processTouchEvent(eventName, x, y) {

@@ -125,6 +125,7 @@ realityEditor.gui.ar.draw.notLoading = "";
 realityEditor.gui.ar.draw.utilities = realityEditor.gui.ar.utilities;
 
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
+    realityEditor.device.touchInputs.update();
     
 //    console.log(JSON.stringify(visibleObjects));
     this.ar.utilities.timeSynchronizer(timeCorrection);
@@ -154,6 +155,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
             //  this.activeObjectMatrix2 = multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix);
             //   document.getElementById("controls").innerHTML = (toAxisAngle(this.activeObjectMatrix2)[0]).toFixed(1)+" "+(toAxisAngle(this.activeObjectMatrix2)[1]).toFixed(1);
+
+            objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
+            objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
             
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);

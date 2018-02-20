@@ -945,6 +945,38 @@ if (thisFrame) {
         //     cover.style.left = left;
         // }
     }
+
+    // Forward the touch events from the nodes to the overall touch event collector
+    
+    if (typeof msgContent.eventObject !== "undefined") {
+      
+        if(msgContent.eventObject.type === "touchstart"){
+            realityEditor.device.touchInputs.screenTouchStart(msgContent.eventObject);
+        } else if(msgContent.eventObject.type === "touchend"){
+            realityEditor.device.touchInputs.screenTouchEnd(msgContent.eventObject);
+        } else if(msgContent.eventObject.type === "touchmove"){
+            realityEditor.device.touchInputs.screenTouchMove(msgContent.eventObject);
+        }
+        return;
+    }
+
+    if (typeof msgContent.screenObject !== "undefined") {
+        realityEditor.gui.screenExtension.receiveObject(msgContent.screenObject);
+    }
+    
+    if (typeof msgContent.sendScreenObject !== "undefined") {
+        if(msgContent.sendScreenObject){
+            realityEditor.gui.screenExtension.activeScreenObject = 
+                {
+                    object : msgContent.object,
+                    frame : msgContent.frame,
+                    node: msgContent.node
+                }
+        }
+    }
+    
+
+    
     
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {

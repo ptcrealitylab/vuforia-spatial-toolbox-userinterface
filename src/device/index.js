@@ -49,6 +49,16 @@
 
 createNameSpace("realityEditor.device");
 
+realityEditor.device.eventObject = {
+    version : null,
+        object: null,
+        frame : null,
+        node : null,
+        x: 0,
+        y: 0,
+        type: null
+};
+
 /**
  * @desc
  **/
@@ -181,7 +191,6 @@ realityEditor.device.endTrash = function(nodeKey) {
 realityEditor.device.touchTimer = null;
 
 realityEditor.device.onTouchDown = function(evt) {
-    
     var target = evt.currentTarget;
 	console.log(target.nodeId);
 
@@ -641,6 +650,11 @@ realityEditor.device.onCanvasPointerDown = function(evt) {
 realityEditor.device.onDocumentPointerMove = function (evt) {
 	evt.preventDefault();
 
+    realityEditor.device.eventObject.x = evt.clientX;
+    realityEditor.device.eventObject.y = evt.clientY;
+    realityEditor.device.eventObject.type = "touchmove";
+    realityEditor.device.touchInputs.screenTouchMove(realityEditor.device.eventObject);
+    
 	globalStates.pointerPosition = [evt.clientX, evt.clientY];
 
 	// Translate up 6px to be above pocket layer
@@ -667,7 +681,13 @@ function getFarFrontFrame(objectKey) {
  **/
 
 realityEditor.device.onDocumentPointerUp = function(evt) {
-    
+
+    realityEditor.device.eventObject.x = evt.clientX;
+    realityEditor.device.eventObject.y = evt.clientY;
+    realityEditor.device.eventObject.type = "touchend";
+    realityEditor.device.touchInputs.screenTouchEnd(realityEditor.device.eventObject);
+
+
     var nodeCalculations = realityEditor.gui.ar.draw.nodeCalculations;
 
 	globalStates.pointerPosition = [-1, -1];
@@ -783,7 +803,13 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
  * @param evt
  */
 realityEditor.device.onDocumentPointerDown = function(evt) {
-	globalStates.pointerPosition = [evt.clientX, evt.clientY];
+
+    realityEditor.device.eventObject.x = evt.clientX;
+    realityEditor.device.eventObject.y = evt.clientY;
+    realityEditor.device.eventObject.type = "touchstart";
+    realityEditor.device.touchInputs.screenTouchStart(realityEditor.device.eventObject);
+    
+    globalStates.pointerPosition = [evt.clientX, evt.clientY];
 
 	overlayDiv.style.display = "inline";
 	// Translate up 6px to be above pocket layer
