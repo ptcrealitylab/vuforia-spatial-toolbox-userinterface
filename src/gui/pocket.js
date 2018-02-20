@@ -120,7 +120,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
     var realityElements = [
         {
-            name: 'reality-control-slider-kinetic',
+            name: 'slider',
             width: 206,
             height: 526,
             nodeNames: [
@@ -128,7 +128,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             ]
         },
         {
-            name: 'reality-control-slider-kinetic-2d',
+            name: 'slider-2d',
             width: 526,
             height: 526,
             nodeNames: [
@@ -137,7 +137,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             ]
         },
         {
-            name: 'reality-sensor-graph',
+            name: 'sensor-graph',
             width: 304,
             height: 304,
             nodeNames: [
@@ -145,7 +145,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             ]
         },
         {
-            name: 'reality-sensor-linear',
+            name: 'sensor-linear',
             width: 204,
             height: 52,
             nodeNames: [
@@ -153,7 +153,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             ]
         },
         {
-            name: 'reality-sensor-digital',
+            name: 'sensor-digital',
             width: 100,
             height: 100,
             nodeNames: [
@@ -170,8 +170,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         // On touching an element-template, upload to currently visible object
         pocket.addEventListener('pointerdown', function(evt) {
             
-            
-            // TODO: reimplement widget frames (uncomment frame.js)
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
@@ -186,9 +184,20 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 var frame = new Frame();
 
                 frame.objectId = closestObjectKey;
-                frame.name = evt.target.dataset.name + realityEditor.device.utilities.uuidTime();
+                
+                // name the frame "gauge", "gauge2", "gauge3", etc... 
+                frame.name = evt.target.dataset.name;
+                var existingFrameTypes = Object.keys(closestObject.frames).map(function(existingFrameKey){return closestObject.frames[existingFrameKey].type;});
+                var numberOfSameFrames = existingFrameTypes.filter(function(type){
+                    return type === evt.target.dataset.name;
+                }).length;
+                if (numberOfSameFrames > 0) {
+                    frame.name = evt.target.dataset.name + (numberOfSameFrames+1);
+                }
+                
+                console.log('created frame with name ' + frame.name);
 
-                var frameID = frame.objectId + frame.name;
+                var frameID = frame.objectId + frame.name + realityEditor.device.utilities.uuidTime();
                 frame.uuid = frameID;
 
                 frame.ar.x = 0;
