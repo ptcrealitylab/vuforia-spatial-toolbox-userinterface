@@ -23,7 +23,15 @@ var sendTouchEvents = false;
         socketIoUrl: '',
         style: document.createElement('style'),
         messageCallBacks: {},
-        version: 170
+        version: 170,
+        eventObject : {
+            version : null,
+            object: null,
+            frame : null,
+            node : null,
+            x: 0,
+            y: 0,
+            type: null}
     };
 
     // adding css styles nessasary for acurate 3D transformations.
@@ -535,6 +543,28 @@ var sendTouchEvents = false;
         return event.changedTouches[0].screenY;
     }
 
+    function getScreenPosition(event) {
+        realityObject.eventObject.version = realityObject.version;
+        realityObject.eventObject.object = realityObject.object;
+        realityObject.eventObject.frame = realityObject.frame;
+        realityObject.eventObject.node = realityObject.node;
+        realityObject.eventObject.x = event.changedTouches[0].screenX;
+        realityObject.eventObject.y = event.changedTouches[0].screenY;
+        realityObject.eventObject.type = event.type;
+        return realityObject.eventObject;
+    }
+
+    function sendEventObject(event) {
+
+        parent.postMessage(JSON.stringify({
+            version: realityObject.version,
+            node: realityObject.node,
+            frame: realityObject.frame,
+            object: realityObject.object,
+            eventObject: getScreenPosition(event)
+        }), '*');
+    }
+
     function sendTouchEvent(event) {
         parent.postMessage(JSON.stringify({
             version: realityObject.version,
@@ -551,6 +581,7 @@ var sendTouchEvents = false;
     
     window.onload = function() {
         document.body.addEventListener('touchstart', function() {
+            sendEventObject(event);
             if (touchTimer) {
                 return;
             }
@@ -572,6 +603,7 @@ var sendTouchEvents = false;
         });
 
         document.body.addEventListener('touchmove', function(event) {
+            sendEventObject(event);
             if (sendTouchEvents) {
                 sendTouchEvent(event);
             } else if (touchTimer) {
@@ -585,6 +617,7 @@ var sendTouchEvents = false;
         });
 
         document.body.addEventListener('touchend', function(event) {
+            sendEventObject(event);
             if (sendTouchEvents) {
                 sendTouchEvent(event);
             }
