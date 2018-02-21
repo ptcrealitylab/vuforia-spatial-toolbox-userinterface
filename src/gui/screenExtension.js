@@ -69,8 +69,18 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     // console.log(thisObject);
     // TODO BEN Replace with exact 3D plane location
     
-    this.screenObject.x = eventObject.x- thisObject.screenX;
-    this.screenObject.y = eventObject.y- thisObject.screenY;
+    var closestFrame = realityEditor.gui.ar.getClosestFrame()[1];
+    var frame = realityEditor.getFrame(this.screenObject.closestObject, closestFrame);
+    if (frame) {
+        var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frame, eventObject.x, eventObject.y, true);
+        this.screenObject.x = results.point.x - results.offsetLeft - 150; // relative to center of marker, not upper left
+        this.screenObject.y = results.point.y - results.offsetTop - 150;
+        console.log(eventObject.x + ' -> ' + this.screenObject.x);
+        console.log(eventObject.y + ' -> ' + this.screenObject.y);
+    } else {
+        this.screenObject.x = eventObject.x - thisObject.screenX;
+        this.screenObject.y = eventObject.y - thisObject.screenY;
+    }
 };
 
 realityEditor.gui.screenExtension.calculatePushPop = function (){

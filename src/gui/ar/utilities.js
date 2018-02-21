@@ -343,13 +343,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
     /**
      * 
-     * @param {Frame|Node} thisObject - 
+     * @param {Frame|Node} thisVehicle - 
      * @param {Number} screenX - x coordinate on the screen plane
      * @param {Number} screenY - y coordinate on the screen plane
-     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisObject's existing translation
-     * @return {{point, offsetLeft, offsetTop}}
+     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
+     * @return {{point (x,y,z), offsetLeft, offsetTop}}
      */
-    function screenCoordinatesToMatrixXY(thisObject, screenX, screenY, relativeToMarker) {
+    function screenCoordinatesToMatrixXY(thisVehicle, screenX, screenY, relativeToMarker) {
 
         var positionData;
         var previousPosition;
@@ -357,7 +357,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         
         // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
         if (relativeToMarker) {
-            positionData = realityEditor.gui.ar.positioning.getPositionData(thisObject);
+            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
 
             if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
                 previousPosition = {
@@ -369,12 +369,12 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                 positionData.y = 0;
                 positionData.scale = 1;
                 var draw = realityEditor.gui.ar.draw;
-                var elementUuid = thisObject.uuid || thisObject.frameId + thisObject.name;
-                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisObject.objectId, elementUuid, thisObject.type, thisObject, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
             }
         }
         
-        var results = solveProjectedCoordinatesInFrame(thisObject, screenX, screenY, updatedCssMatrix);
+        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
         
         // restore the frame's relative position that nothing visually changes due to this computation
         if (previousPosition) {
@@ -383,13 +383,12 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             positionData.scale = previousPosition.scale;
         }
         
-        return results; // [projectedXY.x, projectedXY.y]; // TODO: update invokers to use new data format { point: { x, y }, offsetLeft, offsetTop } 
+        return results;
     }
+    
+    function solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, cssMatrixToUse) {
 
-    // TODO: does this work for things other than frames? should I make assumptions?
-    function solveProjectedCoordinatesInFrame(frame, screenX, screenY, cssMatrixToUse) {
-
-        var elementUuid = frame.uuid || frame.frameId + frame.name;
+        var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
         var overlayDomElement = globalDOMCache[elementUuid];
         
         var projectedZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
