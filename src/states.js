@@ -150,6 +150,7 @@ var globalStates = {
 		interval: undefined,
 		timeout: undefined
 	},
+    initialDistance: null,
 
 	// rettail
 	reality: false,

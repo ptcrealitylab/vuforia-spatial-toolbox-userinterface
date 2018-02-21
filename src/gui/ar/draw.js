@@ -454,6 +454,18 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 };
 
+realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization) {
+    frame.visualization = newVisualization;
+    if (frame.visualization === 'screen') {
+        this.hideTransformed(frame.uuid, frame, globalDOMCache, cout);
+        console.log('hide frame -> screen');
+    } else {
+        // this.drawTransformed(frame.uuid, frame, globalDOMCache, cout);
+        console.log('show frame -> AR');
+    }
+};
+
+
 /**
  * Removes a frame from its associated object and places it instead in the globalFrames object.
  * Updates the DOM elements and data for the frame so that they stay present even if the original object disappears.

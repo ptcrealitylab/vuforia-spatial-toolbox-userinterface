@@ -341,6 +341,39 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 // private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
 (function(exports) {
 
+    // TODO: finish implementing
+    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY) {
+        
+        var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
+        if (visibleObjectMatrix) {
+            
+            var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+            
+            return {
+                x: 0,
+                y: 0
+            }
+        }
+        
+        else {
+            console.warn('this object is not visible, cannot determine its ray projection');
+            return {
+                x: 0,
+                y: 0
+            }
+        }
+    }
+    
+    function computeFinalMatrixFromMarkerMatrix(markerMatrix) {
+        var finalMatrix = [];
+
+        // this.activeObjectMatrix = [];
+        // this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
+        // this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
+        
+        return finalMatrix;
+    }
+
     /**
      * 
      * @param {Frame|Node} thisVehicle - 
@@ -531,6 +564,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
+    exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
     
 }(realityEditor.gui.ar.utilities));
 

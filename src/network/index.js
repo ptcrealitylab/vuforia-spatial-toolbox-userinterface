@@ -296,6 +296,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
 
             origin.frames[frameKey].width = 300; // TODO: why is this hard-coded?
             origin.frames[frameKey].height = 300;
+            
+            origin.frames[frameKey].uuid = frameKey;
 
             console.log('added new frame', origin.frames[frameKey]);
             
@@ -304,6 +306,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             // realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
             
         } else {
+            origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
             origin.frames[frameKey].ar = remote.frames[frameKey].ar;
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
@@ -485,7 +488,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         this.utilities.syncLinksWithRemote(origin, remote.links);
     }
 
-    realityEditor.gui.crafting.updateGrid(objects[objectKey].nodes[nodeKey].grid);
+    if (remote.type === 'logic') {
+        realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
+    }
 
     if (globalStates.currentLogic) {
 
