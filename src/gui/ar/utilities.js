@@ -349,9 +349,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             
             var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
             
+            var point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            
             return {
-                x: 0,
-                y: 0
+                x: point.x  - 284,
+                y: point.y - 160
             }
         }
         
@@ -367,11 +369,106 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     function computeFinalMatrixFromMarkerMatrix(markerMatrix) {
         var finalMatrix = [];
 
-        // this.activeObjectMatrix = [];
-        // this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
-        // this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
+        var draw = realityEditor.gui.ar.draw;
+        var activeObjectMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, draw.matrix.r);
+        realityEditor.gui.ar.utilities.multiplyMatrix(draw.rotateX, draw.matrix.r, activeObjectMatrix);
+
+        // console.log(activeObjectMatrix);
+        
+        // TODO: can we remove this last multiplication since the marker always has pos (0,0) and scale 1 ??
+        var positionData = {
+            scale: 1.0,
+            x: 0,
+            y: 0
+        };
+        draw.matrix.r3 = [
+            positionData.scale, 0, 0, 0,
+            0, positionData.scale, 0, 0,
+            0, 0, 1, 0,
+            positionData.x, positionData.y, 0, 1
+        ];
+        realityEditor.gui.ar.utilities.multiplyMatrix(draw.matrix.r3, activeObjectMatrix, finalMatrix);
         
         return finalMatrix;
+    }
+    
+    function undoTranslationAndScale(finalMatrix) {
+        return finalMatrix;
+    }
+    
+    function screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, relativeToMarker) {
+        if (relativeToMarker) {
+            finalMatrix = undoTranslationAndScale(finalMatrix);
+        }
+        // var results = {};
+
+        // var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
+        // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
+
+        var screenZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
+
+        // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
+        var dt = 0.1;
+        // var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
+
+        // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
+        
+        // translation matrix if the element has a different transform origin
+        // var originTranslationVector = getTransformOrigin(transformedDiv);
+        var originTranslationVector = [284, 160, 0, 1];
+
+        // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+        // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+        var fullTx = computeTransformMatrix(finalMatrix, originTranslationVector);
+        // var fullTx = finalMatrix;
+
+        // invert and normalize the matrix
+        var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
+        var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
+
+        var screenPoint0 = [screenX, screenY, screenZ, 1];
+        // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+        p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint0));
+        
+        var screenPoint2 = [screenX, screenY, screenZ + dt, 1];
+        p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint2));
+
+        // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
+
+        var dx = (p2[0] - p0[0]) / dt;
+        var dy = (p2[1] - p0[1]) / dt;
+        var dz = (p2[2] - p0[2]) / dt;
+        var neededDt = (p0[2]) / dz; // TODO: make sure I don't divide by zero
+        var x = p0[0] - dx * neededDt;
+        var y = p0[1] - dy * neededDt;
+        var z = p0[2] - dz * neededDt;
+
+        point = {
+            x: x,
+            y: y,
+            z: z
+        };
+
+        // var left = parseInt(overlayDomElement.style.left);
+        // if (isNaN(left)) {
+        //     left = 0;
+        // }
+        // var top = parseInt(overlayDomElement.style.top);
+        // if (isNaN(top)) {
+        //     top = 0;
+        // }
+
+        // return {
+        //     point: point,
+        //     offsetLeft: left,
+        //     offsetTop: top
+        // }
+        
+        return {
+            x: point.x,
+            y: point.y
+        }
     }
 
     /**
@@ -565,6 +662,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
     exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
     exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
+    exports.screenCoordinatesToMatrixXY_finalMatrix = screenCoordinatesToMatrixXY_finalMatrix;
+    exports.computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
     
 }(realityEditor.gui.ar.utilities));
 

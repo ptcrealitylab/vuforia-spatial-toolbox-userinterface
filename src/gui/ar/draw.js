@@ -161,13 +161,15 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
+                
                 if (!this.activeFrame.hasOwnProperty('visualization')) { // TODO: temp fix
                     this.activeFrame.visualization = "ar";
                 }
-                if (this.activeFrame.visualization !== "ar") {
-                    continue;
-                }
-                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) {
+                // if (this.activeFrame.visualization !== "ar") {
+                //     continue;
+                // }
+                
+                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) { // TODO: ben better fix for frames with same name as object - make sure they don't get created in the first place...
                     // console.log("break from frame: ",objectKey, frameKey);
                     continue;
                 }
@@ -265,10 +267,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
 
-                // TODO: maybe add some tolerance for shaky recognition so it doesnt immediately take it if the marker just flickers
                 // disassociate a screen<->AR frame from the object if it is being moved in unconstrained editing
-                
-                /*
                 var preserveFrameGlobally = (globalStates.editingMode &&
                     globalStates.unconstrainedPositioning &&
                     globalStates.editingModeObject === this.activeObject.uuid &&
@@ -276,10 +275,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     globalStates.guiState === 'ui' &&
                     !globalStates.editingNode &&
                     !!this.activeFrame.type);
-                    */
+                
                 
                 // TODO: BEN re-enable feature when ready to move frames between objects
-                var preserveFrameGlobally = false;
+                // var preserveFrameGlobally = false;
                 
                 if (preserveFrameGlobally) {
                     
@@ -455,14 +454,31 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 };
 
 realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization) {
-    frame.visualization = newVisualization;
-    if (frame.visualization === 'screen') {
-        this.hideTransformed(frame.uuid, frame, globalDOMCache, cout);
-        console.log('hide frame -> screen');
-    } else {
-        // this.drawTransformed(frame.uuid, frame, globalDOMCache, cout);
-        console.log('show frame -> AR');
+    
+    if (frame.visualization !== newVisualization) {
+        
+        frame.visualization = newVisualization;
+        
+        if (frame.visualization === 'screen') {
+            this.hideTransformed(frame.uuid, frame, globalDOMCache, cout);
+            console.log('hide frame -> screen');
+        } else {
+            // this.drawTransformed(frame.uuid, frame, globalDOMCache, cout);
+            console.log('show frame -> AR');
+            realityEditor.gui.menus.on("editing", ["unconstrained"]);
+            globalStates.unconstrainedPositioning = true;
+
+            var activeKey = frame.uuid; //msgContent.node || msgContent.frame;
+            var element = document.getElementById(activeKey);
+            globalStates.editingPulledScreenFrame = true;
+            realityEditor.device.beginTouchEditing(element);
+            
+            // override size of newly added frame DOM to make sure it matches the frame's properties
+            
+        }
+        realityEditor.network.updateFrameVisualization(objects[frame.objectId].ip, frame.objectId, frame.uuid, newVisualization);
     }
+
 };
 
 
@@ -483,13 +499,16 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
     // seems best to keep the DOM because it's already loaded in the right place and has the touch listeners
     // if we keep the frame data object, we still need to remove it from the object and store it somewhere globally instead
 
-    var newFrameKey = globalFramePrefix + frame.type + realityEditor.device.utilities.uuidTime(); // TODO: maybe use old UUID instead of generating another
+    var frameKeyWithoutObjectKey = frameKey.slice(objectKey.length);
+    // var newFrameKey = globalFramePrefix + frame.type + realityEditor.device.utilities.uuidTime();
+
+    var newFrameKey = globalFramePrefix + frameKeyWithoutObjectKey;
 
     // temporarily disable links on server? maybe not... but may need to change their ids to find global...
     // ... no, just don't change the state of the frame on the server until it gets dropped somewhere,
     // then update everything at once then with the new state
-    // frame.location = 'global'; // TODO: is this the purpose of local vs global?
-    frame.name = newFrameKey;
+    frame.location = 'global';
+    // frame.name = newFrameKey;
 
     // rename nodes to fit the nested naming conventions for the new frame key  //TODO: update link location naming the same way?... or it might not matter for now... i'll see whether any bugs pop up if a global frame has links to it while being moved...
     var newNodes = {};
@@ -511,12 +530,14 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
     // store a reference to where this frame came from, and the transform of that object, so that it
     // can be placed correctly in another object space
     frame.sourceObject = objectKey;
-    var screenFrameKey = objectKey + 'screen';
-    var sourceScreenFrame = realityEditor.getFrame(objectKey, screenFrameKey);
-    if (sourceScreenFrame) {
-        frame.sourceObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(sourceScreenFrame.mostRecentFinalMatrix);
-        // frame.sourceObjectMatrix = sourceScreenFrame.mostRecentFinalMatrix;
-    }
+    // var screenFrameKey = objectKey + 'screen';
+    // var sourceScreenFrame = realityEditor.getFrame(objectKey, screenFrameKey);
+    // if (sourceScreenFrame) {
+    //     frame.sourceObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(sourceScreenFrame.mostRecentFinalMatrix);
+    //     // frame.sourceObjectMatrix = sourceScreenFrame.mostRecentFinalMatrix;
+    // }
+    
+    // frame.sourceObjectMatrix can be computed later with realityEditor.gui.ar.draw.utilities.computeFinalMatrixFromMarkerMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey])
 
     // add the frame to the globalFrames
     globalFrames[newFrameKey] = frame;
@@ -525,7 +546,7 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
     delete objects[objectKey].frames[frameKey];
 
     // update the DOM elements for the frame with new ids
-    this.updateFrameElements(frameKey, newFrameKey);
+    this.updateFrameElements(null, frameKey, newFrameKey);
 
     globalStates.editingModeObject = globalFramePrefix;
     globalStates.editingModeFrame = newFrameKey;
@@ -538,22 +559,29 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
 /**
  * Takes a frame from the globalFrames and moves it to the frames property of the specified object.
  * Updates the DOM elements and data of the frame to be attached to the new object rather than the global namespace.
- * @param objectKey - uuid of the object that the frame should be moved to
- * @param frameKey - the frame's key within globalFrames
+ * @param newObjectKey - uuid of the object that the frame should be moved to
+ * @param globalFrameKey - the frame's key within globalFrames
  * @param frame - a reference to the global frame itself
  */
-realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey, frame) {
+realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, globalFrameKey, frame) {
     
-    console.log(objectKey, frameKey, frame);
+    console.log(newObjectKey, globalFrameKey, frame);
     
     // TODO: we need to store the frame's old objectKey and frameKey so that we can update the server to re-point links here when it gets dropped onto a new object
     // TODO: how will we update other servers (different IPs) to know when this node changes its address?)
     // TODO: should our server store a forwarding table that reroutes incoming packets for nodes flagged as moved?
-    
-    var newFrameKey = objectKey + frame.type + realityEditor.device.utilities.uuidTime(); // maybe generate this a different way, but should work for now
 
-    // frame.location = 'global'; // TODO: is this the purpose of local vs global?
-    frame.name = newFrameKey;
+    var isReturningToSource = (newObjectKey === frame.sourceObject);
+
+    // var newFrameKey = newObjectKey + frame.type + realityEditor.device.utilities.uuidTime(); // maybe generate this a different way, but should work for now
+
+    var frameKeyWithoutObjectKey = globalFrameKey.slice(globalFramePrefix.length);
+    // var newFrameKey = globalFramePrefix + frame.type + realityEditor.device.utilities.uuidTime();
+
+    var newFrameKey = newObjectKey + frameKeyWithoutObjectKey;
+    
+    frame.location = 'local';
+    // frame.name = newFrameKey;
 
     // rename nodes to fit the nested naming conventions for the new frame key  //TODO: update link location naming the same way?... or it might not matter for now... i'll see whether any bugs pop up if a global frame has links to it while being moved...
     var newNodes = {};
@@ -566,15 +594,16 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey,
     }
     frame.nodes = newNodes;
 
-    frame.objectId = objectKey;
-
-    frame.objectVisible = true; // maybe good to do? not sure what the implications are
+    frame.objectId = newObjectKey;
+    
+    frame.objectVisible = true; //true; // maybe good to do? not sure what the implications are
 
     frame.uuid = newFrameKey;
     
+    /*
     // TODO: calculate relative transformation between old object and new object
-    if (frame.sourceObject && frame.sourceObjectMatrix && objectKey !== frame.sourceObject) {
-        var newScreenFrame = realityEditor.getFrame(objectKey, objectKey + 'screen');
+    if (frame.sourceObject && frame.sourceObjectMatrix && newObjectKey !== frame.sourceObject) {
+        var newScreenFrame = realityEditor.getFrame(newObjectKey, newObjectKey + 'screen');
         if (newScreenFrame && newScreenFrame.mostRecentFinalMatrix) {
             // var newObjectMatrix = newScreenFrame.mostRecentFinalMatrix;
             // console.log(frame.sourceObjectMatrix, newObjectMatrix, frame.matrix);
@@ -589,22 +618,126 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey,
             frame.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(tempMatrix);
         }
     }
+    */
     
-    delete frame.sourceObject;
-    delete frame.sourceObjectMatrix;
-
     // add the frame to the new object
-    objects[objectKey].frames[newFrameKey] = frame;
-
+    objects[newObjectKey].frames[newFrameKey] = frame;
     // remove the frame from globalFrames
-    delete globalFrames[frameKey];
+    delete globalFrames[globalFrameKey];
 
     // update the DOM elements for the frame with new ids
-    this.updateFrameElements(frameKey, newFrameKey);
+    this.updateFrameElements(newObjectKey, globalFrameKey, newFrameKey);
 
-    globalStates.editingModeObject = objectKey;
+    // hide the frame if you dropped it when no other objects are visible (returns to source object)
+    if (isReturningToSource) {
+        
+        var isSourceObjectVisible = (newObjectKey in realityEditor.gui.ar.draw.visibleObjects);
+        
+        if (!isSourceObjectVisible) {
+            // if (typeof frame.matrixBeforeEditing !== 'undefined') {
+            //     // frame.ar.matrix = frame.matrixBeforeEditing;
+            //     frame.temp = frame.matrixBeforeEditing;
+            // }
+            frame.ar.x = 0;
+            frame.ar.y = 0;
+            frame.ar.matrix = realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+
+            realityEditor.gui.ar.draw.hideTransformed(newFrameKey, frame, globalDOMCache, cout);
+        }
+        
+    } else {
+        
+        // reset its position (this can be updated later to move the frame to the dropped location
+        
+        frame.ar.x = 0;
+        frame.ar.y = 0;
+        frame.ar.matrix = realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+        
+        // add the new frame to the new object
+        var newObjectIP = realityEditor.getObject(newObjectKey).ip;
+        realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame);
+        
+        // update all links locally within the editor (so that the lines get drawn correctly), and...
+        // find the servers of all incoming and outgoing links and tell them to update the link with this new location
+        
+        realityEditor.forEachFrameInAllObjects( function(thatObjectKey, thatFrameKey) {
+            var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
+            for (var linkKey in thatFrame.links) {
+                if (!thatFrame.links.hasOwnProperty(linkKey)) continue;
+                var thatLink = thatFrame.links[linkKey];
+
+                var newLinkObject = {
+                    logicA: thatLink.logicA,
+                    logicB: thatLink.logicB,
+                    logicSelector: thatLink.logicSelector,
+                    nodeA: thatLink.nodeA,
+                    nodeB: thatLink.nodeB,
+                    frameA: thatLink.frameA,
+                    frameB: thatLink.frameB,
+                    objectA: thatLink.objectA,
+                    objectB: thatLink.objectB
+                };
+                var linkChanges = false;
+                
+                var frameAWithoutObject = thatLink.frameA.slice(thatLink.objectA.length);
+                // re-route links starting from the frame being moved
+                if (thatLink.objectA === frame.sourceObject) {
+                    if (frameAWithoutObject === frameKeyWithoutObjectKey) {
+                        // this link was starting from the frame being moved
+                        // create a new one with the updated route
+                        newLinkObject.objectA = newObjectKey;
+                        newLinkObject.frameA = newFrameKey;
+                        var nodeAWithoutFrame = thatLink.nodeA.slice(thatLink.frameA.length);
+                        newLinkObject.nodeA = newFrameKey + nodeAWithoutFrame;
+                        linkChanges = true;
+                    }
+                }
+
+                var frameBWithoutObject = thatLink.frameB.slice(thatLink.objectB.length);
+                // re-route links ending on the frame being moved
+                if (thatLink.objectB === frame.sourceObject) {
+                    if (frameBWithoutObject === frameKeyWithoutObjectKey) {
+                        // this link was ending on the frame being moved
+                        // create a new one with the updated route
+                        newLinkObject.objectB = newObjectKey;
+                        newLinkObject.frameB = newFrameKey;
+                        var nodeBWithoutFrame = thatLink.nodeB.slice(thatLink.frameB.length);
+                        newLinkObject.nodeB = newFrameKey + nodeBWithoutFrame;
+                        linkChanges = true;
+                    }
+                }
+                
+                if (linkChanges) {
+                    
+                    // delete the old link using its original objectA's ip, objectA, frameA, and linkKey
+                    var ip = realityEditor.getObject(thatLink.objectA).ip;
+                    var objectA = thatLink.objectA;
+                    var frameA = thatLink.frameA;
+
+                    console.log('changed link from ' + thatLink.objectA + '::' + thatLink.frameA + '->' + thatLink.objectB + '::' + thatLink.frameB + '  to  ' + newLinkObject.objectA + '::' + newLinkObject.frameA + '->' + newLinkObject.objectB + '::' + newLinkObject.frameB);
+
+                    delete thatFrame.links[linkKey];
+                    realityEditor.network.deleteLinkFromObject(ip, objectA, frameA, linkKey);
+                    
+                    // create a new link with updated data
+                    // realityEditor.getFrame(newLinkObject.objectA, newLinkObject.frameA).links[linkKey] = newLinkObject;
+                    realityEditor.network.postLinkToServer(newLinkObject, linkKey);
+                }
+            }
+        });
+
+        // delete frame from old object
+        var sourceObjectIP = realityEditor.getObject(frame.sourceObject).ip;
+        var oldFrameKey = frame.sourceObject + frameKeyWithoutObjectKey;
+        realityEditor.network.deleteFrameFromObject(sourceObjectIP, frame.sourceObject, oldFrameKey);
+    }
+
+    globalStates.editingModeObject = newObjectKey;
     globalStates.editingModeFrame = newFrameKey;
     globalStates.editingFrame = newFrameKey;
+    
+    delete frame.sourceObject;
+    // delete frame.sourceObjectMatrix;
 
     // TODO: update server state all at once then with the new state when this finishes
     
@@ -616,30 +749,37 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(objectKey, frameKey,
  * @param frameKey - old uuid
  * @param newFrameKey - new uuid
  */
-realityEditor.gui.ar.draw.updateFrameElements = function(frameKey, newFrameKey) {
+realityEditor.gui.ar.draw.updateFrameElements = function(newObjectKey, frameKey, newFrameKey) {
     // re-assign ids to DOM elements
     globalDOMCache['object' + frameKey].id = 'object' + newFrameKey;
     globalDOMCache['iframe' + frameKey].id = 'iframe' + newFrameKey;
+    
     globalDOMCache[frameKey].id = newFrameKey;
-    globalDOMCache['canvas' + frameKey].id = 'canvas' + newFrameKey;
+    globalDOMCache[frameKey].objectId = newObjectKey;
+    globalDOMCache[frameKey].frameId = newFrameKey;
+
+    globalDOMCache['svg' + frameKey].id = 'svg' + newFrameKey;
 
     // iframe also has a dataset of ids
     globalDOMCache['iframe' + frameKey].dataset = {
         frameKey: newFrameKey,
         nodeKey: "null",
-        objectKey: "null"
+        objectKey: newObjectKey
     };
 
     // update their keys in the globalDOMCache 
     globalDOMCache['object' + newFrameKey] = globalDOMCache['object' + frameKey];
     globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + frameKey];
     globalDOMCache[newFrameKey] = globalDOMCache[frameKey];
-    globalDOMCache['canvas' + newFrameKey] = globalDOMCache['canvas' + frameKey];
+    globalDOMCache['svg' + newFrameKey] = globalDOMCache['svg' + frameKey];
     delete globalDOMCache['object' + frameKey];
     delete globalDOMCache['iframe' + frameKey];
     delete globalDOMCache[frameKey];
-    delete globalDOMCache['canvas' + frameKey];
-}
+    delete globalDOMCache['svg' + frameKey];
+
+    globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
+    globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload();
+};
 
 /**
  * @desc
@@ -648,7 +788,7 @@ realityEditor.gui.ar.draw.updateFrameElements = function(frameKey, newFrameKey) 
 
 realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
-    if (notLoading !== activeKey && activeVehicle.loaded === true) {
+    if (notLoading !== activeKey && activeVehicle.loaded === true && activeVehicle.visualization !== "screen") {
         if (!activeVehicle.visible) {
             activeVehicle.visible = true;
             
@@ -787,7 +927,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         if (matrix.copyStillFromMatrixSwitch) {
                             matrix.visual = utilities.copyMatrix(activeObjectMatrix);
                             if (typeof positionData.matrix === "object") {
-                                if (positionData.matrix.length > 0) { 
+                                if (positionData.matrix.length > 0) {
                                     utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
                                 } else {
                                     activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
@@ -814,22 +954,21 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     var isFullyBehindPlane = false;
 
-                    if (typeof positionData.matrix[1] !== "undefined") {
-                        if (positionData.matrix.length > 0) {
-                            if (globalStates.unconstrainedPositioning === false) {
-                                //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
-                                utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
-                            }
-                            
-                            utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
-                            utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
-                            isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
+                    if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0) {
+                        if (globalStates.unconstrainedPositioning === false) {
+                            //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
+                            utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
                         }
+                        
+                        utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+                        utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+                        isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
                     } else {
                         isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
                     }
                     
                     // for frames that can transfer between AR and screen space, send this to a screen if it goes behind the marker plane
+                    /*
                     if (isFullyBehindPlane) {
                         
                         // having "activeVehicle.type" property this means it is a "local" frame (it can be sent to screen)
@@ -881,14 +1020,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         // }
 
                     }
+                    */
+                    
                 }
 
-                if (positionData.matrix.length < 13) {
-                    utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-                    
-                } else {
-                    utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
-                    utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                if (typeof positionData.matrix !== "undefined") {
+                    if (positionData.matrix.length < 13) {
+                        utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+
+                    } else {
+                        utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+                        utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                    }
                 }
                 
                 
@@ -1096,12 +1239,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         activeVehicle.visibleEditing = false;
 
         if (typeof activeVehicle.begin !== "object") {
-            activeVehicle.begin = [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            ];
+            activeVehicle.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
 
         if (typeof activeVehicle.temp !== "object") {
@@ -1437,12 +1575,8 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
             if (matrix.copyStillFromMatrixSwitch) {
                 matrix.visual = utilities.copyMatrix(activeObjectMatrix);
-                if (typeof positionData.matrix === "object") {
-                    if (positionData.matrix.length > 0) {
-                        utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
-                    } else {
-                        activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
-                    }
+                if (typeof positionData.matrix === "object" && positionData.matrix.length > 0) {
+                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
                 } else {
                     activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
                 }
@@ -1463,26 +1597,24 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
         }
         
-        if (typeof positionData.matrix[1] !== "undefined") {
-            if (positionData.matrix.length > 0) {
-                if (globalStates.unconstrainedPositioning === false) {
-                    //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
-                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
-                }
-
-                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
-                utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+        if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0 && typeof positionData.matrix[1] !== "undefined") {
+            if (globalStates.unconstrainedPositioning === false) {
+                //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
+                utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
             }
-        } 
-
-        if (positionData.matrix.length < 13) {
-            utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-
-        } else {
-            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
-            utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+            utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+            utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
         }
 
+        if (typeof positionData.matrix !== "undefined") {
+            if (positionData.matrix.length < 13) {
+                utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+
+            } else {
+                utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+                utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+            }
+        }
 
         // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
         // but we want all of them to have a positive value so they are rendered in front of background canvas

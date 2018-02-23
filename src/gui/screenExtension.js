@@ -55,7 +55,21 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     var thisObject = objects[this.screenObject.closestObject];
     this.screenObject.touchState = eventObject.type;
     if(eventObject.type === "touchstart") {
-        this.screenObject.isScreenVisible = (thisObject.visualization === "ar");
+        // if (thisObject) {
+        //     var thisFrame = thisObject.frames[this.screenObject.frame];
+        //     if (thisFrame) {
+        //         this.screenObject.isScreenVisible = (thisFrame.visualization === "screen");
+        //     }
+        // }
+        this.screenObject.isScreenVisible = true; // TODO: only if tapped on screen frame;
+        
+        //TODO: finish implementing so doesnt start touch on screen if touch hits an AR frame first
+        // if (this.screenObject.object && this.screenObject.frame) {
+        //     var thisFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
+        //    
+        // }
+        
+        
     } else if(eventObject.type === "touchend") {
         this.screenObject.x = 0;
         this.screenObject.y = 0;
@@ -70,6 +84,38 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     }
     // console.log(thisObject);
     // TODO BEN Replace with exact 3D plane location
+    
+    
+    if (this.screenObject.closestObject && this.screenObject.isScreenVisible) {
+        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
+        // console.log(point);
+        this.screenObject.x = point.x; // offset by half the screen width
+        this.screenObject.y = point.y; // offset by half the screen height
+
+        if (this.screenObject.object && this.screenObject.frame && this.screenObject.object === this.screenObject.closestObject) {
+            var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
+            if (matchingARFrame && matchingARFrame.visualization === 'screen') {
+                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(matchingARFrame, eventObject.x, eventObject.y, true);
+
+                // var positionData = realityEditor.gui.ar.positioning.getPositionData(matchingARFrame);
+                // positionData.x = point.x;
+                // positionData.y = point.y;
+
+                matchingARFrame.ar.x = point.x;
+                matchingARFrame.ar.y = point.y;
+                // if (this.screenObject.scale) {
+                //     matchingARFrame.ar.scale = this.screenObject.scale;
+                // }
+
+                // if (this.screenObject.isScreenVisible) {
+                //     realityEditor.gui.ar.draw.changeVisualization(matchingARFrame, 'ar');
+                //     this.screenObject.isScreenVisible = false;
+                //     realityEditor.gui.screenExtension.updateArFrameVisibility();
+                // }
+            }
+        }
+    }
+    
 
     // var results = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
 
@@ -77,6 +123,7 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     // var closestFrame = realityEditor.gui.ar.getClosestFrame()[1];
     // var frame = realityEditor.getFrame(this.screenObject.closestObject, closestFrame);
     
+    /*
     // TODO: get away from using this temporary fix --> implement screenCoordinatesToMarkerXY
     var frame = null;
     realityEditor.forEachFrameInObject(this.screenObject.closestObject, function(objectKey, frameKey) {
@@ -86,15 +133,30 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         }
     });
     
+    if (frame) {
+        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(frame.mostRecentFinalMatrix, eventObject.x, eventObject.y, true);
+        this.screenObject.x = point.x;// - results.offsetLeft - 150; // relative to center of marker, not upper left
+        this.screenObject.y = point.y;// - results.offsetTop - 150;
+    }
+    */
+    
+    /*
     if (frame && globalDOMCache[frame.uuid]) {
         var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frame, eventObject.x, eventObject.y, true);
         this.screenObject.x = results.point.x - results.offsetLeft - 150; // relative to center of marker, not upper left
         this.screenObject.y = results.point.y - results.offsetTop - 150;
+        
+        var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
+        if (matchingARFrame) {
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(matchingARFrame, eventObject.x, eventObject.y, true);
+        }
+        
         // console.log(eventObject.x + ' -> ' + this.screenObject.x);
         // console.log(eventObject.y + ' -> ' + this.screenObject.y);
     } else {
         console.log('can\'t find default frame')
     }
+    */
     
     /*else {
         this.screenObject.x = eventObject.x - thisObject.screenX;
@@ -114,22 +176,33 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         
         
         var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
+        
+        // Method 1. Use the full distance to the frame.
         var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
-        // console.log(distanceToFrame);
+        
+        // Methods 2. Use only the z distance to the marker plane.
+        // var distanceToFrame = screenFrameMatrix[14];
 
+        // console.log(distanceToFrame);
+        
         if (!globalStates.initialDistance) {
             globalStates.initialDistance = distanceToFrame;
         }
         
-        // TODO: set initial value of this.screenObject.isScreenVisible to true if you just tapped down on a screen frame
         var isScreenVisible = this.screenObject.isScreenVisible;
+
+        // // if frame is on screen, must be pulled out at least 200 to move to AR
+        // if (this.screenObject.isScreenVisible && (distanceToFrame - globalStates.initialDistance > 25)) {
+        //     isScreenVisible = false;
+        //
+        //     // if frame is in AR, must be pushed in at least 200 to move to screen
+        // } else if (!this.screenObject.isScreenVisible && (distanceToFrame - globalStates.initialDistance < -25)) {
+        //     isScreenVisible = true;
+        // }
         
-        // if frame is on screen, must be pulled out at least 200 to move to AR
-        if (this.screenObject.isScreenVisible && (distanceToFrame - globalStates.initialDistance > 200)) {
+        if (distanceToFrame > (globalStates.initialDistance + 50)) {
             isScreenVisible = false;
-            
-        // if frame is in AR, must be pushed in at least 200 to move to screen
-        } else if (!this.screenObject.isScreenVisible && (distanceToFrame - globalStates.initialDistance < -200)) {
+        } else if (distanceToFrame < (globalStates.initialDistance - 50)) {
             isScreenVisible = true;
         }
 
@@ -140,7 +213,14 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
             var newVisualization = isScreenVisible ? 'screen' : 'ar';
             realityEditor.gui.ar.draw.changeVisualization(screenFrame, newVisualization);
             
-            // screenFrame.visualization = 
+            // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+            // screenFrame.currentTouchOffset = {
+            //     x: 284,
+            //     y: 160
+            // };
+            // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(screenFrame, touchPosition.x, touchPosition.y);
+            
+            realityEditor.app.tap();
             
             this.screenObject.isScreenVisible = isScreenVisible;
             realityEditor.gui.screenExtension.updateArFrameVisibility();
