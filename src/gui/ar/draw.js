@@ -473,8 +473,6 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
             globalStates.editingPulledScreenFrame = true;
             realityEditor.device.beginTouchEditing(element);
             
-            // override size of newly added frame DOM to make sure it matches the frame's properties
-            
         }
         realityEditor.network.updateFrameVisualization(objects[frame.objectId].ip, frame.objectId, frame.uuid, newVisualization);
     }
