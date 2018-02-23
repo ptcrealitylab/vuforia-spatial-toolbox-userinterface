@@ -1031,13 +1031,13 @@ if (thisFrame) {
             }
         }
     }
-
+    
     if (msgContent.globalMessage) {
         var iframes = document.getElementsByTagName('iframe');
         for (var i = 0; i < iframes.length; i++) {
-
+       
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
-                var receivingObject = objects[iframes[i].id.substr(6)];
+                var receivingObject = objects[iframes[i].getAttribute("data-object-key")];
                 if (receivingObject.integerVersion >= 32) {
                     var msg = {};
                     if (receivingObject.integerVersion >= 170) {
