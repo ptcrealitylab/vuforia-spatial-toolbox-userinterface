@@ -77,7 +77,7 @@ realityEditor.device.activateNodeMove = function(nodeKey) {
 		}
 
 		//nodeOverlayElement.className = "mainProgram";
-		var nodeCanvasElement = document.getElementById("canvas" + nodeKey);
+		var nodeCanvasElement = document.getElementById("svg" + nodeKey);
 		nodeCanvasElement.style.display = "inline";
 		
 		realityEditor.device.utilities.addBoundListener(nodeOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
@@ -100,7 +100,7 @@ realityEditor.device.deactivateNodeMove = function(nodeKey) {
 		}
 
 		//nodeOverlayElement.className = "mainEditing";
-        var nodeCanvasElement = document.getElementById("canvas" + nodeKey);
+        var nodeCanvasElement = document.getElementById("svg" + nodeKey);
         nodeCanvasElement.style.display = "none";
 
         realityEditor.device.utilities.removeBoundListener(nodeOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart);
@@ -124,7 +124,7 @@ realityEditor.device.activateFrameMove = function(frameKey) {
         }
 
         //frameOverlayElement.className = "mainProgram";
-        var frameCanvasElement = document.getElementById("canvas" + frameKey);
+        var frameCanvasElement = document.getElementById("svg" + frameKey);
         frameCanvasElement.style.display = "inline";
 
         var frame = realityEditor.getFrame(frameOverlayElement.objectId, frameKey);
@@ -148,7 +148,7 @@ realityEditor.device.deactivateFrameMove = function(frameKey) {
             frameOverlayElement.style.visibility = 'hidden';
         }
 
-        var frameCanvasElement = document.getElementById("canvas" + frameKey);
+        var frameCanvasElement = document.getElementById("svg" + frameKey);
         frameCanvasElement.style.display = "none";
     }
 };
@@ -1334,7 +1334,7 @@ realityEditor.device.addEventHandlersForFrame = function(objectKey, frameKey) {
     if (frameOverlayElement && (typeof frameOverlayElement.objectId !== 'undefined') && thisFrame.developer) {
 
         frameOverlayElement.style.visibility = "visible";
-        var frameCanvasElement = document.getElementById("canvas" + frameKey);
+        var frameCanvasElement = document.getElementById("svg" + frameKey);
         frameCanvasElement.style.display = "inline";
 
         realityEditor.device.utilities.addBoundListener(frameOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart, realityEditor.device);
@@ -1368,7 +1368,7 @@ realityEditor.device.removeEventHandlers = function() {
             // this is a typo but maybe relevant?
             //  frameOverlayElement.className = "mainEditing";
 
-            var frameCanvasElement = document.getElementById("canvas" + frameKey);
+            var frameCanvasElement = document.getElementById("svg" + frameKey);
             frameCanvasElement.style.display = "none";
 
             realityEditor.device.utilities.removeBoundListener(frameOverlayElement, 'touchstart', realityEditor.device.onMultiTouchStart);

@@ -924,6 +924,7 @@ if (thisFrame) {
         var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
+        var svg = document.getElementById('svg' + activeKey);
 
         var top = ((globalStates.width - msgContent.height) / 2);
         var left = ((globalStates.height - msgContent.width) / 2);
@@ -936,6 +937,11 @@ if (thisFrame) {
         iFrame.style.height = msgContent.height;
         iFrame.style.top = top;
         iFrame.style.left = left;
+
+        svg.style.width = msgContent.width;
+        svg.style.height = msgContent.height;
+
+        realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
 
         // if (tempThisObject.frameTouchSynthesizer) {
         //     var cover = tempThisObject.frameTouchSynthesizer.cover;
@@ -1037,15 +1043,18 @@ if (thisFrame) {
         for (var i = 0; i < iframes.length; i++) {
        
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
-                var receivingObject = objects[iframes[i].getAttribute("data-object-key")];
-                if (receivingObject.integerVersion >= 32) {
-                    var msg = {};
-                    if (receivingObject.integerVersion >= 170) {
-                        msg = {globalMessage: msgContent.globalMessage};
-                    } else {
-                        msg = {ohGlobalMessage: msgContent.ohGlobalMessage};
+                
+                if(iframes[i].getAttribute("data-object-key")) {
+                    var receivingObject = objects[iframes[i].getAttribute("data-object-key")];
+                    if (receivingObject.integerVersion >= 32) {
+                        var msg = {};
+                        if (receivingObject.integerVersion >= 170) {
+                            msg = {globalMessage: msgContent.globalMessage};
+                        } else {
+                            msg = {ohGlobalMessage: msgContent.ohGlobalMessage};
+                        }
+                        iframes[i].contentWindow.postMessage(JSON.stringify(msg), "*");
                     }
-                    iframes[i].contentWindow.postMessage(JSON.stringify(msg), "*");
                 }
             }
         }

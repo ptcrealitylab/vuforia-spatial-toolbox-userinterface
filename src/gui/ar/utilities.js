@@ -585,14 +585,17 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
     
     /**
      * @desc
-     * @param {Object} thisCanvas
+     * @param {Object} thisSVG
      **/
     
-    function getCornersClockwise(thisCanvas) {
+    function getCornersClockwise(thisSVG) {
+
+        var w = parseInt(thisSVG.style.width, 10);
+        var h = parseInt(thisSVG.style.height, 10);
         return [[0, 0, 0],
-            [thisCanvas.width, 0, 0],
-            [thisCanvas.width, thisCanvas.height, 0],
-            [0, thisCanvas.height, 0]];
+            [w, 0, 0],
+            [w, h, 0],
+            [0, h, 0]];
     }
 
     /**
@@ -723,73 +726,49 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
         
     }
     
-    function renderDefaultCanvas(activeVehicle, thisCanvas, diagonalLineWidth, ctx) {
-        activeVehicle.hasCTXContent = true;
-        ctx.lineWidth = diagonalLineWidth;
-        ctx.strokeStyle = '#01FFFC';
-        for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
-            ctx.beginPath();
-            ctx.moveTo(i, -diagonalLineWidth / 2);
-            ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
-            ctx.stroke();
-        }
+    function renderDefaultCanvas(activeVehicle, thisSVG) {
+     
     }
 
     /**
      * 
      * @param activeKey
-     * @param mCanvas
+     * @param matrixSVG
      * @param activeVehicle
      * @return {boolean}
      */
     
-    function drawMarkerPlaneIntersection(activeKey, mCanvas, activeVehicle) {
+    function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
+        var thisSVG = globalDOMCache["svg" + activeKey];
         
-        var isFullyBehindPlane = false;
-        
-        var thisCanvas = globalDOMCache["canvas" + activeKey];
-        var diagonalLineWidth = 22;
-        var ctx = thisCanvas.getContext("2d");
-        var i;
-
-        if(!mCanvas) { // || !activeVehicle.hasCTXContent){
-            // if(!activeVehicle.hasCTXContent) {
-            //     activeVehicle.hasCTXContent = true;
-            if (!activeVehicle.hasCTXContent) { //} || isCanvasBlank(thisCanvas)) {
-                renderDefaultCanvas(activeVehicle, thisCanvas, diagonalLineWidth, ctx);
-                // activeVehicle.hasCTXContent = true;
-                // ctx.lineWidth = diagonalLineWidth;
-                // ctx.strokeStyle = '#01FFFC';
-                // for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
-                //     ctx.beginPath();
-                //     ctx.moveTo(i, -diagonalLineWidth / 2);
-                //     ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
-                //     ctx.stroke();
-                // }
+        if(!matrixSVG) { // || !activeVehicle.hasCTXContent){
+            if(!activeVehicle.iDoHaveTheSVGContent) {
+                activeVehicle.iDoHaveTheSVGContent = true;
+                realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG,activeVehicle.width,activeVehicle.height);
             }
             return;
         } else {
-            activeVehicle.hasCTXContent = false;
+            activeVehicle.hasMatrixForSVG = true;
         }
     
-        if (globalStates.pointerPosition[0] === -1 && activeVehicle.hasCTXContent) return; // TODO: why did I put this here?
+        if (globalStates.pointerPosition[0] === -1 && !activeVehicle.hasMatrixForSVG) return; // TODO: why did I put this here?
         
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
         if (!hasBeenUnconstrainedPositioned(positionData.matrix)) {
-            renderDefaultCanvas(activeVehicle, thisCanvas, diagonalLineWidth, ctx);
             return;
         }
+
+        var w = parseInt(thisSVG.style.width, 10);
+        var h = parseInt(thisSVG.style.height, 10);
         
-        var corners = getCornersClockwise(thisCanvas);
+        var corners = getCornersClockwise(thisSVG);
         var out = [0, 0, 0, 0];
         corners.forEach(function (corner, index) {
-            var x = corner[0] - thisCanvas.width / 2;
-            var y = corner[1] - thisCanvas.height / 2;
+            var x = corner[0] - w / 2;
+            var y = corner[1] - h / 2;
             var input = [x, y, 0, 1]; // assumes z-position of corner is always 0
-            // console.log(out, input, mCanvas);
-    
-            out = realityEditor.gui.ar.utilities.multiplyMatrix4(input, mCanvas);
-            // var z = getTransformedZ(matrix,x,y)
+            
+            out = realityEditor.gui.ar.utilities.multiplyMatrix4(input, matrixSVG);
             corner[2] = out[2]; // sets z position of corner to its eventual transformed value
         });
         
@@ -801,7 +780,6 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
                 if (areCornersEqual(corner1, corner2)) {
                     return;
                 }
-    
                 // x or y should be the same
                 if (areCornersAdjacent(corner1, corner2)) {
                     if (areCornersOppositeZ(corner1, corner2)) {
@@ -842,7 +820,7 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
     
         var numBehindMarkerPlane = 0;
         // get corners, add in correct order so they get drawn clockwise
-    
+        
         corners.forEach(function (corner) {
             if (corner[2] < 0) {
                 interceptPoints.push(corner);
@@ -857,57 +835,20 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
             // console.log('fully behind plane - send to screen!');
             isFullyBehindPlane = true;
         }
-        
+      
         var sortedPoints = sortPointsClockwise(interceptPoints);
-    
-        // draws blue and purple diagonal lines to mask the image
-        ctx.clearRect(0, 0, thisCanvas.width, thisCanvas.height);
-        activeVehicle.hasCTXContent = false;
-    
-        ctx.lineWidth = diagonalLineWidth;
-        ctx.strokeStyle = '#01FFFC';
-        for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
-            ctx.beginPath();
-            ctx.moveTo(i, -diagonalLineWidth / 2);
-            ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
-            ctx.stroke();
-        }
-    
-        // Save the state, so we can undo the clipping
-        ctx.save();
-    
-        // Create a circle
-        ctx.beginPath();
-    
+
+        var allPoints = "";
+        
         if (sortedPoints.length > 2) {
-            ctx.beginPath();
-            ctx.moveTo(sortedPoints[0][0], sortedPoints[0][1]);
+            allPoints += sortedPoints[0][0]+","+sortedPoints[0][1];
             sortedPoints.forEach(function (point) {
-                ctx.lineTo(point[0], point[1]);
+                allPoints +=","+point[0]+","+point[1];
             });
-            ctx.closePath();
-            // ctx.fill();
+            realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG,allPoints);
+        } else{
+            realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG,0+","+0+","+0+","+0+","+0+","+0);
         }
-        // Clip to the current path
-        ctx.clip();
-    
-        // draw whatever needs to get masked here!
-        ctx.lineWidth = diagonalLineWidth;
-        ctx.strokeStyle = '#FF01FC';
-        for (i = -thisCanvas.height; i < thisCanvas.width; i += 2.5 * diagonalLineWidth) {
-            ctx.beginPath();
-            ctx.moveTo(i, -diagonalLineWidth / 2);
-            ctx.lineTo(i + thisCanvas.height + diagonalLineWidth / 2, thisCanvas.height + diagonalLineWidth / 2);
-            ctx.stroke();
-        }
-    
-        // Undo the clipping
-        ctx.restore();
-        
-        activeVehicle.hasCTXContent = true;
-        // activeVehicle.forceRedrawRepositionOnce = 
-        
-        return isFullyBehindPlane;
     }
     
     exports.drawMarkerPlaneIntersection = drawMarkerPlaneIntersection;

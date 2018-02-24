@@ -643,7 +643,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             var container = globalDOMCache["object" + activeKey];
             var iFrame = globalDOMCache["iframe" + activeKey];
             var overlay = globalDOMCache[activeKey];
-            var canvas = globalDOMCache["canvas" + activeKey];
+            var canvas = globalDOMCache["svg" + activeKey];
             
             container.style.display = 'inline';
             iFrame.style.visibility = 'visible';
@@ -1051,7 +1051,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         // }
 
         globalDOMCache[activeKey].style.visibility = 'hidden';
-        globalDOMCache["canvas" + activeKey].style.display = 'none';
+        globalDOMCache["svg" + activeKey].style.display = 'none';
 
         cout("hideTransformed");
     }
@@ -1127,7 +1127,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         var addContainer = domElements.addContainer;
         var addIframe = domElements.addIframe;
         var addOverlay = domElements.addOverlay;
-        var addCanvas = domElements.addCanvas;
+        var addSVG = domElements.addSVG;
 
         addOverlay.objectId = objectKey;
         addOverlay.frameId = frameKey;
@@ -1167,12 +1167,12 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         // }
         
         addContainer.appendChild(addOverlay);
-        addOverlay.appendChild(addCanvas);
+        addOverlay.appendChild(addSVG);
 
         globalDOMCache[addContainer.id] = addContainer;
         globalDOMCache[addIframe.id] = addIframe;
         globalDOMCache[addOverlay.id] = addOverlay;
-        globalDOMCache[addCanvas.id] = addCanvas;
+        globalDOMCache[addSVG.id] = addSVG;
         
         // Add touch event listeners
         
@@ -1242,21 +1242,24 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addOverlay.style.visibility = "hidden";
+    addOverlay.style.zIndex = "3";
     if (activeVehicle.developer) {
         addOverlay.style["touch-action"] = "none";
     }
 
-    var addCanvas = document.createElement('canvas');
-    addCanvas.id = "canvas" + activeKey;
-    addCanvas.className = "mainCanvas";
-    addCanvas.style.width = "100%";
-    addCanvas.style.height = "100%";
-    
+    var addSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    addSVG.id = "svg" + activeKey;
+    addSVG.className = "mainCanvas";
+    addSVG.style.width = "100%";
+    addSVG.style.height = "100%";
+    addSVG.style.zIndex = "3";
+
+
     return {
         addContainer: addContainer,
         addIframe: addIframe,
         addOverlay: addOverlay,
-        addCanvas: addCanvas
+        addSVG: addSVG
     };
 };
 
@@ -1325,7 +1328,7 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
         delete globalDOMCache["object" + activeKey];
         delete globalDOMCache["iframe" + activeKey];
         delete globalDOMCache[activeKey];
-        delete globalDOMCache["canvas" + activeKey];
+        delete globalDOMCache["svg" + activeKey];
         delete globalDOMCache[activeKey];
 
         for (activeKey in activeVehicle.nodes) {
@@ -1335,7 +1338,7 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
                 delete globalDOMCache["object" + activeKey];
                 delete globalDOMCache["iframe" + activeKey];
                 delete globalDOMCache[activeKey];
-                delete globalDOMCache["canvas" + activeKey];
+                delete globalDOMCache["svg" + activeKey];
 
             } catch (err) {
                 this.cout("could not find any");
@@ -1359,7 +1362,7 @@ realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
     }
     delete this.globalDOMCache["iframe" + nodeId];
     delete this.globalDOMCache[nodeId];
-    delete this.globalDOMCache["canvas" + nodeId];
+    delete this.globalDOMCache["svg" + nodeId];
 
 };
 
@@ -1370,7 +1373,7 @@ realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
     delete this.globalDOMCache["object" + frameId];
     delete this.globalDOMCache["iframe" + frameId];
     delete this.globalDOMCache[frameId];
-    delete this.globalDOMCache["canvas" + frameId];
+    delete this.globalDOMCache["svg" + frameId];
 
 };
 
