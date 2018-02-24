@@ -85,6 +85,19 @@ var sendTouchEvents = false;
     tryResend();
 
     realityObject.messageCallBacks.mainCall = function (msgContent) {
+        
+        if (msgContent.newObject) {
+            realityObject.object = msgContent.newObject;
+            console.log('set new object ' + realityObject.object);
+            // update sockets / callbacks
+        }
+        
+        if (msgContent.newFrame) {
+            realityObject.frame = msgContent.newFrame;
+            console.log('set new frame ' + realityObject.object);
+            // update sockets / callbacks
+
+        }
 
         if (msgContent.objectData) {
             if (!realityObject.node) {

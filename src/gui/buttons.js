@@ -149,7 +149,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     positionData.matrix = [];
                     positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
                     positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                    positionData.scale = 0.2;
+                    positionData.scale = 1.0; //0.2;
                     realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
                     i += 1;
                 }
@@ -167,7 +167,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
                         activeNode.matrix = [];
-                        activeNode.scale = 0.2;
+                        activeNode.scale = 1.0; //0.2;
                         activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
                         activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
