@@ -762,7 +762,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                     // only check adjacent pairs of corners
                     // ignore same corner
                     if (areCornersEqual(corner1, corner2)) {
-                        return;
+                        return false;
                     }
                     // x or y should be the same
                     if (areCornersAdjacent(corner1, corner2)) {
@@ -831,12 +831,17 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                     realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
                 }
             }
+            if (numBehindMarkerPlane === 4) { //interceptPoints.length
+                // console.log('fully behind plane - send to screen!');
+               return true;
+            }
         } else {
             if(!activeVehicle.clippingState) {
                 shadowObject.clippingState = true;
                 realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
             }
         }
+        return false;
     }
     
     exports.drawMarkerPlaneIntersection = drawMarkerPlaneIntersection;
