@@ -660,5 +660,6 @@ var sendTouchEvents = false;
 
     exports.realityObject = realityObject;
     exports.RealityInterface = RealityInterface;
+    exports.HybridObject = RealityInterface;
 
 }(window));
