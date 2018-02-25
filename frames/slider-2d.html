@@ -126,8 +126,8 @@
         properties.valueY = limit(1.0 - (dY / height + 0.5));
         renderProperties();
 
-        hybridObject.write('valueX', properties.valueX);
-        hybridObject.write('valueY', properties.valueY);
+        realityInterface.write('valueX', properties.valueX);
+        realityInterface.write('valueY', properties.valueY);
     }
     
     function renderProperties() {
@@ -216,13 +216,13 @@
     
     ready();
 
-    var hybridObject = new HybridObject();
-    hybridObject.setMoveDelay(1000);
-    hybridObject.addReadListener('valueX', function(e) {
+    var realityInterface = new RealityInterface();
+    realityInterface.setMoveDelay(1000);
+    realityInterface.addReadListener('valueX', function(e) {
         properties.valueX = e;
         renderProperties();
     });
-    hybridObject.addReadListener('valueY', function(e) {
+    realityInterface.addReadListener('valueY', function(e) {
         properties.valueY = e;
         renderProperties();
     });

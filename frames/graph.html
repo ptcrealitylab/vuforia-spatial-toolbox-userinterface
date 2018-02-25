@@ -182,11 +182,11 @@
         ctx.stroke();
     }
 
-    var hybridObject = new HybridObject();
-    hybridObject.addReadListener('value', function(e) {
+    var realityInterface = new RealityInterface();
+    realityInterface.addReadListener('value', function(e) {
         displayValue(e);
     });
-    hybridObject.setMoveDelay(10);
+    realityInterface.setMoveDelay(10);
 
 </script>
 

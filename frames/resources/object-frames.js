@@ -40,7 +40,7 @@ var sendTouchEvents = false;
     realityObject.style.innerHTML = '* {-webkit-user-select: none; -webkit-touch-callout: none;} body, html{ height: 100%; margin:0; padding:0;}';
     document.getElementsByTagName('head')[0].appendChild(realityObject.style);
 
-    var hybridObjects = [];
+    var realityInterfaces = [];
 
     function loadObjectSocketIo(object) {
         var script = document.createElement('script');
@@ -51,8 +51,8 @@ var sendTouchEvents = false;
         script.src = url + '/socket.io/socket.io.js';
 
         script.addEventListener('load', function() {
-            for (var i = 0; i < hybridObjects.length; i++) {
-                var ho = hybridObjects[i];
+            for (var i = 0; i < realityInterfaces.length; i++) {
+                var ho = realityInterfaces[i];
                 ho.injectIo();
             }
         });
@@ -122,8 +122,8 @@ var sendTouchEvents = false;
             realityObject.object = msgContent.object;
 
             if (!alreadyLoaded) {
-                for (var i = 0; i < hybridObjects.length; i++) {
-                    hybridObjects[i].injectPostMessage();
+                for (var i = 0; i < realityInterfaces.length; i++) {
+                    realityInterfaces[i].injectPostMessage();
                 }
             }
         } else if (typeof msgContent.logic !== "undefined") {
@@ -187,7 +187,7 @@ var sendTouchEvents = false;
      ************************************************************
      */
 
-    function HybridObject() {
+    function RealityInterface() {
         this.pendingSends = [];
         this.pendingIos = [];
 
@@ -323,10 +323,10 @@ var sendTouchEvents = false;
             this.addReadListener = makeIoStub('addReadListener');
         }
 
-        hybridObjects.push(this);
+        realityInterfaces.push(this);
     }
 
-    HybridObject.prototype.injectIo = function() {
+    RealityInterface.prototype.injectIo = function() {
         var self = this;
 
         this.ioObject = io.connect(realityObject.socketIoUrl);
@@ -412,7 +412,7 @@ var sendTouchEvents = false;
         this.pendingIos = [];
     };
 
-    HybridObject.prototype.injectPostMessage = function() {
+    RealityInterface.prototype.injectPostMessage = function() {
         this.sendGlobalMessage = function (ohMSG) {
             parent.postMessage(JSON.stringify({
                 version: realityObject.version,
@@ -659,6 +659,6 @@ var sendTouchEvents = false;
     };
 
     exports.realityObject = realityObject;
-    exports.HybridObject = HybridObject;
+    exports.RealityInterface = RealityInterface;
 
 }(window));

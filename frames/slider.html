@@ -101,7 +101,7 @@
         properties.value = value;
         renderProperties();
 
-        hybridObject.write('value', properties.value);
+        realityInterface.write('value', properties.value);
     }
 
     function renderProperties() {
@@ -153,9 +153,9 @@
     
     ready();
     
-    var hybridObject = new HybridObject();
-    hybridObject.setMoveDelay(1000);
-    hybridObject.addReadListener('value', function(e) {
+    var realityInterface = new RealityInterface();
+    realityInterface.setMoveDelay(1000);
+    realityInterface.addReadListener('value', function(e) {
         properties.value = e;
         renderProperties();
     });

@@ -36,8 +36,8 @@
         }
     }
 
-    var hybridObject = new HybridObject();
-    hybridObject.addReadListener('value', function(e) {
+    var realityInterface = new RealityInterface();
+    realityInterface.addReadListener('value', function(e) {
         properties.value = e;
         renderProperties();
     });

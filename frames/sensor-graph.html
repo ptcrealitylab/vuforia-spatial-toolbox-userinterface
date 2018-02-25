@@ -68,8 +68,8 @@
 
     ready();
 
-    var hybridObject = new HybridObject();
-    hybridObject.addReadListener('value', function(e) {
+    var realityInterface = new RealityInterface();
+    realityInterface.addReadListener('value', function(e) {
         if (!isReady) {
             return;
         }
@@ -78,7 +78,7 @@
         data.shift();
         renderProperties();
     });
-    hybridObject.setMoveDelay(10);
+    realityInterface.setMoveDelay(10);
 
 </script>
 <script src="resources/demonstration.js"></script>
