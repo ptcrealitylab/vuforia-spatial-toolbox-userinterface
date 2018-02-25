@@ -176,6 +176,7 @@ var globalFramesDOMCache = {};
 var globalFramePrefix = '__GLOBAL__';
 
 var globalDOMCache = {};
+var shadowObjects = {};
 
 var globalProgram = {
 	objectA: false,

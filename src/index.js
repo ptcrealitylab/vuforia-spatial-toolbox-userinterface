@@ -131,6 +131,57 @@ createNameSpace("realityEditor");
 
 realityEditor.objects = objects;
 
+if(typeof shadowObjects !== "undefined")
+realityEditor.shadowObjects = shadowObjects;
+
+
+realityEditor.getShadowObject = function (objectKey){
+    if(!objectKey) return null;
+    
+    if(!this.shadowObjects[objectKey]){
+        this.shadowObjects[objectKey] = {};
+        this.shadowObjects[objectKey].frames = {};
+    }
+    return  this.shadowObjects[objectKey];
+};
+
+realityEditor.getShadowFrame = function (objectKey, frameKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    
+    if(!this.shadowObjects[objectKey]){
+        this.shadowObjects[objectKey] = {};
+        this.shadowObjects[objectKey].frames = {};
+    }
+    if(!this.shadowObjects[objectKey].frames[frameKey]){
+        this.shadowObjects[objectKey].frames[frameKey] = {};
+        this.shadowObjects[objectKey].links = {};
+        this.shadowObjects[objectKey].nodes = {};
+    }
+    return  this.shadowObjects[objectKey].frames[frameKey];
+};
+
+realityEditor.getShadowNode = function (objectKey, frameKey, nodeKey){
+    if(!objectKey) return null;
+    if(!frameKey) return null;
+    if(!nodeKey) return null;
+    
+    if(!this.shadowObjects[objectKey]){
+        this.shadowObjects[objectKey] = {};
+        this.shadowObjects[objectKey].frames = {};
+    }
+    if(!this.shadowObjects[objectKey].frames[frameKey]){
+        this.shadowObjects[objectKey].frames[frameKey] = {};
+        this.shadowObjects[objectKey].links = {};
+        this.shadowObjects[objectKey].nodes = {};
+    }
+
+    if(!this.shadowObjects[objectKey].frames[frameKey].nodes[nodeKey]){
+        this.shadowObjects[objectKey].frames[frameKey].nodes[nodeKey] = {};
+    }
+    return  this.shadowObjects[objectKey].frames[frameKey].nodes[nodeKey] ;
+};
+
 // return the object
 realityEditor.getObject = function (objectKey){
     if(!objectKey) return null;

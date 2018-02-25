@@ -735,6 +735,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
         var thisSVG = globalDOMCache["svg" + activeKey];
+       var shadowObject = shadowObjects["svg" + activeKey] = {};
         // console.log(activeVehicle);
         if (!thisSVG.getElementById("lineID")) {
             realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG, activeVehicle.width, activeVehicle.height);
@@ -821,18 +822,18 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                 sortedPoints.forEach(function (point) {
                     allPoints += "," + point[0] + "," + point[1];
                 });
-                activeVehicle.clippingState = false;
+                shadowObject.clippingState = false;
                 realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, allPoints);
             } else {
           
                 if(!activeVehicle.clippingState) {
-                    activeVehicle.clippingState = true;
+                    shadowObject.clippingState = true;
                     realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
                 }
             }
         } else {
             if(!activeVehicle.clippingState) {
-                activeVehicle.clippingState = true;
+                shadowObject.clippingState = true;
                 realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
             }
         }
