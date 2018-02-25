@@ -259,7 +259,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         }
                     }
 
-                    realityEditor.gui.ar.utilities.setAvarageScale(objects[objectKey]);
+                    realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
 
                         _this.cout(JSON.stringify(objects[objectKey]));
 
@@ -1787,7 +1787,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     content.lastEditor = globalStates.tempUuid;
     
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
-        realityEditor.gui.ar.utilities.setAvarageScale(objects[objectKey]);
+        realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
         var urlEndpoint;
         if (type === 'node' || type === 'logic') {
             urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/nodeSize/";

@@ -812,12 +812,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
                             utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
                             isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
-                        } else {
-                            isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
                         }
-
                     } else {
-
                         isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
                     }
                     
@@ -1464,14 +1460,8 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
                 utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
                 utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
-                utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
-            } else {
-                utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
             }
-
-        } else {
-            utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
-        }
+        } 
 
         if (positionData.matrix.length < 13) {
             utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);

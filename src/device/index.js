@@ -132,7 +132,7 @@ realityEditor.device.activateFrameMove = function(frameKey) {
         frame.visible = false;
         frame.visibleEditing = false;
 
-        realityEditor.gui.ar.draw.utilities.drawMarkerPlaneIntersection(frameKey, null, frame);
+      //  realityEditor.gui.ar.draw.utilities.drawMarkerPlaneIntersection(frameKey, null, frame);
     }
 };
 

@@ -49,10 +49,10 @@
 
 createNameSpace("realityEditor.gui.ar.utilities");
 
-realityEditor.gui.ar.utilities.timeSynchronizer = function(timeing) {
-	timeing.now = Date.now();
-	timeing.delta = (timeing.now - timeing.then) / 198;
-	timeing.then = timeing.now;
+realityEditor.gui.ar.utilities.timeSynchronizer = function(timing) {
+    timing.now = Date.now();
+    timing.delta = (timing.now - timing.then) / 198;
+    timing.then = timing.now;
 };
 
 /**
@@ -295,9 +295,8 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
         [screenWidth,screenHeight],
         [0,screenHeight]
     ];
-    var isInsideScreen = this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners, true);
+    return this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners);
     //console.log(thisNode.name, [thisNode.screenX, thisNode.screenY], isInsideScreen);
-    return isInsideScreen;
 };
 
 /**
@@ -313,16 +312,18 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     ];
 };
 
-realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
+realityEditor.gui.ar.utilities.setAverageScale = function(object) {
   var amount = 0;
   var sum = 0;
 //  if(!object.frames) return;
   for(var frameKey in object.frames){
+      if(!object.frames.hasOwnProperty(frameKey)) continue;
      // if(!object.frames[frameKey].ar.size) continue;
       amount++;
       sum = sum+ object.frames[frameKey].ar.scale;
      // if(!object.frames[frameKey].nodes) continue;
       for(var nodeKey in object.frames[frameKey].nodes){
+          if(!object.frames[frameKey].nodes.hasOwnProperty(nodeKey)) continue;
         //  if(!object.frames[frameKey].nodes) continue;
           amount++;
           sum = sum+ object.frames[frameKey].nodes[nodeKey].scale; 
@@ -486,11 +487,9 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
         //     st.getPropertyValue("-o-transform") ||
         //     st.getPropertyValue("transform");
         
-        tr = ele.style.webkitTransform;
+        var tr = ele.style.webkitTransform;
 
-        var values = tr.split('(')[1],
-            values = values.split(')')[0],
-            values = values.split(',');
+        var values = tr.split('(')[1].split(')')[0].split(',');
         
         var out = [ 0, 0, 0, 1 ];
         for (var i = 0; i < values.length; ++i) {
@@ -518,13 +517,13 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
         return out;
     }
 
-    function transformVertex(mat, vert) {
-        out = [0,0,0,0];
+    function transformVertex(mat, ver) {
+        var out = [0,0,0,0];
 
         for (var i = 0; i < 4; i++) {
             var sum = 0;
             for (var j = 0; j < 4; j++) {
-                sum += mat[i + j * 4] * vert[j];
+                sum += mat[i + j * 4] * ver[j];
             }
             out[i] = sum;
         }
@@ -656,8 +655,7 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
     function areCornersOppositeZ(corner1, corner2) {
         var z1 = corner1[2];
         var z2 = corner2[2];
-        var oppositeSign = ((z1 * z2) < 0);
-        return oppositeSign;
+        return ((z1 * z2) < 0);
     }
 
     /**
@@ -689,20 +687,20 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
             oppositeCornerPairs.push([corner1, corner2]);
         }
     }
-
-    var blank = document.createElement('canvas');
-
+    
     /**
      * Taken from https://stackoverflow.com/questions/17386707/how-to-check-if-a-canvas-is-blank
      * @param canvas
      * @returns {boolean}
      */
+    /*
     function isCanvasBlank(canvas) {
         blank.width = canvas.width;
         blank.height = canvas.height;
         return canvas.toDataURL() === blank.toDataURL();
     }
-    
+    */
+    /*
     function hasBeenUnconstrainedPositioned(matrix) {
         var approximateMatrix = matrix.map(function(elt) {
             return parseFloat(elt.toFixed(3)); // round to prevent floating point precision errors
@@ -725,11 +723,8 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
                 approximateMatrix[15] === 1);
         
     }
+    */
     
-    function renderDefaultCanvas(activeVehicle, thisSVG) {
-     
-    }
-
     /**
      * 
      * @param activeKey
@@ -740,114 +735,106 @@ realityEditor.gui.ar.utilities.setAvarageScale = function(object) {
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
         var thisSVG = globalDOMCache["svg" + activeKey];
-        
-        if(!matrixSVG) { // || !activeVehicle.hasCTXContent){
-            if(!activeVehicle.iDoHaveTheSVGContent) {
-                activeVehicle.iDoHaveTheSVGContent = true;
-                realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG,activeVehicle.width,activeVehicle.height);
-            }
-            return;
-        } else {
-            activeVehicle.hasMatrixForSVG = true;
+        // console.log(activeVehicle);
+        if (!thisSVG.getElementById("lineID")) {
+            realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG, activeVehicle.width, activeVehicle.height);
         }
-    
-        if (globalStates.pointerPosition[0] === -1 && !activeVehicle.hasMatrixForSVG) return; // TODO: why did I put this here?
         
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        if (!hasBeenUnconstrainedPositioned(positionData.matrix)) {
-            return;
-        }
+        if (matrixSVG) {
+            var w = parseInt(thisSVG.style.width, 10);
+            var h = parseInt(thisSVG.style.height, 10);
 
-        var w = parseInt(thisSVG.style.width, 10);
-        var h = parseInt(thisSVG.style.height, 10);
-        
-        var corners = getCornersClockwise(thisSVG);
-        var out = [0, 0, 0, 0];
-        corners.forEach(function (corner, index) {
-            var x = corner[0] - w / 2;
-            var y = corner[1] - h / 2;
-            var input = [x, y, 0, 1]; // assumes z-position of corner is always 0
-            
-            out = realityEditor.gui.ar.utilities.multiplyMatrix4(input, matrixSVG);
-            corner[2] = out[2]; // sets z position of corner to its eventual transformed value
-        });
-        
-        var oppositeCornerPairs = [];
-        corners.forEach(function (corner1) {
-            corners.forEach(function (corner2) {
-                // only check adjacent pairs of corners
-                // ignore same corner
-                if (areCornersEqual(corner1, corner2)) {
-                    return;
-                }
-                // x or y should be the same
-                if (areCornersAdjacent(corner1, corner2)) {
-                    if (areCornersOppositeZ(corner1, corner2)) {
-                        addCornerPairToOppositeCornerPairs([corner1, corner2], oppositeCornerPairs);
+            var corners = getCornersClockwise(thisSVG);
+            var out = [0, 0, 0, 0];
+            corners.forEach(function (corner) {
+                var x = corner[0] - w / 2;
+                var y = corner[1] - h / 2;
+                var input = [x, y, 0, 1]; // assumes z-position of corner is always 0
+
+                out = realityEditor.gui.ar.utilities.multiplyMatrix4(input, matrixSVG);
+                corner[2] = out[2]; // sets z position of corner to its eventual transformed value
+            });
+
+            var oppositeCornerPairs = [];
+            corners.forEach(function (corner1) {
+                corners.forEach(function (corner2) {
+                    // only check adjacent pairs of corners
+                    // ignore same corner
+                    if (areCornersEqual(corner1, corner2)) {
+                        return;
                     }
+                    // x or y should be the same
+                    if (areCornersAdjacent(corner1, corner2)) {
+                        if (areCornersOppositeZ(corner1, corner2)) {
+                            addCornerPairToOppositeCornerPairs([corner1, corner2], oppositeCornerPairs);
+                        }
+                    }
+                });
+            });
+            
+            // for each opposite corner pair, binary search for the x,y location that will correspond with 0 z-pos
+            // .... or can it be calculated directly....? it's just a linear equation!!!
+            var interceptPoints = [];
+            oppositeCornerPairs.forEach(function (cornerPair) {
+                var c1 = cornerPair[0];
+                var c2 = cornerPair[1];
+                var x1 = c1[0];
+                var y1 = c1[1];
+                var z1 = c1[2];
+                var x2 = c2[0];
+                var y2 = c2[1];
+                var z2 = c2[2];
+                var slope;
+
+                if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
+                    // console.log("dx");
+                    slope = ((z2 - z1) / (x2 - x1));
+                    var x_intercept = x1 - (z1 / slope);
+                    interceptPoints.push([x_intercept, y1]);
+                } else {
+                    // console.log("dy");
+                    slope = ((z2 - z1) / (y2 - y1));
+                    var y_intercept = y1 - (z1 / slope);
+                    interceptPoints.push([x1, y_intercept]);
                 }
             });
-        });
-    
-        // console.log("oppositeCornerPairs", oppositeCornerPairs);
-    
-        // for each opposite corner pair, binary search for the x,y location that will correspond with 0 z-pos
-        // .... or can it be calculated directly....? it's just a linear equation!!!
-        var interceptPoints = [];
-        oppositeCornerPairs.forEach(function (cornerPair) {
-            var c1 = cornerPair[0];
-            var c2 = cornerPair[1];
-            var x1 = c1[0];
-            var y1 = c1[1];
-            var z1 = c1[2];
-            var x2 = c2[0];
-            var y2 = c2[1];
-            var z2 = c2[2];
-            var slope;
-            
-            if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
-                // console.log("dx");
-                slope = ((z2 - z1) / (x2 - x1));
-                var x_intercept = x1 - (z1 / slope);
-                interceptPoints.push([x_intercept, y1]);
-            } else {
-                // console.log("dy");
-                slope = ((z2 - z1) / (y2 - y1));
-                var y_intercept = y1 - (z1 / slope);
-                interceptPoints.push([x1, y_intercept]);
-            }
-        });
-    
-        var numBehindMarkerPlane = 0;
-        // get corners, add in correct order so they get drawn clockwise
-        
-        corners.forEach(function (corner) {
-            if (corner[2] < 0) {
-                interceptPoints.push(corner);
-            }
-            
-            if (corner[2] < -100) {
-                numBehindMarkerPlane++;
-            }
-        });
 
-        if (numBehindMarkerPlane === 4) { //interceptPoints.length
-            // console.log('fully behind plane - send to screen!');
-            isFullyBehindPlane = true;
-        }
-      
-        var sortedPoints = sortPointsClockwise(interceptPoints);
+            var numBehindMarkerPlane = 0;
+            // get corners, add in correct order so they get drawn clockwise
 
-        var allPoints = "";
-        
-        if (sortedPoints.length > 2) {
-            allPoints += sortedPoints[0][0]+","+sortedPoints[0][1];
-            sortedPoints.forEach(function (point) {
-                allPoints +=","+point[0]+","+point[1];
+            corners.forEach(function (corner) {
+                if (corner[2] < 0) {
+                    interceptPoints.push(corner);
+                }
+
+                if (corner[2] < -100) {
+                    numBehindMarkerPlane++;
+                }
             });
-            realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG,allPoints);
-        } else{
-            realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG,0+","+0+","+0+","+0+","+0+","+0);
+            
+            var sortedPoints = sortPointsClockwise(interceptPoints);
+
+            var allPoints = "";
+
+            if (sortedPoints.length > 2) {
+                allPoints += sortedPoints[0][0] + "," + sortedPoints[0][1];
+                sortedPoints.forEach(function (point) {
+                    allPoints += "," + point[0] + "," + point[1];
+                });
+                activeVehicle.clippingState = false;
+                realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, allPoints);
+            } else {
+          
+                if(!activeVehicle.clippingState) {
+                    activeVehicle.clippingState = true;
+                    realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
+                }
+            }
+        } else {
+            if(!activeVehicle.clippingState) {
+                activeVehicle.clippingState = true;
+                realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
+            }
         }
     }
     
