@@ -61,7 +61,7 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         //         this.screenObject.isScreenVisible = (thisFrame.visualization === "screen");
         //     }
         // }
-        this.screenObject.isScreenVisible = true; // TODO: only if tapped on screen frame;
+        // this.screenObject.isScreenVisible = true; // TODO: only if tapped on screen frame;
         
         //TODO: finish implementing so doesnt start touch on screen if touch hits an AR frame first
         // if (this.screenObject.object && this.screenObject.frame) {
@@ -69,6 +69,23 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         //    
         // }
         
+        var that = this;
+        var elementsUnderTouch = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventObject.x, eventObject.y);
+        var didTouchARFrame = elementsUnderTouch.some( function(clickedElement) {
+            if (clickedElement.tagName === 'IFRAME' && clickedElement.dataset.objectKey && clickedElement.dataset.frameKey) {
+                that.screenObject.object = clickedElement.dataset.objectKey;
+                that.screenObject.frame = clickedElement.dataset.frameKey;
+                console.log('tapped down on AR frame, so don\'t start screenframe drag');
+                return true;
+            }
+            return false;
+        });
+        
+        this.screenObject.isScreenVisible = !didTouchARFrame;
+        globalStates.didStartPullingFromScreen = !didTouchARFrame;
+        
+        // TODO: notify screen when new pocket frame is added!
+        // TODO: what about if pocket frame is added to another object and then dropped into this one? generate screen frame as soon as the frame data becomes associated with this new object. maybe even include it in the message when it gets transferred to the screen.
         
     } else if(eventObject.type === "touchend") {
         this.screenObject.x = 0;
@@ -83,85 +100,26 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         globalStates.initialDistance = null;
     }
     // console.log(thisObject);
-    // TODO BEN Replace with exact 3D plane location
-    
     
     if (this.screenObject.closestObject && this.screenObject.isScreenVisible) {
+        
+        // calculate the exact x,y coordinate within the screen plane that this touch corresponds to
         var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
-        // console.log(point);
-        this.screenObject.x = point.x; // offset by half the screen width
-        this.screenObject.y = point.y; // offset by half the screen height
+        this.screenObject.x = point.x; 
+        this.screenObject.y = point.y;
 
         if (this.screenObject.object && this.screenObject.frame && this.screenObject.object === this.screenObject.closestObject) {
             var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
             if (matchingARFrame && matchingARFrame.visualization === 'screen') {
-                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(matchingARFrame, eventObject.x, eventObject.y, true);
-
-                // var positionData = realityEditor.gui.ar.positioning.getPositionData(matchingARFrame);
-                // positionData.x = point.x;
-                // positionData.y = point.y;
-
+                // keep the invisible AR frames synchronized with the position of their screen frames (so that nodes are in same place and pulls out in the right place)
                 matchingARFrame.ar.x = point.x;
                 matchingARFrame.ar.y = point.y;
                 // if (this.screenObject.scale) {
                 //     matchingARFrame.ar.scale = this.screenObject.scale;
                 // }
-
-                // if (this.screenObject.isScreenVisible) {
-                //     realityEditor.gui.ar.draw.changeVisualization(matchingARFrame, 'ar');
-                //     this.screenObject.isScreenVisible = false;
-                //     realityEditor.gui.screenExtension.updateArFrameVisibility();
-                // }
             }
         }
     }
-    
-
-    // var results = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
-
-
-    // var closestFrame = realityEditor.gui.ar.getClosestFrame()[1];
-    // var frame = realityEditor.getFrame(this.screenObject.closestObject, closestFrame);
-    
-    /*
-    // TODO: get away from using this temporary fix --> implement screenCoordinatesToMarkerXY
-    var frame = null;
-    realityEditor.forEachFrameInObject(this.screenObject.closestObject, function(objectKey, frameKey) {
-        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-        if (thisFrame.name === 'default') {
-            frame = thisFrame;
-        }
-    });
-    
-    if (frame) {
-        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(frame.mostRecentFinalMatrix, eventObject.x, eventObject.y, true);
-        this.screenObject.x = point.x;// - results.offsetLeft - 150; // relative to center of marker, not upper left
-        this.screenObject.y = point.y;// - results.offsetTop - 150;
-    }
-    */
-    
-    /*
-    if (frame && globalDOMCache[frame.uuid]) {
-        var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frame, eventObject.x, eventObject.y, true);
-        this.screenObject.x = results.point.x - results.offsetLeft - 150; // relative to center of marker, not upper left
-        this.screenObject.y = results.point.y - results.offsetTop - 150;
-        
-        var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
-        if (matchingARFrame) {
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(matchingARFrame, eventObject.x, eventObject.y, true);
-        }
-        
-        // console.log(eventObject.x + ' -> ' + this.screenObject.x);
-        // console.log(eventObject.y + ' -> ' + this.screenObject.y);
-    } else {
-        console.log('can\'t find default frame')
-    }
-    */
-    
-    /*else {
-        this.screenObject.x = eventObject.x - thisObject.screenX;
-        this.screenObject.y = eventObject.y - thisObject.screenY;
-    }*/
 };
 
 realityEditor.gui.screenExtension.calculatePushPop = function (){
@@ -182,13 +140,13 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         
         // Methods 2. Use only the z distance to the marker plane.
         // var distanceToFrame = screenFrameMatrix[14];
-
-        // console.log(distanceToFrame);
         
         if (!globalStates.initialDistance) {
             globalStates.initialDistance = distanceToFrame;
         }
-        
+
+        // console.log('I have a screen frame', this.screenObject.object, this.screenObject.frame, distanceToFrame, globalStates.initialDistance);
+
         var isScreenVisible = this.screenObject.isScreenVisible;
 
         // // if frame is on screen, must be pulled out at least 200 to move to AR
@@ -199,10 +157,17 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         // } else if (!this.screenObject.isScreenVisible && (distanceToFrame - globalStates.initialDistance < -25)) {
         //     isScreenVisible = true;
         // }
+
+        // globalStates.framePullThreshold = 50 by default in unconstrained editing, much larger when not unconstrained editing
         
-        if (distanceToFrame > (globalStates.initialDistance + 50)) {
+        var distanceThreshold = globalStates.framePullThreshold;
+        if (!globalStates.unconstrainedPositioning && !globalStates.didStartPullingFromScreen) {
+            distanceThreshold = globalStates.framePullThreshold * 5;
+        }
+        
+        if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
             isScreenVisible = false;
-        } else if (distanceToFrame < (globalStates.initialDistance - 50)) {
+        } else if (distanceToFrame < (globalStates.initialDistance - distanceThreshold)) {
             isScreenVisible = true;
         }
 

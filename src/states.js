@@ -151,7 +151,9 @@ var globalStates = {
 		timeout: undefined
 	},
     initialDistance: null,
-
+    framePullThreshold: 50,
+    didStartPullingFromScreen: false,
+    
 	// rettail
 	reality: false,
 	interface: "gui"
