@@ -465,23 +465,33 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
         } else {
             // this.drawTransformed(frame.uuid, frame, globalDOMCache, cout);
             console.log('show frame -> AR');
-            realityEditor.gui.menus.on("editing", ["unconstrained"]);
+            
+            // realityEditor.gui.menus.on("editing", ["unconstrained"]);
             globalStates.unconstrainedPositioning = true;
 
-            var activeKey = frame.uuid; //msgContent.node || msgContent.frame;
-            var element = document.getElementById(activeKey);
+            var activeKey = frame.uuid;
+            
+            // resize iframe to override incorrect size it starts with so that it matches the screen frame
+            var iframe = globalDOMCache['iframe' + activeKey];
+            var overlay = globalDOMCache[activeKey];
+            var svg = globalDOMCache['svg' + activeKey];
+
+            iframe.style.width = frame.frameSizeX + 'px';
+            iframe.style.height = frame.frameSizeY + 'px';
+            iframe.style.left = ((globalStates.height - frame.frameSizeX) / 2) + "px";
+            iframe.style.top = ((globalStates.width - frame.frameSizeY) / 2) + "px";
+
+            overlay.style.width = iframe.style.width;
+            overlay.style.height = iframe.style.height;
+            overlay.style.left = iframe.style.left;
+            overlay.style.top = iframe.style.top;
+
+            svg.style.width = iframe.style.width;
+            svg.style.height = iframe.style.height;
+            realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+
             globalStates.editingPulledScreenFrame = true;
-            realityEditor.device.beginTouchEditing(element);
-
-            globalDOMCache['iframe' + activeKey].style.width = frame.width + 'px';
-            globalDOMCache['iframe' + activeKey].style.height = frame.height + 'px';
-            globalDOMCache['iframe' + activeKey].style.left = ((globalStates.height - frame.width) / 2) + "px";
-            globalDOMCache['iframe' + activeKey].style.top = ((globalStates.width - frame.height) / 2) + "px";
-            globalDOMCache[activeKey].style.width = frame.width + 'px';
-            globalDOMCache[activeKey].style.height = frame.height + 'px';
-            globalDOMCache['svg' + activeKey].style.width = frame.width + 'px';
-            globalDOMCache['svg' + activeKey].style.height = frame.height + 'px';
-
+            realityEditor.device.beginTouchEditing(overlay);
         }
         realityEditor.network.updateFrameVisualization(objects[frame.objectId].ip, frame.objectId, frame.uuid, newVisualization);
     }
@@ -825,7 +835,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
                 
             } else if (activeType === "ui") {
-                if (globalStates.editingMode || globalStates.tempEditingMode) {
+                if ((globalStates.editingMode || globalStates.tempEditingMode) && !globalStates.editingPulledScreenFrame) {
                     if (!activeVehicle.visibleEditing && activeVehicle.developer) {
                         activeVehicle.visibleEditing = true;
                         overlay.style.visibility = 'visible';

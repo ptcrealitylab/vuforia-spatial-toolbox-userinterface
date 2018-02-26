@@ -299,7 +299,7 @@ realityEditor.device.beginTouchEditing = function(target, source) {
 	if (target.nodeId) {
         realityEditor.device.activateNodeMove(target.nodeId);
     } else {
-	    realityEditor.device.activateFrameMove(target.frameId);
+        realityEditor.device.activateFrameMove(target.frameId);
     }
 	// Only display the trash can if it's something we can delete (a frame)
 	if (target.frameId !== target.nodeId) {
