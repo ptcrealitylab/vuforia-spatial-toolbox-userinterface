@@ -218,6 +218,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
                 frame.width = frame.frameSizeX;
                 frame.height = frame.frameSizeY;
+                console.log('created pocket frame with width/height' + frame.width + '/' + frame.height);
                 frame.loaded = false;
                 // frame.objectVisible = true;
                 frame.screen = {

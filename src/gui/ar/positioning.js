@@ -145,7 +145,15 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
     var positionData = activeVehicle;
     if (activeVehicle.hasOwnProperty('visualization')) {
-        positionData = (activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
+        positionData = activeVehicle.ar; //(activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
     }
     return positionData;
 };
+
+// realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
+//     var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
+//     return {
+//         x: translate3d[0],
+//         y: translate3d[1]
+//     }
+// };

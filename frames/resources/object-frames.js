@@ -91,7 +91,6 @@ var sendTouchEvents = false;
                 loadObjectSocketIo(msgContent.objectData);
             }
         }
-
         
         if (typeof msgContent.node !== 'undefined') {
 

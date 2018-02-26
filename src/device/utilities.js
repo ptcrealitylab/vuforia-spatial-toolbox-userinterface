@@ -146,3 +146,22 @@ realityEditor.device.utilities.removeBoundListener = function(element, eventType
         ec--;
     }
 };
+
+realityEditor.device.utilities.getAllDivsUnderCoordinate = function(x, y) {
+    var res = [];
+    var previousDisplayTypes = [];
+
+    var ele = document.elementFromPoint(x,y);
+    while(ele && ele.tagName !== "BODY" && ele.tagName !== "HTML"){
+        res.push(ele);
+        previousDisplayTypes.push(ele.style.display);
+        ele.style.display = "none";
+        ele = document.elementFromPoint(x,y);
+    }
+
+    for(var i = 0; i < res.length; i++){
+        res[i].style.display = previousDisplayTypes[i];
+    }
+    // console.log(res);
+    return res;
+};

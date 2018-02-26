@@ -133,6 +133,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
             this.getData(beat.id, null, null, 'http://' + beat.ip + ':' + httpPort + '/object/' + beat.id, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey) {
 
+                    realityEditor.app.tap();
+
                     objects[objectKey] = msg;
                     
                     var thisObject = realityEditor.getObject(objectKey);
@@ -296,6 +298,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
 
             origin.frames[frameKey].width = 300; // TODO: why is this hard-coded?
             origin.frames[frameKey].height = 300;
+            
+            origin.frames[frameKey].uuid = frameKey;
 
             console.log('added new frame', origin.frames[frameKey]);
             
@@ -304,6 +308,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             // realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
             
         } else {
+            origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
             origin.frames[frameKey].ar = remote.frames[frameKey].ar;
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
@@ -485,7 +490,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         this.utilities.syncLinksWithRemote(origin, remote.links);
     }
 
-    realityEditor.gui.crafting.updateGrid(objects[objectKey].nodes[nodeKey].grid);
+    if (remote.type === 'logic') {
+        realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
+    }
 
     if (globalStates.currentLogic) {
 
@@ -1546,7 +1553,7 @@ realityEditor.network.postData = function (url, body, callback) {
     request.send(params);
 };
 
-realityEditor.network.postLinkToServer = function (thisLink) {
+realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
 
     var thisObjectA = realityEditor.getObject(thisLink.objectA);
     var thisFrameA = realityEditor.getFrame(thisLink.objectA, thisLink.frameA);
@@ -1561,6 +1568,9 @@ realityEditor.network.postLinkToServer = function (thisLink) {
     
     if (okForNewLink) {
         var linkKey = this.realityEditor.device.utilities.uuidTimeShort();
+        if (existingLinkKey) {
+            linkKey = existingLinkKey;
+        }
 
         var namesA, namesB;
         var color = "";
@@ -1948,4 +1958,25 @@ realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, li
     console.log("lockPassword is " + password);
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/password/" + password + "/deleteLock/");
     //console.log('delete --- ' + 'http://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/link/lock/" + thisLinkKey + "/password/" + authenticatedUser);
+};
+
+/**
+ * 
+ * @param ip
+ * @param objectKey
+ * @param frameKey
+ * @param newVisualization
+ */
+realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKey, newVisualization) {
+
+    var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/visualization/";
+    var content = {
+        visualization: newVisualization
+        // positionData: thisFrame.ar
+    };
+    this.postData(urlEndpoint, content, function (err, response) {
+        console.log('set visualization to ' + newVisualization + ' on server');
+        console.log(err, response);
+    });
+    
 };

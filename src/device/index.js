@@ -299,7 +299,7 @@ realityEditor.device.beginTouchEditing = function(target, source) {
 	if (target.nodeId) {
         realityEditor.device.activateNodeMove(target.nodeId);
     } else {
-	    realityEditor.device.activateFrameMove(target.frameId);
+        realityEditor.device.activateFrameMove(target.frameId);
     }
 	// Only display the trash can if it's something we can delete (a frame)
 	if (target.frameId !== target.nodeId) {
@@ -318,7 +318,7 @@ realityEditor.device.beginTouchEditing = function(target, source) {
  * @return {boolean}
  */
 realityEditor.device.isGlobalFrame = function(objectKey) {
-    return objectKey === globalFramePrefix;
+    return objectKey === globalFramePrefix; // TODO: a less hacky way would be to check if (frame.location === 'global')
 };
 
 /**
@@ -420,8 +420,9 @@ realityEditor.device.onTrueTouchUp = function(evt){
         globalStates.editingModeHaveObject = false;
         globalStates.editingModeKind = null;
         globalStates.editingModeObject = null;
-	
-	} else if (globalStates.guiState === 'ui') {
+        globalStates.editingPulledScreenFrame = false;
+
+    } else if (globalStates.guiState === 'ui') {
         if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
             this.deactivateFrameMove(globalStates.editingFrame);
             var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
@@ -431,10 +432,27 @@ realityEditor.device.onTrueTouchUp = function(evt){
             globalStates.editingModeHaveObject = false;
             globalStates.editingModeKind = null;
             globalStates.editingModeObject = null;
+            globalStates.editingPulledScreenFrame = false;
+
         }
     }
 
-	globalCanvas.hasContent = true;
+    if (globalStates.editingPulledScreenFrame) {
+	    if (globalStates.editingFrame && !globalStates.editingMode) {
+	        this.deactivateFrameMove(globalStates.editingFrame);
+        }
+        globalStates.editingNode = null;
+        globalStates.editingModeLocation = null;
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        globalStates.editingModeHaveObject = false;
+        globalStates.editingModeKind = null;
+        globalStates.editingModeObject = null;
+        globalStates.tempEditingMode = false;
+        globalStates.editingPulledScreenFrame = false;
+    }
+
+    globalCanvas.hasContent = true;
 
     realityEditor.gui.ar.draw.matrix.matrixtouchOn = '';
 
@@ -857,7 +875,15 @@ realityEditor.device.onMultiTouchStart = function(evt) {
             // realityEditor.gui.menus.on("bigTrash",[]);
             realityEditor.gui.menus.on("trashOrSave", []);
             //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
-        }
+        
+		} /*else if (target.type === 'ui') {
+            var frame = realityEditor.getFrame(target.objectId, target.frameId); // save initial position so that it can drop back to it
+            if (frame) {
+                // frame.matrixBeforeEditing = frame.ar.matrix;
+                // frame.matrixBeforeEditing = frame.temp;
+            }
+        }*/
+        
 	}
 	
 	var activeKey = target.nodeId || target.frameId;
@@ -1012,6 +1038,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             globalStates.editingModeFrame = null;
             globalStates.editingFrame = null;
             globalStates.editingModeHaveObject = false;
+            globalStates.editingPulledScreenFrame = false;
             globalCanvas.hasContent = true;
             realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
             return;
@@ -1091,6 +1118,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 globalStates.editingModeObject = null;
                 globalStates.editingFrame = null;
                 globalStates.editingModeHaveObject = false;
+                globalStates.editingPulledScreenFrame = false;
 
                 return false;
             }
@@ -1099,36 +1127,44 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
         if (this.isGlobalFrame(globalStates.editingModeObject)) {
             
             // TODO: try to drop the frame into an object underneath, or if there isn't one, return it to its starting position in its old object (need to remember this somewhere)
+
+            var globalFrame = globalFrames[globalStates.editingModeFrame];
+            var newFrameKey;
             
-            var closestObjectKey = null;
-            var visibleObjectKeys = realityEditor.device.speechProcessor.getVisibleObjectKeys(); // TODO: use valentin's new code for finding closest/frontmost
-            if (visibleObjectKeys.length > 0) {
-                closestObjectKey = visibleObjectKeys[0];
-                if (closestObjectKey && objects[closestObjectKey]) {
+            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+            if (closestObjectKey) {
+                console.log('there is an object to drop this frame onto');
 
-                    console.log('there is an object to drop this frame onto');
-                    var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
-
-                    // var frame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-                    // frame.ar.x = 0;
-                    // frame.ar.y = 0;
-                    // frame.ar.scale = 1;
-                    // frame.ar.matrix = []; //realityEditor.gui.ar.utilities.newIdentityMatrix();
-
-                }
-            
-            } else {
+                newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrame);
                 
-                // TODO: if there are no visible objects, return the frame to its previous object
-                var frame = globalFrames[globalStates.editingModeFrame];
-                var newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(frame.sourceObject, globalStates.editingModeFrame, globalFrames[globalStates.editingModeFrame]);
+                // var newObject = realityEditor.getObject(closestObjectKey);
+                var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                var screenX = evt.pageX;
+                var screenY = evt.pageY;
+                
+                var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                console.log(projectedCoordinates);
+                
+                newFrame.ar.x = projectedCoordinates.x;
+                newFrame.ar.y = projectedCoordinates.y;
 
+                // update position on server
+                urlEndpoint = 'http://' + objects[closestObjectKey].ip + ':' + httpPort + '/object/' + closestObjectKey + "/frame/" + newFrameKey + "/node/" + null + "/size/";
+                var content = newFrame.ar;
+                content.lastEditor = globalStates.tempUuid;
+                realityEditor.network.postData(urlEndpoint, content);
+                
+            } else {
+                console.log('there are no visible objects - return this frame to its previous object');
+                
+                newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalFrame.sourceObject, globalStates.editingModeFrame, globalFrame);
+                
             }
 
             globalStates.editingModeObject = null;
             globalStates.editingModeFrame = null;
             globalStates.editingFrame = null;
-            
+            globalStates.editingPulledScreenFrame = false;
 
         } else {
 
@@ -1192,27 +1228,34 @@ realityEditor.device.onMultiTouchCanvasStart = function(evt) {
 
 realityEditor.device.onMultiTouchCanvasMove = function(evt) {
 	evt.preventDefault();
-// generate action for all links to be reloaded after upload
-	if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
-        // var touch = evt.touches[0];
+	
+	// unconstrained repositioning for a frame that was just pulled out of a screen
+	if (globalStates.editingPulledScreenFrame) {
         var touch = evt.targetTouches[0];
-
-        // var canvasTouch;
-        // [].slice.call(evt.touches).forEach(function(touch){
-        //     console.log(touch.target);
-        //     if (touch.target.id === 'canvas') {
-        //         canvasTouch = touch;
-        //     }
-        // });
-        //
-        // if (canvasTouch) {
-        //     realityEditor.gui.ar.positioning.onScaleEvent(canvasTouch);
+        globalStates.editingModeObjectX = touch.pageX;
+        globalStates.editingModeObjectY = touch.pageY;
+        globalStates.editingModeObjectCenterX = touch.pageX;
+        globalStates.editingModeObjectCenterY = touch.pageY;
+        var tempThisObject = realityEditor.device.getEditingModeObject();
+        // TODO: re-enable to move frame while scaling
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
+        // var positionData = tempThisObject.ar;
+        // if (globalStates.unconstrainedPositioning === true) {
+            // console.log('unconstrained move');
+            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
         // }
-        
+    
+        // scale the frame when you move one finger on the canvas while holding down on a frame
+	} else if (globalStates.editingModeHaveObject && globalStates.editingMode && evt.targetTouches.length === 1) {
+        var touch = evt.targetTouches[0];
         realityEditor.gui.ar.positioning.onScaleEvent(touch);
-
 	}
-	cout("MultiTouchCanvasMove");
+
+    // generate action for all links to be reloaded after upload // TODO: what is this for?
+
+    
+    cout("MultiTouchCanvasMove");
 };
 
 realityEditor.device.onMultiTouchCanvasEnd = function(evt) {
@@ -1222,6 +1265,7 @@ realityEditor.device.onMultiTouchCanvasEnd = function(evt) {
             globalStates.editingScaleDistance = null;
             globalStates.editingModeObjectCenterX = null;
             globalStates.editingModeObjectCenterY = null;
+            globalStates.editingPulledScreenFrame = false;
         }
     }
     cout("MultiTouchCanvasEnd");
