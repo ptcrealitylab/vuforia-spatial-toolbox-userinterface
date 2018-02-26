@@ -472,7 +472,16 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
             var element = document.getElementById(activeKey);
             globalStates.editingPulledScreenFrame = true;
             realityEditor.device.beginTouchEditing(element);
-            
+
+            globalDOMCache['iframe' + activeKey].style.width = frame.width + 'px';
+            globalDOMCache['iframe' + activeKey].style.height = frame.height + 'px';
+            globalDOMCache['iframe' + activeKey].style.left = ((globalStates.height - frame.width) / 2) + "px";
+            globalDOMCache['iframe' + activeKey].style.top = ((globalStates.width - frame.height) / 2) + "px";
+            globalDOMCache[activeKey].style.width = frame.width + 'px';
+            globalDOMCache[activeKey].style.height = frame.height + 'px';
+            globalDOMCache['svg' + activeKey].style.width = frame.width + 'px';
+            globalDOMCache['svg' + activeKey].style.height = frame.height + 'px';
+
         }
         realityEditor.network.updateFrameVisualization(objects[frame.objectId].ip, frame.objectId, frame.uuid, newVisualization);
     }
