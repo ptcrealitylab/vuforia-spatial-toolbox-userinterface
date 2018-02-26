@@ -33,7 +33,8 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
 };
 
 realityEditor.gui.screenExtension.update = function (){
-    
+
+    if (globalStates.guiState !== 'ui') return;
 
     // console.log("end", this.screenObject);
     if(this.screenObject.touchState) {
@@ -51,6 +52,9 @@ realityEditor.gui.screenExtension.receiveObject = function (object){
 };
 
 realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
+
+    if (globalStates.guiState !== 'ui') return;
+
     this.screenObject.closestObject = realityEditor.gui.ar.getClosestObject()[0];
     var thisObject = objects[this.screenObject.closestObject];
     this.screenObject.touchState = eventObject.type;
@@ -124,8 +128,6 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
 
 realityEditor.gui.screenExtension.calculatePushPop = function (){
     
-    // TODO BEN Switch this boolean for when to switch from screen to AR and back.
-    
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
 
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
@@ -161,7 +163,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         // globalStates.framePullThreshold = 50 by default in unconstrained editing, much larger when not unconstrained editing
         
         var distanceThreshold = globalStates.framePullThreshold;
-        if (!globalStates.unconstrainedPositioning && !globalStates.didStartPullingFromScreen) {
+        // if (!(globalStates.unconstrainedPositioning || globalStates.editingMode || globalStates.tempEditingMode) && !globalStates.didStartPullingFromScreen) {
+        if (!globalStates.editingMode && !globalStates.didStartPullingFromScreen) {
             distanceThreshold = globalStates.framePullThreshold * 5;
         }
         
