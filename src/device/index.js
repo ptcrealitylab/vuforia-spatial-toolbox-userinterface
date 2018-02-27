@@ -56,7 +56,19 @@ realityEditor.device.eventObject = {
         node : null,
         x: 0,
         y: 0,
-        type: null
+        type: null,
+        touches:[
+            {
+                screenX: 0,
+                screenY: 0,
+                type:null
+            }, 
+            {
+                screenX: 0,
+                screenY: 0,
+                type:null
+            }
+        ]
 };
 
 /**
@@ -667,11 +679,11 @@ realityEditor.device.onCanvasPointerDown = function(evt) {
 
 realityEditor.device.onDocumentPointerMove = function (evt) {
 	evt.preventDefault();
-
-    realityEditor.device.eventObject.x = evt.clientX;
+ /*   realityEditor.device.eventObject.x = evt.clientX;
     realityEditor.device.eventObject.y = evt.clientY;
     realityEditor.device.eventObject.type = "touchmove";
     realityEditor.device.touchInputs.screenTouchMove(realityEditor.device.eventObject);
+    */
     
 	globalStates.pointerPosition = [evt.clientX, evt.clientY];
 
@@ -681,6 +693,35 @@ realityEditor.device.onDocumentPointerMove = function (evt) {
     realityEditor.gui.pocket.setPocketPosition(evt);
 };
 
+realityEditor.device.onDocumentMultiTouchMove = function (evt) {
+    realityEditor.device.touchEventObject(evt, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
+};
+realityEditor.device.onDocumentMultiTouchStart = function (evt) {
+    realityEditor.device.touchEventObject(evt, "touchStart", realityEditor.device.touchInputs.screenTouchStart);
+};
+realityEditor.device.onDocumentMultiTouchEnd = function (evt) {
+    realityEditor.device.touchEventObject(evt, "touchEnd", realityEditor.device.touchInputs.screenTouchEnd);
+};
+
+realityEditor.device.touchEventObject = function (evt, type, cb) {
+    if(!evt.touches) return;
+    if (evt.touches.length >= 1) {
+        realityEditor.device.eventObject.x = evt.touches[0].screenX;
+        realityEditor.device.eventObject.y = evt.touches[0].screenY;
+        realityEditor.device.eventObject.type = type;
+        realityEditor.device.eventObject.touches[0].screenX = evt.touches[0].screenX;
+        realityEditor.device.eventObject.touches[0].screenY = evt.touches[0].screenY;
+        realityEditor.device.eventObject.touches[0].type = type;
+    }
+    if (evt.touches.length >= 2) {
+        realityEditor.device.eventObject.touches[1].screenX = evt.touches[1].screenX;
+        realityEditor.device.eventObject.touches[1].screenY = evt.touches[1].screenY;
+        realityEditor.device.eventObject.touches[1].type = type;
+    } else {
+        realityEditor.device.eventObject.touches[1] = {};
+    }
+    cb(realityEditor.device.eventObject);
+};
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/
@@ -700,10 +741,11 @@ function getFarFrontFrame(objectKey) {
 
 realityEditor.device.onDocumentPointerUp = function(evt) {
 
-    realityEditor.device.eventObject.x = evt.clientX;
+   /* realityEditor.device.eventObject.x = evt.clientX;
     realityEditor.device.eventObject.y = evt.clientY;
     realityEditor.device.eventObject.type = "touchend";
     realityEditor.device.touchInputs.screenTouchEnd(realityEditor.device.eventObject);
+    */
 
 
     var nodeCalculations = realityEditor.gui.ar.draw.nodeCalculations;
@@ -822,10 +864,11 @@ realityEditor.device.onDocumentPointerUp = function(evt) {
  */
 realityEditor.device.onDocumentPointerDown = function(evt) {
 
-    realityEditor.device.eventObject.x = evt.clientX;
+    /* realityEditor.device.eventObject.x = evt.clientX;
     realityEditor.device.eventObject.y = evt.clientY;
     realityEditor.device.eventObject.type = "touchstart";
     realityEditor.device.touchInputs.screenTouchStart(realityEditor.device.eventObject);
+    */
     
     globalStates.pointerPosition = [evt.clientX, evt.clientY];
 
@@ -898,7 +941,6 @@ realityEditor.device.onMultiTouchStart = function(evt) {
  **/
 
 realityEditor.device.onMultiTouchMove = function(evt) {
-    console.log('onMultiTouchMove');
     if (!evt.hasOwnProperty('touches') && (evt.hasOwnProperty('pageX') || evt.hasOwnProperty('pageY'))) {
         evt.touches = [{}];
         evt.targetTouches = [{}];
@@ -1194,7 +1236,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
  **/
 
 realityEditor.device.onMultiTouchCanvasStart = function(evt) {
-
+    
 	globalStates.overlay = 1;
 
 	evt.preventDefault();

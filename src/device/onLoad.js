@@ -102,6 +102,10 @@ realityEditor.device.onload = function () {
 	document.addEventListener("pointermove", realityEditor.device.onDocumentPointerMove.bind(realityEditor.device), false);
 	ec++;
 	document.addEventListener("pointerdown", realityEditor.device.onDocumentPointerDown.bind(realityEditor.device), false);
+   
+    document.addEventListener("touchmove", realityEditor.device.onDocumentMultiTouchMove.bind(realityEditor.device), false);
+    document.addEventListener("touchstart", realityEditor.device.onDocumentMultiTouchStart.bind(realityEditor.device), false);
+    document.addEventListener("touchend", realityEditor.device.onDocumentMultiTouchEnd.bind(realityEditor.device), false);
 	//document.addEventListener("pointerdown", getPosition, false);
 	ec++;
 	document.addEventListener("pointerup", realityEditor.device.onDocumentPointerUp.bind(realityEditor.device), false);

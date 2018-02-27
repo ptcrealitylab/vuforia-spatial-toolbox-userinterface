@@ -395,7 +395,7 @@ var sendTouchEvents = false;
                 if (typeof thisMsg.node !== 'undefined') {
                     if (thisMsg.node === realityObject.frame + node) {
                         if (thisMsg.data) {
-                            callback(thisMsg.data.value);
+                            callback(thisMsg.data);
                         }
                     }
                 }

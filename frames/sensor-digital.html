@@ -16,7 +16,6 @@
         }
     </style>
     <script src="resources/object-frames.js"></script>
-    <script src="resources/pep.min.js"></script>
 </head>
 <body>
 <div id="output" touch-action="none"></div>
@@ -38,7 +37,7 @@
 
     var realityInterface = new RealityInterface();
     realityInterface.addReadListener('value', function(e) {
-        properties.value = e;
+        properties.value = e.value;
         renderProperties();
     });
 </script>
