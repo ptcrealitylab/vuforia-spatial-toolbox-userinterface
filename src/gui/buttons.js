@@ -137,21 +137,24 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
             }
 
             var tempResetObject = objects[objectKey];
+            var shouldPlaceCenter = false;
             
-            var i;
-
             if (globalStates.guiState ==="ui") {
 
-                i = 0;
+                shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
                 for (var frameKey in tempResetObject.frames) {
                     var activeFrame = tempResetObject.frames[frameKey];
                     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
                     positionData.matrix = [];
-                    positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                    positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    if (shouldPlaceCenter) {
+                        positionData.x = 0;
+                        positionData.y = 0;
+                    } else {
+                        positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                        positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    }
                     positionData.scale = 1.0; //0.2;
                     realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
-                    i += 1;
                 }
                 
                 realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
@@ -163,15 +166,19 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     
                     var activeFrame = tempResetObject.frames[frameKey];
                     
-                    i = 0;
+                    var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
                         activeNode.matrix = [];
                         activeNode.scale = 1.0; //0.2;
-                        activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                        activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                        if (shouldPlaceCenter) {
+                            activeNode.x = 0;
+                            activeNode.y = 0;
+                        } else {
+                            activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                            activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                        }
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
-                        i += 1;
                     }
                 }
 

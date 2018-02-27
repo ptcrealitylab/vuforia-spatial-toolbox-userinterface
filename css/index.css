@@ -196,7 +196,7 @@ body {
     padding: 20px;
     background-color: #969696;
 
-    -webkit-transform: translateZ(3px);
+    -webkit-transform: translateZ(300px);
 }
 
 
@@ -218,7 +218,7 @@ body {
     -webkit-user-select: none;
     user-select: none;
 
-    -webkit-transform: translateZ(2px);
+    -webkit-transform: translateZ(300px);
     z-index: 10;
 }
 
@@ -571,7 +571,7 @@ body {
     /* this is a hack for adding the interface in front of the transformed web interface */
     z-index: 3;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: translateZ(6px);
+    -webkit-transform: translateZ(600px);
 }
 
 #overlay.overlayPositive,
@@ -1052,7 +1052,7 @@ Logic Interface CSS
     padding: 0;
     z-index: 1;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: translateZ(3px); /* Above web interfaces, below side buttons */
+    -webkit-transform: translateZ(300px); /* Above web interfaces, below side buttons */
     background-color: rgba(17, 55, 55, 0.7);
     display: none;
 }

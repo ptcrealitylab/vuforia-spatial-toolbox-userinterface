@@ -342,17 +342,28 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 (function(exports) {
 
     // TODO: finish implementing
-    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY) {
+    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
         
         var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
         if (visibleObjectMatrix) {
             
-            var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+            var point = {
+                x: 0,
+                y: 0
+            };
             
-            var point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            if (unconstrainedMatrix) {
+                var finalMatrix = unconstrainedMatrix;
+                // realityEditor.gui.ar.draw.utilities.multiplyMatrix(unconstrainedMatrix, realityEditor.gui.ar.draw.visibleObjects[objectKey], finalMatrix);
+                // realityEditor.gui.ar.draw.utilities.multiplyMatrix(unconstrainedMatrix, realityEditor.gui.ar.draw.visibleObjects[objectKey], finalMatrix);
+                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            } else {
+                var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            }
             
             return {
-                x: point.x  - 284,
+                x: point.x - 284,
                 y: point.y - 160
             }
         }

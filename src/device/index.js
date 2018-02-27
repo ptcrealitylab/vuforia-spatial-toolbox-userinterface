@@ -305,6 +305,8 @@ realityEditor.device.beginTouchEditing = function(target, source) {
 	
 	if (source !== 'pocket') {
         globalStates.tempEditingMode = true;
+    } else {
+	    globalStates.pocketEditingMode = true;
     }
 
 	realityEditor.device.activateMultiTouch();
@@ -461,6 +463,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
         globalStates.editingModeKind = null;
         globalStates.editingModeObject = null;
         globalStates.tempEditingMode = false;
+        globalStates.pocketEditingMode = false;
         globalStates.editingPulledScreenFrame = false;
     }
 
@@ -634,7 +637,7 @@ realityEditor.device.onTouchMove = function(evt) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
 
     // drag and reposition a frame from the pocket
-    } else if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
+    } else if (globalStates.editingFrame && globalStates.editingModeObject && globalStates.pocketEditingMode && /*!globalStates.editingMode &&*/ !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
         
         console.log('move pocket frame!');
         var frame = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
@@ -697,10 +700,10 @@ realityEditor.device.onDocumentMultiTouchMove = function (evt) {
     realityEditor.device.touchEventObject(evt, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
 };
 realityEditor.device.onDocumentMultiTouchStart = function (evt) {
-    realityEditor.device.touchEventObject(evt, "touchStart", realityEditor.device.touchInputs.screenTouchStart);
+    realityEditor.device.touchEventObject(evt, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
 };
 realityEditor.device.onDocumentMultiTouchEnd = function (evt) {
-    realityEditor.device.touchEventObject(evt, "touchEnd", realityEditor.device.touchInputs.screenTouchEnd);
+    realityEditor.device.touchEventObject(evt, "touchend", realityEditor.device.touchInputs.screenTouchEnd);
 };
 
 realityEditor.device.touchEventObject = function (evt, type, cb) {

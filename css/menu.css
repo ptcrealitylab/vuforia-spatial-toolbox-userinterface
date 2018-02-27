@@ -407,7 +407,7 @@
 
 .searchCell {
     margin-top: 5px; margin-left: 5px;
-    height: 34px; width: 160px; -webkit-transform: translateZ(9px);
+    height: 34px; width: 160px; -webkit-transform: translateZ(900px);
     display: inline-table; background-color: rgba(0,255,255,0.1);
 }
 

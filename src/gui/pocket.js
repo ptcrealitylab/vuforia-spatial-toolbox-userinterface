@@ -263,6 +263,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     pageX: evt.pageX,
                     pageY: evt.pageY
                 };
+                
+                frame.currentTouchOffset = {
+                    x: 0,
+                    y: 0,
+                };
 
                 closestObject.frames[frameID] = frame;
 
