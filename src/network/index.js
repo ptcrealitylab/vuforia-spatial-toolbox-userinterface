@@ -484,8 +484,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
     if (remote.links) {
         this.utilities.syncLinksWithRemote(origin, remote.links);
     }
-
-    realityEditor.gui.crafting.updateGrid(objects[objectKey].nodes[nodeKey].grid);
+    realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
 
     if (globalStates.currentLogic) {
 

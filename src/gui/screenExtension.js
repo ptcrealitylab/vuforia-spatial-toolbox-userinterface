@@ -68,9 +68,10 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     }
     // console.log(thisObject);
     // TODO BEN Replace with exact 3D plane location
-    
-    this.screenObject.x = eventObject.x- thisObject.screenX;
-    this.screenObject.y = eventObject.y- thisObject.screenY;
+    if(thisObject) {
+        this.screenObject.x = eventObject.x - thisObject.screenX;
+        this.screenObject.y = eventObject.y - thisObject.screenY;
+    }
 };
 
 realityEditor.gui.screenExtension.calculatePushPop = function (){
