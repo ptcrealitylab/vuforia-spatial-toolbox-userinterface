@@ -140,7 +140,7 @@ function Frame() {
     // Stores all IOPoints. These points are used to keep the state of an object and process its data.
     this.nodes = {};
     // local or global. If local, node-name is exposed to hardware interface
-    this.location = "local";
+    this.location = "global";
     // source
     this.src = "editor";
 }
