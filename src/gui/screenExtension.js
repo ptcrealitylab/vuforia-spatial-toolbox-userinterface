@@ -109,7 +109,7 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
                 matchingARFrame.ar.x = point.x;
                 matchingARFrame.ar.y = point.y;
                 
-                console.log('mirroring position for frame ' + matchingARFrame.name);
+                // console.log('mirroring position for frame ' + matchingARFrame.name);
                 // if (this.screenObject.scale) {
                 //     matchingARFrame.ar.scale = this.screenObject.scale;
                 // }
@@ -147,7 +147,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
 
         
-        if (this.screenObject.frame.indexOf('__GLOBAL__') > -1) {
+        if (this.screenObject.frame.indexOf('__GLOBAL__') > -1 || (globalStates.unconstrainedPositioning && globalStates.editingFrame === this.screenObject.frame) ) {
             
             if (!globalStates.initialDistance) {
                 var realDistanceToUnconstrainedFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
