@@ -1084,7 +1084,9 @@ if (thisFrame) {
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
-            globalDOMCache[tempThisObject.uuid].style.display = '';
+            if (tempThisObject.uuid) {
+                globalDOMCache[tempThisObject.uuid].style.display = '';
+            }
         }
 
     } else if(typeof msgContent.fullScreen === "string") {
@@ -1866,26 +1868,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     var activeKey = nodeKey || frameKey;
 
-    // console.warn('TODO: get rid of hack to only add cover to zero frame');
-    // if (frame && activeKey === frameKey && frameKey.indexOf('zero') > -1) {  // TODO: fix
-    //    
-    //     var addIframe = globalDOMCache["iframe" + activeKey];
-    //     var addContainer = globalDOMCache["object" + activeKey];
-    //    
-    //     var cover = document.createElement('div');
-    //     cover.classList.add('main');
-    //     cover.style.visibility = 'visible';
-    //     cover.style.width = "2025px"; //addIframe.style.width; 
-    //     cover.style.height = "721px"; //addIframe.style.height;
-    //     cover.style.top = "-200.5px"; //addIframe.style.top;
-    //     cover.style.left = "-728.5px"; //addIframe.style.left;
-    //
-    //    // width: 2025px; height: ; visibility: hidden; top: ; left: ;
-    //    
-    //     frame.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-    //     addContainer.appendChild(cover);
-    //    
-    //     console.log(cover, addIframe);
+    // if (globalDOMCache['svg' + activeKey]) {
+    //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
     
     globalDOMCache["iframe" + activeKey]._loaded = true;

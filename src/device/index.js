@@ -720,6 +720,13 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
         realityEditor.device.eventObject.touches[1].screenX = evt.touches[1].screenX;
         realityEditor.device.eventObject.touches[1].screenY = evt.touches[1].screenY;
         realityEditor.device.eventObject.touches[1].type = type;
+    } else if (type === 'touchend') {
+        realityEditor.device.eventObject.x = evt.pageX;
+        realityEditor.device.eventObject.y = evt.pageY;
+        realityEditor.device.eventObject.type = type;
+        realityEditor.device.eventObject.touches[0].screenX = evt.pageX;
+        realityEditor.device.eventObject.touches[0].screenY = evt.pageY;
+        realityEditor.device.eventObject.touches[0].type = type;
     } else {
         realityEditor.device.eventObject.touches[1] = {};
     }

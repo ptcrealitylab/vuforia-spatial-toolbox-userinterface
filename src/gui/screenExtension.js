@@ -35,6 +35,7 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
 realityEditor.gui.screenExtension.update = function (){
 
     if (globalStates.guiState !== 'ui') return;
+    if (!realityEditor.gui.ar.draw.areAnyScreensVisible()) return;
 
     // console.log("end", this.screenObject);
     if(this.screenObject.touchState) {
@@ -54,6 +55,7 @@ realityEditor.gui.screenExtension.receiveObject = function (object){
 realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
 
     if (globalStates.guiState !== 'ui') return;
+    if (!realityEditor.gui.ar.draw.areAnyScreensVisible()) return;
 
     this.screenObject.closestObject = realityEditor.gui.ar.getClosestObject()[0];
     var thisObject = objects[this.screenObject.closestObject];

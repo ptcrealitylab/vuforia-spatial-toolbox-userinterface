@@ -895,10 +895,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 // set initial position correctly
                 if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                    // activeVehicle.currentTouchOffset = {
-                    //     x: activeVehicle.frameSizeX/2,
-                    //     y: activeVehicle.frameSizeY/2
-                    // };
+                    activeVehicle.currentTouchOffset = {
+                        x: activeVehicle.frameSizeX/2,
+                        y: activeVehicle.frameSizeY/2
+                    };
                     realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
                     delete activeVehicle.positionOnLoad;
                     realityEditor.device.beginTouchEditing(globalDOMCache[activeKey], 'pocket');
@@ -1417,7 +1417,6 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";
 
-
     return {
         addContainer: addContainer,
         addIframe: addIframe,
@@ -1685,3 +1684,15 @@ realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
     });
 };
 
+realityEditor.gui.ar.draw.areAnyScreensVisible = function() {
+    var anyScreensVisible = false;
+    for (var objectKey in this.visibleObjects) {
+        if (!objects.hasOwnProperty(objectKey)) continue;
+        if (objects[objectKey].visualization === 'screen') {
+            anyScreensVisible = true;
+            break;
+        }
+    }
+
+    return anyScreensVisible;
+};

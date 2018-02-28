@@ -734,6 +734,16 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
         var w = parseInt(thisSVG.style.width, 10);
         var h = parseInt(thisSVG.style.height, 10);
+
+        // check if css is a percentage (handle differently so we don't convert 100% to 100px)
+        if (thisSVG.style.width[thisSVG.style.width.length-1] === "%") {
+            var parent = thisSVG.parentElement;
+            var parentW = parent.getBoundingClientRect().width;
+            var parentH = parent.getBoundingClientRect().height;
+            w = parentW * (w / 100);
+            w = parentH * (w / 100);
+        }
+        
         return [[0, 0, 0],
             [w, 0, 0],
             [w, h, 0],

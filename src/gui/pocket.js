@@ -187,7 +187,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 
                 // name the frame "gauge", "gauge2", "gauge3", etc... 
                 frame.name = evt.target.dataset.name;
-                var existingFrameTypes = Object.keys(closestObject.frames).map(function(existingFrameKey){return closestObject.frames[existingFrameKey].type;});
+                var existingFrameTypes = Object.keys(closestObject.frames).map(function(existingFrameKey){
+                    return closestObject.frames[existingFrameKey].type;
+                });
                 var numberOfSameFrames = existingFrameTypes.filter(function(type){
                     return type === evt.target.dataset.name;
                 }).length;
@@ -224,8 +226,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 frame.screen = {
                     x: frame.ar.x,
                     y: frame.ar.y,
-                    scale: frame.ar.scale,
-                    matrix: frame.ar.matrix
+                    scale: frame.ar.scale
                 };
                 // frame.screenX = 0;
                 // frame.screenY = 0;
@@ -264,10 +265,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     pageY: evt.pageY
                 };
                 
-                frame.currentTouchOffset = {
-                    x: 0,
-                    y: 0,
-                };
+                // frame.currentTouchOffset = {
+                //     x: 0,
+                //     y: 0
+                // };
 
                 closestObject.frames[frameID] = frame;
 
@@ -283,28 +284,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 console.warn('there aren\'t any visible objects to place this frame on!');
             }
             
-            // var objectIds = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
-            // if (objectIds.length !== 1) {
-            //     return;
-            // }
-            // var parentObject = objects[objectIds[0]];
-            // var src = evt.target.dataset.src;
-            // var width = evt.target.dataset.width;
-            // var height = evt.target.dataset.height;
-            // var frame = new realityEditor.gui.frame.Frame(src, width, height);
-            //
-            // var tempMatrix = [];
-            // var r = realityEditor.gui.ar.draw.matrix.r;
-            //
-            // var arUtilities = realityEditor.gui.ar.utilities;
-            // arUtilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectIds[0]], globalStates.projectionMatrix, r);
-            // arUtilities.multiplyMatrix(rotateX, r, tempMatrix);
-            // parentObject.temp = tempMatrix;
-            // var matrixTouch = arUtilities.screenCoordinatesToMatrixXY(parentObject, [evt.clientX, evt.clientY]);
-            // frame.x = matrixTouch[0];
-            // frame.y = matrixTouch[1];
-            // realityEditor.gui.frame.create(objectIds[0], frame);
-            
             pocketHide();
             
         });
@@ -312,72 +291,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         createPocketUIPalette();
 		pocketHide();
     }
-    
-    // function addFrameToObject() {
-    //     var frame = new Frame();
-    //
-    //     frame.objectId = thisAction.addFrame.objectID;
-    //     frame.name = thisAction.addFrame.name;
-    //
-    //     var frameID = frame.objectId + frame.name;
-    //     frame.uuid = frameID;
-    //
-    //     frame.ar.x = thisAction.addFrame.x;
-    //     frame.ar.y = thisAction.addFrame.y;
-    //     frame.ar.scale = thisAction.addFrame.scale;
-    //     frame.frameSizeX = thisAction.addFrame.frameSizeX;
-    //     frame.frameSizeY = thisAction.addFrame.frameSizeY;
-    //
-    //     frame.location = thisAction.addFrame.location;
-    //     frame.src = thisAction.addFrame.src;
-    //     frame.type = thisAction.addFrame.type;
-    //
-    //     // set other properties
-    //
-    //     frame.animationScale = 0;
-    //     frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    //     frame.width = frame.frameSizeX;
-    //     frame.height = frame.frameSizeY;
-    //     frame.loaded = false;
-    //     // frame.objectVisible = true;
-    //     frame.screen = {
-    //         x: frame.ar.x,
-    //         y: frame.ar.y,
-    //         scale: frame.ar.scale,
-    //         matrix: frame.ar.matrix
-    //     };
-    //     // frame.screenX = 0;
-    //     // frame.screenY = 0;
-    //     frame.screenZ = 1000;
-    //     frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    //
-    //     // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
-    //     frame.fullScreen = false;
-    //     frame.sendMatrix = false;
-    //     frame.sendAcceleration = false;
-    //     frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
-    //     // thisFrame.visible = false;
-    //
-    //     // TODO: add nodes to frame
-    //     var nodeNames = thisAction.addFrame.nodeNames;
-    //     nodeNames.forEach(function(nodeName) {
-    //         var nodeUuid = frameID + nodeName;
-    //         frame.nodes[nodeUuid] = new Node();
-    //         var addedNode = frame.nodes[nodeUuid];
-    //         addedNode.objectId = thisAction.addFrame.objectID;
-    //         addedNode.frameId = frameID;
-    //         addedNode.name = nodeName;
-    //         addedNode.text = undefined;
-    //         addedNode.type = 'node';
-    //         addedNode.x = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
-    //         addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
-    //         addedNode.frameSizeX = 100;
-    //         addedNode.frameSizeY = 100;
-    //
-    //     });
-    //
-    //     thisObject.frames[frameID] = frame;
-    // }
 
     function isPocketWanted() {
         if (pocketShown()) {
@@ -549,6 +462,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
             var elt = document.createElement('iframe');
             elt.classList.add('palette-element');
+            elt.style.width = element.width * 2 + 'px';
+            elt.style.height = element.height * 2 + 'px';
             elt.src = thisUrl;
 
             container.appendChild(elt);
