@@ -151,7 +151,10 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
             
             if (!globalStates.initialDistance) {
                 var realDistanceToUnconstrainedFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
-                globalStates.initialDistance = realDistanceToUnconstrainedFrame;                
+                globalStates.initialDistance = realDistanceToUnconstrainedFrame; 
+                if (this.screenObject.frame.indexOf('__GLOBAL__') > -1) {
+                    globalStates.initialDistance *= 0.9; // make global frames a bit harder to push into the screen
+                }
             }
 
             console.log('screen frame is a global frame switching between objects');

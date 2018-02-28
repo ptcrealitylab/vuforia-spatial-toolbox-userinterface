@@ -460,15 +460,58 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
         frame.visualization = newVisualization;
         
         if (frame.visualization === 'screen') {
+
+            if (realityEditor.device.isGlobalFrame(globalStates.editingModeObject)) {
+                
+                var globalFrame = globalFrames[globalStates.editingModeFrame];
+                var newFrameKey;
+
+                var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+                if (closestObjectKey) {
+                    console.log('there is an object to drop this frame onto');
+
+                    var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                    var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, touchPosition.x, touchPosition.y);
+
+                    // var projectedCoordinates = {
+                    //     x: realityEditor.gui.screenExtension.screenObject.x,
+                    //     y: realityEditor.gui.screenExtension.screenObject.y
+                    // };
+                    realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrame, projectedCoordinates);
+                    
+                    // newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrame);
+                    // var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                    // var screenX = evt.pageX;
+                    // var screenY = evt.pageY;
+                    // var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                    // console.log(projectedCoordinates);
+                    
+                    // var projectedCoordinates = {
+                    //     x: realityEditor.gui.screenExtension.screenObject.x,
+                    //     y: realityEditor.gui.screenExtension.screenObject.y
+                    // };
+
+                    // newFrame.ar.x = projectedCoordinates.x;
+                    // newFrame.ar.y = projectedCoordinates.y;
+
+                    // // update position on server
+                    // urlEndpoint = 'http://' + objects[closestObjectKey].ip + ':' + httpPort + '/object/' + closestObjectKey + "/frame/" + newFrameKey + "/node/" + null + "/size/";
+                    // var content = newFrame.ar;
+                    // content.lastEditor = globalStates.tempUuid;
+                    // realityEditor.network.postData(urlEndpoint, content);
+                    
+
+                }
+
+            }
+            
+            
             this.hideTransformed(frame.uuid, frame, globalDOMCache, cout);
             console.log('hide frame -> screen');
         } else {
             // this.drawTransformed(frame.uuid, frame, globalDOMCache, cout);
             console.log('show frame -> AR');
             
-            // realityEditor.gui.menus.on("editing", ["unconstrained"]);
-            globalStates.unconstrainedPositioning = true;
-
             var activeKey = frame.uuid;
             
             // resize iframe to override incorrect size it starts with so that it matches the screen frame
@@ -490,6 +533,9 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
             svg.style.height = iframe.style.height;
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
 
+            realityEditor.gui.menus.on("editing", ["unconstrained"]);
+            globalStates.previousUnconstrainedPositioning = globalStates.unconstrainedPositioning;
+            globalStates.unconstrainedPositioning = true;
             globalStates.editingPulledScreenFrame = true;
             realityEditor.device.beginTouchEditing(overlay);
         }
@@ -580,7 +626,7 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
  * @param globalFrameKey - the frame's key within globalFrames
  * @param frame - a reference to the global frame itself
  */
-realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, globalFrameKey, frame) {
+realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, globalFrameKey, frame, optionalPosition) {
     
     console.log(newObjectKey, globalFrameKey, frame);
     
@@ -668,6 +714,12 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
         
         frame.ar.x = 0;
         frame.ar.y = 0;
+        
+        if (optionalPosition) {
+            frame.ar.x = optionalPosition.x;
+            frame.ar.y = optionalPosition.y;
+        }
+        
         frame.ar.matrix = realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
         
         // add the new frame to the new object

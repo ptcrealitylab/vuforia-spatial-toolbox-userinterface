@@ -341,7 +341,6 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 // private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
 (function(exports) {
 
-    // TODO: finish implementing
     function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
         
         var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
@@ -354,8 +353,6 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             
             if (unconstrainedMatrix) {
                 var finalMatrix = unconstrainedMatrix;
-                // realityEditor.gui.ar.draw.utilities.multiplyMatrix(unconstrainedMatrix, realityEditor.gui.ar.draw.visibleObjects[objectKey], finalMatrix);
-                // realityEditor.gui.ar.draw.utilities.multiplyMatrix(unconstrainedMatrix, realityEditor.gui.ar.draw.visibleObjects[objectKey], finalMatrix);
                 point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
             } else {
                 var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);

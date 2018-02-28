@@ -426,30 +426,16 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
         }
-
-        globalStates.editingNode = null;
-        globalStates.editingModeLocation = null;
-        globalStates.editingFrame = null;
-        globalStates.editingModeFrame = null;
-        globalStates.editingModeHaveObject = false;
-        globalStates.editingModeKind = null;
-        globalStates.editingModeObject = null;
-        globalStates.editingPulledScreenFrame = false;
-        globalStates.pocketEditingMode = false;
+        
+        this.stopEditingMode();
 
     } else if (globalStates.guiState === 'ui') {
         if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
             this.deactivateFrameMove(globalStates.editingFrame);
             var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
             // realityEditor.device.deactivateMultiTouch();
-            globalStates.editingFrame = null;
-            globalStates.editingModeFrame = null;
-            globalStates.editingModeHaveObject = false;
-            globalStates.editingModeKind = null;
-            globalStates.editingModeObject = null;
-            globalStates.editingPulledScreenFrame = false;
-            globalStates.pocketEditingMode = false;
-
+            
+            this.stopEditingMode();
         }
     }
 
@@ -457,18 +443,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
 	    if (globalStates.editingFrame && !globalStates.editingMode) {
 	        this.deactivateFrameMove(globalStates.editingFrame);
         }
-        globalStates.editingNode = null;
-        globalStates.editingModeLocation = null;
-        globalStates.editingFrame = null;
-        globalStates.editingModeFrame = null;
-        globalStates.editingModeHaveObject = false;
-        globalStates.editingModeKind = null;
-        globalStates.editingModeObject = null;
-        globalStates.tempEditingMode = false;
-        globalStates.pocketEditingMode = false;
-        globalStates.editingPulledScreenFrame = false;
-        globalStates.pocketEditingMode = false;
-
+        this.stopEditingMode();
     }
 
     globalCanvas.hasContent = true;
@@ -515,6 +490,28 @@ realityEditor.device.onTrueTouchUp = function(evt){
 };
 
 
+realityEditor.device.stopEditingMode = function(/*stopObject, stopFrame, stopNode*/) {
+    globalStates.editingMode = false;
+    globalStates.editingModeKind = null;
+    globalStates.tempEditingMode = false;
+    globalStates.pocketEditingMode = false;
+    // if (stopObject) {
+        globalStates.editingModeHaveObject = false;
+        globalStates.editingModeObject = null;
+    // }
+    // if (stopFrame) {
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        if (globalStates.editingPulledScreenFrame) {
+            globalStates.unconstrainedPositioning = globalStates.previousUnconstrainedPositioning;
+        }
+        globalStates.editingPulledScreenFrame = false;
+    // }
+    // if (stopNode) {
+        globalStates.editingNode = null;
+        globalStates.editingModeLocation = null;
+    // }
+};
 
 realityEditor.device.onTouchEnter = function(evt) {
     var target = evt.currentTarget;
@@ -1179,6 +1176,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 globalStates.editingFrame = null;
                 globalStates.editingModeHaveObject = false;
                 globalStates.editingPulledScreenFrame = false;
+                
+                // TODO: use new stopEditing function instead
 
                 return false;
             }
@@ -1225,6 +1224,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             globalStates.editingModeFrame = null;
             globalStates.editingFrame = null;
             globalStates.editingPulledScreenFrame = false;
+            
+            // todo: use new stop editing function instead
 
         } else {
 

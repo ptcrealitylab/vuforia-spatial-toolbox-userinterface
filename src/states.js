@@ -146,6 +146,7 @@ var globalStates = {
 	angY: 0,
 	angZ: 0,
 	unconstrainedPositioning: false,
+    previousUnconstrainedPositioning: false,
 	thisAndthat : {
 		interval: undefined,
 		timeout: undefined
