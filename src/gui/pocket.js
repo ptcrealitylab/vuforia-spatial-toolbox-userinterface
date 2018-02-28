@@ -119,24 +119,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     var inMemoryDeletion = false;
 
     var realityElements = [
-        {
-            name: 'slider',
-            width: 206,
-            height: 526,
-            nodeNames: [
-                'value'
-            ]
-        },
-        {
-            name: 'slider-2d',
-            width: 526,
-            height: 526,
-            nodeNames: [
-                'valueX',
-                'valueY'
-            ]
-        },
-        {
+      
+        /*{
             name: 'sensor-graph',
             width: 304,
             height: 304,
@@ -159,7 +143,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             nodeNames: [
                 'value'
             ]
-        },
+        },*/
         {
             name: 'graphUI',
             width: 690,
@@ -188,6 +172,22 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             width: 400,
             height: 400,
             nodeNames: [
+            ]
+        },  {
+            name: 'slider',
+            width: 206,
+            height: 526,
+            nodeNames: [
+                'value'
+            ]
+        },
+        {
+            name: 'slider-2d',
+            width: 526,
+            height: 526,
+            nodeNames: [
+                'valueX',
+                'valueY'
             ]
         }
     ];
