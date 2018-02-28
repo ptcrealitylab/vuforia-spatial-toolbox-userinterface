@@ -502,9 +502,9 @@ realityEditor.device.stopEditingMode = function(/*stopObject, stopFrame, stopNod
     // if (stopFrame) {
         globalStates.editingFrame = null;
         globalStates.editingModeFrame = null;
-        if (globalStates.editingPulledScreenFrame) {
-            globalStates.unconstrainedPositioning = globalStates.previousUnconstrainedPositioning;
-        }
+        // if (globalStates.editingPulledScreenFrame) {
+        //     globalStates.unconstrainedPositioning = globalStates.previousUnconstrainedPositioning;
+        // }
         globalStates.editingPulledScreenFrame = false;
     // }
     // if (stopNode) {

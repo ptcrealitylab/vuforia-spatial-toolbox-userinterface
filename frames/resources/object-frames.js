@@ -629,6 +629,8 @@ var sendTouchEvents = false;
         });
 
         window.addEventListener('message', function (msg) {
+            if (msg.origin === "https://www.youtube.com") return; // TODO: make a more generalized solution for this... 
+            
             var msgContent = JSON.parse(msg.data);
             if (msgContent.stopTouchEditing) {
                 sendTouchEvents = false;

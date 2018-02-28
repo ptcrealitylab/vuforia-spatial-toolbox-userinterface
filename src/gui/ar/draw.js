@@ -534,8 +534,8 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
 
             realityEditor.gui.menus.on("editing", ["unconstrained"]);
-            globalStates.previousUnconstrainedPositioning = globalStates.unconstrainedPositioning;
-            globalStates.unconstrainedPositioning = true;
+            // globalStates.previousUnconstrainedPositioning = globalStates.unconstrainedPositioning;
+            // globalStates.unconstrainedPositioning = true;
             globalStates.editingPulledScreenFrame = true;
             realityEditor.device.beginTouchEditing(overlay);
         }
