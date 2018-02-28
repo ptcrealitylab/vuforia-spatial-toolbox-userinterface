@@ -636,7 +636,7 @@ var sendTouchEvents = false;
 
             if (msgContent.event) {
                 var eventData = msgContent.event;
-                var event = new PointerEvent(eventData.type, {
+               var event = new PointerEvent(eventData.type, {
                     view: window,
                     bubbles: true,
                     cancelable: true
@@ -651,6 +651,7 @@ var sendTouchEvents = false;
                 event.pageY = eventData.y;
                 event.screenX = eventData.x;
                 event.screenY = eventData.y;
+                
                 var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
                 elt.dispatchEvent(event);
             }

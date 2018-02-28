@@ -119,24 +119,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     var inMemoryDeletion = false;
 
     var realityElements = [
-        {
-            name: 'slider',
-            width: 206,
-            height: 526,
-            nodeNames: [
-                'value'
-            ]
-        },
-        {
-            name: 'slider-2d',
-            width: 526,
-            height: 526,
-            nodeNames: [
-                'valueX',
-                'valueY'
-            ]
-        },
-        {
+      
+        /*{
             name: 'sensor-graph',
             width: 304,
             height: 304,
@@ -158,6 +142,52 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             height: 100,
             nodeNames: [
                 'value'
+            ]
+        },*/
+        {
+            name: 'graphUI',
+            width: 690,
+            height: 410,
+            nodeNames: [
+                'value'
+            ]
+        },
+        {
+            name: 'skyNews',
+            width: 660,
+            height: 430,
+            nodeNames: [
+                'play'
+            ]
+        },
+        {
+            name: 'ptcStockUI',
+            width: 600,
+            height: 500,
+            nodeNames: [
+            ]
+        },
+        {
+            name: 'ptcTwitter',
+            width: 400,
+            height: 400,
+            nodeNames: [
+            ]
+        },  {
+            name: 'slider',
+            width: 206,
+            height: 526,
+            nodeNames: [
+                'value'
+            ]
+        },
+        {
+            name: 'slider-2d',
+            width: 526,
+            height: 526,
+            nodeNames: [
+                'valueX',
+                'valueY'
             ]
         }
     ];
@@ -288,7 +318,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             
         });
 
-        createPocketUIPalette();
+        // createPocketUIPalette();
 		pocketHide();
     }
 
@@ -412,6 +442,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
 
     function pocketShow() {
+        createPocketUIPalette();
+        
+        
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn('main', ['pocket']);
         if (globalStates.guiState === "node") {
@@ -437,6 +470,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function pocketHide() {
+        palette.innerHTML ="";
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff('main', ['pocket']);
         setPaletteElementDemo(false);
@@ -447,7 +481,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function createPocketUIPalette() {
-
+        palette = document.querySelector('.palette');
         for (var i = 0; i<realityElements.length; i++){
             var element = realityElements[i];
             var container = document.createElement('div');
