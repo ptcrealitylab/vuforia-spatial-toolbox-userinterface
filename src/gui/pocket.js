@@ -159,6 +159,36 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             nodeNames: [
                 'value'
             ]
+        },
+        {
+            name: 'graphUI',
+            width: 690,
+            height: 410,
+            nodeNames: [
+                'value'
+            ]
+        },
+        {
+            name: 'skyNews',
+            width: 660,
+            height: 430,
+            nodeNames: [
+                'play'
+            ]
+        },
+        {
+            name: 'ptcStockUI',
+            width: 600,
+            height: 500,
+            nodeNames: [
+            ]
+        },
+        {
+            name: 'ptcTwitter',
+            width: 400,
+            height: 400,
+            nodeNames: [
+            ]
         }
     ];
 
@@ -304,7 +334,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             
         });
 
-        createPocketUIPalette();
+        // createPocketUIPalette();
 		pocketHide();
     }
     
@@ -494,6 +524,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
 
     function pocketShow() {
+        createPocketUIPalette();
+        
+        
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn('main', ['pocket']);
         if (globalStates.guiState === "node") {
@@ -519,6 +552,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function pocketHide() {
+        palette.innerHTML ="";
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff('main', ['pocket']);
         setPaletteElementDemo(false);
@@ -529,7 +563,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function createPocketUIPalette() {
-
+        palette = document.querySelector('.palette');
         for (var i = 0; i<realityElements.length; i++){
             var element = realityElements[i];
             var container = document.createElement('div');
