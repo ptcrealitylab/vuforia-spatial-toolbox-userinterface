@@ -313,7 +313,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
             
-            console.log('updated frame');
+            // console.log('updated frame');
             
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
@@ -466,7 +466,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
-        console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
+        // console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
 
         if (origin.type === "logic") {
             if (!origin.guiState) {
@@ -498,13 +498,13 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
         if (globalStates.currentLogic.uuid === nodeKey) {
 
-            console.log("YES");
+            // console.log("YES");
             realityEditor.gui.crafting.forceRedraw(globalStates.currentLogic);
 
         }
 
     } else {
-        console.log("NO");
+        // console.log("NO");
 
         if (globalDOMCache["iframe" + nodeKey]) {
             if (globalDOMCache["iframe" + nodeKey]._loaded)

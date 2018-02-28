@@ -755,8 +755,6 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
     
     delete frame.sourceObject;
     // delete frame.sourceObjectMatrix;
-
-    // TODO: update server state all at once then with the new state when this finishes
     
     return newFrameKey;
 };

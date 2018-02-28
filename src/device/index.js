@@ -435,6 +435,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
         globalStates.editingModeKind = null;
         globalStates.editingModeObject = null;
         globalStates.editingPulledScreenFrame = false;
+        globalStates.pocketEditingMode = false;
 
     } else if (globalStates.guiState === 'ui') {
         if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
@@ -447,6 +448,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
             globalStates.editingModeKind = null;
             globalStates.editingModeObject = null;
             globalStates.editingPulledScreenFrame = false;
+            globalStates.pocketEditingMode = false;
 
         }
     }
@@ -465,6 +467,8 @@ realityEditor.device.onTrueTouchUp = function(evt){
         globalStates.tempEditingMode = false;
         globalStates.pocketEditingMode = false;
         globalStates.editingPulledScreenFrame = false;
+        globalStates.pocketEditingMode = false;
+
     }
 
     globalCanvas.hasContent = true;
@@ -641,7 +645,11 @@ realityEditor.device.onTouchMove = function(evt) {
         
         console.log('move pocket frame!');
         var frame = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY, true);
+        if (frame) {
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY, true);
+        } else {
+            console.log('pocket frame became global frame');
+        }
         
     }
 

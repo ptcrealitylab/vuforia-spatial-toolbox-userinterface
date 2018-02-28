@@ -61,24 +61,12 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     var thisObject = objects[this.screenObject.closestObject];
     this.screenObject.touchState = eventObject.type;
     if(eventObject.type === "touchstart") {
-        // if (thisObject) {
-        //     var thisFrame = thisObject.frames[this.screenObject.frame];
-        //     if (thisFrame) {
-        //         this.screenObject.isScreenVisible = (thisFrame.visualization === "screen");
-        //     }
-        // }
-        // this.screenObject.isScreenVisible = true; // TODO: only if tapped on screen frame;
         
-        //TODO: finish implementing so doesnt start touch on screen if touch hits an AR frame first
-        // if (this.screenObject.object && this.screenObject.frame) {
-        //     var thisFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
-        //    
-        // }
-        
+        // TODO: make a similar function for when a screen object becomes visible while unconstrained editing a global frame
         var that = this;
         var elementsUnderTouch = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventObject.x, eventObject.y);
         var didTouchARFrame = elementsUnderTouch.some( function(clickedElement) {
-            if (clickedElement.tagName === 'IFRAME' && clickedElement.dataset.objectKey && clickedElement.dataset.frameKey) {
+            if (clickedElement.tagName === 'IFRAME' && clickedElement.dataset.objectKey && clickedElement.dataset.frameKey && clickedElement.style.display !== 'none') {
                 that.screenObject.object = clickedElement.dataset.objectKey;
                 that.screenObject.frame = clickedElement.dataset.frameKey;
                 console.log('tapped down on AR frame, so don\'t start screenframe drag');
@@ -120,6 +108,8 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
                 // keep the invisible AR frames synchronized with the position of their screen frames (so that nodes are in same place and pulls out in the right place)
                 matchingARFrame.ar.x = point.x;
                 matchingARFrame.ar.y = point.y;
+                
+                console.log('mirroring position for frame ' + matchingARFrame.name);
                 // if (this.screenObject.scale) {
                 //     matchingARFrame.ar.scale = this.screenObject.scale;
                 // }
@@ -131,13 +121,48 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
 realityEditor.gui.screenExtension.calculatePushPop = function (){
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
+    
+    if (!screenFrame) {
+        var globalFrame = globalFrames[globalStates.editingFrame];
+        if (globalFrame) {
+            // var globalFrameKey = globalFramePrefix + (this.screenObject.frame).slice((this.screenObject.object).length);
+            // var globalFrame = globalFrames[globalFrameKey];
+            this.screenObject.object = this.screenObject.closestObject;
+            this.screenObject.frame = globalStates.editingFrame; //globalFrameKey;
+            screenFrame = globalFrame;
+        }
+    }
+    // if (this.screenObject.frame && this.screenObject.object && !screenFrame) {
+    //     var globalFrameKey = globalFramePrefix + (this.screenObject.frame).slice((this.screenObject.object).length);
+    //     var globalFrame = globalFrames[globalFrameKey];
+    //     this.screenObject.object = this.screenObject.closestObject;
+    //     this.screenObject.frame = globalFrameKey;
+    //     screenFrame = globalFrame;
+    // }
 
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
     if (screenFrame && isScreenObjectVisible) {
         // console.log('I have a screen frame');
-        
-        
+
         var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
+
+        
+        if (this.screenObject.frame.indexOf('__GLOBAL__') > -1) {
+            
+            if (!globalStates.initialDistance) {
+                var realDistanceToUnconstrainedFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
+                globalStates.initialDistance = realDistanceToUnconstrainedFrame;                
+            }
+
+            console.log('screen frame is a global frame switching between objects');
+            var identityPosition = {
+                x: 0,
+                y: 0,
+                scale: 1.0,
+                matrix: realityEditor.gui.ar.draw.utilities.newIdentityMatrix()
+            };
+            screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], identityPosition);
+        }
         
         // Method 1. Use the full distance to the frame.
         var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
@@ -149,7 +174,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
             globalStates.initialDistance = distanceToFrame;
         }
 
-        // console.log('I have a screen frame', this.screenObject.object, this.screenObject.frame, distanceToFrame, globalStates.initialDistance);
+        console.log('I have a screen frame', this.screenObject.object, this.screenObject.frame, distanceToFrame, globalStates.initialDistance);
 
         var isScreenVisible = this.screenObject.isScreenVisible;
 
