@@ -226,10 +226,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 }
                 
                 console.log('created frame with name ' + frame.name);
-
-                var frameID = frame.objectId + frame.name + realityEditor.device.utilities.uuidTime();
+                var frameName = frame.name + realityEditor.device.utilities.uuidTime();
+                var frameID = frame.objectId + frameName;
                 frame.uuid = frameID;
-
+                frame.name = frameName;
+                
                 frame.ar.x = 0;
                 frame.ar.y = 0;
                 frame.ar.scale = closestObject.averageScale;

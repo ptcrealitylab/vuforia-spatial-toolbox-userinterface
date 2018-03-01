@@ -169,10 +169,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 //     continue;
                 // }
                 
+                /*
                 if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) { // TODO: ben better fix for frames with same name as object - make sure they don't get created in the first place...
                     // console.log("break from frame: ",objectKey, frameKey);
                     continue;
-                }
+                }*/
                 // making sure that the node is always the object to draw
                 this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
@@ -597,7 +598,7 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
 
     var newFrameKey = newObjectKey + frameKeyWithoutObjectKey;
     
-    frame.location = 'local';
+    //frame.location = 'local';
     // frame.name = newFrameKey;
 
     // rename nodes to fit the nested naming conventions for the new frame key  //TODO: update link location naming the same way?... or it might not matter for now... i'll see whether any bugs pop up if a global frame has links to it while being moved...
