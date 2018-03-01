@@ -209,6 +209,11 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         if (isScreenVisible !== this.screenObject.isScreenVisible) {
             
             var newVisualization = isScreenVisible ? 'screen' : 'ar';
+            
+            if (newVisualization === 'screen') {
+                this.screenObject.scale = realityEditor.gui.ar.positioning.getPositionData(screenFrame).scale;
+            }
+            
             realityEditor.gui.ar.draw.changeVisualization(screenFrame, newVisualization);
             
             // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();

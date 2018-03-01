@@ -494,6 +494,7 @@ realityEditor.device.stopEditingMode = function(/*stopObject, stopFrame, stopNod
     globalStates.editingMode = false;
     globalStates.editingModeKind = null;
     globalStates.tempEditingMode = false;
+    globalStates.unconstrainedSnapInitialPosition = null;
     globalStates.pocketEditingMode = false;
     // if (stopObject) {
         globalStates.editingModeHaveObject = false;
@@ -502,6 +503,13 @@ realityEditor.device.stopEditingMode = function(/*stopObject, stopFrame, stopNod
     // if (stopFrame) {
         globalStates.editingFrame = null;
         globalStates.editingModeFrame = null;
+        
+        // if (globalStates.tempUnconstrainedPositioning) {
+        //     globalStates.unconstrainedPositioning = false;
+        //     globalStates.tempUnconstrainedPositioning = false;
+        //     realityEditor.gui.menus.off("editing", ["unconstrained"]);
+        // }
+        
         // if (globalStates.editingPulledScreenFrame) {
         //     globalStates.unconstrainedPositioning = globalStates.previousUnconstrainedPositioning;
         // }
@@ -1017,6 +1025,26 @@ realityEditor.device.onMultiTouchMove = function(evt) {
             if (globalStates.unconstrainedPositioning === true) {
                 // console.log('unconstrained move');
                 realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+            
+            } else {
+                var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[tempThisObject.objectId], tempThisObject);
+                var distanceToFrame = screenFrameMatrix[14];
+                if (!globalStates.unconstrainedSnapInitialPosition) {
+                    globalStates.unconstrainedSnapInitialPosition = distanceToFrame;
+                } else {
+                    var threshold = 100;
+                    if (distanceToFrame - globalStates.unconstrainedSnapInitialPosition > threshold) {
+                        console.log('pop into unconstrained editing mode');
+                        realityEditor.app.tap();
+                        globalStates.unconstrainedSnapInitialPosition = null;
+                        globalStates.unconstrainedPositioning = true;
+                        // globalStates.editingMode = true;
+                        realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+                        realityEditor.gui.ar.draw.matrix.matrixtouchOn = tempThisObject.uuid;
+                        globalStates.tempUnconstrainedPositioning = true;
+                        realityEditor.gui.menus.on("editing", ["unconstrained"]);
+                    }
+                }
             }
         }
 
@@ -1245,6 +1273,15 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		globalStates.editingModeHaveObject = false;
 		globalCanvas.hasContent = true;
 		realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
+
+        if (globalStates.tempUnconstrainedPositioning) {
+            globalStates.unconstrainedPositioning = false;
+            globalStates.tempUnconstrainedPositioning = false;
+            realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = false;
+            // globalStates.editingMode = false;
+            realityEditor.gui.menus.off("editing", ["unconstrained"]);
+        }
+        
 	}
 	cout("MultiTouchEnd");
 };

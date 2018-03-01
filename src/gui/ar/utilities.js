@@ -731,15 +731,6 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
         var w = parseInt(thisSVG.style.width, 10);
         var h = parseInt(thisSVG.style.height, 10);
-
-        // check if css is a percentage (handle differently so we don't convert 100% to 100px)
-        if (thisSVG.style.width[thisSVG.style.width.length-1] === "%") {
-            var parent = thisSVG.parentElement;
-            var parentW = parent.getBoundingClientRect().width;
-            var parentH = parent.getBoundingClientRect().height;
-            w = parentW * (w / 100);
-            w = parentH * (w / 100);
-        }
         
         return [[0, 0, 0],
             [w, 0, 0],
@@ -885,7 +876,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
         var thisSVG = globalDOMCache["svg" + activeKey];
-       var shadowObject = shadowObjects["svg" + activeKey] = {};
+
+        // check if css is a percentage (handle differently so we don't convert 100% to 100px)
+        if (thisSVG.style.width[thisSVG.style.width.length-1] === "%") {
+            return;
+        }
+        
+        var shadowObject = shadowObjects["svg" + activeKey] = {};
         // console.log(activeVehicle);
         if (!thisSVG.getElementById("lineID")) {
             realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG, activeVehicle.width, activeVehicle.height);

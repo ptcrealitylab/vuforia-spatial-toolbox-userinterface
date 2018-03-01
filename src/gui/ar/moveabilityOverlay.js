@@ -11,13 +11,9 @@ realityEditor.gui.ar.moveabilityOverlay.createSvg = function(svg){ // TODO: call
     var x = parseInt(svg.style.width, 10);
     var y = parseInt(svg.style.height, 10);
 
-    // check if css is a percentage (handle differently so we don't convert 100% to 100px)
+    //  if the object is fullscreen, handle differently so we don't convert 100% to 100px)
     if (svg.style.width[svg.style.width.length-1] === "%") {
-        var parent = svg.parentElement;
-        var parentX = parent.getBoundingClientRect().width; // TODO: add event listener on parent resize to recompute this 
-        var parentY = parent.getBoundingClientRect().height;
-        x = parentX * (x / 100);
-        y = parentY * (y / 100);
+        return;
     }
     
     this.drawBox(svg, svg.namespaceURI, x, y);

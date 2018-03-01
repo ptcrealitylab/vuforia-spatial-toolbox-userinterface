@@ -234,7 +234,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
-                frame.ar.scale = closestObject.averageScale;
+                frame.ar.scale = closestObject.averageScale/2;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
 
@@ -496,8 +496,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
             var elt = document.createElement('iframe');
             elt.classList.add('palette-element');
-            elt.style.width = element.width * 2 + 'px';
-            elt.style.height = element.height * 2 + 'px';
+            elt.style.width = element.width + 'px';
+            elt.style.height = element.height + 'px';
             elt.src = thisUrl;
 
             container.appendChild(elt);
@@ -506,8 +506,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var paletteElementSize = Math.floor(parseFloat(window.getComputedStyle(container).width)) - 6;
 
             var scale = Math.min(
-                paletteElementSize / element.width,
-                paletteElementSize / element.height,
+                paletteElementSize / (element.width),
+                paletteElementSize / (element.height),
                 1
             );
 
