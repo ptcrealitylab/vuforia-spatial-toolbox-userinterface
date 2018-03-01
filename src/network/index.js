@@ -1173,6 +1173,7 @@ if (thisFrame) {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
             globalStates.tempEditingMode = false;
+            console.log('stop editing mode!!!');
             globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.deactivateFrameMove(msgContent.frame);
             var frame = document.getElementById('iframe' + msgContent.frame);
