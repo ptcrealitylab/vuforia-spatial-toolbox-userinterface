@@ -34,10 +34,22 @@ realityEditor.gui.screenExtension.touchMove = function (eventObject){
 };
 
 realityEditor.gui.screenExtension.touchEnd = function (eventObject){
-    this.updateScreenObject(eventObject);
     if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
         realityEditor.gui.screenExtension.sendScreenObject();
     }
+    
+        this.screenObject.x = 0;
+        this.screenObject.y = 0;
+        this.screenObject.scale = 1;
+        this.screenObject.object = null;
+        this.screenObject.frame = null;
+        this.screenObject.node = null;
+        this.screenObject.closestObject = null;
+        this.screenObject.touchState = null;
+        
+        globalStates.initialDistance = null;
+
+    this.updateScreenObject(eventObject);
     //console.log("end", this.screenObject);
 };
 
