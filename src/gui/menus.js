@@ -383,6 +383,7 @@ realityEditor.gui.menus.pointerDown = function(event) {
 
     realityEditor.gui.buttons.pocketButtonDown(event);
     realityEditor.gui.buttons.resetButtonDown(event);
+    realityEditor.gui.buttons.settingButtonDown(event);
 
 };
 

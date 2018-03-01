@@ -205,10 +205,44 @@ realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {
         }
     };
 
+realityEditor.gui.buttons.settingTimer = null;
+realityEditor.gui.buttons.wasTimed = false;
+
+realityEditor.gui.buttons.settingButtonDown = function(event) {
+    if (event.button !== "setting") return;
+    
+    realityEditor.gui.buttons.settingTimer = setTimeout(function(){
+        realityEditor.gui.buttons.wasTimed = true;
+
+        if (!globalStates.editingMode) {
+
+            realityEditor.device.addEventHandlers();
+            // globalStates.editingMode = true;
+            realityEditor.device.setEditingMode(true);
+            realityEditor.app.appFunctionCall("developerOn", null, null);
+            realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
+        } else {
+            realityEditor.device.removeEventHandlers();
+            // globalStates.editingMode = false;
+            realityEditor.device.setEditingMode(false);
+            realityEditor.app.appFunctionCall("developerOff", null, null);
+        }
+    },500);
+    
+};
+
 realityEditor.gui.buttons.settingButtonUp = function(event) {
         if (event.button !== "setting" && event.button !== "logicSetting") return;
 
        // realityEditor.gui.menus.on("main", ["setting"]);
+        if(realityEditor.gui.buttons.settingTimer) {
+            clearTimeout(realityEditor.gui.buttons.settingTimer);
+        }
+        if(realityEditor.gui.buttons.wasTimed) {
+            realityEditor.gui.buttons.wasTimed = false;
+            return;
+        }
+
 
         realityEditor.gui.pocket.pocketHide();
 
