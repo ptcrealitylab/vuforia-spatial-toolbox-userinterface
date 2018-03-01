@@ -117,6 +117,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     var nodeMemoryBar;
     
     var inMemoryDeletion = false;
+    var pocketDestroyTimer = null;
 
     var realityElements = [
       
@@ -319,8 +320,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             
         });
 
-        // createPocketUIPalette();
-		pocketHide();
+            // createPocketUIPalette();
+		// pocketHide();
     }
 
     function isPocketWanted() {
@@ -443,8 +444,12 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
 
     function pocketShow() {
-        createPocketUIPalette();
-        
+        console.log('pocketShow()', palette.innerHTML.trim());
+        if (palette.innerHTML.trim() === "") {
+            createPocketUIPalette();
+        } else {
+            clearTimeout(pocketDestroyTimer);
+        }
         
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn('main', ['pocket']);
@@ -471,7 +476,15 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function pocketHide() {
-        palette.innerHTML ="";
+        // palette.style.display = 'none';
+        pocketDestroyTimer = setTimeout(function() {
+            palette.innerHTML = "";
+            // remove touch event from dragged frame if needed
+            if (globalStates.pocketEditingMode) {
+                var fakeEvent = { currentTarget: document.getElementById(globalStates.editingFrame) };
+                realityEditor.device.onTrueTouchUp(fakeEvent);
+            }
+        }, 5000);
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff('main', ['pocket']);
         setPaletteElementDemo(false);

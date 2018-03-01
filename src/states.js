@@ -156,6 +156,7 @@ var globalStates = {
     framePullThreshold: 50,
     didStartPullingFromScreen: false,
     unconstrainedSnapInitialPosition: null,
+    defaultScale: 0.5,
     
 	// rettail
 	reality: false,

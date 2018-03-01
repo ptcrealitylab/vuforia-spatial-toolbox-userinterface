@@ -964,19 +964,20 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
             if (activeVehicle.fullScreen !== true) {
 
+                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+
                 // set initial position correctly
                 if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                    activeVehicle.currentTouchOffset = {
-                        x: activeVehicle.frameSizeX/2,
-                        y: activeVehicle.frameSizeY/2
-                    };
-                    realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
+                    // activeVehicle.currentTouchOffset = {
+                    //     x: activeVehicle.frameSizeX/2 * positionData.scale,
+                    //     y: activeVehicle.frameSizeY/2 * positionData.scale
+                    // };
+                    // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
+                    realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, false);
                     delete activeVehicle.positionOnLoad;
                     realityEditor.device.beginTouchEditing(globalDOMCache[activeKey], 'pocket');
                 }
                 
-                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-
                 var finalOffsetX = positionData.x;
                 var finalOffsetY = positionData.y;
 

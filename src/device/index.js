@@ -397,7 +397,8 @@ realityEditor.device.onFalseTouchUp= function() {
 
 realityEditor.device.onTrueTouchUp = function(evt){
     var target = evt.currentTarget;
-	if (globalStates.guiState ==="node") {
+    
+	if (globalStates.guiState === "node") {
 		if (globalProgram.objectA) {
 
 			if(target.nodeId === globalProgram.nodeA && target.type === "logic"){
@@ -425,24 +426,56 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
         }
-        
-        this.stopEditingMode();
+
+        globalStates.editingNode = null;
+        globalStates.editingModeLocation = null;
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        globalStates.editingModeHaveObject = false;
+        globalStates.editingModeKind = null;
+        globalStates.editingModeObject = null;
+        globalStates.editingPulledScreenFrame = false;
+        globalStates.pocketEditingMode = false;
 
     } else if (globalStates.guiState === 'ui') {
-        if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
-            this.deactivateFrameMove(globalStates.editingFrame);
-            var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
-            // realityEditor.device.deactivateMultiTouch();
+	    
+        if (globalStates.editingFrame && globalStates.editingModeObject && globalStates.guiState === 'ui' /*&& !globalStates.editingMode && !globalStates.tempEditingMode*/) {
             
-            this.stopEditingMode();
+            if (!globalStates.editingMode) {
+                this.deactivateFrameMove(globalStates.editingFrame);
+                // var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
+                // realityEditor.device.deactivateMultiTouch();                
+            }
+            globalStates.editingFrame = null;
+            globalStates.editingModeFrame = null;
+            globalStates.editingModeHaveObject = false;
+            globalStates.editingModeKind = null;
+            globalStates.editingModeObject = null;
+            globalStates.editingPulledScreenFrame = false;
+            globalStates.pocketEditingMode = false;
+            globalStates.tempUnconstrainedPositioning = false;
+            globalStates.unconstrainedSnapInitialPosition = null;
         }
+        
     }
 
     if (globalStates.editingPulledScreenFrame) {
 	    if (globalStates.editingFrame && !globalStates.editingMode) {
 	        this.deactivateFrameMove(globalStates.editingFrame);
         }
-        this.stopEditingMode();
+        globalStates.editingNode = null;
+        globalStates.editingModeLocation = null;
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        globalStates.editingModeHaveObject = false;
+        globalStates.editingModeKind = null;
+        globalStates.editingModeObject = null;
+        globalStates.tempEditingMode = false;
+        globalStates.pocketEditingMode = false;
+        globalStates.editingPulledScreenFrame = false;
+        globalStates.pocketEditingMode = false;
+        globalStates.tempUnconstrainedPositioning = false;
+        globalStates.unconstrainedSnapInitialPosition = null;
     }
     
     if (globalStates.tempUnconstrainedPositioning) {
@@ -497,8 +530,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
 realityEditor.device.stopEditingMode = function(/*stopObject, stopFrame, stopNode*/) {
     globalStates.editingMode = false;
     globalStates.editingModeKind = null;
-    globalStates.tempEditingMode = false;
-    globalStates.unconstrainedSnapInitialPosition = null;
+
     globalStates.pocketEditingMode = false;
     // if (stopObject) {
         globalStates.editingModeHaveObject = false;
