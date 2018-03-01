@@ -227,7 +227,7 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
             realityEditor.device.setEditingMode(false);
             realityEditor.app.appFunctionCall("developerOff", null, null);
         }
-    },500);
+    },200);
     
 };
 
