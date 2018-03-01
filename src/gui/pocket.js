@@ -235,7 +235,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
-                frame.ar.scale = closestObject.averageScale/2;
+                frame.ar.scale = closestObject.averageScale;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
 

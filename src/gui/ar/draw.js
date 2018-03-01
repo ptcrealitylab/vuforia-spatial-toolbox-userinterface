@@ -271,7 +271,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 // disassociate a screen<->AR frame from the object if it is being moved in unconstrained editing
-                var preserveFrameGlobally = (globalStates.editingMode &&
+                var preserveFrameGlobally = ((globalStates.editingMode ||
+                                             (globalStates.tempEditingMode && globalStates.tempUnconstrainedPositioning)) &&
                     globalStates.unconstrainedPositioning &&
                     globalStates.editingModeObject === this.activeObject.uuid &&
                     globalStates.editingModeFrame === frameKey &&
@@ -1744,7 +1745,6 @@ realityEditor.gui.ar.draw.resetNodeRepositionCanvases = function() {
 realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var frame = realityEditor.getFrame(objectKey, frameKey);
-        frame.hasCTXContent = false;
         frame.visible = false;
         frame.visibleEditing = false;
         // frame.forceRedrawRepositionOnce = true;

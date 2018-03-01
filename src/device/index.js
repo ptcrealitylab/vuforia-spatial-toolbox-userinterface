@@ -140,7 +140,6 @@ realityEditor.device.activateFrameMove = function(frameKey) {
         frameCanvasElement.style.display = "inline";
 
         var frame = realityEditor.getFrame(frameOverlayElement.objectId, frameKey);
-        frame.hasCTXContent = false;
         frame.visible = false;
         frame.visibleEditing = false;
 
@@ -444,6 +443,11 @@ realityEditor.device.onTrueTouchUp = function(evt){
 	        this.deactivateFrameMove(globalStates.editingFrame);
         }
         this.stopEditingMode();
+    }
+    
+    if (globalStates.tempUnconstrainedPositioning) {
+	    this.onMultiTouchEnd(evt);
+	    globalStates.tempEditingMode = false;
     }
 
     globalCanvas.hasContent = true;
