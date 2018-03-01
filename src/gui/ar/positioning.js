@@ -142,6 +142,46 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 
 };
 
+realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = function(activeVehicle, screenX, screenY, useTouchOffset) {
+
+    var positionData = this.getPositionData(activeVehicle);
+    var hasBeenUnconstrainedEdited = positionData.matrix.length > 0;
+
+    var unconstrainedMatrix = undefined;
+    if (hasBeenUnconstrainedEdited) {
+        unconstrainedMatrix = [];
+        realityEditor.gui.ar.draw.utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, unconstrainedMatrix);
+    }
+
+    var objectKey = activeVehicle.objectId;
+    var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix);
+
+    if (useTouchOffset) {
+
+        var changeInPosition = {
+            x: point.x - positionData.x,
+            y: point.y - positionData.y
+        };
+
+        if (!activeVehicle.currentTouchOffset) {
+            activeVehicle.currentTouchOffset = changeInPosition;
+            console.log('set touch offset: ');
+            console.log(changeInPosition);
+        } else {
+            positionData.x = point.x - activeVehicle.currentTouchOffset.x;
+            positionData.y = point.y - activeVehicle.currentTouchOffset.y;
+        }
+
+    } else {
+
+        activeVehicle.currentTouchOffset = null;
+        positionData.x = point.x;
+        positionData.y = point.y;
+
+    }
+};
+
+
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
     var positionData = activeVehicle;
     if (activeVehicle.hasOwnProperty('visualization')) {
@@ -150,10 +190,10 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
     return positionData;
 };
 
-// realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
-//     var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
-//     return {
-//         x: translate3d[0],
-//         y: translate3d[1]
-//     }
-// };
+realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
+    var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
+    return {
+        x: translate3d[0],
+        y: translate3d[1]
+    }
+};

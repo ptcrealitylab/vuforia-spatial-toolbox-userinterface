@@ -305,6 +305,8 @@ realityEditor.device.beginTouchEditing = function(target, source) {
 	
 	if (source !== 'pocket') {
         globalStates.tempEditingMode = true;
+    } else {
+	    globalStates.pocketEditingMode = true;
     }
 
 	realityEditor.device.activateMultiTouch();
@@ -424,28 +426,16 @@ realityEditor.device.onTrueTouchUp = function(evt){
 			globalProgram.logicB = false;
 			globalProgram.logicSelector = 4;
         }
-
-        globalStates.editingNode = null;
-        globalStates.editingModeLocation = null;
-        globalStates.editingFrame = null;
-        globalStates.editingModeFrame = null;
-        globalStates.editingModeHaveObject = false;
-        globalStates.editingModeKind = null;
-        globalStates.editingModeObject = null;
-        globalStates.editingPulledScreenFrame = false;
+        
+        this.stopEditingMode();
 
     } else if (globalStates.guiState === 'ui') {
         if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
             this.deactivateFrameMove(globalStates.editingFrame);
             var activeVehicle = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
             // realityEditor.device.deactivateMultiTouch();
-            globalStates.editingFrame = null;
-            globalStates.editingModeFrame = null;
-            globalStates.editingModeHaveObject = false;
-            globalStates.editingModeKind = null;
-            globalStates.editingModeObject = null;
-            globalStates.editingPulledScreenFrame = false;
-
+            
+            this.stopEditingMode();
         }
     }
 
@@ -453,15 +443,7 @@ realityEditor.device.onTrueTouchUp = function(evt){
 	    if (globalStates.editingFrame && !globalStates.editingMode) {
 	        this.deactivateFrameMove(globalStates.editingFrame);
         }
-        globalStates.editingNode = null;
-        globalStates.editingModeLocation = null;
-        globalStates.editingFrame = null;
-        globalStates.editingModeFrame = null;
-        globalStates.editingModeHaveObject = false;
-        globalStates.editingModeKind = null;
-        globalStates.editingModeObject = null;
-        globalStates.tempEditingMode = false;
-        globalStates.editingPulledScreenFrame = false;
+        this.stopEditingMode();
     }
 
     globalCanvas.hasContent = true;
@@ -508,6 +490,36 @@ realityEditor.device.onTrueTouchUp = function(evt){
 };
 
 
+realityEditor.device.stopEditingMode = function(/*stopObject, stopFrame, stopNode*/) {
+    globalStates.editingMode = false;
+    globalStates.editingModeKind = null;
+    globalStates.tempEditingMode = false;
+    globalStates.unconstrainedSnapInitialPosition = null;
+    globalStates.pocketEditingMode = false;
+    // if (stopObject) {
+        globalStates.editingModeHaveObject = false;
+        globalStates.editingModeObject = null;
+    // }
+    // if (stopFrame) {
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        
+        // if (globalStates.tempUnconstrainedPositioning) {
+        //     globalStates.unconstrainedPositioning = false;
+        //     globalStates.tempUnconstrainedPositioning = false;
+        //     realityEditor.gui.menus.off("editing", ["unconstrained"]);
+        // }
+        
+        // if (globalStates.editingPulledScreenFrame) {
+        //     globalStates.unconstrainedPositioning = globalStates.previousUnconstrainedPositioning;
+        // }
+        globalStates.editingPulledScreenFrame = false;
+    // }
+    // if (stopNode) {
+        globalStates.editingNode = null;
+        globalStates.editingModeLocation = null;
+    // }
+};
 
 realityEditor.device.onTouchEnter = function(evt) {
     var target = evt.currentTarget;
@@ -634,11 +646,15 @@ realityEditor.device.onTouchMove = function(evt) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
 
     // drag and reposition a frame from the pocket
-    } else if (globalStates.editingFrame && globalStates.editingModeObject && !globalStates.editingMode && !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
+    } else if (globalStates.editingFrame && globalStates.editingModeObject && globalStates.pocketEditingMode && /*!globalStates.editingMode &&*/ !globalStates.tempEditingMode && globalStates.guiState === 'ui') {
         
         console.log('move pocket frame!');
         var frame = realityEditor.getFrame(globalStates.editingModeObject, globalStates.editingFrame);
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY, true);
+        if (frame) {
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY, true);
+        } else {
+            console.log('pocket frame became global frame');
+        }
         
     }
 
@@ -697,10 +713,10 @@ realityEditor.device.onDocumentMultiTouchMove = function (evt) {
     realityEditor.device.touchEventObject(evt, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
 };
 realityEditor.device.onDocumentMultiTouchStart = function (evt) {
-    realityEditor.device.touchEventObject(evt, "touchStart", realityEditor.device.touchInputs.screenTouchStart);
+    realityEditor.device.touchEventObject(evt, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
 };
 realityEditor.device.onDocumentMultiTouchEnd = function (evt) {
-    realityEditor.device.touchEventObject(evt, "touchEnd", realityEditor.device.touchInputs.screenTouchEnd);
+    realityEditor.device.touchEventObject(evt, "touchend", realityEditor.device.touchInputs.screenTouchEnd);
 };
 
 realityEditor.device.touchEventObject = function (evt, type, cb) {
@@ -717,6 +733,13 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
         realityEditor.device.eventObject.touches[1].screenX = evt.touches[1].screenX;
         realityEditor.device.eventObject.touches[1].screenY = evt.touches[1].screenY;
         realityEditor.device.eventObject.touches[1].type = type;
+    } else if (type === 'touchend') {
+        realityEditor.device.eventObject.x = evt.pageX;
+        realityEditor.device.eventObject.y = evt.pageY;
+        realityEditor.device.eventObject.type = type;
+        realityEditor.device.eventObject.touches[0].screenX = evt.pageX;
+        realityEditor.device.eventObject.touches[0].screenY = evt.pageY;
+        realityEditor.device.eventObject.touches[0].type = type;
     } else {
         realityEditor.device.eventObject.touches[1] = {};
     }
@@ -1002,6 +1025,26 @@ realityEditor.device.onMultiTouchMove = function(evt) {
             if (globalStates.unconstrainedPositioning === true) {
                 // console.log('unconstrained move');
                 realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+            
+            } else {
+                var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[tempThisObject.objectId], tempThisObject);
+                var distanceToFrame = screenFrameMatrix[14];
+                if (!globalStates.unconstrainedSnapInitialPosition) {
+                    globalStates.unconstrainedSnapInitialPosition = distanceToFrame;
+                } else {
+                    var threshold = 100;
+                    if (distanceToFrame - globalStates.unconstrainedSnapInitialPosition > threshold) {
+                        console.log('pop into unconstrained editing mode');
+                        realityEditor.app.tap();
+                        globalStates.unconstrainedSnapInitialPosition = null;
+                        globalStates.unconstrainedPositioning = true;
+                        // globalStates.editingMode = true;
+                        realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+                        realityEditor.gui.ar.draw.matrix.matrixtouchOn = tempThisObject.uuid;
+                        globalStates.tempUnconstrainedPositioning = true;
+                        // realityEditor.gui.menus.on("editing", ["unconstrained"]);
+                    }
+                }
             }
         }
 
@@ -1161,6 +1204,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 globalStates.editingFrame = null;
                 globalStates.editingModeHaveObject = false;
                 globalStates.editingPulledScreenFrame = false;
+                
+                // TODO: use new stopEditing function instead
 
                 return false;
             }
@@ -1207,6 +1252,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             globalStates.editingModeFrame = null;
             globalStates.editingFrame = null;
             globalStates.editingPulledScreenFrame = false;
+            
+            // todo: use new stop editing function instead
 
         } else {
 
@@ -1226,6 +1273,15 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		globalStates.editingModeHaveObject = false;
 		globalCanvas.hasContent = true;
 		realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
+
+        if (globalStates.tempUnconstrainedPositioning) {
+            globalStates.unconstrainedPositioning = false;
+            globalStates.tempUnconstrainedPositioning = false;
+            realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = false;
+            // globalStates.editingMode = false;
+            // realityEditor.gui.menus.off("editing", ["unconstrained"]);
+        }
+        
 	}
 	cout("MultiTouchEnd");
 };

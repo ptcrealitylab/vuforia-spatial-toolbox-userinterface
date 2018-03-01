@@ -387,7 +387,7 @@ realityEditor.device.speechProcessor.getClosestNodeOnObject = function(objectKey
             node.temp = matrix;
         }
 
-        var screenCenterMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter);
+        var screenCenterMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter); // TODO: change to markerXY
         var nodeOffsetToCenter = {x: screenCenterMatrixXY[0] - node.x, y: screenCenterMatrixXY[1] - node.y};
         var totalDistanceSquared =  nodeOffsetToCenter.x * nodeOffsetToCenter.x + nodeOffsetToCenter.y * nodeOffsetToCenter.y;
 

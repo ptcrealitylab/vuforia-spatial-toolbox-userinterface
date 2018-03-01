@@ -363,7 +363,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             
             var frameToPlaceOn = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
 
-            var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frameToPlaceOn, screenX, screenY, true);
+            var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frameToPlaceOn, screenX, screenY, true); // TODO: change to markerXY
 
             var positionData = realityEditor.gui.ar.positioning.getPositionData(addedElement.logicNode);
 

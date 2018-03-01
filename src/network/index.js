@@ -313,7 +313,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
             
-            console.log('updated frame');
+            // console.log('updated frame');
             
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
@@ -466,7 +466,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
-        console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
+        // console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
 
         if (origin.type === "logic") {
             if (!origin.guiState) {
@@ -498,13 +498,13 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
         if (globalStates.currentLogic.uuid === nodeKey) {
 
-            console.log("YES");
+            // console.log("YES");
             realityEditor.gui.crafting.forceRedraw(globalStates.currentLogic);
 
         }
 
     } else {
-        console.log("NO");
+        // console.log("NO");
 
         if (globalDOMCache["iframe" + nodeKey]) {
             if (globalDOMCache["iframe" + nodeKey]._loaded)
@@ -1084,7 +1084,9 @@ if (thisFrame) {
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
-            globalDOMCache[tempThisObject.uuid].style.display = '';
+            if (tempThisObject.uuid) {
+                globalDOMCache[tempThisObject.uuid].style.display = '';
+            }
         }
 
     } else if(typeof msgContent.fullScreen === "string") {
@@ -1171,6 +1173,7 @@ if (thisFrame) {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
             globalStates.tempEditingMode = false;
+            globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.deactivateFrameMove(msgContent.frame);
             var frame = document.getElementById('iframe' + msgContent.frame);
             if (frame) {
@@ -1866,26 +1869,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     var activeKey = nodeKey || frameKey;
 
-    // console.warn('TODO: get rid of hack to only add cover to zero frame');
-    // if (frame && activeKey === frameKey && frameKey.indexOf('zero') > -1) {  // TODO: fix
-    //    
-    //     var addIframe = globalDOMCache["iframe" + activeKey];
-    //     var addContainer = globalDOMCache["object" + activeKey];
-    //    
-    //     var cover = document.createElement('div');
-    //     cover.classList.add('main');
-    //     cover.style.visibility = 'visible';
-    //     cover.style.width = "2025px"; //addIframe.style.width; 
-    //     cover.style.height = "721px"; //addIframe.style.height;
-    //     cover.style.top = "-200.5px"; //addIframe.style.top;
-    //     cover.style.left = "-728.5px"; //addIframe.style.left;
-    //
-    //    // width: 2025px; height: ; visibility: hidden; top: ; left: ;
-    //    
-    //     frame.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-    //     addContainer.appendChild(cover);
-    //    
-    //     console.log(cover, addIframe);
+    // if (globalDOMCache['svg' + activeKey]) {
+    //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
     
     globalDOMCache["iframe" + activeKey]._loaded = true;

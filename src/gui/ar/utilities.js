@@ -341,18 +341,26 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 // private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
 (function(exports) {
 
-    // TODO: finish implementing
-    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY) {
+    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
         
         var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
         if (visibleObjectMatrix) {
             
-            var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+            var point = {
+                x: 0,
+                y: 0
+            };
             
-            var point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            if (unconstrainedMatrix) {
+                var finalMatrix = unconstrainedMatrix;
+                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            } else {
+                var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            }
             
             return {
-                x: point.x  - 284,
+                x: point.x - 284,
                 y: point.y - 160
             }
         }
@@ -723,6 +731,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
         var w = parseInt(thisSVG.style.width, 10);
         var h = parseInt(thisSVG.style.height, 10);
+        
         return [[0, 0, 0],
             [w, 0, 0],
             [w, h, 0],
@@ -867,7 +876,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
         var thisSVG = globalDOMCache["svg" + activeKey];
-       var shadowObject = shadowObjects["svg" + activeKey] = {};
+
+        // check if css is a percentage (handle differently so we don't convert 100% to 100px)
+        if (thisSVG.style.width[thisSVG.style.width.length-1] === "%") {
+            return;
+        }
+        
+        var shadowObject = shadowObjects["svg" + activeKey] = {};
         // console.log(activeVehicle);
         if (!thisSVG.getElementById("lineID")) {
             realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG, activeVehicle.width, activeVehicle.height);

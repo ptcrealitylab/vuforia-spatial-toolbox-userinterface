@@ -256,7 +256,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         else if (this.activeObject.objectVisible) {
             // this.activeObject.objectVisible = false;
             realityEditor.gui.ar.draw.setObjectVisible(this.activeObject, false);
-
+            
+            var wereAnyFramesMovedToGlobal = false;
+            
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 if (!this.activeFrame) {
@@ -283,6 +285,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 
                 if (preserveFrameGlobally) {
                     
+                    wereAnyFramesMovedToGlobal = true;
                     realityEditor.gui.ar.draw.moveFrameToGlobalSpace(objectKey, frameKey, this.activeFrame);
                     
                 } else {
@@ -315,6 +318,22 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     
                 }
                 
+            }
+            
+            if (!wereAnyFramesMovedToGlobal) {
+                // remove editing states related to this object
+                if (globalStates.editingModeObject === objectKey) {
+                    globalStates.editingModeObject = null;
+                    globalStates.editingModeHaveObject = false;
+                    globalStates.editingModeKind = null;
+                    globalStates.tempUnconstrainedPositioning = false;
+                    globalStates.unconstrainedSnapInitialPosition = null;
+                    globalStates.tempEditingMode = false;
+                    globalStates.editingModeFrame = null;
+                    globalStates.editingFrame = null;
+                    globalStates.editingNode = null;
+                    globalStates.editingModeLocation = null;
+                }
             }
         }
 
@@ -461,15 +480,58 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
         frame.visualization = newVisualization;
         
         if (frame.visualization === 'screen') {
+
+            if (realityEditor.device.isGlobalFrame(globalStates.editingModeObject)) {
+                
+                var globalFrame = globalFrames[globalStates.editingModeFrame];
+                var newFrameKey;
+
+                var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+                if (closestObjectKey) {
+                    console.log('there is an object to drop this frame onto');
+
+                    var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                    var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, touchPosition.x, touchPosition.y);
+
+                    // var projectedCoordinates = {
+                    //     x: realityEditor.gui.screenExtension.screenObject.x,
+                    //     y: realityEditor.gui.screenExtension.screenObject.y
+                    // };
+                    realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrame, projectedCoordinates);
+                    
+                    // newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrame);
+                    // var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                    // var screenX = evt.pageX;
+                    // var screenY = evt.pageY;
+                    // var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                    // console.log(projectedCoordinates);
+                    
+                    // var projectedCoordinates = {
+                    //     x: realityEditor.gui.screenExtension.screenObject.x,
+                    //     y: realityEditor.gui.screenExtension.screenObject.y
+                    // };
+
+                    // newFrame.ar.x = projectedCoordinates.x;
+                    // newFrame.ar.y = projectedCoordinates.y;
+
+                    // // update position on server
+                    // urlEndpoint = 'http://' + objects[closestObjectKey].ip + ':' + httpPort + '/object/' + closestObjectKey + "/frame/" + newFrameKey + "/node/" + null + "/size/";
+                    // var content = newFrame.ar;
+                    // content.lastEditor = globalStates.tempUuid;
+                    // realityEditor.network.postData(urlEndpoint, content);
+                    
+
+                }
+
+            }
+            
+            
             this.hideTransformed(frame.uuid, frame, globalDOMCache, cout);
             console.log('hide frame -> screen');
         } else {
             // this.drawTransformed(frame.uuid, frame, globalDOMCache, cout);
             console.log('show frame -> AR');
             
-            // realityEditor.gui.menus.on("editing", ["unconstrained"]);
-            globalStates.unconstrainedPositioning = true;
-
             var activeKey = frame.uuid;
             
             // resize iframe to override incorrect size it starts with so that it matches the screen frame
@@ -491,6 +553,9 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
             svg.style.height = iframe.style.height;
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
 
+            realityEditor.gui.menus.on("editing", ["unconstrained"]);
+            // globalStates.previousUnconstrainedPositioning = globalStates.unconstrainedPositioning;
+            // globalStates.unconstrainedPositioning = true;
             globalStates.editingPulledScreenFrame = true;
             realityEditor.device.beginTouchEditing(overlay);
         }
@@ -508,7 +573,7 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
  * @param frame - reference to the frame itself
  */
 realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey, frame) {
-
+    
     // either make a clone of the data and the DOM and let the old version be killed
     // or preserve just the data and clone the DOM
     // or preserve just the DOM and clone the data
@@ -581,7 +646,7 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
  * @param globalFrameKey - the frame's key within globalFrames
  * @param frame - a reference to the global frame itself
  */
-realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, globalFrameKey, frame) {
+realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, globalFrameKey, frame, optionalPosition) {
     
     console.log(newObjectKey, globalFrameKey, frame);
     
@@ -669,6 +734,12 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
         
         frame.ar.x = 0;
         frame.ar.y = 0;
+        
+        if (optionalPosition) {
+            frame.ar.x = optionalPosition.x;
+            frame.ar.y = optionalPosition.y;
+        }
+        
         frame.ar.matrix = realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
         
         // add the new frame to the new object
@@ -756,8 +827,6 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
     
     delete frame.sourceObject;
     // delete frame.sourceObjectMatrix;
-
-    // TODO: update server state all at once then with the new state when this finishes
     
     return newFrameKey;
 };
@@ -1418,7 +1487,6 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";
 
-
     return {
         addContainer: addContainer,
         addIframe: addIframe,
@@ -1686,3 +1754,15 @@ realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
     });
 };
 
+realityEditor.gui.ar.draw.areAnyScreensVisible = function() {
+    var anyScreensVisible = false;
+    for (var objectKey in this.visibleObjects) {
+        if (!objects.hasOwnProperty(objectKey)) continue;
+        if (objects[objectKey].visualization === 'screen') {
+            anyScreensVisible = true;
+            break;
+        }
+    }
+
+    return anyScreensVisible;
+};

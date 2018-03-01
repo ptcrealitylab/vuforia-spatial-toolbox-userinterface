@@ -6,10 +6,15 @@ realityEditor.gui.ar.moveabilityOverlay.svgNS = {};
 realityEditor.gui.ar.moveabilityOverlay.x = window.innerWidth;
 realityEditor.gui.ar.moveabilityOverlay.y = window.innerHeight;
 
-realityEditor.gui.ar.moveabilityOverlay.createSvg = function(svg){
+realityEditor.gui.ar.moveabilityOverlay.createSvg = function(svg){ // TODO: call this in drawMarkerPlaneIntersection if the width of the polyline elements inside it is different than the width of the parent iframe
     svg.innerHTML ="";
     var x = parseInt(svg.style.width, 10);
     var y = parseInt(svg.style.height, 10);
+
+    //  if the object is fullscreen, handle differently so we don't convert 100% to 100px)
+    if (svg.style.width[svg.style.width.length-1] === "%") {
+        return;
+    }
     
     this.drawBox(svg, svg.namespaceURI, x, y);
     this.drawNegativeSpace(svg, svg.namespaceURI, x, y, 0+","+0+","+0+","+0+","+0+","+0+","+0+","+0);

@@ -146,6 +146,8 @@ var globalStates = {
 	angY: 0,
 	angZ: 0,
 	unconstrainedPositioning: false,
+    // previousUnconstrainedPositioning: false,
+    tempUnconstrainedPositioning: false,
 	thisAndthat : {
 		interval: undefined,
 		timeout: undefined
@@ -153,6 +155,7 @@ var globalStates = {
     initialDistance: null,
     framePullThreshold: 50,
     didStartPullingFromScreen: false,
+    unconstrainedSnapInitialPosition: null,
     
 	// rettail
 	reality: false,
