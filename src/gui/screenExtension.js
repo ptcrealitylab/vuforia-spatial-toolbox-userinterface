@@ -19,17 +19,26 @@ realityEditor.gui.screenExtension.activeScreenObject = {
 
 realityEditor.gui.screenExtension.touchStart = function (eventObject){
     this.updateScreenObject(eventObject);
-  //  console.log("start", this.screenObject);
+    if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
+        realityEditor.gui.screenExtension.sendScreenObject();
+    }
+    //console.log("start", this.screenObject);
 };
 
 realityEditor.gui.screenExtension.touchMove = function (eventObject){
     this.updateScreenObject(eventObject);
-   // console.log("move", this.screenObject.x,this.screenObject.y);
+    if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
+        realityEditor.gui.screenExtension.sendScreenObject();
+    }
+    //console.log("move", this.screenObject);
 };
 
 realityEditor.gui.screenExtension.touchEnd = function (eventObject){
     this.updateScreenObject(eventObject);
-   // console.log("end", this.screenObject);
+    if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
+        realityEditor.gui.screenExtension.sendScreenObject();
+    }
+    //console.log("end", this.screenObject);
 };
 
 realityEditor.gui.screenExtension.update = function (){
@@ -39,9 +48,8 @@ realityEditor.gui.screenExtension.update = function (){
 
     // console.log("end", this.screenObject);
     if(this.screenObject.touchState) {
-        if(this.activeScreenObject.frame) {
+        if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
             realityEditor.gui.screenExtension.calculatePushPop();
-            realityEditor.gui.screenExtension.sendScreenObject();
         }
     }
 };
@@ -81,7 +89,7 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         // TODO: notify screen when new pocket frame is added!
         // TODO: what about if pocket frame is added to another object and then dropped into this one? generate screen frame as soon as the frame data becomes associated with this new object. maybe even include it in the message when it gets transferred to the screen.
         
-    } else if(eventObject.type === "touchend") {
+    } /*else if(eventObject.type === "touchend") {
         this.screenObject.x = 0;
         this.screenObject.y = 0;
         this.screenObject.scale = 1;
@@ -92,7 +100,7 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         this.screenObject.touchState = null;
         
         globalStates.initialDistance = null;
-    }
+    }*/
     // console.log(thisObject);
     
     if (this.screenObject.closestObject && this.screenObject.isScreenVisible) {
