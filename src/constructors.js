@@ -93,7 +93,7 @@ function Objects() {
 
     this.zone = "";
 
-    this.averageScale = 0.2;
+    this.averageScale = 0.5;
 }
 
 function Frame() {
@@ -110,7 +110,7 @@ function Frame() {
         // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
         y : 0,
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-        scale : 0.2,
+        scale : 0.5,
         // Unconstrained positioning in 3D space
         matrix : []
     };
@@ -121,7 +121,7 @@ function Frame() {
         // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
         y : 0,
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-        scale : 0.2
+        scale : 0.5
     };
     // Used internally from the reality editor to indicate if an object should be rendered or not.
     this.visible = false;

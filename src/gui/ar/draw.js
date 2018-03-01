@@ -271,7 +271,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 // disassociate a screen<->AR frame from the object if it is being moved in unconstrained editing
-                var preserveFrameGlobally = (globalStates.editingMode &&
+                var preserveFrameGlobally = ((globalStates.editingMode ||
+                                             (globalStates.tempEditingMode && globalStates.tempUnconstrainedPositioning)) &&
                     globalStates.unconstrainedPositioning &&
                     globalStates.editingModeObject === this.activeObject.uuid &&
                     globalStates.editingModeFrame === frameKey &&
@@ -963,19 +964,20 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
             if (activeVehicle.fullScreen !== true) {
 
+                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+
                 // set initial position correctly
                 if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                    activeVehicle.currentTouchOffset = {
-                        x: activeVehicle.frameSizeX/2,
-                        y: activeVehicle.frameSizeY/2
-                    };
-                    realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
+                    // activeVehicle.currentTouchOffset = {
+                    //     x: activeVehicle.frameSizeX/2 * positionData.scale,
+                    //     y: activeVehicle.frameSizeY/2 * positionData.scale
+                    // };
+                    // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, true);
+                    realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, false);
                     delete activeVehicle.positionOnLoad;
                     realityEditor.device.beginTouchEditing(globalDOMCache[activeKey], 'pocket');
                 }
                 
-                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-
                 var finalOffsetX = positionData.x;
                 var finalOffsetY = positionData.y;
 
@@ -1744,7 +1746,6 @@ realityEditor.gui.ar.draw.resetNodeRepositionCanvases = function() {
 realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var frame = realityEditor.getFrame(objectKey, frameKey);
-        frame.hasCTXContent = false;
         frame.visible = false;
         frame.visibleEditing = false;
         // frame.forceRedrawRepositionOnce = true;

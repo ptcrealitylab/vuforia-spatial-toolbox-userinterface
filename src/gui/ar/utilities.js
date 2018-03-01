@@ -316,6 +316,12 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
   var amount = 0;
   var sum = 0;
 //  if(!object.frames) return;
+    
+    if (Object.keys(object.frames).length === 0) {
+        object.averageScale = globalStates.defaultScale;
+        return; // use default scale if there are no existing frames
+    }
+    
   for(var frameKey in object.frames){
       if(!object.frames.hasOwnProperty(frameKey)) continue;
      // if(!object.frames[frameKey].ar.size) continue;
@@ -329,7 +335,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
           sum = sum+ object.frames[frameKey].nodes[nodeKey].scale; 
       }
   }
-    object.averageScale = sum/amount;
+    object.averageScale = Math.max(0.01, sum/amount); // TODO: put more thought into minimum scale
 };
 
 
