@@ -255,7 +255,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         else if (this.activeObject.objectVisible) {
             // this.activeObject.objectVisible = false;
             realityEditor.gui.ar.draw.setObjectVisible(this.activeObject, false);
-
+            
+            var wereAnyFramesMovedToGlobal = false;
+            
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 if (!this.activeFrame) {
@@ -282,6 +284,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 
                 if (preserveFrameGlobally) {
                     
+                    wereAnyFramesMovedToGlobal = true;
                     realityEditor.gui.ar.draw.moveFrameToGlobalSpace(objectKey, frameKey, this.activeFrame);
                     
                 } else {
@@ -314,6 +317,22 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     
                 }
                 
+            }
+            
+            if (!wereAnyFramesMovedToGlobal) {
+                // remove editing states related to this object
+                if (globalStates.editingModeObject === objectKey) {
+                    globalStates.editingModeObject = null;
+                    globalStates.editingModeHaveObject = false;
+                    globalStates.editingModeKind = null;
+                    globalStates.tempUnconstrainedPositioning = false;
+                    globalStates.unconstrainedSnapInitialPosition = null;
+                    globalStates.tempEditingMode = false;
+                    globalStates.editingModeFrame = null;
+                    globalStates.editingFrame = null;
+                    globalStates.editingNode = null;
+                    globalStates.editingModeLocation = null;
+                }
             }
         }
 
@@ -553,7 +572,7 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
  * @param frame - reference to the frame itself
  */
 realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey, frame) {
-
+    
     // either make a clone of the data and the DOM and let the old version be killed
     // or preserve just the data and clone the DOM
     // or preserve just the DOM and clone the data

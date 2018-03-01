@@ -1042,7 +1042,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
                         realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
                         realityEditor.gui.ar.draw.matrix.matrixtouchOn = tempThisObject.uuid;
                         globalStates.tempUnconstrainedPositioning = true;
-                        realityEditor.gui.menus.on("editing", ["unconstrained"]);
+                        // realityEditor.gui.menus.on("editing", ["unconstrained"]);
                     }
                 }
             }
@@ -1279,7 +1279,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             globalStates.tempUnconstrainedPositioning = false;
             realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = false;
             // globalStates.editingMode = false;
-            realityEditor.gui.menus.off("editing", ["unconstrained"]);
+            // realityEditor.gui.menus.off("editing", ["unconstrained"]);
         }
         
 	}
