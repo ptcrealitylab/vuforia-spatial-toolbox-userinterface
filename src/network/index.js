@@ -1169,6 +1169,7 @@ if (thisFrame) {
             // realityEditor.device.onDocumentPointerMove(fakeEvent);
             // realityEditor.device.onTouchMove(fakeEvent);
             realityEditor.device.onMultiTouchMove(fakeEvent);
+            
         } else if (event.type === 'touchend') {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);

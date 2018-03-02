@@ -153,7 +153,7 @@ var globalStates = {
 		timeout: undefined
 	},
     initialDistance: null,
-    framePullThreshold: 50,
+    framePullThreshold: 25,
     didStartPullingFromScreen: false,
     unconstrainedSnapInitialPosition: null,
     defaultScale: 0.5,

@@ -482,7 +482,7 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
         
         if (frame.visualization === 'screen') {
 
-            if (realityEditor.device.isGlobalFrame(globalStates.editingModeObject)) {
+            if (globalStates.inTransition) {
                 
                 var globalFrame = globalFrames[globalStates.editingModeFrame];
                 var newFrameKey;
@@ -583,10 +583,10 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
     // seems best to keep the DOM because it's already loaded in the right place and has the touch listeners
     // if we keep the frame data object, we still need to remove it from the object and store it somewhere globally instead
 
-    var frameKeyWithoutObjectKey = frameKey.slice(objectKey.length);
+    // var frameKeyWithoutObjectKey = frameKey.slice(objectKey.length);
     // var newFrameKey = globalFramePrefix + frame.type + realityEditor.device.utilities.uuidTime();
 
-    var newFrameKey = globalFramePrefix + frameKeyWithoutObjectKey;
+    var newFrameKey = frameKey; //frameKeyWithoutObjectKey;
 
     // temporarily disable links on server? maybe not... but may need to change their ids to find global...
     // ... no, just don't change the state of the frame on the server until it gets dropped somewhere,
@@ -630,9 +630,10 @@ realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey,
     delete objects[objectKey].frames[frameKey];
 
     // update the DOM elements for the frame with new ids
-    this.updateFrameElements(null, frameKey, newFrameKey);
+    // this.updateFrameElements(null, frameKey, newFrameKey);
+    globalStates.inTransition = frameKey;
 
-    globalStates.editingModeObject = globalFramePrefix;
+    globalStates.editingModeObject = objectKey;
     globalStates.editingModeFrame = newFrameKey;
     globalStates.editingFrame = newFrameKey;
 
@@ -651,6 +652,12 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
     
     console.log(newObjectKey, globalFrameKey, frame);
     
+    globalStates.inTransition = null;
+   globalStates.tempEditingMode = false;
+
+   
+    
+    
     // TODO: we need to store the frame's old objectKey and frameKey so that we can update the server to re-point links here when it gets dropped onto a new object
     // TODO: how will we update other servers (different IPs) to know when this node changes its address?)
     // TODO: should our server store a forwarding table that reroutes incoming packets for nodes flagged as moved?
@@ -659,7 +666,7 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
 
     // var newFrameKey = newObjectKey + frame.type + realityEditor.device.utilities.uuidTime(); // maybe generate this a different way, but should work for now
 
-    var frameKeyWithoutObjectKey = globalFrameKey.slice(globalFramePrefix.length);
+    var frameKeyWithoutObjectKey = globalFrameKey;//.slice(globalFramePrefix.length);
     // var newFrameKey = globalFramePrefix + frame.type + realityEditor.device.utilities.uuidTime();
 
     var newFrameKey = newObjectKey + frameKeyWithoutObjectKey;
@@ -709,6 +716,9 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
     // remove the frame from globalFrames
     delete globalFrames[globalFrameKey];
 
+    realityEditor.gui.screenExtension.screenObject.object = newObjectKey;
+    realityEditor.gui.screenExtension.screenObject.frame = newFrameKey;
+
     // update the DOM elements for the frame with new ids
     this.updateFrameElements(newObjectKey, globalFrameKey, newFrameKey);
 
@@ -724,7 +734,10 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
             // }
             frame.ar.x = 0;
             frame.ar.y = 0;
-            frame.ar.matrix = realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+            frame.ar.matrix = [];
+            frame.begin =  realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+            frame.temp =  realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+
 
             realityEditor.gui.ar.draw.hideTransformed(newFrameKey, frame, globalDOMCache, cout);
         }
@@ -741,7 +754,9 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
             frame.ar.y = optionalPosition.y;
         }
         
-        frame.ar.matrix = realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+        frame.ar.matrix = [];
+        frame.begin =  realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+        frame.temp =  realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
         
         // add the new frame to the new object
         var newObjectIP = realityEditor.getObject(newObjectKey).ip;
@@ -818,13 +833,23 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(newObjectKey, global
 
         // delete frame from old object
         var sourceObjectIP = realityEditor.getObject(frame.sourceObject).ip;
-        var oldFrameKey = frame.sourceObject + frameKeyWithoutObjectKey;
-        realityEditor.network.deleteFrameFromObject(sourceObjectIP, frame.sourceObject, oldFrameKey);
+        realityEditor.network.deleteFrameFromObject(sourceObjectIP, frame.sourceObject, globalFrameKey);
     }
 
-    globalStates.editingModeObject = newObjectKey;
-    globalStates.editingModeFrame = newFrameKey;
-    globalStates.editingFrame = newFrameKey;
+  //  globalStates.editingModeObject = newObjectKey;
+   // globalStates.editingModeFrame = newFrameKey;
+   // globalStates.editingFrame = newFrameKey;
+    
+    
+    realityEditor.device.removeEventHandlers();
+    globalStates.editingMode = false;
+    realityEditor.device.setEditingMode(false);
+    
+    
+    
+    globalStates.editingModeObject = null;
+    globalStates.editingModeFrame = null;
+    globalStates.editingFrame = null;
     
     delete frame.sourceObject;
     // delete frame.sourceObjectMatrix;
@@ -849,12 +874,10 @@ realityEditor.gui.ar.draw.updateFrameElements = function(newObjectKey, frameKey,
     globalDOMCache['svg' + frameKey].id = 'svg' + newFrameKey;
 
     // iframe also has a dataset of ids
-    globalDOMCache['iframe' + frameKey].dataset = {
-        frameKey: newFrameKey,
-        nodeKey: "null",
-        objectKey: newObjectKey
-    };
 
+    globalDOMCache['iframe' + frameKey].setAttribute("data-frame-key", newFrameKey);
+    globalDOMCache['iframe' + frameKey].setAttribute("data-object-key", newObjectKey);
+    
     // update their keys in the globalDOMCache 
     globalDOMCache['object' + newFrameKey] = globalDOMCache['object' + frameKey];
     globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + frameKey];
@@ -865,7 +888,7 @@ realityEditor.gui.ar.draw.updateFrameElements = function(newObjectKey, frameKey,
     delete globalDOMCache[frameKey];
     delete globalDOMCache['svg' + frameKey];
 
-    globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
+   globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
     globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload();
 };
 
@@ -1462,9 +1485,9 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addIframe.style.visibility = "hidden";
     addIframe.src = iframeSrc;
-    addIframe.dataset.nodeKey = nodeKey;
-    addIframe.dataset.frameKey = frameKey;
-    addIframe.dataset.objectKey = objectKey;
+    addIframe.setAttribute("data-frame-key", frameKey);
+    addIframe.setAttribute("data-object-key", objectKey);
+    addIframe.setAttribute("data-node-key", nodeKey);
     addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
     addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
 

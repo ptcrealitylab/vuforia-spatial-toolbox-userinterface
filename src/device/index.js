@@ -333,7 +333,7 @@ realityEditor.device.beginTouchEditing = function(target, source) {
  * @return {boolean}
  */
 realityEditor.device.isGlobalFrame = function(objectKey) {
-    return objectKey === globalFramePrefix; // TODO: a less hacky way would be to check if (frame.location === 'global')
+    return objectKey;// === globalFramePrefix; // TODO: a less hacky way would be to check if (frame.location === 'global')
 };
 
 /**
@@ -346,7 +346,7 @@ realityEditor.device.getEditingModeObject = function() {
     
     if (globalStates.editingModeKind === 'ui') {
         // edge case for editing frames dis-associated from any object
-        if (this.isGlobalFrame(objectId)) {
+        if (globalStates.inTransition) {
             return globalFrames[frameId];
         }
         // edge case for pocket frames
@@ -399,6 +399,15 @@ realityEditor.device.onFalseTouchUp= function() {
 
 realityEditor.device.onTrueTouchUp = function(evt){
     var target = evt.currentTarget;
+
+
+    globalStates.editingModeObject = null;
+    globalStates.editingModeFrame = null;
+    globalStates.editingFrame = null;
+
+    realityEditor.device.removeEventHandlers();
+    globalStates.editingMode = false;
+    realityEditor.device.setEditingMode(false);
     
 	if (globalStates.guiState === "node") {
 		if (globalProgram.objectA) {
@@ -462,6 +471,13 @@ realityEditor.device.onTrueTouchUp = function(evt){
     }
 
     if (globalStates.editingPulledScreenFrame) {
+
+
+
+
+
+
+	    
 	    if (globalStates.editingFrame && !globalStates.editingMode) {
 	        this.deactivateFrameMove(globalStates.editingFrame);
         }
@@ -1076,7 +1092,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
                         realityEditor.app.tap();
                         globalStates.unconstrainedSnapInitialPosition = null;
                         globalStates.unconstrainedPositioning = true;
-                        // globalStates.editingMode = true;
+                         globalStates.editingMode = true;
                         realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
                         realityEditor.gui.ar.draw.matrix.matrixtouchOn = tempThisObject.uuid;
                         globalStates.tempUnconstrainedPositioning = true;
@@ -1128,6 +1144,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
  **/
 
 realityEditor.device.onMultiTouchEnd = function(evt) {
+    
 	if (evt.preventDefault) {
 		evt.preventDefault();
 	}
@@ -1138,6 +1155,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
         globalStates.editingModeObjectCenterY = null;
     }
 
+    console.log("should get first place");
+    
     // generate action for all links to be reloaded after upload
 	if (globalStates.editingModeHaveObject) {
 		if (globalStates.editingMode) {
@@ -1154,6 +1173,9 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		cout("start");
 		// this is where it should be send to the object..
 
+        if(!globalStates.inTransition)
+        {
+        
 		var tempThisObject = realityEditor.device.getEditingModeObject();
 		
 		if (!tempThisObject) {
@@ -1207,6 +1229,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		// 	// 	realityEditor.gui.frame.delete(globalStates.editingModeObject, frameId);
 		// 	// }
 		// } else 
+
+        console.log("should get here earlier");
         
         if (globalStates.tempEditingMode && globalStates.editingModeKind === 'ui' && globalStates.editingModeFrame && globalStates.guiState === 'ui') {
             if (evt.pageX > window.innerWidth - 60) {
@@ -1248,8 +1272,11 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 return false;
             }
         }
+        console.log("should get here");
+
+        }
         
-        if (this.isGlobalFrame(globalStates.editingModeObject)) {
+        if (globalStates.inTransition) {
             
             // TODO: try to drop the frame into an object underneath, or if there isn't one, return it to its starting position in its old object (need to remember this somewhere)
 

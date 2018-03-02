@@ -34,8 +34,10 @@ realityEditor.gui.screenExtension.touchMove = function (eventObject){
 };
 
 realityEditor.gui.screenExtension.touchEnd = function (eventObject){
+    this.updateScreenObject(eventObject);
     if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
         realityEditor.gui.screenExtension.sendScreenObject();
+        
     }
     
         this.screenObject.x = 0;
@@ -48,8 +50,7 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
         this.screenObject.touchState = null;
         
         globalStates.initialDistance = null;
-
-    this.updateScreenObject(eventObject);
+        
     //console.log("end", this.screenObject);
 };
 
@@ -67,6 +68,8 @@ realityEditor.gui.screenExtension.update = function (){
 };
 
 realityEditor.gui.screenExtension.receiveObject = function (object){
+
+    console.log(object);
     this.screenObject.object = object.object;
     this.screenObject.frame = object.frame;
     this.screenObject.node = object.node;
@@ -115,13 +118,13 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     }*/
     // console.log(thisObject);
     
-    if (this.screenObject.closestObject && this.screenObject.isScreenVisible) {
+    if (this.screenObject.closestObject && this.screenObject.isScreenVisible  && eventObject.type !== "touchend") {
         
         // calculate the exact x,y coordinate within the screen plane that this touch corresponds to
         var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
         this.screenObject.x = point.x; 
         this.screenObject.y = point.y;
-
+        
         if (this.screenObject.object && this.screenObject.frame && this.screenObject.object === this.screenObject.closestObject) {
             var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
             if (matchingARFrame && matchingARFrame.visualization === 'screen') {
@@ -197,7 +200,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
             globalStates.initialDistance = distanceToFrame;
         }
 
-        console.log('I have a screen frame', this.screenObject.object, this.screenObject.frame, distanceToFrame, globalStates.initialDistance);
+      //  console.log('I have a screen frame', this.screenObject.object, this.screenObject.frame, distanceToFrame, globalStates.initialDistance);
 
         var isScreenVisible = this.screenObject.isScreenVisible;
 
@@ -214,9 +217,9 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
         
         var distanceThreshold = globalStates.framePullThreshold;
         // if (!(globalStates.unconstrainedPositioning || globalStates.editingMode || globalStates.tempEditingMode) && !globalStates.didStartPullingFromScreen) {
-        if (!globalStates.editingMode && !globalStates.didStartPullingFromScreen) {
-            distanceThreshold = globalStates.framePullThreshold * 5;
-        }
+        // if (!globalStates.editingMode && !globalStates.didStartPullingFromScreen) {
+        //     distanceThreshold = globalStates.framePullThreshold * 5;
+        // }
         
         if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
             isScreenVisible = false;
