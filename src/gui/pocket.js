@@ -192,11 +192,12 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             ]
         },
         {
-            name: 'pushMe',
-            width: 600,
-            height: 600,
+            name: 'easterEgg',
+            width: 480,
+            height: 270,
             nodeNames: [
-                'startStop'
+                'x',
+                'y'
             ]
         }
     ];
