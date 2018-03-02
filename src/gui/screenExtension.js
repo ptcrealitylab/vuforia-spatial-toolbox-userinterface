@@ -73,6 +73,8 @@ realityEditor.gui.screenExtension.receiveObject = function (object){
     this.screenObject.object = object.object;
     this.screenObject.frame = object.frame;
     this.screenObject.node = object.node;
+    
+    globalStates.waitingForScreenObject = false;
 };
 
 realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
@@ -102,6 +104,11 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
         
         this.screenObject.isScreenVisible = !didTouchARFrame;
         globalStates.didStartPullingFromScreen = !didTouchARFrame;
+        
+        if (!didTouchARFrame) {
+            globalStates.waitingForScreenObject = true;
+            console.log('begin waiting');
+        }
         
     } /*else if(eventObject.type === "touchend") {
         this.screenObject.x = 0;
@@ -135,6 +142,73 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     }
 };
 
+
+function onScreenTouchDown(eventObject) {
+    // figure out if I'm touching on AR frame, screen frame, or nothing
+
+    this.screenObject.object = eventObject.object;
+    this.screenObject.frame = eventObject.frame;
+    this.screenObject.node = eventObject.node;
+
+    var didTouchARFrame = (eventObject.object && eventObject.frame);
+
+    this.screenObject.isScreenVisible = !didTouchARFrame;
+    globalStates.didStartPullingFromScreen = !didTouchARFrame;
+
+    if (!didTouchARFrame) {
+        globalStates.waitingForScreenObject = true;
+    }
+}
+
+function onScreenTouchMove(eventObject) {
+    // do nothing other than send xy to screen // maybe iff I'm touching on screen frame, move AR frame to mirror its position
+
+    // calculate the exact x,y coordinate within the screen plane that this touch corresponds to
+    var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
+    this.screenObject.x = point.x;
+    this.screenObject.y = point.y;
+    
+    // also needs to update AR frame positions so that nodes float above them
+    
+}
+
+function onScreenTouchUp(eventObject) {
+    // reset screen object to null and update screen state to match
+    this.screenObject.object = null;
+    this.screenObject.frame = null;
+    this.screenObject.node = null;
+}
+
+function onScreenPushIn() {
+    // set screen object visible, wait to hear that the screen received it, then hide AR frame
+    var isScreenVisible = true;
+    
+    if (isScreenVisible !== this.screenObject.isScreenVisible) {
+
+        this.screenObject.isScreenVisible = true;
+        this.screenObject.scale = realityEditor.gui.ar.positioning.getPositionData(screenFrame).scale;
+        // realityEditor.gui.ar.draw.changeVisualization(screenFrame, newVisualization); // TODO: combine this with updateArFrameVisibility
+        realityEditor.app.tap();
+        realityEditor.gui.screenExtension.updateArFrameVisibility();
+    }
+    
+}
+
+function onScreenPullOut() {
+    // set screen object hidden, wait to hear that the screen received it, then move AR frame to position and show AR frame
+
+    var isScreenVisible = false;
+
+    if (isScreenVisible !== this.screenObject.isScreenVisible) {
+
+        this.screenObject.isScreenVisible = false;
+        // realityEditor.gui.ar.draw.changeVisualization(screenFrame, newVisualization); // TODO: combine this with updateArFrameVisibility
+        realityEditor.app.tap();
+        realityEditor.gui.screenExtension.updateArFrameVisibility();
+    }
+    
+}
+
 realityEditor.gui.screenExtension.calculatePushPop = function (){
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
@@ -148,6 +222,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
     if (screenFrame && isScreenObjectVisible) {
 
+        console.log('waiting', globalStates.waitingForScreenObject);
+        
         var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
 
         if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
@@ -192,7 +268,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
                 this.screenObject.scale = realityEditor.gui.ar.positioning.getPositionData(screenFrame).scale;
             }
             
-            realityEditor.gui.ar.draw.changeVisualization(screenFrame, newVisualization);
+            realityEditor.gui.ar.draw.changeVisualization(screenFrame, newVisualization); // TODO: combine this with updateArFrameVisibility
             
             realityEditor.app.tap();
             
