@@ -1271,18 +1271,15 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 
                 var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
                 var newFrameKey = closestObjectKey + frameBeingMoved.name;
-                realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey);
+
+                var screenX = evt.pageX;
+                var screenY = evt.pageY;
+                var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                
+                realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
                 
                 // var newObject = realityEditor.getObject(closestObjectKey);
                 var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-                var screenX = evt.pageX;
-                var screenY = evt.pageY;
-                
-                var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
-                console.log(projectedCoordinates);
-                
-                newFrame.ar.x = projectedCoordinates.x;
-                newFrame.ar.y = projectedCoordinates.y;
 
                 // update position on server
                 urlEndpoint = 'http://' + objects[closestObjectKey].ip + ':' + httpPort + '/object/' + closestObjectKey + "/frame/" + newFrameKey + "/node/" + null + "/size/";
@@ -1447,10 +1444,14 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
         //     }
         // }
 
-        realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
-        realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
+        // realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
+        // realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
     }
     globalStates.editingMode = newEditingMode;
+    
+    if (!newEditingMode) {
+        globalStates.unconstrainedPositioning = false;
+    }
 };
 
 /**

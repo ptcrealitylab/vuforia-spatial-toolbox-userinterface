@@ -489,12 +489,12 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
                 if (closestObjectKey) {
                     console.log('there is an object to drop this frame onto');
                     
-                    // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                    // var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, touchPosition.x, touchPosition.y);
+                    var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                    var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, touchPosition.x, touchPosition.y);
 
                     var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
                     var newFrameKey = closestObjectKey + frameBeingMoved.name;
-                    realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey);
+                    realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
 
                 }
 
@@ -657,7 +657,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 };
 
 
-realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey) {
+realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
     
     this.moveFrameToNewObject(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey);
     
@@ -1559,30 +1559,30 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
     }
 };
 
-realityEditor.gui.ar.draw.resetNodeRepositionCanvases = function() {
-    realityEditor.forEachNodeInAllObjects(function(objectKey, frameKey, nodeKey) {
-        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
-        node.hasCTXContent = false;
-        node.visible = false;
-        node.visibleEditing = false;
-        // node.forceRedrawRepositionOnce = true;
-        //         objects[objectKey].frames[frameKey].visible = false;
-        //         objects[objectKey].frames[frameKey].visibleEditing = false;
-        //         objects[objectKey].frames[frameKey].hasCTXContent = false;
-    });
-};
-
-realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
-    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
-        var frame = realityEditor.getFrame(objectKey, frameKey);
-        frame.visible = false;
-        frame.visibleEditing = false;
-        // frame.forceRedrawRepositionOnce = true;
-        //         objects[objectKey].frames[frameKey].visible = false;
-        //         objects[objectKey].frames[frameKey].visibleEditing = false;
-        //         objects[objectKey].frames[frameKey].hasCTXContent = false;
-    });
-};
+// realityEditor.gui.ar.draw.resetNodeRepositionCanvases = function() {
+//     realityEditor.forEachNodeInAllObjects(function(objectKey, frameKey, nodeKey) {
+//         var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+//         node.hasCTXContent = false;
+//         node.visible = false;
+//         node.visibleEditing = false;
+//         // node.forceRedrawRepositionOnce = true;
+//         //         objects[objectKey].frames[frameKey].visible = false;
+//         //         objects[objectKey].frames[frameKey].visibleEditing = false;
+//         //         objects[objectKey].frames[frameKey].hasCTXContent = false;
+//     });
+// };
+//
+// realityEditor.gui.ar.draw.resetFrameRepositionCanvases = function() {
+//     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+//         var frame = realityEditor.getFrame(objectKey, frameKey);
+//         frame.visible = false;
+//         frame.visibleEditing = false;
+//         // frame.forceRedrawRepositionOnce = true;
+//         //         objects[objectKey].frames[frameKey].visible = false;
+//         //         objects[objectKey].frames[frameKey].visibleEditing = false;
+//         //         objects[objectKey].frames[frameKey].hasCTXContent = false;
+//     });
+// };
 
 realityEditor.gui.ar.draw.areAnyScreensVisible = function() {
     var anyScreensVisible = false;
