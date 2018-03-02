@@ -178,10 +178,6 @@ var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
-var globalFrames = {};
-var globalFramesDOMCache = {};
-var globalFramePrefix = '__GLOBAL__';
-
 var globalDOMCache = {};
 var shadowObjects = {};
 

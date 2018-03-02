@@ -328,15 +328,6 @@ realityEditor.device.beginTouchEditing = function(target, source) {
 };
 
 /**
- * Returns whether or not the object is the "global frame container" for when frames are dis-associated from a marker
- * @param objectKey
- * @return {boolean}
- */
-realityEditor.device.isGlobalFrame = function(objectKey) {
-    return objectKey;// === globalFramePrefix; // TODO: a less hacky way would be to check if (frame.location === 'global')
-};
-
-/**
  * @returns {*} the object, frame, or node currently being edited (repositioned)
  */
 realityEditor.device.getEditingModeObject = function() {
@@ -345,10 +336,6 @@ realityEditor.device.getEditingModeObject = function() {
     var nodeId = globalStates.editingModeLocation;
     
     if (globalStates.editingModeKind === 'ui') {
-        // edge case for editing frames dis-associated from any object
-        if (globalStates.inTransition) {
-            return globalFrames[frameId];
-        }
         // edge case for pocket frames
         if (objectId && objectId in pocketItem) {
             return pocketItem[objectId].frames[frameId];
@@ -1173,7 +1160,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		cout("start");
 		// this is where it should be send to the object..
 
-        if(!globalStates.inTransition)
+        if(!globalStates.inTransitionObject || globalStates.inTransitionFrame)
         {
         
 		var tempThisObject = realityEditor.device.getEditingModeObject();
@@ -1276,18 +1263,15 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 
         }
         
-        if (globalStates.inTransition) {
-            
-            // TODO: try to drop the frame into an object underneath, or if there isn't one, return it to its starting position in its old object (need to remember this somewhere)
-
-            var globalFrame = globalFrames[globalStates.editingModeFrame];
-            var newFrameKey;
+        if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
             
             var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
             if (closestObjectKey) {
                 console.log('there is an object to drop this frame onto');
 
-                newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(closestObjectKey, globalStates.editingModeFrame, globalFrame);
+                var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
+                var newFrameKey = closestObjectKey + frameBeingMoved.name;
+                realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey);
                 
                 // var newObject = realityEditor.getObject(closestObjectKey);
                 var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
@@ -1309,7 +1293,8 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
             } else {
                 console.log('there are no visible objects - return this frame to its previous object');
                 
-                newFrameKey = realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalFrame.sourceObject, globalStates.editingModeFrame, globalFrame);
+                globalStates.inTransitionObject = null;
+                globalStates.inTransitionFrame = null;
                 
             }
 
