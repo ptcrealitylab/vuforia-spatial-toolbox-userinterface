@@ -1266,7 +1266,9 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
         if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
             
             var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+            
             if (closestObjectKey) {
+                
                 console.log('there is an object to drop this frame onto');
 
                 var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
@@ -1276,7 +1278,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 var screenY = evt.pageY;
                 var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
                 
-                realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
+                realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
                 
                 // var newObject = realityEditor.getObject(closestObjectKey);
                 var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
@@ -1288,11 +1290,10 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                 realityEditor.network.postData(urlEndpoint, content);
                 
             } else {
+                
                 console.log('there are no visible objects - return this frame to its previous object');
-                
-                globalStates.inTransitionObject = null;
-                globalStates.inTransitionFrame = null;
-                
+                realityEditor.gui.ar.draw.returnTransitionFrameBackToSource();
+
             }
 
             globalStates.editingModeObject = null;

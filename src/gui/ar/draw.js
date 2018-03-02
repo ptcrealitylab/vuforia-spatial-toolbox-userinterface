@@ -495,7 +495,7 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
 
                     var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
                     var newFrameKey = closestObjectKey + frameBeingMoved.name;
-                    realityEditor.gui.ar.draw.moveFrameToObjectSpace(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
+                    realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
 
                 }
 
@@ -657,8 +657,36 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     realityEditor.network.deleteFrameFromObject(oldObject.ip, oldObjectKey, oldFrameKey);
 };
 
+realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
+    
+    // (activeKey, activeVehicle, globalDOMCache, cout
+    var frameInMotion = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
+    realityEditor.gui.ar.draw.hideTransformed(globalStates.inTransitionFrame, frameInMotion, globalDOMCache, cout);
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(frameInMotion);
+    positionData.matrix = [];
+    frameInMotion.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    frameInMotion.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
 
-realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
+    // update any variables in the application with the old keys to use the new keys
+    if (globalStates.editingModeObject === globalStates.inTransitionObject)
+        globalStates.editingModeObject = null;
+    if (globalStates.editingModeFrame === globalStates.inTransitionFrame)
+        globalStates.editingModeFrame = null;
+    if (globalStates.editingFrame = globalStates.inTransitionFrame)
+        globalStates.editingFrame = null;
+    if (realityEditor.gui.screenExtension.screenObject.object === globalStates.inTransitionObject)
+        realityEditor.gui.screenExtension.screenObject.object = null;
+    if (realityEditor.gui.screenExtension.screenObject.frame === globalStates.inTransitionFrame)
+        realityEditor.gui.screenExtension.screenObject.frame = null;
+
+    globalStates.inTransitionObject = null;
+    globalStates.inTransitionFrame = null;
+
+    realityEditor.device.removeEventHandlers();
+    realityEditor.device.setEditingMode(false);
+};
+
+realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
     
     this.moveFrameToNewObject(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey);
     

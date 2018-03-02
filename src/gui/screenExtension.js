@@ -40,16 +40,16 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
         
     }
     
-        this.screenObject.x = 0;
-        this.screenObject.y = 0;
-        this.screenObject.scale = 1;
-        this.screenObject.object = null;
-        this.screenObject.frame = null;
-        this.screenObject.node = null;
-        this.screenObject.closestObject = null;
-        this.screenObject.touchState = null;
-        
-        globalStates.initialDistance = null;
+    this.screenObject.x = 0;
+    this.screenObject.y = 0;
+    this.screenObject.scale = 1;
+    this.screenObject.object = null;
+    this.screenObject.frame = null;
+    this.screenObject.node = null;
+    this.screenObject.closestObject = null;
+    this.screenObject.touchState = null;
+    
+    globalStates.initialDistance = null;
         
     //console.log("end", this.screenObject);
 };
@@ -85,24 +85,23 @@ realityEditor.gui.screenExtension.updateScreenObject = function (eventObject){
     this.screenObject.touchState = eventObject.type;
     if(eventObject.type === "touchstart") {
         
-        // TODO: make a similar function for when a screen object becomes visible while unconstrained editing a global frame
-        var that = this;
-        var elementsUnderTouch = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventObject.x, eventObject.y);
-        var didTouchARFrame = elementsUnderTouch.some( function(clickedElement) {
-            if (clickedElement.tagName === 'IFRAME' && clickedElement.dataset.objectKey && clickedElement.dataset.frameKey && clickedElement.style.display !== 'none') {
-                that.screenObject.object = clickedElement.dataset.objectKey;
-                that.screenObject.frame = clickedElement.dataset.frameKey;
-                console.log('tapped down on AR frame, so don\'t start screenframe drag');
-                return true;
-            }
-            return false;
-        });
+        var didTouchARFrame = (eventObject.object && eventObject.frame);
+        
+        if (didTouchARFrame) {
+            console.log('should have an AR element', eventObject);
+        } else {
+            console.log('should be null', eventObject);
+        }
+        
+        // if (eventObject.object && eventObject.frame) {
+        //     didTouchARFrame = true;
+            this.screenObject.object = eventObject.object;
+            this.screenObject.frame = eventObject.frame;
+            this.screenObject.node = eventObject.node;
+        // }
         
         this.screenObject.isScreenVisible = !didTouchARFrame;
         globalStates.didStartPullingFromScreen = !didTouchARFrame;
-        
-        // TODO: notify screen when new pocket frame is added!
-        // TODO: what about if pocket frame is added to another object and then dropped into this one? generate screen frame as soon as the frame data becomes associated with this new object. maybe even include it in the message when it gets transferred to the screen.
         
     } /*else if(eventObject.type === "touchend") {
         this.screenObject.x = 0;
@@ -181,10 +180,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
 
         if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
             isScreenVisible = false;
-            globalStates.initialDistance += distanceThreshold;
         } else if (distanceToFrame < (globalStates.initialDistance - distanceThreshold)) {
             isScreenVisible = true;
-            globalStates.initialDistance -= distanceThreshold;
         }
         
         if (isScreenVisible !== this.screenObject.isScreenVisible) {

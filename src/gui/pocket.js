@@ -455,6 +455,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         console.log('pocketShow()', palette.innerHTML.trim());
         if (palette.innerHTML.trim() === "") {
             createPocketUIPalette();
+            clearTimeout(pocketDestroyTimer);
         } else {
             clearTimeout(pocketDestroyTimer);
         }
