@@ -287,7 +287,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 if (preserveFrameGlobally) {
                     
                     wereAnyFramesMovedToGlobal = true;
-                    realityEditor.gui.ar.draw.moveFrameToGlobalSpace(objectKey, frameKey, this.activeFrame);
+                    globalStates.inTransitionObject = objectKey;
+                    globalStates.inTransitionFrame = frameKey;
                     
                 } else {
 
@@ -691,11 +692,6 @@ realityEditor.gui.ar.draw.moveFrameToObjectSpace = function(oldObjectKey, oldFra
     globalStates.editingModeFrame = null;
     globalStates.editingFrame = null;
     
-};
-
-realityEditor.gui.ar.draw.moveFrameToGlobalSpace = function(objectKey, frameKey) {
-    globalStates.inTransitionObject = objectKey;
-    globalStates.inTransitionFrame = frameKey;
 };
 
 /**
