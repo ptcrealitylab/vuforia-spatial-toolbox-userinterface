@@ -769,6 +769,22 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
         realityEditor.device.eventObject.touches[0].screenX = evt.touches[0].screenX;
         realityEditor.device.eventObject.touches[0].screenY = evt.touches[0].screenY;
         realityEditor.device.eventObject.touches[0].type = type;
+
+        if (type === 'touchstart') {
+            realityEditor.device.eventObject.object = null;
+            realityEditor.device.eventObject.frame = null;
+            var ele = evt.target;
+            while (ele && ele.tagName !== "BODY" && ele.tagName !== "HTML") {
+                if (ele.objectId && ele.frameId) {
+                    realityEditor.device.eventObject.object = ele.objectId;
+                    realityEditor.device.eventObject.frame = ele.frameId;
+                    break;
+                }
+                ele = ele.parentElement;
+            }
+        }
+
+        
     }
     if (evt.touches.length >= 2) {
         realityEditor.device.eventObject.touches[1].screenX = evt.touches[1].screenX;
@@ -1276,7 +1292,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 
                 var screenX = evt.pageX;
                 var screenY = evt.pageY;
-                var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
                 
                 realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
                 
@@ -1411,9 +1427,20 @@ realityEditor.device.onMultiTouchCanvasEnd = function(evt) {
             globalStates.editingScaleDistance = null;
             globalStates.editingModeObjectCenterX = null;
             globalStates.editingModeObjectCenterY = null;
-            globalStates.editingPulledScreenFrame = false;
         }
     }
+    
+    if (globalStates.editingPulledScreenFrame) {
+        globalStates.editingPulledScreenFrame = false;
+        globalStates.editingFrame = null;
+        globalStates.editingModeFrame = null;
+        globalStates.editingModeObject = null;
+        globalStates.editingModeKind = null;
+        globalStates.editingModeHaveObject = false;
+        globalStates.tempEditingMode = false;
+        globalStates.tempUnconstrainedPositioning = false;
+    }
+    
     cout("MultiTouchCanvasEnd");
 };
 

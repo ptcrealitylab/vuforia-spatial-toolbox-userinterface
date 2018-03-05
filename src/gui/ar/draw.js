@@ -491,7 +491,7 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
                     console.log('there is an object to drop this frame onto');
                     
                     var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                    var projectedCoordinates = realityEditor.gui.ar.draw.utilities.screenCoordinatesToMarkerXY(closestObjectKey, touchPosition.x, touchPosition.y);
+                    var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, touchPosition.x, touchPosition.y);
 
                     var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
                     var newFrameKey = closestObjectKey + frameBeingMoved.name;
@@ -709,8 +709,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     }
 
     frame.ar.matrix = [];
-    frame.begin =  realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
-    frame.temp =  realityEditor.gui.ar.draw.utilities.newIdentityMatrix();
+    frame.begin =  realityEditor.gui.ar.utilities.newIdentityMatrix();
+    frame.temp =  realityEditor.gui.ar.utilities.newIdentityMatrix();
 
     realityEditor.device.removeEventHandlers();
     globalStates.editingMode = false;

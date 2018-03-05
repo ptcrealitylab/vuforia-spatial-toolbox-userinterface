@@ -160,6 +160,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.sendAcceleration = false;
                         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
                         thisFrame.visible = false;
+                        thisFrame.objectId = objectKey;
                         
                         delete thisFrame.positionOnLoad;
                         
