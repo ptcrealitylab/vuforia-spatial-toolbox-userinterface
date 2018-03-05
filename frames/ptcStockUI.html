@@ -232,8 +232,19 @@
             plotBackground :{backgroundColor: "rgba(0,0,0,1)"},
             rangeSelector: {
                 //3 months:
-                selected: 1,
+                selected: 1
 
+            },
+            buttons: {
+                'myButton': {
+                    symbol: 'circle',
+                    symbolFill: '#B5C9DF',
+                    hoverSymbolFill: '#779ABF',
+                    theme: {
+                        class: "myButton highcharts-button highcharts-button-normal",
+                        id: "myDiamondButton"
+                    }
+                }
             },
             tooltip: {
                 backgroundColor: 'rgba(20,150,150,0.6',
@@ -303,11 +314,45 @@
                         fontFamily: 'Trebuchet MS, Verdana, sans-serif'
                     }
                 }
+            },
+            rangeSelector: {
+                buttonTheme: {
+                    fill: '#505053',
+                    stroke: '#00ffff',
+                    style: {
+                        color: '#00ffff'
+                    },
+                    states: {
+                        hover: {
+                            fill: '#707073',
+                            stroke: '#00ffff',
+                            style: {
+                                color: '#00ffff'
+                            }
+                        },
+                        select: {
+                            fill: '#cccccc',
+                            stroke: '#00ffff',
+                            style: {
+                                color: '#00ffff'
+                            }
+                        }
+                    }
+                },
+                inputBoxBorderColor: '#505053',
+                inputStyle: {
+                    backgroundColor: '#333',
+                    color: 'silver'
+                },
+                labelStyle: {
+                    color: 'silver'
+                },
+                selected: 1
             }
         });
 
 
-        var ticker = 'PTC'
+        var ticker = 'PTC';
         var to = new Date(_now);
         var from = new Date(to);
         // console.log(to.getFullYear()-6);
