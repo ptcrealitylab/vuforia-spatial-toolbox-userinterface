@@ -667,7 +667,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');
     blockSettingsContainer.setAttribute('class', 'settingsContainer');
 
-    blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.object + "','" + keys.logic + "','" + keys.block + "','" + JSON.stringify(block.publicData) + "')");
+    blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
     blockSettingsContainer.src = settingsUrl;
     craftingBoard.appendChild(blockSettingsContainer);
     

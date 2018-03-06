@@ -274,9 +274,10 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
         this.cout("pointerUp ->" + touchState);
     }
 
-    function onLoadBlock(object,logic,block,publicData) {
+    function onLoadBlock(object,frame,logic,block,publicData) {
         var msg = {
             object: object,
+            frame: frame,
             logic:  logic,
             block:  block,
             publicData: JSON.parse(publicData)
