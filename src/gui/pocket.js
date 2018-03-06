@@ -117,7 +117,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     var nodeMemoryBar;
     
     var inMemoryDeletion = false;
-    var pocketDestroyTimer = null;
+    // var pocketDestroyTimer = null;
 
     var realityElements = [
       
@@ -328,7 +328,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             
         });
 
-            // createPocketUIPalette();
+        createPocketUIPalette();
 		// pocketHide();
     }
 
@@ -452,13 +452,13 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
 
     function pocketShow() {
-        console.log('pocketShow()', palette.innerHTML.trim());
-        if (palette.innerHTML.trim() === "") {
-            createPocketUIPalette();
-            clearTimeout(pocketDestroyTimer);
-        } else {
-            clearTimeout(pocketDestroyTimer);
-        }
+        // console.log('pocketShow()', palette.innerHTML.trim());
+        // if (palette.innerHTML.trim() === "") {
+        //     createPocketUIPalette();
+        //     clearTimeout(pocketDestroyTimer);
+        // } else {
+        //     clearTimeout(pocketDestroyTimer);
+        // }
         
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn('main', ['pocket']);
@@ -474,26 +474,26 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
     }
 
     function setPaletteElementDemo(value) {
-        var paletteElements = document.querySelectorAll('.palette-element');
-        for (var i = 0; i < paletteElements.length; i++) {
-            var elt = paletteElements[i];
-            // TODO(hobinjk): stringify is not required except for legacy reasons
-            elt.contentWindow.postMessage(JSON.stringify({demo: value}), '*');
-            // elt.contentWindow.postMessage({demo: value}, '*');
-
-        }
+        // var paletteElements = document.querySelectorAll('.palette-element');
+        // for (var i = 0; i < paletteElements.length; i++) {
+        //     var elt = paletteElements[i];
+        //     // TODO(hobinjk): stringify is not required except for legacy reasons
+        //     elt.contentWindow.postMessage(JSON.stringify({demo: value}), '*');
+        //     // elt.contentWindow.postMessage({demo: value}, '*');
+        //
+        // }
     }
 
     function pocketHide() {
         // palette.style.display = 'none';
-        pocketDestroyTimer = setTimeout(function() {
-            palette.innerHTML = "";
-            // remove touch event from dragged frame if needed
-            if (globalStates.pocketEditingMode) {
-                var fakeEvent = { currentTarget: document.getElementById(globalStates.editingFrame) };
-                realityEditor.device.onTrueTouchUp(fakeEvent);
-            }
-        }, 5000);
+        // pocketDestroyTimer = setTimeout(function() {
+        //     palette.innerHTML = "";
+        //     // remove touch event from dragged frame if needed
+        //     if (globalStates.pocketEditingMode) {
+        //         var fakeEvent = { currentTarget: document.getElementById(globalStates.editingFrame) };
+        //         realityEditor.device.onTrueTouchUp(fakeEvent);
+        //     }
+        // }, 5000);
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff('main', ['pocket']);
         setPaletteElementDemo(false);
@@ -509,38 +509,52 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
+            // container.position = 'relative';
             var thisUrl = 'frames/' + element.name + '.html';
+            var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
             container.dataset.src = thisUrl;
 
             container.dataset.name = element.name;
             container.dataset.width = element.width;
             container.dataset.height = element.height;
             container.dataset.nodeNames = element.nodeNames;
-
-            var elt = document.createElement('iframe');
+            
+            var elt = document.createElement('img');
             elt.classList.add('palette-element');
-            elt.style.width = element.width + 'px';
-            elt.style.height = element.height + 'px';
-            elt.src = thisUrl;
+            // elt.style.width = element.width + 'px';
+            // elt.style.height = element.height + 'px';
+            // elt.style.width = '100%'; //container.offsetWidth + 'px'; // paletteElementSize + 'px'; //container.offsetWidth; //'100%';
+            // elt.style.height = '100%'; container.offsetHeight + 'px'; // paletteElementSize + 'px'; // container.offsetHeight; //'100%';
+            elt.src = gifUrl;
 
             container.appendChild(elt);
             palette.appendChild(container);
 
             var paletteElementSize = Math.floor(parseFloat(window.getComputedStyle(container).width)) - 6;
 
-            var scale = Math.min(
-                paletteElementSize / (element.width),
-                paletteElementSize / (element.height),
-                1
-            );
+            // var scale = Math.min(
+            //     paletteElementSize / (element.width),
+            //     paletteElementSize / (element.height),
+            //     1
+            // );
+
+            // var scale = Math.min(
+            //     paletteElementSize / (elt.naturalWidth),
+            //     paletteElementSize / (elt.naturalHeight),
+            //     1
+            // );
+            
+            var ICON_SIZE = 204;
+            // var scale = paletteElementSize / elt.naturalWidth;
+            var scale = paletteElementSize / ICON_SIZE;
 
             elt.style.transform = 'scale(' + scale + ')';
 
-            var offsetX = (paletteElementSize - element.width * scale) / 2;
-            var offsetY = (paletteElementSize - element.height * scale) / 2;
+            // var offsetX = (paletteElementSize - element.width * scale) / 2;
+            // var offsetY = (paletteElementSize - element.height * scale) / 2;
 
-            elt.style.marginTop = offsetY + 'px';
-            elt.style.marginLeft = offsetX + 'px';
+            // elt.style.marginTop = offsetY + 'px';
+            // elt.style.marginLeft = offsetX + 'px';
         }
     }
 
