@@ -196,8 +196,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             width: 600,
             height: 600,
             nodeNames: [
-                'x',
-                'y'
             ]
         }
     ];
