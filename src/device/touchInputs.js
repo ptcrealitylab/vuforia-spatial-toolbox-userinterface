@@ -16,7 +16,7 @@ realityEditor.device.touchInputs.screenTouchEnd = function(eventObject){
 realityEditor.device.touchInputs.screenTouchMove = function(eventObject){
    // console.log("move", eventObject.x, eventObject.y);
    // console.log("move", eventObject.multiTouch.firstFinger.type, eventObject.multiTouch.secondFinger.type);
-    //console.log("move", eventObject);
+   //  console.log("move", eventObject);
     realityEditor.gui.screenExtension.touchMove(eventObject);
 
    //realityEditor.device.onMultiTouchMove(eventObject);

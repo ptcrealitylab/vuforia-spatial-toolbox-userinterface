@@ -55,43 +55,46 @@ realityEditor.gui.crafting.updateGrid = function(grid) {
     var previousLogic = globalStates.currentLogic;
     
     var logic = grid.parentLogic();
-    globalStates.currentLogic = logic;
-
-    // *** this does all the backend work ***
-    grid.recalculateAllRoutes();
-
-
-    // UPDATE THE UI IF OPEN
-    var blockContainer = document.getElementById('blocks');
     
-    if (globalStates.currentLogic && grid.parentLogic() && (grid.parentLogic().uuid === globalStates.currentLogic.uuid) && blockContainer) {
+    if (logic) {
+        globalStates.currentLogic = logic;
 
-        // reset domElements 
-        for (var domKey in logic.guiState.blockDomElements) {
-            var blockDomElement = logic.guiState.blockDomElements[domKey];
+        // *** this does all the backend work ***
+        grid.recalculateAllRoutes();
 
-            // remove dom elements if their blocks are gone or needs to be reset
-            if (this.shouldRemoveBlockDom(blockDomElement)) {
-                blockDomElement.parentNode.removeChild(blockDomElement);
-                delete logic.guiState.blockDomElements[domKey];
-            }
-        }
 
-        // add new domElement for each block that needs one
-        for (var blockKey in logic.blocks) {
-            var block = logic.blocks[blockKey];
-            if (block.isPortBlock) continue; // don't render invisible input/output blocks
+        // UPDATE THE UI IF OPEN
+        var blockContainer = document.getElementById('blocks');
 
-            if (realityEditor.gui.crafting.grid.isBlockOutsideGrid(block, grid) && !block.isPortBlock) { // don't render blocks offscreen
-                continue;
-            }
+        if (globalStates.currentLogic && grid.parentLogic() && (grid.parentLogic().uuid === globalStates.currentLogic.uuid) && blockContainer) {
 
-            // only add if the block doesn't already have one
-            var blockDomElement = logic.guiState.blockDomElements[block.globalId];
-            if (!blockDomElement) {
-                this.addDomElementForBlock(block, grid);
+            // reset domElements 
+            for (var domKey in logic.guiState.blockDomElements) {
+                var blockDomElement = logic.guiState.blockDomElements[domKey];
+
+                // remove dom elements if their blocks are gone or needs to be reset
+                if (this.shouldRemoveBlockDom(blockDomElement)) {
+                    blockDomElement.parentNode.removeChild(blockDomElement);
+                    delete logic.guiState.blockDomElements[domKey];
+                }
             }
 
+            // add new domElement for each block that needs one
+            for (var blockKey in logic.blocks) {
+                var block = logic.blocks[blockKey];
+                if (block.isPortBlock) continue; // don't render invisible input/output blocks
+
+                if (realityEditor.gui.crafting.grid.isBlockOutsideGrid(block, grid) && !block.isPortBlock) { // don't render blocks offscreen
+                    continue;
+                }
+
+                // only add if the block doesn't already have one
+                var blockDomElement = logic.guiState.blockDomElements[block.globalId];
+                if (!blockDomElement) {
+                    this.addDomElementForBlock(block, grid);
+                }
+
+            }
         }
     }
     

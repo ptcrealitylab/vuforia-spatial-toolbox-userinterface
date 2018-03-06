@@ -366,8 +366,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             }
             
             return {
-                x: point.x - 284,
-                y: point.y - 160
+                x: point.x - globalStates.height/2, // 284
+                y: point.y - globalStates.width/2 // 160
             }
         }
         
@@ -881,6 +881,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
      */
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
+        if(!globalStates.inTransition) return false;
         var thisSVG = globalDOMCache["svg" + activeKey];
 
         // check if css is a percentage (handle differently so we don't convert 100% to 100px)

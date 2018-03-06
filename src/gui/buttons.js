@@ -227,6 +227,21 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
             realityEditor.device.setEditingMode(false);
             realityEditor.app.appFunctionCall("developerOff", null, null);
         }
+        
+
+            if(!globalStates.realityState) {
+                realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+            } else {
+                realityEditor.gui.menus.buttonOff("reality", ["setting"]);
+            }
+            
+            if (globalStates.editingMode) {
+                realityEditor.gui.menus.on("editing", []);
+            } else {
+                realityEditor.gui.menus.on("main",[]);
+            }
+        
+        
     },200);
     
 };

@@ -153,7 +153,9 @@ var globalStates = {
 		timeout: undefined
 	},
     initialDistance: null,
-    framePullThreshold: 50,
+    framePullThreshold: 25,
+    maxFramePullThreshold: 250,
+    minFramePullThreshold: 25,
     didStartPullingFromScreen: false,
     unconstrainedSnapInitialPosition: null,
     defaultScale: 0.5,
@@ -177,10 +179,6 @@ var globalLogic ={
 var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
-
-var globalFrames = {};
-var globalFramesDOMCache = {};
-var globalFramePrefix = '__GLOBAL__';
 
 var globalDOMCache = {};
 var shadowObjects = {};

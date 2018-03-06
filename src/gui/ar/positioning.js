@@ -150,7 +150,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
     var unconstrainedMatrix = undefined;
     if (hasBeenUnconstrainedEdited) {
         unconstrainedMatrix = [];
-        realityEditor.gui.ar.draw.utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, unconstrainedMatrix);
+        realityEditor.gui.ar.utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, unconstrainedMatrix);
     }
 
     var objectKey = activeVehicle.objectId;

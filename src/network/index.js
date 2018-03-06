@@ -160,6 +160,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.sendAcceleration = false;
                         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
                         thisFrame.visible = false;
+                        thisFrame.objectId = objectKey;
                         
                         delete thisFrame.positionOnLoad;
                         
@@ -1169,6 +1170,7 @@ if (thisFrame) {
             // realityEditor.device.onDocumentPointerMove(fakeEvent);
             // realityEditor.device.onTouchMove(fakeEvent);
             realityEditor.device.onMultiTouchMove(fakeEvent);
+            
         } else if (event.type === 'touchend') {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
