@@ -154,6 +154,8 @@ var globalStates = {
 	},
     initialDistance: null,
     framePullThreshold: 25,
+    maxFramePullThreshold: 250,
+    minFramePullThreshold: 25,
     didStartPullingFromScreen: false,
     unconstrainedSnapInitialPosition: null,
     defaultScale: 0.5,

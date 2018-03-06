@@ -1,15 +1,17 @@
 createNameSpace("realityEditor.gui.screenExtension");
 
 realityEditor.gui.screenExtension.screenObject = {
-        touchState : null,
-        closestObject : null,
-        x : 0,
-        y : 0,
-        scale : 1,
-        object : null,
-        frame : null,
-        node : null,
-        isScreenVisible: false
+    touchState : null,
+    closestObject : null,
+    x : 0,
+    y : 0,
+    scale : 1,
+    object : null,
+    frame : null,
+    node : null,
+    isScreenVisible: false,
+    touchOffsetX: 0,
+    touchOffsetY: 0
 };
 realityEditor.gui.screenExtension.activeScreenObject = {
     object : null,
@@ -63,7 +65,7 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
     globalStates.initialDistance = null;
     
     globalStates.didStartPullingFromScreen = false;
-        
+    
     //console.log("end", this.screenObject);
 };
 
@@ -140,16 +142,23 @@ realityEditor.gui.screenExtension.update = function (){
     if(this.screenObject.touchState) {
         if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
             realityEditor.gui.screenExtension.calculatePushPop();
+            return;
         }
+    }
+    
+    if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {
+        globalStates.framePullThreshold -= 5;
     }
 };
 
 realityEditor.gui.screenExtension.receiveObject = function (object){
 
-    console.log('receiveObject', object);
+    // console.log('receiveObject', object);
     this.screenObject.object = object.object;
     this.screenObject.frame = object.frame;
     this.screenObject.node = object.node;
+    this.screenObject.touchOffsetX = object.touchOffsetX;
+    this.screenObject.touchOffsetY = object.touchOffsetY;
     
 };
 
@@ -238,13 +247,17 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
         }
         
         var distanceThreshold = globalStates.framePullThreshold;
+        console.log(distanceThreshold);
 
         if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
             this.onScreenPullOut(screenFrame);
         } else if (distanceToFrame < (globalStates.initialDistance - distanceThreshold)) {
             this.onScreenPushIn(screenFrame);
         }
-        
+    } else {
+        if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {
+            globalStates.framePullThreshold -= 5;
+        }
     }
 };
 
@@ -333,14 +346,21 @@ realityEditor.gui.screenExtension.sendScreenObject = function (){
 realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
     var thisFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
     if(thisFrame) {
+
+        globalStates.initialDistance = null;
+        globalStates.framePullThreshold = globalStates.maxFramePullThreshold;
+
         if (this.screenObject.isScreenVisible) {
             thisFrame.visualization = "screen";
-            // thisFrame.currentTouchOffset = {
-            //     x: 0,
-            //     y: 0
-            // };
 
             console.log('hide frame -> screen');
+
+            if (thisFrame.currentTouchOffset) {
+                this.screenObject.touchOffsetX = (thisFrame.currentTouchOffset.x - parseInt(thisFrame.width) * thisFrame.ar.scale * 0.5) / thisFrame.ar.scale; //(thisFrame.currentTouchOffset.x) / thisFrame.ar.scale;
+                this.screenObject.touchOffsetY = ((thisFrame.currentTouchOffset.y) - parseInt(thisFrame.height) * thisFrame.ar.scale * 0.5) / thisFrame.ar.scale; /// thisFrame.ar.scale;
+                
+                console.log(this.screenObject.touchOffsetX, this.screenObject.touchOffsetY);
+            }
 
             realityEditor.gui.ar.draw.hideTransformed(thisFrame.uuid, thisFrame, globalDOMCache, cout);
             
@@ -350,11 +370,23 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             thisFrame.ar.matrix = [];
             thisFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
             thisFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            // thisFrame.currentTouchOffset = {
+            //     x: globalStates.height/2,
+            //     y: globalStates.width/2
+            // };
+
             thisFrame.currentTouchOffset = {
-                x: globalStates.height/2,
-                y: globalStates.width/2
+                x: (thisFrame.width/2 * thisFrame.ar.scale) + (0.5 * parseInt(thisFrame.width) * thisFrame.ar.scale),
+                y: (thisFrame.height/2 * thisFrame.ar.scale) + (0.5 * parseInt(thisFrame.height) * thisFrame.ar.scale)
             };
 
+            // thisFrame.currentTouchOffset = {
+            //     x: (this.screenObject.touchOffsetX * thisFrame.ar.scale) + (0.5 * parseInt(thisFrame.width) * thisFrame.ar.scale),
+            //     y: (this.screenObject.touchOffsetY * thisFrame.ar.scale) + (0.5 * parseInt(thisFrame.height) * thisFrame.ar.scale)
+            // };
+            
+            // thisFrame.currentTouchOffset = null;
+            
             console.log('show frame -> AR');
 
             var activeKey = thisFrame.uuid;
@@ -377,10 +409,14 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             svg.style.height = iframe.style.height;
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
 
+            var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, true);
+
             // realityEditor.gui.menus.on("editing", ["unconstrained"]);
             // globalStates.previousUnconstrainedPositioning = globalStates.unconstrainedPositioning;
             // globalStates.unconstrainedPositioning = true;
             globalStates.editingPulledScreenFrame = true;
+            globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.beginTouchEditing(overlay);
             
         }

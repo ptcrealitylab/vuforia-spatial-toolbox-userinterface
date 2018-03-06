@@ -475,6 +475,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 };
 
+/*
 realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization) {
     
     if (frame.visualization !== newVisualization) {
@@ -541,6 +542,7 @@ realityEditor.gui.ar.draw.changeVisualization = function(frame, newVisualization
     }
 
 };
+*/
 
 realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey) {
     
@@ -1112,6 +1114,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             }
 
         }
+    
+    } else if (activeVehicle.visualization === "screen") {
+        this.hideTransformed(activeKey, activeVehicle, globalDOMCache, cout);
     }
     
     return true;
