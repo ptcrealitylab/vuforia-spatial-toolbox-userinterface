@@ -192,9 +192,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             ]
         },
         {
-            name: 'easterEgg',
-            width: 480,
-            height: 270,
+            name: 'draw',
+            width: 600,
+            height: 600,
             nodeNames: [
                 'x',
                 'y'
