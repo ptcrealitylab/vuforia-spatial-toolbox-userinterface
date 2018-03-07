@@ -316,7 +316,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     */
 
                     // this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCache); // TODO: this only kills last node, not the frames (because activeKey changes)
-                    this.killObjects(frameKey, this.activeFrame, this.globalDOMCache);
+//                    this.killObjects(frameKey, this.activeFrame, this.globalDOMCache);
                     
                 }
                 
@@ -337,6 +337,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     globalStates.editingModeLocation = null;
                 }
             }
+        } else {
+            this.killObjects(this.activeKey, this.activeObject, this.globalDOMCache);
         }
 
     }
@@ -1410,32 +1412,33 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
  **/
 
 realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCache) {
-
-    if (activeVehicle.visibleCounter > 0) {
+    if(!activeVehicle.visibleCounter) return;
+    if (activeVehicle.visibleCounter > 1) {
         activeVehicle.visibleCounter--;
-    } else if (activeVehicle.loaded) {
-        activeVehicle.loaded = false;
+    } else {
+        activeVehicle.visibleCounter--;
+        for (var activeFrameKey in activeVehicle.frames) {
+            activeVehicle.frames[activeFrameKey].loaded = false;
+            globalDOMCache["object" + activeFrameKey].parentNode.removeChild(globalDOMCache["object" + activeFrameKey]);
+            delete globalDOMCache["object" + activeFrameKey];
+            delete globalDOMCache["iframe" + activeFrameKey];
+            delete globalDOMCache[activeFrameKey];
+            delete globalDOMCache["svg" + activeFrameKey];
+            delete globalDOMCache[activeFrameKey];
 
-        globalDOMCache["object" + activeKey].parentNode.removeChild(globalDOMCache["object" + activeKey]);
-        delete globalDOMCache["object" + activeKey];
-        delete globalDOMCache["iframe" + activeKey];
-        delete globalDOMCache[activeKey];
-        delete globalDOMCache["svg" + activeKey];
-        delete globalDOMCache[activeKey];
-
-        for (activeKey in activeVehicle.nodes) {
-            if (!activeVehicle.nodes.hasOwnProperty(activeKey)) continue;
-            try {
-                globalDOMCache["object" + activeKey].parentNode.removeChild(globalDOMCache["object" + activeKey]);
-                delete globalDOMCache["object" + activeKey];
-                delete globalDOMCache["iframe" + activeKey];
-                delete globalDOMCache[activeKey];
-                delete globalDOMCache["svg" + activeKey];
-
-            } catch (err) {
-                this.cout("could not find any");
+            for (var activeNodeKey in activeVehicle.frames[activeFrameKey].nodes) {
+                if (!activeVehicle.frames[activeFrameKey].nodes.hasOwnProperty(activeNodeKey)) continue;
+                try {
+                    globalDOMCache["object" + activeNodeKey].parentNode.removeChild(globalDOMCache["object" + activeNodeKey]);
+                    delete globalDOMCache["object" + activeNodeKey];
+                    delete globalDOMCache["iframe" + activeNodeKey];
+                    delete globalDOMCache[activeNodeKey];
+                    delete globalDOMCache["svg" + activeNodeKey];
+                    activeVehicle.frames[activeFrameKey].nodes[activeNodeKey].loaded = false;
+                } catch (err) {
+                    this.cout("could not find any");
+                }
             }
-            activeVehicle.nodes[activeKey].loaded = false;
         }
         this.cout("killObjects");
     }
