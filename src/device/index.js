@@ -1228,7 +1228,7 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
                     }
                 });
 
-                realityEditor.gui.ar.draw.killObjects(tempThisObject.uuid, thisFrame, globalDOMCache);
+                realityEditor.gui.ar.draw.killElement(tempThisObject.uuid, thisFrame, globalDOMCache);
                 
                 realityEditor.network.deleteFrameFromObject(thisObject.ip, tempThisObject.objectId, tempThisObject.uuid);
 

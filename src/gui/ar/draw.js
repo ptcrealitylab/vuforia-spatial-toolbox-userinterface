@@ -1412,7 +1412,9 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
  **/
 
 realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCache) {
-    if(!activeVehicle.visibleCounter) return;
+    if(!activeVehicle.visibleCounter) {
+        return;
+        }
     if (activeVehicle.visibleCounter > 1) {
         activeVehicle.visibleCounter--;
     } else {
@@ -1442,6 +1444,16 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
         }
         this.cout("killObjects");
     }
+};
+
+realityEditor.gui.ar.draw.killElement = function (thisActiveVehicleKey, thisActiveVehicle) {
+    thisActiveVehicle.loaded = false;
+    globalDOMCache["object" + thisActiveVehicleKey].parentNode.removeChild(globalDOMCache["object" + thisActiveVehicleKey]);
+    delete globalDOMCache["object" + thisActiveVehicleKey];
+    delete globalDOMCache["iframe" + thisActiveVehicleKey];
+    delete globalDOMCache[thisActiveVehicleKey];
+    delete globalDOMCache["svg" + thisActiveVehicleKey];
+    delete globalDOMCache[thisActiveVehicleKey];
 };
 
 realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
