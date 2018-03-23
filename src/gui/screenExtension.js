@@ -20,6 +20,9 @@ realityEditor.gui.screenExtension.activeScreenObject = {
 };
 
 realityEditor.gui.screenExtension.touchStart = function (eventObject){
+
+    if (globalStates.guiState !== 'ui') return;
+
     // this.updateScreenObject(eventObject);
     this.onScreenTouchDown(eventObject);
     
@@ -31,13 +34,18 @@ realityEditor.gui.screenExtension.touchStart = function (eventObject){
 };
 
 realityEditor.gui.screenExtension.touchMove = function (eventObject){
+
+    if (globalStates.guiState !== 'ui') return;
+
     // this.updateScreenObject(eventObject);
     this.onScreenTouchMove(eventObject);
 
     var thisVisualization = "";
     if (this.screenObject.object && this.screenObject.frame) {
         var activeFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
-        thisVisualization = activeFrame.visualization;
+        if (activeFrame) {
+            thisVisualization = activeFrame.visualization;
+        }
     }
     
     if(realityEditor.gui.screenExtension.activeScreenObject.frame && thisVisualization !== "ar") {
@@ -46,6 +54,9 @@ realityEditor.gui.screenExtension.touchMove = function (eventObject){
 };
 
 realityEditor.gui.screenExtension.touchEnd = function (eventObject){
+
+    // if (globalStates.guiState !== 'ui') return;
+
     // this.updateScreenObject(eventObject);
     this.onScreenTouchUp(eventObject);
     if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
@@ -115,6 +126,19 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
     this.screenObject.y = point.y;
 
     // also needs to update AR frame positions so that nodes float above them
+    if (this.screenObject.object && this.screenObject.frame && this.screenObject.object === this.screenObject.closestObject) {
+        var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
+        if (matchingARFrame && matchingARFrame.visualization === 'screen') {
+            // keep the invisible AR frames synchronized with the position of their screen frames (so that nodes are in same place and pulls out in the right place)
+            matchingARFrame.ar.x = point.x;
+            matchingARFrame.ar.y = point.y;
+
+            // console.log('mirroring position for frame ' + matchingARFrame.name);
+            // if (this.screenObject.scale) {
+            //     matchingARFrame.ar.scale = this.screenObject.scale;
+            // }
+        }
+    }
     
     // console.log(this.screenObject);
 };
@@ -234,25 +258,30 @@ realityEditor.gui.screenExtension.onScreenPullOut = function(screenFrame) {
 };
 
 realityEditor.gui.screenExtension.calculatePushPop = function() {
+    if (globalStates.freezeButtonState) return; // don't allow pushing and pulling if the background is frozen
+    
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
 
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
     if (screenFrame && isScreenObjectVisible) {
+        if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
-        // calculate distance to frame
-        var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
-        var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
-        if (!globalStates.initialDistance) {
-            globalStates.initialDistance = distanceToFrame;
-        }
-        
-        var distanceThreshold = globalStates.framePullThreshold;
-        console.log(distanceThreshold);
+            // calculate distance to frame
+            var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
+            var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
+            if (!globalStates.initialDistance) {
+                globalStates.initialDistance = distanceToFrame;
+            }
 
-        if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
-            this.onScreenPullOut(screenFrame);
-        } else if (distanceToFrame < (globalStates.initialDistance - distanceThreshold)) {
-            this.onScreenPushIn(screenFrame);
+            var distanceThreshold = globalStates.framePullThreshold;
+            console.log(distanceThreshold);
+
+            if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
+                this.onScreenPullOut(screenFrame);
+            } else if (distanceToFrame < (globalStates.initialDistance - distanceThreshold)) {
+                this.onScreenPushIn(screenFrame);
+            }
+            
         }
     } else {
         if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {

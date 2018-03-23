@@ -1053,7 +1053,7 @@ realityEditor.device.onMultiTouchMove = function(evt) {
                 // console.log('unconstrained move');
                 realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
             
-            } else if (tempThisObject.visualization === 'ar') {
+            } else if (tempThisObject.visualization === 'ar' && !globalStates.freezeButtonState) { // don't allow pop if on screen or frozen background
                 var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[tempThisObject.objectId], tempThisObject);
                 var distanceToFrame = screenFrameMatrix[14];
                 if (!globalStates.unconstrainedSnapInitialPosition) {

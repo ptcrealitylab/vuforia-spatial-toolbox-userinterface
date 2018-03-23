@@ -1352,6 +1352,8 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     } else {
         activeVehicle.visibleCounter--;
         for (var activeFrameKey in activeVehicle.frames) {
+            if (activeFrameKey === globalStates.inTransitionFrame) continue;
+            
             activeVehicle.frames[activeFrameKey].loaded = false;
             globalDOMCache["object" + activeFrameKey].parentNode.removeChild(globalDOMCache["object" + activeFrameKey]);
             delete globalDOMCache["object" + activeFrameKey];
