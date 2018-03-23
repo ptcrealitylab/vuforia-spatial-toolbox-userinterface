@@ -225,11 +225,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 
                 // name the frame "gauge", "gauge2", "gauge3", etc... 
                 frame.name = evt.target.dataset.name;
-                var existingFrameTypes = Object.keys(closestObject.frames).map(function(existingFrameKey){
-                    return closestObject.frames[existingFrameKey].type;
+                var existingFrameSrcs = Object.keys(closestObject.frames).map(function(existingFrameKey){
+                    return closestObject.frames[existingFrameKey].src;
                 });
-                var numberOfSameFrames = existingFrameTypes.filter(function(type){
-                    return type === evt.target.dataset.name;
+                var numberOfSameFrames = existingFrameSrcs.filter(function(src){
+                    return src === evt.target.dataset.name;
                 }).length;
                 if (numberOfSameFrames > 0) {
                     frame.name = evt.target.dataset.name + (numberOfSameFrames+1);
@@ -251,7 +251,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
                 frame.location = 'global';
                 frame.src = evt.target.dataset.name;
-                frame.type = evt.target.dataset.name;
 
                 // set other properties
 

@@ -699,7 +699,6 @@ realityEditor.network.onAction = function (action) {
             
             frame.location = thisAction.addFrame.location;
             frame.src = thisAction.addFrame.src;
-            frame.type = thisAction.addFrame.type;
             
             // set other properties
             
@@ -745,42 +744,6 @@ realityEditor.network.onAction = function (action) {
             });
             
             thisObject.frames[frameID] = frame;
-            
-            // if (thisAction.addFrame.frame) { // && thisAction.addFrame.hasOwnProperty('name')) {
-                
-                // console.log(thisAction.addFrame.frame);
-                
-                // var thisFrame = JSON.parse(thisAction.addFrame.frame);
-                
-                //thisObject.frames[thisAction.addFrame.frameID] = thisAction.addFrame.frame;
-
-                // realityEditor.network.updateObject(objects[objectKey], res, objectKey, frameKey);
-
-            // }
-
-            // if (!origin.frames[frameKey]) {
-            //     origin.frames[frameKey] = remote.frames[frameKey];
-            //
-            //     origin.frames[frameKey].width = 300;
-            //     origin.frames[frameKey].height = 300;
-            //
-            //     console.log('added new frame', origin.frames[frameKey]);
-            //
-            //     var frameType = origin.frames[frameKey].type;
-            //     var frameUrl = '../../frames/' + frameType + '/index.html';
-            //     realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
-            // }
-            
-            
-            // TODO: start unconstrained editing on the frame -- try calling beginTouchEditing
-            
-            
-            /* TODO: uncomment to continue developing unconstrained editing of transferred frames 
-            globalStates.editingMode = true;
-            realityEditor.gui.ar.draw.matrix.matrixtouchOn = thisAction.addFrame.frameID; //target.nodeId;
-            realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
-            */
-            
             
         }
         

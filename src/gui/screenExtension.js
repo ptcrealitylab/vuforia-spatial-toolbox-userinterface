@@ -333,7 +333,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function (){
 */
 
 realityEditor.gui.screenExtension.sendScreenObject = function (){
-    if(this.activeScreenObject.frame) {
+    var isActiveScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.activeScreenObject.object];
+    if(this.activeScreenObject.frame && isActiveScreenObjectVisible) {
         var iframe = globalDOMCache["iframe" + this.activeScreenObject.frame];
         if (iframe) {
             iframe.contentWindow.postMessage(JSON.stringify({

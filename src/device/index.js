@@ -316,7 +316,7 @@ realityEditor.device.beginTouchEditing = function(target, source) {
     }
 	// Only display the trash can if it's something we can delete (a frame)
 	if (target.frameId !== target.nodeId) {
-	    if(realityEditor.getFrame(target.objectId, target.frameId).location !== "local") {
+	    if(realityEditor.getFrame(target.objectId, target.frameId).location === "global") {
             realityEditor.gui.menus.on("bigTrash", []);
         }
 		//realityEditor.gui.pocket.pocketOnMemoryDeletionStart();

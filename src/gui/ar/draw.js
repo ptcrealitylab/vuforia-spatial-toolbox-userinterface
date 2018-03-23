@@ -278,11 +278,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     globalStates.editingModeFrame === frameKey &&
                     globalStates.guiState === 'ui' &&
                     !globalStates.editingNode &&
-                    !!this.activeFrame.type);
-                
-                
-                // TODO: BEN re-enable feature when ready to move frames between objects
-                // var preserveFrameGlobally = false;
+                    this.activeFrame.location === 'global');
                 
                 if (preserveFrameGlobally) {
                     
@@ -911,62 +907,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
                     } else {
                         isFullyBehindPlane = utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
+                        // TODO: we don't use isFullyBehindPlane anymore, so can remove the return value for now
                     }
-                    
-                    // for frames that can transfer between AR and screen space, send this to a screen if it goes behind the marker plane
-                    /*
-                    if (isFullyBehindPlane) {
-                        
-                        // having "activeVehicle.type" property this means it is a "local" frame (it can be sent to screen)
-                        if (globalStates.editingModeObject && globalStates.editingModeFrame && globalStates.editingModeKind === 'ui' && activeVehicle.type && globalStates.guiState === 'ui') { // TODO: rename frame 'type' because it overlaps with node 'type'
-                            console.log('~~ !!!!! send to screen !!!!! ~~');
-
-                            this.killObjects(activeKey, activeVehicle, globalDOMCache);
-                            
-                            var pointerPosition = window.getComputedStyle(document.getElementById('overlay'));
-                            var transformMatrix = pointerPosition.transform.split(',');
-                            var xPos = parseInt(transformMatrix[12]);
-                            var yPos = parseInt(transformMatrix[13]);
-                            var screenFrameKey = objectKey + 'screen';
-                            var screenFrame = realityEditor.getFrame(objectKey, screenFrameKey);
-                            
-                            var unrotatedResult = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, unrotatedResult);
-                            if (!screenFrame.begin) {
-                                screenFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                            }
-                            realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, unrotatedResult, screenFrame.begin);
-                            
-                            var cursorMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(screenFrame, [xPos, yPos]);
-                            
-                            console.log(cursorMatrixXY);
-                            
-                            var positionData = {
-                                x: cursorMatrixXY[0],
-                                y: cursorMatrixXY[1]
-                            };
-
-                            realityEditor.network.sendFrameToScreen(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame, positionData);
-                            realityEditor.network.deleteFrameFromObject(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
-
-                            delete objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame];
-
-                            globalStates.editingModeFrame = null;
-                            globalStates.editingModeObject = null;
-                            globalStates.editingFrame = null;
-                            globalStates.editingModeHaveObject = false;
-                            
-                            return false;
-                        }
-                        
-                        // if (globalStates.editingModeObject && globalStates.editingModeFrame) {
-                        //     var frame = 
-                        //     objects[globalStates.editingModeObject].frames[globalStates.editingModeFrame].type
-
-                        // }
-
-                    }
-                    */
                     
                 }
 
@@ -1165,6 +1107,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, nodeKey, activeType, activeVehicle) {
 
     var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+    var isFrameElement = activeKey === frameKey;
     
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
         
@@ -1202,20 +1145,9 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         // Create DOM elements for everything associated with this frame/node
         
-        var isUsingLocalFrame = false;
-        if (activeKey === frameKey && activeVehicle.type) {
-            // console.log('change url to ../frames/' + activeVehicle.type + '/index.html');
-
-            // This line loads frame locally from userinterface/frames directory - fast but can't connect to sockets
-            thisUrl = 'frames/' + activeVehicle.type + '.html';
-            
-            // This line loads frame from server instance - can connect to sockets like we want!
-            // var object = realityEditor.getObject(objectKey);
-            // var frameHttpPort = 3032;
-            // http://localhost:3033/frames/gauge.html
-            // thisUrl = 'http://' + object.ip + ':' + httpPort + '/frames/' + activeVehicle.type + '.html';
-            
-            isUsingLocalFrame = true;
+        if (isFrameElement && activeVehicle.location === 'global') {
+            // This line loads frame locally from userinterface/frames directory
+            thisUrl = 'frames/' + activeVehicle.src + '.html';
         }
 
         var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
@@ -1274,7 +1206,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
         
         if (globalStates.editingMode) {
-            if (activeKey === frameKey) {
+            if (isFrameElement) {
                 realityEditor.device.addEventHandlersForFrame(objectKey, activeKey);
             } else { //if (activeType === "node") {
                 realityEditor.device.activateNodeMove(activeKey);
