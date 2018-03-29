@@ -78,7 +78,6 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
     realityEditor.gui.pocket.pocketHide();
     
     globalStates.guiState = "ui";
-    realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
     
     if (globalStates.guiState !== "logic") {
         if (DEBUG_DATACRAFTING) {
@@ -157,8 +156,6 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
                 }
                 
-                realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
-
             }
 
             if (globalStates.guiState === "node") {
@@ -181,9 +178,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
                     }
                 }
-
-                realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
-
+                
             }
 
         }
