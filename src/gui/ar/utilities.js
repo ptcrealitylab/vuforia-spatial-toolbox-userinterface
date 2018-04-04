@@ -126,6 +126,8 @@ realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
  **/
 
 realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
+    if (matrix.length === 0) return [];
+    
 	var r = []; //new Array(16);
 	r[0] = matrix[0];
 	r[1] = matrix[1];

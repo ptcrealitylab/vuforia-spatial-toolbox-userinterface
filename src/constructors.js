@@ -201,6 +201,8 @@ function Node() {
 	this.scale = 0.2;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
+	// Matrix combining the node unconstrained positioning with its parent frame matrix // TODO: move this outside definition so it doesnt get transferred to server - not necessary there
+    this.relativeMatrix = [];
 	// defines the nodeInterface that is used to process data of this type. It also defines the visual representation
 	// in the Reality Editor. Such data points interfaces can be found in the nodeInterface folder.
 	this.type = "node";

@@ -242,10 +242,21 @@ realityEditor.device.onTouchDown = function(evt) {
 							globalProgram.objectA = false;
                             globalProgram.frameA = false;
 							globalProgram.nodeA = false;
+							
 							globalStates.editingNode = target.nodeId;
+							globalStates.editingModeLocation = target.nodeId;
+							
                             globalStates.editingFrame = target.frameId;
+                            globalStates.editingModeFrame = target.frameId;
                             
-							//globalStates.editingMode = true;
+                            globalStates.editingModeObject = target.objectId;
+                            
+                            globalStates.editingModeHaveObject = true;
+                            globalStates.editingModeKind = 'node';
+
+                            globalStates.tempEditingMode = true;
+
+                            //globalStates.editingMode = true;
 							console.log("hello");
 
                             // move element to front of nodes so that touches don't get blocked by other nodes
@@ -256,7 +267,6 @@ realityEditor.device.onTouchDown = function(evt) {
                                 }
                             }
 							
-							globalStates.editingModeObject = target.objectId;
 							realityEditor.device.activateMultiTouch();
 							realityEditor.device.activateNodeMove(target.nodeId);
 							if (type === "logic") {
@@ -1023,7 +1033,10 @@ realityEditor.device.onMultiTouchMove = function(evt) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
         var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
         if (globalStates.unconstrainedPositioning === true) {
-            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+            console.log('write to matrix -- should be relativeMatrix');
+            var resultMatrix = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), resultMatrix);
+            realityEditor.gui.ar.positioning.setWritableMatrix(tempThisObject, resultMatrix);
         }
         var secondTouch = evt.touches[1];
         realityEditor.gui.ar.positioning.onScaleEvent(secondTouch);
@@ -1051,9 +1064,12 @@ realityEditor.device.onMultiTouchMove = function(evt) {
 
             if (globalStates.unconstrainedPositioning === true) {
                 // console.log('unconstrained move');
-                realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+                console.log('write to matrix -- should be relativeMatrix');
+                var resultMatrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), resultMatrix);
+                realityEditor.gui.ar.positioning.setWritableMatrix(tempThisObject, resultMatrix);
             
-            } else if (tempThisObject.visualization === 'ar' && !globalStates.freezeButtonState) { // don't allow pop if on screen or frozen background
+            } else if ( ((tempThisObject.type === 'ui' && tempThisObject.visualization === 'ar') || tempThisObject.type === 'node' || tempThisObject.type === 'logic') && !globalStates.freezeButtonState) { // don't allow pop if on screen or frozen background
                 var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[tempThisObject.objectId], tempThisObject);
                 var distanceToFrame = screenFrameMatrix[14];
                 if (!globalStates.unconstrainedSnapInitialPosition) {
@@ -1174,9 +1190,14 @@ realityEditor.device.onMultiTouchEnd = function(evt) {
 		content.scale = positionData.scale;
 
 		if (globalStates.unconstrainedPositioning === true) {
-			realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
-			content.matrix = positionData.matrix;
-		}
+            console.log('write to matrix -- should be relativeMatrix');
+            var resultMatrix = [];
+			realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), resultMatrix);
+            realityEditor.gui.ar.positioning.setWritableMatrix(tempThisObject, resultMatrix);
+            // content.matrix = (tempThisObject.type === 'node' || tempThisObject.type === 'logic') ? positionData.relativeMatrix : positionData.matrix; // TODO: send matrix for both and recover relativeMatrix when object is loaded in from server by multiplying by inverse of parentFrame's matrix
+            content.matrix = positionData.matrix;
+
+        }
 		content.lastEditor = globalStates.tempUuid;
 
 		// todo for now we just send nodes but no logic locations. ---- Became obsolete because the logic nodes are now normal nodes
@@ -1375,7 +1396,10 @@ realityEditor.device.onMultiTouchCanvasMove = function(evt) {
         // var positionData = tempThisObject.ar;
         // if (globalStates.unconstrainedPositioning === true) {
             // console.log('unconstrained move');
-            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), positionData.matrix);
+        console.log('write to matrix -- should be relativeMatrix');
+        var resultMatrix = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), resultMatrix);
+            realityEditor.gui.ar.positioning.setWritableMatrix(tempThisObject, resultMatrix);
         // }
     
         // scale the frame when you move one finger on the canvas while holding down on a frame

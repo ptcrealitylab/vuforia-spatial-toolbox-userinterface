@@ -166,7 +166,9 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
-                        activeNode.matrix = [];
+                        console.log('write to matrix -- should be relativeMatrix');
+                        // activeNode.relativeMatrix = [];
+                        realityEditor.gui.ar.positioning.setWritableMatrix(activeNode, []);
                         activeNode.scale = globalStates.defaultScale;
                         if (shouldPlaceCenter) {
                             activeNode.x = 0;
@@ -466,7 +468,12 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         thisObject.sendMatrix = false;
         thisObject.loaded = false;
         thisObject.integerVersion = 170;
-        thisObject.matrix = [];
+        console.log('write to matrix -- should be relativeMatrix');
+        realityEditor.gui.ar.positioning.setWritableMatrix(thisObject, []);
+        // if (thisObject.type === "node") {
+        //     thisObject.relativeMatrix = [];
+        // }
+        // thisObject.matrix = [];
         // thisObject.nodes = {};
         thisObject.protocol = "R1";
 

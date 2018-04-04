@@ -179,6 +179,23 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
                                 thisNode.matrix = [];
                             }
+
+                            
+                            // recover the relativeMatrix from the node's matrix and its frame's matrix by multiplying by the inverse
+                            var ar = realityEditor.gui.ar;
+                            var parentFramePositionData = ar.positioning.getPositionData(thisFrame);
+                            thisNode.relativeMatrix = [];
+                            console.log('set relativeMatrix to []');
+                            if (thisNode.matrix.length === 16) {
+                                if (parentFramePositionData.matrix.length === 16) {
+                                    ar.utilities.multiplyMatrix(ar.utilities.invertMatrix(parentFramePositionData.matrix), thisNode.matrix, thisNode.relativeMatrix);
+                                    console.log('recovered relativeMatrix from inverse multiplication');
+                                } else {
+                                    thisNode.relativeMatrix = ar.utilities.copyMatrix(thisNode.matrix);
+                                    console.log('relativeMatrix is just node matrix');
+                                }
+                            }
+                            
                             thisNode.objectId = objectKey;
                             thisNode.frameId = frameKey;
                             thisNode.loaded = false;
@@ -463,7 +480,13 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
             origin.text = remote.text;
         }
         if (remote.matrix) {
+            console.log('write to matrix -- should be relativeMatrix');
             origin.matrix = remote.matrix;
+            // TODO: recompute relativeMatrix based on this and parent frame's matrices
+            origin.relativeMatrix = [];
+            console.log('node matrix = ', origin.matrix);
+            console.log('frame matrix = ', realityEditor.getFrame(objectKey, frameKey).ar.matrix);
+            console.log('need to compute relativeMatrix for this node');
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
@@ -1760,6 +1783,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     content.scale = positionData.scale;
 
     if (typeof positionData.matrix === "object") {
+        console.log('write to matrix -- should be relativeMatrix'); // TODO: this one might be ok to keep as just .matrix as long as we read it back correctly
         content.matrix = positionData.matrix;
     }
 

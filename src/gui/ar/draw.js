@@ -834,6 +834,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 var finalOffsetX = positionData.x;
                 var finalOffsetY = positionData.y;
 
+                // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
                 // add node's position to its frame's position to gets its actual offset
                 if (activeType === "node" || activeType === "logic") {
                     var frameKey = activeVehicle.frameId;
@@ -844,6 +845,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         finalOffsetY += parentFramePositionData.y;
                     }
                 }
+                
+                // TODO: also multiply node's unconstrained matrix by frame's unconstrained matrix if necessary
                 
                 matrix.r3 = [
                     positionData.scale, 0, 0, 0,
@@ -879,13 +882,19 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             }
 
                             if (globalStates.unconstrainedPositioning === true) {
-                                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                                console.log('write to matrix -- should be relativeMatrix');
+                                var resultMatrix = [];
+                                utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
+                                realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
                             }
 
                             matrix.copyStillFromMatrixSwitch = false;
                             
                         } else if (globalStates.unconstrainedPositioning === true) {
-                            realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                            console.log('write to matrix -- should be relativeMatrix');
+                            var resultMatrix = [];
+                            realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
+                            realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
                         }
 
                         if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
@@ -893,6 +902,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         }
 
                     }
+                    
+                    // DONE TODO: recompute .matrix based on .relativeMatrix
+                    realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
                     var isFullyBehindPlane = false;
 
@@ -914,7 +926,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 if (typeof positionData.matrix !== "undefined") {
                     if (positionData.matrix.length < 13) {
-                        utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+                        // utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+
+                        // if (parentFramePositionData && parentFramePositionData.matrix.length === 16) {
+                        //     // This is a node - position relative to parent frame unconstrained editing
+                        //     utilities.multiplyMatrix(parentFramePositionData.matrix, activeObjectMatrix, matrix.r);
+                        //     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                        // } else {
+                            utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+                        // }
 
                     } else {
                         utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
@@ -922,6 +942,23 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
                 }
                 
+                /*
+                    if (typeof positionData.matrix !== "undefined") {
+                        if (positionData.matrix.length < 13) {
+                            
+                            if (parentFramePositionData && parentFramePositionData.matrix.length === 16) { // This is a node - position relative to parent frame unconstrained editing
+                                utilities.multiplyMatrix(parentFramePositionData.matrix, activeObjectMatrix, matrix.r);
+                                utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                            } else {
+                                utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+                            }
+    
+                        } else {
+                            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+                            utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                        }
+                    }
+                 */
                 
                 // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
                 // but we want all of them to have a positive value so they are rendered in front of background canvas
@@ -1439,11 +1476,13 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
     if (activeVehicle.fullScreen !== true) {
         
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        
+        var unconstrainedMatrix
 
         var finalOffsetX = positionData.x;
         var finalOffsetY = positionData.y;
 
-        // add node's position to its frame's position to gets its actual offset
+        // // add node's position to its frame's position to gets its actual offset
         if (activeType === "node" || activeType === "logic") {
             var frameKey = activeVehicle.frameId;
             var frame = realityEditor.getFrame(objectKey, frameKey);
@@ -1477,13 +1516,19 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
                 }
 
                 if (globalStates.unconstrainedPositioning === true) {
-                    utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                    console.log('write to matrix -- should be relativeMatrix');
+                    var resultMatrix = [];
+                    utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
+                    realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
                 }
 
                 matrix.copyStillFromMatrixSwitch = false;
 
             } else if (globalStates.unconstrainedPositioning === true) {
-                realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), positionData.matrix);
+                console.log('write to matrix -- should be relativeMatrix');
+                var resultMatrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
+                realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
             }
 
             if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
@@ -1491,6 +1536,8 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             }
 
         }
+        
+        // realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
         
         if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0 && typeof positionData.matrix[1] !== "undefined") {
             if (globalStates.unconstrainedPositioning === false) {
