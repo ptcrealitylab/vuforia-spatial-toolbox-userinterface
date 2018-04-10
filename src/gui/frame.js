@@ -155,16 +155,16 @@ var touchMoveTolerance = 100;
 function FrameTouchSynthesizer(cover, iframe) {
     this.cover = cover;
     this.iframe = iframe;
-    this.beginTouchEditing = this.beginTouchEditing.bind(this);
+    // this.beginTouchEditing = this.beginTouchEditing.bind(this);
     this.onPointerEvent = this.onPointerEvent.bind(this);
-    this.cover.addEventListener('pointerdown', this.onPointerEvent);
-    this.cover.addEventListener('pointermove', this.onPointerEvent);
-    this.cover.addEventListener('pointerup', this.onPointerEvent);
-    this.cover.addEventListener('pointercancel', this.onPointerEvent);
+    // this.cover.addEventListener('pointerdown', this.onPointerEvent);
+    // this.cover.addEventListener('pointermove', this.onPointerEvent);
+    // this.cover.addEventListener('pointerup', this.onPointerEvent);
+    // this.cover.addEventListener('pointercancel', this.onPointerEvent);
 }
 
 FrameTouchSynthesizer.prototype.onPointerEvent = function(event) {
-    event.stopPropagation();
+    // event.stopPropagation();
 
     // Note that this is a legacy API that the GeometryUtils should eventually replace
     var newCoords = webkitConvertPointFromPageToNode(this.iframe, new WebKitPoint(event.pageX, event.pageY));
@@ -201,20 +201,20 @@ FrameTouchSynthesizer.prototype.onPointerEvent = function(event) {
     }
 };
 
-FrameTouchSynthesizer.prototype.beginTouchEditing = function() {
-    var activeKey = this.iframe.dataset.nodeKey;
-    if (!activeKey || activeKey === "null") {
-        activeKey = this.iframe.dataset.frameKey;
-    }
-    realityEditor.device.beginTouchEditing(document.getElementById(activeKey));
-};
+// FrameTouchSynthesizer.prototype.beginTouchEditing = function() {
+//     var activeKey = this.iframe.dataset.nodeKey;
+//     if (!activeKey || activeKey === "null") {
+//         activeKey = this.iframe.dataset.frameKey;
+//     }
+//     realityEditor.device.beginTouchEditing(document.getElementById(activeKey));
+// };
 
-FrameTouchSynthesizer.prototype.remove = function() {
-    this.cover.removeEventListener('pointerdown', this.onPointerEvent);
-    this.cover.removeEventListener('pointermove', this.onPointerEvent);
-    this.cover.removeEventListener('pointerup', this.onPointerEvent);
-    this.cover.removeEventListener('pointercancel', this.onPointerEvent);
-};
+// FrameTouchSynthesizer.prototype.remove = function() {
+//     this.cover.removeEventListener('pointerdown', this.onPointerEvent);
+//     this.cover.removeEventListener('pointermove', this.onPointerEvent);
+//     this.cover.removeEventListener('pointerup', this.onPointerEvent);
+//     this.cover.removeEventListener('pointercancel', this.onPointerEvent);
+// };
 
 // function Frame(src, width, height) {
 //     this.src = src;

@@ -469,7 +469,12 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         thisObject.loaded = false;
         thisObject.integerVersion = 170;
         console.log('write to matrix -- should be relativeMatrix');
-        realityEditor.gui.ar.positioning.setWritableMatrix(thisObject, []);
+        
+        thisObject.type = 'logic';
+        thisObject.matrix = [];
+        thisObject.relativeMatrix = [];
+        thisObject.nodes = {};
+        // realityEditor.gui.ar.positioning.setWritableMatrix(thisObject, []);
         // if (thisObject.type === "node") {
         //     thisObject.relativeMatrix = [];
         // }

@@ -9,6 +9,8 @@ realityEditor.device.touchEvents.canvasEventCache = [];
 realityEditor.device.touchEvents.elementEventCaches = {};
 
 realityEditor.device.touchEvents.overlayDivs = {};
+realityEditor.device.touchEvents.vehiclesBeingEdited = [];
+realityEditor.device.touchEvents.touchEditingTimers = {};
 
 realityEditor.device.touchEvents.addEventToCache = function(event) {
     var eventTargetId = event.currentTarget.id;
@@ -161,10 +163,22 @@ realityEditor.device.touchEvents.onCanvasTouchUp = function(event) {
     // if scaling, stop scaling
 };
 
+/*
+                Element Events
+ */
 realityEditor.device.touchEvents.onElementTouchDown = function(event) {
-    event.stopPropagation();
+    // event.stopPropagation();
+    console.log('onElementTouchDown');
 
     this.addEventToCache(event);
+    
+    var activeVehicle = this.extractVehicleFromEvent(event);
+    
+    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+        console.log('touched down on node', activeVehicle);
+    } else {
+        console.log('touched down on frame', activeVehicle);
+    }
     
     // TODO:
     // Nodes
@@ -174,19 +188,37 @@ realityEditor.device.touchEvents.onElementTouchDown = function(event) {
     //
     // Frames
     // Post event into iframe
+    var iframe = document.getElementById('iframe' + activeVehicle.uuid);
+    var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
+    iframe.contentWindow.postMessage(JSON.stringify({
+        event: {
+            type: event.type,
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            x: newCoords.x,
+            y: newCoords.y
+        }
+    }), '*');
     // Start hold timer to begin temp editing mode
+    this.touchEditingTimers[activeVehicle.uuid] = setTimeout(function() {
+        console.log('begin touch editing for ' + activeVehicle.uuid);
+    }, 400);
     
     // update state of currently edited element(s)
 };
 
 realityEditor.device.touchEvents.onElementTouchMove = function(event) {
-    event.stopPropagation();
+    // event.stopPropagation();
+    // console.log('onElementTouchMove');
 
     var cachedEvents = this.getTheseCachedEvents(event);
     var isMultitouch = cachedEvents.length > 1;
 
     console.log(isMultitouch, cachedEvents);
-    
+
+    var activeVehicle = this.extractVehicleFromEvent(event);
+
+
     // TODO:
     // Nodes
     // If editing or temp editing, and single touch, move node
@@ -197,13 +229,29 @@ realityEditor.device.touchEvents.onElementTouchMove = function(event) {
     // If editing or temp editing, and single touch, move frame
     // If editing or temp editing, and multi-touch, scale frame
     // If not editing, post event into iframe and cancel hold timer
+    var iframe = document.getElementById('iframe' + activeVehicle.uuid);
+    var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
+    iframe.contentWindow.postMessage(JSON.stringify({
+        event: {
+            type: event.type,
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            x: newCoords.x,
+            y: newCoords.y
+        }
+    }), '*');
+    
+    // TODO: cancel touchediting timer, and add this vehicle to the vehicles being edited list, and only post touches if not editing
 };
 
 realityEditor.device.touchEvents.onElementTouchUp = function(event) {
-    event.stopPropagation();
+    // event.stopPropagation();
+    console.log('onElementTouchUp');
 
     this.removeEventFromCache(event);
-    
+
+    var activeVehicle = this.extractVehicleFromEvent(event);
+
     // TODO:
     // Nodes
     // If editing, stop editing
@@ -212,6 +260,17 @@ realityEditor.device.touchEvents.onElementTouchUp = function(event) {
     // Frames
     // If editing, stop editing
     // If not editing, post event into iframe
+    var iframe = document.getElementById('iframe' + activeVehicle.uuid);
+    var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
+    iframe.contentWindow.postMessage(JSON.stringify({
+        event: {
+            type: event.type,
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            x: newCoords.x,
+            y: newCoords.y
+        }
+    }), '*');
     
     // update state of currently edited element(s)
 };
@@ -236,8 +295,14 @@ realityEditor.device.touchEvents.addCanvasTouchListeners = function() {
 
 realityEditor.device.touchEvents.addTouchListenersForElement = function(objectKey, frameKey, nodeKey) {
     var activeKey = nodeKey || frameKey;
-    var elementId = 'cover' + activeKey;
+    var elementId = /*'cover' + */activeKey;
     var element = globalDOMCache[elementId];
+    
+    if (activeKey === nodeKey) {
+        console.log('added new touch listeners for node');
+    } else {
+        console.log('added new touch listeners for frame');
+    }
     
     element.addEventListener('pointerdown', this.onElementTouchDown.bind(realityEditor.device.touchEvents), false);
     element.addEventListener('pointermove', this.onElementTouchMove.bind(realityEditor.device.touchEvents), false);
@@ -250,7 +315,7 @@ realityEditor.device.touchEvents.addTouchListenersForElement = function(objectKe
 // we never actually need to remove touch listeners from an element, but at least delete the event cache
 realityEditor.device.touchEvents.removeTouchListenersForElement = function(objectKey, frameKey, nodeKey) {
     var activeKey = nodeKey || frameKey;
-    var elementId = 'cover' + activeKey;
+    var elementId = /*'cover' + */activeKey;
 
     if (typeof this.elementEventCaches[elementId] !== undefined) {
         delete this.elementEventCaches[elementId];
@@ -275,27 +340,32 @@ realityEditor.device.touchEvents.showOverlay = function(event) {
 
 realityEditor.device.touchEvents.moveOverlay = function(event) {
     var thisEventOverlay = this.overlayDivs[event.pointerId];
-    thisEventOverlay.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 6px)';
-    // thisEventOverlay.style.left = event.pageX + 'px';
-    // thisEventOverlay.style.top = event.pageY + 'px';
+    if (thisEventOverlay) {
+        thisEventOverlay.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 6px)';
+    }
 };
 
 realityEditor.device.touchEvents.hideOverlay = function(event) {
-    overlayContainer.removeChild(this.overlayDivs[event.pointerId]);
-    delete this.overlayDivs[event.pointerId];
+    if (this.overlayDivs[event.pointerId]) {
+        overlayContainer.removeChild(this.overlayDivs[event.pointerId]);
+        delete this.overlayDivs[event.pointerId];
+    }
 };
 
 realityEditor.device.touchEvents.extractVehicleFromEvent = function(event) {
-
-    var eventTargetId = event.currentTarget.id;
-    console.log(eventTargetId);
-
-    // TODO: return objectKey, frameKey, nodeKey (and maybe the activeVehicle itself)
-    var objectKey;
-    var frameKey;
-    var nodeKey;
-
-    // return event.currentTarget;
+    var iframe = document.getElementById('iframe' + event.currentTarget.id);
+    if (iframe) {
+        var objectKey = iframe.dataset.objectKey;
+        var frameKey = iframe.dataset.frameKey;
+        var nodeKey = iframe.dataset.nodeKey;
+        if (nodeKey === "null") nodeKey = null;
+        
+        if (nodeKey) {
+            return realityEditor.getNode(objectKey, frameKey, nodeKey);
+        }
+        
+        return realityEditor.getFrame(objectKey, frameKey);
+    }
 };
 
 realityEditor.device.touchEvents.isDocumentEvent = function(event) {

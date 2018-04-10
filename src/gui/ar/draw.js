@@ -783,6 +783,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 }
             }
+            
+            overlay.style.visibility = 'visible';
 
             /*
              else if (activeType === "logic") {
@@ -1219,16 +1221,16 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
 
         // If this is a frame, add a cover object for touch event synthesizing
         // if (activeVehicle.src) {
-            var cover = document.createElement('div');
-            cover.classList.add('main');
-            cover.id = 'cover' + activeKey;
-            cover.style.visibility = 'visible';
-            cover.style.width = addIframe.style.width;
-            cover.style.height = addIframe.style.height;
-            cover.style.top = addIframe.style.top;
-            cover.style.left = addIframe.style.left;
-            activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-            addContainer.appendChild(cover);
+        //     var cover = document.createElement('div');
+        //     cover.classList.add('main');
+        //     cover.id = 'cover' + activeKey;
+        //     cover.style.visibility = 'visible';
+        //     cover.style.width = addIframe.style.width;
+        //     cover.style.height = addIframe.style.height;
+        //     cover.style.top = addIframe.style.top;
+        //     cover.style.left = addIframe.style.left;
+        //     activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+        //     addContainer.appendChild(cover);
         // }
         
         addContainer.appendChild(addOverlay);
@@ -1241,29 +1243,24 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         // Add touch event listeners
         
-        realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
-        
-        if (globalStates.editingMode) {
-            if (isFrameElement) {
-                realityEditor.device.addEventHandlersForFrame(objectKey, activeKey);
-            } else { //if (activeType === "node") {
-                realityEditor.device.activateNodeMove(activeKey);
-            }
-        }
+        // realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
 
-        if (activeType === "node") {
-            addOverlay.style.visibility = "visible";
-        } else if (activeType === "logic") {
-            addOverlay.style.visibility = "visible";
-            // addContainer.style.display = 'block';
-            // addIframe.style.visibility = 'visible';
-        } else {
-            addOverlay.style.visibility = "hidden";
-        }
+        realityEditor.device.touchEvents.addTouchListenersForElement(objectKey, frameKey, nodeKey);
         
-        // if (typeof activeVehicle.positionOnLoad !== 'undefined') {
-        //     realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY);
-        //     delete activeVehicle.positionOnLoad;
+        // if (globalStates.editingMode) {
+        //     if (isFrameElement) {
+        //         realityEditor.device.addEventHandlersForFrame(objectKey, activeKey);
+        //     } else { //if (activeType === "node") {
+        //         realityEditor.device.activateNodeMove(activeKey);
+        //     }
+        // }
+        
+        // if (activeType === "node") {
+        //     addOverlay.style.visibility = "visible";
+        // } else if (activeType === "logic") {
+        //     addOverlay.style.visibility = "visible";
+        // } else {
+        //     addOverlay.style.visibility = "hidden";
         // }
 
     }

@@ -82,7 +82,7 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
 
 realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
     // figure out if I'm touching on AR frame, screen frame, or nothing
-    console.log('onScreenTouchDown', eventObject, this.screenObject);
+    // console.log('onScreenTouchDown', eventObject, this.screenObject);
 
     this.screenObject.closestObject = realityEditor.gui.ar.getClosestObject()[0];
     this.screenObject.touchState = eventObject.type;
@@ -149,7 +149,7 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
 
 realityEditor.gui.screenExtension.onScreenTouchUp = function(eventObject) {
     // reset screen object to null and update screen state to match
-    console.log('onScreenTouchUp', eventObject, this.screenObject);
+    // console.log('onScreenTouchUp', eventObject, this.screenObject);
 
     this.screenObject.closestObject = realityEditor.gui.ar.getClosestObject()[0];
     this.screenObject.touchState = eventObject.type;
