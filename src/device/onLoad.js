@@ -71,6 +71,7 @@ realityEditor.device.onload = function () {
 	console.log("starting up GUI");
 	uiButtons = document.getElementById("GUI");
 	overlayDiv = document.getElementById('overlay');
+	overlayContainer = document.getElementById('overlayContainer');
 
 	realityEditor.gui.buttons.draw();
 	realityEditor.gui.memory.initMemoryBar();
@@ -115,6 +116,8 @@ realityEditor.device.onload = function () {
 	overlayDiv.addEventListener('touchstart', function (e) {
 		e.preventDefault();
 	});
+
+    realityEditor.device.touchEvents.addCanvasTouchListeners();
 
     // realityEditor.device.addFrameEventHandlers();
 

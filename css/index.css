@@ -551,6 +551,31 @@ body {
     object-fit: cover;
 }
 
+#overlayContainer {
+    position: fixed;
+    left:0;
+    top:0;
+}
+
+#overlayContainer > .overlay {
+    pointer-events: none;
+    position: fixed;
+    box-sizing: border-box;
+    width: 60px;
+    height: 60px;
+    left: 0;
+    top: 0;
+    margin-left: -30px;
+    margin-top: -30px;
+    padding: 0;
+    border: 4px solid #01fffc;
+    border-radius: 60px;
+    /* this is a hack for adding the interface in front of the transformed web interface */
+    z-index: 3;
+    -webkit-transform-style: preserve-3d;
+    -webkit-transform: translateZ(600px);
+}
+
 #overlay {
     display: none;
     pointer-events: none;

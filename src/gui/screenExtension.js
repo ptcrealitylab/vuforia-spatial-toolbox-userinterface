@@ -120,6 +120,10 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
         // console.log(activeFrame.visualization);
     // }
     
+    if (!this.screenObject.closestObject) {
+        return;
+    }
+    
     // calculate the exact x,y coordinate within the screen plane that this touch corresponds to
     var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
     this.screenObject.x = point.x;

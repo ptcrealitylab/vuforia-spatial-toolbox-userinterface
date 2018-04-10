@@ -234,12 +234,13 @@ var rotateX = [
 	1, 0, 0, 0,
 	0, -1, 0, 0,
 	0, 0, 1, 0,
-	0, 0, 0, 1000
+	0, 0, 0, 1
 ];
 
 var testInterlink = {};
 
 var overlayDiv;
+var overlayContainer;
 //var overlayImg;
 //var overlayImage = [];
 

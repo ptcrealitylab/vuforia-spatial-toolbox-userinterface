@@ -1219,15 +1219,16 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
 
         // If this is a frame, add a cover object for touch event synthesizing
         // if (activeVehicle.src) {
-        //     var cover = document.createElement('div');
-        //     cover.classList.add('main');
-        //     cover.style.visibility = 'visible';
-        //     cover.style.width = addIframe.style.width;
-        //     cover.style.height = addIframe.style.height;
-        //     cover.style.top = addIframe.style.top;
-        //     cover.style.left = addIframe.style.left;
-        //     activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
-        //     addContainer.appendChild(cover);
+            var cover = document.createElement('div');
+            cover.classList.add('main');
+            cover.id = 'cover' + activeKey;
+            cover.style.visibility = 'visible';
+            cover.style.width = addIframe.style.width;
+            cover.style.height = addIframe.style.height;
+            cover.style.top = addIframe.style.top;
+            cover.style.left = addIframe.style.left;
+            activeVehicle.frameTouchSynthesizer = new realityEditor.gui.frame.FrameTouchSynthesizer(cover, addIframe);
+            addContainer.appendChild(cover);
         // }
         
         addContainer.appendChild(addOverlay);

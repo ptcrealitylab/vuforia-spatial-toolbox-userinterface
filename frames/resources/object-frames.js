@@ -530,6 +530,7 @@ var sendTouchEvents = false;
         this.pendingSends = [];
     };
 
+    /*
     var touchTimer = null;
     // var sendTouchEvents = false;
     var startCoords = {
@@ -556,7 +557,9 @@ var sendTouchEvents = false;
         realityObject.eventObject.type = event.type;
         return realityObject.eventObject;
     }
+    */
 
+    /*
     function sendEventObject(event) {
 
         parent.postMessage(JSON.stringify({
@@ -581,8 +584,11 @@ var sendTouchEvents = false;
             }
         }), '*');
     }
+    */
     
     window.onload = function() {
+        
+        /*
         document.body.addEventListener('touchstart', function() {
             sendEventObject(event);
             if (touchTimer) {
@@ -627,16 +633,17 @@ var sendTouchEvents = false;
             clearTimeout(touchTimer);
             touchTimer = null;
         });
+        */
 
         window.addEventListener('message', function (msg) {
-            if (msg.origin === "https://www.youtube.com") return; // TODO: make a more generalized solution for this... 
+            // if (msg.origin === "https://www.youtube.com") return; // TODO: make a more generalized solution for this... 
             
             var msgContent = JSON.parse(msg.data);
-            if (msgContent.stopTouchEditing) {
-                sendTouchEvents = false;
-            }
+            // if (msgContent.stopTouchEditing) {
+            //     sendTouchEvents = false;
+            // }
 
-            if (msgContent.event) {
+            if (msgContent.event && msgContent.event.pointerId) {
                 var eventData = msgContent.event;
                var event = new PointerEvent(eventData.type, {
                     view: window,
