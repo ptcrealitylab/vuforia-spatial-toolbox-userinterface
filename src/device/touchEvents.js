@@ -4,6 +4,7 @@ createNameSpace("realityEditor.device.touchEvents");
         Event Caches
  */
 
+realityEditor.device.touchEvents.documentEventCache = [];
 realityEditor.device.touchEvents.canvasEventCache = [];
 realityEditor.device.touchEvents.elementEventCaches = {};
 
@@ -12,7 +13,9 @@ realityEditor.device.touchEvents.overlayDivs = {};
 realityEditor.device.touchEvents.addEventToCache = function(event) {
     var eventTargetId = event.currentTarget.id;
     
-    if (eventTargetId === 'canvas') {
+    if (this.isDocumentEvent(event)) {
+        this.documentEventCache.push(event);
+    } else if (eventTargetId === 'canvas') {
         this.canvasEventCache.push(event);
     } else {
         this.elementEventCaches[eventTargetId].push(event);
@@ -21,25 +24,47 @@ realityEditor.device.touchEvents.addEventToCache = function(event) {
 
 realityEditor.device.touchEvents.removeEventFromCache = function(event) {
     var eventTargetId = event.currentTarget.id;
-    var index;
-    
-    if (eventTargetId === 'canvas') {
-        index = this.canvasEventCache.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
-        if (index !== -1) {
-            this.canvasEventCache.splice(index, 1);
-        }
-        
+    var thisCache;
+
+    if (this.isDocumentEvent(event)) {
+        thisCache = this.documentEventCache;
+    } else if (eventTargetId === 'canvas') {
+        thisCache = this.canvasEventCache;
     } else {
-        index = this.elementEventCaches[eventTargetId].map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
-        if (index !== -1) {
-            this.elementEventCaches[eventTargetId].splice(index, 1);
-        }
+        thisCache = this.elementEventCaches[eventTargetId];
     }
+
+    var index = thisCache.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
+    if (index !== -1) {
+        thisCache.splice(index, 1);
+    }
+    
+    // if (this.isDocumentEvent(event)) {
+    //     index = this.documentEventCache.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
+    //     if (index !== -1) {
+    //         this.canvasEventCache.splice(index, 1);
+    //     }
+    //    
+    // } else if (eventTargetId === 'canvas') {
+    //     index = this.canvasEventCache.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
+    //     if (index !== -1) {
+    //         this.canvasEventCache.splice(index, 1);
+    //     }
+    //    
+    // } else {
+    //     index = this.elementEventCaches[eventTargetId].map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
+    //     if (index !== -1) {
+    //         this.elementEventCaches[eventTargetId].splice(index, 1);
+    //     }
+    // }
 };
 
 realityEditor.device.touchEvents.getTheseCachedEvents = function(event) {
     var eventTargetId = event.currentTarget.id;
-    if (eventTargetId === 'canvas') {
+    
+    if (this.isDocumentEvent(event)) {
+        return this.documentEventCache;
+    } else if (eventTargetId === 'canvas') {
         return this.canvasEventCache;
     } else {
         return this.elementEventCaches[eventTargetId];
@@ -48,6 +73,7 @@ realityEditor.device.touchEvents.getTheseCachedEvents = function(event) {
 
 realityEditor.device.touchEvents.getAllCachedEvents = function() {
     var allEventsList = [];
+    allEventsList.push.apply(allEventsList, this.documentEventCache);
     allEventsList.push.apply(allEventsList, this.canvasEventCache);
     
     for (var eventTarget in this.elementEventCaches) {
@@ -64,33 +90,55 @@ realityEditor.device.touchEvents.getAllCachedEvents = function() {
         Event Handlers
  */
 
-realityEditor.device.touchEvents.onCanvasTouchDown = function(event) {
-    event.stopPropagation();
-    
+/*
+                Document Events
+ */
+realityEditor.device.touchEvents.onDocumentTouchDown = function(event) {
+    // console.log('onDocumentTouchDown');
+
     this.addEventToCache(event);
-    
-    // TODO
-    // if UI mode, start creating a memory pointer?
-    // if node mode, set first point on the cut line
-    
     // show an overlay div for each finger pressed
     this.showOverlay(event);
     this.moveOverlay(event);
 };
 
+realityEditor.device.touchEvents.onDocumentTouchMove = function(event) {
+    this.moveOverlay(event);
+};
+
+realityEditor.device.touchEvents.onDocumentTouchUp = function(event) {
+    // console.log('onDocumentTouchUp');
+
+    this.removeEventFromCache(event);
+    // hide overlay div for associated event
+    this.hideOverlay(event);
+};
+
+/*
+                Canvas Events
+ */
+realityEditor.device.touchEvents.onCanvasTouchDown = function(event) {
+    // event.stopPropagation();
+    console.log('onCanvasTouchDown');
+
+    this.addEventToCache(event);
+    
+    // TODO
+    // if UI mode, start creating a memory pointer?
+    // if node mode, set first point on the cut line
+};
+
 realityEditor.device.touchEvents.onCanvasTouchMove = function(event) {
-    event.stopPropagation();
+    // event.stopPropagation();
 
     var cachedEvents = this.getAllCachedEvents();
     var isMultitouch = cachedEvents.length > 1;
     
-    console.log(isMultitouch, cachedEvents);
+    // console.log(isMultitouch, cachedEvents);
     
     // TODO:
     // if UI mode, move memory pointer
     // if node mode, draw cut line from start point
-    // move overlay div for associated event
-    this.moveOverlay(event);
     
     // if multi-touch and another touch exists on an element, scale that element
     if (isMultitouch) {
@@ -101,16 +149,14 @@ realityEditor.device.touchEvents.onCanvasTouchMove = function(event) {
 };
 
 realityEditor.device.touchEvents.onCanvasTouchUp = function(event) {
-    event.stopPropagation();
+    // event.stopPropagation();
+    console.log('onCanvasTouchUp');
 
     this.removeEventFromCache(event);
     
     // TODO:
     // if UI mode, stop memory pointer
     // if node mode, stop cut line and delete crossed links
-    
-    // hide overlay div for associated event
-    this.hideOverlay(event);
     
     // if scaling, stop scaling
 };
@@ -175,10 +221,17 @@ realityEditor.device.touchEvents.onElementTouchUp = function(event) {
  */
 
 realityEditor.device.touchEvents.addCanvasTouchListeners = function() {
+    // add canvas touch listeners to handle background touch actions (e.g. scaling with one finger on background)
     globalCanvas.canvas.addEventListener('pointerdown', this.onCanvasTouchDown.bind(realityEditor.device.touchEvents), false);
     globalCanvas.canvas.addEventListener('pointermove', this.onCanvasTouchMove.bind(realityEditor.device.touchEvents), false);
     globalCanvas.canvas.addEventListener('pointerup', this.onCanvasTouchUp.bind(realityEditor.device.touchEvents), false);
     globalCanvas.canvas.addEventListener('pointercancel', this.onCanvasTouchUp.bind(realityEditor.device.touchEvents), false);
+
+    // add document touch listeners so that the overlayDivs show regardless of where you touch on the screen
+    document.addEventListener('pointerdown', this.onDocumentTouchDown.bind(realityEditor.device.touchEvents), false);
+    document.addEventListener('pointermove', this.onDocumentTouchMove.bind(realityEditor.device.touchEvents), false);
+    document.addEventListener('pointerup', this.onDocumentTouchUp.bind(realityEditor.device.touchEvents), false);
+    document.addEventListener('pointercancel', this.onDocumentTouchUp.bind(realityEditor.device.touchEvents), false);
 };
 
 realityEditor.device.touchEvents.addTouchListenersForElement = function(objectKey, frameKey, nodeKey) {
@@ -245,3 +298,11 @@ realityEditor.device.touchEvents.extractVehicleFromEvent = function(event) {
     // return event.currentTarget;
 };
 
+realityEditor.device.touchEvents.isDocumentEvent = function(event) {
+    if (event && event.currentTarget) {
+        if (event.currentTarget.firstElementChild) {
+            return event.currentTarget.firstElementChild.tagName === "HTML";
+        }
+    }
+    return false;
+};
