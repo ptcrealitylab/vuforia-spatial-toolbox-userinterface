@@ -526,13 +526,13 @@ function memoryCanCreate() {
     if (globalStates.settingsButtonState) {
         return false;
     }
-    if (globalStates.editingMode || globalStates.editingNode || globalStates.tempEditingMode) {
+    if (globalStates.editingMode || globalStates.editingNode || globalStates.tempEditingMode) { // TODO: update this if I change globalStates.editingNode to .editingModeNode
         return false;
     }
     if (globalStates.guiState === 'ui') {
         return true;
     }
-    if (globalStates.guiState === 'node' && !globalProgram.objectA) {
+    if (globalStates.guiState === 'node' && !globalProgram.objectA) { // TODO: shouldn't this draw dot line?
         return true;
     }
     return false;

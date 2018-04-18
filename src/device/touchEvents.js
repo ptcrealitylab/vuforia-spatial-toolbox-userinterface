@@ -4,8 +4,8 @@ createNameSpace("realityEditor.device.touchEvents");
         Event Caches - one array for each multi-touch target
  */
 
-realityEditor.device.touchEvents.documentEventCache = [];
-realityEditor.device.touchEvents.canvasEventCache = [];
+realityEditor.device.touchEvents.documentEventCache = {};
+realityEditor.device.touchEvents.canvasEventCache = {};
 realityEditor.device.touchEvents.elementEventCaches = {};
 realityEditor.device.touchEvents.touchMoveTolerance = 100;
 
@@ -14,17 +14,30 @@ realityEditor.device.touchEvents.touchMoveTolerance = 100;
  */
 
 realityEditor.device.touchEvents.overlayDivs = {};
-realityEditor.device.touchEvents.vehiclesBeingEdited = [];
+realityEditor.device.touchEvents.vehiclesBeingEdited = {};
 realityEditor.device.touchEvents.touchEditingTimers = {};
+realityEditor.device.touchEvents.initialScaleData = {};
 
 /**
- * Finds the correct cache in which to store this event (based on its target), and adds it to that array.
+ * Finds the correct cache in which to store this event (based on its target), and adds it to that object.
  * @param event {PointerEvent}
  */
 realityEditor.device.touchEvents.addEventToCache = function(event) {
     var thisCache = this.getCacheForEvent(event);
-    if (thisCache && thisCache.constructor === Array) {
-        thisCache.push(event);
+    if (thisCache && thisCache.constructor === Object) {
+        // this makes TouchEvents and PointerEvents compatible
+        if (!event.pointerId) {
+            if (event.changedTouches) {
+                event.pointerId = event.changedTouches[0].identifier;
+            }
+        }
+        // this will cache a new pointer down event or update to a pointer move event if it is from the same pointer
+        // but keep the timestamp of the original event
+        if (!thisCache[event.pointerId]) {
+            //event.timeStamp = thisCache[event.pointerId].timeStamp;
+            event.initialTimeStamp = event.timeStamp;
+        }
+        thisCache[event.pointerId] = event;
         return;
     }
     console.warn('cannot find cache for this event', event);
@@ -36,20 +49,26 @@ realityEditor.device.touchEvents.addEventToCache = function(event) {
  */
 realityEditor.device.touchEvents.removeEventFromCache = function(event) {
     var thisCache = this.getCacheForEvent(event);
-    if (thisCache && thisCache.constructor === Array) {
-        var index = thisCache.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
-        if (index !== -1) {
-            thisCache.splice(index, 1);
-            return;
-        }
+    if (thisCache && thisCache.constructor === Object) {
+        delete thisCache[event.pointerId];
+        return;
     }
     console.warn('could not find this event in any caches', event);
+    
+    // try to remove from element cache in case the touch slipped away from the element and onto the background TODO shouldn't happen in the first place
+    for (var elementCacheKey in this.elementEventCaches) {
+        if (!this.elementEventCaches.hasOwnProperty(elementCacheKey)) continue;
+        if (this.elementEventCaches[elementCacheKey][event.pointerId]) {
+            delete this.elementEventCaches[elementCacheKey][event.pointerId];
+            console.warn('found event in element cache - fix underlying bug to prevent this second search');
+        }
+    }
 };
 
 /**
  * Helper function for finding the correct cache for this event, based on its currentTarget.id
  * @param event {PointerEvent}
- * @return {Array} cache containing other events with the same target as the argument
+ * @return {Object} cache containing other events with the same target as the argument
  */
 realityEditor.device.touchEvents.getCacheForEvent = function(event) {
     var eventTargetId = event.currentTarget.id;
@@ -59,26 +78,28 @@ realityEditor.device.touchEvents.getCacheForEvent = function(event) {
     } else if (eventTargetId === 'canvas') {
         return this.canvasEventCache;
     } else {
+        // find the correct cache even if target changed due to the svg showing up
+        eventTargetId = eventTargetId.replace(/^(svg)/,"");
+        
         return this.elementEventCaches[eventTargetId];
     }
 };
 
 /**
  * Helper function to get a flattened array of all current PointerEvents stored in any cache
- * @return {Array}
+ * @return {Array.<PointerEvent>}
  */
 realityEditor.device.touchEvents.getAllCachedEvents = function() {
     var allEventsList = [];
-    allEventsList.push.apply(allEventsList, this.documentEventCache);
-    allEventsList.push.apply(allEventsList, this.canvasEventCache);
+    allEventsList.push.apply(allEventsList, Object.values(this.documentEventCache));
+    allEventsList.push.apply(allEventsList, Object.values(this.canvasEventCache));
     
     for (var eventTarget in this.elementEventCaches) {
         if (!this.elementEventCaches.hasOwnProperty(eventTarget)) continue;
         if (this.elementEventCaches[eventTarget].length > 0) {
-            allEventsList.push.apply(allEventsList, this.elementEventCaches[eventTarget]);
+            allEventsList.push.apply(allEventsList, Object.values(this.elementEventCaches[eventTarget]));
         }
     }
-    
     return allEventsList;
 };
 
@@ -128,7 +149,7 @@ realityEditor.device.touchEvents.onCanvasTouchMove = function(event) {
     // event.stopPropagation();
 
     var cachedEvents = this.getAllCachedEvents();
-    var isMultitouch = cachedEvents.length > 1;
+    var isMultitouch = Object.keys(cachedEvents).length > 1;
     
     // console.log(isMultitouch, cachedEvents);
     
@@ -174,6 +195,10 @@ realityEditor.device.touchEvents.onElementTouchDown = function(event) {
         console.log('touched down on frame', activeVehicle);
     }
 
+    if (this.isVehicleBeingEdited(activeVehicle)) {
+        return; // No need to start a new hold timer or post events into the iframe if it's already being edited
+    }
+    
     // Start hold timer to begin temp editing mode
     var timeoutFunction = setTimeout(function() {
         clearTimeout(this.touchEditingTimers[activeVehicle.uuid]);
@@ -215,12 +240,17 @@ realityEditor.device.touchEvents.onElementTouchDown = function(event) {
     // TODO: if editing mode is on, set this element to being edited immediately, otherwise start the hold timer
 };
 
+// TODO: always base touchmove behavior off of the cached touchdown event - lookup based on pointerId even if on canvas - use a single touchmove and touchup handler function that implements this while keeping separate touchdowns to keep track of what you touched on
 realityEditor.device.touchEvents.onElementTouchMove = function(event) {
     // event.stopPropagation();
     // console.log('onElementTouchMove');
 
-    var cachedEvents = this.getCacheForEvent(event);
-    var isMultitouch = cachedEvents.length > 1;
+    this.addEventToCache(event);
+
+    // TODO: update cached event with same pointerId to be set to this event
+
+    var cachedEvents = this.getCacheForEvent(event); 
+    var isMultitouch = Object.keys(cachedEvents).length > 1;
     var isPrimaryTouch = this.isPrimaryTouchForElement(event);
 
     // console.log(isMultitouch, cachedEvents);
@@ -268,79 +298,21 @@ realityEditor.device.touchEvents.onElementTouchMove = function(event) {
                 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.pageX, event.pageY, true);
             }
 
-            /*
-                    var firstTouch = evt.touches[0];
-        globalStates.editingModeObjectX = firstTouch.pageX;
-        globalStates.editingModeObjectY = firstTouch.pageY;
-        globalStates.editingModeObjectCenterX = firstTouch.pageX;
-        globalStates.editingModeObjectCenterY = firstTouch.pageY;
-        var tempThisObject = realityEditor.device.getEditingModeObject();
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
-        if (globalStates.unconstrainedPositioning === true) {
-            console.log('write to matrix -- should be relativeMatrix');
-            var resultMatrix = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), resultMatrix);
-            realityEditor.gui.ar.positioning.setWritableMatrix(tempThisObject, resultMatrix);
-        }
-        var secondTouch = evt.touches[1];
-        realityEditor.gui.ar.positioning.onScaleEvent(secondTouch);
-             */
-
+            if (isMultitouch) {
+                var sortedEventList = this.getTimeOrderedListFromCache(cachedEvents);
+                var centerTouchEvent = sortedEventList[0];
+                var outerTouchEvent = sortedEventList[1];
+                this.scaleVehicle(activeVehicle, centerTouchEvent, outerTouchEvent);
+            }
 
         } else {
 
             // If editing or temp editing, and single touch, move frame
-            if (isPrimaryTouch) {
+            if (isPrimaryTouch) { // TODO: refactor this and multitouch version out of the if statement
                 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.pageX, event.pageY, true);
             }
-            
-            /*
-            // if (globalStates.editingModeHaveObject && (globalStates.editingMode || globalStates.tempEditingMode) && (evt.targetTouches.length === 1 || (evt.pageX && evt.pageY))) {
-            var touch = evt.touches[0];
-
-            globalStates.editingModeObjectX = touch.pageX;
-            globalStates.editingModeObjectY = touch.pageY;
-            globalStates.editingModeObjectCenterX = touch.pageX;
-            globalStates.editingModeObjectCenterY = touch.pageY;
-
-            var tempThisObject = realityEditor.device.getEditingModeObject();
-
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(tempThisObject, evt.pageX, evt.pageY, true);
-
-            var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
-
-            if (globalStates.unconstrainedPositioning === true) {
-                // console.log('unconstrained move');
-                console.log('write to matrix -- should be relativeMatrix');
-                var resultMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(tempThisObject.begin, realityEditor.gui.ar.utilities.invertMatrix(tempThisObject.temp), resultMatrix);
-                realityEditor.gui.ar.positioning.setWritableMatrix(tempThisObject, resultMatrix);
-            
-            } else if ( ((tempThisObject.type === 'ui' && tempThisObject.visualization === 'ar') || tempThisObject.type === 'node' || tempThisObject.type === 'logic') && !globalStates.freezeButtonState) { // don't allow pop if on screen or frozen background
-                var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[tempThisObject.objectId], tempThisObject);
-                var distanceToFrame = screenFrameMatrix[14];
-                if (!globalStates.unconstrainedSnapInitialPosition) {
-                    globalStates.unconstrainedSnapInitialPosition = distanceToFrame;
-                } else {
-                    var threshold = 100;
-                    if (distanceToFrame - globalStates.unconstrainedSnapInitialPosition > threshold) {
-                        console.log('pop into unconstrained editing mode');
-                        realityEditor.app.tap();
-                        globalStates.unconstrainedSnapInitialPosition = null;
-                        globalStates.unconstrainedPositioning = true;
-                         globalStates.editingMode = true;
-                        realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
-                        realityEditor.gui.ar.draw.matrix.matrixtouchOn = tempThisObject.uuid;
-                        globalStates.tempUnconstrainedPositioning = true;
-                        // realityEditor.gui.menus.on("editing", ["unconstrained"]);
-                    }
-                }
-            }
-             */
 
         }
-        
         
     // If not editing, post the touches into the iframe to interact with its contents
     } else {
@@ -367,6 +339,8 @@ realityEditor.device.touchEvents.onElementTouchUp = function(event) {
 
     this.removeEventFromCache(event);
 
+    var numRemainingTouches = Object.keys(this.getCacheForEvent(event)).length;
+
     var activeVehicle = this.extractVehicleFromEvent(event);
 
     // TODO:
@@ -376,10 +350,12 @@ realityEditor.device.touchEvents.onElementTouchUp = function(event) {
     // 
     // Frames
     
-    // If editing, stop editing
+    // If editing, stop editing (if it is the last touch on the object)
     if (this.isVehicleBeingEdited(activeVehicle)) {
         
-        this.setVehicleEditing(activeVehicle, false);
+        if (numRemainingTouches === 0) {
+            this.setVehicleEditing(activeVehicle, false);
+        }
     
     } else {
 
@@ -397,8 +373,6 @@ realityEditor.device.touchEvents.onElementTouchUp = function(event) {
         }), '*');
         
     }
-    
-
     
     // update state of currently edited element(s)
 };
@@ -440,13 +414,15 @@ realityEditor.device.touchEvents.addTouchListenersForElement = function(objectKe
     } else {
         console.log('added new touch listeners for frame');
     }
-    
+
+    // element.addEventListener('touchstart', this.onElementTouchDown.bind(realityEditor.device.touchEvents), false);
     element.addEventListener('pointerdown', this.onElementTouchDown.bind(realityEditor.device.touchEvents), false);
-    element.addEventListener('pointermove', this.onElementTouchMove.bind(realityEditor.device.touchEvents), false);
+    // element.addEventListener('pointermove', this.onElementTouchMove.bind(realityEditor.device.touchEvents), false);
+    element.addEventListener('touchmove', this.onElementTouchMove.bind(realityEditor.device.touchEvents), false);
     element.addEventListener('pointerup', this.onElementTouchUp.bind(realityEditor.device.touchEvents), false);
     element.addEventListener('pointercancel', this.onElementTouchUp.bind(realityEditor.device.touchEvents), false);
     
-    this.elementEventCaches[elementId] = [];
+    this.elementEventCaches[elementId] = {};
 };
  
 /**
@@ -549,8 +525,11 @@ realityEditor.device.touchEvents.isDocumentEvent = function(event) {
  */
 realityEditor.device.touchEvents.setVehicleEditing = function(activeVehicle, isEditing) {
     if (isEditing) {
+        // show editing feedback SVG
+        document.getElementById('svg' + activeVehicle.uuid).style.display = 'inline';
         this.vehiclesBeingEdited[activeVehicle.uuid] = activeVehicle;
     } else {
+        document.getElementById('svg' + activeVehicle.uuid).style.display = 'none';
         delete this.vehiclesBeingEdited[activeVehicle.uuid];
     }
 };
@@ -570,8 +549,75 @@ realityEditor.device.touchEvents.isVehicleBeingEdited = function(activeVehicle) 
  * @param event {PointerEvent}
  * @return {boolean}
  */
-realityEditor.device.touchEvents.isPrimaryTouchForElement = function(event) {
+// realityEditor.device.touchEvents.isPrimaryTouchForElement = function(event) {
+//     var cachedEvents = this.getCacheForEvent(event);
+//     if (Object.values(cachedEvents).length === 1) {
+//         return true;
+//     }
+//    
+//     var earliestPointerId = Object.keys(cachedEvents).reduce(function(a,b) { return cachedEvents[a].timeStamp < cachedEvents[b].timeStamp ? a : b });
+//     // var thisTouchIndex = cachedEvents.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
+//     // return (thisTouchIndex === 0);
+//    
+//     return event.pointerId === earliestPointerId;
+// };
+realityEditor.device.touchEvents.isPrimaryTouchForElement = function(event){
     var cachedEvents = this.getCacheForEvent(event);
-    var thisTouchIndex = cachedEvents.map(function(pointerEvent){ return pointerEvent.pointerId; }).indexOf(event.pointerId);
-    return (thisTouchIndex === 0);
+    var sortedEventList = this.getTimeOrderedListFromCache(cachedEvents);
+    return event.pointerId === sortedEventList[0].pointerId;
+};
+
+/**
+ * Helper function that takes a cache object and returns it as an array sorted by the events' initialTimeStamp property
+ * @param cachedEvents {Object} 
+ * @return {Array.<PointerEvent>}
+ */
+realityEditor.device.touchEvents.getTimeOrderedListFromCache = function(cachedEvents) {
+    var eventsArray = Object.values(cachedEvents);
+    return eventsArray.sort(function(a, b) {
+        return a.initialTimeStamp - b.initialTimeStamp;
+    });
+};
+
+/**
+ * Scales the specified frame or node using the first two touches 
+ * @param centerTouchEvent {PointerEvent} the first touch event, where the scale is centered from
+ * @param outerTouchEvent {PointerEvent} the other touch, where the scale extends to
+ */
+realityEditor.device.touchEvents.scaleVehicle = function(activeVehicle, centerTouchEvent, outerTouchEvent) {
+
+    var dx = centerTouchEvent.pageX - outerTouchEvent.pageX;
+    var dy = centerTouchEvent.pageY - outerTouchEvent.pageY;
+    var radius = Math.sqrt(dx * dx + dy * dy);
+    
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+    var thisInitialScaleData = this.initialScaleData[activeVehicle];
+    
+    if (!thisInitialScaleData) {
+        this.initialScaleData[activeVehicle] = {
+            radius: radius,
+            scale: positionData.scale
+        };
+        return; // TODO: return or not?
+    }
+    
+    // calculate the new scale based on the radius between the two touches
+    var newScale = thisInitialScaleData.scale + (radius - thisInitialScaleData.radius) / 300;
+    if (typeof newScale !== 'number') return;
+    positionData.scale = Math.max(0.002, newScale); // 0.002 is the minimum scale allowed
+
+    // redraw circles to visualize the new scaling
+    globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
+    
+    // draw a blue circle visualizing the initial radius
+    var circleCenterCoordinates = [centerTouchEvent.pageX, centerTouchEvent.pageY];
+    var circleEdgeCoordinates = [outerTouchEvent.pageX, outerTouchEvent.pageY];
+    realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, thisInitialScaleData.radius);
+
+    // draw a red or green circle visualizing the new radius
+    if (radius < thisInitialScaleData.radius) {
+        realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+    } else {
+        realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+    }
 };

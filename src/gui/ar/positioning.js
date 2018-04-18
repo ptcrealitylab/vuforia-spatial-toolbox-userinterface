@@ -55,44 +55,90 @@ createNameSpace("realityEditor.gui.ar.positioning");
  * @param touch
  **/
 
-realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
+// realityEditor.gui.ar.positioning.onScaleEvent = function(touch) {
+//
+//     var tempThisObject = realityEditor.device.getEditingModeObject();
+//     var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
+//    
+// 	var thisRadius = Math.sqrt(Math.pow((globalStates.editingModeObjectX - touch.pageX), 2) + Math.pow((globalStates.editingModeObjectY - touch.pageY), 2));
+// 	if (!globalStates.editingScaleDistance) {
+// 	    globalStates.editingScaleDistance = thisRadius;
+// 	    globalStates.editingStartScale = positionData.scale;
+//     }
+// 	var thisScale = globalStates.editingStartScale + (thisRadius - globalStates.editingScaleDistance) / 300;// + globalStates.editingScaleDistance;
+//
+// 	// cout(thisScale);
+//
+// 	if (thisScale < 0.002) {
+//         thisScale = 0.002;
+//     }
+//
+// 	if (typeof thisScale === "number" && thisScale > 0) {
+//         positionData.scale = thisScale;
+// 	}
+//
+//     var circleCenterX = globalStates.editingModeObjectCenterX || globalStates.editingModeObjectX;
+//     var circleCenterY = globalStates.editingModeObjectCenterY || globalStates.editingModeObjectY;
+//
+//     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
+// 	//drawRed(globalCanvas.context, [globalStates.editingModeObjectX,globalStates.editingModeObjectY],[touch.pageX,touch.pageY],globalStates.editingScaleDistance);
+// 	this.ar.lines.drawBlue(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], globalStates.editingScaleDistance);
+//
+// 	if (thisRadius < globalStates.editingScaleDistance) {
+//
+// 		this.ar.lines.drawRed(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], thisRadius);
+//
+// 	} else {
+// 		this.ar.lines.drawGreen(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], thisRadius);
+//
+// 	}
+// 	this.cout("scaleEvent");
+// };
 
-    var tempThisObject = realityEditor.device.getEditingModeObject();
-    var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
-    
-	var thisRadius = Math.sqrt(Math.pow((globalStates.editingModeObjectX - touch.pageX), 2) + Math.pow((globalStates.editingModeObjectY - touch.pageY), 2));
-	if (!globalStates.editingScaleDistance) {
-	    globalStates.editingScaleDistance = thisRadius;
-	    globalStates.editingStartScale = positionData.scale;
+realityEditor.gui.ar.positioning.initialScaleData = null; //{};
+
+/**
+ * Scales the specified frame or node using the first two touches
+ * @param activeVehicle {Frame|Node} the frame or node you are scaling
+ * @param centerTouch {Object.<x,y>} the first touch event, where the scale is centered from
+ * @param outerTouch {Object.<x,y>} the other touch, where the scale extends to
+ */
+realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTouch, outerTouch) {
+
+    var dx = centerTouch.x - outerTouch.x;
+    var dy = centerTouch.y - outerTouch.y;
+    var radius = Math.sqrt(dx * dx + dy * dy);
+
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+    // var thisInitialScaleData = this.initialScaleData[activeVehicle];
+
+    if (!this.initialScaleData) {
+        this.initialScaleData = {
+            radius: radius,
+            scale: positionData.scale
+        };
+        return; // TODO: return or not?
     }
-	var thisScale = globalStates.editingStartScale + (thisRadius - globalStates.editingScaleDistance) / 300;// + globalStates.editingScaleDistance;
 
-	// cout(thisScale);
+    // calculate the new scale based on the radius between the two touches
+    var newScale = this.initialScaleData.scale + (radius - this.initialScaleData.radius) / 300;
+    if (typeof newScale !== 'number') return;
+    positionData.scale = Math.max(0.002, newScale); // 0.002 is the minimum scale allowed
 
-	if (thisScale < 0.002) {
-        thisScale = 0.002;
-    }
-
-	if (typeof thisScale === "number" && thisScale > 0) {
-        positionData.scale = thisScale;
-	}
-
-    var circleCenterX = globalStates.editingModeObjectCenterX || globalStates.editingModeObjectX;
-    var circleCenterY = globalStates.editingModeObjectCenterY || globalStates.editingModeObjectY;
-
+    // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
-	//drawRed(globalCanvas.context, [globalStates.editingModeObjectX,globalStates.editingModeObjectY],[touch.pageX,touch.pageY],globalStates.editingScaleDistance);
-	this.ar.lines.drawBlue(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], globalStates.editingScaleDistance);
 
-	if (thisRadius < globalStates.editingScaleDistance) {
+    // draw a blue circle visualizing the initial radius
+    var circleCenterCoordinates = [centerTouch.x, centerTouch.y];
+    var circleEdgeCoordinates = [outerTouch.x, outerTouch.y];
+    realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, this.initialScaleData.radius);
 
-		this.ar.lines.drawRed(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], thisRadius);
-
-	} else {
-		this.ar.lines.drawGreen(globalCanvas.context, [circleCenterX, circleCenterY], [touch.pageX, touch.pageY], thisRadius);
-
-	}
-	this.cout("scaleEvent");
+    // draw a red or green circle visualizing the new radius
+    if (radius < this.initialScaleData.radius) {
+        realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+    } else {
+        realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+    }
 };
 
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {

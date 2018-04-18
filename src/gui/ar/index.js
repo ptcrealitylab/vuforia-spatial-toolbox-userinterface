@@ -256,7 +256,7 @@ realityEditor.gui.ar.objects = objects;
 
 /**
  * @desc This function returns the closest visible object relative to the camera.
- * @return {String|Array} [ObjectName, null, null]
+ * @return {String|Array} [ObjectKey, null, null]
  **/
 
 realityEditor.gui.ar.getClosestObject = function () {
@@ -279,7 +279,7 @@ realityEditor.gui.ar.getClosestObject = function () {
 
 /**
  * @desc This function returns the closest visible frame relative to the camera.
- * @return {String|Array} [ObjectName, null, null]
+ * @return {String|Array} [ObjectKey, FrameKey, null]
  **/
 
 realityEditor.gui.ar.getClosestFrame = function () {
@@ -305,7 +305,7 @@ realityEditor.gui.ar.getClosestFrame = function () {
 
 /**
  * @desc This function returns the closest visible node relative to the camera.
- * @return {String|Array} [ObjectName, null, null]
+ * @return {String|Array} [ObjectKey, FrameKey, NodeKey]
  **/
 
 realityEditor.gui.ar.getClosestNode = function () {

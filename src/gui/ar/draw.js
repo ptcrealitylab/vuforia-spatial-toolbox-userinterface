@@ -1243,9 +1243,9 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         // Add touch event listeners
         
-        // realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
+        realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
 
-        realityEditor.device.touchEvents.addTouchListenersForElement(objectKey, frameKey, nodeKey);
+        // realityEditor.device.touchEvents.addTouchListenersForElement(objectKey, frameKey, nodeKey);
         
         // if (globalStates.editingMode) {
         //     if (isFrameElement) {

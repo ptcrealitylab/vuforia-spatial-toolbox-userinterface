@@ -180,13 +180,13 @@ cc = realityEditor.app.clearCache.bind(realityEditor.app);
  **************UTILITIES****************
  **/
 // encodes a javascript function call to be sent to the native app via the http interface or whatever interface will be available.
-realityEditor.app.appFunctionCall = function(functionName, arguments, callbackString) {
+realityEditor.app.appFunctionCall = function(functionName, functionArguments, callbackString) {
     var messageBody = {
         functionName: functionName
     };
     
-    if (arguments) {
-        messageBody.arguments = arguments;
+    if (functionArguments) {
+        messageBody.functionArguments = functionArguments;
     }
     
     if (callbackString) {

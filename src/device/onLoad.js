@@ -95,29 +95,32 @@ realityEditor.device.onload = function () {
     // reference implementation
 
     setTimeout(realityEditor.app.getVuforiaReady(function(){console.log("pong")}), 5000);
-  
+    
+	// globalCanvas.canvas.addEventListener("pointerdown", realityEditor.device.onCanvasPointerDown.bind(realityEditor.device), false);
+	// ec++;
+    //
+	// document.addEventListener("pointermove", realityEditor.device.onDocumentPointerMove.bind(realityEditor.device), false);
+	// ec++;
+	// document.addEventListener("pointerdown", realityEditor.device.onDocumentPointerDown.bind(realityEditor.device), false);
+    //
+    // document.addEventListener("touchmove", realityEditor.device.onDocumentMultiTouchMove.bind(realityEditor.device), false);
+    // document.addEventListener("touchstart", realityEditor.device.onDocumentMultiTouchStart.bind(realityEditor.device), false);
+    // document.addEventListener("touchend", realityEditor.device.onDocumentMultiTouchEnd.bind(realityEditor.device), false);
+	// //document.addEventListener("pointerdown", getPosition, false);
+	// ec++;
+	// document.addEventListener("pointerup", realityEditor.device.onDocumentPointerUp.bind(realityEditor.device), false);
+	// ec++;
 
-	globalCanvas.canvas.addEventListener("pointerdown", realityEditor.device.onCanvasPointerDown.bind(realityEditor.device), false);
-	ec++;
-
-	document.addEventListener("pointermove", realityEditor.device.onDocumentPointerMove.bind(realityEditor.device), false);
-	ec++;
-	document.addEventListener("pointerdown", realityEditor.device.onDocumentPointerDown.bind(realityEditor.device), false);
-   
-    document.addEventListener("touchmove", realityEditor.device.onDocumentMultiTouchMove.bind(realityEditor.device), false);
-    document.addEventListener("touchstart", realityEditor.device.onDocumentMultiTouchStart.bind(realityEditor.device), false);
-    document.addEventListener("touchend", realityEditor.device.onDocumentMultiTouchEnd.bind(realityEditor.device), false);
-	//document.addEventListener("pointerdown", getPosition, false);
-	ec++;
-	document.addEventListener("pointerup", realityEditor.device.onDocumentPointerUp.bind(realityEditor.device), false);
-	ec++;
+    
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
 	ec++;
 	overlayDiv.addEventListener('touchstart', function (e) {
 		e.preventDefault();
 	});
 
-    realityEditor.device.touchEvents.addCanvasTouchListeners();
+    // realityEditor.device.touchEvents.addCanvasTouchListeners();
+    
+    realityEditor.device.addDocumentTouchListeners();
 
     // realityEditor.device.addFrameEventHandlers();
 
