@@ -96,7 +96,7 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
     this.screenObject.isScreenVisible = !didTouchARFrame;
     globalStates.didStartPullingFromScreen = !didTouchARFrame;
 
-    if (!didTouchARFrame) {
+    if (this.screenObject.closestObject && !didTouchARFrame) {
 
         // calculate the exact x,y coordinate within the screen plane that this touch corresponds to
         var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);

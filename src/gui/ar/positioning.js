@@ -104,13 +104,17 @@ realityEditor.gui.ar.positioning.initialScaleData = null; //{};
  * @param outerTouch {Object.<x,y>} the other touch, where the scale extends to
  */
 realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTouch, outerTouch) {
+    
+    if (!centerTouch.x || !centerTouch.y || !outerTouch.x || !outerTouch.y) {
+        console.warn('trying to scale vehicle using improperly formatted touches');
+        return;
+    }
 
     var dx = centerTouch.x - outerTouch.x;
     var dy = centerTouch.y - outerTouch.y;
     var radius = Math.sqrt(dx * dx + dy * dy);
 
     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-    // var thisInitialScaleData = this.initialScaleData[activeVehicle];
 
     if (!this.initialScaleData) {
         this.initialScaleData = {
@@ -123,7 +127,10 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     // calculate the new scale based on the radius between the two touches
     var newScale = this.initialScaleData.scale + (radius - this.initialScaleData.radius) / 300;
     if (typeof newScale !== 'number') return;
-    positionData.scale = Math.max(0.002, newScale); // 0.002 is the minimum scale allowed
+    positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
+    
+    // TODO: manually calculate positionData.x and y to keep centerTouch in the same place relative to the vehicle
+    // TODO: BEN resume here tomorrow
 
     // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
@@ -169,18 +176,18 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
             y: newPosition.y - positionData.y
         };
 
-        if (!activeVehicle.currentTouchOffset) {
-            activeVehicle.currentTouchOffset = changeInPosition;
+        if (!realityEditor.device.editingState.touchOffset) {
+            realityEditor.device.editingState.touchOffset = changeInPosition;
             console.log('set touch offset: ');
             console.log(changeInPosition);
         } else {
-            positionData.x = newPosition.x - activeVehicle.currentTouchOffset.x;
-            positionData.y = newPosition.y - activeVehicle.currentTouchOffset.y;
+            positionData.x = newPosition.x - realityEditor.device.editingState.touchOffset.x;
+            positionData.y = newPosition.y - realityEditor.device.editingState.touchOffset.y;
         }
 
     } else {
 
-        activeVehicle.currentTouchOffset = null;
+        realityEditor.device.editingState.touchOffset = null;
         positionData.x = newPosition.x;
         positionData.y = newPosition.y;
 
@@ -209,18 +216,18 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
             y: point.y - positionData.y
         };
 
-        if (!activeVehicle.currentTouchOffset) {
-            activeVehicle.currentTouchOffset = changeInPosition;
+        if (!realityEditor.device.editingState.touchOffset) {
+            realityEditor.device.editingState.touchOffset = changeInPosition;
             console.log('set touch offset: ');
             console.log(changeInPosition);
         } else {
-            positionData.x = point.x - activeVehicle.currentTouchOffset.x;
-            positionData.y = point.y - activeVehicle.currentTouchOffset.y;
+            positionData.x = point.x - realityEditor.device.editingState.touchOffset.x;
+            positionData.y = point.y - realityEditor.device.editingState.touchOffset.y;
         }
 
     } else {
 
-        activeVehicle.currentTouchOffset = null;
+        realityEditor.device.editingState.touchOffset = null;
         positionData.x = point.x;
         positionData.y = point.y;
 

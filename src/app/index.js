@@ -186,7 +186,7 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
     };
     
     if (functionArguments) {
-        messageBody.functionArguments = functionArguments;
+        messageBody.arguments = functionArguments;
     }
     
     if (callbackString) {
