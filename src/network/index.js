@@ -1858,7 +1858,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     }
     
     var activeKey = nodeKey || frameKey;
-
+    
     // if (globalDOMCache['svg' + activeKey]) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }

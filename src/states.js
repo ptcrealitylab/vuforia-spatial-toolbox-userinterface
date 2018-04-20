@@ -225,7 +225,6 @@ var globalMatrix = {
 		0, 0, 1, 0,
 		0, 0, 0, 1
 	],
-	matrixtouchOn: false,
 	copyStillFromMatrixSwitch: false
 };
 

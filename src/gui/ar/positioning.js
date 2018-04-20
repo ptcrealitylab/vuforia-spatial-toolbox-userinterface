@@ -66,7 +66,7 @@ realityEditor.gui.ar.positioning.initialScaleData = null;
  */
 realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTouch, outerTouch) {
     
-    if (!centerTouch.x || !centerTouch.y || !outerTouch.x || !outerTouch.y) {
+    if (!centerTouch || !outerTouch || !centerTouch.x || !centerTouch.y || !outerTouch.x || !outerTouch.y) {
         console.warn('trying to scale vehicle using improperly formatted touches');
         return;
     }
@@ -88,10 +88,22 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     // calculate the new scale based on the radius between the two touches
     var newScale = this.initialScaleData.scale + (radius - this.initialScaleData.radius) / 300;
     if (typeof newScale !== 'number') return;
-    positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
+
+    // TODO: this only works for frames right now, not nodes (at least not after scaling nodes twice in one gesture)
+    // manually calculate positionData.x and y to keep centerTouch in the same place relative to the vehicle
+    var overlayDiv = document.getElementById(activeVehicle.uuid);
+    var touchOffset = realityEditor.device.editingState.touchOffset;
+    if (overlayDiv && touchOffset) {
+        var touchOffsetFromCenter = {
+            x: overlayDiv.clientWidth/2 - touchOffset.x,
+            y: overlayDiv.clientHeight/2 - touchOffset.y
+        };
+        var scaleDifference = Math.max(0.2, newScale) - positionData.scale;
+        positionData.x += touchOffsetFromCenter.x * scaleDifference;
+        positionData.y += touchOffsetFromCenter.y * scaleDifference;
+    }
     
-    // TODO: manually calculate positionData.x and y to keep centerTouch in the same place relative to the vehicle
-    // TODO: BEN resume here tomorrow
+    positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
 
     // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);

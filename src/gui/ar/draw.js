@@ -269,7 +269,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 // preserve frame globally when object disappears if it is being moved in unconstrained editing
-                if (editingVehicle === this.activeVehicle && realityEditor.device.editingState.unconstrained) {
+                if (editingVehicle === this.activeVehicle && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
                     
                     wereAnyFramesMovedToGlobal = true;
                     globalStates.inTransitionObject = objectKey;

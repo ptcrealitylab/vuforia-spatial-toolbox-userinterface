@@ -571,6 +571,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
+            container.id = 'pocket-element';
             // container.position = 'relative';
             var thisUrl = 'frames/' + element.name + '.html';
             var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
