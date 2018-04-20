@@ -323,8 +323,8 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             var r = globalMatrix.r;
             ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
             ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
-            ar.draw.drawTransformed(objectKey, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCache, globalMatrix);
-            ar.draw.hideTransformed(objectKey, objectKey, generalObject, "ui"); // TODO: change arguments 
+            ar.draw.drawTransformed(realityEditor.gui.ar.draw.visibleObjects, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCache, globalMatrix);
+            ar.draw.hideTransformed(realityEditor.gui.ar.draw.visibleObjects, objectKey, generalObject, "ui"); // TODO: change arguments 
         
         } else {
             // Using Node.
@@ -417,10 +417,9 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             // series of actions to begin dragging it immediately (copied from device.onTouchDown)
             globalProgram.objectA = false;
             globalProgram.nodeA = false;
-            globalStates.editingNode = addedElement.logicNode.uuid;
-            globalStates.editingModeObject = addedElement.objectKey;
-            realityEditor.device.activateMultiTouch();
-            realityEditor.device.activateNodeMove(addedElement.logicNode.uuid);
+            
+            realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
+            
             // realityEditor.gui.menus.on("bigTrash",[]);
             realityEditor.gui.menus.on("trashOrSave", []);
         }

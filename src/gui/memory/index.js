@@ -526,15 +526,15 @@ function memoryCanCreate() {
     if (globalStates.settingsButtonState) {
         return false;
     }
-    if (globalStates.editingMode || globalStates.editingNode || globalStates.tempEditingMode) { // TODO: update this if I change globalStates.editingNode to .editingModeNode
+    if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
         return false;
     }
     if (globalStates.guiState === 'ui') {
         return true;
     }
-    if (globalStates.guiState === 'node' && !globalProgram.objectA) { // TODO: shouldn't this draw dot line?
-        return true;
-    }
+    // if (globalStates.guiState === 'node' && !globalProgram.objectA) { // TODO: shouldn't this draw dot line?
+    //     return true;
+    // }
     return false;
 }
 

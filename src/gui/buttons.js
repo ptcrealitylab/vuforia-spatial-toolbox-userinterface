@@ -86,10 +86,8 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
             realityEditor.gui.crafting.craftingBoardHide();
         }
     }
-
-    if (globalStates.editingMode) {
-        realityEditor.device.addEventHandlers();
-    }
+    
+    // TODO: maybe here display the svgs if they don't exist yet?
 
 };
 
@@ -103,19 +101,8 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
 
     globalStates.guiState = "node";
 
-    // alternative to realityEditor.gui.ar.draw.resetNodeRepositionCanvases() without the side effects of node getting stuck on screen
-    realityEditor.forEachNodeInAllObjects(function(objectKey, frameKey, nodeKey) {
-        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
-        node.hasCTXContent = false;
-        // node.visible = false;
-        // node.visibleEditing = false;
-    });
-
     realityEditor.gui.crafting.craftingBoardHide();
-
-    if (globalStates.editingMode) {
-        realityEditor.device.addEventHandlers();
-    }
+    
 };
 
 realityEditor.gui.buttons.resetButtonDown = function(event) {
@@ -210,36 +197,25 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
     
     realityEditor.gui.buttons.settingTimer = setTimeout(function(){
         realityEditor.gui.buttons.wasTimed = true;
+        
+        if(!globalStates.realityState) {
+            realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+        } else {
+            realityEditor.gui.menus.buttonOff("reality", ["setting"]);
+        }
 
         if (!globalStates.editingMode) {
-
-            realityEditor.device.addEventHandlers();
-            // globalStates.editingMode = true;
             realityEditor.device.setEditingMode(true);
+            realityEditor.gui.menus.on("editing", []);
             realityEditor.app.appFunctionCall("developerOn", null, null);
-            realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
+            
         } else {
-            realityEditor.device.removeEventHandlers();
-            // globalStates.editingMode = false;
             realityEditor.device.setEditingMode(false);
+            realityEditor.gui.menus.on("main",[]);
             realityEditor.app.appFunctionCall("developerOff", null, null);
         }
         
-
-            if(!globalStates.realityState) {
-                realityEditor.gui.menus.buttonOff("setting", ["setting"]);
-            } else {
-                realityEditor.gui.menus.buttonOff("reality", ["setting"]);
-            }
-            
-            if (globalStates.editingMode) {
-                realityEditor.gui.menus.on("editing", []);
-            } else {
-                realityEditor.gui.menus.on("main",[]);
-            }
-        
-        
-    },200);
+    }, 200);
     
 };
 
@@ -412,83 +388,14 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         return;
     }
 
-    // var currentMenu = globalStates.guiState === "logic" ? "logic" : "main";
-    // if (globalStates.pocketButtonState === true) {
-    //     realityEditor.gui.menus.off(currentMenu, ["pocket"]);
-    //     // 0 is off, 2 is on
-    //  // todo   if (!globalStates.UIOffMode)    document.getElementById('pocketButton').src = pocketButtonImage[0+indexChange].src;
-    // }
-    // else {
-    //     realityEditor.gui.menus.on(currentMenu ,["pocket"]);
-    //   // todo  if (!globalStates.UIOffMode)    document.getElementById('pocketButton').src = pocketButtonImage[2+indexChange].src;
-    // }
-
     // this is where the virtual point creates object
 
-    // todo for testing only
-    if (globalStates.pocketButtonDown === true && globalStates.guiState ==="node") {
+    if (globalStates.pocketButtonDown === true && globalStates.guiState === "node") {
 
-        pocketItemId = realityEditor.device.utilities.uuidTime();
-        console.log(pocketItemId);
-        pocketItem["pocket"].frames["pocket"].nodes[pocketItemId] = new Logic();
-
-        var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
-
-        thisItem.uuid = pocketItemId;
-
-        thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
-        thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
-        
-        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-        var closestObject = realityEditor.getObject(closestObjectKey);
-        
-        thisItem.scale = closestObject.averageScale;
-        thisItem.screenZ = 1000;
-
-        // else {
-        // var matrixTouch =  screenCoordinatesToMatrixXY(thisItem, [evt.clientX,evt.clientY]);
-        // thisItem.x = matrixTouch[0];
-        // thisItem.y = matrixTouch[1];
-        //}
-        thisItem.loaded = false;
-
-        var thisObject = pocketItem["pocket"];
-        // this is a work around to set the state of an objects to not being visible.
-        thisObject.objectId = "pocket";
-        thisObject.name = "pocket";
-        
-        var thisFrame = thisObject.frames["pocket"];
-        thisFrame.objectId = "pocket";
-        thisFrame.name = "pocket";
-        
-        // thisObject.objectVisible = false;
-        realityEditor.gui.ar.draw.setObjectVisible(thisObject, false); // TODO: should this function encapsulate the following 7 lines too?
-        thisObject.screenZ = 1000;
-        thisObject.fullScreen = false;
-        thisObject.sendMatrix = false;
-        thisObject.loaded = false;
-        thisObject.integerVersion = 170;
-        console.log('write to matrix -- should be relativeMatrix');
-        
-        thisObject.type = 'logic';
-        thisObject.matrix = [];
-        thisObject.relativeMatrix = [];
-        thisObject.nodes = {};
-        // realityEditor.gui.ar.positioning.setWritableMatrix(thisObject, []);
-        // if (thisObject.type === "node") {
-        //     thisObject.relativeMatrix = [];
-        // }
-        // thisObject.matrix = [];
-        // thisObject.nodes = {};
-        thisObject.protocol = "R1";
-
-        //
-        //thisObject.visibleCounter = timeForContentLoaded;
-
-        //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
+        realityEditor.gui.pocket.createLogicNodeFromPocket();
+        realityEditor.gui.pocket.setPocketPosition(event);
 
     }
-    realityEditor.gui.pocket.setPocketPosition(event);
 };
 
 realityEditor.gui.buttons.bigPocketButtonEnter = function(event) {

@@ -76,6 +76,68 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 };
 
+realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
+    
+    pocketItemId = realityEditor.device.utilities.uuidTime();
+    console.log(pocketItemId);
+    pocketItem["pocket"].frames["pocket"].nodes[pocketItemId] = new Logic();
+
+    var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+
+    thisItem.uuid = pocketItemId;
+
+    thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
+    thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
+
+    var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+    var closestObject = realityEditor.getObject(closestObjectKey);
+
+    thisItem.scale = closestObject ? closestObject.averageScale : globalStates.defaultScale;
+    thisItem.screenZ = 1000;
+
+    // else {
+    // var matrixTouch =  screenCoordinatesToMatrixXY(thisItem, [evt.clientX,evt.clientY]);
+    // thisItem.x = matrixTouch[0];
+    // thisItem.y = matrixTouch[1];
+    //}
+    thisItem.loaded = false;
+
+    var thisObject = pocketItem["pocket"];
+    // this is a work around to set the state of an objects to not being visible.
+    thisObject.objectId = "pocket";
+    thisObject.name = "pocket";
+
+    var thisFrame = thisObject.frames["pocket"];
+    thisFrame.objectId = "pocket";
+    thisFrame.name = "pocket";
+
+    // thisObject.objectVisible = false;
+    realityEditor.gui.ar.draw.setObjectVisible(thisObject, false); // TODO: should this function encapsulate the following 7 lines too?
+    thisObject.screenZ = 1000;
+    thisObject.fullScreen = false;
+    thisObject.sendMatrix = false;
+    thisObject.loaded = false;
+    thisObject.integerVersion = 170;
+    console.log('write to matrix -- should be relativeMatrix');
+
+    thisObject.type = 'logic';
+    thisObject.matrix = [];
+    thisObject.relativeMatrix = [];
+    thisObject.nodes = {};
+    // realityEditor.gui.ar.positioning.setWritableMatrix(thisObject, []);
+    // if (thisObject.type === "node") {
+    //     thisObject.relativeMatrix = [];
+    // }
+    // thisObject.matrix = [];
+    // thisObject.nodes = {};
+    thisObject.protocol = "R1";
+
+    //
+    //thisObject.visibleCounter = timeForContentLoaded;
+
+    //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
+};
+
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
 	if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
@@ -85,7 +147,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 		var pocketDomElement = globalDOMCache['object' + thisItem.uuid];
 		if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
 
-		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement === "") {
+        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+
+		if (!closestObjectKey) {
 		    
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
@@ -403,11 +467,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         }
         
         // TODO: add any side effects here before showing pocket
-        
-        if (globalStates.editingNode) {
-            // var logicNode = getLogicFromNodeKey(globalStates.editingNode);
-            var logicNode = realityEditor.getNode(globalStates.editingModeObject, globalStates.editingFrame, globalStates.editingNode);
-            if (logicNode) {
+        var editingVehicle = realityEditor.device.getEditingVehicle();
+
+        if (editingVehicle && editingVehicle.type === 'logic') {
+            
+            if (editingVehicle) {
                 overlayDiv.classList.add('overlayLogicNode');
 
                 var nameText = document.createElement('div');
@@ -415,11 +479,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 nameText.style.top = '33px';
                 nameText.style.width = '100%';
                 nameText.style.textAlign = 'center';
-                nameText.innerHTML = logicNode.name;
+                nameText.innerHTML = editingVehicle.name;
                 overlayDiv.innerHTML = '';
                 overlayDiv.appendChild(nameText);
                 
-                overlayDiv.storedLogicNode = logicNode;
+                overlayDiv.storedLogicNode = editingVehicle;
             }
         }
         

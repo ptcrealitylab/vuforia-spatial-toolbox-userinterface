@@ -936,6 +936,12 @@ if (thisFrame) {
         svg.style.height = msgContent.height;
 
         realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+        
+        if (globalStates.editingMode) {
+            svg.style.display = 'inline';
+        } else {
+            svg.style.display = 'none';
+        }
 
         // if (tempThisObject.frameTouchSynthesizer) {
         //     var cover = tempThisObject.frameTouchSynthesizer.cover;
@@ -1037,9 +1043,9 @@ if (thisFrame) {
         for (var i = 0; i < iframes.length; i++) {
        
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
-                
-                if(iframes[i].getAttribute("data-object-key")) {
-                    var receivingObject = objects[iframes[i].getAttribute("data-object-key")];
+                var objectKey = iframes[i].getAttribute("data-object-key");
+                if (objectKey) {
+                    var receivingObject = (objectKey === 'pocket') ? (pocketItem[objectKey]) : objects[objectKey];
                     if (receivingObject.integerVersion >= 32) {
                         var msg = {};
                         if (receivingObject.integerVersion >= 170) {
@@ -1264,15 +1270,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         if (typeof msgContent.settings.setSettings.editingMode !== "undefined") {
 
             if (msgContent.settings.setSettings.editingMode) {
-
-                realityEditor.device.addEventHandlers();
-                // globalStates.editingMode = true;
                 realityEditor.device.setEditingMode(true);
                 realityEditor.app.appFunctionCall("developerOn", null, null);
-                realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
             } else {
-                realityEditor.device.removeEventHandlers();
-                // globalStates.editingMode = false;
                 realityEditor.device.setEditingMode(false);
                 realityEditor.app.appFunctionCall("developerOff", null, null);
 
