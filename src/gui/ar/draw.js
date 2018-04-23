@@ -627,7 +627,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         var thisIsBeingEdited = (editingVehicle === activeVehicle);
         
         // make visible a frame or node if it was previously hidden
-        if (!activeVehicle.visible) {
+        if (!activeVehicle.visible && !activeVehicle.positionOnLoad) {
+            
             activeVehicle.visible = true;
             
             var container = globalDOMCache["object" + activeKey];
@@ -666,7 +667,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             }
 
         }
-        if (activeVehicle.visible) {
+        if (activeVehicle.visible || activeVehicle.positionOnLoad) {
             // this needs a better solution
 
             if (activeVehicle.fullScreen !== true) {
@@ -685,11 +686,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, false);
                     delete activeVehicle.positionOnLoad;
                     // realityEditor.device.beginTouchEditing(globalDOMCache[activeKey], 'pocket');
-                    
+
                     var activeFrameKey = activeVehicle.frameId || activeVehicle.uuid;
                     var activeNodeKey = activeVehicle.uuid === activeFrameKey ? null : activeVehicle.uuid;
                     realityEditor.device.beginTouchEditing(activeVehicle.objectId, activeFrameKey, activeNodeKey);
-                    
+
                 }
                 
                 var finalOffsetX = positionData.x;
@@ -718,6 +719,16 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 ];
 
                 if (globalStates.editingMode || thisIsBeingEdited) {
+
+                    // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
+                    var svg = globalDOMCache["svg" + activeKey];
+                    if (svg.children.length === 0) {
+                        console.log('retroactively creating the svg overlay');
+                        var iFrame = globalDOMCache["iframe" + activeKey];
+                        svg.style.width = iFrame.style.width;
+                        svg.style.height = iFrame.style.height;
+                        realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+                    }
 
                     // todo test if this can be made touch related
                     if (activeType === "logic") {

@@ -345,7 +345,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 
-    document.getElementById('svg' + activeVehicle.uuid).style.display = 'inline';
+    document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     
 };
 
@@ -936,7 +936,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
             console.log('this is the last touch - hide editing overlay');
 
             if (activeVehicle && !globalStates.editingMode) {
-                document.getElementById('svg' + activeVehicle.uuid).style.display = 'none';
+                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
             }
 
             this.resetEditingState();

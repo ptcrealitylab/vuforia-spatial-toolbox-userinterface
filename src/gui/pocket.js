@@ -279,7 +279,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
             var closestObject = realityEditor.getObject(closestObjectKey);
             
-            
             // make sure that the frames only sticks to 2.0 server version
             if (closestObject && closestObject.integerVersion > 165) {
 

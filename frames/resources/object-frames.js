@@ -529,116 +529,14 @@ var sendTouchEvents = false;
         }
         this.pendingSends = [];
     };
-
-    /*
-    var touchTimer = null;
-    // var sendTouchEvents = false;
-    var startCoords = {
-        x: 0,
-        y: 0
-    };
-    var touchMoveTolerance = 100;
-
-    function getTouchX(event) {
-        return event.changedTouches[0].screenX;
-    }
-
-    function getTouchY(event) {
-        return event.changedTouches[0].screenY;
-    }
-
-    function getScreenPosition(event) {
-        realityObject.eventObject.version = realityObject.version;
-        realityObject.eventObject.object = realityObject.object;
-        realityObject.eventObject.frame = realityObject.frame;
-        realityObject.eventObject.node = realityObject.node;
-        realityObject.eventObject.x = event.changedTouches[0].screenX;
-        realityObject.eventObject.y = event.changedTouches[0].screenY;
-        realityObject.eventObject.type = event.type;
-        return realityObject.eventObject;
-    }
-    */
-
-    /*
-    function sendEventObject(event) {
-
-        parent.postMessage(JSON.stringify({
-            version: realityObject.version,
-            node: realityObject.node,
-            frame: realityObject.frame,
-            object: realityObject.object,
-            eventObject: getScreenPosition(event)
-        }), '*');
-    }
-
-    function sendTouchEvent(event) {
-        parent.postMessage(JSON.stringify({
-            version: realityObject.version,
-            node: realityObject.node,
-            frame: realityObject.frame,
-            object: realityObject.object,
-            touchEvent: {
-                type: event.type,
-                x: getTouchX(event),
-                y: getTouchY(event)
-            }
-        }), '*');
-    }
-    */
     
     window.onload = function() {
-        
-        /*
-        document.body.addEventListener('touchstart', function() {
-            sendEventObject(event);
-            if (touchTimer) {
-                return;
-            }
-
-            startCoords.x = getTouchX(event);
-            startCoords.y = getTouchY(event);
-
-            touchTimer = setTimeout(function() {
-                parent.postMessage(JSON.stringify({
-                    version: realityObject.version,
-                    node: realityObject.node,
-                    frame: realityObject.frame,
-                    object: realityObject.object,
-                    beginTouchEditing: true
-                }), '*');
-                sendTouchEvents = true;
-                touchTimer = null;
-            }, realityObject.moveDelay);
-        });
-
-        document.body.addEventListener('touchmove', function(event) {
-            sendEventObject(event);
-            if (sendTouchEvents) {
-                sendTouchEvent(event);
-            } else if (touchTimer) {
-                var dx = getTouchX(event) - startCoords.x;
-                var dy = getTouchY(event) - startCoords.y;
-                if (dx * dx + dy * dy > touchMoveTolerance) {
-                    clearTimeout(touchTimer);
-                    touchTimer = null;
-                }
-            }
-        });
-
-        document.body.addEventListener('touchend', function(event) {
-            sendEventObject(event);
-            if (sendTouchEvents) {
-                sendTouchEvent(event);
-            }
-            clearTimeout(touchTimer);
-            touchTimer = null;
-        });
-        */
 
         window.addEventListener('message', function (msg) {
             // if (msg.origin === "https://www.youtube.com") return; // TODO: make a more generalized solution for this... 
             
             var msgContent = JSON.parse(msg.data);
+            
             // if (msgContent.stopTouchEditing) {
             //     sendTouchEvents = false;
             // }
