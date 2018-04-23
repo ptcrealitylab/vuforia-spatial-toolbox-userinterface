@@ -60,9 +60,9 @@ realityEditor.gui.ar.positioning.initialScaleData = null;
 /**
  * Scales the specified frame or node using the first two touches.
  * The new scale starts at the initial scale and varies linearly with the changing touch radius.
- * @param activeVehicle {Frame|Node} the frame or node you are scaling
- * @param centerTouch {Object.<x,y>} the first touch event, where the scale is centered from
- * @param outerTouch {Object.<x,y>} the other touch, where the scale extends to
+ * @param {Frame|Node} activeVehicle the frame or node you are scaling
+ * @param {Object.<x,y>} centerTouch the first touch event, where the scale is centered from
+ * @param {Object.<x,y>} outerTouch the other touch, where the scale extends to
  */
 realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTouch, outerTouch) {
     

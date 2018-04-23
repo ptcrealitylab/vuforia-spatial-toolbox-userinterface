@@ -141,23 +141,21 @@ var globalStates = {
 		motion:0
 	},
 	sendAcceleration : false,
-	editingModeHaveObject: false,
 	angX: 0,
 	angY: 0,
 	angZ: 0,
 	unconstrainedPositioning: false,
-    // previousUnconstrainedPositioning: false,
-    tempUnconstrainedPositioning: false,
 	thisAndthat : {
 		interval: undefined,
 		timeout: undefined
 	},
+    // variables for screen extension
     initialDistance: null,
     framePullThreshold: 25,
     maxFramePullThreshold: 250,
     minFramePullThreshold: 25,
-    didStartPullingFromScreen: false,
-    unconstrainedSnapInitialPosition: null,
+    
+    // default scale for new frames and nodes
     defaultScale: 0.5,
     
 	// rettail
