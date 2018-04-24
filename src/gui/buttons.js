@@ -87,8 +87,7 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
         }
     }
     
-    // TODO: maybe here display the svgs if they don't exist yet?
-
+    realityEditor.device.resetEditingState();
 };
 
 realityEditor.gui.buttons.logicButtonUp = function(event){
@@ -102,7 +101,8 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
     globalStates.guiState = "node";
 
     realityEditor.gui.crafting.craftingBoardHide();
-    
+
+    realityEditor.device.resetEditingState();
 };
 
 realityEditor.gui.buttons.resetButtonDown = function(event) {
@@ -220,55 +220,57 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
 };
 
 realityEditor.gui.buttons.settingButtonUp = function(event) {
-        if (event.button !== "setting" && event.button !== "logicSetting") return;
+    if (event.button !== "setting" && event.button !== "logicSetting") return;
 
-       // realityEditor.gui.menus.on("main", ["setting"]);
-        if(realityEditor.gui.buttons.settingTimer) {
-            clearTimeout(realityEditor.gui.buttons.settingTimer);
-        }
-        if(realityEditor.gui.buttons.wasTimed) {
-            realityEditor.gui.buttons.wasTimed = false;
-            return;
-        }
-
-
-        realityEditor.gui.pocket.pocketHide();
-
-        if (globalStates.guiState === "logic") {
-            console.log(" LOGIC SETTINGS PRESSED ");
-            var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
-            realityEditor.gui.menus.off("crafting", ["logicSetting"]);
-            if (!wasBlockSettingsOpen) {
-                var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
-                if (!wasNodeSettingsOpen) {
-                    console.log("Open Node Settings");
-                    realityEditor.gui.crafting.eventHelper.openNodeSettings();
-                }
-            }
-            return;
-        }
+   // realityEditor.gui.menus.on("main", ["setting"]);
+    if(realityEditor.gui.buttons.settingTimer) {
+        clearTimeout(realityEditor.gui.buttons.settingTimer);
+    }
+    if(realityEditor.gui.buttons.wasTimed) {
+        realityEditor.gui.buttons.wasTimed = false;
+        return;
+    }
 
 
-        if (globalStates.settingsButtonState === true) {
+    realityEditor.gui.pocket.pocketHide();
 
-            this.gui.settings.hideSettings();
-
-            if(!globalStates.realityState) {
-                realityEditor.gui.menus.buttonOff("setting", ["setting"]);
-            } else {
-                realityEditor.gui.menus.buttonOff("reality", ["setting"]);
-            }
-
-            overlayDiv.style.display = "inline";
-
-            if (globalStates.editingMode) {
-                realityEditor.gui.menus.on("editing", []);
+    if (globalStates.guiState === "logic") {
+        console.log(" LOGIC SETTINGS PRESSED ");
+        var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
+        realityEditor.gui.menus.off("crafting", ["logicSetting"]);
+        if (!wasBlockSettingsOpen) {
+            var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
+            if (!wasNodeSettingsOpen) {
+                console.log("Open Node Settings");
+                realityEditor.gui.crafting.eventHelper.openNodeSettings();
             }
         }
-        else {
-            this.gui.settings.showSettings();
+        return;
+    }
+
+
+    if (globalStates.settingsButtonState === true) {
+
+        this.gui.settings.hideSettings();
+
+        if(!globalStates.realityState) {
+            realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+        } else {
+            realityEditor.gui.menus.buttonOff("reality", ["setting"]);
         }
-    };
+
+        overlayDiv.style.display = "inline";
+
+        if (globalStates.editingMode) {
+            realityEditor.gui.menus.on("editing", []);
+        }
+    }
+    else {
+        this.gui.settings.showSettings();
+    }
+
+    realityEditor.device.resetEditingState();
+};
 
 realityEditor.gui.buttons.freezeButtonUp = function(event) {
     if (event.button !== "freeze") return;

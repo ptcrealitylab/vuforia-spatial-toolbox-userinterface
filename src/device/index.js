@@ -405,7 +405,7 @@ realityEditor.device.onElementTouchMove = function(event) {
     var target = event.currentTarget;
     
     // visual feedback if you move over the trash
-    if (event.pageX >= (globalStates.height - 60)) {
+    if (event.pageX >= this.layout.getTrashThresholdX()) {
         if (overlayDiv.classList.contains('overlayAction')) {
             overlayDiv.classList.remove('overlayAction');
             overlayDiv.classList.add('overlayNegative');
@@ -541,7 +541,7 @@ realityEditor.device.onElementTouchUp = function(event) {
     }
 
     // touch up over the trash
-    if (event.pageX >= (globalStates.height - 60)) {
+    if (event.pageX >= this.layout.getTrashThresholdX()) {
 
         // delete logic node
         if (target.type === "logic") {

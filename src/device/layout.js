@@ -50,18 +50,9 @@
 createNameSpace("realityEditor.device.layout");
 
 realityEditor.device.layout.adjustForScreenSize = function() {
-    // width: window.innerHeight,
-    // height: window.innerWidth,
 
-    document.querySelector('#craftingBoard').style.width = '100%';
-    document.querySelector('#craftingBoard').style.height = '100%';
-
-    if (globalStates.rightEdgeOffset) { /// globalStates.device === 'iPhone10,3' is not set yet, so use other method to set up screen
-
-        // globalStates.height = document.body.offsetWidth; //document.body.offsetHeight;
-        // globalStates.width = document.body.offsetHeight; //document.body.offsetWidth;
-        // adjust everything for iPhoneX if necessary
-        // realityEditor.gui.ar.setProjectionMatrix(globalStates.realProjectionMatrix);
+    // in onLoad.js, (globalStates.device === 'iPhone10,3') is not set yet, so use other method to set up screen
+    if (globalStates.rightEdgeOffset) { 
 
         console.log('adjust right edge of interface for iPhone X');
 
@@ -73,7 +64,7 @@ realityEditor.device.layout.adjustForScreenSize = function() {
 
         // pocket
         document.querySelector('.memoryBar').style.transformOrigin = 'left top';
-        document.querySelector('.memoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')';
+        document.querySelector('.memoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')'; // 0.99 factor makes sure it fits
         document.querySelector('.palette').style.width = '100%';
         document.querySelector('.palette').style.transformOrigin = 'left top';
         document.querySelector('.palette').style.transform = 'scale(' + scaleFactor * 0.99 + ')';
@@ -91,67 +82,13 @@ realityEditor.device.layout.adjustForScreenSize = function() {
         edgeDiv.style.top = '0';
         edgeDiv.style.height = document.body.offsetHeight;
         edgeDiv.style.display = 'none';
-        // document.querySelector('#settingsIframe').appendChild(edgeDiv);
-        // document.querySelector('#settingsIframe').appendChild(edgeDiv);
         document.body.appendChild(edgeDiv);
 
         // crafting
-        // document.querySelector('#craftingBoard').style.left = '44px';
-        // document.querySelector('#craftingBoard').style.left = '44px';
         menuBarWidth += globalStates.rightEdgeOffset;
-
-        // TODO: change class definitions for the following properties to apply to all future instances of these classes...
-
-        /*
-        
-        .blockPlaceholder
-            width: 92px;
-            margin-right: 46px;
-        
-        .blockPlaceholderLastCol {
-            width: 92px;
-
-        .columnHighlight {
-            width: 92px;
-            margin-right: 46px;
-            
-         .columnHighlightLastCol {
-            width: 92px;  
-            
-         #datacraftingEventDiv {
-            width: 568px;
-            height: 320px; 
-              
-         .settingsContainer {
-            width: 506px;
-            height: 320px;     
-              
-          #menuContainer {
-            width: 506px;
-            height: 320px;
-
-          #menuBlockContainer {
-            width: 400px;
-            height: 320px;
-
-          #menuSideContainer {
-            left: 398px;
-            width: 106px;
-            height: 320px;
-
-          .menuBlock {
-            width: 92px;
-            height: 46px;
-            
-          .menuTab {
-            width: 106px;
-            height: 59.5px;
-  
-          .menuTabSelected {
-            width: 106px;
-            height: 59.5px;
-            
-         */
-
     }
+};
+
+realityEditor.device.layout.getTrashThresholdX = function() {
+    return (globalStates.height - 60 - globalStates.rightEdgeOffset);
 };
