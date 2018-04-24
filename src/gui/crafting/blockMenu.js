@@ -58,6 +58,8 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
         var container = document.createElement('div');
         container.setAttribute('id', 'menuContainer');
+        container.style.left = logic.grid.xMargin + 'px';
+        container.style.top = logic.grid.yMargin + 'px';
         craftingBoard.appendChild(container);
     
         var menuBlockContainer = document.createElement('div');

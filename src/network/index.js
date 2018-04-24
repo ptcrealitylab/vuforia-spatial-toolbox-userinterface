@@ -204,7 +204,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             if (thisNode.type === "logic") {
                                 thisNode.guiState = new LogicGUIState();
                                 var container = document.getElementById('craftingBoard');
-                                thisNode.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, thisObject.uuid);
+                                thisNode.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
                                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
                             }
                         }
@@ -499,7 +499,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
             if (!origin.grid) {
                 var container = document.getElementById('craftingBoard');
-                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, origin.uuid);
+                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
             }
 
         }
@@ -937,7 +937,7 @@ if (thisFrame) {
 
         realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
         
-        if (globalStates.editingMode) {
+        if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
             svg.style.display = 'inline';
         } else {
             svg.style.display = 'none';

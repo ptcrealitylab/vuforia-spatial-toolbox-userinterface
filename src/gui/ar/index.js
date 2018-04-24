@@ -171,13 +171,22 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     if (globalStates.device === "iPad6,7") {
         // TODO: make any small corrections if needed
     }
-
+    
     var viewportScaling = [
         globalStates.height, 0, 0, 0,
-        0, -globalStates.width, 0, 0,
+        0, -1 * globalStates.width, 0, 0,
         0, 0, 1, 0,
         corX, corY, 0, 1
     ];
+ 
+    // changes for iPhoneX
+    if (globalStates.device === "iPhone10,3") {
+        var scaleRatio = (globalStates.height/globalStates.width) / (568/320);
+
+        // new scale based on aspect ratio of camera feed - just use the size of the old iphone screen
+        viewportScaling[0] = 568 * scaleRatio;
+        viewportScaling[5] = -320 * scaleRatio;
+    }
 
     var r = [];
     globalStates.realProjectionMatrix = matrix;

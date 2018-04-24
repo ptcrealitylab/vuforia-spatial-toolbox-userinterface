@@ -527,21 +527,24 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
     container.className = "craftingBoardBlur";
 
     // initializes the data model for the datacrafting board
-    logic.grid = new this.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, logic.uuid);
+    logic.grid = new this.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, logic.uuid);
 
     var datacraftingCanvas = document.createElement('canvas');
     datacraftingCanvas.setAttribute('id', 'datacraftingCanvas');
     container.appendChild(datacraftingCanvas);
 
-    var dimensions = logic.grid.getPixelDimensions();
-    datacraftingCanvas.width = dimensions.width;
-    datacraftingCanvas.style.width = dimensions.width;
-    datacraftingCanvas.height = dimensions.height;
-    datacraftingCanvas.style.height = dimensions.height;
+    // var dimensions = logic.grid.getPixelDimensions(); // no longer gives the pixel dimensions we need
+    datacraftingCanvas.width = container.clientWidth - menuBarWidth; //dimensions.width;
+    datacraftingCanvas.style.width = container.clientWidth - menuBarWidth; //dimensions.width;
+    datacraftingCanvas.height = container.clientHeight; //dimensions.height;
+    datacraftingCanvas.style.height = container.clientHeight; //dimensions.height;
 
     // holds the colored background blocks
     var blockPlaceholdersContainer = document.createElement('div');
     blockPlaceholdersContainer.setAttribute('id', 'blockPlaceholders');
+    blockPlaceholdersContainer.style.position = 'absolute';
+    blockPlaceholdersContainer.style.left = logic.grid.xMargin + 'px';
+    blockPlaceholdersContainer.style.top = logic.grid.yMargin + 'px';
     container.appendChild(blockPlaceholdersContainer);
 
     for (var rowNum = 0; rowNum < logic.grid.size; rowNum++) {

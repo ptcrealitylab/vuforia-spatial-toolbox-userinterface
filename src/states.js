@@ -160,7 +160,9 @@ var globalStates = {
     
 	// rettail
 	reality: false,
-	interface: "gui"
+	interface: "gui",
+    
+    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : (0) // if iPhone X, offset the right edge by 74px
 };
 
 var globalCanvas = {};
@@ -239,6 +241,9 @@ var testInterlink = {};
 var overlayDiv;
 //var overlayImg;
 //var overlayImage = [];
+
+var CRAFTING_GRID_WIDTH = 506;
+var CRAFTING_GRID_HEIGHT = 320;
 
 /**********************************************************************************************************************
  ***************************************** datacrafting variables  ****************************************************

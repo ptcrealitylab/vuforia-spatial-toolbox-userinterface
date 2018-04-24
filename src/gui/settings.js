@@ -75,8 +75,11 @@ realityEditor.gui.settings.hideSettings = function() {
 
 	document.getElementById("settingsIframe").style.visibility = "hidden";
 	document.getElementById("settingsIframe").style.display = "none";
-
-
+	
+	if (document.getElementById("settingsEdgeDiv")) {
+	    document.getElementById("settingsEdgeDiv").style.display = "none";
+    }
+    
     if (globalStates.clearSkyState) {
         document.getElementById("UIButtons").classList.add('clearSky');
     } else {
@@ -118,6 +121,10 @@ realityEditor.gui.settings.showSettings = function() {
 	globalStates.settingsButtonState = true;
 	document.getElementById("settingsIframe").style.visibility = "visible";
 	document.getElementById("settingsIframe").style.display = "inline";
+
+    if (document.getElementById("settingsEdgeDiv")) {
+        document.getElementById("settingsEdgeDiv").style.display = "inline";
+    }
 
     document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({getSettings: {
         extendedTracking: globalStates.extendedTracking,

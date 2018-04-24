@@ -63,12 +63,16 @@ createNameSpace("realityEditor.gui.crafting.grid");
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // the grid is the overall data structure for managing block locations and calculating routes between them
-    function Grid(containerWidth, containerHeight, logicID) {
+    function Grid(containerWidth, containerHeight, gridWidth, gridHeight, logicID) {
 
         this.size = 7; // number of rows and columns
-        this.blockColWidth = 2 * (containerWidth / 11);
-        this.blockRowHeight = (containerHeight / 7);
-        this.marginColWidth = (containerWidth / 11);
+        
+        this.xMargin = (containerWidth - gridWidth) / 2;
+        this.yMargin = (containerHeight - gridHeight) / 2;
+        
+        this.blockColWidth = 2 * (gridWidth / 11);
+        this.blockRowHeight = (gridHeight / 7);
+        this.marginColWidth = (gridWidth / 11);
         this.marginRowHeight = this.blockRowHeight;
 
         this.cells = []; // array of [Cell] objects
@@ -265,6 +269,7 @@ createNameSpace("realityEditor.gui.crafting.grid");
 //      -- GRID UTILITIES -- //
     
     Grid.prototype.parentLogic = function() {
+        
         for (var objectKey in objects) {
             var object = objects[objectKey];
             for (var frameKey in object.frames) {
@@ -330,29 +335,29 @@ createNameSpace("realityEditor.gui.crafting.grid");
         return (row % 2 === 0) ? this.blockRowHeight : this.marginRowHeight;
     };
 
-// utility - gets x position of cell
+// utility - gets x position of cell //TODO: update with grid margin
     Grid.prototype.getCellCenterX = function(cell) {
         var leftEdgeX = 0;
         if (cell.location.col % 2 === 0) { // this is a block cell
             leftEdgeX = (cell.location.col / 2) * (this.blockColWidth + this.marginColWidth);
-            return leftEdgeX + this.blockColWidth/2;
+            return this.xMargin + leftEdgeX + this.blockColWidth/2;
 
         } else { // this is a margin cell
             leftEdgeX = Math.ceil(cell.location.col / 2) * this.blockColWidth + Math.floor(cell.location.col / 2) * this.marginColWidth;
-            return leftEdgeX + this.marginColWidth/2;
+            return this.xMargin + leftEdgeX + this.marginColWidth/2;
         }
     };
 
-// utility - gets y position of cell
+// utility - gets y position of cell //TODO: update with grid margin
     Grid.prototype.getCellCenterY = function(cell) {
         var topEdgeY = 0;
         if (cell.location.row % 2 === 0) { // this is a block cell
             topEdgeY = (cell.location.row / 2) * (this.blockRowHeight + this.marginRowHeight);
-            return topEdgeY + this.blockRowHeight/2;
+            return this.yMargin + topEdgeY + this.blockRowHeight/2;
 
         } else { // this is a margin cell
             topEdgeY = Math.ceil(cell.location.row / 2) * this.blockRowHeight + Math.floor(cell.location.row / 2) * this.marginRowHeight;
-            return topEdgeY + this.marginRowHeight/2;
+            return this.yMargin + topEdgeY + this.marginRowHeight/2;
         }
     };
 
@@ -462,6 +467,9 @@ createNameSpace("realityEditor.gui.crafting.grid");
     Grid.prototype.getCellFromPointerPosition = function(xCoord, yCoord) {
         var col;
         var row;
+        
+        xCoord -= this.xMargin;
+        yCoord -= this.yMargin;
 
         var colPairIndex = xCoord / (this.blockColWidth + this.marginColWidth);
         var fraction = colPairIndex - Math.floor(colPairIndex);

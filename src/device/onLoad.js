@@ -61,6 +61,12 @@ createNameSpace("realityEditor.device");
 realityEditor.device.onload = function () {
 
     realityEditor.gui.menus.init();
+    
+    // center the menu vertically if the screen is taller than 320 px
+    var MENU_HEIGHT = 320;
+    var menuHeightDifference = globalStates.width - MENU_HEIGHT;
+    document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
+    CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
 
     realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
     realityEditor.gui.menus.on("main",["gui"]);
@@ -102,6 +108,7 @@ realityEditor.device.onload = function () {
 	
 	// adds all the event handlers for setting up the editor
     realityEditor.device.addDocumentTouchListeners();
+    realityEditor.device.layout.adjustForScreenSize();
     
 	this.cout("onload");
 
