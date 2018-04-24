@@ -325,8 +325,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
         // show the trash and pocket
         if (activeVehicle.type === "logic") {
-            //realityEditor.gui.menus.on("trashOrSave", []); // TODO: use this to enable logic node pocket again
-            realityEditor.gui.menus.on("bigTrash", []);
+            realityEditor.gui.menus.on("trashOrSave", []); // TODO: use this to enable logic node pocket again
+            // realityEditor.gui.menus.on("bigTrash", []);
 
         }
 

@@ -365,17 +365,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     pageX: evt.pageX,
                     pageY: evt.pageY
                 };
-                
-                // frame.currentTouchOffset = {
-                //     x: 0,
-                //     y: 0
-                // };
 
                 closestObject.frames[frameID] = frame;
-
-                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY);
-                
-                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate()
 
                 // send it to the server
                 // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);

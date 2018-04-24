@@ -1035,12 +1035,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         }
 
         if (typeof activeVehicle.temp !== "object") {
-            activeVehicle.temp = [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            ];
+            activeVehicle.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
         
         // Create DOM elements for everything associated with this frame/node
