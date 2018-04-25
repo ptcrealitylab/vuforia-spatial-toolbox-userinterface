@@ -678,11 +678,12 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     // If the event is hitting the background and it isn't the multi-touch to scale an object
     if (event.target.id === "canvas" && !activeVehicle) {
 
-        if (globalStates.guiState === "ui" && !globalStates.freezeButtonState) {
+        /*if (globalStates.guiState === "ui" && !globalStates.freezeButtonState) {
             
-            overlayDiv.classList.add('overlayMemory');
+            // overlayDiv.classList.add('overlayMemory');
+            realityEditor.gui.memory.createMemory();
 
-        } else if (globalStates.guiState === "node" && !globalStates.editingMode) {
+        } else */ if (globalStates.guiState === "node" && !globalStates.editingMode) {
 
             if (!globalProgram.objectA) {
                 globalStates.drawDotLine = true;
@@ -691,8 +692,10 @@ realityEditor.device.onDocumentPointerDown = function(event) {
             }
         }
 
-        if (realityEditor.gui.memory.memoryCanCreate() && window.innerWidth - event.clientX > 65) {
-            realityEditor.gui.menus.on("bigPocket", []);
+        if (realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
+            // realityEditor.gui.menus.on("bigPocket", []);
+            realityEditor.gui.memory.createMemory();
+
         }
         
     }
@@ -770,6 +773,7 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     overlayDiv.classList.remove('overlayAction');
     overlayDiv.classList.remove('overlayPositive');
     overlayDiv.classList.remove('overlayNegative');
+    overlayDiv.classList.remove('overlayScreenFrame');
     overlayDiv.innerHTML = '';
     
     // if not in crafting board, reset menu back to main

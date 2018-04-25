@@ -977,12 +977,14 @@ if (thisFrame) {
                     object : msgContent.object,
                     frame : msgContent.frame,
                     node: msgContent.node
-                }
+                };
+            realityEditor.gui.screenExtension.registeredScreenObjects[msgContent.frame] = {
+                object : msgContent.object,
+                frame : msgContent.frame,
+                node: msgContent.node
+            };
         }
     }
-    
-
-    
     
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {

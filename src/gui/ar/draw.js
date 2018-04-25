@@ -665,6 +665,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     thisObject.animationScale = 0;
                 }
             }
+            
+            // re-activate the activeScreenObject when it reappears
+            var screenExtension = realityEditor.gui.screenExtension;
+            if (screenExtension.registeredScreenObjects[activeKey]) {
+                screenExtension.activeScreenObject.object = objectKey;
+                screenExtension.activeScreenObject.frame = activeKey;
+                screenExtension.activeScreenObject.node = null;
+            }
 
         }
         if (activeVehicle.visible || activeVehicle.positionOnLoad) {
@@ -994,6 +1002,14 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 
         globalDOMCache[activeKey].style.visibility = 'hidden';
         globalDOMCache["svg" + activeKey].style.display = 'none';
+        
+        // reset the active screen object when it disappears
+        if (realityEditor.gui.screenExtension.activeScreenObject.frame === activeKey ||
+            realityEditor.gui.screenExtension.activeScreenObject.node === activeKey) {
+            realityEditor.gui.screenExtension.activeScreenObject.object = null;
+            realityEditor.gui.screenExtension.activeScreenObject.frame = null;
+            realityEditor.gui.screenExtension.activeScreenObject.node = null;
+        }
 
         cout("hideTransformed");
     }

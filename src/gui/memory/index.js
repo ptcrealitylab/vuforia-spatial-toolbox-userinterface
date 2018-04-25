@@ -514,7 +514,7 @@ function getMemoryWithId(id) {
 
 function memoryCanCreate() {
     // Exactly one visible object
-    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1 || typeof realityEditor.gui.ar.draw.visibleObjects.dummy !== 'undefined') {
+    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1) {
         return false;
     }
     if (globalStates.freezeButtonState) {
@@ -527,6 +527,9 @@ function memoryCanCreate() {
         return false;
     }
     if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
+        return false;
+    }
+    if (realityEditor.gui.screenExtension.activeScreenObject.object && realityEditor.gui.screenExtension.activeScreenObject.frame) {
         return false;
     }
     if (globalStates.guiState === 'ui') {

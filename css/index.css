@@ -599,6 +599,10 @@ body {
   border-color: #F9F90A;
 }
 
+#overlay.overlayScreen {
+    border-color: #3AF431;
+}
+
 .objectEntry {
     position: relative;
     float: left;

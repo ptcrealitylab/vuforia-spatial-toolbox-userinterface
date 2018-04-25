@@ -1,5 +1,7 @@
 createNameSpace("realityEditor.gui.screenExtension");
 
+realityEditor.gui.screenExtension.registeredScreenObjects = [];
+
 realityEditor.gui.screenExtension.screenObject = {
     touchState : null,
     closestObject : null,
@@ -183,7 +185,15 @@ realityEditor.gui.screenExtension.receiveObject = function (object){
     this.screenObject.node = object.node;
     this.screenObject.touchOffsetX = object.touchOffsetX;
     this.screenObject.touchOffsetY = object.touchOffsetY;
-    
+
+    if (this.screenObject.object && this.screenObject.frame) {
+        overlayDiv.classList.add('overlayScreenFrame');
+        overlayDiv.style.backgroundImage = 'none';
+        overlayDiv.classList.remove('overlayMemory');
+    } else {
+        overlayDiv.classList.remove('overlayScreenFrame');
+    }
+
 };
 
 realityEditor.gui.screenExtension.onScreenPushIn = function(screenFrame) {
