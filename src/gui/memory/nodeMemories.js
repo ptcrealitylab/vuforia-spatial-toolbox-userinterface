@@ -169,7 +169,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     var closestFrameKey = null;
     var closestObjectKey = null;
   
-    var objectKeys = realityEditor.gui.ar.getClosestFrame();
+    var objectKeys = realityEditor.gui.ar.getClosestFrame(); // TODO: should we limit to only add these to AR frames?
     if(objectKeys[1] !== null) {
         closestFrameKey = objectKeys[1];
         closestObjectKey = objectKeys[0];

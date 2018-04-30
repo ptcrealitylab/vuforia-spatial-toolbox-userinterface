@@ -1220,21 +1220,29 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
 realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCache) {
     if(!activeVehicle.visibleCounter) {
         return;
-        }
+    }
+    
     if (activeVehicle.visibleCounter > 1) {
         activeVehicle.visibleCounter--;
     } else {
         activeVehicle.visibleCounter--;
         for (var activeFrameKey in activeVehicle.frames) {
+            if (!activeVehicle.frames.hasOwnProperty(activeFrameKey)) continue;
+
+            // don't kill inTransitionFrame or its nodes
             if (activeFrameKey === globalStates.inTransitionFrame) continue;
             
-            activeVehicle.frames[activeFrameKey].loaded = false;
-            globalDOMCache["object" + activeFrameKey].parentNode.removeChild(globalDOMCache["object" + activeFrameKey]);
-            delete globalDOMCache["object" + activeFrameKey];
-            delete globalDOMCache["iframe" + activeFrameKey];
-            delete globalDOMCache[activeFrameKey];
-            delete globalDOMCache["svg" + activeFrameKey];
-            delete globalDOMCache[activeFrameKey];
+            try {
+                globalDOMCache["object" + activeFrameKey].parentNode.removeChild(globalDOMCache["object" + activeFrameKey]);
+                delete globalDOMCache["object" + activeFrameKey];
+                delete globalDOMCache["iframe" + activeFrameKey];
+                delete globalDOMCache[activeFrameKey];
+                delete globalDOMCache["svg" + activeFrameKey];
+                activeVehicle.frames[activeFrameKey].loaded = false;
+            } catch (err) {
+                this.cout("could not find any frames")
+            }
+
 
             for (var activeNodeKey in activeVehicle.frames[activeFrameKey].nodes) {
                 if (!activeVehicle.frames[activeFrameKey].nodes.hasOwnProperty(activeNodeKey)) continue;
@@ -1246,7 +1254,7 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
                     delete globalDOMCache["svg" + activeNodeKey];
                     activeVehicle.frames[activeFrameKey].nodes[activeNodeKey].loaded = false;
                 } catch (err) {
-                    this.cout("could not find any");
+                    this.cout("could not find any nodes");
                 }
             }
         }

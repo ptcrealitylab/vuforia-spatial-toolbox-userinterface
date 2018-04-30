@@ -644,6 +644,30 @@ realityEditor.network.onAction = function (action) {
             });
         }
     }
+    
+    if (typeof thisAction.reloadFrame !== "undefined") {
+        var thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
+        if (thisFrame) {
+            console.log('get frame');
+            var urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + httpPort + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
+            this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
+                console.log('got frame');
+                console.log(objectKey, frameKey, nodeKey, res);
+
+                console.log('before...');
+                console.log(thisFrame);
+                
+                for (var thisKey in res) {
+                    if (!res.hasOwnProperty(thisKey)) continue;
+                    if (!thisFrame.hasOwnProperty(thisKey)) continue;
+                    thisFrame[thisKey] = res[thisKey];
+                }
+
+                console.log('after...');
+                console.log(thisFrame);
+            });
+        }
+    }
 
     if (typeof thisAction.reloadNode !== "undefined") {
         console.log("gotdata: " + thisAction.reloadNode.object + " " + thisAction.reloadNode.frame+ " " + thisAction.reloadNode.node);

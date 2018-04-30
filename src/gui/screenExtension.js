@@ -13,7 +13,8 @@ realityEditor.gui.screenExtension.screenObject = {
     node : null,
     isScreenVisible: false,
     touchOffsetX: 0,
-    touchOffsetY: 0
+    touchOffsetY: 0,
+    touches: null
 };
 realityEditor.gui.screenExtension.activeScreenObject = {
     object : null,
@@ -106,6 +107,10 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
     // console.log(this.screenObject);
 };
 
+/**
+ * 
+ * @param {ScreenEventObject} eventObject
+ */
 realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
     // do nothing other than send xy to screen // maybe iff I'm touching on screen frame, move AR frame to mirror its position
     // console.log('onScreenTouchMove', eventObject, this.screenObject);
@@ -126,6 +131,23 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
     var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.x, eventObject.y);
     this.screenObject.x = point.x;
     this.screenObject.y = point.y;
+    
+    if (eventObject.touches.length > 1) {
+        this.screenObject.touches = [];
+        this.screenObject.touches[0] = {
+            x: point.x,
+            y: point.y,
+            type: eventObject.type
+        };
+        var secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(this.screenObject.closestObject, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
+        this.screenObject.touches[1] = {
+            x: secondPoint.x,
+            y: secondPoint.y,
+            type: eventObject.touches[1].type
+        };
+    } else {
+        this.screenObject.touches = null;
+    }
 
     // also needs to update AR frame positions so that nodes float above them
     if (this.screenObject.object && this.screenObject.frame && this.screenObject.object === this.screenObject.closestObject) {
@@ -243,16 +265,23 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             // calculate distance to frame
             var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
             var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
+            
+            
+            var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]);
+
+            // console.log('distance to object, frame: ' + distanceToObject + ', ' + distanceToFrame);
+            // console.log('distance to object: ' + distanceToFrame);
+
             if (!globalStates.initialDistance) {
-                globalStates.initialDistance = distanceToFrame;
+                globalStates.initialDistance = distanceToObject; //distanceToFrame;
             }
 
             var distanceThreshold = globalStates.framePullThreshold;
-            console.log(distanceThreshold);
+            // console.log(distanceThreshold);
 
-            if (distanceToFrame > (globalStates.initialDistance + distanceThreshold)) {
+            if (distanceToObject > (globalStates.initialDistance + distanceThreshold)) { //distanceToFrame;
                 this.onScreenPullOut(screenFrame);
-            } else if (distanceToFrame < (globalStates.initialDistance - distanceThreshold)) {
+            } else if (distanceToObject < (globalStates.initialDistance - distanceThreshold)) { //distanceToFrame;
                 this.onScreenPushIn(screenFrame);
             }
             
@@ -297,6 +326,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
             realityEditor.gui.ar.draw.hideTransformed(thisFrame.uuid, thisFrame, globalDOMCache, cout);
             
+            realityEditor.device.resetEditingState();
+            
         } else {
             console.log('show frame -> AR');
             thisFrame.visualization = "ar";
@@ -329,6 +360,10 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             svg.style.width = iframe.style.width;
             svg.style.height = iframe.style.height;
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+            
+            // var arScaleBasedOnScreenScale = thisFrame.ar.scale;
+            
+            // realityEditor.network.getData()
 
             // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
             // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, true);
