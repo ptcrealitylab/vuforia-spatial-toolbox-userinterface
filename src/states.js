@@ -152,8 +152,8 @@ var globalStates = {
     // variables for screen extension
     initialDistance: null,
     framePullThreshold: 25,
-    maxFramePullThreshold: 250,
-    minFramePullThreshold: 25,
+    // maxFramePullThreshold: 250,
+    // minFramePullThreshold: 25,
     
     // default scale for new frames and nodes
     defaultScale: 0.5,
@@ -234,6 +234,14 @@ var rotateX = [
 	0, -1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1
+];
+
+var startTime = new Date().getTime();
+var editingAnimationsMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
 ];
 
 var testInterlink = {};

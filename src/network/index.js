@@ -1204,10 +1204,20 @@ if (thisFrame) {
             }
         }
     }
-    
-/*    if (typeof msgContent.finishedLoading !== 'undefined') {
-        console.log('~~~ iframe finished loading ~~~')
-    }*/
+
+    if (typeof msgContent.moveDelay !== "undefined") {
+        
+        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        
+        activeVehicle.moveDelay = msgContent.moveDelay;
+        console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
+        
+    }
+
+
+        /*    if (typeof msgContent.finishedLoading !== 'undefined') {
+                console.log('~~~ iframe finished loading ~~~')
+            }*/
 
 };
 

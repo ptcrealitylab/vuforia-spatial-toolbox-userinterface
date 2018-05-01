@@ -124,7 +124,7 @@ realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
     thisObject.matrix = [];
     thisObject.relativeMatrix = [];
     thisObject.nodes = {};
-    // realityEditor.gui.ar.positioning.setWritableMatrix(thisObject, []);
+    // realityEditor.gui.ar.positioning.setPositionDataMatrix(thisObject, []);
     // if (thisObject.type === "node") {
     //     thisObject.relativeMatrix = [];
     // }

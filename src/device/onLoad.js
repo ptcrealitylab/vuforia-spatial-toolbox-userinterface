@@ -110,6 +110,13 @@ realityEditor.device.onload = function () {
     realityEditor.device.addDocumentTouchListeners();
     realityEditor.device.layout.adjustForScreenSize();
     
+    // start TWEEN library for animations
+    function animate(time) {
+        requestAnimationFrame(animate);
+        TWEEN.update(time);
+    }
+    animate();
+    
 	this.cout("onload");
 
 };

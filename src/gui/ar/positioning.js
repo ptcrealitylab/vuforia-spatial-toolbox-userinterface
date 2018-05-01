@@ -221,7 +221,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
     //     activeVehicle.relativeMatrix = [];
     // }
     //
-    // this.setWritableMatrix(activeVehicle, activeVehicle.relativeMatrix);
+    // this.setPositionDataMatrix(activeVehicle, activeVehicle.relativeMatrix);
 
     // add node's position to its frame's position to gets its actual offset
     if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
@@ -236,7 +236,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
                 activeVehicle.relativeMatrix = [];
             }
 
-            // TODO: offload this computation into the setWritableMatrix function so it only runs on write, not on read (more common)
+            // TODO: offload this computation into the setPositionDataMatrix function so it only runs on write, not on read (more common)
             if (parentFramePositionData.matrix.length === 16) {
                 if (activeVehicle.relativeMatrix.length === 16) {
                     // both have matrix -> multiply
@@ -255,7 +255,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
     return activeVehicle;
 };
 
-realityEditor.gui.ar.positioning.setWritableMatrix = function(activeVehicle, newMatrixValue) {
+realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
         
         if (!newMatrixValue || newMatrixValue.constructor !== Array) {

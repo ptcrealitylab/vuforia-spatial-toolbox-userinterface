@@ -155,7 +155,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                         var activeNode = activeFrame.nodes[nodeKey];
                         console.log('write to matrix -- should be relativeMatrix');
                         // activeNode.relativeMatrix = [];
-                        realityEditor.gui.ar.positioning.setWritableMatrix(activeNode, []);
+                        realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
                         activeNode.scale = globalStates.defaultScale;
                         if (shouldPlaceCenter) {
                             activeNode.x = 0;

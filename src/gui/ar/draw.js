@@ -125,7 +125,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     
 //    console.log(JSON.stringify(visibleObjects));
     this.ar.utilities.timeSynchronizer(timeCorrection);
-
+    
     if (globalStates.guiState === "logic") {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
@@ -423,6 +423,38 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
         
     }
+
+    // Render the inTransitionFrame 
+
+    if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
+
+        this.activeObject = objects[globalStates.inTransitionObject];
+        this.activeObject.visibleCounter = timeForContentLoaded;
+        this.activeObject.objectVisible = true;
+
+        objectKey = globalStates.inTransitionObject;
+        frameKey = globalStates.inTransitionFrame;
+
+        this.activeObjectMatrix = [];
+
+        if (!this.visibleObjects.hasOwnProperty(objectKey)) {
+
+            // this.ar.utilities.multiplyMatrix(this.visibleObjects[closestObjectKey], globalStates.projectionMatrix, this.matrix.r);
+            // this.ar.utilities.multiplyMatrix(rotateX, this.matrix.r, this.activeObjectMatrix);
+            
+            // for (var frameKey in this.activeObject.frames) {
+            this.activeFrame = this.activeObject.frames[frameKey];
+
+            this.activeKey = frameKey;
+            
+            this.activeObjectMatrix = this.activeFrame.temp;
+
+            var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
+
+            if (!continueUpdate) return;
+        }
+
+    }
     
     /* // TODO: any updates to frames transitioning between objects should happen here
     for (var frameKey in globalFrames) {
@@ -569,10 +601,7 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     frameInMotion.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
 
     // update any variables in the application with the old keys to use the new keys
-    if (realityEditor.device.editingState.object === globalStates.inTransitionObject)
-        realityEditor.device.editingState.object = null;
-    if (realityEditor.device.editingState.frame === globalStates.inTransitionFrame)
-        realityEditor.device.editingState.frame = null;
+    // TODO: do these need to be set here or will they update automatically elsewhere?
     if (realityEditor.gui.screenExtension.screenObject.object === globalStates.inTransitionObject)
         realityEditor.gui.screenExtension.screenObject.object = null;
     if (realityEditor.gui.screenExtension.screenObject.frame === globalStates.inTransitionFrame)
@@ -580,7 +609,6 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
 
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
-    
 };
 
 realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
@@ -592,8 +620,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
 
-    realityEditor.gui.screenExtension.screenObject.object = newObjectKey;
-    realityEditor.gui.screenExtension.screenObject.frame = newFrameKey;
+    // realityEditor.gui.screenExtension.screenObject.object = newObjectKey;
+    // realityEditor.gui.screenExtension.screenObject.frame = newFrameKey;
 
     // reset its position (this can be updated later to move the frame to the dropped location
 
@@ -606,11 +634,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     }
 
     frame.ar.matrix = [];
-    frame.begin =  realityEditor.gui.ar.utilities.newIdentityMatrix();
-    frame.temp =  realityEditor.gui.ar.utilities.newIdentityMatrix();
-    
-    realityEditor.device.editingState.object = null;
-    realityEditor.device.editingState.frame = null;
+    frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
     
 };
 
@@ -698,7 +723,23 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var activeFrameKey = activeVehicle.frameId || activeVehicle.uuid;
                     var activeNodeKey = activeVehicle.uuid === activeFrameKey ? null : activeVehicle.uuid;
                     realityEditor.device.beginTouchEditing(activeVehicle.objectId, activeFrameKey, activeNodeKey);
-
+                    
+                    // immediately start placing the pocket frame in unconstrained mode
+                    realityEditor.device.editingState.unconstrained = true;
+                    // animate it as flowing out of the pocket
+                    
+                    var position = {x: 0, y: 0, z: 0.7};
+                    var pocketDropAnimation = new TWEEN.Tween(position)
+                        .to({z: 1.0}, 250)
+                        .easing(TWEEN.Easing.Quadratic.Out)
+                        .onUpdate( function(newPosition) {
+                            editingAnimationsMatrix[15] = position.z;
+                        }).onComplete(function() {
+                            editingAnimationsMatrix[15] = 1;
+                        }).onStop(function() {
+                            editingAnimationsMatrix[15] = 1;
+                        })
+                        .start();
                 }
                 
                 var finalOffsetX = positionData.x;
@@ -744,8 +785,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+
                         activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
-                   
+
                         // do this one time when you first tap down on something unconstrained, to preserve its current matrix
                         if (matrix.copyStillFromMatrixSwitch) {
                             matrix.visual = utilities.copyMatrix(activeObjectMatrix);
@@ -763,7 +805,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             console.log('write to matrix -- should be relativeMatrix');
                             var resultMatrix = [];
                             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                            realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
+                            realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
 
                             matrix.copyStillFromMatrixSwitch = false;
                             
@@ -772,7 +814,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             console.log('write to matrix -- should be relativeMatrix');
                             var resultMatrix = [];
                             realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                            realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
+                            realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
                         }
 
                         // TODO: this never seems to be triggered, can it be removed?
@@ -815,6 +857,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
                         utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                     }
+                }
+                
+                // multiply in the animation matrix if you are editing this frame in unconstrained mode.
+                // in the future this can be expanded but currently this is the only time it gets animated.
+                if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+                    var animatedFinalMatrix = [];
+                    utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
+                    finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
                 }
                 
                 /*
@@ -865,6 +915,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
                 activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
                 // activeVehicle.screenZ = finalMatrix[14];
+                
+                if (thisIsBeingEdited) {
+                    realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
+                }
 
             }
             if (activeType === "ui") {
@@ -1362,7 +1416,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
                     console.log('write to matrix -- should be relativeMatrix');
                     var resultMatrix = [];
                     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                    realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
+                    realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
                 }
 
                 matrix.copyStillFromMatrixSwitch = false;
@@ -1371,7 +1425,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
                 console.log('write to matrix -- should be relativeMatrix');
                 var resultMatrix = [];
                 realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                realityEditor.gui.ar.positioning.setWritableMatrix(activeVehicle, resultMatrix);
+                realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
             }
 
             if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {

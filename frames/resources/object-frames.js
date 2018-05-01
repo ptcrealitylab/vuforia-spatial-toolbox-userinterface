@@ -24,7 +24,7 @@ var sendTouchEvents = false;
         style: document.createElement('style'),
         messageCallBacks: {},
         version: 170,
-        moveDelay: 1000,
+        moveDelay: 400,
         eventObject : {
             version : null,
             object: null,
@@ -109,7 +109,8 @@ var sendTouchEvents = false;
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
-                    fullScreen: realityObject.sendFullScreen
+                    fullScreen: realityObject.sendFullScreen,
+                    moveDelay: realityObject.moveDelay
                 }
                 )
                 // this needs to contain the final interface source
@@ -305,7 +306,17 @@ var sendTouchEvents = false;
         };
 
         this.setMoveDelay = function(delayInMilliseconds) {
-            realityObject.moveDelay = delayInMilliseconds
+            realityObject.moveDelay = delayInMilliseconds;
+
+            if (realityObject.object && realityObject.frame) {
+                parent.postMessage(JSON.stringify({
+                    version: realityObject.version,
+                    node: realityObject.node,
+                    frame: realityObject.frame,
+                    object: realityObject.object,
+                    moveDelay : delayInMilliseconds
+                }), '*');
+            }
         };
 
         if (typeof io !== 'undefined') {

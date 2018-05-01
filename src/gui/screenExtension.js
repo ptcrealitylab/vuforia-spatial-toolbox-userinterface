@@ -190,13 +190,13 @@ realityEditor.gui.screenExtension.update = function (){
     if(this.screenObject.touchState) {
         if(realityEditor.gui.screenExtension.activeScreenObject.frame) {
             realityEditor.gui.screenExtension.calculatePushPop();
-            return;
+            // return;
         }
     }
     
-    if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {
-        globalStates.framePullThreshold -= 5;
-    }
+    // if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {
+    //     globalStates.framePullThreshold -= 5;
+    // }
 };
 
 realityEditor.gui.screenExtension.receiveObject = function (object){
@@ -263,10 +263,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
             // calculate distance to frame
-            var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
-            var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
-            
-            
+            // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
+            // var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
             var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]);
 
             // console.log('distance to object, frame: ' + distanceToObject + ', ' + distanceToFrame);
@@ -286,11 +284,11 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             }
             
         }
-    } else {
+    } /*else {
         if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {
             globalStates.framePullThreshold -= 5;
         }
-    }
+    }*/
 };
 
 realityEditor.gui.screenExtension.sendScreenObject = function (){
@@ -310,7 +308,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
     if(thisFrame) {
 
         globalStates.initialDistance = null;
-        globalStates.framePullThreshold = globalStates.maxFramePullThreshold;
+        // globalStates.framePullThreshold = globalStates.maxFramePullThreshold;
         
         if (this.screenObject.isScreenVisible) {
             console.log('hide frame -> screen');

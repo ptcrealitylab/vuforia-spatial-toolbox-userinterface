@@ -184,6 +184,10 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
             globalDOMCache[pocketItemId].objectId = closestObjectKey;
             globalDOMCache[pocketItemId].frameId = closestFrameKey;
 
+            globalDOMCache['iframe' + pocketItemId].setAttribute("data-object-key", closestObjectKey);
+            globalDOMCache['iframe' + pocketItemId].setAttribute("data-frame-key", closestFrameKey);
+            globalDOMCache['iframe' + pocketItemId].setAttribute("onload", 'realityEditor.network.onElementLoad("' + closestObjectKey + '","' + closestFrameKey + '","' + null + '")');
+
             realityEditor.network.postNewLogicNode(objects[closestObjectKey].ip, closestObjectKey, closestFrameKey, pocketItemId, pocketNode);
 
         }
@@ -363,8 +367,8 @@ realityEditor.device.onElementTouchDown = function(event) {
     var moveDelay = this.defaultMoveDelay;
     if (globalStates.editingMode) {
         moveDelay = 0;
-    } else if (activeVehicle.touchMoveDelay) {
-        moveDelay = activeVehicle.touchMoveDelay; // TODO: set this from the javascript API
+    } else if (activeVehicle.moveDelay) {
+        moveDelay = activeVehicle.moveDelay; // This gets set from the JavaScript API
     }
     
     // set point A of the link you are starting to create
@@ -626,6 +630,14 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
     // drop frame onto closest object if we have pulled one away from a previous object
     if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
 
+        // allow scaling with multiple fingers without dropping the frame in motion
+        var touchesOnActiveVehicle = this.currentScreenTouches.filter(function(touchTarget) {
+            return (touchTarget === this.editingState.frame || touchTarget === this.editingState.node || touchTarget === "pocket-element");
+        }.bind(this));
+        if (touchesOnActiveVehicle.length > 1) {
+            return;
+        }
+
         var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
 
         if (closestObjectKey) {
@@ -875,38 +887,44 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
         } else if (event.touches.length === 1) {
 
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
-
-            // pop into unconstrained mode if pull out z > threshold
-            var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && !globalStates.freezeButtonState;
-            if (ableToBePulled) {
-                
-                var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId], activeVehicle);
-                var distanceToFrame = screenFrameMatrix[14];
-
-                // the first time, detect how far you are from the element and use that as a baseline
-                if (!this.editingState.unconstrainedOffset) {
-                    this.editingState.unconstrainedOffset = distanceToFrame;
-
-                } else {
-
-                    // after that, if you pull out more than 100 in the z direction, turn on unconstrained
-                    var zPullThreshold = 100;
-                    var amountPulled = distanceToFrame - this.editingState.unconstrainedOffset;
-                    if (amountPulled > zPullThreshold) {
-                        console.log('pop into unconstrained editing mode');
-                        
-                        realityEditor.app.tap();
-                        this.editingState.unconstrained = true;
-                        this.editingState.unconstrainedOffset = null;
-                        
-                        // tell the renderer to freeze the current matrix as the unconstrained position on the screen
-                        realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
-                    }
-                }
-            }
+            
+            // this.checkIfFramePulledIntoUnconstrained(activeVehicle);
         }
     }
 };
+
+realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicle) {
+    // pop into unconstrained mode if pull out z > threshold
+    var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && !globalStates.freezeButtonState;
+    if (ableToBePulled) {
+
+        // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId], activeVehicle);
+        // var distanceToFrame = screenFrameMatrix[14];
+        var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId]);
+
+        // the first time, detect how far you are from the element and use that as a baseline
+        if (!this.editingState.unconstrainedOffset) {
+            this.editingState.unconstrainedOffset = distanceToObject;
+
+        } else {
+
+            // after that, if you pull out more than 100 in the z direction, turn on unconstrained
+            // var zPullThreshold = 50;
+            var amountPulled = distanceToObject - this.editingState.unconstrainedOffset;
+            console.log(amountPulled);
+            if (amountPulled > globalStates.framePullThreshold) {
+                console.log('pop into unconstrained editing mode');
+
+                realityEditor.app.tap();
+                this.editingState.unconstrained = true;
+                this.editingState.unconstrainedOffset = null;
+
+                // tell the renderer to freeze the current matrix as the unconstrained position on the screen
+                realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+            }
+        }
+    }
+}
 
 /**
  * Exposes all touchend events to the touchInputs module for additional functionality (e.g. screens).
@@ -917,7 +935,13 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     realityEditor.device.touchEventObject(event, "touchend", realityEditor.device.touchInputs.screenTouchEnd);
     cout("onDocumentMultiTouchEnd");
-
+    
+    // if you started editing with beginTouchEditing instead of touchevent on element, programmatically trigger onElementMultiTouchEnd
+    var editingVehicleTouchIndex = this.currentScreenTouches.indexOf((this.editingState.node || this.editingState.frame));
+    if (editingVehicleTouchIndex === -1) {
+        realityEditor.device.onElementMultiTouchEnd(event);
+    }
+    
     var index = this.currentScreenTouches.indexOf(event.target.id.replace(/^(svg)/,""));
     if (index !== -1) {
         this.currentScreenTouches.splice(index, 1);
@@ -926,7 +950,6 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         this.currentScreenTouches.pop(); // always remove one even if target changes
     }
     console.log(this.currentScreenTouches);
-
 
     // stop editing the active frame or node if there are no more touches on it
     if (this.editingState.object) {
@@ -1056,16 +1079,16 @@ realityEditor.device.setDeviceName = function(deviceName) {
 
 /**
  * Sets the persistent global settings of the Reality Editor based on the state saved in iOS storage.
- * @param {boolean} developerState
- * @param {boolean} extendedTrackingState
- * @param {boolean} clearSkyState
- * @param {boolean} instantState
- * @param {boolean} speechState
- * @param {string} externalState
- * @param {string} discoveryState
- * @param {boolean} realityState
- * @param {string} zoneText
- * @param {boolean} zoneState
+ * @param {boolean} developerState - sets editingMode on
+ * @param {boolean} extendedTrackingState - enables vuforia extended tracking
+ * @param {boolean} clearSkyState - hides menu buttons for clean appearance
+ * @param {boolean} instantState - enables instant connection mode when connected to enabled capacitive touch hardware
+ * @param {boolean} speechState - enables Siri speech API to connect this to that
+ * @param {string} externalState - the IP address of a userinterface directory that should be loaded in instead of default
+ * @param {string} discoveryState - the IP address of a discovery server to be used instead of UDP
+ * @param {boolean} realityState - sets retail mode on, showing a different menu for those use cases
+ * @param {string} zoneText - the current zone that object discovery is limited to
+ * @param {boolean} zoneState - whether to use zones or not
  */
 realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, externalState, discoveryState, realityState, zoneText, zoneState) {
 
