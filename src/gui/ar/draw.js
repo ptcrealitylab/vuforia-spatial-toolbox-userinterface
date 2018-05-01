@@ -1022,9 +1022,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
         }
     
-    } else if (activeVehicle.visualization === "screen") {
+    } /*else if (activeVehicle.visualization === "screen") {
         this.hideTransformed(activeKey, activeVehicle, globalDOMCache, cout);
-    }
+    }*/
     
     return true;
 

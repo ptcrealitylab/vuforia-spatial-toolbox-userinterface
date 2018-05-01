@@ -25,6 +25,7 @@ realityEditor.gui.screenExtension.activeScreenObject = {
 realityEditor.gui.screenExtension.touchStart = function (eventObject){
 
     if (globalStates.guiState !== 'ui') return;
+    if (this.getValidTouches(eventObject).length > 1 && realityEditor.device.editingState.frame) return; // don't send multitouch if editing an AR frame
 
     // this.updateScreenObject(eventObject);
     this.onScreenTouchDown(eventObject);
@@ -39,6 +40,7 @@ realityEditor.gui.screenExtension.touchStart = function (eventObject){
 realityEditor.gui.screenExtension.touchMove = function (eventObject){
 
     if (globalStates.guiState !== 'ui') return;
+    if (this.getValidTouches(eventObject).length > 1 && realityEditor.device.editingState.frame) return; // don't send multitouch if editing an AR frame
 
     // this.updateScreenObject(eventObject);
     this.onScreenTouchMove(eventObject);
@@ -59,6 +61,7 @@ realityEditor.gui.screenExtension.touchMove = function (eventObject){
 realityEditor.gui.screenExtension.touchEnd = function (eventObject){
 
     // if (globalStates.guiState !== 'ui') return;
+    if (this.getValidTouches(eventObject).length > 1 && realityEditor.device.editingState.frame) return; // don't send multitouch if editing an AR frame
 
     // this.updateScreenObject(eventObject);
     this.onScreenTouchUp(eventObject);
@@ -80,16 +83,29 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
     //console.log("end", this.screenObject);
 };
 
+/**
+ * Filters a list of TouchEvents to only include those with populated coordinate fields (sometimes empty objects get stuck there)
+ * @param {ScreenEventObject} eventObject
+ * @return {Array.<{screenX: number, screenY: number, type: string}>}
+ */
+realityEditor.gui.screenExtension.getValidTouches = function(eventObject) {
+    return eventObject.touches.filter(function(touch) {
+        return (typeof touch.screenX === "number" && typeof touch.screenY === "number");
+    });
+};
+
 realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
     // figure out if I'm touching on AR frame, screen frame, or nothing
     // console.log('onScreenTouchDown', eventObject, this.screenObject);
 
     this.screenObject.closestObject = realityEditor.gui.ar.getClosestObject()[0];
     this.screenObject.touchState = eventObject.type;
-
-    this.screenObject.object = eventObject.object;
-    this.screenObject.frame = eventObject.frame;
-    this.screenObject.node = eventObject.node;
+    
+    if (this.getValidTouches(eventObject).length < 2) { // don't reset in between scaling gestures
+        this.screenObject.object = eventObject.object;
+        this.screenObject.frame = eventObject.frame;
+        this.screenObject.node = eventObject.node;
+    }
 
     var didTouchARFrame = (!!eventObject.object && !!eventObject.frame);
 
@@ -102,8 +118,7 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
         this.screenObject.x = point.x;
         this.screenObject.y = point.y;
     }
-
-
+    
     // console.log(this.screenObject);
 };
 
@@ -132,7 +147,7 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
     this.screenObject.x = point.x;
     this.screenObject.y = point.y;
     
-    if (eventObject.touches.length > 1) {
+    if (this.getValidTouches(eventObject).length > 1) {
         this.screenObject.touches = [];
         this.screenObject.touches[0] = {
             x: point.x,
@@ -173,10 +188,12 @@ realityEditor.gui.screenExtension.onScreenTouchUp = function(eventObject) {
 
     this.screenObject.closestObject = realityEditor.gui.ar.getClosestObject()[0];
     this.screenObject.touchState = eventObject.type;
-
-    this.screenObject.object = null;
-    this.screenObject.frame = null;
-    this.screenObject.node = null;
+    
+    if (this.getValidTouches(eventObject).length < 2) { // don't reset in between scaling gestures
+        this.screenObject.object = null;
+        this.screenObject.frame = null;
+        this.screenObject.node = null;
+    }
     
     // console.log(this.screenObject);
 };
@@ -202,6 +219,7 @@ realityEditor.gui.screenExtension.update = function (){
 realityEditor.gui.screenExtension.receiveObject = function (object){
 
     // console.log('receiveObject', object);
+    
     this.screenObject.object = object.object;
     this.screenObject.frame = object.frame;
     this.screenObject.node = object.node;
@@ -329,6 +347,9 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         } else {
             console.log('show frame -> AR');
             thisFrame.visualization = "ar";
+            
+            // set to false so it definitely gets re-added and re-rendered
+            thisFrame.visible = false;
 
             thisFrame.ar.matrix = [];
             thisFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
