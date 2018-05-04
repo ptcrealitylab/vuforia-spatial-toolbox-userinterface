@@ -323,4 +323,3 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
         callback(objectKey, frameKey);
     }
 };
-

@@ -133,11 +133,11 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
  * @return {Frame|Node|null}
  */
 realityEditor.device.getActiveVehicle = function(objectKey, frameKey, nodeKey) {
-    var vehicle = realityEditor.getNode(objectKey, frameKey, nodeKey);
-    if (!vehicle) {
-        vehicle = realityEditor.getFrame(objectKey, frameKey);
+    if (nodeKey) {
+        return realityEditor.getNode(objectKey, frameKey, nodeKey);
+    } else {
+        return realityEditor.getFrame(objectKey, frameKey);
     }
-    return vehicle;
 };
 
 /**
@@ -161,6 +161,10 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
 
     // TODO: look up why it can't equal 2... it might not be correct anymore
     if (closestFrameKey && pocketNode.screenZ && pocketNode.screenZ !== 2) {
+        
+        // update the pocket node with values from its new parent frame
+        pocketNode.objectId = closestObjectKey;
+        pocketNode.frameId = closestFrameKey;
 
         // set the name of the node by counting how many logic nodes the frame already has
         var closestFrame = realityEditor.getFrame(closestObjectKey, closestFrameKey);
@@ -186,10 +190,13 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
 
             globalDOMCache['iframe' + pocketItemId].setAttribute("data-object-key", closestObjectKey);
             globalDOMCache['iframe' + pocketItemId].setAttribute("data-frame-key", closestFrameKey);
-            globalDOMCache['iframe' + pocketItemId].setAttribute("onload", 'realityEditor.network.onElementLoad("' + closestObjectKey + '","' + closestFrameKey + '","' + null + '")');
+            globalDOMCache['iframe' + pocketItemId].setAttribute("onload", 'realityEditor.network.onElementLoad("' + closestObjectKey + '","' + closestFrameKey + '","' + pocketItemId + '")');
 
+            // post new object, frame, node, name into the logicNode iframe
+            realityEditor.network.onElementLoad(closestObjectKey, closestFrameKey, pocketItemId);
+            
+            // upload it to the server
             realityEditor.network.postNewLogicNode(objects[closestObjectKey].ip, closestObjectKey, closestFrameKey, pocketItemId, pocketNode);
-
         }
 
     }
@@ -408,18 +415,18 @@ realityEditor.device.onElementTouchDown = function(event) {
 realityEditor.device.onElementTouchMove = function(event) {
     var target = event.currentTarget;
     
-    // visual feedback if you move over the trash
-    if (event.pageX >= this.layout.getTrashThresholdX()) {
-        if (overlayDiv.classList.contains('overlayAction')) {
-            overlayDiv.classList.remove('overlayAction');
-            overlayDiv.classList.add('overlayNegative');
-        }
-    } else {
-        if (overlayDiv.classList.contains('overlayNegative')) {
-            overlayDiv.classList.remove('overlayNegative');
-            overlayDiv.classList.add('overlayAction');
-        }
-    }
+    // // visual feedback if you move over the trash
+    // if (event.pageX >= this.layout.getTrashThresholdX()) {
+    //     if (overlayDiv.classList.contains('overlayAction')) {
+    //         overlayDiv.classList.remove('overlayAction');
+    //         overlayDiv.classList.add('overlayNegative');
+    //     }
+    // } else {
+    //     if (overlayDiv.classList.contains('overlayNegative')) {
+    //         overlayDiv.classList.remove('overlayNegative');
+    //         overlayDiv.classList.add('overlayAction');
+    //     }
+    // }
     
     // cancel the touch hold timer if you move more than a negligible amount
     if (this.touchEditingTimer) {
@@ -523,6 +530,7 @@ realityEditor.device.onElementTouchUp = function(event) {
         this.postEventIntoIframe(event, target.frameId, target.nodeId);
     }
 
+    var didDisplayCrafting = false;
     if (globalStates.guiState === "node") {
 
         if (globalProgram.objectA) {
@@ -530,6 +538,7 @@ realityEditor.device.onElementTouchUp = function(event) {
             // open the crafting board if you tapped on a logic node
             if (target.nodeId === globalProgram.nodeA && target.type === "logic") {
                 realityEditor.gui.crafting.craftingBoardVisible(target.objectId, target.frameId, target.nodeId);
+                didDisplayCrafting = true;
             }
 
             globalProgram.objectB = target.objectId;
@@ -598,6 +607,9 @@ realityEditor.device.onElementTouchUp = function(event) {
     
     // hide the trash menu
     realityEditor.gui.menus.buttonOn("main",[]);
+    if (!didDisplayCrafting) {
+        realityEditor.gui.menus.on("main",[]);
+    }
 
     cout("onElementTouchUp");
 };
@@ -889,6 +901,20 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
             // this.checkIfFramePulledIntoUnconstrained(activeVehicle);
+            
+            // visual feedback if you move over the trash
+            if (event.pageX >= this.layout.getTrashThresholdX()) {
+                // if (overlayDiv.classList.contains('overlayAction')) {
+                //     overlayDiv.classList.remove('overlayAction');
+                    overlayDiv.classList.add('overlayNegative');
+                // }
+            } else {
+                // if (overlayDiv.classList.contains('overlayNegative')) {
+                    overlayDiv.classList.remove('overlayNegative');
+                    // overlayDiv.classList.add('overlayAction');
+                // }
+            }
+            
         }
     }
 };

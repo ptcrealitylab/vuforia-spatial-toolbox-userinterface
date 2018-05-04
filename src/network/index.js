@@ -480,7 +480,6 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
             origin.text = remote.text;
         }
         if (remote.matrix) {
-            console.log('write to matrix -- should be relativeMatrix');
             origin.matrix = remote.matrix;
             // TODO: recompute relativeMatrix based on this and parent frame's matrices
             origin.relativeMatrix = [];
@@ -660,6 +659,8 @@ realityEditor.network.onAction = function (action) {
                 for (var thisKey in res) {
                     if (!res.hasOwnProperty(thisKey)) continue;
                     if (!thisFrame.hasOwnProperty(thisKey)) continue;
+                    if (thisAction.reloadFrame.propertiesToIgnore &&
+                        thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue; // don't overwrite specified properties like AR position
                     thisFrame[thisKey] = res[thisKey];
                 }
 
@@ -1819,7 +1820,6 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     content.scale = positionData.scale;
 
     if (typeof positionData.matrix === "object") {
-        console.log('write to matrix -- should be relativeMatrix'); // TODO: this one might be ok to keep as just .matrix as long as we read it back correctly
         content.matrix = positionData.matrix;
     }
 

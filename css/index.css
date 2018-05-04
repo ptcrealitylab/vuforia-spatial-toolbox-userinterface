@@ -587,6 +587,10 @@ body {
     border-radius: 120px;
 }
 
+#overlay.overlayScreenFrame {
+    border-color: #3AF431;
+}
+
 #overlay.overlayPositive {
   border-color: #3AF431;
 }
@@ -597,10 +601,6 @@ body {
 
 #overlay.overlayAction {
   border-color: #F9F90A;
-}
-
-#overlay.overlayScreenFrame {
-    border-color: #3AF431;
 }
 
 .objectEntry {

@@ -168,10 +168,15 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
     if (this.screenObject.object && this.screenObject.frame && this.screenObject.object === this.screenObject.closestObject) {
         var matchingARFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
         if (matchingARFrame && matchingARFrame.visualization === 'screen') {
+            
+            console.log('moved matching ar frame from (' + matchingARFrame.ar.x + ', ' + matchingARFrame.ar.y + ') ...');
+
             // keep the invisible AR frames synchronized with the position of their screen frames (so that nodes are in same place and pulls out in the right place)
             matchingARFrame.ar.x = point.x;
             matchingARFrame.ar.y = point.y;
 
+            console.log('...to (' + matchingARFrame.ar.x + ', ' + matchingARFrame.ar.y + ')');
+            
             // console.log('mirroring position for frame ' + matchingARFrame.name);
             // if (this.screenObject.scale) {
             //     matchingARFrame.ar.scale = this.screenObject.scale;

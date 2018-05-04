@@ -802,7 +802,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                                 activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
                             }
                             
-                            console.log('write to matrix -- should be relativeMatrix');
                             var resultMatrix = [];
                             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                             realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
@@ -811,7 +810,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             
                         // if this isn't the first frame of unconstrained editing, just use the previously stored begin and temp
                         } else {
-                            console.log('write to matrix -- should be relativeMatrix');
                             var resultMatrix = [];
                             realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                             realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
@@ -1090,10 +1088,14 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
 
         if (typeof activeVehicle.frameSizeX === 'undefined') {
             activeVehicle.frameSizeX = activeVehicle.width;
+        } else if (typeof activeVehicle.width === 'undefined') {
+            // activeVehicle.width = activeVehicle.frameSizeX;
         }
 
         if (typeof activeVehicle.frameSizeY === 'undefined') {
             activeVehicle.frameSizeY = activeVehicle.height;
+        } else if (typeof activeVehicle.height === 'undefined') {
+            // activeVehicle.height = activeVehicle.frameSizeY;
         }
         
         activeVehicle.animationScale = 0;
@@ -1176,8 +1178,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.id = "iframe" + activeKey;
     addIframe.className = "main";
     addIframe.frameBorder = 0;
-    addIframe.style.width = (activeVehicle.width || 0) + "px";
-    addIframe.style.height = (activeVehicle.height || 0) + "px";
+    addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX || 100) + "px";
+    addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY || 100) + "px";
     addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addIframe.style.visibility = "hidden";
@@ -1413,7 +1415,6 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
                 }
 
                 if (globalStates.unconstrainedPositioning === true) {
-                    console.log('write to matrix -- should be relativeMatrix');
                     var resultMatrix = [];
                     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                     realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
@@ -1422,7 +1423,6 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
                 matrix.copyStillFromMatrixSwitch = false;
 
             } else if (globalStates.unconstrainedPositioning === true) {
-                console.log('write to matrix -- should be relativeMatrix');
                 var resultMatrix = [];
                 realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                 realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);

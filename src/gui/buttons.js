@@ -130,6 +130,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                 shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
                 for (var frameKey in tempResetObject.frames) {
                     var activeFrame = tempResetObject.frames[frameKey];
+                    if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames // TODO: could reset on-screen positions too
                     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
                     positionData.matrix = [];
                     if (shouldPlaceCenter) {
@@ -153,7 +154,6 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
-                        console.log('write to matrix -- should be relativeMatrix');
                         // activeNode.relativeMatrix = [];
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
                         activeNode.scale = globalStates.defaultScale;

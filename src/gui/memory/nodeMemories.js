@@ -155,7 +155,7 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
     console.log("drop logic onto object", logicNodeObject);
 
     var addedLogic = new Logic();
-
+    
     // copy over most properties from the saved pocket logic node
     var keysToCopyOver = ['blocks', 'iconImage', 'lastSetting', 'lastSettingBlock', 'links', 'lockPassword', 'lockType', 'name', 'nameInput', 'nameOutput'];
     keysToCopyOver.forEach( function(key) {
@@ -179,8 +179,18 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
         addedLogic.objectId = closestObjectKey;
         addedLogic.frameId = closestFrameKey;
 
+        addedLogic.x = 0;
+        addedLogic.y = 0;
+        
+        addedLogic.scale = closestObject ? closestObject.averageScale : globalStates.defaultScale;
+        addedLogic.screenZ = 1000;
+        addedLogic.loaded = false;
+        addedLogic.matrix = [];
+        addedLogic.relativeMatrix = [];
+
         // make sure that logic nodes only stick to 2.0 server version
         if(realityEditor.network.testVersion(closestObjectKey)>165) {
+            console.log('created node with logic key ' + logicKey + ' and added to ' + closestFrameKey);
             closestFrame.nodes[logicKey] = addedLogic;
 
             // render it
@@ -279,130 +289,18 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             pageX: evt.pageX,
             pageY: evt.pageY
         };
-        
-        // // TODO: handle cases where addedElement is null (couldn't find anywhere to add it)
-        //
-        // var objectKey = addedElement.objectKey;
-        // var frameKey = addedElement.frameKey;
-        // var generalObject = objects[objectKey];
-        //
-        // // Get the transformation matrix for the Logic Node from either the object's UI (if it exists in the DOM), or
-        // //   from one of its Nodes (one of the two situations must be true). If using the UI, refresh its matrix before
-        // //   using it, since we are in the Node view it is out-of-date. If using a Node, afterwards adjust the center
-        // //   by the Node's <x,y> offset within the object. 
-        //
-        // var element = document.getElementById('object' + addedElement.objectKey);
-        // var isNodeElement = false;
-        // if (element) {
-        //     // Using UI. Refresh matrix.
-        //     var tempMatrix = [];
-        //     var r = globalMatrix.r;
-        //     ar.utilities.multiplyMatrix(globalObjects[objectKey], globalStates.projectionMatrix, r);
-        //     ar.utilities.multiplyMatrix(rotateX, r, tempMatrix);
-        //     ar.draw.drawTransformed(realityEditor.gui.ar.draw.visibleObjects, objectKey, generalObject, tempMatrix, "ui", globalStates, globalCanvas, globalLogic, globalDOMCache, globalMatrix);
-        //     ar.draw.hideTransformed(realityEditor.gui.ar.draw.visibleObjects, objectKey, generalObject, "ui"); // TODO: change arguments 
-        //
-        // } else {
-        //     // Using Node.
-        //     var potentialElements = [].slice.call(document.getElementById('GUI').children);
-        //     var elementsIDsForThisObject = potentialElements.map( function(element) {
-        //         return element.id;
-        //     }).filter( function(elementID) {
-        //         return elementID.startsWith('object' + addedElement.objectKey);
-        //     });
-        //
-        //     if (elementsIDsForThisObject.length > 0) {
-        //         // extract true matrix for object so node can be placed correctly on it
-        //         element = document.getElementById(elementsIDsForThisObject.pop()); //document.getElementById(elementsIDsForThisObject[0]);
-        //         isNodeElement = true;
-        //     }
-        // }
-        //    
-        // if (element) {
-        //     // For now, the most reliable way to get the transformation matrix is to parse from CSS transform matrix3d
-        //     var matrixString = element.style.cssText.split('transform: ')[1].split(';')[0];
-        //     if (matrixString.startsWith('matrix3d')) { // converts transform string into matrix (array)
-        //         var matrix = matrixString
-        //             .split('(')[1]
-        //             .split(')')[0]
-        //             .split(',')
-        //             .map(parseFloat);
-        //         objects[objectKey].temp = matrix; // stores matrix in object so that screenCoordinatesToMatrixXY can read it
-        //     }
-        //    
-        //     // // get the projected touch point
-        //     // var matrixTouch = ar.utilities.screenCoordinatesToMatrixXY(objects[addedElement.objectKey], [evt.clientX, evt.clientY]);
-        //
-        //     // var objects[addedElement.objectKey];
-        //    
-        //     // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(/*addedElement.logicNode*/, evt.clientX, evt.clientY, true);
-        //    
-        //     var frameToPlaceOn = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
-        //
-        //     addedElement.positionOnLoad = {
-        //         pageX: evt.pageX,
-        //         pageY: evt.pageY
-        //     };
-        //
-        //     // var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(frameToPlaceOn, screenX, screenY, true); // TODO: change to markerXY
-        //     //
-        //     // var positionData = realityEditor.gui.ar.positioning.getPositionData(addedElement.logicNode);
-        //     //
-        //     // var newPosition = {
-        //     //     x: results.point.x - results.offsetLeft,
-        //     //     y: results.point.y - results.offsetTop
-        //     // };
-        //
-        //     // if (results) {
-        //     //     positionData.x = results.point.x - results.offsetLeft; // - initialTouchOffset.x;// - vehicleCornerScreenPosition[0];// - results.offsetLeft;// - initialFramePosition.x;  // TODO: put an offset based on touch position relative to frame div
-        //     //     positionData.y = results.point.y - results.offsetTop; // - initialTouchOffset.y;// - vehicleCornerScreenPosition[1];// - results.offsetTop;// - initialFramePosition.y;
-        //     // }
-        //
-        //     // if (useTouchOffset) {
-        //     //
-        //     //     var changeInPosition = {
-        //     //         x: newPosition.x - positionData.x,
-        //     //         y: newPosition.y - positionData.y
-        //     //     };
-        //     //
-        //     //     if (!activeVehicle.currentTouchOffset) {
-        //     //         activeVehicle.currentTouchOffset = changeInPosition;
-        //     //         console.log('set touch offset: ');
-        //     //         console.log(changeInPosition);
-        //     //     } else {
-        //     //         positionData.x = newPosition.x - activeVehicle.currentTouchOffset.x;
-        //     //         positionData.y = newPosition.y - activeVehicle.currentTouchOffset.y;
-        //     //     }
-        //     //
-        //     // } else {
-        //
-        //     // addedElement.logicNode.currentTouchOffset = { x: 0, y: 0 };
-        //     // positionData.x = newPosition.x;
-        //     // positionData.y = newPosition.y;
-        //
-        //    
-        //     //     // adjust by node offset if necessary
-        //     // if (isNodeElement) {
-        //     //     // var referenceElement = objects[objectKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
-        //     //     // var referenceElement = objects[objectKey].frames[frameKey].nodes[objectKey + element.id.split(addedElement.objectKey)[1]];
-        //     //     // var referenceElement = objects[objectKey].frames[objectKey + element.id.split(addedElement.objectKey)[1]];
-        //     //     var referenceElement = objects[objectKey].frames[frameKey].nodes[element.id.split('object')[1]];
-        //     //     matrixTouch[0] += referenceElement.x;
-        //     //     matrixTouch[1] += referenceElement.y;
-        //     // }
-        //     //
-        //     // // set the Logic Node's position within the object
-        //     // addedElement.logicNode.x = matrixTouch[0];
-        //     // addedElement.logicNode.y = matrixTouch[1];
 
-            // series of actions to begin dragging it immediately (copied from device.onTouchDown)
-            // globalProgram.objectA = false;
-            // globalProgram.nodeA = false;
-            
-            realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
+        var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
+        
+        realityEditor.device.editingState.touchOffset = {
+            x: logicNodeSize/2,
+            y: logicNodeSize/2
+        };
+
+        realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
             
             // realityEditor.gui.menus.on("bigTrash",[]);
-            realityEditor.gui.menus.on("trashOrSave", []);
+        realityEditor.gui.menus.on("trashOrSave", []); // TODO: make this bigTrash again and adjust trash area check to be full size if just added from memory
         // }
 
         // remove the touch event listener so that it doesn't fire twice and create two Logic Nodes by accident

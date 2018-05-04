@@ -198,7 +198,7 @@ function Node() {
 	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 0.2;
+	this.scale = 0.5;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
 	// Matrix combining the node unconstrained positioning with its parent frame matrix // TODO: move this outside definition so it doesnt get transferred to server - not necessary there
@@ -230,7 +230,7 @@ function Logic() {
 	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 0.2;
+	this.scale = 0.5;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
 

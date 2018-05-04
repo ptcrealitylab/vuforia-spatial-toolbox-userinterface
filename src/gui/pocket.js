@@ -84,6 +84,8 @@ realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
 
     var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
 
+    thisItem.objectId = "pocket";
+    thisItem.frameId = "pocket";
     thisItem.uuid = pocketItemId;
 
     thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
@@ -118,7 +120,6 @@ realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
     thisObject.sendMatrix = false;
     thisObject.loaded = false;
     thisObject.integerVersion = 170;
-    console.log('write to matrix -- should be relativeMatrix');
 
     thisObject.type = 'logic';
     thisObject.matrix = [];
