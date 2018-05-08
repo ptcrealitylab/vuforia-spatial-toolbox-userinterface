@@ -647,25 +647,29 @@ realityEditor.network.onAction = function (action) {
     if (typeof thisAction.reloadFrame !== "undefined") {
         var thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
         if (thisFrame) {
-            console.log('get frame');
+
             var urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + httpPort + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
+            
             this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
                 console.log('got frame');
-                console.log(objectKey, frameKey, nodeKey, res);
-
-                console.log('before...');
-                console.log(thisFrame);
                 
                 for (var thisKey in res) {
                     if (!res.hasOwnProperty(thisKey)) continue;
                     if (!thisFrame.hasOwnProperty(thisKey)) continue;
                     if (thisAction.reloadFrame.propertiesToIgnore &&
-                        thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue; // don't overwrite specified properties like AR position
+                        thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue;
+                    
+                    // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
+                    if (thisKey === 'ar' &&
+                        thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
+                        thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
+                        thisFrame['ar'].scale = res['ar'].scale;
+                        continue;
+                    }
+                    
                     thisFrame[thisKey] = res[thisKey];
                 }
-
-                console.log('after...');
-                console.log(thisFrame);
+                
             });
         }
     }

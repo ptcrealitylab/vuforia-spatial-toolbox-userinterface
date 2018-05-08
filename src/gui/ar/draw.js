@@ -488,14 +488,46 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
     // rename nodes and give new keys
     var newNodes = {};
-    for (var nodeKey in frame.nodes) {
-        if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
-        var node = frame.nodes[nodeKey];
+    for (var oldNodeKey in frame.nodes) {
+        if (!frame.nodes.hasOwnProperty(oldNodeKey)) continue;
+        var node = frame.nodes[oldNodeKey];
+        var newNodeKey = newFrameKey + node.name;
         node.objectId = newObjectKey;
         node.frameId = newFrameKey;
-        node.uuid = newFrameKey + node.name;
+        node.uuid = newNodeKey;
         newNodes[node.uuid] = node;
-        delete frame.nodes[nodeKey];
+        delete frame.nodes[oldNodeKey];
+
+        // update the DOM elements for each node
+        // (only if node has been loaded to DOM already - doesn't happen if haven't ever switched to node view)
+        if (globalDOMCache[oldNodeKey]) {
+            // update their keys in the globalDOMCache 
+            globalDOMCache['object' + newNodeKey] = globalDOMCache['object' + oldNodeKey];
+            globalDOMCache['iframe' + newNodeKey] = globalDOMCache['iframe' + oldNodeKey];
+            globalDOMCache[newNodeKey] = globalDOMCache[oldNodeKey];
+            globalDOMCache['svg' + newNodeKey] = globalDOMCache['svg' + oldNodeKey];
+            delete globalDOMCache['object' + oldNodeKey];
+            delete globalDOMCache['iframe' + oldNodeKey];
+            delete globalDOMCache[oldNodeKey];
+            delete globalDOMCache['svg' + oldNodeKey];
+            
+            // re-assign ids to DOM elements
+            globalDOMCache['object' + newNodeKey].id = 'object' + newNodeKey;
+            globalDOMCache['iframe' + newNodeKey].id = 'iframe' + newNodeKey;
+            globalDOMCache[newNodeKey].id = newNodeKey;
+            globalDOMCache[newNodeKey].objectId = newObjectKey;
+            globalDOMCache[newNodeKey].frameId = newFrameKey;
+            globalDOMCache['svg' + newNodeKey].id = 'svg' + newNodeKey;
+
+            // update iframe attributes
+            globalDOMCache['iframe' + newNodeKey].setAttribute("data-frame-key", newFrameKey);
+            globalDOMCache['iframe' + newNodeKey].setAttribute("data-object-key", newObjectKey);
+            globalDOMCache['iframe' + newNodeKey].setAttribute("data-node-key", newNodeKey);
+
+            globalDOMCache['iframe' + newNodeKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + newNodeKey + '")');
+            globalDOMCache['iframe' + newNodeKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+        }
+        
     }
 
     frame.nodes = newNodes;
@@ -513,31 +545,33 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         realityEditor.gui.screenExtension.screenObject.frame = newFrameKey;
     
     // update the DOM elements for the frame with new ids
+    // (only if node has been loaded to DOM already - doesn't happen if haven't ever switched to ui view)
+    if (globalDOMCache[oldFrameKey]) {
+        // update their keys in the globalDOMCache 
+        globalDOMCache['object' + newFrameKey] = globalDOMCache['object' + oldFrameKey];
+        globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + oldFrameKey];
+        globalDOMCache[newFrameKey] = globalDOMCache[oldFrameKey];
+        globalDOMCache['svg' + newFrameKey] = globalDOMCache['svg' + oldFrameKey];
+        delete globalDOMCache['object' + oldFrameKey];
+        delete globalDOMCache['iframe' + oldFrameKey];
+        delete globalDOMCache[oldFrameKey];
+        delete globalDOMCache['svg' + oldFrameKey];
 
-    // update their keys in the globalDOMCache 
-    globalDOMCache['object' + newFrameKey] = globalDOMCache['object' + oldFrameKey];
-    globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + oldFrameKey];
-    globalDOMCache[newFrameKey] = globalDOMCache[oldFrameKey];
-    globalDOMCache['svg' + newFrameKey] = globalDOMCache['svg' + oldFrameKey];
-    delete globalDOMCache['object' + oldFrameKey];
-    delete globalDOMCache['iframe' + oldFrameKey];
-    delete globalDOMCache[oldFrameKey];
-    delete globalDOMCache['svg' + oldFrameKey];
-    
-    // re-assign ids to DOM elements
-    globalDOMCache['object' + newFrameKey].id = 'object' + newFrameKey;
-    globalDOMCache['iframe' + newFrameKey].id = 'iframe' + newFrameKey;
-    globalDOMCache[newFrameKey].id = newFrameKey;
-    globalDOMCache[newFrameKey].objectId = newObjectKey;
-    globalDOMCache[newFrameKey].frameId = newFrameKey;
-    globalDOMCache['svg' + newFrameKey].id = 'svg' + newFrameKey;
+        // re-assign ids to DOM elements
+        globalDOMCache['object' + newFrameKey].id = 'object' + newFrameKey;
+        globalDOMCache['iframe' + newFrameKey].id = 'iframe' + newFrameKey;
+        globalDOMCache[newFrameKey].id = newFrameKey;
+        globalDOMCache[newFrameKey].objectId = newObjectKey;
+        globalDOMCache[newFrameKey].frameId = newFrameKey;
+        globalDOMCache['svg' + newFrameKey].id = 'svg' + newFrameKey;
 
-    // update iframe attributes
-    globalDOMCache['iframe' + newFrameKey].setAttribute("data-frame-key", newFrameKey);
-    globalDOMCache['iframe' + newFrameKey].setAttribute("data-object-key", newObjectKey);
+        // update iframe attributes
+        globalDOMCache['iframe' + newFrameKey].setAttribute("data-frame-key", newFrameKey);
+        globalDOMCache['iframe' + newFrameKey].setAttribute("data-object-key", newObjectKey);
 
-    globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
-    globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+        globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
+        globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+    }
     
     // add the frame to the new object and post the new frame on the server (must exist there before we can update the links)
     objects[newObjectKey].frames[newFrameKey] = frame;
@@ -1087,15 +1121,17 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         // assign the element some default properties if they don't exist
 
         if (typeof activeVehicle.frameSizeX === 'undefined') {
-            activeVehicle.frameSizeX = activeVehicle.width;
-        } else if (typeof activeVehicle.width === 'undefined') {
-            // activeVehicle.width = activeVehicle.frameSizeX;
+            activeVehicle.frameSizeX = activeVehicle.width || 220;
+        } 
+        if (typeof activeVehicle.width === 'undefined') {
+            activeVehicle.width = activeVehicle.frameSizeX;
         }
 
         if (typeof activeVehicle.frameSizeY === 'undefined') {
-            activeVehicle.frameSizeY = activeVehicle.height;
-        } else if (typeof activeVehicle.height === 'undefined') {
-            // activeVehicle.height = activeVehicle.frameSizeY;
+            activeVehicle.frameSizeY = activeVehicle.height || 220;
+        }
+        if (typeof activeVehicle.height === 'undefined') {
+            activeVehicle.height = activeVehicle.frameSizeY;
         }
         
         activeVehicle.animationScale = 0;
@@ -1178,8 +1214,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.id = "iframe" + activeKey;
     addIframe.className = "main";
     addIframe.frameBorder = 0;
-    addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX || 100) + "px";
-    addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY || 100) + "px";
+    addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX) + "px";
+    addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY) + "px";
     addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addIframe.style.visibility = "hidden";

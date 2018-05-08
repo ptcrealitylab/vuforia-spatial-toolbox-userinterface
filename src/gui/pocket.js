@@ -344,6 +344,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 
                 // TODO: add nodes to frame
                 var nodeNames = evt.target.dataset.nodeNames.split(',');
+                var hasMultipleNodes = nodeNames.length > 1;
                 nodeNames.forEach(function(nodeName) {
                     var nodeUuid = frameID + nodeName;
                     frame.nodes[nodeUuid] = new Node();
@@ -353,10 +354,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     addedNode.name = nodeName;
                     addedNode.text = undefined;
                     addedNode.type = 'node';
-                    addedNode.x = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
-                    addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
-                    addedNode.frameSizeX = 100;
-                    addedNode.frameSizeY = 100;
+                    addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one
+                    addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // random otherwise
+                    addedNode.frameSizeX = 220;
+                    addedNode.frameSizeY = 220;
                     addedNode.scale = closestObject.averageScale;
                     console.log("closest Node", closestObject.averageScale);
 

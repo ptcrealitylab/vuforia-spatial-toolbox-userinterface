@@ -25,8 +25,15 @@ realityEditor.gui.screenExtension.activeScreenObject = {
 realityEditor.gui.screenExtension.touchStart = function (eventObject){
 
     if (globalStates.guiState !== 'ui') return;
-    if (this.getValidTouches(eventObject).length > 1 && realityEditor.device.editingState.frame) return; // don't send multitouch if editing an AR frame
 
+    // don't send multitouch if editing an AR frame
+    if (this.getValidTouches(eventObject).length > 1 && realityEditor.device.editingState.frame) return;
+    
+    // don't send touch to screen if tapping a menu button
+    var frontTouchedElement = document.elementFromPoint(eventObject.x, eventObject.y);
+    var didTouchMenuButton = frontTouchedElement && frontTouchedElement.id && frontTouchedElement.id.indexOf('ButtonDiv') > -1;
+    if (didTouchMenuButton) return;
+    
     // this.updateScreenObject(eventObject);
     this.onScreenTouchDown(eventObject);
     
