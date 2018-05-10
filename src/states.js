@@ -150,9 +150,7 @@ var globalStates = {
 		timeout: undefined
 	},
     // constants for screen extension
-    framePullThreshold: 25,
-    // maxFramePullThreshold: 250,
-    // minFramePullThreshold: 25,
+    framePullThreshold: 50,
     
     // default scale for new frames and nodes
     defaultScale: 0.5,
@@ -235,13 +233,14 @@ var rotateX = [
 	0, 0, 0, 1
 ];
 
-var startTime = new Date().getTime();
 var editingAnimationsMatrix = [
     1, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
+
+var pocketBegin = [956.8170739024711,-25.32500250343194,0.09733138113722903,0.09713691303732826,23.175280781937825,954.8219354127291,0.10791667005412833,0.1077010525469294,42.48369712054169,49.60956821329689, -1.9987274305432945, -1.9947339731290876, -33040.24105790703, 14168.915981592378, 1559.0859741009547, 1559.966924318466];
 
 var testInterlink = {};
 

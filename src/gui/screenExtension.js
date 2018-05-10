@@ -316,6 +316,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
     if (screenFrame && isScreenObjectVisible) {
+        
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
             // calculate distance to frame
@@ -333,18 +334,41 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             var distanceThreshold = globalStates.framePullThreshold;
             // console.log(distanceThreshold);
 
-            if (distanceToObject > (globalStates.initialDistance + distanceThreshold)) { //distanceToFrame;
+            // is frame within screen bounds... don't push it in if you aren't located on top of a screen
+            var object = realityEditor.getObject(this.screenObject.object);
+            var isWithinWidth = Math.abs(screenFrame.ar.x) < object.targetSize.width/2;
+            var isWithinHeight = Math.abs(screenFrame.ar.y) < object.targetSize.height/2;
+            
+            var didPushIn = false;
+            
+            if (isWithinWidth && isWithinHeight) {
+                // when unconstrained editing, push in if the frame goes completely behind the z = 0 plane
+                if (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning) {
+                    // calculate center Z of frame to know if it is mostly in front or behind the marker plane
+                    var resultMatrix = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
+                    var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
+                    didPushIn = projectedPoint[2] < 0; // if the z coordinate of center of frame is negative
+                    // when not in unconstrained editing mode, just push in if you move towards the screen more than a certain threshold
+                } else {
+                    didPushIn = (distanceToObject < (globalStates.initialDistance - distanceThreshold));
+                }
+            }
+            
+            var didPullOut = (distanceToObject > (globalStates.initialDistance + distanceThreshold) ||
+                                !isWithinWidth || !isWithinHeight);
+
+            // pull out either if you move away from the screen, or if you move outside the screen bounds
+            if (didPullOut) { 
                 this.onScreenPullOut(screenFrame);
-            } else if (distanceToObject < (globalStates.initialDistance - distanceThreshold)) { //distanceToFrame;
+
+            // push into screen depending if you move close to frame while within screen bounds
+            } else if (didPushIn) { 
                 this.onScreenPushIn(screenFrame);
             }
             
         }
-    } /*else {
-        if (globalStates.framePullThreshold > globalStates.minFramePullThreshold) {
-            globalStates.framePullThreshold -= 5;
-        }
-    }*/
+    }
 };
 
 realityEditor.gui.screenExtension.sendScreenObject = function (){
@@ -371,6 +395,12 @@ realityEditor.gui.screenExtension.sendScreenObject = function (){
     
 };
 
+/**
+ * Map touchOffset x and y from marker units to 0-1 range representing the percent x and y within the touched frame
+ * e.g. (0,0) means tapped upper left corner, (0.5, 0.5) is center, (1,1) is lower right corner
+ * @param thisFrame
+ * @return {{x: number, y: number}}
+ */
 realityEditor.gui.screenExtension.getTouchOffsetAsPercent = function(thisFrame) {
     var touchOffset = realityEditor.device.editingState.touchOffset;
 
@@ -385,7 +415,6 @@ realityEditor.gui.screenExtension.getTouchOffsetAsPercent = function(thisFrame) 
     var xPercent = (frameCenter.x + (touchOffset.x - frameWidth/2) * thisFrame.ar.scale) / (frameWidth * thisFrame.ar.scale);
     var yPercent = (frameCenter.y + (touchOffset.y - frameHeight/2) * thisFrame.ar.scale) / (frameHeight * thisFrame.ar.scale);
 
-    // console.log(this.screenObject.touchOffsetX, this.screenObject.touchOffsetY);
     return {
         x: xPercent,
         y: yPercent
@@ -411,6 +440,11 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             }
 
             realityEditor.gui.ar.draw.hideTransformed(thisFrame.uuid, thisFrame, globalDOMCache, cout);
+
+            thisFrame.ar.x = 0;
+            thisFrame.ar.y = 0;
+            thisFrame.begin = [];
+            thisFrame.ar.matrix = [];
             
             realityEditor.device.resetEditingState();
             

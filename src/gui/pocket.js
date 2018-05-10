@@ -309,11 +309,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
-                frame.ar.scale = closestObject.averageScale;
+                frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
 
-                console.log("closest Frame", closestObject.averageScale);
+                // console.log("closest Frame", closestObject.averageScale);
 
                 frame.location = 'global';
                 frame.src = evt.target.dataset.name;

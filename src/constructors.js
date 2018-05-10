@@ -94,6 +94,11 @@ function Objects() {
     this.zone = "";
 
     this.averageScale = 0.5;
+    
+    this.targetSize = {
+        x: 300,
+        y: 300
+    }
 }
 
 function Frame() {
