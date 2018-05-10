@@ -728,9 +728,17 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             // re-activate the activeScreenObject when it reappears
             var screenExtension = realityEditor.gui.screenExtension;
             if (screenExtension.registeredScreenObjects[activeKey]) {
-                screenExtension.activeScreenObject.object = objectKey;
-                screenExtension.activeScreenObject.frame = activeKey;
-                screenExtension.activeScreenObject.node = null;
+
+                if (!screenExtension.visibleScreenObjects.hasOwnProperty(activeKey)) {
+                    screenExtension.visibleScreenObjects[activeKey] = {
+                        object: objectKey,
+                        frame: activeKey,
+                        node: null,
+                        x: 0,
+                        y: 0,
+                        touches: null
+                    };
+                }
             }
 
         }
@@ -1090,11 +1098,8 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         globalDOMCache["svg" + activeKey].style.display = 'none';
         
         // reset the active screen object when it disappears
-        if (realityEditor.gui.screenExtension.activeScreenObject.frame === activeKey ||
-            realityEditor.gui.screenExtension.activeScreenObject.node === activeKey) {
-            realityEditor.gui.screenExtension.activeScreenObject.object = null;
-            realityEditor.gui.screenExtension.activeScreenObject.frame = null;
-            realityEditor.gui.screenExtension.activeScreenObject.node = null;
+        if (realityEditor.gui.screenExtension.visibleScreenObjects[activeKey]) {
+            delete realityEditor.gui.screenExtension.visibleScreenObjects[activeKey];
         }
 
         cout("hideTransformed");
@@ -1491,6 +1496,17 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             }
         }
 
+        var editingVehicle = realityEditor.device.getEditingVehicle();
+        var thisIsBeingEdited = (editingVehicle === activeVehicle);
+
+        // multiply in the animation matrix if you are editing this frame in unconstrained mode.
+        // in the future this can be expanded but currently this is the only time it gets animated.
+        if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+            var animatedFinalMatrix = [];
+            utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
+            finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
+        }
+
         // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
         // but we want all of them to have a positive value so they are rendered in front of background canvas
         // and frames with developer=false should have the lowest positive value
@@ -1515,17 +1531,4 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         return finalMatrix;
 
     }
-};
-
-realityEditor.gui.ar.draw.areAnyScreensVisible = function() {
-    var anyScreensVisible = false;
-    for (var objectKey in this.visibleObjects) {
-        if (!objects.hasOwnProperty(objectKey)) continue;
-        if (objects[objectKey].visualization === 'screen') {
-            anyScreensVisible = true;
-            break;
-        }
-    }
-
-    return anyScreensVisible;
 };

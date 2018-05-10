@@ -297,6 +297,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             y: logicNodeSize/2
         };
 
+
         realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
             
             // realityEditor.gui.menus.on("bigTrash",[]);

@@ -151,8 +151,6 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 
         if (!realityEditor.device.editingState.touchOffset) {
             realityEditor.device.editingState.touchOffset = changeInPosition;
-            console.log('set touch offset: ');
-            console.log(changeInPosition);
         } else {
             positionData.x = newPosition.x - realityEditor.device.editingState.touchOffset.x;
             positionData.y = newPosition.y - realityEditor.device.editingState.touchOffset.y;
@@ -191,8 +189,6 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
 
         if (!realityEditor.device.editingState.touchOffset) {
             realityEditor.device.editingState.touchOffset = changeInPosition;
-            console.log('set touch offset: ');
-            console.log(changeInPosition);
         } else {
             positionData.x = point.x - realityEditor.device.editingState.touchOffset.x;
             positionData.y = point.y - realityEditor.device.editingState.touchOffset.y;

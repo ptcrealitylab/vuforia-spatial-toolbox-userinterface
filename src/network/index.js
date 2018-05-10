@@ -1001,16 +1001,17 @@ if (thisFrame) {
     
     if (typeof msgContent.sendScreenObject !== "undefined") {
         if(msgContent.sendScreenObject){
-            realityEditor.gui.screenExtension.activeScreenObject = 
-                {
-                    object : msgContent.object,
-                    frame : msgContent.frame,
-                    node: msgContent.node
-                };
             realityEditor.gui.screenExtension.registeredScreenObjects[msgContent.frame] = {
                 object : msgContent.object,
                 frame : msgContent.frame,
                 node: msgContent.node
+            };
+            realityEditor.gui.screenExtension.visibleScreenObjects[msgContent.frame] = {
+                object: msgContent.object,
+                frame: msgContent.frame,
+                node: msgContent.node,
+                x: 0,
+                y: 0
             };
         }
     }

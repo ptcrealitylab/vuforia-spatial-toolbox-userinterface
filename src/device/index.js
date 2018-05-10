@@ -1058,16 +1058,25 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
         realityEditor.device.eventObject.touches[0].type = type;
 
         if (type === 'touchstart') {
-            realityEditor.device.eventObject.object = null;
-            realityEditor.device.eventObject.frame = null;
-            var ele = evt.target;
-            while (ele && ele.tagName !== "BODY" && ele.tagName !== "HTML") {
-                if (ele.objectId && ele.frameId) {
-                    realityEditor.device.eventObject.object = ele.objectId;
-                    realityEditor.device.eventObject.frame = ele.frameId;
-                    break;
+            
+            var didJustAddPocket = false;
+            if (realityEditor.device.eventObject.object && realityEditor.device.eventObject.frame) {
+                var existingEventFrame = realityEditor.getFrame(realityEditor.device.eventObject.object, realityEditor.device.eventObject.frame);
+                didJustAddPocket = (existingEventFrame && typeof existingEventFrame.positionOnLoad !== 'undefined');
+            }
+            
+            if (!didJustAddPocket) {
+                realityEditor.device.eventObject.object = null;
+                realityEditor.device.eventObject.frame = null;
+                var ele = evt.target;
+                while (ele && ele.tagName !== "BODY" && ele.tagName !== "HTML") {
+                    if (ele.objectId && ele.frameId) {
+                        realityEditor.device.eventObject.object = ele.objectId;
+                        realityEditor.device.eventObject.frame = ele.frameId;
+                        break;
+                    }
+                    ele = ele.parentElement;
                 }
-                ele = ele.parentElement;
             }
         }
     }

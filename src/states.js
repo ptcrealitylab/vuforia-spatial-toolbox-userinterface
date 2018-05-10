@@ -149,8 +149,7 @@ var globalStates = {
 		interval: undefined,
 		timeout: undefined
 	},
-    // variables for screen extension
-    initialDistance: null,
+    // constants for screen extension
     framePullThreshold: 25,
     // maxFramePullThreshold: 250,
     // minFramePullThreshold: 25,

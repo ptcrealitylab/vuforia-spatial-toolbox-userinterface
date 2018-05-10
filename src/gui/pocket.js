@@ -276,8 +276,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
-            
-            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+
+            // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
+            // TODO: this would make it easier to drop exactly on the the object you want
+            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0]; 
             var closestObject = realityEditor.getObject(closestObjectKey);
             
             // make sure that the frames only sticks to 2.0 server version
@@ -367,6 +369,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     pageX: evt.pageX,
                     pageY: evt.pageY
                 };
+
+                // // set the eventObject so that the frame can interact with screens as soon as you add it
+                realityEditor.device.eventObject.object = closestObjectKey;
+                realityEditor.device.eventObject.frame = frameID;
+                realityEditor.device.eventObject.node = null;
 
                 closestObject.frames[frameID] = frame;
 

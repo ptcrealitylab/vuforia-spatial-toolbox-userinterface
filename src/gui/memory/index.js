@@ -529,7 +529,7 @@ function memoryCanCreate() {
     if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
         return false;
     }
-    if (realityEditor.gui.screenExtension.activeScreenObject.object && realityEditor.gui.screenExtension.activeScreenObject.frame) {
+    if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
         return false;
     }
     if (globalStates.guiState === 'ui') {
