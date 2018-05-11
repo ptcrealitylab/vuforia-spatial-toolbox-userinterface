@@ -121,7 +121,7 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
 
 realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 
-    if (globalStates.editingMode || realityEditor.device.editingState.node) {
+    if (globalStates.editingMode || realityEditor.device.BeeditingState.node) {
         return;
     }
     

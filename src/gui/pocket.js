@@ -344,8 +344,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
                 // thisFrame.visible = false;
 
-                // TODO: add nodes to frame
-                var nodeNames = evt.target.dataset.nodeNames.split(',');
+                // add each node with a non-empty name
+                var nodeNames = evt.target.dataset.nodeNames.split(',').filter(function(nodeName){return nodeName.length > 0;});
                 var hasMultipleNodes = nodeNames.length > 1;
                 nodeNames.forEach(function(nodeName) {
                     var nodeUuid = frameID + nodeName;

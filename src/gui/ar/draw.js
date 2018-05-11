@@ -535,14 +535,19 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     frame.uuid = newFrameKey;
     
     // update any variables in the application with the old keys to use the new keys
-    if (realityEditor.device.editingState.object === oldObjectKey)
+    if (realityEditor.device.editingState.object === oldObjectKey) {
         realityEditor.device.editingState.object = newObjectKey;
-    if (realityEditor.device.editingState.frame === oldFrameKey)
+    }
+    if (realityEditor.device.editingState.frame === oldFrameKey) {
         realityEditor.device.editingState.frame = newFrameKey;
-    if (realityEditor.gui.screenExtension.screenObject.object === oldObjectKey)
+        realityEditor.gui.ar.draw.pushEditedFrameToFront(newFrameKey);
+    }
+    if (realityEditor.gui.screenExtension.screenObject.object === oldObjectKey) {
         realityEditor.gui.screenExtension.screenObject.object = newObjectKey;
-    if (realityEditor.gui.screenExtension.screenObject.frame === oldFrameKey)
+    }
+    if (realityEditor.gui.screenExtension.screenObject.frame === oldFrameKey) {
         realityEditor.gui.screenExtension.screenObject.frame = newFrameKey;
+    }
     
     // update the DOM elements for the frame with new ids
     // (only if node has been loaded to DOM already - doesn't happen if haven't ever switched to ui view)
@@ -621,6 +626,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     
     // remove the frame from the old object
     delete objects[oldObjectKey].frames[oldFrameKey];
+    realityEditor.gui.ar.draw.removeFromEditedFramesList(oldFrameKey);
     realityEditor.network.deleteFrameFromObject(oldObject.ip, oldObjectKey, oldFrameKey);
 };
 
@@ -750,43 +756,38 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
                 // set initial position of frames placed in from pocket correctly
-                // 1. drop directly onto marker plane if in freeze state
+                // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
                 // 2. otherwise float in unconstrained slightly in front of the editor camera
                 // 3. animate so it looks like it is being pushed from pocket
                 if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
 
-                    if (globalStates.freezeButtonState) {
+                    if (globalStates.freezeButtonState || realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1) {
                         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, false);
                     } else {
-                        var scaleRatio = 1.5; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
+                        var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
                         activeVehicle.ar.x = (activeVehicle.positionOnLoad.pageX - globalStates.height/2) * scaleRatio;
                         activeVehicle.ar.y = (activeVehicle.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
                         // immediately start placing the pocket frame in unconstrained mode
                         realityEditor.device.editingState.unconstrained = true;
                     }
                     
-                    var activeFrameKey = activeVehicle.frameId || activeVehicle.uuid;
-                    var activeNodeKey = activeVehicle.uuid === activeFrameKey ? null : activeVehicle.uuid;
-                    realityEditor.device.beginTouchEditing(activeVehicle.objectId, activeFrameKey, activeNodeKey);
-                    
-                    // animate it as flowing out of the pocket
-                    
-                    var position = {x: 0, y: 0, z: 0.7};
-                    var pocketDropAnimation = new TWEEN.Tween(position)
-                        .to({z: 1.0}, 250)
-                        .easing(TWEEN.Easing.Quadratic.Out)
-                        .onUpdate( function(t) {
-                            editingAnimationsMatrix[15] = position.z;
-                            // animationPositionZ = ((1.0 - position.z) / (0.3)) * 200;
-                        }).onComplete(function() {
-                            editingAnimationsMatrix[15] = 1;
-                        }).onStop(function() {
-                            editingAnimationsMatrix[15] = 1;
-                        })
-                        .start();
-                    
-                    matrix.copyStillFromMatrixSwitch = false;
-                    activeVehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
+                    // only start editing it if you didn't do a quick tap that already released by the time it loads
+                    if (realityEditor.device.currentScreenTouches.indexOf("pocket-element") > -1) {
+
+                        var activeFrameKey = activeVehicle.frameId || activeVehicle.uuid;
+                        var activeNodeKey = activeVehicle.uuid === activeFrameKey ? null : activeVehicle.uuid;
+
+                        realityEditor.device.beginTouchEditing(activeVehicle.objectId, activeFrameKey, activeNodeKey);
+                        // animate it as flowing out of the pocket
+                        this.startPocketDropAnimation(250, 0.7, 1.0);
+                        matrix.copyStillFromMatrixSwitch = false;
+                        activeVehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
+
+                        // experiment to make pocket frame float further away from you if you are further away from the object...
+                        // activeVehicle.begin[14] = 0.5 * (activeVehicle.begin[14] + (this.visibleObjects[activeVehicle.objectId][14] * 1.3)); // average between preset matrix and how far away you are from the object
+                        // activeVehicle.begin[15] = activeVehicle.begin[14]; // 15 should always be set to 14 for the perspective divide 
+                        
+                    }
                     
                     delete activeVehicle.positionOnLoad;
                 }
@@ -948,17 +949,38 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // but we want all of them to have a positive value so they are rendered in front of background canvas
                 // and frames with developer=false should have the lowest positive value
 
+                // calculate center Z of frame to know if it is mostly in front or behind the marker plane
+                var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix);
+                // activeVehicle.originCoordinates = {
+                //     x: projectedPoint[0],
+                //     y: projectedPoint[1],
+                //     z: projectedPoint[2]
+                // };
+
                 activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
-                // finalMatrix[14] *= -1;
-                
                 var activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
-
-                if (finalMatrix[14] < 10) {
-                    finalMatrix[14] = 10;
-                }
-                finalMatrix[14] = 200 + activeElementZIncrease + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
                 
+                // var editedOrderData = (activeType === "ui") ? this.getFrameRenderPriority(activeKey) : this.getNodeRenderPriority(activeKey);
+                // var editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
+                
+                var editedOrderZIncrease = 0;
+                if (activeType !== "ui") {
+                    var editedOrderData = this.getNodeRenderPriority(activeKey);
+                    editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
+                }
+
+                // if (finalMatrix[14] < 10) {
+                //     finalMatrix[14] = 10;
+                // }
+                // finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+
+                if (projectedPoint[2] < 10) {
+                    projectedPoint[2] = 10;
+                }
+                finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / projectedPoint[2]; // TODO: does this mess anything up? it should fix the z-order problems
+
+
                 //move non-developer frames to the back so they don't steal touches from interactable frames //TODO: is this still necessary / working?
                 if (activeVehicle.developer === false) {
                     finalMatrix[14] = 100;
@@ -1085,6 +1107,27 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     
     return true;
 
+};
+
+realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds, startPerspectiveDivide, endPerspectiveDivide) {
+    var duration = timeInMilliseconds || 250;
+    var zStart = startPerspectiveDivide || 0.7;
+    var zEnd = endPerspectiveDivide || 1.0;
+    
+    var position = {x: 0, y: 0, z: zStart};
+    pocketDropAnimation = new TWEEN.Tween(position)
+        .to({z: zEnd}, duration)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onUpdate( function(t) {
+            editingAnimationsMatrix[15] = position.z;
+        }).onComplete(function() {
+            editingAnimationsMatrix[15] = zEnd;
+            pocketDropAnimation = null;
+        }).onStop(function() {
+            editingAnimationsMatrix[15] = zEnd;
+            pocketDropAnimation = null;
+        })
+        .start();
 };
 
 /**
@@ -1428,6 +1471,44 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
     }
 };
 
+realityEditor.gui.ar.draw.pushEditedNodeToFront = function(nodeKey) {
+    this.removeFromEditedNodesList(nodeKey);
+    globalStates.mostRecentlyEditedNodes.push(nodeKey);
+};
+
+realityEditor.gui.ar.draw.pushEditedFrameToFront = function(frameKey) {
+    this.removeFromEditedFramesList(frameKey);
+    globalStates.mostRecentlyEditedFrames.push(frameKey);
+};
+
+realityEditor.gui.ar.draw.removeFromEditedFramesList = function(frameKey) {
+    var existingIndex = globalStates.mostRecentlyEditedFrames.indexOf(frameKey);
+    if (existingIndex > -1) {
+        globalStates.mostRecentlyEditedFrames.splice(existingIndex, 1);
+    }
+};
+
+realityEditor.gui.ar.draw.removeFromEditedNodesList = function(nodeKey) {
+    var existingIndex = globalStates.mostRecentlyEditedNodes.indexOf(nodeKey);
+    if (existingIndex > -1) {
+        globalStates.mostRecentlyEditedNodes.splice(existingIndex, 1);
+    }
+};
+
+realityEditor.gui.ar.draw.getFrameRenderPriority = function(frameKey) {
+    return {
+        index: globalStates.mostRecentlyEditedFrames.indexOf(frameKey),
+        length: globalStates.mostRecentlyEditedFrames.length
+    }
+};
+
+realityEditor.gui.ar.draw.getNodeRenderPriority = function(nodeKey) {
+    return {
+        index: globalStates.mostRecentlyEditedNodes.indexOf(nodeKey),
+        length: globalStates.mostRecentlyEditedNodes.length
+    }
+};
+
 // simulates drawing... TODO: simplify this and make it only work for frames? or maybe nodes too...
 
 realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
@@ -1436,8 +1517,13 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
-        this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, matrix.r);
-        this.ar.utilities.multiplyMatrix(rotateX, matrix.r, activeObjectMatrixCopy);
+        if (visibleObjects[objectKey]) {
+            this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, matrix.r);
+            this.ar.utilities.multiplyMatrix(rotateX, matrix.r, activeObjectMatrixCopy);
+        } else {
+            activeObjectMatrixCopy = utilities.copyMatrix(activeObjectMatrix);
+        }
+
         
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
         
@@ -1518,16 +1604,16 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             }
         }
 
-        var editingVehicle = realityEditor.device.getEditingVehicle();
-        var thisIsBeingEdited = (editingVehicle === activeVehicle);
+        // var editingVehicle = realityEditor.device.getEditingVehicle();
+        // var thisIsBeingEdited = (editingVehicle === activeVehicle);
 
         // multiply in the animation matrix if you are editing this frame in unconstrained mode.
         // in the future this can be expanded but currently this is the only time it gets animated.
-        if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
-            var animatedFinalMatrix = [];
-            utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
-            finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
-        }
+        // if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+        //     var animatedFinalMatrix = [];
+        //     utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
+        //     finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
+        // }
 
         // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
         // but we want all of them to have a positive value so they are rendered in front of background canvas

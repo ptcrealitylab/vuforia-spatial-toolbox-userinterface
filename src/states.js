@@ -158,7 +158,17 @@ var globalStates = {
 	// rettail
 	reality: false,
 	interface: "gui",
-    
+
+    /**
+     * @type {Array.<string>} list of frameKeys that have been edited at any point. later in array = more recently edited.
+     */
+    mostRecentlyEditedFrames: [],
+
+    /**
+     * @type {Array.<string>} list of nodeKeys that have been edited at any point. later in array = more recently edited.
+     */
+    mostRecentlyEditedNodes: [],
+
     rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : (0) // if iPhone X, offset the right edge by 74px
 };
 
@@ -240,7 +250,9 @@ var editingAnimationsMatrix = [
     0, 0, 0, 1
 ];
 
-var pocketBegin = [956.8170739024711,-25.32500250343194,0.09733138113722903,0.09713691303732826,23.175280781937825,954.8219354127291,0.10791667005412833,0.1077010525469294,42.48369712054169,49.60956821329689, -1.9987274305432945, -1.9947339731290876, -33040.24105790703, 14168.915981592378, 1559.0859741009547, 1559.966924318466];
+var pocketDropAnimation = null;
+
+var pocketBegin = [957.8799965328,14.08087319936,-0.010595169148000001,-0.010574,-14.111489845951999,956.3419195071999,-0.0006352692680000001,-0.000634,-10.408501976832,-1.08562603904, -2.0039759439440004, -1.999972, -2403.635924829311, 4583.42312003328, 1273.2070436783604, 1274.65918];
 
 var testInterlink = {};
 

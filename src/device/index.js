@@ -330,7 +330,9 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     if (globalStates.guiState === "node") {
         this.editingState.node = nodeKey;
-
+        
+        realityEditor.gui.ar.draw.pushEditedNodeToFront(nodeKey);
+        
         // reset link creation state
         this.resetGlobalProgram();
 
@@ -341,9 +343,15 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
         }
 
-    } else if (globalStates.guiState === "ui" && activeVehicle.location === "global") {
-        // show the trash if this is a reusable frame
-        realityEditor.gui.menus.on("bigTrash", []);
+    } else if (globalStates.guiState === "ui") {
+
+        realityEditor.gui.ar.draw.pushEditedFrameToFront(frameKey);
+
+        if (activeVehicle.location === "global") {
+            // show the trash if this is a reusable frame
+            realityEditor.gui.menus.on("bigTrash", []);            
+        }
+
     }
 
     // move element to front of nodes or frames so that touches don't get blocked by other nodes
@@ -574,7 +582,7 @@ realityEditor.device.onElementTouchUp = function(event) {
 
             // remove it from the DOM
             realityEditor.gui.ar.draw.deleteNode(target.objectId, target.frameId, target.nodeId);
-
+            realityEditor.gui.ar.draw.removeFromEditedNodesList(target.nodeId);
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
@@ -594,8 +602,10 @@ realityEditor.device.onElementTouchUp = function(event) {
                 });
             });
 
+            // remove it from the DOM
             realityEditor.gui.ar.draw.killElement(this.editingState.frame, activeVehicle, globalDOMCache);
-
+            realityEditor.gui.ar.draw.removeFromEditedFramesList(this.editingState.frame);
+            // delete it from the server
             realityEditor.network.deleteFrameFromObject(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
 
             delete objects[this.editingState.object].frames[this.editingState.frame];
