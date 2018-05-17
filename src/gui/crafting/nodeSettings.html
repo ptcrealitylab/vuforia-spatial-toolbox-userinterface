@@ -226,22 +226,6 @@
             
             postNameToParent();
 
-            // TODO: make this work inside an iframe by posting a message to the parent that triggers the following:
-            /*
-            globalStates.currentLogic.name = newNameTextField.value;
-
-            // update node text label on AR view
-            globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
-                JSON.stringify( { renameNode: newNameTextField.value }) , "*");
-
-            // update model and view for pocket menu
-            var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
-            if (savedIndex > -1) {
-                realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
-                document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
-            }
-            */
-
         }
     }
     

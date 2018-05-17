@@ -112,7 +112,7 @@ realityEditor.gui.crafting.utilities.convertLogicToServerFormat = function(logic
         if (!logic.links.hasOwnProperty(key)) continue;
         logicServer.links[key] = this.convertBlockLinkToServerFormat(logic.links[key]);
     }
-
+    
     return logicServer;
 };
 

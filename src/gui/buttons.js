@@ -397,6 +397,7 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         // realityEditor.gui.pocket.createLogicNodeFromPocket();
         // realityEditor.gui.pocket.setPocketPosition(event);
 
+        // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
         var addedElement = realityEditor.gui.memory.nodeMemories.createLogicNodeFromMemory(null);
 
         // set the name of the node by counting how many logic nodes the frame already has
@@ -405,6 +406,10 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
             return node.type === 'logic'
         }).length;
         addedElement.logicNode.name = "LOGIC" + logicCount;
+
+        // upload new name to server when you change it
+        var object = realityEditor.getObject(addedElement.objectKey);
+        realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
 
         addedElement.positionOnLoad = {
             pageX: event.pageX,

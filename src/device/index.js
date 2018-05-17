@@ -197,6 +197,8 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
             
             // upload it to the server
             realityEditor.network.postNewLogicNode(objects[closestObjectKey].ip, closestObjectKey, closestFrameKey, pocketItemId, pocketNode);
+
+            // realityEditor.network.postNewNodeName(objects[closestObjectKey].ip, closestObjectKey, closestFrameKey, pocketItemId, pocketNode.name);
         }
 
     }

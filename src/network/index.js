@@ -1262,6 +1262,19 @@ realityEditor.network.loadLogicName = function(data) {
         realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = logicNode.name;
         document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = logicNode.name;
     }
+    
+    // upload name to server
+    var object = realityEditor.getObject(data.object);
+    this.postNewNodeName(object.ip, data.object, data.frame, data.node, logicNode.name);
+};
+
+realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKey, name) {
+    var contents = {
+        nodeName: name,
+        lastEditor: globalStates.tempUuid
+    };
+
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/", contents);
 };
 
 realityEditor.network.onSettingPostMessage = function (msgContent) {
