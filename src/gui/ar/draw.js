@@ -1235,20 +1235,6 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
 
         if (activeType === "logic") {
             
-            // // add the icon image for the logic nodes
-            // var logicIconContainer = document.createElement('div');
-            // logicIconContainer.className = 'menuBlockContents';
-            // logicIconContainer.style.position = 'absolute';
-            // // logicIconContainer.style.transform = 'translateZ(1px)'; // so it appears behind the 4 quadrants
-            // addOverlay.appendChild(logicIconContainer);
-            //
-            // // var logicIconImage = document.createElement('img');
-            // // logicIconImage.className = 'blockIcon';
-            // // logicIconImage.id = 'icon' + activeKey;
-            // // logicIconImage.style.width = (activeVehicle.frameSizeX * 0.75) + 'px';
-            // // logicIconContainer.appendChild(logicIconImage);
-            // // globalDOMCache['icon' + activeKey] = logicIconImage;
-            
             // add the 4-quadrant animated SVG overlay for the logic nodes
             var addLogic = this.createLogicElement(activeVehicle, activeKey);
             addOverlay.appendChild(addLogic);
@@ -1337,26 +1323,18 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     };
 };
 
+/**
+ * Gets the correct iconImage url for the logic node and posts it into the logic node iframe to be displayed.
+ * its iconImage property is either 'auto', 'custom', or 'none'
+ * @param {Logic} activeVehicle
+ */
 realityEditor.gui.ar.draw.updateLogicNodeIcon = function(activeVehicle) {
     // add the icon image for the logic nodes
-    // var logicIconImage = globalDOMCache['icon' + activeVehicle.uuid];
-
     var logicIconSrc = realityEditor.gui.crafting.getLogicNodeIcon(activeVehicle);
-    // if (logicIconSrc) {
-    //     logicIconImage.src = logicIconSrc;
-    //     logicIconImage.style.display = 'inline';
-    // } else {
-    //     logicIconImage.style.display = 'none';
-    // }
-
     var nodeDom = globalDOMCache["iframe" + activeVehicle.uuid];
     if (nodeDom) {
         nodeDom.contentWindow.postMessage( JSON.stringify({ iconImage: logicIconSrc }) , "*");
     }
-    
-    
-    
-    // // logicIconImage.style.width = (activeVehicle.frameSizeX * 0.75) + 'px';
 };
 
 realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey) {
@@ -1553,7 +1531,7 @@ realityEditor.gui.ar.draw.getNodeRenderPriority = function(nodeKey) {
 realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
 
     if (activeVehicle.fullScreen !== true) {
-        
+
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
         if (visibleObjects[objectKey]) {
@@ -1563,9 +1541,9 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             activeObjectMatrixCopy = utilities.copyMatrix(activeObjectMatrix);
         }
 
-        
+
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        
+
         var finalOffsetX = positionData.x;
         var finalOffsetY = positionData.y;
 
@@ -1621,24 +1599,26 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             }
 
         }
-        
-        // realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        
-        if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0 && typeof positionData.matrix[1] !== "undefined") {
+
+        realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+
+        var matrixToUse = realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix); // defaults to positionData.matrix for all but a special case of node
+
+        if (typeof matrixToUse !== "undefined" && matrixToUse.length > 0 && typeof matrixToUse[1] !== "undefined") {
             if (globalStates.unconstrainedPositioning === false) {
                 //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
-                utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
             }
             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
             utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
         }
 
-        if (typeof positionData.matrix !== "undefined") {
-            if (positionData.matrix.length < 13) {
+        if (typeof matrixToUse !== "undefined") {
+            if (matrixToUse.length < 13) {
                 utilities.multiplyMatrix(matrix.r3, activeObjectMatrixCopy, finalMatrix);
 
             } else {
-                utilities.multiplyMatrix(positionData.matrix, activeObjectMatrixCopy, matrix.r);
+                utilities.multiplyMatrix(matrixToUse, activeObjectMatrixCopy, matrix.r);
                 utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
             }
         }
@@ -1672,9 +1652,9 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
         // draw transformed
         // globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
-        
+
         // return 'matrix3d(' + finalMatrix.toString() + ')';
-        
+
         return finalMatrix;
 
     }

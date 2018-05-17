@@ -166,7 +166,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 var centerOffsetX = thisItem.frameSizeX / 2;
                 var centerOffsetY = thisItem.frameSizeY / 2;
                 
-                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
+                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false); // TODO: undo based on marker
 
 			}
 		}
