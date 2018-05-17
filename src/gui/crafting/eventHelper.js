@@ -686,8 +686,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
-
-
+    
     var wasBlockSettingsOpen = false;
     var container = document.getElementById('blockSettingsContainer');
     if (container) {
@@ -700,6 +699,55 @@ realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
     return wasBlockSettingsOpen;
 };
 
+realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
+    if (document.getElementById('menuContainer') && document.getElementById('menuContainer').style.display !== "none") {
+        return;
+    }
+    
+    // 1. temporarily hide all other datacrafting divs. redisplay them when menu hides
+    this.changeDatacraftingDisplayForMenu('none');
+
+    // 2. create and display the settings container
+
+    var nodeSettingsContainer = document.createElement('iframe');
+    nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
+    nodeSettingsContainer.setAttribute('class', 'settingsContainer');
+
+    // nodeSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
+    nodeSettingsContainer.src = 'src/gui/crafting/nodeSettings.html';
+    
+    nodeSettingsContainer.onload = function() {
+
+        var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
+
+        var logicNodeData = {
+            
+            version: realityEditor.getObject(keys.objectKey).integerVersion,
+            ip: keys.ip,
+            httpPort: httpPort,
+            
+            objectKey: keys.objectKey,
+            frameKey: keys.frameKey,
+            nodeKey: keys.logicKey,
+            
+            objectName: realityEditor.getObject(keys.objectKey).name,
+            logicName: globalStates.currentLogic.name,
+            
+            iconImageState: globalStates.currentLogic.iconImage,
+            autoImagePath: realityEditor.gui.crafting.getSrcForAutoIcon(globalStates.currentLogic)
+        };
+        
+        nodeSettingsContainer.contentWindow.postMessage(JSON.stringify(logicNodeData), '*');
+        
+    };
+    
+    var craftingBoard = document.getElementById('craftingBoard');
+    craftingBoard.appendChild(nodeSettingsContainer);
+
+    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+};
+
+/*
 realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     if (document.getElementById('menuContainer') && document.getElementById('menuContainer').style.display !== "none") {
         return;
@@ -868,6 +916,7 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     
     realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
 };
+*/
 
 realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
     var wasBlockSettingsOpen = false;

@@ -729,12 +729,7 @@ realityEditor.network.onAction = function (action) {
     }
     
     if (thisAction.loadLogicIcon) {
-        var iconImage = thisAction.loadLogicIcon.iconImage;
-        var logicNode = realityEditor.getNode(thisAction.loadLogicIcon.object, thisAction.loadLogicIcon.frame, thisAction.loadLogicIcon.node);
-        if (logicNode) {
-            logicNode.iconImage = iconImage;
-            realityEditor.gui.ar.draw.updateLogicNodeIcon(logicNode);
-        }
+        this.loadLogicIcon(thisAction.loadLogicIcon);
     }
     
     if (thisAction.addFrame) {
@@ -1229,6 +1224,14 @@ if (thisFrame) {
         
     }
 
+    if (msgContent.loadLogicIcon) {
+        this.loadLogicIcon(msgContent);
+    }
+    
+    if (msgContent.loadLogicName) {
+        this.loadLogicName(msgContent);
+    }
+
 
         /*    if (typeof msgContent.finishedLoading !== 'undefined') {
                 console.log('~~~ iframe finished loading ~~~')
@@ -1236,6 +1239,30 @@ if (thisFrame) {
 
 };
 
+realityEditor.network.loadLogicIcon = function(data) {
+    var iconImage = data.loadLogicIcon;
+    var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
+    if (logicNode) {
+        logicNode.iconImage = iconImage;
+        realityEditor.gui.ar.draw.updateLogicNodeIcon(logicNode);
+    }
+};
+
+realityEditor.network.loadLogicName = function(data) {
+    var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
+    logicNode.name = data.loadLogicName;
+
+    // update node text label on AR view
+    globalDOMCache["iframe" + logicNode.uuid].contentWindow.postMessage(
+        JSON.stringify( { renameNode: logicNode.name }) , "*");
+
+    // update model and view for pocket menu
+    var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(logicNode);
+    if (savedIndex > -1) {
+        realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = logicNode.name;
+        document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = logicNode.name;
+    }
+};
 
 realityEditor.network.onSettingPostMessage = function (msgContent) {
 

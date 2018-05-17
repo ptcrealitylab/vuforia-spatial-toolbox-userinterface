@@ -1341,7 +1341,7 @@ realityEditor.gui.ar.draw.updateLogicNodeIcon = function(activeVehicle) {
     // add the icon image for the logic nodes
     // var logicIconImage = globalDOMCache['icon' + activeVehicle.uuid];
 
-    var logicIconSrc = realityEditor.gui.crafting.getLogicBlockIcon(activeVehicle);
+    var logicIconSrc = realityEditor.gui.crafting.getLogicNodeIcon(activeVehicle);
     // if (logicIconSrc) {
     //     logicIconImage.src = logicIconSrc;
     //     logicIconImage.style.display = 'inline';

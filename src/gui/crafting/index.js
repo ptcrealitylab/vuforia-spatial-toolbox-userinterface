@@ -230,26 +230,53 @@ realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch
 
 };
 
+realityEditor.gui.crafting.getSrcForCustomIcon = function(logic) {
+    var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
+    return 'http://' + keys.ip + ':' + httpPort + '/logicNodeIcon/' + realityEditor.getObject(keys.objectKey).name + "/" + keys.logicKey + ".jpg";
+};
+
+realityEditor.gui.crafting.getSrcForAutoIcon = function(logic) {
+    var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
+        return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
+            !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
+    });
+    console.log(validBlockIDs);
+    if (validBlockIDs.length > 0) {
+        var firstBlock = logic.blocks[validBlockIDs[0]];
+        console.log(firstBlock.type);
+        return this.getBlockIcon(logic, firstBlock.type, false).src;
+    }
+    return null;
+};
+
 /**
  * Returns either the preset iconImage for this logic node, or the icon of its first visible block
  * @param {Logic} logic
  */
-realityEditor.gui.crafting.getLogicBlockIcon = function(logic) {
-    if (logic.iconImage) {
-        return logic.iconImage;
+realityEditor.gui.crafting.getLogicNodeIcon = function(logic) {
+    if (logic.iconImage === 'custom') {
+        return this.getSrcForCustomIcon(logic);
+    } else if (logic.iconImage === 'auto') {
+        return this.getSrcForAutoIcon(logic);
     } else {
-        var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
-            return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
-                    !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
-        });
-        console.log(validBlockIDs);
-        if (validBlockIDs.length > 0) {
-            var firstBlock = logic.blocks[validBlockIDs[0]];
-            console.log(firstBlock.type);
-            return this.getBlockIcon(logic, firstBlock.type, false).src;
-        }
+        return null;
     }
-    return null;
+    
+    // if (logic.iconImage) {
+    //     return logic.iconImage;
+    // } else {
+    //     var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
+    //         return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
+    //                 !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
+    //     });
+    //     console.log(validBlockIDs);
+    //     if (validBlockIDs.length > 0) {
+    //         var firstBlock = logic.blocks[validBlockIDs[0]];
+    //         console.log(firstBlock.type);
+    //         return this.getBlockIcon(logic, firstBlock.type, false).src;
+    //     }
+    // }
+    // return null;
 };
 
 // updates datacrafting visuals each frame

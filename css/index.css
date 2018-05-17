@@ -834,23 +834,25 @@ Logic Interface CSS
 /* block settings */
 
 .settingsContainer {
-  background-color: #B7B7B7; /*#969696;*/
+  /*background-color: #B7B7B7; !*#969696;*!*/
+  background-color: transparent;
   position: absolute;
   left: 0;
   top: 0;
   width: 506px;
   height: 320px;
+  border: none;
 }
 
-#nodeSettingsContainer {
-  text-align: center;
-  padding-top: 25px;
-  line-height: 50px;
-  font-size: xx-large;
-  font-weight: 700;
-  color: #00ffff;
-  background-color: transparent;
-}
+/*#nodeSettingsContainer {*/
+  /*text-align: center;*/
+  /*!*padding-top: 25px;*!*/
+  /*line-height: 50px;*/
+  /*font-size: xx-large;*/
+  /*font-weight: 700;*/
+  /*color: #00ffff;*/
+  /*background-color: transparent;*/
+/*}*/
 
 #currentLogicNameText {
     margin: 20px;
@@ -874,7 +876,7 @@ Logic Interface CSS
     font-size: 18px;
 }
 
-.saveNewNameButton {
+#saveNewNameButton {
     border: 3px solid cyan;
     background-color: rgba(0, 255, 255, 0.5);
     line-height: 30px;

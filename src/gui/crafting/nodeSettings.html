@@ -4,27 +4,135 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" type="text/css" href="../../../css/index.css">
+    <style>
+        /*#nodeSettingsContainer {*/
+            /*width: 568px;*/
+            /*height: 320px;*/
+            /*border: 2px solid black;*/
+            /*background-color: rgb(100, 100, 100);*/
+        /*}*/
+        #nodeSettingsContainer {
+            text-align: center;
+            /*padding-top: 25px;*/
+            line-height: 50px;
+            font-size: xx-large;
+            font-weight: 700;
+            color: #00ffff;
+            background-color: transparent;
+        }
+        #iconContainerDiv {
+            position: relative;
+            height: 100px;
+            width: 100px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 25px;
+        }
+        #logicNodeEmpty {
+            width: 100px;
+            height: 100px;
+            position: fixed;
+            left: 0;
+        }
+        #customIconImage {
+            position: fixed;
+            left: 0;
+            border-radius: 30px;
+        }
+        #logicNodeOutline {
+            width: 90px;
+            height: 90px;
+            border-radius: 30px;
+            border: 5px solid cyan;
+            position: fixed;
+            left: 0;
+        }
+        #currentLogicNameText {
+            color: white;
+            font-size: 12pt;
+            font-weight: normal;
+            margin-top: -5px;
+            margin-bottom: 0;
+        }
+        #renameContainer {
+            margin-bottom: 0;
+        }
+        #newNameTextField {
+            padding-top: 2px;
+            padding-bottom: 2px;
+            height: 35px;
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 244px;
+            text-indent: 10px;
+        }
+        #saveNewNameButton {
+            width: 165px;
+        }
+        #newIconContainer {
+            width: 435px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #iconButtonNone {
+            width: 33.3%;
+            margin-right: -5px;
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+        }
+        #iconButtonAuto {
+            width: 33.3%;
+            margin-left: -5px;
+            margin-right: -5px;
+        }
+        #iconButtonCustom {
+            width: 33.3%;
+            margin-left: -5px;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+        }
+        #iconUploadButton {
+            display: none;
+            position: absolute;
+            margin-top: 10px;
+            left: 65px;
+        }
+        #autoIconDescription {
+            display: none;
+            font-size: 12pt;
+            position: absolute;
+            left: 0;
+            width: 100%;
+            margin-top: -5px;
+            font-weight: normal;
+        }
+    </style>
 </head>
 <body>
-<div id="nodeSettingsContainer" class="settingsContainer" style="width: 568px; height: 320px; border: 2px solid black; background-color: rgb(100, 100, 100)">
-    <div style="position: relative; height: 100px; width: 100px; margin-left: auto; margin-right: auto;">
-        <img src="../../../svg/logicNode.svg" width="100px" height="100px" style="position: fixed; left: 0;"/>
-        <img id="iconImage" src="../../../svg/menu/setting.svg" width="100px" height="100px" style="position: fixed; left: 0; border-radius: 30px;"/>
-        <div style="width: 90px; height: 90px; border-radius: 30px; border: 5px solid cyan; position: fixed; left: 0;"></div>
+<div id="nodeSettingsContainer" style="display: none;"> <!-- begin hidden, only show when received post message from parent -->
+    
+    <!-- Empty logic node image always shows. If there is a custom or auto icon, shows custom icon image, which is clipped by the outline -->
+    <div id="iconContainerDiv">
+        <img id="logicNodeEmpty" src="../../../svg/logicNode.svg" width="100px" height="100px" />
+        <img id="customIconImage" src="../../../svg/menu/setting.svg" width="100px" height="100px" />
+        <div id="logicNodeOutline"></div>
     </div>
-    <div id="currentLogicNameText" style="color: white; font-size: 12pt; font-weight: normal; margin-top: -5px;">LOGIC0</div>
-    <div id="renameContainer" style="margin-bottom: 0;">
-        <input id="newNameTextField" type="text" placeholder="" style="padding-top: 2px; padding-bottom: 2px; height: 35px; border-top-left-radius: 5px; border-bottom-left-radius: 5px; width: 250px; text-indent: 10px;">
-        <button type="button" class="saveNewNameButton" style="width: 175px;">Rename Node</button>
+    
+    <div id="currentLogicNameText">LOGIC0</div>
+    
+    <div id="renameContainer">
+        <input id="newNameTextField" type="text" placeholder="">
+        <button id="saveNewNameButton" type="button">Rename Node</button>
     </div>
 
-    <div id="newIconContainer" style="width: 435px; margin-left: auto; margin-right: auto;">
-        <button class="iconTab" id="iconButtonNone" style="width: 33.3%; margin-right: -5px; border-top-left-radius: 5px; border-bottom-left-radius: 5px;">No Icon</button>
-        <button class="iconTab iconTabSelected" id="iconButtonAuto" style="width: 33.3%; margin-left: -5px; margin-right: -5px;">Auto Icon</button>
-        <button class="iconTab" id="iconButtonCustom" style="width: 33.3%; margin-left: -5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px;">Custom Icon</button>
+    <div id="newIconContainer">
+        <button class="iconTab" id="iconButtonNone">No Icon</button>
+        <button class="iconTab iconTabSelected" id="iconButtonAuto">Auto Icon</button>
+        <button class="iconTab" id="iconButtonCustom">Custom Icon</button>
     </div>
-    <input type="file" id="iconUploadButton" style="display: none; position: absolute; margin-top: 10px; left: 65px;">
-    <div id="autoIconDescription" style="display: none; font-size: 12pt; position: absolute; left: 0; width: 100%; margin-top: -5px; font-weight: normal;">(uses icon of first block placed)</div>
+    
+    <input type="file" id="iconUploadButton">
+    <div id="autoIconDescription">(uses icon of first block placed)</div>
     
 </div>
 
@@ -33,48 +141,116 @@
     var iconButtonState = 'Auto';
     var iconButtons = {};
     
+    var nodeSettingsContainer = document.querySelector('#nodeSettingsContainer');
+    
     var currentLogicNameText = document.querySelector('#currentLogicNameText');
     var newNameTextField = document.querySelector('#newNameTextField');
-    var saveNewNameButton = document.querySelector('.saveNewNameButton');
+    var saveNewNameButton = document.querySelector('#saveNewNameButton');
     var iconUploadButton = document.querySelector('#iconUploadButton');
     var autoIconDescription = document.querySelector('#autoIconDescription');
     
+    var customIconImage = document.querySelector('#customIconImage');
+    
     var currentLogicName = 'LOGIC0';
     
+    var logicNodeData = {
+        ip: null,
+        httpPort: null,
+        objectKey: null,
+        frameKey: null,
+        nodeKey: null,
+        objectName: null,
+        version: null,
+        iconImageState: null,
+        autoImagePath: null,
+        logicName: null
+    }; // TODO: add check that prevents image upload attempt if data is still null
+    
     initializeView();
+    
+    function onMessage(e) {
+        var msg = JSON.parse(e.data);
+        // logicNodeData = msg;
+        // console.log('received data', logicNodeData);
+
+        if (msg.ip) {
+            logicNodeData.ip = msg.ip;
+        }
+        if (msg.httpPort) {
+            logicNodeData.httpPort = msg.httpPort;
+        }
+        if (msg.objectKey) {
+            logicNodeData.objectKey = msg.objectKey;
+        }
+        if (msg.frameKey) {
+            logicNodeData.frameKey = msg.frameKey;
+        }
+        if (msg.nodeKey) {
+            logicNodeData.nodeKey = msg.nodeKey;
+        }
+        if (msg.objectName) {
+            logicNodeData.objectName = msg.objectName;
+        }
+        if (msg.version) {
+            logicNodeData.version = msg.version;
+        }
+        if (typeof msg.logicName !== "undefined") {
+            logicNodeData.logicName = msg.logicName;
+            setLogicName(msg.logicName);
+        }
+        if (typeof msg.autoImagePath !== "undefined") {
+            logicNodeData.autoImagePath = msg.autoImagePath;
+        }
+        if (typeof msg.iconImageState !== "undefined") {
+            logicNodeData.iconImageState = msg.iconImageState || 'Auto';
+            updateIconButtonSelection(capitalizeFirstLetter(logicNodeData.iconImageState));
+        }
+        
+        nodeSettingsContainer.style.display = 'inline';
+    }
+
+    function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+    
+    function setLogicName(newName) {
+        if (newName && newName !== '') {
+
+            currentLogicName = newName;
+
+            console.log("set new name of logic node to " + currentLogicName);
+
+            // update label in node settings menu
+            currentLogicNameText.innerHTML = currentLogicName;
+            newNameTextField.placeholder = currentLogicName;
+            
+            postNameToParent();
+
+            // TODO: make this work inside an iframe by posting a message to the parent that triggers the following:
+            /*
+            globalStates.currentLogic.name = newNameTextField.value;
+
+            // update node text label on AR view
+            globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
+                JSON.stringify( { renameNode: newNameTextField.value }) , "*");
+
+            // update model and view for pocket menu
+            var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
+            if (savedIndex > -1) {
+                realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
+                document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
+            }
+            */
+
+        }
+    }
     
     function initializeView() {
         newNameTextField.placeholder = currentLogicName;
         currentLogicNameText.innerHTML = currentLogicName;
 
         saveNewNameButton.onclick = function(e) {
-            if (newNameTextField.value && newNameTextField.value !== '') {
-
-                currentLogicName = newNameTextField.value;
-
-                console.log("set new name of logic node to " + currentLogicName);
-
-                // update label in node settings menu
-                currentLogicNameText.innerHTML = currentLogicName;
-                newNameTextField.placeholder = currentLogicName;
-
-                // TODO: make this work inside an iframe by posting a message to the parent that triggers the following:
-                /*
-                globalStates.currentLogic.name = newNameTextField.value;
-    
-                // update node text label on AR view
-                globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
-                    JSON.stringify( { renameNode: newNameTextField.value }) , "*");
-    
-                // update model and view for pocket menu
-                var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
-                if (savedIndex > -1) {
-                    realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
-                    document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
-                }
-                */
-
-            }
+            setLogicName(newNameTextField.value);
         };
 
         possibleIconStates.forEach(function(state) {
@@ -89,7 +265,9 @@
             uploadImageToServer();
         });
 
-        updateIconButtonSelection(iconButtonState);
+        // updateIconButtonSelection(iconButtonState);
+
+        window.addEventListener("message", onMessage);
     }
     
     function updateIconButtonSelection(newSelection) {
@@ -102,7 +280,7 @@
 
         iconUploadButton.style.display = 'none';
         autoIconDescription.style.display = 'none';
-
+        
         switch (newSelection) {
             case 'None':
                 useIconNone();
@@ -119,27 +297,54 @@
     }
     
     function useIconNone() {
-        document.getElementById('iconImage').style.display = 'none';
+        customIconImage.style.display = 'none';
     }
     
     function useIconAuto() {
         // var autoSrc = 'png/_test_icon_image.png';
-        document.getElementById('iconImage').style.display = 'none'; // force re-render
-        var autoSrc = '../../../svg/menu/setting.svg';
-        document.getElementById('iconImage').src = autoSrc;// + '?' + new Date().getTime();
+        customIconImage.style.display = 'none'; // force re-render
+        var autoSrc = logicNodeData.autoImagePath || '../../../png/emptyLogicIcon.png'; //'../../../svg/menu/setting.svg';
+        customIconImage.src = autoSrc;// + '?' + new Date().getTime();
         setTimeout(function() {
-            document.getElementById('iconImage').style.display = 'inline';
+            customIconImage.style.display = 'inline';
         }, 100);
 
         autoIconDescription.style.display = 'inline';
     }
     
+    function getSrcForCustomIcon() {
+        return 'http://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/logicNodeIcon/' + logicNodeData.objectName + "/" + logicNodeData.nodeKey + ".jpg";
+    }
+    
+    function postIconToParent() {
+        parent.postMessage(JSON.stringify({
+            loadLogicIcon: iconButtonState.toLowerCase(),
+            version: logicNodeData.version,
+            object: logicNodeData.objectKey,
+            frame: logicNodeData.frameKey,
+            node: logicNodeData.nodeKey
+        }), '*');
+    }
+    
+    function postNameToParent() {
+        parent.postMessage(JSON.stringify({
+            loadLogicName: currentLogicName,
+            version: logicNodeData.version,
+            object: logicNodeData.objectKey,
+            frame: logicNodeData.frameKey,
+            node: logicNodeData.nodeKey
+        }), '*');
+    }
+    
     function useIconCustom() {
-        // document.getElementById('iconImage').style.display = 'none'; // force re-render
-        var customSrc = 'http://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg';
-        document.getElementById('iconImage').src = customSrc;// + '?' + new Date().getTime();
+        // customIconImage.style.display = 'none'; // force re-render
+        // var customSrc = 'http://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg'; http://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg
+
+        var customSrc = getSrcForCustomIcon();
+
+        customIconImage.src = customSrc;// + '?' + new Date().getTime();
         setTimeout(function() {
-            document.getElementById('iconImage').style.display = 'inline';
+            customIconImage.style.display = 'inline';
         }, 100);
 
         iconUploadButton.style.display = 'inline';
@@ -171,14 +376,7 @@
         // Set up the request.
         var xhr = new XMLHttpRequest();
         
-        var data = {
-            ip: '192.168.1.227',
-            httpPort: 8080,
-            objectKey: 'secondScreenLQc0zt7ejv3x',
-            frameKey: 'secondScreenLQc0zt7ejv3xgraphUI5ofroz12vjru',
-            nodeKey: 'ZHg9f0rbute1'
-        };
-        var postUrl = 'http://' + data.ip + ':' + data.httpPort + '/object/' + data.objectKey + "/frame/" + data.frameKey + "/node/" + data.nodeKey + "/uploadIconImage/";
+        var postUrl = 'http://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/object/' + logicNodeData.objectKey + "/frame/" + logicNodeData.frameKey + "/node/" + logicNodeData.nodeKey + "/uploadIconImage/";
 
         // Open the connection.
         xhr.open('POST', postUrl, true);
@@ -190,9 +388,14 @@
                 // newIconSubmitButton.innerHTML = 'Upload';
                 console.log('successful upload');
                 setTimeout(function() {
-                    var customSrc = 'http://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg';
-                    document.getElementById('iconImage').src = customSrc;// + '?' + new Date().getTime();
-                    document.getElementById('iconImage').style.display = 'inline';
+                    
+                    // var customSrc = getSrcForCustomIcon();
+                    // customIconImage.src = customSrc;// + '?' + new Date().getTime();
+                    // customIconImage.style.display = 'inline';
+
+                    useIconCustom();
+                    postIconToParent();
+                    
                 }, 1000);
 
             } else {
@@ -201,7 +404,7 @@
         };
         
         // hide the existing image
-        document.getElementById('iconImage').style.display = 'none';
+        customIconImage.style.display = 'none';
 
         // Send the Data.
         xhr.send(formData);

@@ -249,7 +249,7 @@ function Logic() {
 
 	this.lastSettingBlock = "";
 	// the iconImage is in png or jpg format and will be stored within the logicBlock folder. A reference is placed here.
-	this.iconImage = null;
+	this.iconImage = 'auto';
 	// nameInput are the names given for each IO.
 	this.nameInput = ["", "", "", ""];
 	// nameOutput are the names given for each IO
