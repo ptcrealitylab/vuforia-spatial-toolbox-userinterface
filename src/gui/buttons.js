@@ -394,8 +394,35 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
 
     if (globalStates.pocketButtonDown === true && globalStates.guiState === "node") {
 
-        realityEditor.gui.pocket.createLogicNodeFromPocket();
-        realityEditor.gui.pocket.setPocketPosition(event);
+        // realityEditor.gui.pocket.createLogicNodeFromPocket();
+        // realityEditor.gui.pocket.setPocketPosition(event);
+
+        var addedElement = realityEditor.gui.memory.nodeMemories.createLogicNodeFromMemory(null);
+
+        // set the name of the node by counting how many logic nodes the frame already has
+        var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
+        var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
+            return node.type === 'logic'
+        }).length;
+        addedElement.logicNode.name = "LOGIC" + logicCount;
+
+        addedElement.positionOnLoad = {
+            pageX: event.pageX,
+            pageY: event.pageY
+        };
+
+        var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
+
+        realityEditor.device.editingState.touchOffset = {
+            x: logicNodeSize/2,
+            y: logicNodeSize/2
+        };
+
+        realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
+
+        realityEditor.gui.menus.on("bigTrash",[]);
+        // realityEditor.gui.menus.on("trashOrSave", []); // TODO: make this bigTrash again and adjust trash area check to be full size if just added from memory
+        // }
 
     }
 };

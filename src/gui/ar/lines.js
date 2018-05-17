@@ -258,7 +258,10 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
             nodeA.screenZ = nodeA.screenLinearZ*objectA.averageScale;
 		}
 
-		var logicA = globalProgram.logicA || 4;
+		var logicA = globalProgram.logicA;
+		if (globalProgram.logicA === false) {
+		    logicA = 4;
+        }
 
 		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector);
 	}

@@ -230,6 +230,28 @@ realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch
 
 };
 
+/**
+ * Returns either the preset iconImage for this logic node, or the icon of its first visible block
+ * @param {Logic} logic
+ */
+realityEditor.gui.crafting.getLogicBlockIcon = function(logic) {
+    if (logic.iconImage) {
+        return logic.iconImage;
+    } else {
+        var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
+            return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
+                    !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
+        });
+        console.log(validBlockIDs);
+        if (validBlockIDs.length > 0) {
+            var firstBlock = logic.blocks[validBlockIDs[0]];
+            console.log(firstBlock.type);
+            return this.getBlockIcon(logic, firstBlock.type, false).src;
+        }
+    }
+    return null;
+};
+
 // updates datacrafting visuals each frame
 // renders all the links for a datacrafting grid, draws cut line if present, draws temp block if present
 realityEditor.gui.crafting.redrawDataCrafting = function() {
@@ -404,9 +426,11 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
             globalStates.freezeButtonState = true;
             realityEditor.app.appFunctionCall("freeze");
         }
+
+        // update the icon image of the current logic node in case it was based on the blocks
+        realityEditor.gui.ar.draw.updateLogicNodeIcon(globalStates.currentLogic);
     }
-
-
+    
     // remove the block menu if it's showing
     this.blockMenu.resetBlockMenu();
     // reset side menu buttons
@@ -424,6 +448,11 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
  **/
 
 realityEditor.gui.crafting.blockMenuVisible = function() {
+    if (document.getElementById('nodeSettingsContainer') && document.getElementById('nodeSettingsContainer').style.display !== "none") {
+        return;
+    }
+
+    realityEditor.gui.menus.on("crafting",["logicPocket"]);
     
     // hide block settings if necessary
     blockSettingsContainer = document.getElementById('blockSettingsContainer');
@@ -432,11 +461,8 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
     }
     
     var _this = this;
-    //temporarily hide all other datacrafting divs. redisplay them when menu hides
-    document.getElementById("datacraftingCanvas").style.display = "none";
-    document.getElementById("blockPlaceholders").style.display = "none";
-    document.getElementById("blocks").style.display = "none";
-    document.getElementById("datacraftingEventDiv").style.display = "none";
+    
+    this.eventHelper.changeDatacraftingDisplayForMenu('none');
 
     // create the menu if it doesn't already exist, otherwise just show it
     var existingMenu = document.getElementById('menuContainer');
@@ -457,22 +483,20 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
  **/
 
 realityEditor.gui.crafting.blockMenuHide = function() {
-
-    //temporarily hide all other datacrafting divs. redisplay them when menu hides
-    document.getElementById("datacraftingCanvas").style.display = "";
-    document.getElementById("blockPlaceholders").style.display = "";
-    document.getElementById("blocks").style.display = "";
-    document.getElementById("datacraftingEventDiv").style.display = "";
     
     var existingMenu = document.getElementById('menuContainer');
-    if (existingMenu) {
+    if (existingMenu && existingMenu.style.display !== 'none') {
         existingMenu.style.display = 'none';
+        //temporarily hide all other datacrafting divs. redisplay them when menu hides
+        this.eventHelper.changeDatacraftingDisplayForMenu('');
+
         if (!globalStates.pocketButtonState) {
             globalStates.pocketButtonState = true;
             //document.getElementById('pocketButton').src = pocketButtonImage[4].src;
             realityEditor.gui.menus.off("crafting",["logicPocket"]);
         }
     }
+    
 };
 
 

@@ -364,8 +364,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         
     }
 
-    // todo this is a test for the pocket
-    
+    // temporarily aren't using this method anymore for the pocket, it immediately gets added to the closest object
+    /*
     if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
         
         this.activeObject = pocketItem["pocket"];
@@ -423,6 +423,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
         
     }
+    */
 
     // Render the inTransitionFrame 
 
@@ -1233,6 +1234,22 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         // todo the lines need to end at the center of the square.
 
         if (activeType === "logic") {
+            
+            // // add the icon image for the logic nodes
+            // var logicIconContainer = document.createElement('div');
+            // logicIconContainer.className = 'menuBlockContents';
+            // logicIconContainer.style.position = 'absolute';
+            // // logicIconContainer.style.transform = 'translateZ(1px)'; // so it appears behind the 4 quadrants
+            // addOverlay.appendChild(logicIconContainer);
+            //
+            // // var logicIconImage = document.createElement('img');
+            // // logicIconImage.className = 'blockIcon';
+            // // logicIconImage.id = 'icon' + activeKey;
+            // // logicIconImage.style.width = (activeVehicle.frameSizeX * 0.75) + 'px';
+            // // logicIconContainer.appendChild(logicIconImage);
+            // // globalDOMCache['icon' + activeKey] = logicIconImage;
+            
+            // add the 4-quadrant animated SVG overlay for the logic nodes
             var addLogic = this.createLogicElement(activeVehicle, activeKey);
             addOverlay.appendChild(addLogic);
             globalDOMCache["logic" + activeKey] = addLogic;
@@ -1318,6 +1335,28 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
         addOverlay: addOverlay,
         addSVG: addSVG
     };
+};
+
+realityEditor.gui.ar.draw.updateLogicNodeIcon = function(activeVehicle) {
+    // add the icon image for the logic nodes
+    // var logicIconImage = globalDOMCache['icon' + activeVehicle.uuid];
+
+    var logicIconSrc = realityEditor.gui.crafting.getLogicBlockIcon(activeVehicle);
+    // if (logicIconSrc) {
+    //     logicIconImage.src = logicIconSrc;
+    //     logicIconImage.style.display = 'inline';
+    // } else {
+    //     logicIconImage.style.display = 'none';
+    // }
+
+    var nodeDom = globalDOMCache["iframe" + activeVehicle.uuid];
+    if (nodeDom) {
+        nodeDom.contentWindow.postMessage( JSON.stringify({ iconImage: logicIconSrc }) , "*");
+    }
+    
+    
+    
+    // // logicIconImage.style.width = (activeVehicle.frameSizeX * 0.75) + 'px';
 };
 
 realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey) {

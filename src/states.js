@@ -187,6 +187,18 @@ var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
+var pocketFrame = {
+    frame: null,
+    positionOnLoad: null,
+    closestObjectKey: null
+};
+var pocketNode = {
+    node: null,
+    positionOnLoad: null,
+    closestObjectKey: null,
+    closestFrameKey: null
+};
+
 var globalDOMCache = {};
 var shadowObjects = {};
 

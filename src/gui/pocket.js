@@ -59,8 +59,6 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 		if (globalStates.guiState === 'logic') {
 		    realityEditor.gui.crafting.blockMenuVisible();
-
-            realityEditor.gui.menus.on("crafting",["logicPocket"]);
 		}
 	}
 	else {
@@ -70,12 +68,12 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 		if (globalStates.guiState === 'logic') {
 			realityEditor.gui.crafting.blockMenuHide();
             realityEditor.gui.menus.off("crafting",["logicPocket"]);
-
         }
 	}
 
 };
 
+/*
 realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
     
     pocketItemId = realityEditor.device.utilities.uuidTime();
@@ -137,7 +135,13 @@ realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
     //thisObject.visibleCounter = timeForContentLoaded;
 
     //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
+    
+    var closestFrameKey = realityEditor.gui.ar.getClosestFrame()[1];
+
+    realityEditor.gui.pocket.setPocketNode(thisItem, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
+
 };
+*/
 
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
@@ -168,6 +172,19 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 		}
 		
 	}
+};
+
+realityEditor.gui.pocket.setPocketFrame = function(frame, positionOnLoad, closestObjectKey) {
+    pocketFrame.frame = frame;
+    pocketFrame.positionOnLoad = positionOnLoad;
+    pocketFrame.closestObjectKey = closestObjectKey;
+};
+
+realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestObjectKey, closestFrameKey) {
+    pocketNode.node = node;
+    pocketNode.positionOnLoad = positionOnLoad;
+    pocketNode.closestObjectKey = closestObjectKey;
+    pocketNode.closestFrameKey = closestFrameKey;
 };
 
 /**
@@ -380,6 +397,8 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 // send it to the server
                 // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
                 realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
+                
+                realityEditor.gui.pocket.setPocketFrame(frame, {pageX: evt.pageX, pageY: evt.pageY}, closestObjectKey);
 
             } else {
                 console.warn('there aren\'t any visible objects to place this frame on!');

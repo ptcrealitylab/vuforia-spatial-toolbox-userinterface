@@ -172,7 +172,7 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
             return node.type === 'logic'
         }).length;
         pocketNode.name = "LOGIC" + logicCount;
-
+        
         // make sure that logic nodes only stick to 2.0 server version
         if (realityEditor.network.testVersion(closestObjectKey) > 165) {
 
@@ -422,19 +422,6 @@ realityEditor.device.onElementTouchDown = function(event) {
  */
 realityEditor.device.onElementTouchMove = function(event) {
     var target = event.currentTarget;
-    
-    // // visual feedback if you move over the trash
-    // if (event.pageX >= this.layout.getTrashThresholdX()) {
-    //     if (overlayDiv.classList.contains('overlayAction')) {
-    //         overlayDiv.classList.remove('overlayAction');
-    //         overlayDiv.classList.add('overlayNegative');
-    //     }
-    // } else {
-    //     if (overlayDiv.classList.contains('overlayNegative')) {
-    //         overlayDiv.classList.remove('overlayNegative');
-    //         overlayDiv.classList.add('overlayAction');
-    //     }
-    // }
     
     // cancel the touch hold timer if you move more than a negligible amount
     if (this.touchEditingTimer) {
@@ -910,19 +897,11 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
-            // this.checkIfFramePulledIntoUnconstrained(activeVehicle);
-            
             // visual feedback if you move over the trash
             if (event.pageX >= this.layout.getTrashThresholdX()) {
-                // if (overlayDiv.classList.contains('overlayAction')) {
-                //     overlayDiv.classList.remove('overlayAction');
-                    overlayDiv.classList.add('overlayNegative');
-                // }
+                overlayDiv.classList.add('overlayNegative');
             } else {
-                // if (overlayDiv.classList.contains('overlayNegative')) {
-                    overlayDiv.classList.remove('overlayNegative');
-                    // overlayDiv.classList.add('overlayAction');
-                // }
+                overlayDiv.classList.remove('overlayNegative');
             }
             
         }
@@ -997,6 +976,20 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
 
         if (touchesOnActiveVehicle.length === 0) {
             console.log('this is the last touch - hide editing overlay');
+            
+            // TODO: if pocketNode.node === activeVehicle, move node to closestFrameToScreenPosition upon dropping it
+            // if (activeVehicle === pocketNode.node) {
+            //
+            //     var closest = realityEditor.gui.ar.getClosestFrameToScreenCoordinates(event.pageX, event.pageY);
+            //
+            //     // set the name of the node by counting how many logic nodes the frame already has
+            //     var closestFrame = realityEditor.getFrame(closest[0], closest[1]);
+            //     var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
+            //         return node.type === 'logic'
+            //     }).length;
+            //     pocketNode.name = "LOGIC" + logicCount;
+            //
+            // }
 
             if (activeVehicle && !globalStates.editingMode) {
                 document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';

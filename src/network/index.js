@@ -728,6 +728,15 @@ realityEditor.network.onAction = function (action) {
         });
     }
     
+    if (thisAction.loadLogicIcon) {
+        var iconImage = thisAction.loadLogicIcon.iconImage;
+        var logicNode = realityEditor.getNode(thisAction.loadLogicIcon.object, thisAction.loadLogicIcon.frame, thisAction.loadLogicIcon.node);
+        if (logicNode) {
+            logicNode.iconImage = iconImage;
+            realityEditor.gui.ar.draw.updateLogicNodeIcon(logicNode);
+        }
+    }
+    
     if (thisAction.addFrame) {
         console.log("addFrame");
         
@@ -1906,8 +1915,15 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     globalDOMCache["iframe" + activeKey]._loaded = true;
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
-    this.cout("on_load");
+
+    if (nodeKey) {
+        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+        if (node.type === 'logic') {
+            realityEditor.gui.ar.draw.updateLogicNodeIcon(node);
+        }
+    }
     
+    this.cout("on_load");
 };
 
 /**

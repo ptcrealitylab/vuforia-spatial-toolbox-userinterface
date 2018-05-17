@@ -842,13 +842,14 @@ Logic Interface CSS
   height: 320px;
 }
 
-#nodeSettingsContainer {  
+#nodeSettingsContainer {
   text-align: center;
   padding-top: 25px;
   line-height: 50px;
   font-size: xx-large;
   font-weight: 700;
   color: #00ffff;
+  background-color: transparent;
 }
 
 #currentLogicNameText {
@@ -887,7 +888,49 @@ Logic Interface CSS
 #logicNodeIcon {
     width: 100px;
     height: 100px;
+    position: relative;
 }
+
+#settingsIconImage {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 35px;
+    /*<rect id = "2" x="14" y="14" rx="35" ry="35" width="130" height="130" stroke="#00ffff" stroke-width="25" fill="none"/>*/
+}
+
+#settingsIconClipping {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 35px;
+    border: 25px solid cyan;
+    /*<rect id = "2" x="14" y="14" rx="35" ry="35" width="130" height="130" stroke="#00ffff" stroke-width="25" fill="none"/>*/
+}
+
+.iconTab {
+    -webkit-user-select: auto;
+    line-height: 30px;
+    border: 3px solid cyan;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: none;
+    height: 45px;
+    -webkit-appearance: none;
+    padding-top: 5px;
+    font-size: 18px;
+    background-color: rgb(0,155,155);
+}
+
+.iconTabSelected {
+    background-color: rgb(0,255,255);
+}
+
+
 
 /* block menu */
 

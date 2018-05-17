@@ -151,16 +151,18 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
 
 // TODO: ben look at this next...
 // create a new instance of the saved logic node template, add it to the DOM and upload to the server
-realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logicNodeObject) {
-    console.log("drop logic onto object", logicNodeObject);
+realityEditor.gui.memory.nodeMemories.createLogicNodeFromMemory = function(logicNodeMemory) {
+    console.log("drop logic onto object based on memory", logicNodeMemory);
 
     var addedLogic = new Logic();
     
-    // copy over most properties from the saved pocket logic node
-    var keysToCopyOver = ['blocks', 'iconImage', 'lastSetting', 'lastSettingBlock', 'links', 'lockPassword', 'lockType', 'name', 'nameInput', 'nameOutput'];
-    keysToCopyOver.forEach( function(key) {
-        addedLogic[key] = logicNodeObject[key];
-    });
+    if (logicNodeMemory) {
+        // copy over most properties from the saved pocket logic node
+        var keysToCopyOver = ['blocks', 'iconImage', 'lastSetting', 'lastSettingBlock', 'links', 'lockPassword', 'lockType', 'name', 'nameInput', 'nameOutput'];
+        keysToCopyOver.forEach( function(key) {
+            addedLogic[key] = logicNodeMemory[key];
+        });
+    }
 
     // give new logic node a new unique identifier so each copy is stored separately
     var logicKey = realityEditor.device.utilities.uuidTime();
@@ -205,6 +207,8 @@ realityEditor.gui.memory.nodeMemories.createLogicNodeFromPocket = function(logic
             
             // send it to the server
             realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
+
+            realityEditor.gui.pocket.setPocketNode(addedLogic, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
 
             console.log("successfully added logic from pocket to object (" + closestObject.name + ", " + closestFrame.name + ")");
             return {
@@ -283,7 +287,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
         realityEditor.gui.pocket.pocketHide();
         console.log("move " + logicNodeObject.name + " to pointer position");
 
-        var addedElement = nodeMemories.createLogicNodeFromPocket(logicNodeObject);
+        var addedElement = nodeMemories.createLogicNodeFromMemory(logicNodeObject);
 
         addedElement.positionOnLoad = {
             pageX: evt.pageX,
@@ -297,11 +301,10 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
             y: logicNodeSize/2
         };
 
-
         realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
             
-            // realityEditor.gui.menus.on("bigTrash",[]);
-        realityEditor.gui.menus.on("trashOrSave", []); // TODO: make this bigTrash again and adjust trash area check to be full size if just added from memory
+            realityEditor.gui.menus.on("bigTrash",[]);
+        // realityEditor.gui.menus.on("trashOrSave", []); // TODO: make this bigTrash again and adjust trash area check to be full size if just added from memory
         // }
 
         // remove the touch event listener so that it doesn't fire twice and create two Logic Nodes by accident

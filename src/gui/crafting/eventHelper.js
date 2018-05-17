@@ -659,7 +659,18 @@ realityEditor.gui.crafting.eventHelper.addBlockFromMenu = function(blockJSON, po
     }, true);
 };
 
+//temporarily hide all other datacrafting divs. redisplay them when menu hides
+realityEditor.gui.crafting.eventHelper.changeDatacraftingDisplayForMenu = function(newDisplay) {
+    document.getElementById("datacraftingCanvas").style.display = newDisplay;
+    document.getElementById("blockPlaceholders").style.display = newDisplay;
+    document.getElementById("blocks").style.display = newDisplay;
+    document.getElementById("datacraftingEventDiv").style.display = newDisplay;
+};
+
 realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
+
+    this.changeDatacraftingDisplayForMenu('none');
+    
     var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
     var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.name + "/index.html";
     var craftingBoard = document.getElementById('craftingBoard');
@@ -675,9 +686,14 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
+
+
     var wasBlockSettingsOpen = false;
     var container = document.getElementById('blockSettingsContainer');
     if (container) {
+
+        this.changeDatacraftingDisplayForMenu('');
+        
         container.parentNode.removeChild(container);
         wasBlockSettingsOpen = true;
     }
@@ -685,7 +701,16 @@ realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
 };
 
 realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
+    if (document.getElementById('menuContainer') && document.getElementById('menuContainer').style.display !== "none") {
+        return;
+    }
+    
     var craftingBoard = document.getElementById('craftingBoard');
+    
+    // 1. temporarily hide all other datacrafting divs. redisplay them when menu hides
+    this.changeDatacraftingDisplayForMenu('none');
+    
+    // 2. create and display the settings container
     
     var nodeSettingsContainer = document.createElement('div');
     nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
@@ -695,9 +720,20 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     var logicNodeIcon = document.createElement('img');
     logicNodeIcon.src = '../../../svg/logicNode.svg';
     logicNodeIcon.id = 'logicNodeIcon';
-    logicNodeIcon.width = '80px';
-    logicNodeIcon.height = '80px';
+    logicNodeIcon.width = '100px';
+    logicNodeIcon.height = '100px';
     nodeSettingsContainer.appendChild(logicNodeIcon);
+
+    // var settingsIconImage = document.createElement('img');
+    // settingsIconImage.src = globalStates.currentLogic.iconImage;
+    // settingsIconImage.id = 'settingsIconImage';
+    // settingsIconImage.style.display = (globalStates.currentLogic.iconImage) ? 'inline' : 'none';
+    // logicNodeIcon.appendChild(settingsIconImage);
+    //
+    // var settingsIconClipping = document.createElement('div');
+    // settingsIconClipping.id = 'settingsIconClipping';
+    // settingsIconClipping.style.display = (globalStates.currentLogic.iconImage) ? 'inline' : 'none';
+    // logicNodeIcon.appendChild(settingsIconClipping);
 
     var currentLogicNameText = document.createElement('div');
     currentLogicNameText.id = 'currentLogicNameText';
@@ -742,6 +778,94 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     };
     renameContainer.appendChild(saveNewNameButton);
     
+    var newIconContainer = document.createElement('div');
+    newIconContainer.id = 'newIconContainer';
+    nodeSettingsContainer.appendChild(newIconContainer);
+    
+    var newIconForm = document.createElement('form');
+    newIconForm.id = 'newIconForm';
+    newIconForm.setAttribute('enctype', 'multipart/form-data');
+    
+    var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
+    var postUrl = 'http://' + keys.ip + ':' + httpPort + '/object/' + keys.objectKey + "/frame/" + keys.frameKey + "/node/" + keys.logicKey + "/uploadIconImage/";
+    // var postUrl = 'http://' + keys.ip + ':' + httpPort + "/uploadIconImage/";
+    newIconForm.setAttribute('action', postUrl);
+    newIconForm.setAttribute('method', 'post');
+    newIconContainer.appendChild(newIconForm);
+
+    var newIconInput = document.createElement('input');
+    newIconInput.id = 'newIconInput';
+    newIconInput.type = 'file';
+    newIconInput.onchange = function(e) {
+        console.log('file selected', e);
+    };
+    newIconForm.appendChild(newIconInput);
+
+    var newIconSubmitButton = document.createElement('input');
+    newIconSubmitButton.id = 'newIconSubmitButton';
+    newIconSubmitButton.type = 'submit';
+    newIconSubmitButton.value = 'submit';
+    // newIconSubmitButton.onchange = function(e) {
+    //     console.log(e);
+    // };
+    newIconForm.appendChild(newIconSubmitButton);
+
+    newIconForm.onsubmit = function(event) {
+        console.log('on submit called');
+        event.preventDefault();
+
+        // Update button text.
+        newIconSubmitButton.innerHTML = 'Uploading...';
+        
+        // Get the selected files from the input.
+        var files = newIconInput.files;
+
+        // Create a new FormData object.
+        var formData = new FormData();
+
+        // Loop through each of the selected files.
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+
+            // Check the file type.
+            if (!file.type.match('image.*')) {
+                continue;
+            }
+
+            // Add the file to the request.
+            formData.append('photos[]', file, file.name);
+        }
+
+        // Set up the request.
+        var xhr = new XMLHttpRequest();
+
+        // Open the connection.
+        xhr.open('POST', postUrl, true);
+
+        // Set up a handler for when the request finishes.
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // File(s) uploaded.
+                newIconSubmitButton.innerHTML = 'Upload';
+                console.log('successful upload');
+            } else {
+                console.log('error uploading');
+            }
+        };
+
+        // Send the Data.
+        xhr.send(formData);
+    };
+
+    
+
+// <form enctype="multipart/form-data" action="/upload/image" method="post">
+//         <input id="image-file" type="file" />
+//         <input type="submit" value="submit" id="submit" />
+// </form>
+
+// <input name="myFile" type="file">
+    
     realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
 };
 
@@ -750,6 +874,9 @@ realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
     var container = document.getElementById('nodeSettingsContainer');
     if (container) {
         container.parentNode.removeChild(container);
+        //temporarily hide all other datacrafting divs. redisplay them when menu hides
+        this.changeDatacraftingDisplayForMenu('');
+
         wasBlockSettingsOpen = true;
     }
     return wasBlockSettingsOpen;

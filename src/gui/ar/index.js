@@ -339,3 +339,31 @@ realityEditor.gui.ar.getClosestNode = function () {
     }
     return [object, frame, node];
 };
+
+
+realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, screenY) {
+    var object = null;
+    var frame = null;
+    var node = null;
+    var closest = 10000000000;
+    var distance = 10000000000;
+
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        for(var frameKey in this.objects[objectKey].frames) {
+            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey]));
+            
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            var dx = screenX - thisFrame.screenX;
+            var dy = screenY = thisFrame.screenY;
+            distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < closest) {
+                object = objectKey;
+                frame = frameKey;
+                closest = distance;
+            }
+
+        }
+    }
+    return [object, frame, node];
+};
