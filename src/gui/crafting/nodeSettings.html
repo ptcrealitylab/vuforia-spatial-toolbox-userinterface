@@ -5,12 +5,10 @@
     <title>Title</title>
     <link rel="stylesheet" type="text/css" href="../../../css/index.css">
     <style>
-        /*#nodeSettingsContainer {*/
-            /*width: 568px;*/
-            /*height: 320px;*/
-            /*border: 2px solid black;*/
-            /*background-color: rgb(100, 100, 100);*/
-        /*}*/
+        * {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
         #nodeSettingsContainer {
             text-align: center;
             /*padding-top: 25px;*/
@@ -55,9 +53,18 @@
             margin-bottom: 0;
         }
         #renameContainer {
+            font-size: 10pt;
             margin-bottom: 0;
         }
         #newNameTextField {
+            -webkit-user-select: auto;
+            line-height: 30px;
+            border: 3px solid cyan;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: none;
+            -webkit-appearance: none;
+            font-size: 18px;
             padding-top: 2px;
             padding-bottom: 2px;
             height: 35px;
@@ -67,12 +74,38 @@
             text-indent: 10px;
         }
         #saveNewNameButton {
+            border: 3px solid cyan;
+            background-color: rgba(0, 255, 255, 0.5);
+            line-height: 30px;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            height: 45px;
+            margin-left: -5px;
+            font-size: 18px;
             width: 165px;
         }
         #newIconContainer {
             width: 435px;
             margin-left: auto;
             margin-right: auto;
+            line-height: 35px;
+            margin-top: 5px;
+            height: 90px;
+        }
+        .iconTab {
+            line-height: 30px;
+            border: 3px solid cyan;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: none;
+            height: 45px;
+            -webkit-appearance: none;
+            padding-top: 5px;
+            font-size: 18px;
+            background-color: rgb(0,155,155);
+        }
+        .iconTabSelected {
+            background-color: rgb(0,255,255);
         }
         #iconButtonNone {
             width: 33.3%;
@@ -89,13 +122,29 @@
             width: 33.3%;
             margin-left: -5px;
             border-top-right-radius: 5px;
-            border-bottom-right-radius: 5px;
+            /*border-bottom-right-radius: 5px;*/
         }
         #iconUploadButton {
             display: none;
-            position: absolute;
-            margin-top: 10px;
-            left: 65px;
+            /*position: absolute;*/
+            /*margin-top: 10px;*/
+            /*left: 65px;*/
+            /*-webkit-border-radius: 5px;*/
+            /*border-radius: 5px;*/
+            margin-left: 66%;
+            width: 33.3%;
+            border-bottom-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+
+            animation-name: showButton;
+            animation-duration: 100ms;
+            -webkit-animation-fill-mode: forwards; /* Chrome, Safari, Opera */
+            -webkit-animation-timing-function: ease-out;
+        }
+        #hiddenFileUpload {
+            height: 0;
+            width: 0;
+            overflow: hidden;
         }
         #autoIconDescription {
             display: none;
@@ -103,8 +152,19 @@
             position: absolute;
             left: 0;
             width: 100%;
-            margin-top: -5px;
+            margin-top: -50px;
             font-weight: normal;
+        }
+
+        @keyframes showButton {
+            0% {
+                /*height: 0;*/
+                opacity: 0;
+            }
+            100% {
+                /*height: 45px;*/
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -129,9 +189,11 @@
         <button class="iconTab" id="iconButtonNone">No Icon</button>
         <button class="iconTab iconTabSelected" id="iconButtonAuto">Auto Icon</button>
         <button class="iconTab" id="iconButtonCustom">Custom Icon</button>
+        
+        <button class="iconTab" id="iconUploadButton">Upload File</button>
     </div>
-    
-    <input type="file" id="iconUploadButton">
+    <input type="file" id="hiddenFileUpload">
+
     <div id="autoIconDescription">(uses icon of first block placed)</div>
     
 </div>
@@ -147,6 +209,7 @@
     var newNameTextField = document.querySelector('#newNameTextField');
     var saveNewNameButton = document.querySelector('#saveNewNameButton');
     var iconUploadButton = document.querySelector('#iconUploadButton');
+    var hiddenFileUpload = document.querySelector('#hiddenFileUpload');
     var autoIconDescription = document.querySelector('#autoIconDescription');
     
     var customIconImage = document.querySelector('#customIconImage');
@@ -167,9 +230,44 @@
     }; // TODO: add check that prevents image upload attempt if data is still null
     
     initializeView();
+
+    function initializeView() {
+        // document.body.style.marginTop = (window.innerHeight - 320) / 2 + 'px';
+        
+        newNameTextField.placeholder = currentLogicName;
+        currentLogicNameText.innerHTML = currentLogicName;
+
+        saveNewNameButton.onclick = function(e) {
+            setLogicName(newNameTextField.value);
+        };
+
+        possibleIconStates.forEach(function(state) {
+            iconButtons[state] = document.getElementById('iconButton' + state);
+            iconButtons[state].addEventListener('click', function(e) {
+                updateIconButtonSelection(state);
+            });
+        });
+
+        hiddenFileUpload.addEventListener('change', function(e) {
+            console.log('image changed');
+            uploadImageToServer();
+        });
+        
+        iconUploadButton.addEventListener('click', function(e) {
+            hiddenFileUpload.click();
+        });
+
+        // updateIconButtonSelection(iconButtonState);
+
+        window.addEventListener("message", onMessage);
+    }
     
     function onMessage(e) {
-        var msg = JSON.parse(e.data);
+
+        var msg = e.data;
+        if (typeof e.data === 'string') {
+            msg = JSON.parse(e.data);
+        }
         // logicNodeData = msg;
         // console.log('received data', logicNodeData);
 
@@ -229,31 +327,6 @@
         }
     }
     
-    function initializeView() {
-        newNameTextField.placeholder = currentLogicName;
-        currentLogicNameText.innerHTML = currentLogicName;
-
-        saveNewNameButton.onclick = function(e) {
-            setLogicName(newNameTextField.value);
-        };
-
-        possibleIconStates.forEach(function(state) {
-            iconButtons[state] = document.getElementById('iconButton' + state);
-            iconButtons[state].addEventListener('click', function(e) {
-                updateIconButtonSelection(state);
-            });
-        });
-
-        iconUploadButton.addEventListener('change', function(e) {
-            console.log('image changed');
-            uploadImageToServer();
-        });
-
-        // updateIconButtonSelection(iconButtonState);
-
-        window.addEventListener("message", onMessage);
-    }
-    
     function updateIconButtonSelection(newSelection) {
         console.log('selected: ' + newSelection);
         iconButtonState = newSelection;
@@ -264,7 +337,9 @@
 
         iconUploadButton.style.display = 'none';
         autoIconDescription.style.display = 'none';
-        
+
+        postIconToParent();
+
         switch (newSelection) {
             case 'None':
                 useIconNone();
@@ -339,7 +414,7 @@
         // iconUploadButton.innerHTML = 'Uploading...';
 
         // Get the selected files from the input.
-        var files = iconUploadButton.files;
+        var files = hiddenFileUpload.files;
 
         // Create a new FormData object.
         var formData = new FormData();

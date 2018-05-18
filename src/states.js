@@ -65,7 +65,7 @@ var boundListeners = {};
  **********************************************************************************************************************/
 
 var globalStates = {
-	moveDelay : 1000,
+	craftingMoveDelay : 400,
 	tempUuid : "0000",
 	debug: false,
     debugSpeechConsole: false,

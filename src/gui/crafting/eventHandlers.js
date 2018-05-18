@@ -63,12 +63,11 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
     var cutLineStart = null;
 
     var startTapTime;
-
-    var HOLD_TIME_THRESHOLD = 300;
-
+    
     var activeHoldTimer = null;
 
     function onPointerDown(e) {
+        if (realityEditor.gui.crafting.eventHelper.areAnyMenusOpen()) return;
 
         // we can assume we are in TS_NONE
 
@@ -94,7 +93,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
 
                 realityEditor.gui.menus.on("bigTrash",[]);
                 //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
-            }, globalStates.moveDelay);
+            }, globalStates.craftingMoveDelay);
             
         } else {
 
@@ -108,6 +107,8 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
     }
 
     function onPointerMove(e, setStateMove) {
+        if (realityEditor.gui.crafting.eventHelper.areAnyMenusOpen()) return;
+        
         if (setStateMove) {
             touchState = TS_MOVE;
         }
@@ -145,7 +146,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
 
                 // otherwise if enough time has passed, change to TS_HOLD
             } else if (!contents.block.isPortBlock) {
-                if (Date.now() - startTapTime > globalStates.moveDelay) {
+                if (Date.now() - startTapTime > globalStates.craftingMoveDelay) {
                     this.cout("enough time has passed -> HOLD (" + (Date.now() - startTapTime) + ")");
                     touchState = TS_HOLD;
                     clearTimeout(activeHoldTimer);
@@ -208,6 +209,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
     }
 
     function onPointerUp(e) {
+        if (realityEditor.gui.crafting.eventHelper.areAnyMenusOpen()) return;
         if (e.target !== e.currentTarget) return; // prevents event bubbling
 
         var cell = this.crafting.eventHelper.getCellOverPointer(e.pageX, e.pageY);
@@ -228,7 +230,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
             clearTimeout(activeHoldTimer);
 
             if (!contents.block.isPortBlock) {
-                if (Date.now() - startTapTime < (globalStates.moveDelay/2)) {
+                if (Date.now() - startTapTime < (globalStates.craftingMoveDelay/2)) {
                     this.crafting.eventHelper.openBlockSettings(tappedContents.block);
                 }
             }

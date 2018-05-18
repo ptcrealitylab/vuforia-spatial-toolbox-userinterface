@@ -148,13 +148,15 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
     blockContents.setAttribute("touch-action", "none");
     blockDomElement.appendChild(blockContents);
 
+    var iconImage = null;
+    
     // add icon and title to block
     if (block.name) {
 
         // show image full width and height of block if able to find
         var blockIcon = this.getBlockIcon(globalStates.currentLogic, block.type, true);
         if (blockIcon) {
-            var iconImage = document.createElement("img");
+            iconImage = document.createElement("img");
             iconImage.setAttribute('class', 'blockIcon');
             iconImage.src = blockIcon.src;
             blockContents.appendChild(iconImage);
@@ -181,8 +183,7 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
         blockContents.appendChild(moveDiv);
     }
     blockDomElement.style.display = 'inline-block';
-
-
+    
     // if we're adding a temp block, it doesn't have associated cells it can use to calculate position. we need to remember to set position to pointer afterwards
     if (!isTempBlock) { //TODO: is there a way to set position for new blocks consistently?
         var firstCell = this.grid.getCellForBlock(grid, block, 0);
@@ -193,6 +194,13 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
 
     blockDomElement.style.width = this.grid.getBlockPixelWidth(block,grid);
     blockDomElement.style.height = grid.blockRowHeight;
+    
+    if (iconImage) {
+        iconImage.style.width = blockDomElement.style.width;
+        iconImage.style.height = blockDomElement.style.height;
+        iconImage.style.marginLeft = '-2px';
+        iconImage.style.marginTop = '-2px';
+    }
 
     var blockContainer = document.getElementById('blocks');
     blockContainer.appendChild(blockDomElement);
@@ -496,7 +504,7 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
     if (existingMenu) {
         existingMenu.style.display = 'inline';
         this.blockMenu.redisplayTabSelection();
-        this.blockMenu.redisplayBlockSelection();
+        // this.blockMenu.redisplayBlockSelection();
     } else {
         this.blockMenu.initializeBlockMenu(function() {
             _this.blockMenu.redisplayTabSelection(); // wait for callback to ensure menu fully loaded
@@ -576,19 +584,35 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
 
     var container = document.getElementById('craftingBoard');
     container.className = "craftingBoardBlur";
+    
+    var containerWidth = container.clientWidth - menuBarWidth;
+    var containerHeight = container.clientHeight;
+    
+    var GRID_ASPECT_RATIO = CRAFTING_GRID_WIDTH / CRAFTING_GRID_HEIGHT;
 
+    var gridWidth = Math.max(CRAFTING_GRID_WIDTH, containerWidth * 0.8);
+    var gridHeight = Math.max(CRAFTING_GRID_HEIGHT, containerHeight * 0.8);
+    
+    var newAspectRatio = gridWidth / gridHeight;
+    
+    if (newAspectRatio < GRID_ASPECT_RATIO) {
+        gridHeight = gridWidth / GRID_ASPECT_RATIO;
+    } else if (newAspectRatio > GRID_ASPECT_RATIO) {
+        gridWidth = gridHeight * GRID_ASPECT_RATIO;
+    }
+    
     // initializes the data model for the datacrafting board
-    logic.grid = new this.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, logic.uuid);
+    logic.grid = new this.grid.Grid(containerWidth, containerHeight, gridWidth, gridHeight, logic.uuid);
 
     var datacraftingCanvas = document.createElement('canvas');
     datacraftingCanvas.setAttribute('id', 'datacraftingCanvas');
     container.appendChild(datacraftingCanvas);
 
     // var dimensions = logic.grid.getPixelDimensions(); // no longer gives the pixel dimensions we need
-    datacraftingCanvas.width = container.clientWidth - menuBarWidth; //dimensions.width;
-    datacraftingCanvas.style.width = container.clientWidth - menuBarWidth; //dimensions.width;
-    datacraftingCanvas.height = container.clientHeight; //dimensions.height;
-    datacraftingCanvas.style.height = container.clientHeight; //dimensions.height;
+    datacraftingCanvas.width = containerWidth;
+    datacraftingCanvas.style.width = containerWidth;
+    datacraftingCanvas.height = containerHeight;
+    datacraftingCanvas.style.height = containerHeight;
 
     // holds the colored background blocks
     var blockPlaceholdersContainer = document.createElement('div');
@@ -612,6 +636,10 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                     var blockPlaceholder = document.createElement('div');
                     var className = (colNum === logic.grid.size - 1) ? "blockPlaceholderLastCol" : "blockPlaceholder";
                     blockPlaceholder.setAttribute("class", className);
+
+                    blockPlaceholder.style.width = (gridWidth * (2/11)) + 'px';
+                    blockPlaceholder.style.marginRight = (gridWidth * (1/11)) + 'px';
+
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
                     blockPlaceholder.style.border = "2px solid " + blockColorMap[colNum / 2]; //rgb(45, 255, 254);"
@@ -640,6 +668,10 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                     var columnHighlight = document.createElement('div');
                     var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
                     columnHighlight.setAttribute("class", className);
+
+                    columnHighlight.style.width = (gridWidth * 2/11) + 'px';
+                    columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
+                    
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
                     columnHighlight.style.background = columnHighlightColorMap[colNum/2];
@@ -667,7 +699,18 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
     datacraftingEventDiv.setAttribute('id', 'datacraftingEventDiv');
     datacraftingEventDiv.setAttribute("touch-action", "none");
     container.appendChild(datacraftingEventDiv);
-
+    
+    var craftingMenusContainer = document.createElement('div');
+    craftingMenusContainer.id = 'craftingMenusContainer';
+    craftingMenusContainer.style.width = containerWidth + 'px';
+    craftingMenusContainer.style.height = containerHeight + 'px';
+    craftingMenusContainer.style.position = 'absolute';
+    craftingMenusContainer.style.left = '0';
+    craftingMenusContainer.style.top = '0';
+    // craftingMenusContainer.style.pointerEvents = 'none';
+    craftingMenusContainer.style.display = 'none';
+    container.appendChild(craftingMenusContainer);
+    
     this.updateGrid(logic.grid);
     this.addDatacraftingEventListeners();
 };

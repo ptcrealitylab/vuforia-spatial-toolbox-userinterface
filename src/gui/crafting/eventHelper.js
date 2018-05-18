@@ -249,7 +249,7 @@ realityEditor.gui.crafting.eventHelper.toggleDatacraftingExceptPort = function(t
                         blockDom.setAttribute("class", "blockDivPlaced invisibleFadeOut");
                     }
                 });
-            }, 300);
+            }, globalStates.craftingMoveDelay * 2); // takes twice as long to unblur background as it does to pick up a block
         }
 
         globalStates.currentLogic.guiState.isCraftingBackgroundShown = shouldShow;
@@ -665,6 +665,16 @@ realityEditor.gui.crafting.eventHelper.changeDatacraftingDisplayForMenu = functi
     document.getElementById("blockPlaceholders").style.display = newDisplay;
     document.getElementById("blocks").style.display = newDisplay;
     document.getElementById("datacraftingEventDiv").style.display = newDisplay;
+    
+    if (newDisplay === 'none') {
+        document.getElementById("craftingMenusContainer").style.display = '';
+    } else {
+        document.getElementById("craftingMenusContainer").style.display = 'none';
+    }
+};
+
+realityEditor.gui.crafting.eventHelper.areAnyMenusOpen = function() {
+    return document.getElementById('craftingMenusContainer').style.display !== 'none';
 };
 
 realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
@@ -673,14 +683,20 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     
     var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
     var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.name + "/index.html";
-    var craftingBoard = document.getElementById('craftingBoard');
+    var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     var blockSettingsContainer = document.createElement('iframe');
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');
     blockSettingsContainer.setAttribute('class', 'settingsContainer');
 
+    // center on iPad
+    blockSettingsContainer.classList.add('centerVerticallyAndHorizontally');
+    var scaleMultiplier = Math.max(globalStates.currentLogic.grid.containerHeight / globalStates.currentLogic.grid.gridHeight, globalStates.currentLogic.grid.containerWidth / globalStates.currentLogic.grid.gridWidth);
+    blockSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+    
     blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
     blockSettingsContainer.src = settingsUrl;
-    craftingBoard.appendChild(blockSettingsContainer);
+    
+    craftingMenusContainer.appendChild(blockSettingsContainer);
     
     realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
 };
@@ -704,6 +720,8 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
         return;
     }
     
+    var logic = globalStates.currentLogic;
+    
     // 1. temporarily hide all other datacrafting divs. redisplay them when menu hides
     this.changeDatacraftingDisplayForMenu('none');
 
@@ -713,12 +731,24 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
     nodeSettingsContainer.setAttribute('class', 'settingsContainer');
 
+    nodeSettingsContainer.classList.add('centerVerticallyAndHorizontally');
+    
+    // center on iPads
+    // nodeSettingsContainer.style.marginLeft = logic.grid.xMargin + 'px';
+    // nodeSettingsContainer.style.marginTop = logic.grid.yMargin + 'px';
+
+    // nodeSettingsContainer.style.width = globalStates.currentLogic.grid.gridWidth + 'px';
+    // nodeSettingsContainer.style.height = globalStates.currentLogic.grid.gridHeight + 'px';
+
+    var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
+    nodeSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+
     // nodeSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
     nodeSettingsContainer.src = 'src/gui/crafting/nodeSettings.html';
     
     nodeSettingsContainer.onload = function() {
 
-        var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
+        var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
 
         var logicNodeData = {
             
@@ -731,192 +761,21 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
             nodeKey: keys.logicKey,
             
             objectName: realityEditor.getObject(keys.objectKey).name,
-            logicName: globalStates.currentLogic.name,
+            logicName: logic.name,
             
-            iconImageState: globalStates.currentLogic.iconImage,
-            autoImagePath: realityEditor.gui.crafting.getSrcForAutoIcon(globalStates.currentLogic)
+            iconImageState: logic.iconImage,
+            autoImagePath: realityEditor.gui.crafting.getSrcForAutoIcon(logic)
         };
         
         nodeSettingsContainer.contentWindow.postMessage(JSON.stringify(logicNodeData), '*');
         
     };
     
-    var craftingBoard = document.getElementById('craftingBoard');
-    craftingBoard.appendChild(nodeSettingsContainer);
+    var craftingMenusContainer = document.getElementById('craftingMenusContainer');
+    craftingMenusContainer.appendChild(nodeSettingsContainer);
 
-    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+    realityEditor.gui.menus.on("crafting",["logicSetting"]);
 };
-
-/*
-realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
-    if (document.getElementById('menuContainer') && document.getElementById('menuContainer').style.display !== "none") {
-        return;
-    }
-    
-    var craftingBoard = document.getElementById('craftingBoard');
-    
-    // 1. temporarily hide all other datacrafting divs. redisplay them when menu hides
-    this.changeDatacraftingDisplayForMenu('none');
-    
-    // 2. create and display the settings container
-    
-    var nodeSettingsContainer = document.createElement('div');
-    nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
-    nodeSettingsContainer.setAttribute('class', 'settingsContainer');
-    craftingBoard.appendChild(nodeSettingsContainer);
-    
-    var logicNodeIcon = document.createElement('img');
-    logicNodeIcon.src = '../../../svg/logicNode.svg';
-    logicNodeIcon.id = 'logicNodeIcon';
-    logicNodeIcon.width = '100px';
-    logicNodeIcon.height = '100px';
-    nodeSettingsContainer.appendChild(logicNodeIcon);
-
-    // var settingsIconImage = document.createElement('img');
-    // settingsIconImage.src = globalStates.currentLogic.iconImage;
-    // settingsIconImage.id = 'settingsIconImage';
-    // settingsIconImage.style.display = (globalStates.currentLogic.iconImage) ? 'inline' : 'none';
-    // logicNodeIcon.appendChild(settingsIconImage);
-    //
-    // var settingsIconClipping = document.createElement('div');
-    // settingsIconClipping.id = 'settingsIconClipping';
-    // settingsIconClipping.style.display = (globalStates.currentLogic.iconImage) ? 'inline' : 'none';
-    // logicNodeIcon.appendChild(settingsIconClipping);
-
-    var currentLogicNameText = document.createElement('div');
-    currentLogicNameText.id = 'currentLogicNameText';
-    currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
-    nodeSettingsContainer.appendChild(currentLogicNameText);
-    
-    var renameContainer = document.createElement('div');
-    renameContainer.id = 'renameContainer';
-    nodeSettingsContainer.appendChild(renameContainer);
-
-    var newNameTextField = document.createElement('input');
-    newNameTextField.id = 'newNameTextField';
-    newNameTextField.type = 'text';
-    newNameTextField.placeholder = globalStates.currentLogic.name; // TODO: change to suggest the name of the last block you added
-    renameContainer.appendChild(newNameTextField);
-
-    var saveNewNameButton = document.createElement('button');
-    saveNewNameButton.innerHTML = 'Rename Node';
-    saveNewNameButton.type = 'button';
-    saveNewNameButton.className = 'saveNewNameButton';
-    saveNewNameButton.onclick = function() {
-        if (newNameTextField.value && newNameTextField.value !== '') {
-
-            console.log("set new name of logic node to " + globalStates.currentLogic.name);
-            globalStates.currentLogic.name = newNameTextField.value;
-            
-            // update label in node settings menu
-            currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
-            
-            // update node text label on AR view
-            globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
-                JSON.stringify( { renameNode: newNameTextField.value }) , "*");
-            
-            // update model and view for pocket menu
-            var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
-            if (savedIndex > -1) {
-                realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
-                document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
-            }
-            
-        }
-    };
-    renameContainer.appendChild(saveNewNameButton);
-    
-    var newIconContainer = document.createElement('div');
-    newIconContainer.id = 'newIconContainer';
-    nodeSettingsContainer.appendChild(newIconContainer);
-    
-    var newIconForm = document.createElement('form');
-    newIconForm.id = 'newIconForm';
-    newIconForm.setAttribute('enctype', 'multipart/form-data');
-    
-    var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
-    var postUrl = 'http://' + keys.ip + ':' + httpPort + '/object/' + keys.objectKey + "/frame/" + keys.frameKey + "/node/" + keys.logicKey + "/uploadIconImage/";
-    // var postUrl = 'http://' + keys.ip + ':' + httpPort + "/uploadIconImage/";
-    newIconForm.setAttribute('action', postUrl);
-    newIconForm.setAttribute('method', 'post');
-    newIconContainer.appendChild(newIconForm);
-
-    var newIconInput = document.createElement('input');
-    newIconInput.id = 'newIconInput';
-    newIconInput.type = 'file';
-    newIconInput.onchange = function(e) {
-        console.log('file selected', e);
-    };
-    newIconForm.appendChild(newIconInput);
-
-    var newIconSubmitButton = document.createElement('input');
-    newIconSubmitButton.id = 'newIconSubmitButton';
-    newIconSubmitButton.type = 'submit';
-    newIconSubmitButton.value = 'submit';
-    // newIconSubmitButton.onchange = function(e) {
-    //     console.log(e);
-    // };
-    newIconForm.appendChild(newIconSubmitButton);
-
-    newIconForm.onsubmit = function(event) {
-        console.log('on submit called');
-        event.preventDefault();
-
-        // Update button text.
-        newIconSubmitButton.innerHTML = 'Uploading...';
-        
-        // Get the selected files from the input.
-        var files = newIconInput.files;
-
-        // Create a new FormData object.
-        var formData = new FormData();
-
-        // Loop through each of the selected files.
-        for (var i = 0; i < files.length; i++) {
-            var file = files[i];
-
-            // Check the file type.
-            if (!file.type.match('image.*')) {
-                continue;
-            }
-
-            // Add the file to the request.
-            formData.append('photos[]', file, file.name);
-        }
-
-        // Set up the request.
-        var xhr = new XMLHttpRequest();
-
-        // Open the connection.
-        xhr.open('POST', postUrl, true);
-
-        // Set up a handler for when the request finishes.
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                // File(s) uploaded.
-                newIconSubmitButton.innerHTML = 'Upload';
-                console.log('successful upload');
-            } else {
-                console.log('error uploading');
-            }
-        };
-
-        // Send the Data.
-        xhr.send(formData);
-    };
-
-    
-
-// <form enctype="multipart/form-data" action="/upload/image" method="post">
-//         <input id="image-file" type="file" />
-//         <input type="submit" value="submit" id="submit" />
-// </form>
-
-// <input name="myFile" type="file">
-    
-    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
-};
-*/
 
 realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
     var wasBlockSettingsOpen = false;

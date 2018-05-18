@@ -67,6 +67,12 @@ createNameSpace("realityEditor.gui.crafting.grid");
 
         this.size = 7; // number of rows and columns
         
+        // TODO: these four properties are almost never used, except for sizing the settings and block menu - decide if necessary
+        this.containerWidth = containerWidth;
+        this.containerHeight = containerHeight;
+        this.gridWidth = gridWidth;
+        this.gridHeight = gridHeight;
+        
         this.xMargin = (containerWidth - gridWidth) / 2;
         this.yMargin = (containerHeight - gridHeight) / 2;
         
