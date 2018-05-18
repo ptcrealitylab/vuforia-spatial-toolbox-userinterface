@@ -770,6 +770,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         activeVehicle.ar.y = (activeVehicle.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
                         // immediately start placing the pocket frame in unconstrained mode
                         realityEditor.device.editingState.unconstrained = true;
+                        
+                        // still need to set touchOffset...
+                        realityEditor.device.editingState.touchOffset = {
+                            x: 0,
+                            y: 0
+                        };
                     }
                     
                     // only start editing it if you didn't do a quick tap that already released by the time it loads
