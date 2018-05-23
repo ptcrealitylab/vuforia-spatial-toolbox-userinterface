@@ -897,7 +897,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
         // otherwise, if you just have one finger on the screen, move the frame you're on if you can
         } else if (event.touches.length === 1) {
 
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
             
             // visual feedback if you move over the trash
             if (event.pageX >= this.layout.getTrashThresholdX()) {
@@ -1002,7 +1002,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         } else {
             // if there's still a touch on it (it was being scaled), reset touch offset so vehicle doesn't jump
             this.editingState.touchOffset = null;
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
 
         }
     }

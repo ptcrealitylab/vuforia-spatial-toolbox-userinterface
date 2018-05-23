@@ -646,6 +646,16 @@ realityEditor.network.onAction = function (action) {
     
     if (typeof thisAction.reloadFrame !== "undefined") {
         var thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
+        if (!thisFrame) {
+            console.log('this is a new frame... add it to the object...');
+
+            // actionSender({reloadFrame: {object: objectID, frame: frameID, propertiesToIgnore: propertiesToIgnore}, lastEditor: body.lastEditor});
+            thisFrame = new Frame();
+            
+            var thisObject = realityEditor.getObject(thisAction.reloadFrame.object);
+            thisObject.frames[thisAction.reloadFrame.frame] = thisFrame;
+        }
+        
         if (thisFrame) {
 
             var urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + httpPort + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
@@ -656,15 +666,30 @@ realityEditor.network.onAction = function (action) {
                 for (var thisKey in res) {
                     if (!res.hasOwnProperty(thisKey)) continue;
                     if (!thisFrame.hasOwnProperty(thisKey)) continue;
-                    if (thisAction.reloadFrame.propertiesToIgnore &&
-                        thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue;
-                    
-                    // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
-                    if (thisKey === 'ar' &&
-                        thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
-                        thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
-                        thisFrame['ar'].scale = res['ar'].scale;
-                        continue;
+                    if (thisAction.reloadFrame.propertiesToIgnore) {
+                        if (thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue;
+
+                        // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
+                        if (thisKey === 'ar' &&
+                            thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
+                            thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
+                            thisFrame['ar'].scale = res['ar'].scale;
+                            continue;
+                        }
+                        
+                        // only rewrite existing properties of nodes, otherwise node.loaded gets removed and another element added
+                        if (thisKey === 'nodes') {
+                            for (var nodeKey in res.nodes) {
+                                if (!thisFrame.nodes.hasOwnProperty(nodeKey)) {
+                                    thisFrame.nodes[nodeKey] = res.nodes[nodeKey];
+                                } else {
+                                    for (var propertyKey in res.nodes[nodeKey]) {
+                                        thisFrame.nodes[nodeKey][propertyKey] = res.nodes[nodeKey][propertyKey];
+                                    }
+                                }
+                            }
+                            continue;
+                        }
                     }
                     
                     thisFrame[thisKey] = res[thisKey];
@@ -1512,6 +1537,13 @@ realityEditor.network.postNewFrame = function(ip, objectKey, contents) {
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/addFrame/", contents);
 };
 
+realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
+    this.cout("I am adding a frame: " + ip);
+    contents.lastEditor = globalStates.tempUuid;
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/", contents);
+};
+
+// TODO: this isn't used anywhere anymore?
 realityEditor.network.sendFrameToScreen = function(ip, objectKey, frameKey, contents) {
     //(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
     this.cout("I am sending a frame to the screen: " + ip);

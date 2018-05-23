@@ -773,9 +773,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         
                         // still need to set touchOffset...
                         realityEditor.device.editingState.touchOffset = {
-                            x: 0,
-                            y: 0
+                            x: parseFloat(activeVehicle.frameSizeX)/2,
+                            y: parseFloat(activeVehicle.frameSizeY)/2
                         };
+                        
                     }
                     
                     // only start editing it if you didn't do a quick tap that already released by the time it loads

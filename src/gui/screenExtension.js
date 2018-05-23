@@ -425,6 +425,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
     var thisFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
     if(thisFrame) {
 
+        var shouldCreateCopy = false;
+
         globalStates.initialDistance = null;
         
         if (this.screenObject.isScreenVisible) {
@@ -450,15 +452,21 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             
         } else {
             console.log('show frame -> AR');
-            thisFrame.visualization = "ar";
             
+            if (shouldCreateCopy) {
+                // realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
+                realityEditor.network.createCopyOfFrame(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, {newVisualization: "ar"});
+            } 
+
+            thisFrame.visualization = "ar";
+
             // set to false so it definitely gets re-added and re-rendered
             thisFrame.visible = false;
 
             thisFrame.ar.matrix = [];
             thisFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
             thisFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            
+
             var activeKey = thisFrame.uuid;
             // resize iframe to override incorrect size it starts with so that it matches the screen frame
             var iframe = globalDOMCache['iframe' + activeKey];
@@ -478,9 +486,9 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             svg.style.width = iframe.style.width;
             svg.style.height = iframe.style.height;
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
-            
+
             // set the correct position for the frame that was just pulled to AR
-            
+
             // 1. move it so it is centered on the pointer, ignoring touchOffset
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
@@ -498,7 +506,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
                 x: convertedTouchOffsetX,
                 y: convertedTouchOffsetY
             };
-            
+
             realityEditor.device.beginTouchEditing(thisFrame.objectId, activeKey);
             
         }
@@ -506,6 +514,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         // realityEditor.gui.ar.draw.changeVisualization(thisFrame, thisFrame.visualization);
 
         realityEditor.gui.screenExtension.sendScreenObject();
+        
         realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
 
     }
