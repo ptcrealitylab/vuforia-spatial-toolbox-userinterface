@@ -171,13 +171,22 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     if (globalStates.device === "iPad6,7") {
         // TODO: make any small corrections if needed
     }
-
+    
     var viewportScaling = [
         globalStates.height, 0, 0, 0,
-        0, -globalStates.width, 0, 0,
+        0, -1 * globalStates.width, 0, 0,
         0, 0, 1, 0,
         corX, corY, 0, 1
     ];
+ 
+    // changes for iPhoneX
+    if (globalStates.device === "iPhone10,3") {
+        var scaleRatio = (globalStates.height/globalStates.width) / (568/320);
+
+        // new scale based on aspect ratio of camera feed - just use the size of the old iphone screen
+        viewportScaling[0] = 568 * scaleRatio;
+        viewportScaling[5] = -320 * scaleRatio;
+    }
 
     var r = [];
     globalStates.realProjectionMatrix = matrix;
@@ -256,7 +265,7 @@ realityEditor.gui.ar.objects = objects;
 
 /**
  * @desc This function returns the closest visible object relative to the camera.
- * @return {String|Array} [ObjectName, null, null]
+ * @return {String|Array} [ObjectKey, null, null]
  **/
 
 realityEditor.gui.ar.getClosestObject = function () {
@@ -279,7 +288,7 @@ realityEditor.gui.ar.getClosestObject = function () {
 
 /**
  * @desc This function returns the closest visible frame relative to the camera.
- * @return {String|Array} [ObjectName, null, null]
+ * @return {String|Array} [ObjectKey, FrameKey, null]
  **/
 
 realityEditor.gui.ar.getClosestFrame = function () {
@@ -305,7 +314,7 @@ realityEditor.gui.ar.getClosestFrame = function () {
 
 /**
  * @desc This function returns the closest visible node relative to the camera.
- * @return {String|Array} [ObjectName, null, null]
+ * @return {String|Array} [ObjectKey, FrameKey, NodeKey]
  **/
 
 realityEditor.gui.ar.getClosestNode = function () {
@@ -326,6 +335,34 @@ realityEditor.gui.ar.getClosestNode = function () {
                     closest = distance;
                 }
             }
+        }
+    }
+    return [object, frame, node];
+};
+
+
+realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, screenY) {
+    var object = null;
+    var frame = null;
+    var node = null;
+    var closest = 10000000000;
+    var distance = 10000000000;
+
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        for(var frameKey in this.objects[objectKey].frames) {
+            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey]));
+            
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            var dx = screenX - thisFrame.screenX;
+            var dy = screenY = thisFrame.screenY;
+            distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < closest) {
+                object = objectKey;
+                frame = frameKey;
+                closest = distance;
+            }
+
         }
     }
     return [object, frame, node];

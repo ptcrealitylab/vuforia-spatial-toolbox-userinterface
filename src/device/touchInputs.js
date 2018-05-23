@@ -2,7 +2,7 @@ createNameSpace("realityEditor.device.touchInputs");
 
 
 realityEditor.device.touchInputs.screenTouchStart = function(eventObject){
-    console.log("start", eventObject);
+    // console.log("start", eventObject);
     
     realityEditor.gui.screenExtension.touchStart(eventObject)
 };

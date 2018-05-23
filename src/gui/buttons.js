@@ -78,7 +78,6 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
     realityEditor.gui.pocket.pocketHide();
     
     globalStates.guiState = "ui";
-    realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
     
     if (globalStates.guiState !== "logic") {
         if (DEBUG_DATACRAFTING) {
@@ -87,11 +86,8 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
             realityEditor.gui.crafting.craftingBoardHide();
         }
     }
-
-    if (globalStates.editingMode) {
-        realityEditor.device.addEventHandlers();
-    }
-
+    
+    realityEditor.device.resetEditingState();
 };
 
 realityEditor.gui.buttons.logicButtonUp = function(event){
@@ -104,19 +100,9 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
 
     globalStates.guiState = "node";
 
-    // alternative to realityEditor.gui.ar.draw.resetNodeRepositionCanvases() without the side effects of node getting stuck on screen
-    realityEditor.forEachNodeInAllObjects(function(objectKey, frameKey, nodeKey) {
-        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
-        node.hasCTXContent = false;
-        // node.visible = false;
-        // node.visibleEditing = false;
-    });
-
     realityEditor.gui.crafting.craftingBoardHide();
 
-    if (globalStates.editingMode) {
-        realityEditor.device.addEventHandlers();
-    }
+    realityEditor.device.resetEditingState();
 };
 
 realityEditor.gui.buttons.resetButtonDown = function(event) {
@@ -144,6 +130,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                 shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
                 for (var frameKey in tempResetObject.frames) {
                     var activeFrame = tempResetObject.frames[frameKey];
+                    if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames // TODO: could reset on-screen positions too
                     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
                     positionData.matrix = [];
                     if (shouldPlaceCenter) {
@@ -157,8 +144,6 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
                 }
                 
-                realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
-
             }
 
             if (globalStates.guiState === "node") {
@@ -169,7 +154,8 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
-                        activeNode.matrix = [];
+                        // activeNode.relativeMatrix = [];
+                        realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
                         activeNode.scale = globalStates.defaultScale;
                         if (shouldPlaceCenter) {
                             activeNode.x = 0;
@@ -181,9 +167,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                         realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
                     }
                 }
-
-                realityEditor.gui.ar.draw.resetNodeRepositionCanvases();
-
+                
             }
 
         }
@@ -213,89 +197,80 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
     
     realityEditor.gui.buttons.settingTimer = setTimeout(function(){
         realityEditor.gui.buttons.wasTimed = true;
+        
+        if(!globalStates.realityState) {
+            realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+        } else {
+            realityEditor.gui.menus.buttonOff("reality", ["setting"]);
+        }
 
         if (!globalStates.editingMode) {
-
-            realityEditor.device.addEventHandlers();
-            // globalStates.editingMode = true;
             realityEditor.device.setEditingMode(true);
+            realityEditor.gui.menus.on("editing", []);
             realityEditor.app.appFunctionCall("developerOn", null, null);
-            realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
+            
         } else {
-            realityEditor.device.removeEventHandlers();
-            // globalStates.editingMode = false;
             realityEditor.device.setEditingMode(false);
+            realityEditor.gui.menus.on("main",[]);
             realityEditor.app.appFunctionCall("developerOff", null, null);
         }
         
-
-            if(!globalStates.realityState) {
-                realityEditor.gui.menus.buttonOff("setting", ["setting"]);
-            } else {
-                realityEditor.gui.menus.buttonOff("reality", ["setting"]);
-            }
-            
-            if (globalStates.editingMode) {
-                realityEditor.gui.menus.on("editing", []);
-            } else {
-                realityEditor.gui.menus.on("main",[]);
-            }
-        
-        
-    },200);
+    }, 200);
     
 };
 
 realityEditor.gui.buttons.settingButtonUp = function(event) {
-        if (event.button !== "setting" && event.button !== "logicSetting") return;
+    if (event.button !== "setting" && event.button !== "logicSetting") return;
 
-       // realityEditor.gui.menus.on("main", ["setting"]);
-        if(realityEditor.gui.buttons.settingTimer) {
-            clearTimeout(realityEditor.gui.buttons.settingTimer);
-        }
-        if(realityEditor.gui.buttons.wasTimed) {
-            realityEditor.gui.buttons.wasTimed = false;
-            return;
-        }
-
-
-        realityEditor.gui.pocket.pocketHide();
-
-        if (globalStates.guiState === "logic") {
-            console.log(" LOGIC SETTINGS PRESSED ");
-            var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
-            realityEditor.gui.menus.off("crafting", ["logicSetting"]);
-            if (!wasBlockSettingsOpen) {
-                var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
-                if (!wasNodeSettingsOpen) {
-                    console.log("Open Node Settings");
-                    realityEditor.gui.crafting.eventHelper.openNodeSettings();
-                }
-            }
-            return;
-        }
+   // realityEditor.gui.menus.on("main", ["setting"]);
+    if(realityEditor.gui.buttons.settingTimer) {
+        clearTimeout(realityEditor.gui.buttons.settingTimer);
+    }
+    if(realityEditor.gui.buttons.wasTimed) {
+        realityEditor.gui.buttons.wasTimed = false;
+        return;
+    }
 
 
-        if (globalStates.settingsButtonState === true) {
+    realityEditor.gui.pocket.pocketHide();
 
-            this.gui.settings.hideSettings();
-
-            if(!globalStates.realityState) {
-                realityEditor.gui.menus.buttonOff("setting", ["setting"]);
-            } else {
-                realityEditor.gui.menus.buttonOff("reality", ["setting"]);
-            }
-
-            overlayDiv.style.display = "inline";
-
-            if (globalStates.editingMode) {
-                realityEditor.gui.menus.on("editing", []);
+    if (globalStates.guiState === "logic") {
+        console.log(" LOGIC SETTINGS PRESSED ");
+        var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
+        realityEditor.gui.menus.off("crafting", ["logicSetting"]);
+        if (!wasBlockSettingsOpen) {
+            var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
+            if (!wasNodeSettingsOpen) {
+                console.log("Open Node Settings");
+                realityEditor.gui.crafting.eventHelper.openNodeSettings();
             }
         }
-        else {
-            this.gui.settings.showSettings();
+        return;
+    }
+
+
+    if (globalStates.settingsButtonState === true) {
+
+        this.gui.settings.hideSettings();
+
+        if(!globalStates.realityState) {
+            realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+        } else {
+            realityEditor.gui.menus.buttonOff("reality", ["setting"]);
         }
-    };
+
+        overlayDiv.style.display = "inline";
+
+        if (globalStates.editingMode) {
+            realityEditor.gui.menus.on("editing", []);
+        }
+    }
+    else {
+        this.gui.settings.showSettings();
+    }
+
+    realityEditor.device.resetEditingState();
+};
 
 realityEditor.gui.buttons.freezeButtonUp = function(event) {
     if (event.button !== "freeze") return;
@@ -415,73 +390,46 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         return;
     }
 
-    // var currentMenu = globalStates.guiState === "logic" ? "logic" : "main";
-    // if (globalStates.pocketButtonState === true) {
-    //     realityEditor.gui.menus.off(currentMenu, ["pocket"]);
-    //     // 0 is off, 2 is on
-    //  // todo   if (!globalStates.UIOffMode)    document.getElementById('pocketButton').src = pocketButtonImage[0+indexChange].src;
-    // }
-    // else {
-    //     realityEditor.gui.menus.on(currentMenu ,["pocket"]);
-    //   // todo  if (!globalStates.UIOffMode)    document.getElementById('pocketButton').src = pocketButtonImage[2+indexChange].src;
-    // }
-
     // this is where the virtual point creates object
 
-    // todo for testing only
-    if (globalStates.pocketButtonDown === true && globalStates.guiState ==="node") {
+    if (globalStates.pocketButtonDown === true && globalStates.guiState === "node") {
 
-        pocketItemId = realityEditor.device.utilities.uuidTime();
-        console.log(pocketItemId);
-        pocketItem["pocket"].frames["pocket"].nodes[pocketItemId] = new Logic();
+        // realityEditor.gui.pocket.createLogicNodeFromPocket();
+        // realityEditor.gui.pocket.setPocketPosition(event);
 
-        var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+        // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
+        var addedElement = realityEditor.gui.memory.nodeMemories.createLogicNodeFromMemory(null);
 
-        thisItem.uuid = pocketItemId;
+        // set the name of the node by counting how many logic nodes the frame already has
+        var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
+        var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
+            return node.type === 'logic'
+        }).length;
+        addedElement.logicNode.name = "LOGIC" + logicCount;
 
-        thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
-        thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
-        
-        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-        var closestObject = realityEditor.getObject(closestObjectKey);
-        
-        thisItem.scale = closestObject.averageScale;
-        thisItem.screenZ = 1000;
+        // upload new name to server when you change it
+        var object = realityEditor.getObject(addedElement.objectKey);
+        realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
 
-        // else {
-        // var matrixTouch =  screenCoordinatesToMatrixXY(thisItem, [evt.clientX,evt.clientY]);
-        // thisItem.x = matrixTouch[0];
-        // thisItem.y = matrixTouch[1];
-        //}
-        thisItem.loaded = false;
+        addedElement.positionOnLoad = {
+            pageX: event.pageX,
+            pageY: event.pageY
+        };
 
-        var thisObject = pocketItem["pocket"];
-        // this is a work around to set the state of an objects to not being visible.
-        thisObject.objectId = "pocket";
-        thisObject.name = "pocket";
-        
-        var thisFrame = thisObject.frames["pocket"];
-        thisFrame.objectId = "pocket";
-        thisFrame.name = "pocket";
-        
-        // thisObject.objectVisible = false;
-        realityEditor.gui.ar.draw.setObjectVisible(thisObject, false); // TODO: should this function encapsulate the following 7 lines too?
-        thisObject.screenZ = 1000;
-        thisObject.fullScreen = false;
-        thisObject.sendMatrix = false;
-        thisObject.loaded = false;
-        thisObject.integerVersion = 170;
-        thisObject.matrix = [];
-        // thisObject.nodes = {};
-        thisObject.protocol = "R1";
+        var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
 
-        //
-        //thisObject.visibleCounter = timeForContentLoaded;
+        realityEditor.device.editingState.touchOffset = {
+            x: logicNodeSize/2,
+            y: logicNodeSize/2
+        };
 
-        //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
+        realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
+
+        realityEditor.gui.menus.on("bigTrash",[]);
+        // realityEditor.gui.menus.on("trashOrSave", []); // TODO: make this bigTrash again and adjust trash area check to be full size if just added from memory
+        // }
 
     }
-    realityEditor.gui.pocket.setPocketPosition(event);
 };
 
 realityEditor.gui.buttons.bigPocketButtonEnter = function(event) {

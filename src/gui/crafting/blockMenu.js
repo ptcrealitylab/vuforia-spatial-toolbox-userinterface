@@ -54,11 +54,26 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     function initializeBlockMenu(callback) {
         var logic = globalStates.currentLogic;
     
-        var craftingBoard = document.getElementById('craftingBoard');
+        var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     
         var container = document.createElement('div');
         container.setAttribute('id', 'menuContainer');
-        craftingBoard.appendChild(container);
+        // container.style.left = logic.grid.xMargin + 'px';
+        // container.style.top = logic.grid.yMargin + 'px';
+
+        container.classList.add('centerVerticallyAndHorizontally');
+        
+        // center on iPads
+        // nodeSettingsContainer.style.marginLeft = globalStates.currentLogic.grid.xMargin + 'px';
+        // nodeSettingsContainer.style.marginTop = globalStates.currentLogic.grid.yMargin + 'px';
+
+        // container.style.width = logic.grid.gridWidth + 'px';
+        // container.style.height = logic.grid.gridHeight + 'px';
+        
+        var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
+        container.style.transform = 'scale(' + scaleMultiplier + ')';
+
+        craftingMenusContainer.appendChild(container);
     
         var menuBlockContainer = document.createElement('div');
         menuBlockContainer.setAttribute('id', 'menuBlockContainer');
@@ -119,6 +134,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                 for (var c = 0; c < menuCols; c++) {
                     var block = document.createElement('div');
                     block.setAttribute('class', 'menuBlock');
+                    block.style.visibility = 'hidden';
                     var blockContents = document.createElement('div');
                     blockContents.setAttribute('class', 'menuBlockContents');
                     blockContents.setAttribute("touch-action", "none");
@@ -192,9 +208,10 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             blocksInThisSection.push(blocksObject[key]);
         }
     
+        var blockDiv;
         // reassign as many divs as needed to the current set of blocks
         for (var i = 0; i < blocksInThisSection.length; i++) {
-            var blockDiv = guiState.menuBlockDivs[i];
+            blockDiv = guiState.menuBlockDivs[i];
             var thisBlockData = blocksInThisSection[i];
             blockDiv.blockData = thisBlockData;
             blockDiv.firstChild.innerHTML = ""; // reset block contents before adding anything
@@ -202,21 +219,31 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             // load icon and title
             var iconImage = document.createElement("img");
             iconImage.setAttribute('class', 'blockIcon');
+            
+            // wait until image loads to display block
+            iconImage.onload = function(e) {
+                console.log('did load image');
+
+                var parentBlock = e.target.parentElement.parentElement;
+                if (parentBlock) {
+                    parentBlock.style.visibility = 'visible';
+                    parentBlock.style.display = 'inline-block';
+                }
+            };
+
+            // must come after the onload callback is defined, otherwise won't trigger it
             iconImage.src = this.crafting.getBlockIcon(globalStates.currentLogic, thisBlockData.type,false).src;
             blockDiv.firstChild.appendChild(iconImage);
-    
+
             var blockTitle = document.createElement('div');
             blockTitle.setAttribute('class', 'blockTitle');
             blockTitle.innerHTML = thisBlockData.name;
             blockDiv.firstChild.appendChild(blockTitle);
-
-            blockDiv.style.display = 'inline-block';
-            blockDiv.style.marginBottom = '18px';
         }
     
         // clear the remaining block divs
         for (var i = blocksInThisSection.length; i < guiState.menuBlockDivs.length; i++) {
-            var blockDiv = guiState.menuBlockDivs[i];
+            blockDiv = guiState.menuBlockDivs[i];
             blockDiv.blockData = '';
             blockDiv.style.display = 'none';
         }

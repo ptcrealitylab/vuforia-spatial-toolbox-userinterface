@@ -249,7 +249,7 @@ realityEditor.gui.crafting.eventHelper.toggleDatacraftingExceptPort = function(t
                         blockDom.setAttribute("class", "blockDivPlaced invisibleFadeOut");
                     }
                 });
-            }, 300);
+            }, globalStates.craftingMoveDelay * 2); // takes twice as long to unblur background as it does to pick up a block
         }
 
         globalStates.currentLogic.guiState.isCraftingBackgroundShown = shouldShow;
@@ -659,25 +659,56 @@ realityEditor.gui.crafting.eventHelper.addBlockFromMenu = function(blockJSON, po
     }, true);
 };
 
+//temporarily hide all other datacrafting divs. redisplay them when menu hides
+realityEditor.gui.crafting.eventHelper.changeDatacraftingDisplayForMenu = function(newDisplay) {
+    document.getElementById("datacraftingCanvas").style.display = newDisplay;
+    document.getElementById("blockPlaceholders").style.display = newDisplay;
+    document.getElementById("blocks").style.display = newDisplay;
+    document.getElementById("datacraftingEventDiv").style.display = newDisplay;
+    
+    if (newDisplay === 'none') {
+        document.getElementById("craftingMenusContainer").style.display = '';
+    } else {
+        document.getElementById("craftingMenusContainer").style.display = 'none';
+    }
+};
+
+realityEditor.gui.crafting.eventHelper.areAnyMenusOpen = function() {
+    return document.getElementById('craftingMenusContainer').style.display !== 'none';
+};
+
 realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
+
+    this.changeDatacraftingDisplayForMenu('none');
+    
     var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
     var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.name + "/index.html";
-    var craftingBoard = document.getElementById('craftingBoard');
+    var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     var blockSettingsContainer = document.createElement('iframe');
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');
     blockSettingsContainer.setAttribute('class', 'settingsContainer');
 
+    // center on iPad
+    blockSettingsContainer.classList.add('centerVerticallyAndHorizontally');
+    var scaleMultiplier = Math.max(globalStates.currentLogic.grid.containerHeight / globalStates.currentLogic.grid.gridHeight, globalStates.currentLogic.grid.containerWidth / globalStates.currentLogic.grid.gridWidth);
+    blockSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+    
     blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
     blockSettingsContainer.src = settingsUrl;
-    craftingBoard.appendChild(blockSettingsContainer);
+    
+    craftingMenusContainer.appendChild(blockSettingsContainer);
     
     realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
+    
     var wasBlockSettingsOpen = false;
     var container = document.getElementById('blockSettingsContainer');
     if (container) {
+
+        this.changeDatacraftingDisplayForMenu('');
+        
         container.parentNode.removeChild(container);
         wasBlockSettingsOpen = true;
     }
@@ -685,64 +716,65 @@ realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
 };
 
 realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
-    var craftingBoard = document.getElementById('craftingBoard');
+    if (document.getElementById('menuContainer') && document.getElementById('menuContainer').style.display !== "none") {
+        return;
+    }
     
-    var nodeSettingsContainer = document.createElement('div');
+    var logic = globalStates.currentLogic;
+    
+    // 1. temporarily hide all other datacrafting divs. redisplay them when menu hides
+    this.changeDatacraftingDisplayForMenu('none');
+
+    // 2. create and display the settings container
+
+    var nodeSettingsContainer = document.createElement('iframe');
     nodeSettingsContainer.setAttribute('id', 'nodeSettingsContainer');
     nodeSettingsContainer.setAttribute('class', 'settingsContainer');
-    craftingBoard.appendChild(nodeSettingsContainer);
+
+    nodeSettingsContainer.classList.add('centerVerticallyAndHorizontally');
     
-    var logicNodeIcon = document.createElement('img');
-    logicNodeIcon.src = '../../../svg/logicNode.svg';
-    logicNodeIcon.id = 'logicNodeIcon';
-    logicNodeIcon.width = '80px';
-    logicNodeIcon.height = '80px';
-    nodeSettingsContainer.appendChild(logicNodeIcon);
+    // center on iPads
+    // nodeSettingsContainer.style.marginLeft = logic.grid.xMargin + 'px';
+    // nodeSettingsContainer.style.marginTop = logic.grid.yMargin + 'px';
 
-    var currentLogicNameText = document.createElement('div');
-    currentLogicNameText.id = 'currentLogicNameText';
-    currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
-    nodeSettingsContainer.appendChild(currentLogicNameText);
+    // nodeSettingsContainer.style.width = globalStates.currentLogic.grid.gridWidth + 'px';
+    // nodeSettingsContainer.style.height = globalStates.currentLogic.grid.gridHeight + 'px';
+
+    var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
+    nodeSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+
+    // nodeSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
+    nodeSettingsContainer.src = 'src/gui/crafting/nodeSettings.html';
     
-    var renameContainer = document.createElement('div');
-    renameContainer.id = 'renameContainer';
-    nodeSettingsContainer.appendChild(renameContainer);
+    nodeSettingsContainer.onload = function() {
 
-    var newNameTextField = document.createElement('input');
-    newNameTextField.id = 'newNameTextField';
-    newNameTextField.type = 'text';
-    newNameTextField.placeholder = globalStates.currentLogic.name; // TODO: change to suggest the name of the last block you added
-    renameContainer.appendChild(newNameTextField);
+        var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
 
-    var saveNewNameButton = document.createElement('button');
-    saveNewNameButton.innerHTML = 'Rename Node';
-    saveNewNameButton.type = 'button';
-    saveNewNameButton.className = 'saveNewNameButton';
-    saveNewNameButton.onclick = function() {
-        if (newNameTextField.value && newNameTextField.value !== '') {
-
-            console.log("set new name of logic node to " + globalStates.currentLogic.name);
-            globalStates.currentLogic.name = newNameTextField.value;
+        var logicNodeData = {
             
-            // update label in node settings menu
-            currentLogicNameText.innerHTML = 'Name: ' + globalStates.currentLogic.name + '\n';
+            version: realityEditor.getObject(keys.objectKey).integerVersion,
+            ip: keys.ip,
+            httpPort: httpPort,
             
-            // update node text label on AR view
-            globalDOMCache["iframe" + globalStates.currentLogic.uuid].contentWindow.postMessage(
-                JSON.stringify( { renameNode: newNameTextField.value }) , "*");
+            objectKey: keys.objectKey,
+            frameKey: keys.frameKey,
+            nodeKey: keys.logicKey,
             
-            // update model and view for pocket menu
-            var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(globalStates.currentLogic);
-            if (savedIndex > -1) {
-                realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = newNameTextField.value;
-                document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = newNameTextField.value;
-            }
+            objectName: realityEditor.getObject(keys.objectKey).name,
+            logicName: logic.name,
             
-        }
+            iconImageState: logic.iconImage,
+            autoImagePath: realityEditor.gui.crafting.getSrcForAutoIcon(logic)
+        };
+        
+        nodeSettingsContainer.contentWindow.postMessage(JSON.stringify(logicNodeData), '*');
+        
     };
-    renameContainer.appendChild(saveNewNameButton);
     
-    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+    var craftingMenusContainer = document.getElementById('craftingMenusContainer');
+    craftingMenusContainer.appendChild(nodeSettingsContainer);
+
+    realityEditor.gui.menus.on("crafting",["logicSetting"]);
 };
 
 realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
@@ -750,6 +782,9 @@ realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {
     var container = document.getElementById('nodeSettingsContainer');
     if (container) {
         container.parentNode.removeChild(container);
+        //temporarily hide all other datacrafting divs. redisplay them when menu hides
+        this.changeDatacraftingDisplayForMenu('');
+
         wasBlockSettingsOpen = true;
     }
     return wasBlockSettingsOpen;

@@ -94,6 +94,11 @@ function Objects() {
     this.zone = "";
 
     this.averageScale = 0.5;
+    
+    this.targetSize = {
+        x: 300,
+        y: 300
+    }
 }
 
 function Frame() {
@@ -198,9 +203,11 @@ function Node() {
 	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 0.2;
+	this.scale = 0.5;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
+	// Matrix combining the node unconstrained positioning with its parent frame matrix // TODO: move this outside definition so it doesnt get transferred to server - not necessary there
+    this.relativeMatrix = [];
 	// defines the nodeInterface that is used to process data of this type. It also defines the visual representation
 	// in the Reality Editor. Such data points interfaces can be found in the nodeInterface folder.
 	this.type = "node";
@@ -228,7 +235,7 @@ function Logic() {
 	// Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
 	this.y = 0;
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
-	this.scale = 0.2;
+	this.scale = 0.5;
 	// Unconstrained positioning in 3D space
 	this.matrix = [];
 
@@ -242,7 +249,7 @@ function Logic() {
 
 	this.lastSettingBlock = "";
 	// the iconImage is in png or jpg format and will be stored within the logicBlock folder. A reference is placed here.
-	this.iconImage = null;
+	this.iconImage = 'auto';
 	// nameInput are the names given for each IO.
 	this.nameInput = ["", "", "", ""];
 	// nameOutput are the names given for each IO

@@ -120,6 +120,11 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
  **/
 
 realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
+
+    if (globalStates.editingMode || (realityEditor.device.editingState.node && realityEditor.device.currentScreenTouches.length > 1)) {
+        return;
+    }
+    
     if(!thisFrame) return;
 	for (var linkKey in thisFrame.links) {
 		if (!thisFrame.links.hasOwnProperty(linkKey)) continue;
@@ -217,7 +222,8 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection,logicA,logicB);
 	}
 	// context.fill();
-	globalCanvas.hasContent = true;
+    
+    globalCanvas.hasContent = true;
 };
 
 /**
@@ -225,7 +231,13 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
  **/
 
 realityEditor.gui.ar.lines.drawInteractionLines = function () {
-	// this function here needs to be more precise
+
+    if (globalStates.editingMode || realityEditor.device.editingState.node) {
+        return;
+    }
+
+
+    // this function here needs to be more precise
 
 	if (globalProgram.objectA) {
 
@@ -246,7 +258,10 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
             nodeA.screenZ = nodeA.screenLinearZ*objectA.averageScale;
 		}
 
-		var logicA = globalProgram.logicA || 4;
+		var logicA = globalProgram.logicA;
+		if (globalProgram.logicA === false) {
+		    logicA = 4;
+        }
 
 		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector);
 	}
@@ -255,7 +270,7 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 		this.drawDotLine(globalCanvas.context, [globalStates.drawDotLineX, globalStates.drawDotLineY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], 1, 1);
 	}
 
-	globalCanvas.hasContent = true;
+    globalCanvas.hasContent = true;
 };
 
 /**********************************************************************************************************************

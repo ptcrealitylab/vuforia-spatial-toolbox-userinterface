@@ -55,7 +55,7 @@ var ec = 0;
 var disp = {};
 var uiButtons;
 var httpPort = 8080;
-var timeForContentLoaded = 1000000; // temporary set to 1000x with the UI Recording mode for video recording
+var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording mode for video recording
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 
@@ -65,7 +65,7 @@ var boundListeners = {};
  **********************************************************************************************************************/
 
 var globalStates = {
-	moveDelay : 1000,
+	craftingMoveDelay : 400,
 	tempUuid : "0000",
 	debug: false,
     debugSpeechConsole: false,
@@ -141,28 +141,35 @@ var globalStates = {
 		motion:0
 	},
 	sendAcceleration : false,
-	editingModeHaveObject: false,
 	angX: 0,
 	angY: 0,
 	angZ: 0,
 	unconstrainedPositioning: false,
-    // previousUnconstrainedPositioning: false,
-    tempUnconstrainedPositioning: false,
 	thisAndthat : {
 		interval: undefined,
 		timeout: undefined
 	},
-    initialDistance: null,
-    framePullThreshold: 25,
-    maxFramePullThreshold: 250,
-    minFramePullThreshold: 25,
-    didStartPullingFromScreen: false,
-    unconstrainedSnapInitialPosition: null,
+    // constants for screen extension
+    framePullThreshold: 50,
+    
+    // default scale for new frames and nodes
     defaultScale: 0.5,
     
 	// rettail
 	reality: false,
-	interface: "gui"
+	interface: "gui",
+
+    /**
+     * @type {Array.<string>} list of frameKeys that have been edited at any point. later in array = more recently edited.
+     */
+    mostRecentlyEditedFrames: [],
+
+    /**
+     * @type {Array.<string>} list of nodeKeys that have been edited at any point. later in array = more recently edited.
+     */
+    mostRecentlyEditedNodes: [],
+
+    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : (0) // if iPhone X, offset the right edge by 74px
 };
 
 var globalCanvas = {};
@@ -179,6 +186,18 @@ var globalLogic ={
 var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
+
+var pocketFrame = {
+    frame: null,
+    positionOnLoad: null,
+    closestObjectKey: null
+};
+var pocketNode = {
+    node: null,
+    positionOnLoad: null,
+    closestObjectKey: null,
+    closestFrameKey: null
+};
 
 var globalDOMCache = {};
 var shadowObjects = {};
@@ -225,7 +244,6 @@ var globalMatrix = {
 		0, 0, 1, 0,
 		0, 0, 0, 1
 	],
-	matrixtouchOn: false,
 	copyStillFromMatrixSwitch: false
 };
 
@@ -237,11 +255,25 @@ var rotateX = [
 	0, 0, 0, 1
 ];
 
+var editingAnimationsMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
+var pocketDropAnimation = null;
+
+var pocketBegin = [957.8799965328,14.08087319936,-0.010595169148000001,-0.010574,-14.111489845951999,956.3419195071999,-0.0006352692680000001,-0.000634,-10.408501976832,-1.08562603904, -2.0039759439440004, -1.999972, -2403.635924829311, 4583.42312003328, 1273.2070436783604, 1274.65918];
+
 var testInterlink = {};
 
 var overlayDiv;
 //var overlayImg;
 //var overlayImage = [];
+
+var CRAFTING_GRID_WIDTH = 506;
+var CRAFTING_GRID_HEIGHT = 320;
 
 /**********************************************************************************************************************
  ***************************************** datacrafting variables  ****************************************************

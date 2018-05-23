@@ -179,6 +179,23 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
                                 thisNode.matrix = [];
                             }
+
+                            
+                            // recover the relativeMatrix from the node's matrix and its frame's matrix by multiplying by the inverse
+                            var ar = realityEditor.gui.ar;
+                            var parentFramePositionData = ar.positioning.getPositionData(thisFrame);
+                            thisNode.relativeMatrix = [];
+                            console.log('set relativeMatrix to []');
+                            if (thisNode.matrix.length === 16) {
+                                if (parentFramePositionData.matrix.length === 16) {
+                                    ar.utilities.multiplyMatrix(ar.utilities.invertMatrix(parentFramePositionData.matrix), thisNode.matrix, thisNode.relativeMatrix);
+                                    console.log('recovered relativeMatrix from inverse multiplication');
+                                } else {
+                                    thisNode.relativeMatrix = ar.utilities.copyMatrix(thisNode.matrix);
+                                    console.log('relativeMatrix is just node matrix');
+                                }
+                            }
+                            
                             thisNode.objectId = objectKey;
                             thisNode.frameId = frameKey;
                             thisNode.loaded = false;
@@ -187,7 +204,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             if (thisNode.type === "logic") {
                                 thisNode.guiState = new LogicGUIState();
                                 var container = document.getElementById('craftingBoard');
-                                thisNode.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, thisObject.uuid);
+                                thisNode.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
                                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
                             }
                         }
@@ -464,6 +481,11 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
         if (remote.matrix) {
             origin.matrix = remote.matrix;
+            // TODO: recompute relativeMatrix based on this and parent frame's matrices
+            origin.relativeMatrix = [];
+            console.log('node matrix = ', origin.matrix);
+            console.log('frame matrix = ', realityEditor.getFrame(objectKey, frameKey).ar.matrix);
+            console.log('need to compute relativeMatrix for this node');
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
@@ -476,7 +498,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
             if (!origin.grid) {
                 var container = document.getElementById('craftingBoard');
-                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, origin.uuid);
+                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
             }
 
         }
@@ -621,6 +643,61 @@ realityEditor.network.onAction = function (action) {
             });
         }
     }
+    
+    if (typeof thisAction.reloadFrame !== "undefined") {
+        var thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
+        if (!thisFrame) {
+            console.log('this is a new frame... add it to the object...');
+
+            // actionSender({reloadFrame: {object: objectID, frame: frameID, propertiesToIgnore: propertiesToIgnore}, lastEditor: body.lastEditor});
+            thisFrame = new Frame();
+            
+            var thisObject = realityEditor.getObject(thisAction.reloadFrame.object);
+            thisObject.frames[thisAction.reloadFrame.frame] = thisFrame;
+        }
+        
+        if (thisFrame) {
+
+            var urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + httpPort + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
+            
+            this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
+                console.log('got frame');
+                
+                for (var thisKey in res) {
+                    if (!res.hasOwnProperty(thisKey)) continue;
+                    if (!thisFrame.hasOwnProperty(thisKey)) continue;
+                    if (thisAction.reloadFrame.propertiesToIgnore) {
+                        if (thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue;
+
+                        // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
+                        if (thisKey === 'ar' &&
+                            thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
+                            thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
+                            thisFrame['ar'].scale = res['ar'].scale;
+                            continue;
+                        }
+                        
+                        // only rewrite existing properties of nodes, otherwise node.loaded gets removed and another element added
+                        if (thisKey === 'nodes') {
+                            for (var nodeKey in res.nodes) {
+                                if (!thisFrame.nodes.hasOwnProperty(nodeKey)) {
+                                    thisFrame.nodes[nodeKey] = res.nodes[nodeKey];
+                                } else {
+                                    for (var propertyKey in res.nodes[nodeKey]) {
+                                        thisFrame.nodes[nodeKey][propertyKey] = res.nodes[nodeKey][propertyKey];
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+                    }
+                    
+                    thisFrame[thisKey] = res[thisKey];
+                }
+                
+            });
+        }
+    }
 
     if (typeof thisAction.reloadNode !== "undefined") {
         console.log("gotdata: " + thisAction.reloadNode.object + " " + thisAction.reloadNode.frame+ " " + thisAction.reloadNode.node);
@@ -676,6 +753,10 @@ realityEditor.network.onAction = function (action) {
         });
     }
     
+    if (thisAction.loadLogicIcon) {
+        this.loadLogicIcon(thisAction.loadLogicIcon);
+    }
+    
     if (thisAction.addFrame) {
         console.log("addFrame");
         
@@ -699,7 +780,6 @@ realityEditor.network.onAction = function (action) {
             
             frame.location = thisAction.addFrame.location;
             frame.src = thisAction.addFrame.src;
-            frame.type = thisAction.addFrame.type;
             
             // set other properties
             
@@ -745,42 +825,6 @@ realityEditor.network.onAction = function (action) {
             });
             
             thisObject.frames[frameID] = frame;
-            
-            // if (thisAction.addFrame.frame) { // && thisAction.addFrame.hasOwnProperty('name')) {
-                
-                // console.log(thisAction.addFrame.frame);
-                
-                // var thisFrame = JSON.parse(thisAction.addFrame.frame);
-                
-                //thisObject.frames[thisAction.addFrame.frameID] = thisAction.addFrame.frame;
-
-                // realityEditor.network.updateObject(objects[objectKey], res, objectKey, frameKey);
-
-            // }
-
-            // if (!origin.frames[frameKey]) {
-            //     origin.frames[frameKey] = remote.frames[frameKey];
-            //
-            //     origin.frames[frameKey].width = 300;
-            //     origin.frames[frameKey].height = 300;
-            //
-            //     console.log('added new frame', origin.frames[frameKey]);
-            //
-            //     var frameType = origin.frames[frameKey].type;
-            //     var frameUrl = '../../frames/' + frameType + '/index.html';
-            //     realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
-            // }
-            
-            
-            // TODO: start unconstrained editing on the frame -- try calling beginTouchEditing
-            
-            
-            /* TODO: uncomment to continue developing unconstrained editing of transferred frames 
-            globalStates.editingMode = true;
-            realityEditor.gui.ar.draw.matrix.matrixtouchOn = thisAction.addFrame.frameID; //target.nodeId;
-            realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
-            */
-            
             
         }
         
@@ -950,6 +994,12 @@ if (thisFrame) {
         svg.style.height = msgContent.height;
 
         realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+        
+        if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
+            svg.style.display = 'inline';
+        } else {
+            svg.style.display = 'none';
+        }
 
         // if (tempThisObject.frameTouchSynthesizer) {
         //     var cover = tempThisObject.frameTouchSynthesizer.cover;
@@ -980,17 +1030,20 @@ if (thisFrame) {
     
     if (typeof msgContent.sendScreenObject !== "undefined") {
         if(msgContent.sendScreenObject){
-            realityEditor.gui.screenExtension.activeScreenObject = 
-                {
-                    object : msgContent.object,
-                    frame : msgContent.frame,
-                    node: msgContent.node
-                }
+            realityEditor.gui.screenExtension.registeredScreenObjects[msgContent.frame] = {
+                object : msgContent.object,
+                frame : msgContent.frame,
+                node: msgContent.node
+            };
+            realityEditor.gui.screenExtension.visibleScreenObjects[msgContent.frame] = {
+                object: msgContent.object,
+                frame: msgContent.frame,
+                node: msgContent.node,
+                x: 0,
+                y: 0
+            };
         }
     }
-    
-
-    
     
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {
@@ -1051,9 +1104,9 @@ if (thisFrame) {
         for (var i = 0; i < iframes.length; i++) {
        
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
-                
-                if(iframes[i].getAttribute("data-object-key")) {
-                    var receivingObject = objects[iframes[i].getAttribute("data-object-key")];
+                var objectKey = iframes[i].getAttribute("data-object-key");
+                if (objectKey) {
+                    var receivingObject = (objectKey === 'pocket') ? (pocketItem[objectKey]) : objects[objectKey];
                     if (receivingObject.integerVersion >= 32) {
                         var msg = {};
                         if (receivingObject.integerVersion >= 170) {
@@ -1186,13 +1239,68 @@ if (thisFrame) {
             }
         }
     }
+
+    if (typeof msgContent.moveDelay !== "undefined") {
+        
+        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        
+        activeVehicle.moveDelay = msgContent.moveDelay;
+        console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
+        
+    }
+
+    if (msgContent.loadLogicIcon) {
+        this.loadLogicIcon(msgContent);
+    }
     
-/*    if (typeof msgContent.finishedLoading !== 'undefined') {
-        console.log('~~~ iframe finished loading ~~~')
-    }*/
+    if (msgContent.loadLogicName) {
+        this.loadLogicName(msgContent);
+    }
+
+
+        /*    if (typeof msgContent.finishedLoading !== 'undefined') {
+                console.log('~~~ iframe finished loading ~~~')
+            }*/
 
 };
 
+realityEditor.network.loadLogicIcon = function(data) {
+    var iconImage = data.loadLogicIcon;
+    var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
+    if (logicNode) {
+        logicNode.iconImage = iconImage;
+        realityEditor.gui.ar.draw.updateLogicNodeIcon(logicNode);
+    }
+};
+
+realityEditor.network.loadLogicName = function(data) {
+    var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
+    logicNode.name = data.loadLogicName;
+
+    // update node text label on AR view
+    globalDOMCache["iframe" + logicNode.uuid].contentWindow.postMessage(
+        JSON.stringify( { renameNode: logicNode.name }) , "*");
+
+    // update model and view for pocket menu
+    var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(logicNode);
+    if (savedIndex > -1) {
+        realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = logicNode.name;
+        document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = logicNode.name;
+    }
+    
+    // upload name to server
+    var object = realityEditor.getObject(data.object);
+    this.postNewNodeName(object.ip, data.object, data.frame, data.node, logicNode.name);
+};
+
+realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKey, name) {
+    var contents = {
+        nodeName: name,
+        lastEditor: globalStates.tempUuid
+    };
+
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/", contents);
+};
 
 realityEditor.network.onSettingPostMessage = function (msgContent) {
 
@@ -1278,15 +1386,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         if (typeof msgContent.settings.setSettings.editingMode !== "undefined") {
 
             if (msgContent.settings.setSettings.editingMode) {
-
-                realityEditor.device.addEventHandlers();
-                // globalStates.editingMode = true;
                 realityEditor.device.setEditingMode(true);
                 realityEditor.app.appFunctionCall("developerOn", null, null);
-                realityEditor.gui.ar.draw.matrix.matrixtouchOn = "";
             } else {
-                realityEditor.device.removeEventHandlers();
-                // globalStates.editingMode = false;
                 realityEditor.device.setEditingMode(false);
                 realityEditor.app.appFunctionCall("developerOff", null, null);
 
@@ -1435,6 +1537,13 @@ realityEditor.network.postNewFrame = function(ip, objectKey, contents) {
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/addFrame/", contents);
 };
 
+realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
+    this.cout("I am adding a frame: " + ip);
+    contents.lastEditor = globalStates.tempUuid;
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/", contents);
+};
+
+// TODO: this isn't used anywhere anymore?
 realityEditor.network.sendFrameToScreen = function(ip, objectKey, frameKey, contents) {
     //(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
     this.cout("I am sending a frame to the screen: " + ip);
@@ -1871,15 +1980,22 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     }
     
     var activeKey = nodeKey || frameKey;
-
+    
     // if (globalDOMCache['svg' + activeKey]) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
     
     globalDOMCache["iframe" + activeKey]._loaded = true;
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
-    this.cout("on_load");
+
+    if (nodeKey) {
+        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+        if (node.type === 'logic') {
+            realityEditor.gui.ar.draw.updateLogicNodeIcon(node);
+        }
+    }
     
+    this.cout("on_load");
 };
 
 /**

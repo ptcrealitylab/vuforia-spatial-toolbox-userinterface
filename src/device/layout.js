@@ -47,79 +47,48 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+createNameSpace("realityEditor.device.layout");
 
-/**
- * @desc
- **/
+realityEditor.device.layout.adjustForScreenSize = function() {
 
-function helloWorld(cb){
- cb();
-}
+    // in onLoad.js, (globalStates.device === 'iPhone10,3') is not set yet, so use other method to set up screen
+    if (globalStates.rightEdgeOffset) { 
 
-createNameSpace("realityEditor.device");
+        console.log('adjust right edge of interface for iPhone X');
 
-realityEditor.device.onload = function () {
+        var scaleFactor = (window.innerWidth - globalStates.rightEdgeOffset) / window.innerWidth;
 
-    realityEditor.gui.menus.init();
-    
-    // center the menu vertically if the screen is taller than 320 px
-    var MENU_HEIGHT = 320;
-    var menuHeightDifference = globalStates.width - MENU_HEIGHT;
-    document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
-    CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+        // menu buttons
+        document.querySelector('#UIButtons').style.width = window.innerWidth - globalStates.rightEdgeOffset + 'px';
+        document.querySelector('#UIButtons').style.right = globalStates.rightEdgeOffset + 'px';
 
-    realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
-    realityEditor.gui.menus.on("main",["gui"]);
-    globalStates.realityState= false;
+        // pocket
+        document.querySelector('.memoryBar').style.transformOrigin = 'left top';
+        document.querySelector('.memoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')'; // 0.99 factor makes sure it fits
+        document.querySelector('.palette').style.width = '100%';
+        document.querySelector('.palette').style.transformOrigin = 'left top';
+        document.querySelector('.palette').style.transform = 'scale(' + scaleFactor * 0.99 + ')';
+        document.querySelector('.nodeMemoryBar').style.transformOrigin = 'left top';
+        document.querySelector('.nodeMemoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')';
 
-	globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
-	console.log("-----------------------------:  "+globalStates.tempUuid);
-	console.log("starting up GUI");
-	uiButtons = document.getElementById("GUI");
-	overlayDiv = document.getElementById('overlay');
+        // settings
+        document.querySelector('#settingsIframe').style.width = document.body.offsetWidth - globalStates.rightEdgeOffset + 'px';
+        var edgeDiv = document.createElement('div');
+        edgeDiv.id = 'settingsEdgeDiv';
+        edgeDiv.style.backgroundColor = 'rgb(34, 34, 34)';
+        edgeDiv.style.position = 'absolute';
+        edgeDiv.style.left = document.body.offsetWidth - globalStates.rightEdgeOffset + 'px';
+        edgeDiv.style.width = globalStates.rightEdgeOffset + 'px';
+        edgeDiv.style.top = '0';
+        edgeDiv.style.height = document.body.offsetHeight;
+        edgeDiv.style.display = 'none';
+        document.body.appendChild(edgeDiv);
 
-	realityEditor.gui.buttons.draw();
-	realityEditor.gui.memory.initMemoryBar();
-	realityEditor.gui.memory.nodeMemories.initMemoryBar();
-	realityEditor.gui.pocket.pocketInit();
-
-	console.log(globalStates.platform);
-
-	if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
-		globalStates.platform = false;
-	}
-
-	globalCanvas.canvas = document.getElementById('canvas');
-	globalCanvas.canvas.width = globalStates.height;
-	globalCanvas.canvas.height = globalStates.width;
-
-	globalCanvas.context = canvas.getContext('2d');
-    
-    realityEditor.app.appFunctionCall("kickoff", null, null);
-   
-    // reference implementation
-    setTimeout(realityEditor.app.getVuforiaReady(function(){console.log("pong")}), 5000);
-    
-	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
-	ec++;
-	overlayDiv.addEventListener('touchstart', function (e) {
-		e.preventDefault();
-	});
-	
-	// adds all the event handlers for setting up the editor
-    realityEditor.device.addDocumentTouchListeners();
-    realityEditor.device.layout.adjustForScreenSize();
-    
-    // start TWEEN library for animations
-    function animate(time) {
-        requestAnimationFrame(animate);
-        TWEEN.update(time);
+        // crafting
+        menuBarWidth += globalStates.rightEdgeOffset;
     }
-    animate();
-    
-	this.cout("onload");
-
 };
 
-
-window.onload = realityEditor.device.onload;
+realityEditor.device.layout.getTrashThresholdX = function() {
+    return (globalStates.height - 60 - globalStates.rightEdgeOffset);
+};

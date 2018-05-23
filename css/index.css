@@ -154,6 +154,7 @@ body {
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 
 }
+
 /*
 .contentRotation {
     -webkit-transform-style: preserve-3d;
@@ -206,8 +207,10 @@ body {
     -webkit-transform-style: preserve-3d;
     position: fixed;
     /*width: 506px;*/
-    width: 568px;
-    height: 320px;
+    /*width: 568px;*/
+    /*height: 320px;*/
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
     background-color: rgba(20,20,20,0.5);
@@ -264,6 +267,18 @@ body {
     animation-duration: 100ms;
     -webkit-animation-fill-mode: forwards;
     -webkit-animation-timing-function: ease-out;
+}
+
+.centerVerticallyAndHorizontally {
+    position:absolute; /*it can be fixed too*/
+    left:0; right:0;
+    top:0; bottom:0;
+    margin:auto;
+
+    /*this to solve "the content will not be cut when the window is smaller than the content": */
+    max-width:100%;
+    max-height:100%;
+    overflow:auto;
 }
 
 
@@ -584,6 +599,10 @@ body {
     border-radius: 120px;
 }
 
+#overlay.overlayScreenFrame {
+    border-color: #3AF431;
+}
+
 #overlay.overlayPositive {
   border-color: #3AF431;
 }
@@ -793,12 +812,12 @@ Logic Interface CSS
   position: absolute;
   left: 0;
   top: 0;
-  width: 568px;
-  height: 320px;
+  width: 100%;
+  height: 100%;
 }
 
 .blockDivPlaced {
-    box-sizing: border-box;
+  box-sizing: border-box;
   position: absolute;
   color: white;
   user-select:none;
@@ -827,59 +846,14 @@ Logic Interface CSS
 /* block settings */
 
 .settingsContainer {
-  background-color: #B7B7B7; /*#969696;*/
+  /*background-color: #B7B7B7; !*#969696;*!*/
+  background-color: transparent;
   position: absolute;
   left: 0;
   top: 0;
   width: 506px;
   height: 320px;
-}
-
-#nodeSettingsContainer {  
-  text-align: center;
-  padding-top: 25px;
-  line-height: 50px;
-  font-size: xx-large;
-  font-weight: 700;
-  color: #00ffff;
-}
-
-#currentLogicNameText {
-    margin: 20px;
-}
-
-#renameContainer {
-    margin-bottom: 30px;
-    font-size: 10pt;
-}
-
-#newNameTextField {
-    -webkit-user-select: auto;
-    line-height: 30px;
-    border: 3px solid cyan;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    box-shadow: none;
-    height: 45px;
-    -webkit-appearance: none;
-    padding-top: 5px;
-    font-size: 18px;
-}
-
-.saveNewNameButton {
-    border: 3px solid cyan;
-    background-color: rgba(0, 255, 255, 0.5);
-    line-height: 30px;
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-    height: 45px;
-    margin-left: -5px;
-    font-size: 18px;
-}
-
-#logicNodeIcon {
-    width: 100px;
-    height: 100px;
+  border: none;
 }
 
 /* block menu */
@@ -911,7 +885,6 @@ Logic Interface CSS
 }
 
 .menuBlock {
-    box-sizing: border-box;
   width: 92px;
   height: 46px;
   display: inline-block;
@@ -920,6 +893,7 @@ Logic Interface CSS
   box-sizing: border-box;
   border: solid 2px white;
   margin: 3.5px;
+  margin-bottom: 18px;
 }
 
 .menuBlockContents {

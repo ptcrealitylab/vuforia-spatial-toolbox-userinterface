@@ -59,8 +59,6 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 		if (globalStates.guiState === 'logic') {
 		    realityEditor.gui.crafting.blockMenuVisible();
-
-            realityEditor.gui.menus.on("crafting",["logicPocket"]);
 		}
 	}
 	else {
@@ -70,11 +68,80 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 		if (globalStates.guiState === 'logic') {
 			realityEditor.gui.crafting.blockMenuHide();
             realityEditor.gui.menus.off("crafting",["logicPocket"]);
-
         }
 	}
 
 };
+
+/*
+realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
+    
+    pocketItemId = realityEditor.device.utilities.uuidTime();
+    console.log(pocketItemId);
+    pocketItem["pocket"].frames["pocket"].nodes[pocketItemId] = new Logic();
+
+    var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+
+    thisItem.objectId = "pocket";
+    thisItem.frameId = "pocket";
+    thisItem.uuid = pocketItemId;
+
+    thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
+    thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
+
+    var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+    var closestObject = realityEditor.getObject(closestObjectKey);
+
+    thisItem.scale = closestObject ? closestObject.averageScale : globalStates.defaultScale;
+    thisItem.screenZ = 1000;
+
+    // else {
+    // var matrixTouch =  screenCoordinatesToMatrixXY(thisItem, [evt.clientX,evt.clientY]);
+    // thisItem.x = matrixTouch[0];
+    // thisItem.y = matrixTouch[1];
+    //}
+    thisItem.loaded = false;
+
+    var thisObject = pocketItem["pocket"];
+    // this is a work around to set the state of an objects to not being visible.
+    thisObject.objectId = "pocket";
+    thisObject.name = "pocket";
+
+    var thisFrame = thisObject.frames["pocket"];
+    thisFrame.objectId = "pocket";
+    thisFrame.name = "pocket";
+
+    // thisObject.objectVisible = false;
+    realityEditor.gui.ar.draw.setObjectVisible(thisObject, false); // TODO: should this function encapsulate the following 7 lines too?
+    thisObject.screenZ = 1000;
+    thisObject.fullScreen = false;
+    thisObject.sendMatrix = false;
+    thisObject.loaded = false;
+    thisObject.integerVersion = 170;
+
+    thisObject.type = 'logic';
+    thisObject.matrix = [];
+    thisObject.relativeMatrix = [];
+    thisObject.nodes = {};
+    // realityEditor.gui.ar.positioning.setPositionDataMatrix(thisObject, []);
+    // if (thisObject.type === "node") {
+    //     thisObject.relativeMatrix = [];
+    // }
+    // thisObject.matrix = [];
+    // thisObject.nodes = {};
+    thisObject.protocol = "R1";
+
+    //
+    //thisObject.visibleCounter = timeForContentLoaded;
+
+    //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
+    
+    var closestFrameKey = realityEditor.gui.ar.getClosestFrame()[1];
+
+    realityEditor.gui.pocket.setPocketNode(thisItem, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
+
+};
+*/
 
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
@@ -85,7 +152,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 		var pocketDomElement = globalDOMCache['object' + thisItem.uuid];
 		if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
 
-		if (realityEditor.gui.ar.draw.nodeCalculations.farFrontElement === "") {
+        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+
+		if (!closestObjectKey) {
 		    
 			thisItem.x = evt.clientX - (globalStates.height / 2);
 			thisItem.y = evt.clientY - (globalStates.width / 2);
@@ -97,12 +166,25 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 var centerOffsetX = thisItem.frameSizeX / 2;
                 var centerOffsetY = thisItem.frameSizeY / 2;
                 
-                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
+                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false); // TODO: undo based on marker
 
 			}
 		}
 		
 	}
+};
+
+realityEditor.gui.pocket.setPocketFrame = function(frame, positionOnLoad, closestObjectKey) {
+    pocketFrame.frame = frame;
+    pocketFrame.positionOnLoad = positionOnLoad;
+    pocketFrame.closestObjectKey = closestObjectKey;
+};
+
+realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestObjectKey, closestFrameKey) {
+    pocketNode.node = node;
+    pocketNode.positionOnLoad = positionOnLoad;
+    pocketNode.closestObjectKey = closestObjectKey;
+    pocketNode.closestFrameKey = closestFrameKey;
 };
 
 /**
@@ -196,8 +278,6 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             width: 600,
             height: 600,
             nodeNames: [
-                'x',
-                'y'
             ]
         }
     ];
@@ -213,10 +293,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
-            
-            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+
+            // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
+            // TODO: this would make it easier to drop exactly on the the object you want
+            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0]; 
             var closestObject = realityEditor.getObject(closestObjectKey);
-            
             
             // make sure that the frames only sticks to 2.0 server version
             if (closestObject && closestObject.integerVersion > 165) {
@@ -227,11 +308,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 
                 // name the frame "gauge", "gauge2", "gauge3", etc... 
                 frame.name = evt.target.dataset.name;
-                var existingFrameTypes = Object.keys(closestObject.frames).map(function(existingFrameKey){
-                    return closestObject.frames[existingFrameKey].type;
+                var existingFrameSrcs = Object.keys(closestObject.frames).map(function(existingFrameKey){
+                    return closestObject.frames[existingFrameKey].src;
                 });
-                var numberOfSameFrames = existingFrameTypes.filter(function(type){
-                    return type === evt.target.dataset.name;
+                var numberOfSameFrames = existingFrameSrcs.filter(function(src){
+                    return src === evt.target.dataset.name;
                 }).length;
                 if (numberOfSameFrames > 0) {
                     frame.name = evt.target.dataset.name + (numberOfSameFrames+1);
@@ -245,15 +326,14 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
-                frame.ar.scale = closestObject.averageScale;
+                frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
 
-                console.log("closest Frame", closestObject.averageScale);
+                // console.log("closest Frame", closestObject.averageScale);
 
                 frame.location = 'global';
                 frame.src = evt.target.dataset.name;
-                frame.type = evt.target.dataset.name;
 
                 // set other properties
 
@@ -281,8 +361,9 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
                 // thisFrame.visible = false;
 
-                // TODO: add nodes to frame
-                var nodeNames = evt.target.dataset.nodeNames.split(',');
+                // add each node with a non-empty name
+                var nodeNames = evt.target.dataset.nodeNames.split(',').filter(function(nodeName){return nodeName.length > 0;});
+                var hasMultipleNodes = nodeNames.length > 1;
                 nodeNames.forEach(function(nodeName) {
                     var nodeUuid = frameID + nodeName;
                     frame.nodes[nodeUuid] = new Node();
@@ -292,10 +373,10 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     addedNode.name = nodeName;
                     addedNode.text = undefined;
                     addedNode.type = 'node';
-                    addedNode.x = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
-                    addedNode.y = 0; //realityEditor.utilities.randomIntInc(0, 200) - 100;
-                    addedNode.frameSizeX = 100;
-                    addedNode.frameSizeY = 100;
+                    addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one
+                    addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // random otherwise
+                    addedNode.frameSizeX = 220;
+                    addedNode.frameSizeY = 220;
                     addedNode.scale = closestObject.averageScale;
                     console.log("closest Node", closestObject.averageScale);
 
@@ -305,21 +386,19 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                     pageX: evt.pageX,
                     pageY: evt.pageY
                 };
-                
-                // frame.currentTouchOffset = {
-                //     x: 0,
-                //     y: 0
-                // };
+
+                // // set the eventObject so that the frame can interact with screens as soon as you add it
+                realityEditor.device.eventObject.object = closestObjectKey;
+                realityEditor.device.eventObject.frame = frameID;
+                realityEditor.device.eventObject.node = null;
 
                 closestObject.frames[frameID] = frame;
-
-                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(frame, evt.pageX, evt.pageY);
-                
-                // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate()
 
                 // send it to the server
                 // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
                 realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
+                
+                realityEditor.gui.pocket.setPocketFrame(frame, {pageX: evt.pageX, pageY: evt.pageY}, closestObjectKey);
 
             } else {
                 console.warn('there aren\'t any visible objects to place this frame on!');
@@ -406,11 +485,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
         }
         
         // TODO: add any side effects here before showing pocket
-        
-        if (globalStates.editingNode) {
-            // var logicNode = getLogicFromNodeKey(globalStates.editingNode);
-            var logicNode = realityEditor.getNode(globalStates.editingModeObject, globalStates.editingFrame, globalStates.editingNode);
-            if (logicNode) {
+        var editingVehicle = realityEditor.device.getEditingVehicle();
+
+        if (editingVehicle && editingVehicle.type === 'logic') {
+            
+            if (editingVehicle) {
                 overlayDiv.classList.add('overlayLogicNode');
 
                 var nameText = document.createElement('div');
@@ -418,11 +497,11 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 nameText.style.top = '33px';
                 nameText.style.width = '100%';
                 nameText.style.textAlign = 'center';
-                nameText.innerHTML = logicNode.name;
+                nameText.innerHTML = editingVehicle.name;
                 overlayDiv.innerHTML = '';
                 overlayDiv.appendChild(nameText);
                 
-                overlayDiv.storedLogicNode = logicNode;
+                overlayDiv.storedLogicNode = editingVehicle;
             }
         }
         
@@ -510,6 +589,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
+            container.id = 'pocket-element';
             // container.position = 'relative';
             var thisUrl = 'frames/' + element.name + '.html';
             var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';

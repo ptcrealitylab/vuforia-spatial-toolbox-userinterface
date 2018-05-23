@@ -183,6 +183,10 @@ realityEditor.getShadowNode = function (objectKey, frameKey, nodeKey){
 };
 
 // return the object
+/**
+ * @param objectKey
+ * @return {Objects|null}
+ */
 realityEditor.getObject = function (objectKey){
     if(!objectKey) return null;
     if(!(objectKey in this.objects)) return null;
@@ -190,6 +194,11 @@ realityEditor.getObject = function (objectKey){
 };
 
 // return a frame located in the object
+/**
+ * @param objectKey
+ * @param frameKey
+ * @return {Frame|null}
+ */
 realityEditor.getFrame = function (objectKey, frameKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
@@ -199,6 +208,12 @@ realityEditor.getFrame = function (objectKey, frameKey){
 };
 
 // return a node located in the object frame
+/**
+ * @param objectKey
+ * @param frameKey
+ * @param nodeKey
+ * @return {Node|null}
+ */
 realityEditor.getNode = function (objectKey, frameKey, nodeKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
@@ -323,4 +338,3 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
         callback(objectKey, frameKey);
     }
 };
-

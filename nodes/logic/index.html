@@ -19,12 +19,44 @@
         img {
             display: block;
         }
+        
+        #iconContainer {
+            width: 100%;
+            height: 100%;
+            display:-webkit-box;
+            -webkit-box-pack:center;
+            -webkit-box-align:center;
+            -webkit-box-orient:vertical;
+            user-select:none;
+            -webkit-user-select:none;
+            color: white;
+            font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            position: absolute;
+        }
+        
+        #icon {
+            text-align: center;
+            width: 120px;
+            height: 120px;
+            overflow: hidden;
+            user-select:none;
+            -webkit-user-select:none;
+            display: none;
+        }
+        
     </style>
 </head>
 <body>
 <div style="width:160px; height:160px; overflow: hidden; position: absolute;top:30px;left:30px;">
-    <svg id = "1" height="160" width="160">
-        <rect id = "2" x="14" y="14" rx="35" ry="35" width="130" height="130" stroke="#00ffff" stroke-width="25" fill="rgba(0,0,0,0)" />
+    <svg id = "fill1" height="160" width="160" style="position: absolute">
+        <rect id = "fill2" x="14" y="14" rx="35" ry="35" width="130" height="130" stroke="none" fill="#383838" />
+    </svg>
+    <div id="iconContainer">
+        <img id="icon" />
+    </div>
+    <svg id = "1" height="160" width="160" style="position: absolute">
+        <rect id = "2" x="14" y="14" rx="35" ry="35" width="130" height="130" stroke="#00ffff" stroke-width="25" fill="none"/>
     </svg>
 </div>
 <div id="textNote" style="visibility: visible; position: absolute; overflow: hidden;top:190px;left:0px; width:220px; height:30px; text-align: center; font-size:1.6em; font-weight: bold; font-family: Helvetica, Arial, sans-serif;
@@ -37,6 +69,7 @@ color: white"></div>
 
     var svg = svgEl.getElementById('2');
     var thisText =  document.getElementById("textNote");
+    var icon = document.getElementById("icon");
 
     window.addEventListener("message", function (e) {
 
@@ -58,8 +91,9 @@ color: white"></div>
                     })
                     // this needs to contain the final interface source
                     , "*");
-            if(msg.nodes[msg.node])
-                thisText.innerHTML =msg.nodes[msg.node].name;
+            if(msg.nodes[msg.node]) {
+                thisText.innerHTML = msg.nodes[msg.node].name;
+            }
             objects.node = msg.node;
             objects.object = msg.object;
 
@@ -81,6 +115,15 @@ color: white"></div>
         
         if (typeof msg.renameNode !== "undefined") {
             thisText.innerHTML = msg.renameNode;
+        }
+        
+        if (typeof msg.iconImage !== "undefined") {
+            if (typeof msg.iconImage === "string") {
+                icon.src = msg.iconImage;
+                icon.style.display = "inline";
+            } else {
+                icon.style.display = "none";
+            }
         }
         
     }, false);

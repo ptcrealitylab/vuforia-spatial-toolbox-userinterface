@@ -148,13 +148,15 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
     blockContents.setAttribute("touch-action", "none");
     blockDomElement.appendChild(blockContents);
 
+    var iconImage = null;
+    
     // add icon and title to block
     if (block.name) {
 
         // show image full width and height of block if able to find
         var blockIcon = this.getBlockIcon(globalStates.currentLogic, block.type, true);
         if (blockIcon) {
-            var iconImage = document.createElement("img");
+            iconImage = document.createElement("img");
             iconImage.setAttribute('class', 'blockIcon');
             iconImage.src = blockIcon.src;
             blockContents.appendChild(iconImage);
@@ -181,8 +183,7 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
         blockContents.appendChild(moveDiv);
     }
     blockDomElement.style.display = 'inline-block';
-
-
+    
     // if we're adding a temp block, it doesn't have associated cells it can use to calculate position. we need to remember to set position to pointer afterwards
     if (!isTempBlock) { //TODO: is there a way to set position for new blocks consistently?
         var firstCell = this.grid.getCellForBlock(grid, block, 0);
@@ -193,6 +194,13 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
 
     blockDomElement.style.width = this.grid.getBlockPixelWidth(block,grid);
     blockDomElement.style.height = grid.blockRowHeight;
+    
+    if (iconImage) {
+        iconImage.style.width = blockDomElement.style.width;
+        iconImage.style.height = blockDomElement.style.height;
+        iconImage.style.marginLeft = '-2px';
+        iconImage.style.marginTop = '-2px';
+    }
 
     var blockContainer = document.getElementById('blocks');
     blockContainer.appendChild(blockDomElement);
@@ -228,6 +236,55 @@ realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch
         return blockIconCache[keys.logicKey][blockName+"label"];
     }
 
+};
+
+realityEditor.gui.crafting.getSrcForCustomIcon = function(logic) {
+    var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
+    return 'http://' + keys.ip + ':' + httpPort + '/logicNodeIcon/' + realityEditor.getObject(keys.objectKey).name + "/" + keys.logicKey + ".jpg";
+};
+
+realityEditor.gui.crafting.getSrcForAutoIcon = function(logic) {
+    var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
+        return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
+            !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
+    });
+    console.log(validBlockIDs);
+    if (validBlockIDs.length > 0) {
+        var firstBlock = logic.blocks[validBlockIDs[0]];
+        console.log(firstBlock.type);
+        return this.getBlockIcon(logic, firstBlock.type, false).src;
+    }
+    return null;
+};
+
+/**
+ * Returns either the preset iconImage for this logic node, or the icon of its first visible block
+ * @param {Logic} logic
+ */
+realityEditor.gui.crafting.getLogicNodeIcon = function(logic) {
+    if (logic.iconImage === 'custom') {
+        return this.getSrcForCustomIcon(logic);
+    } else if (logic.iconImage === 'auto') {
+        return this.getSrcForAutoIcon(logic);
+    } else {
+        return null;
+    }
+    
+    // if (logic.iconImage) {
+    //     return logic.iconImage;
+    // } else {
+    //     var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
+    //         return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
+    //                 !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
+    //     });
+    //     console.log(validBlockIDs);
+    //     if (validBlockIDs.length > 0) {
+    //         var firstBlock = logic.blocks[validBlockIDs[0]];
+    //         console.log(firstBlock.type);
+    //         return this.getBlockIcon(logic, firstBlock.type, false).src;
+    //     }
+    // }
+    // return null;
 };
 
 // updates datacrafting visuals each frame
@@ -404,9 +461,11 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
             globalStates.freezeButtonState = true;
             realityEditor.app.appFunctionCall("freeze");
         }
+
+        // update the icon image of the current logic node in case it was based on the blocks
+        realityEditor.gui.ar.draw.updateLogicNodeIcon(globalStates.currentLogic);
     }
-
-
+    
     // remove the block menu if it's showing
     this.blockMenu.resetBlockMenu();
     // reset side menu buttons
@@ -424,6 +483,11 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
  **/
 
 realityEditor.gui.crafting.blockMenuVisible = function() {
+    if (document.getElementById('nodeSettingsContainer') && document.getElementById('nodeSettingsContainer').style.display !== "none") {
+        return;
+    }
+
+    realityEditor.gui.menus.on("crafting",["logicPocket"]);
     
     // hide block settings if necessary
     blockSettingsContainer = document.getElementById('blockSettingsContainer');
@@ -432,18 +496,15 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
     }
     
     var _this = this;
-    //temporarily hide all other datacrafting divs. redisplay them when menu hides
-    document.getElementById("datacraftingCanvas").style.display = "none";
-    document.getElementById("blockPlaceholders").style.display = "none";
-    document.getElementById("blocks").style.display = "none";
-    document.getElementById("datacraftingEventDiv").style.display = "none";
+    
+    this.eventHelper.changeDatacraftingDisplayForMenu('none');
 
     // create the menu if it doesn't already exist, otherwise just show it
     var existingMenu = document.getElementById('menuContainer');
     if (existingMenu) {
         existingMenu.style.display = 'inline';
         this.blockMenu.redisplayTabSelection();
-        this.blockMenu.redisplayBlockSelection();
+        // this.blockMenu.redisplayBlockSelection();
     } else {
         this.blockMenu.initializeBlockMenu(function() {
             _this.blockMenu.redisplayTabSelection(); // wait for callback to ensure menu fully loaded
@@ -457,22 +518,20 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
  **/
 
 realityEditor.gui.crafting.blockMenuHide = function() {
-
-    //temporarily hide all other datacrafting divs. redisplay them when menu hides
-    document.getElementById("datacraftingCanvas").style.display = "";
-    document.getElementById("blockPlaceholders").style.display = "";
-    document.getElementById("blocks").style.display = "";
-    document.getElementById("datacraftingEventDiv").style.display = "";
     
     var existingMenu = document.getElementById('menuContainer');
-    if (existingMenu) {
+    if (existingMenu && existingMenu.style.display !== 'none') {
         existingMenu.style.display = 'none';
+        //temporarily hide all other datacrafting divs. redisplay them when menu hides
+        this.eventHelper.changeDatacraftingDisplayForMenu('');
+
         if (!globalStates.pocketButtonState) {
             globalStates.pocketButtonState = true;
             //document.getElementById('pocketButton').src = pocketButtonImage[4].src;
             realityEditor.gui.menus.off("crafting",["logicPocket"]);
         }
     }
+    
 };
 
 
@@ -525,23 +584,42 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
 
     var container = document.getElementById('craftingBoard');
     container.className = "craftingBoardBlur";
+    
+    var containerWidth = container.clientWidth - menuBarWidth;
+    var containerHeight = container.clientHeight;
+    
+    var GRID_ASPECT_RATIO = CRAFTING_GRID_WIDTH / CRAFTING_GRID_HEIGHT;
 
+    var gridWidth = Math.max(CRAFTING_GRID_WIDTH, containerWidth * 0.8);
+    var gridHeight = Math.max(CRAFTING_GRID_HEIGHT, containerHeight * 0.8);
+    
+    var newAspectRatio = gridWidth / gridHeight;
+    
+    if (newAspectRatio < GRID_ASPECT_RATIO) {
+        gridHeight = gridWidth / GRID_ASPECT_RATIO;
+    } else if (newAspectRatio > GRID_ASPECT_RATIO) {
+        gridWidth = gridHeight * GRID_ASPECT_RATIO;
+    }
+    
     // initializes the data model for the datacrafting board
-    logic.grid = new this.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, logic.uuid);
+    logic.grid = new this.grid.Grid(containerWidth, containerHeight, gridWidth, gridHeight, logic.uuid);
 
     var datacraftingCanvas = document.createElement('canvas');
     datacraftingCanvas.setAttribute('id', 'datacraftingCanvas');
     container.appendChild(datacraftingCanvas);
 
-    var dimensions = logic.grid.getPixelDimensions();
-    datacraftingCanvas.width = dimensions.width;
-    datacraftingCanvas.style.width = dimensions.width;
-    datacraftingCanvas.height = dimensions.height;
-    datacraftingCanvas.style.height = dimensions.height;
+    // var dimensions = logic.grid.getPixelDimensions(); // no longer gives the pixel dimensions we need
+    datacraftingCanvas.width = containerWidth;
+    datacraftingCanvas.style.width = containerWidth;
+    datacraftingCanvas.height = containerHeight;
+    datacraftingCanvas.style.height = containerHeight;
 
     // holds the colored background blocks
     var blockPlaceholdersContainer = document.createElement('div');
     blockPlaceholdersContainer.setAttribute('id', 'blockPlaceholders');
+    blockPlaceholdersContainer.style.position = 'absolute';
+    blockPlaceholdersContainer.style.left = logic.grid.xMargin + 'px';
+    blockPlaceholdersContainer.style.top = logic.grid.yMargin + 'px';
     container.appendChild(blockPlaceholdersContainer);
 
     for (var rowNum = 0; rowNum < logic.grid.size; rowNum++) {
@@ -558,6 +636,10 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                     var blockPlaceholder = document.createElement('div');
                     var className = (colNum === logic.grid.size - 1) ? "blockPlaceholderLastCol" : "blockPlaceholder";
                     blockPlaceholder.setAttribute("class", className);
+
+                    blockPlaceholder.style.width = (gridWidth * (2/11)) + 'px';
+                    blockPlaceholder.style.marginRight = (gridWidth * (1/11)) + 'px';
+
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
                     blockPlaceholder.style.border = "2px solid " + blockColorMap[colNum / 2]; //rgb(45, 255, 254);"
@@ -586,6 +668,10 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                     var columnHighlight = document.createElement('div');
                     var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
                     columnHighlight.setAttribute("class", className);
+
+                    columnHighlight.style.width = (gridWidth * 2/11) + 'px';
+                    columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
+                    
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
                     columnHighlight.style.background = columnHighlightColorMap[colNum/2];
@@ -613,7 +699,18 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
     datacraftingEventDiv.setAttribute('id', 'datacraftingEventDiv');
     datacraftingEventDiv.setAttribute("touch-action", "none");
     container.appendChild(datacraftingEventDiv);
-
+    
+    var craftingMenusContainer = document.createElement('div');
+    craftingMenusContainer.id = 'craftingMenusContainer';
+    craftingMenusContainer.style.width = containerWidth + 'px';
+    craftingMenusContainer.style.height = containerHeight + 'px';
+    craftingMenusContainer.style.position = 'absolute';
+    craftingMenusContainer.style.left = '0';
+    craftingMenusContainer.style.top = '0';
+    // craftingMenusContainer.style.pointerEvents = 'none';
+    craftingMenusContainer.style.display = 'none';
+    container.appendChild(craftingMenusContainer);
+    
     this.updateGrid(logic.grid);
     this.addDatacraftingEventListeners();
 };

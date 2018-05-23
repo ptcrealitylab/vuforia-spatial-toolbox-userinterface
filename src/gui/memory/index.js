@@ -514,7 +514,7 @@ function getMemoryWithId(id) {
 
 function memoryCanCreate() {
     // Exactly one visible object
-    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1 || typeof realityEditor.gui.ar.draw.visibleObjects.dummy !== 'undefined') {
+    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1) {
         return false;
     }
     if (globalStates.freezeButtonState) {
@@ -526,15 +526,18 @@ function memoryCanCreate() {
     if (globalStates.settingsButtonState) {
         return false;
     }
-    if (globalStates.editingMode || globalStates.editingNode || globalStates.tempEditingMode) {
+    if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
+        return false;
+    }
+    if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
         return false;
     }
     if (globalStates.guiState === 'ui') {
         return true;
     }
-    if (globalStates.guiState === 'node' && !globalProgram.objectA) {
-        return true;
-    }
+    // if (globalStates.guiState === 'node' && !globalProgram.objectA) { // TODO: shouldn't this draw dot line?
+    //     return true;
+    // }
     return false;
 }
 

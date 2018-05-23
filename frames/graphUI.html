@@ -179,7 +179,9 @@
 
         dataValue.textContent = scaleVal(properties.value).toPrecision(7).substring(0,8);
 
-        dataName.textContent = properties.unit;
+        if(properties.unit) {
+            dataName.textContent = properties.unit;
+        }
 
 
 
@@ -223,6 +225,7 @@
 
     var realityInterface = new RealityInterface();
     realityInterface.addReadListener('value', function(e) {
+  
         properties.value = e.value;
         properties.unit = e.unit;
         properties.unitMax = e.unitMax;

@@ -126,6 +126,8 @@ realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
  **/
 
 realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
+    if (matrix.length === 0) return [];
+    
 	var r = []; //new Array(16);
 	r[0] = matrix[0];
 	r[1] = matrix[1];
@@ -847,30 +849,27 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         return canvas.toDataURL() === blank.toDataURL();
     }
     */
-    /*
+
+    /**
+     * Shortcut approximately detects if it has been unconstrained moved with only a few comparisons
+     * @param matrix
+     * @return {boolean}
+     */
     function hasBeenUnconstrainedPositioned(matrix) {
-        var approximateMatrix = matrix.map(function(elt) {
-            return parseFloat(elt.toFixed(3)); // round to prevent floating point precision errors
-        });
-        return !(approximateMatrix[0] === 1 &&
-                approximateMatrix[1] === 0 &&
-                approximateMatrix[2] === 0 &&
-                approximateMatrix[3] === 0 &&
-                approximateMatrix[4] === 0 &&
-                approximateMatrix[5] === 1 &&
-                approximateMatrix[6] === 0 &&
-                approximateMatrix[7] === 0 &&
-                approximateMatrix[8] === 0 &&
-                approximateMatrix[9] === 0 &&
-                approximateMatrix[10] === 1 &&
-                approximateMatrix[11] === 0 &&
-                approximateMatrix[12] === 0 &&
-                approximateMatrix[13] === 0 &&
-                approximateMatrix[14] === 0 &&
-                approximateMatrix[15] === 1);
-        
+        if (!matrix || matrix.length < 15) {
+            return false;
+        }
+        if (parseFloat(matrix[1].toFixed(3)) !== 0) {
+            return true;
+        }
+        if (parseFloat(matrix[2].toFixed(3)) !== 0) {
+            return true;
+        }
+        if (parseFloat(matrix[14].toFixed(3)) !== 0) {
+            return true;
+        }
+        return false;
     }
-    */
     
     /**
      * 
@@ -881,7 +880,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
      */
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
-        if(!globalStates.inTransition) return false;
+        
+        // don't draw lines unless the marker has been unconstrained edited
+        if (!hasBeenUnconstrainedPositioned(matrixSVG)) {
+            return;
+        }
+        
+        // if (globalStates.inTransitionFrame) return false;
         var thisSVG = globalDOMCache["svg" + activeKey];
 
         // check if css is a percentage (handle differently so we don't convert 100% to 100px)
