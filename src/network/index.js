@@ -1969,16 +1969,15 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         interface: globalStates.interface
     };
 
+    if (version < 170 && objectKey === nodeKey) {
+        newStyle = oldStyle;
+    }
+
     if (object && object.ip) {
         newStyle.objectData = {
             ip: object.ip
         };
     }
-
-    if (version < 170 && objectKey === nodeKey) {
-        newStyle = oldStyle;
-    }
-    
     var activeKey = nodeKey || frameKey;
     
     // if (globalDOMCache['svg' + activeKey]) {
