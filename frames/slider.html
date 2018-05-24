@@ -101,7 +101,11 @@
         properties.value = value;
         renderProperties();
 
-        realityInterface.write('value', properties.value);
+       realityInterface.write('value', properties.value);
+
+      //  realityInterface.write('value', properties.value, "f", "kg", 0,20);
+        
+        
     }
 
     function renderProperties() {

@@ -287,10 +287,15 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             nodes: [
                 {name: 'in_out', type: "twoSidedLimiter"}
             ]
+        },
+        {
+            name: 'limiter',
+            width: 600,
+            height: 600,
+            nodes: [
+                {name: 'in_out', type: "limiter"}
+            ]
         }
-
-
-        
     ];
 
     function pocketInit() {
