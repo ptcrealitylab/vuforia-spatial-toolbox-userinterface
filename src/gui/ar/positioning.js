@@ -221,7 +221,8 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
     // add node's position to its frame's position to gets its actual offset
     
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    
+    if (typeof activeVehicle.type !== 'undefined') {
         var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (frame) {
             var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
@@ -257,7 +258,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    if (typeof activeVehicle.type !== 'undefined') {
         
         if (!newMatrixValue || newMatrixValue.constructor !== Array) {
             console.warn('trying to set relativeMatrix to a non-array value');
@@ -296,7 +297,7 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     } 
     
     
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    if (typeof activeVehicle.type !== 'undefined') {
         activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
     } else {
         activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);

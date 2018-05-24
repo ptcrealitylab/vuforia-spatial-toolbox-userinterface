@@ -9,6 +9,7 @@ var sendTouchEvents = false;
         node: '',
         frame: '',
         object: '',
+        publicData: {},
         modelViewMatrix: [],
         projectionMatrix: [],
         visibility: 'visible',
@@ -188,6 +189,7 @@ var sendTouchEvents = false;
      */
 
     function RealityInterface() {
+        this.publicData = realityObject.publicData;
         this.pendingSends = [];
         this.pendingIos = [];
 
@@ -331,6 +333,10 @@ var sendTouchEvents = false;
             this.read = makeIoStub('read');
             this.readRequest = makeIoStub('readRequest');
             this.addReadListener = makeIoStub('addReadListener');
+            this.readPublicData = makeIoStub('readPublicData');
+            this.addReadPublicDataListener = makeIoStub('addReadPublicDataListener');
+            this.writePublicData = makeIoStub('writePublicData');
+            this.writePrivateData = makeIoStub('writePrivateData');
         }
 
         realityInterfaces.push(this);
@@ -418,6 +424,71 @@ var sendTouchEvents = false;
             });
         };
 
+        this.readPublicData = function (node, valueName, value) {
+            console.log(realityObject.publicData);
+            if (!value)  value = 0;
+     
+            if(typeof realityObject.publicData[node] === "undefined") {
+                realityObject.publicData[node] = {};
+            }
+       
+            if (typeof realityObject.publicData[node][valueName] === "undefined") {
+                realityObject.publicData[node][valueName] = value;
+                return value;
+            } else {
+                return realityObject.publicData[node][valueName];
+            }
+        };
+
+        this.addReadPublicDataListener = function (node, valueName, callback) {
+            self.ioObject.on("object/publicData", function (msg) {
+                var thisMsg = JSON.parse(msg);
+                if (typeof thisMsg.publicData === "undefined")  return;
+                    if(typeof thisMsg.publicData[node] === "undefined") return;
+                    if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
+                        callback(thisMsg.publicData[node][valueName]);
+            });
+        };
+
+        this.writePublicData = function (node, valueName, value) {
+
+            if(typeof realityObject.publicData[node] === "undefined") {
+                realityObject.publicData[node] = {};
+            }
+            
+            realityObject.publicData[node][valueName] = value;
+
+            this.ioObject.emit('object/publicData', JSON.stringify({
+                object: realityObject.object,
+                frame: realityObject.frame,
+                node: realityObject.frame + node,
+                publicData: realityObject.publicData[node]
+            }));
+
+            parent.postMessage(JSON.stringify(
+                {
+                    version: realityObject.version,
+                    object: realityObject.object,
+                    frame: realityObject.frame,
+                    node: realityObject.frame + node,
+                    publicData: realityObject.publicData[node]
+                }
+            ), "*");
+        };
+
+        this.writePrivateData = function (node, valueName, value) {
+            
+            var thisItem = {};
+            thisItem[valueName] = value;
+
+            this.ioObject.emit('object/privateData', JSON.stringify({
+                object: realityObject.object,
+                frame: realityObject.frame,
+                node: realityObject.frame + node,
+                privateData: thisItem
+            }));
+        };
+        
         console.log('socket.io is loaded and injected');
 
         for (var i = 0; i < this.pendingIos.length; i++) {

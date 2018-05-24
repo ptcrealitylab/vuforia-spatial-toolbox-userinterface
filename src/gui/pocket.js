@@ -207,7 +207,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             name: 'sensor-graph',
             width: 304,
             height: 304,
-            nodeNames: [
+            nodes: [
                 'value'
             ]
         },
@@ -215,7 +215,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             name: 'sensor-linear',
             width: 204,
             height: 52,
-            nodeNames: [
+            nodes: [
                 'value'
             ]
         },
@@ -223,7 +223,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             name: 'sensor-digital',
             width: 100,
             height: 100,
-            nodeNames: [
+            nodes: [
                 'value'
             ]
         },*/
@@ -231,55 +231,66 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             name: 'graphUI',
             width: 690,
             height: 410,
-            nodeNames: [
-                'value'
+            nodes: [
+                {name: 'value', type: "node"}
             ]
         },
         {
             name: 'skyNews',
             width: 660,
             height: 430,
-            nodeNames: [
-                'play'
+            nodes: [
+                {name: 'play', type: "node"}
             ]
         },
         {
             name: 'ptcStockUI',
             width: 600,
             height: 500,
-            nodeNames: [
+            nodes: [
             ]
         },
         {
             name: 'ptcTwitter',
             width: 400,
             height: 400,
-            nodeNames: [
+            nodes: [
             ]
         },  {
             name: 'slider',
             width: 206,
             height: 526,
-            nodeNames: [
-                'value'
+            nodes: [
+                {name: 'value', type: "node"}
             ]
         },
         {
             name: 'slider-2d',
             width: 526,
             height: 526,
-            nodeNames: [
-                'valueX',
-                'valueY'
+            nodes: [
+                {name: 'valueX', type: "node"},
+                {name: 'valueY', type: "node"}
             ]
         },
         {
             name: 'draw',
             width: 600,
             height: 600,
-            nodeNames: [
+            nodes: [
+            ]
+        },
+        {
+            name: 'twoSidedLimiter',
+            width: 600,
+            height: 600,
+            nodes: [
+                {name: 'in_out', type: "twoSidedLimiter"}
             ]
         }
+
+
+        
     ];
 
     function pocketInit() {
@@ -362,17 +373,22 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
                 // thisFrame.visible = false;
 
                 // add each node with a non-empty name
-                var nodeNames = evt.target.dataset.nodeNames.split(',').filter(function(nodeName){return nodeName.length > 0;});
-                var hasMultipleNodes = nodeNames.length > 1;
-                nodeNames.forEach(function(nodeName) {
-                    var nodeUuid = frameID + nodeName;
+                
+              
+
+                var nodes = JSON.parse(evt.target.dataset.nodes);
+                var hasMultipleNodes = nodes.length > 1;
+                nodes.forEach(function(node) {
+              
+                    if(typeof node !== "object") return;
+                    var nodeUuid = frameID + node.name;
                     frame.nodes[nodeUuid] = new Node();
                     var addedNode = frame.nodes[nodeUuid];
                     addedNode.objectId = closestObjectKey;
                     addedNode.frameId = frameID;
-                    addedNode.name = nodeName;
+                    addedNode.name = node.name;
                     addedNode.text = undefined;
-                    addedNode.type = 'node';
+                    addedNode.type = node.type;
                     addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one
                     addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // random otherwise
                     addedNode.frameSizeX = 220;
@@ -394,6 +410,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
 
                 closestObject.frames[frameID] = frame;
 
+                console.log(frame);
                 // send it to the server
                 // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
                 realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
@@ -598,7 +615,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             container.dataset.name = element.name;
             container.dataset.width = element.width;
             container.dataset.height = element.height;
-            container.dataset.nodeNames = element.nodeNames;
+            container.dataset.nodes = JSON.stringify(element.nodes);
             
             var elt = document.createElement('img');
             elt.classList.add('palette-element');

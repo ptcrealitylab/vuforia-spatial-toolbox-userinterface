@@ -308,7 +308,7 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
     overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
     
     // give enter and leave events to nodes for when you draw links between them
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    if (activeVehicle.type !== 'ui') {
         overlayDomElement.addEventListener('pointerenter', this.onElementTouchEnter.bind(this));
         overlayDomElement.addEventListener('pointerout', this.onElementTouchOut.bind(this));
     }
@@ -451,8 +451,8 @@ realityEditor.device.onElementTouchMove = function(event) {
  */
 realityEditor.device.onElementTouchEnter = function(event) {
     var target = event.currentTarget;
-
-    if (target.type === "node" || target.type === "logic") {
+    console.log(target.type);
+    if (target.type !== "ui") {
         var contentForFeedback;
 
         if (globalProgram.nodeA === target.nodeId || globalProgram.nodeA === false) {
@@ -484,8 +484,8 @@ realityEditor.device.onElementTouchEnter = function(event) {
  */
 realityEditor.device.onElementTouchOut = function(event) {
     var target = event.currentTarget;
-
-    if (target.type === "node" || target.type === "logic") {
+    console.log(target.type);
+    if (target.type !== "ui") {
 
         // stop node hold timer // TODO: handle node move same as frame by calculating dist^2 > threshold
         this.clearTouchTimer();

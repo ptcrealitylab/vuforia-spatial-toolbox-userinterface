@@ -722,7 +722,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         search: realityEditor.gui.search.getSearch()
                     }), '*');
             
-            if (activeType === "node" || activeType === "logic") {
+            if (activeType !== "ui") {
                 activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
             }
 
@@ -805,7 +805,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
                 // add node's position to its frame's position to gets its actual offset
-                if (activeType === "node" || activeType === "logic") {
+                if (activeType !== "ui") {
                     var frameKey = activeVehicle.frameId;
                     var frame = realityEditor.getFrame(objectKey, frameKey);
                     if (frame) {
@@ -1099,7 +1099,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             // temporary UI styling to visualize locks
 
-            if (activeType === "node" || activeType === "logic") {
+            if (activeType !== "ui") {
                 if (!!activeVehicle.lockPassword && activeVehicle.lockType === "full") {
                     globalDOMCache["iframe" + activeKey].style.opacity = 0.25;
                 } else if (!!activeVehicle.lockPassword && activeVehicle.lockType === "half") {
@@ -1555,7 +1555,8 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         var finalOffsetY = positionData.y;
 
         // // add node's position to its frame's position to gets its actual offset
-        if (activeType === "node" || activeType === "logic") {
+        
+        if (activeType !== "ui") {
             var frameKey = activeVehicle.frameId;
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame) {

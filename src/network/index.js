@@ -1877,13 +1877,10 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
 // generate action for all links to be reloaded after upload
 
     var tempThisObject = {};
-    if (type === "node") {
+    if (type !== "ui") {
         tempThisObject = realityEditor.getNode(objectKey, frameKey, nodeKey);
-    } else if (type === "logic") {
-        // todo might result in error??
-        tempThisObject = realityEditor.getNode(objectKey, frameKey, nodeKey);
-    }
-    else if (type === "ui") {
+    } 
+    else {
         // if (object === nodeKey) {
         //     tempThisObject = realityEditor.getObject(objectKey);
         // } else {
@@ -1914,7 +1911,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
         realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
         var urlEndpoint;
-        if (type === 'node' || type === 'logic') {
+        if (type !== 'ui') {
             urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/nodeSize/";
         } else {
             urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/";
