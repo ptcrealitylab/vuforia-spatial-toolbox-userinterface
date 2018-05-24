@@ -177,20 +177,35 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
 
-                if (this.globalStates.guiState === "ui") { // || Object.keys(this.activeFrame.nodes).length === 0) { // removed feature where UI shows in node view if no nodes... check with team that this is a good decision
-                    var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
-                        this.globalDOMCache, this.globalStates, this.globalCanvas,
-                        this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                        this.nodeCalculations, this.cout);
-                    
-                    if (!continueUpdate) return;
-                    
-                    var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
-                    this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
+                // if (this.globalStates.guiState === "ui") { // || Object.keys(this.activeFrame.nodes).length === 0) { // removed feature where UI shows in node view if no nodes... check with team that this is a good decision
+                //     var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                //         this.globalDOMCache, this.globalStates, this.globalCanvas,
+                //         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
+                //         this.nodeCalculations, this.cout);
+                //    
+                //     if (!continueUpdate) return;
+                //    
+                //     var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
+                //     this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
+                //
+                //     // TODO: set repositioning DOM elements present if in editing mode and developer true
+                //
+                // } else {
+                //     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
+                // }
 
-                    // TODO: set repositioning DOM elements present if in editing mode and developer true
+                
+                var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                    this.globalDOMCache, this.globalStates, this.globalCanvas,
+                    this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
+                    this.nodeCalculations, this.cout);
 
-                } else {
+                if (globalStates.guiState === 'ui' && !continueUpdate) return;
+
+                var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
+                this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
+                
+                if (globalStates.guiState !== 'ui') {
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                 }
 
@@ -693,7 +708,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         
         // make visible a frame or node if it was previously hidden
         // waits to make visible until positionOnLoad has been applied, to avoid one frame rendered in wrong position
-        if (!activeVehicle.visible && !(activePocketFrameWaiting || activePocketNodeWaiting)) {
+        if (globalStates.guiState === activeType && !activeVehicle.visible && !(activePocketFrameWaiting || activePocketNodeWaiting)) {
             
             activeVehicle.visible = true;
             
@@ -702,8 +717,25 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             var overlay = globalDOMCache[activeKey];
             var canvas = globalDOMCache["svg" + activeKey];
             
-            container.style.display = 'inline';
-            iFrame.style.visibility = 'visible';
+            if (activeType === 'ui') {
+                container.classList.remove('hiddenFrameContainer');
+                container.classList.add('visibleFrameContainer');
+
+            } else {
+                container.classList.remove('hiddenNodeContainer');
+                container.classList.add('visibleNodeContainer');
+
+            }
+            
+            // container.classList.remove('hiddenFrameContainer');
+            // container.classList.add('visibleFrameContainer');
+
+            iFrame.classList.remove('hiddenFrame');
+            iFrame.classList.add('visibleFrame');
+
+            // container.style.display = 'inline';
+            // iFrame.style.visibility = 'visible';
+            
             overlay.style.visibility = 'visible';
             
             if (globalStates.editingMode || thisIsBeingEdited) {
@@ -749,8 +781,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             }
 
         }
+        
+        // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
+        var shouldRenderFramesInNodeView = globalStates.guiState === 'node' && activeType === 'ui';
 
-        if (activeVehicle.visible || activePocketFrameWaiting || activePocketNodeWaiting) {
+        if ((activeVehicle.visible || shouldRenderFramesInNodeView) || activePocketFrameWaiting || activePocketNodeWaiting) {
 
             if (activeVehicle.fullScreen !== true) {
 
@@ -933,6 +968,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 if (activeType !== "ui") {
                     var editedOrderData = this.getNodeRenderPriority(activeKey);
                     editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
+                }
+                
+                if (shouldRenderFramesInNodeView) {
+                    editedOrderZIncrease = -200;
                 }
 
                 // if (finalMatrix[14] < 10) {
@@ -1152,8 +1191,26 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     
  //   console.log(activeVehicle);
     if (activeVehicle.visible === true) {
-        globalDOMCache["object" + activeKey].style.display = 'none';
-        globalDOMCache["iframe" + activeKey].style.visibility = 'hidden';
+        
+        // globalDOMCache["object" + activeKey].style.display = 'none';
+        // globalDOMCache["iframe" + activeKey].style.visibility = 'hidden';
+
+        if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
+            globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
+            globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
+
+        } else {
+            globalDOMCache['object' + activeKey].classList.remove('visibleNodeContainer');
+            globalDOMCache['object' + activeKey].classList.add('hiddenNodeContainer');
+
+        }
+
+        // globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
+        // globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
+        
+        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+        
         globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
             JSON.stringify(
                 {
@@ -1288,7 +1345,12 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addContainer.className = "main";
     addContainer.style.width = globalStates.height + "px";
     addContainer.style.height = globalStates.width + "px";
-    addContainer.style.display = "none";
+    // addContainer.style.display = "none";
+    if (!!nodeKey) {
+        addContainer.classList.add('hiddenNodeContainer');
+    } else {
+        addContainer.classList.add('hiddenFrameContainer');
+    }
     addContainer.style.border = 0;
 
     var addIframe = document.createElement('iframe');
@@ -1299,7 +1361,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY) + "px";
     addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
-    addIframe.style.visibility = "hidden";
+    // addIframe.style.visibility = "hidden";
+    addIframe.classList.add('hiddenFrame');
     addIframe.src = iframeSrc;
     addIframe.setAttribute("data-frame-key", frameKey);
     addIframe.setAttribute("data-object-key", objectKey);
