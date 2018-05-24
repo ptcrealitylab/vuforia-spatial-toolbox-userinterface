@@ -162,8 +162,6 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.visible = false;
                         thisFrame.objectId = objectKey;
                         
-                        delete thisFrame.positionOnLoad;
-                        
                         if (typeof thisFrame.developer === 'undefined') {
                             thisFrame.developer = true;
                         }
@@ -1539,8 +1537,41 @@ realityEditor.network.postNewFrame = function(ip, objectKey, contents) {
 
 realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
     this.cout("I am adding a frame: " + ip);
+    contents = contents || {};
     contents.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/", contents);
+
+    var oldFrame = realityEditor.getFrame(objectKey, frameKey);
+
+    var cachedPositionData = {
+        x: oldFrame.ar.x,
+        y: oldFrame.ar.y,
+        scale: oldFrame.ar.scale,
+        matrix: oldFrame.ar.matrix
+    };
+    
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/", contents, function(err, response) {
+        console.log(err);
+        console.log(response);
+        
+        if (err) {
+            console.warn('unable to make copy of frame ' + frameKey);
+        } else {
+            var responseFrame = response.frame;
+            var newFrame = new Frame();
+            for (var propertyKey in responseFrame) {
+                if (!responseFrame.hasOwnProperty(propertyKey)) continue;
+                newFrame[propertyKey] = responseFrame[propertyKey];
+            }
+            var thisObject = realityEditor.getObject(objectKey);
+            
+            // make this staticCopy so it replaces the old static copy
+            newFrame.staticCopy = true;
+
+            // copy position data directly from the old one in the editor so it is correctly placed to start (server version might have old data)
+            newFrame.ar = cachedPositionData;
+            thisObject.frames[response.frameId] = newFrame;
+        }
+    });
 };
 
 // TODO: this isn't used anywhere anymore?

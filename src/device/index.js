@@ -149,6 +149,23 @@ realityEditor.device.getEditingVehicle = function() {
 };
 
 /**
+ * Returns true iff the vehicle is the active editing vehicle, and being unconstrained edited
+ * @param {Frame|Node} vehicle
+ * @return {boolean}
+ */
+realityEditor.device.isEditingUnconstrained = function(vehicle) {
+    if (vehicle === this.getEditingVehicle() && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+        if (typeof vehicle.staticCopy !== 'undefined') {
+            if (vehicle.staticCopy) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+};
+
+/**
  * Finds the closest frame to the camera and moves the pocket node from the pocketItem storage to that frame.
  * @param {Logic} pocketNode
  */
@@ -896,26 +913,13 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
         // otherwise, if you just have one finger on the screen, move the frame you're on if you can
         } else if (event.touches.length === 1) {
-
-            // detect edge case where my dragging system doesn't work
-            /*
-            var ignoreDragToPreventBug = false;
-            if (globalStates.guiState === 'node' && (this.editingState.unconstrained || globalStates.unconstrainedPositioning) && activeVehicle.matrix.length > 0) {
-                var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
-                if (frame) {
-                    var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                    if (parentFramePositionData.matrix.length > 0) {
-                        ignoreDragToPreventBug = true;
-                    }
-                }
+            
+            // cannot move static copy frames
+            if (activeVehicle.staticCopy) {
+                return;
             }
             
-            console.log(ignoreDragToPreventBug);
-            
-            if (ignoreDragToPreventBug) return;
-            */
-            
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
             // visual feedback if you move over the trash
             if (event.pageX >= this.layout.getTrashThresholdX()) {
@@ -951,6 +955,13 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
                 console.log('pop into unconstrained editing mode');
 
                 realityEditor.app.tap();
+
+                // create copy of static frame when it gets pulled out
+                if (activeVehicle.staticCopy) {
+                    realityEditor.network.createCopyOfFrame(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
+                    activeVehicle.staticCopy = false;
+                }
+                
                 this.editingState.unconstrained = true;
                 this.editingState.unconstrainedOffset = null;
 
@@ -959,7 +970,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
             }
         }
     }
-}
+};
 
 /**
  * Exposes all touchend events to the touchInputs module for additional functionality (e.g. screens).
@@ -1020,7 +1031,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         } else {
             // if there's still a touch on it (it was being scaled), reset touch offset so vehicle doesn't jump
             this.editingState.touchOffset = null;
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
 
         }
     }
@@ -1085,7 +1096,7 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
             var didJustAddPocket = false;
             if (realityEditor.device.eventObject.object && realityEditor.device.eventObject.frame) {
                 var existingEventFrame = realityEditor.getFrame(realityEditor.device.eventObject.object, realityEditor.device.eventObject.frame);
-                didJustAddPocket = (existingEventFrame && typeof existingEventFrame.positionOnLoad !== 'undefined');
+                didJustAddPocket = (existingEventFrame && existingEventFrame === pocketFrame.vehicle && pocketFrame.waitingToRender);
             }
             
             if (!didJustAddPocket) {

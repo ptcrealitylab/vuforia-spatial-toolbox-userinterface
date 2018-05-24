@@ -411,11 +411,6 @@ realityEditor.gui.buttons.pocketButtonLeave = function(event) {
         var object = realityEditor.getObject(addedElement.objectKey);
         realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
 
-        addedElement.positionOnLoad = {
-            pageX: event.pageX,
-            pageY: event.pageY
-        };
-
         var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
 
         realityEditor.device.editingState.touchOffset = {

@@ -269,7 +269,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 // preserve frame globally when object disappears if it is being moved in unconstrained editing
-                if (editingVehicle === this.activeVehicle && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+                if (realityEditor.device.isEditingUnconstrained(this.activeVehicle)) {
+                // if (editingVehicle === this.activeVehicle && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
                     
                     wereAnyFramesMovedToGlobal = true;
                     globalStates.inTransitionObject = objectKey;
@@ -660,23 +661,18 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
+    
+    // recompute frame.temp for the new object
+    this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
+    this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
 
-    // realityEditor.gui.screenExtension.screenObject.object = newObjectKey;
-    // realityEditor.gui.screenExtension.screenObject.frame = newFrameKey;
-
-    // reset its position (this can be updated later to move the frame to the dropped location
-
-    frame.ar.x = 0;
-    frame.ar.y = 0;
-
-    if (optionalPosition) {
-        frame.ar.x = optionalPosition.x;
-        frame.ar.y = optionalPosition.y;
-    }
-
-    frame.ar.matrix = [];
+    // compute frame.matrix based on new object
+    var resultMatrix = [];
+    this.utilities.multiplyMatrix(frame.begin, this.utilities.invertMatrix(frame.temp), resultMatrix);
+    realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+    
+    // reset frame.begin
     frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
     
 };
 
@@ -815,7 +811,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
                     }
 
-                    if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+                    if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                    // if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
 
                         activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
 
@@ -862,7 +859,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                     
                     if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0) {
-                        if (!(thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning))) {
+                        if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                        // if (!(thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning))) {
                             utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
                         }
                         
@@ -905,7 +903,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 // multiply in the animation matrix if you are editing this frame in unconstrained mode.
                 // in the future this can be expanded but currently this is the only time it gets animated.
-                if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+                if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                // if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
                     var animatedFinalMatrix = [];
                     utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
                     finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
@@ -1086,7 +1085,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     if (pocketContainer.type === 'ui' && (globalStates.freezeButtonState || realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1)) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, pocketContainer.positionOnLoad.pageX, pocketContainer.positionOnLoad.pageY, false);
 
-        // otherwise float in front of screen in unconstrained mode
+    // otherwise float in front of screen in unconstrained mode
     } else {
         var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
         
@@ -1102,7 +1101,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
             x: parseFloat(pocketContainer.vehicle.frameSizeX)/2,
             y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
         };
-
+        
     }
 
     // only start editing it if you didn't do a quick tap that already released by the time it loads
@@ -1586,7 +1585,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
             //  console.log(activeVehicle.temp);
 
-            if (matrix.copyStillFromMatrixSwitch) {
+            if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
                 matrix.visual = utilities.copyMatrix(activeObjectMatrixCopy);
                 if (typeof positionData.matrix === "object" && positionData.matrix.length > 0) {
                     utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);

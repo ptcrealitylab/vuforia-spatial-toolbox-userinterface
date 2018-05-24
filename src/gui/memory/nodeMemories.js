@@ -213,11 +213,6 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
 
         var addedElement = realityEditor.gui.pocket.createLogicNode(logicNodeObject);
 
-        addedElement.positionOnLoad = {
-            pageX: evt.pageX,
-            pageY: evt.pageY
-        };
-
         var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
         
         realityEditor.device.editingState.touchOffset = {

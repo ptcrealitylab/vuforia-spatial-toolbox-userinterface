@@ -166,7 +166,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 var centerOffsetX = thisItem.frameSizeX / 2;
                 var centerOffsetY = thisItem.frameSizeY / 2;
                 
-                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false); // TODO: undo based on marker
+                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
 
 			}
 		}
@@ -377,7 +377,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
 
         // On touching an element-template, upload to currently visible object
-        pocket.addEventListener('pointerdown', function(evt) {
+        pocket.addEventListener('pointermove', function(evt) {
             
             if (!evt.target.classList.contains('element-template')) {
                 return;
@@ -470,11 +470,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     console.log("closest Node", closestObject.averageScale);
 
                 });
-                
-                frame.positionOnLoad = {
-                    pageX: evt.pageX,
-                    pageY: evt.pageY
-                };
 
                 // // set the eventObject so that the frame can interact with screens as soon as you add it
                 realityEditor.device.eventObject.object = closestObjectKey;
