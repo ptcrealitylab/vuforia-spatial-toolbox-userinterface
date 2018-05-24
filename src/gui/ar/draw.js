@@ -778,7 +778,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
                 // add node's position to its frame's position to gets its actual offset
-                if (activeType === "node" || activeType === "logic") {
+                if (activeType === "node") {
                     var frameKey = activeVehicle.frameId;
                     var frame = realityEditor.getFrame(objectKey, frameKey);
                     if (frame) {
@@ -823,9 +823,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         if (matrix.copyStillFromMatrixSwitch) {
                             matrix.visual = utilities.copyMatrix(activeObjectMatrix);
                             
-                            if (typeof positionData.matrix === "object") {
-                                if (positionData.matrix.length > 0) {
-                                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                            var matrixToUse = positionData.matrix;
+                            if (activeType === 'node') {
+                                matrixToUse = positionData.relativeMatrix;
+                            }
+                            
+                            if (typeof matrixToUse === "object") {
+                                if (matrixToUse.length > 0) {
+                                    utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
                                 } else {
                                     activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
                                 }
@@ -905,26 +910,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
                     finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
                 }
-                
-                
-                
-                /*
-                    if (typeof positionData.matrix !== "undefined") {
-                        if (positionData.matrix.length < 13) {
-                            
-                            if (parentFramePositionData && parentFramePositionData.matrix.length === 16) { // This is a node - position relative to parent frame unconstrained editing
-                                utilities.multiplyMatrix(parentFramePositionData.matrix, activeObjectMatrix, matrix.r);
-                                utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-                            } else {
-                                utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-                            }
-    
-                        } else {
-                            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
-                            utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-                        }
-                    }
-                 */
                 
                 // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
                 // but we want all of them to have a positive value so they are rendered in front of background canvas
@@ -1096,10 +1081,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
  * @param matrix - reference to realityEditor.gui.ar.draw.matrix
  */
 realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
-    // drop directly down onto marker plane if you quick-tap the pocket or background is frozen
-    if (globalStates.freezeButtonState || (pocketContainer.type === 'ui' && realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1)) {
+    
+    // drop frames directly down onto marker plane if you quick-tap the pocket or background is frozen
+    if (pocketContainer.type === 'ui' && (globalStates.freezeButtonState || realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1)) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, pocketContainer.positionOnLoad.pageX, pocketContainer.positionOnLoad.pageY, false);
 
+        // otherwise float in front of screen in unconstrained mode
     } else {
         var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
         
@@ -1128,11 +1115,8 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         // animate it as flowing out of the pocket
         this.startPocketDropAnimation(250, 0.7, 1.0);
         matrix.copyStillFromMatrixSwitch = false;
-        pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
 
-        // experiment to make pocket frame float further away from you if you are further away from the object...
-        // activeVehicle.begin[14] = 0.5 * (activeVehicle.begin[14] + (this.visibleObjects[activeVehicle.objectId][14] * 1.3)); // average between preset matrix and how far away you are from the object
-        // activeVehicle.begin[15] = activeVehicle.begin[14]; // 15 should always be set to 14 for the perspective divide 
+        pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
 
     }
 
@@ -1578,7 +1562,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         var finalOffsetY = positionData.y;
 
         // // add node's position to its frame's position to gets its actual offset
-        if (activeType === "node" || activeType === "logic") {
+        if (activeType === "node") {
             var frameKey = activeVehicle.frameId;
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame) {

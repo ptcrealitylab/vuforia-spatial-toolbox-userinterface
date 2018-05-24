@@ -122,12 +122,7 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 };
 
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
-
-    // var initialTouchOffset = realityEditor.gui.ar.utilities.getLocalOffset(activeVehicle, screenX, screenY);
-
-    // var overlayDomElement = globalDOMCache[activeVehicle.uuid];
-    // var vehicleCornerScreenPosition = realityEditor.gui.ar.utilities.getScreenCoordinateWithinDiv(overlayDomElement, 0, 0);
-
+    
     var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
 
     var positionData = this.getPositionData(activeVehicle);
@@ -136,11 +131,6 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
         x: results.point.x - results.offsetLeft,
         y: results.point.y - results.offsetTop
     };
-
-    // if (results) {
-    //     positionData.x = results.point.x - results.offsetLeft; // - initialTouchOffset.x;// - vehicleCornerScreenPosition[0];// - results.offsetLeft;// - initialFramePosition.x;  // TODO: put an offset based on touch position relative to frame div
-    //     positionData.y = results.point.y - results.offsetTop; // - initialTouchOffset.y;// - vehicleCornerScreenPosition[1];// - results.offsetTop;// - initialFramePosition.y;
-    // }
 
     if (useTouchOffset) {
 
@@ -210,24 +200,15 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
     if (activeVehicle.hasOwnProperty('visualization')) {
-        return activeVehicle.ar; //(activeVehicle.visualization === "ar") ? (activeVehicle.ar) : (activeVehicle.screen);
+        return activeVehicle.ar;
     }
-
-    // if (typeof activeVehicle.relativeMatrix === 'undefined') { // TODO: temporary fix - make sure it gets initialized with one loaded in from server
-    //     activeVehicle.relativeMatrix = [];
-    // }
-    //
-    // this.setPositionDataMatrix(activeVehicle, activeVehicle.relativeMatrix);
 
     // add node's position to its frame's position to gets its actual offset
     
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    if (activeVehicle.type === 'node') {
         var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (frame) {
             var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-            // activeVehicle.combinedPosition.x = activeVehicle.x + parentFramePositionData.x;
-            // activeVehicle.combinedPosition.y = activeVehicle.y + parentFramePositionData.y;
-            // activeVehicle.combinedPosition.scale = activeVehicle.scale * parentFramePositionData.scale;
 
             if (typeof activeVehicle.relativeMatrix === 'undefined') { // TODO: temporary fix - make sure it gets initialized with one loaded in from server
                 activeVehicle.relativeMatrix = [];
@@ -237,8 +218,6 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
             if (parentFramePositionData.matrix.length === 16) {
                 if (activeVehicle.relativeMatrix.length === 16) {
                     // both have matrix -> multiply
-                    // realityEditor.gui.ar.draw.utilities.multiplyMatrix(activeVehicle.relativeMatrix, realityEditor.gui.ar.utilities.invertMatrix(parentFramePositionData.matrix), activeVehicle.matrix);
-
                     realityEditor.gui.ar.draw.utilities.multiplyMatrix(activeVehicle.relativeMatrix, parentFramePositionData.matrix, activeVehicle.matrix);
 
                 } else {
@@ -250,14 +229,18 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
                 activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(activeVehicle.relativeMatrix);
             }
         }
+    
     }
+    
+    // logic nodes and frames just use their own x, y, and matrix
 
     return activeVehicle;
 };
 
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    // logic nodes and frames don't need to update relativeMatrix
+    if (activeVehicle.type === 'node') {
         
         if (!newMatrixValue || newMatrixValue.constructor !== Array) {
             console.warn('trying to set relativeMatrix to a non-array value');
@@ -277,9 +260,6 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
             if (parentFramePositionData.matrix.length === 16) {
                 if (activeVehicle.relativeMatrix.length === 16) {
                     // both have matrix -> multiply
-
-                    // realityEditor.gui.ar.draw.utilities.multiplyMatrix(activeVehicle.relativeMatrix, realityEditor.gui.ar.utilities.invertMatrix(parentFramePositionData.matrix), activeVehicle.matrix);
-
                     realityEditor.gui.ar.draw.utilities.multiplyMatrix(realityEditor.gui.ar.utilities.invertMatrix(parentFramePositionData.matrix), activeVehicle.relativeMatrix, activeVehicle.matrix);
                 } else {
                     // only parent frame has matrix -> just use that
@@ -291,14 +271,12 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
             }
         }
         
-    } else {
-        activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
-    } 
+    }
     
-    
-    if (activeVehicle.type === 'node' || activeVehicle.type === 'logic') {
+    if ( activeVehicle.type === 'logic') {
         activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
-    } else {
+        
+    } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
         activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
     }
 };

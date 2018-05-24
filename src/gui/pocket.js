@@ -213,8 +213,17 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     var closestFrameKey = null;
     var closestObjectKey = null;
+    
+    // try to find the closest local AR frame to attach the logic node to
+    var objectKeys = realityEditor.gui.ar.getClosestFrame(function(frame) {
+        return frame.visualization !== 'screen' && frame.location === 'local';
+    });
+    
+    // if no local frames found, expand the search to include all frames
+    if (!objectKeys[1]) {
+        objectKeys = realityEditor.gui.ar.getClosestFrame();
+    }
 
-    var objectKeys = realityEditor.gui.ar.getClosestFrame(); // TODO: should we limit to only add these to AR frames?
     if (objectKeys[1] !== null) {
         closestFrameKey = objectKeys[1];
         closestObjectKey = objectKeys[0];
