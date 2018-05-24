@@ -691,10 +691,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
         var editingVehicle = realityEditor.device.getEditingVehicle();
         var thisIsBeingEdited = (editingVehicle === activeVehicle);
+
+        var activePocketFrameWaiting = activeVehicle === pocketFrame.vehicle && pocketFrame.waitingToRender;
+        var activePocketNodeWaiting = activeVehicle === pocketNode.vehicle && pocketNode.waitingToRender;
         
         // make visible a frame or node if it was previously hidden
         // waits to make visible until positionOnLoad has been applied, to avoid one frame rendered in wrong position
-        if (!activeVehicle.visible && !activeVehicle.positionOnLoad) {
+        if (!activeVehicle.visible && !(activePocketFrameWaiting || activePocketNodeWaiting)) {
             
             activeVehicle.visible = true;
             
@@ -750,54 +753,24 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             }
 
         }
-        if (activeVehicle.visible || activeVehicle.positionOnLoad) {
+
+        if (activeVehicle.visible || activePocketFrameWaiting || activePocketNodeWaiting) {
 
             if (activeVehicle.fullScreen !== true) {
 
                 var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
-                // set initial position of frames placed in from pocket correctly
+                // set initial position of frames and nodes placed in from pocket
                 // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
                 // 2. otherwise float in unconstrained slightly in front of the editor camera
                 // 3. animate so it looks like it is being pushed from pocket
-                if (typeof activeVehicle.positionOnLoad !== 'undefined' && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-
-                    if (globalStates.freezeButtonState || realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1) {
-                        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(activeVehicle, activeVehicle.positionOnLoad.pageX, activeVehicle.positionOnLoad.pageY, false);
-                    } else {
-                        var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
-                        activeVehicle.ar.x = (activeVehicle.positionOnLoad.pageX - globalStates.height/2) * scaleRatio;
-                        activeVehicle.ar.y = (activeVehicle.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
-                        // immediately start placing the pocket frame in unconstrained mode
-                        realityEditor.device.editingState.unconstrained = true;
-                        
-                        // still need to set touchOffset...
-                        realityEditor.device.editingState.touchOffset = {
-                            x: parseFloat(activeVehicle.frameSizeX)/2,
-                            y: parseFloat(activeVehicle.frameSizeY)/2
-                        };
-                        
-                    }
-                    
-                    // only start editing it if you didn't do a quick tap that already released by the time it loads
-                    if (realityEditor.device.currentScreenTouches.indexOf("pocket-element") > -1) {
-
-                        var activeFrameKey = activeVehicle.frameId || activeVehicle.uuid;
-                        var activeNodeKey = activeVehicle.uuid === activeFrameKey ? null : activeVehicle.uuid;
-
-                        realityEditor.device.beginTouchEditing(activeVehicle.objectId, activeFrameKey, activeNodeKey);
-                        // animate it as flowing out of the pocket
-                        this.startPocketDropAnimation(250, 0.7, 1.0);
-                        matrix.copyStillFromMatrixSwitch = false;
-                        activeVehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
-
-                        // experiment to make pocket frame float further away from you if you are further away from the object...
-                        // activeVehicle.begin[14] = 0.5 * (activeVehicle.begin[14] + (this.visibleObjects[activeVehicle.objectId][14] * 1.3)); // average between preset matrix and how far away you are from the object
-                        // activeVehicle.begin[15] = activeVehicle.begin[14]; // 15 should always be set to 14 for the perspective divide 
-                        
-                    }
-                    
-                    delete activeVehicle.positionOnLoad;
+                if (activePocketNodeWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
+                    console.log('just added pocket node');
+                    this.addPocketVehicle(pocketNode, matrix);
+                }
+                if (activePocketFrameWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
+                    console.log('just added pocket frame');
+                    this.addPocketVehicle(pocketFrame, matrix);
                 }
                 
                 var finalOffsetX = positionData.x;
@@ -1115,6 +1088,56 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     
     return true;
 
+};
+
+/**
+ * A one-time action that sets up the frame or node added from the pocket in the correct place and begins editing it
+ * @param pocketContainer - either pocketFrame or pocketNode
+ * @param matrix - reference to realityEditor.gui.ar.draw.matrix
+ */
+realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
+    // drop directly down onto marker plane if you quick-tap the pocket or background is frozen
+    if (globalStates.freezeButtonState || (pocketContainer.type === 'ui' && realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1)) {
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, pocketContainer.positionOnLoad.pageX, pocketContainer.positionOnLoad.pageY, false);
+
+    } else {
+        var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
+        
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(pocketContainer.vehicle);
+        
+        positionData.x = (pocketContainer.positionOnLoad.pageX - globalStates.height/2) * scaleRatio;
+        positionData.y = (pocketContainer.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
+        // immediately start placing the pocket frame in unconstrained mode
+        realityEditor.device.editingState.unconstrained = true;
+
+        // still need to set touchOffset...
+        realityEditor.device.editingState.touchOffset = {
+            x: parseFloat(pocketContainer.vehicle.frameSizeX)/2,
+            y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
+        };
+
+    }
+
+    // only start editing it if you didn't do a quick tap that already released by the time it loads
+    if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.indexOf("pocket-element") > -1) {
+
+        var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
+        var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
+
+        realityEditor.device.beginTouchEditing(pocketContainer.vehicle.objectId, activeFrameKey, activeNodeKey);
+        // animate it as flowing out of the pocket
+        this.startPocketDropAnimation(250, 0.7, 1.0);
+        matrix.copyStillFromMatrixSwitch = false;
+        pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
+
+        // experiment to make pocket frame float further away from you if you are further away from the object...
+        // activeVehicle.begin[14] = 0.5 * (activeVehicle.begin[14] + (this.visibleObjects[activeVehicle.objectId][14] * 1.3)); // average between preset matrix and how far away you are from the object
+        // activeVehicle.begin[15] = activeVehicle.begin[14]; // 15 should always be set to 14 for the perspective divide 
+
+    }
+
+    pocketContainer.positionOnLoad = null;
+    pocketContainer.waitingToRender = false;
 };
 
 realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds, startPerspectiveDivide, endPerspectiveDivide) {
@@ -1612,12 +1635,16 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         var matrixToUse = realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix); // defaults to positionData.matrix for all but a special case of node
 
         if (typeof matrixToUse !== "undefined" && matrixToUse.length > 0 && typeof matrixToUse[1] !== "undefined") {
-            if (globalStates.unconstrainedPositioning === false) {
-                //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
-                utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
-            }
-            utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
-            utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+            // if (globalStates.unconstrainedPositioning === false) {
+            //     //activeVehicle.begin = copyMatrix(multiplyMatrix(activeVehicle.matrix, activeVehicle.temp));
+            //     utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
+            // }
+            // utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+            // utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+            
+            var tempBegin = [];
+            utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, tempBegin);
+            utilities.multiplyMatrix(tempBegin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
         }
 
         if (typeof matrixToUse !== "undefined") {

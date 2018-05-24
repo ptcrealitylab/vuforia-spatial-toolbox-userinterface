@@ -188,15 +188,19 @@ pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
 var pocketFrame = {
-    frame: null,
+    type: 'ui',
+    vehicle: null,
+    closestObjectKey: null,
     positionOnLoad: null,
-    closestObjectKey: null
+    waitingToRender: false
 };
 var pocketNode = {
-    node: null,
+    type: 'logic',
+    vehicle: null,
     positionOnLoad: null,
     closestObjectKey: null,
-    closestFrameKey: null
+    closestFrameKey: null,
+    waitingToRender: false
 };
 
 var globalDOMCache = {};

@@ -897,6 +897,24 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
         // otherwise, if you just have one finger on the screen, move the frame you're on if you can
         } else if (event.touches.length === 1) {
 
+            // detect edge case where my dragging system doesn't work
+            /*
+            var ignoreDragToPreventBug = false;
+            if (globalStates.guiState === 'node' && (this.editingState.unconstrained || globalStates.unconstrainedPositioning) && activeVehicle.matrix.length > 0) {
+                var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
+                if (frame) {
+                    var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+                    if (parentFramePositionData.matrix.length > 0) {
+                        ignoreDragToPreventBug = true;
+                    }
+                }
+            }
+            
+            console.log(ignoreDragToPreventBug);
+            
+            if (ignoreDragToPreventBug) return;
+            */
+            
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true); // todo undo based on marker
             
             // visual feedback if you move over the trash
