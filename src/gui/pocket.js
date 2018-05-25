@@ -227,59 +227,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
                 'value'
             ]
         },*/
-        {
-            name: 'graphUI',
-            width: 690,
-            height: 410,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'skyNews',
-            width: 660,
-            height: 430,
-            nodes: [
-                {name: 'play', type: "node"}
-            ]
-        },
-        {
-            name: 'ptcStockUI',
-            width: 600,
-            height: 500,
-            nodes: [
-            ]
-        },
-        {
-            name: 'ptcTwitter',
-            width: 400,
-            height: 400,
-            nodes: [
-            ]
-        },  {
-            name: 'slider',
-            width: 206,
-            height: 526,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'slider-2d',
-            width: 526,
-            height: 526,
-            nodes: [
-                {name: 'valueX', type: "node"},
-                {name: 'valueY', type: "node"}
-            ]
-        },
-        {
-            name: 'draw',
-            width: 600,
-            height: 600,
-            nodes: [
-            ]
-        },
+        
         {
             name: 'twoSidedLimiter',
             width: 600,
@@ -294,6 +242,69 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
             height: 600,
             nodes: [
                 {name: 'in_out', type: "limiter"}
+            ]
+        },
+        {
+            name: 'switch',
+            width: 570,
+            height: 270,
+            nodes: [
+                {name: 'value', type: "node"}
+            ]
+        },
+        
+        {
+            name: 'graphUI',
+            width: 690,
+            height: 410,
+            nodes: [
+                {name: 'value', type: "node"}
+            ]
+        },
+        /*  {
+            name: 'skyNews',
+            width: 660,
+            height: 430,
+            nodes: [
+                {name: 'play', type: "node"}
+            ]
+        },
+        {
+             name: 'ptcStockUI',
+             width: 600,
+             height: 500,
+             nodes: [
+             ]
+         },
+        {
+             name: 'ptcTwitter',
+             width: 400,
+             height: 400,
+             nodes: [
+             ]
+         },*/
+        {
+            name: 'draw',
+            width: 600,
+            height: 600,
+            nodes: [
+            ]
+        },
+          {
+            name: 'slider',
+            width: 206,
+            height: 526,
+            nodes: [
+                {name: 'value', type: "node"}
+            ]
+        },
+        {
+            name: 'slider-2d',
+            width: 526,
+            height: 526,
+            nodes: [
+                {name: 'valueX', type: "node"},
+                {name: 'valueY', type: "node"}
             ]
         }
     ];
