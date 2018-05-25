@@ -656,6 +656,36 @@ body {
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 }
 
+.visibleFrameContainer {
+    display: inline;
+    visibility: visible;
+}
+
+.hiddenFrameContainer {
+    /*display: none;*/
+    display: inline;
+    visibility: visible;
+    pointer-events: none;
+}
+
+.visibleFrame {
+    visibility: visible;
+    /*opacity: 1.0;*/
+}
+
+.hiddenFrame {
+    visibility: visible;
+    opacity: 0.3;
+}
+
+.visibleNodeContainer {
+    display: inline;
+}
+
+.hiddenNodeContainer {
+    display: none;
+}
+
 /*
 *
 *

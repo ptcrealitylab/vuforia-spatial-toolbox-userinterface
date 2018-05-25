@@ -293,9 +293,10 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             var blockRect = guiState.menuBlockToAdd.getBoundingClientRect();
             var pointerX = blockRect.left + blockRect.width/2;
             var pointerY = blockRect.top + blockRect.height/2;
+            
+            this.crafting.blockMenuHide(); // hide menu before adding block otherwise the touchmove event it triggers will be stopped
             this.crafting.eventHelper.addBlockFromMenu(blockJSON, pointerX, pointerY);
             guiState.menuBlockToAdd = null;
-            this.crafting.blockMenuHide();
         }
     }
 

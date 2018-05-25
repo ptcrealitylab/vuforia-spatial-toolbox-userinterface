@@ -343,7 +343,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             
             if (isWithinWidth && isWithinHeight) {
                 // when unconstrained editing, push in if the frame goes completely behind the z = 0 plane
-                if (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning) {
+                if (realityEditor.device.isEditingUnconstrained(screenFrame)) {
                     // calculate center Z of frame to know if it is mostly in front or behind the marker plane
                     var resultMatrix = [];
                     realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
@@ -425,7 +425,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
     var thisFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
     if(thisFrame) {
 
-        var shouldCreateCopy = false;
+        // var shouldCreateCopy = false;
 
         globalStates.initialDistance = null;
         
@@ -453,10 +453,10 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         } else {
             console.log('show frame -> AR');
             
-            if (shouldCreateCopy) {
-                // realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
-                realityEditor.network.createCopyOfFrame(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, {newVisualization: "ar"});
-            } 
+            // if (shouldCreateCopy) {
+            //     // realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
+            //     realityEditor.network.createCopyOfFrame(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, {newVisualization: "ar"});
+            // } 
 
             thisFrame.visualization = "ar";
 

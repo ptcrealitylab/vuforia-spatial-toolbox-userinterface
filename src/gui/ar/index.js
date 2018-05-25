@@ -288,10 +288,12 @@ realityEditor.gui.ar.getClosestObject = function () {
 
 /**
  * @desc This function returns the closest visible frame relative to the camera.
+ * @param filterFunction - optional function applied to each frame. return true if you want to include that frame in the search, false to ignore.
+ *                         for example, function localARFilter(frame) {return frame.visualization !== 'screen' && frame.location === 'local';}
  * @return {String|Array} [ObjectKey, FrameKey, null]
  **/
 
-realityEditor.gui.ar.getClosestFrame = function () {
+realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
     var object = null;
     var frame = null;
     var node = null;
@@ -300,6 +302,12 @@ realityEditor.gui.ar.getClosestFrame = function () {
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
+            
+            // apply an additional filter, e.g.
+            if (filterFunction) {
+                if (!filterFunction(this.objects[objectKey].frames[frameKey])) continue;
+            }
+            
             distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey]));
             if (distance < closest) {
                 object = objectKey;
