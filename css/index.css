@@ -656,6 +656,14 @@ body {
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 }
 
+.ignorePointerEvents {
+    pointer-events: none;
+}
+
+.usePointerEvents {
+    pointer-events: auto;
+}
+
 .visibleFrameContainer {
     display: inline;
     visibility: visible;

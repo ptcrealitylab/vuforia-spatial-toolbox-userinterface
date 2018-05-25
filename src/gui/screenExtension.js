@@ -336,8 +336,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
             // is frame within screen bounds... don't push it in if you aren't located on top of a screen
             var object = realityEditor.getObject(this.screenObject.object);
-            var isWithinWidth = Math.abs(screenFrame.ar.x) < object.targetSize.width/2;
-            var isWithinHeight = Math.abs(screenFrame.ar.y) < object.targetSize.height/2;
+            var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
+            var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
             
             var didPushIn = false;
             
@@ -499,6 +499,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
                 x: convertedTouchOffsetX,
                 y: convertedTouchOffsetY
             };
+            
+            realityEditor.gui.ar.draw.showARFrame(activeKey);
 
             realityEditor.device.beginTouchEditing(thisFrame.objectId, activeKey);
             

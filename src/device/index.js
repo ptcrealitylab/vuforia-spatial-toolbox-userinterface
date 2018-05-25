@@ -155,12 +155,14 @@ realityEditor.device.getEditingVehicle = function() {
  */
 realityEditor.device.isEditingUnconstrained = function(vehicle) {
     if (vehicle === this.getEditingVehicle() && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+        // staticCopy frames cannot be unconstrained edited
         if (typeof vehicle.staticCopy !== 'undefined') {
             if (vehicle.staticCopy) {
                 return false;
             }
         }
-        return true;
+        // only frames and logic nodes can be unconstrained edited
+        return (typeof vehicle.type === 'undefined' || vehicle.type === 'ui' || vehicle.type === 'logic');
     }
     return false;
 };
@@ -468,7 +470,6 @@ realityEditor.device.onElementTouchMove = function(event) {
  */
 realityEditor.device.onElementTouchEnter = function(event) {
     var target = event.currentTarget;
-    console.log(target.type);
     if (target.type !== "ui") {
         var contentForFeedback;
 
@@ -501,7 +502,6 @@ realityEditor.device.onElementTouchEnter = function(event) {
  */
 realityEditor.device.onElementTouchOut = function(event) {
     var target = event.currentTarget;
-    console.log(target.type);
     if (target.type !== "ui") {
 
         // stop node hold timer // TODO: handle node move same as frame by calculating dist^2 > threshold
@@ -934,7 +934,10 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
 realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicle) {
     // pop into unconstrained mode if pull out z > threshold
-    var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && !globalStates.freezeButtonState;
+    var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
+                            !globalStates.freezeButtonState &&
+                            (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui') || activeVehicle.type === 'logic';
+    
     if (ableToBePulled) {
 
         // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId], activeVehicle);
