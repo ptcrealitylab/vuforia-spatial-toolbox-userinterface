@@ -163,37 +163,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 if (!this.activeFrame.hasOwnProperty('visualization')) { // TODO: temp fix
                     this.activeFrame.visualization = "ar";
                 }
-                // if (this.activeFrame.visualization !== "ar") {
-                //     continue;
-                // }
-                
-                /*
-                if (!this.activeFrame || (this.activeFrame.name === this.activeObject.name)) { // TODO: ben better fix for frames with same name as object - make sure they don't get created in the first place...
-                    // console.log("break from frame: ",objectKey, frameKey);
-                    continue;
-                }*/
+
                 // making sure that the node is always the object to draw
                 this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
-
-                // if (this.globalStates.guiState === "ui") { // || Object.keys(this.activeFrame.nodes).length === 0) { // removed feature where UI shows in node view if no nodes... check with team that this is a good decision
-                //     var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
-                //         this.globalDOMCache, this.globalStates, this.globalCanvas,
-                //         this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                //         this.nodeCalculations, this.cout);
-                //    
-                //     if (!continueUpdate) return;
-                //    
-                //     var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
-                //     this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
-                //
-                //     // TODO: set repositioning DOM elements present if in editing mode and developer true
-                //
-                // } else {
-                //     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
-                // }
-
                 
                 var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                     this.globalDOMCache, this.globalStates, this.globalCanvas,

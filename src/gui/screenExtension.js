@@ -424,9 +424,7 @@ realityEditor.gui.screenExtension.getTouchOffsetAsPercent = function(thisFrame) 
 realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
     var thisFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
     if(thisFrame) {
-
-        // var shouldCreateCopy = false;
-
+        
         globalStates.initialDistance = null;
         
         if (this.screenObject.isScreenVisible) {
@@ -452,11 +450,6 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             
         } else {
             console.log('show frame -> AR');
-            
-            // if (shouldCreateCopy) {
-            //     // realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
-            //     realityEditor.network.createCopyOfFrame(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, {newVisualization: "ar"});
-            // } 
 
             thisFrame.visualization = "ar";
 
