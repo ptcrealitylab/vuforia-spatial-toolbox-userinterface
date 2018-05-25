@@ -95,9 +95,10 @@ function Objects() {
 
     this.averageScale = 0.5;
     
+    // taken from target.xml. necessary to make the screens work correctly.
     this.targetSize = {
-        x: 300,
-        y: 300
+        x: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
+        y: 0.3
     }
 }
 
@@ -148,6 +149,8 @@ function Frame() {
     this.location = "global";
     // source
     this.src = "editor";
+    // if true, cannot move the frame but copies are made from it when you pull into unconstrained
+    this.staticCopy = false;
 }
 
 /**

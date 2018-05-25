@@ -166,7 +166,7 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
                 var centerOffsetX = thisItem.frameSizeX / 2;
                 var centerOffsetY = thisItem.frameSizeY / 2;
                 
-                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false); // TODO: undo based on marker
+                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
 
 			}
 		}
@@ -175,16 +175,105 @@ realityEditor.gui.pocket.setPocketPosition = function(evt){
 };
 
 realityEditor.gui.pocket.setPocketFrame = function(frame, positionOnLoad, closestObjectKey) {
-    pocketFrame.frame = frame;
+    pocketFrame.vehicle = frame;
     pocketFrame.positionOnLoad = positionOnLoad;
     pocketFrame.closestObjectKey = closestObjectKey;
+    pocketFrame.waitingToRender = true;
 };
 
 realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestObjectKey, closestFrameKey) {
-    pocketNode.node = node;
+    pocketNode.vehicle = node;
     pocketNode.positionOnLoad = positionOnLoad;
     pocketNode.closestObjectKey = closestObjectKey;
     pocketNode.closestFrameKey = closestFrameKey;
+    pocketNode.waitingToRender = true;
+};
+
+/**
+ * create a new instance of the saved logic node template, add it to the DOM and upload to the server
+ * @param {Logic|undefined} logicNodeMemory
+ * @return {*}
+ */
+realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
+    console.log("drop logic onto object (based on memory? " + logicNodeMemory + ")");
+
+    var addedLogic = new Logic();
+
+    // if this is being created from a logic node memory, copy over most properties from the saved pocket logic node
+    if (logicNodeMemory) {
+        var keysToCopyOver = ['blocks', 'iconImage', 'lastSetting', 'lastSettingBlock', 'links', 'lockPassword', 'lockType', 'name', 'nameInput', 'nameOutput'];
+        keysToCopyOver.forEach( function(key) {
+            addedLogic[key] = logicNodeMemory[key];
+        });
+    }
+
+    // give new logic node a new unique identifier so each copy is stored separately
+    var logicKey = realityEditor.device.utilities.uuidTime();
+    addedLogic.uuid = logicKey;
+
+    var closestFrameKey = null;
+    var closestObjectKey = null;
+    
+    // try to find the closest local AR frame to attach the logic node to
+    var objectKeys = realityEditor.gui.ar.getClosestFrame(function(frame) {
+        return frame.visualization !== 'screen' && frame.location === 'local';
+    });
+    
+    // if no local frames found, expand the search to include all frames
+    if (!objectKeys[1]) {
+        objectKeys = realityEditor.gui.ar.getClosestFrame();
+    }
+
+    if (objectKeys[1] !== null) {
+        closestFrameKey = objectKeys[1];
+        closestObjectKey = objectKeys[0];
+        var closestObject = objects[closestObjectKey];
+        var closestFrame = closestObject.frames[closestFrameKey];
+
+        addedLogic.objectId = closestObjectKey;
+        addedLogic.frameId = closestFrameKey;
+
+        addedLogic.x = 0;
+        addedLogic.y = 0;
+
+        addedLogic.scale = closestObject ? closestObject.averageScale : globalStates.defaultScale;
+        addedLogic.screenZ = 1000;
+        addedLogic.loaded = false;
+        addedLogic.matrix = [];
+        addedLogic.relativeMatrix = [];
+
+        // make sure that logic nodes only stick to 2.0 server version
+        if(realityEditor.network.testVersion(closestObjectKey) > 165) {
+            console.log('created node with logic key ' + logicKey + ' and added to ' + closestFrameKey);
+            closestFrame.nodes[logicKey] = addedLogic;
+
+            // render it
+            var nodeUrl = "nodes/logic/index.html";
+
+            realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', addedLogic);
+
+            var _thisNode = document.getElementById("iframe" + logicKey);
+            if (_thisNode && _thisNode._loaded) {
+                realityEditor.network.onElementLoad(closestObjectKey, logicKey);
+            }
+
+            // send it to the server
+            realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
+
+            realityEditor.gui.pocket.setPocketNode(addedLogic, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
+
+            console.log("successfully added logic from pocket to object (" + closestObject.name + ", " + closestFrame.name + ")");
+            return {
+                logicNode: addedLogic,
+                domElement: globalDOMCache[logicKey],
+                objectKey: closestObjectKey,
+                frameKey: closestFrameKey
+            };
+        }
+    }
+
+    console.log("couldn't add logic from pocket to any objects");
+    return null;
 };
 
 /**
@@ -304,7 +393,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
 
         // On touching an element-template, upload to currently visible object
-        pocket.addEventListener('pointerdown', function(evt) {
+        pocket.addEventListener('pointermove', function(evt) {
             
             if (!evt.target.classList.contains('element-template')) {
                 return;
@@ -402,11 +491,6 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
                     console.log("closest Node", closestObject.averageScale);
 
                 });
-                
-                frame.positionOnLoad = {
-                    pageX: evt.pageX,
-                    pageY: evt.pageY
-                };
 
                 // // set the eventObject so that the frame can interact with screens as soon as you add it
                 realityEditor.device.eventObject.object = closestObjectKey;
@@ -419,7 +503,7 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
                 // send it to the server
                 // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
                 realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
-                
+
                 realityEditor.gui.pocket.setPocketFrame(frame, {pageX: evt.pageX, pageY: evt.pageY}, closestObjectKey);
 
             } else {
