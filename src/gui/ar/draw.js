@@ -680,7 +680,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         var activePocketNodeWaiting = activeVehicle === pocketNode.vehicle && pocketNode.waitingToRender;
 
         // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
-        var shouldRenderFramesInNodeView = globalStates.guiState === 'node' && activeType === 'ui';
+        var shouldRenderFramesInNodeView = globalStates.guiState === 'node' && activeType === 'ui';// &&(typeof activeVehicle.visibleCounter === 'undefined' || activeVehicle.visibleCounter === 0);
         
         // make visible a frame or node if it was previously hidden
         // waits to make visible until positionOnLoad has been applied, to avoid one frame rendered in wrong position
@@ -696,6 +696,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             if (activeType === 'ui') {
                 container.classList.remove('hiddenFrameContainer');
                 container.classList.add('visibleFrameContainer');
+                container.classList.remove('displayNone');
 
             } else {
                 container.classList.remove('hiddenNodeContainer');
@@ -753,6 +754,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         }
 
         if ((activeVehicle.visible || shouldRenderFramesInNodeView) || activePocketFrameWaiting || activePocketNodeWaiting) {
+            
+            if (shouldRenderFramesInNodeView) {
+               globalDOMCache["object" + activeKey].classList.remove('displayNone');
+            }
 
             if (activeVehicle.fullScreen !== true) {
 
@@ -920,6 +925,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 //     y: projectedPoint[1],
                 //     z: projectedPoint[2]
                 // };
+                
+                finalMatrix[14] = Math.abs(finalMatrix[14]);
+                projectedPoint[2] = Math.abs(projectedPoint[2]);
 
                 activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
@@ -1153,13 +1161,26 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
  **/
 realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, globalDOMCache, cout) {
     
- //   console.log(activeVehicle);
-    if (activeVehicle.visible === true) {
+    var isVisible = activeVehicle.visible === true;
+    if (!isVisible) {
+        var isPartiallyHiddenFrame = (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') &&
+                                     !globalDOMCache['object' + activeKey].classList.contains('displayNone');
+        if (isPartiallyHiddenFrame) {
+            isVisible = true;
+        }
+    }
+
+    if (isVisible) {
         
         if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
             globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
             globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
-
+            
+            var shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId);
+            if (shouldReallyHide) {
+                globalDOMCache['object' + activeKey].classList.add('displayNone');
+            }
+            
         } else {
             globalDOMCache['object' + activeKey].classList.remove('visibleNodeContainer');
             globalDOMCache['object' + activeKey].classList.add('hiddenNodeContainer');
