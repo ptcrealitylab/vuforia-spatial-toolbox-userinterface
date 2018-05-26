@@ -684,6 +684,7 @@ body {
 .hiddenFrame {
     visibility: visible;
     opacity: 0.3;
+    pointer-events: none;
 }
 
 .visibleNodeContainer {
