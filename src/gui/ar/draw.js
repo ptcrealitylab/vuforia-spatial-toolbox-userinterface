@@ -650,9 +650,21 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     
+    // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
+    // var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
+    // var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
+    // var scaleFactor = oldTargetSize.width / newTargetSize.width;
+    //
+    // realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
+    
     // recompute frame.temp for the new object
     this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
     this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
+
+    // frame.begin[0] /= scaleFactor;
+    // frame.begin[5] /= scaleFactor;
+    // frame.begin[10] /= scaleFactor;
+    // frame.begin[15] *= scaleFactor;
 
     // compute frame.matrix based on new object
     var resultMatrix = [];
@@ -1146,17 +1158,30 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         matrix.copyStillFromMatrixSwitch = false;
 
         pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
-
+        
     }
 
     pocketContainer.positionOnLoad = null;
     pocketContainer.waitingToRender = false;
 };
 
+/**
+ * Run an animation on the frame being dropped in from the pocket, performing a smooth tweening of its last matrix element
+ * The frame scales down (moves away from camera) the bigger that 15th element is
+ * @param {number} timeInMilliseconds - how long the animation takes (default 250ms)
+ * @param {number} startPerspectiveDivide - the frame starts out (1 / this) times as big as usual (default 0.7)
+ * @param {number} endPerspectiveDivide - the frame ends up (1 / this) times as big as usual (default 1)
+ */
 realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds, startPerspectiveDivide, endPerspectiveDivide) {
     var duration = timeInMilliseconds || 250;
     var zStart = startPerspectiveDivide || 0.7;
     var zEnd = endPerspectiveDivide || 1.0;
+    
+    // reset this so that the initial distance to screens gets calculated when the pocketAnimation ends
+    // (or else it automatically gets pushed in by its own animation)
+    if (globalStates.initialDistance) {
+        globalStates.initialDistance = null;
+    }
     
     var position = {x: 0, y: 0, z: zStart};
     pocketDropAnimation = new TWEEN.Tween(position)
@@ -1217,11 +1242,6 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 
         activeVehicle.visible = false;
         activeVehicle.visibleEditing = false;
-        
-        // activeVehicle is a frame if it has nodes...
-        // if (activeVehicle.hasOwnProperty('nodes')) {
-        //     // realityEditor.gui.ar.draw.resetFrameRepositionCanvases();
-        // }
 
         globalDOMCache[activeKey].style.visibility = 'hidden';
         globalDOMCache["svg" + activeKey].style.display = 'none';
@@ -1643,41 +1663,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             // positionData.x, positionData.y, 0, 1
             finalOffsetX, finalOffsetY, 0, 1
         ];
-
-        if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
-            //if(globalStates.unconstrainedPositioning===true)
-            activeVehicle.temp = utilities.copyMatrix(activeObjectMatrixCopy);
-
-            //  console.log(activeVehicle.temp);
-
-            if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
-                matrix.visual = utilities.copyMatrix(activeObjectMatrixCopy);
-                if (typeof positionData.matrix === "object" && positionData.matrix.length > 0) {
-                    utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
-                } else {
-                    activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
-                }
-
-                if (globalStates.unconstrainedPositioning === true) {
-                    var resultMatrix = [];
-                    utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                    realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
-                }
-
-                matrix.copyStillFromMatrixSwitch = false;
-
-            } else if (globalStates.unconstrainedPositioning === true) {
-                var resultMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
-            }
-
-            if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
-                activeObjectMatrixCopy = matrix.visual;
-            }
-
-        }
-
+        
         realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
         var matrixToUse = realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix); // defaults to positionData.matrix for all but a special case of node
@@ -1720,15 +1706,15 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         // but we want all of them to have a positive value so they are rendered in front of background canvas
         // and frames with developer=false should have the lowest positive value
 
-        if (finalMatrix[14] < 10) {
-            finalMatrix[14] = 10;
-        }
-        finalMatrix[14] = 200 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
-
-        //move non-developer frames to the back so they don't steal touches from interactable frames
-        if (activeVehicle.developer === false) {
-            finalMatrix[14] = 100;
-        }
+        // if (finalMatrix[14] < 10) {
+        //     finalMatrix[14] = 10;
+        // }
+        // finalMatrix[14] = 200 + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
+        //
+        // //move non-developer frames to the back so they don't steal touches from interactable frames
+        // if (activeVehicle.developer === false) {
+        //     finalMatrix[14] = 100;
+        // }
 
         activeVehicle.mostRecentFinalMatrix = finalMatrix;
 

@@ -69,6 +69,11 @@ realityEditor.gui.screenExtension.touchMove = function (eventObject){
     
     if (!this.shouldSendTouchesToScreen(eventObject)) return;
     
+    // this will retroactively set the screen object to a new frame when it gets added by dragging in from the pocket
+    if (eventObject.object && eventObject.frame && !this.screenObject.object && !this.screenObject.frame){
+        this.onScreenTouchDown(eventObject);
+    }
+    
     this.onScreenTouchMove(eventObject);
 
     // make sure we aren't manipulating a screenObject frame with AR visualization mode
@@ -314,8 +319,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
 
-    var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
-    if (screenFrame && isScreenObjectVisible) {
+    var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
+    if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
         
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
