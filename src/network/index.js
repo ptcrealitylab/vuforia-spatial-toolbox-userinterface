@@ -512,7 +512,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
     }
 
     if (remote.type === 'logic') {
-        realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
+        if (nodeKey === globalStates.currentLogic.uuid) {
+            realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
+        }
     }
 
     if (globalStates.currentLogic) {
