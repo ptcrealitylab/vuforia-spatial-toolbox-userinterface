@@ -470,7 +470,9 @@ realityEditor.device.onElementTouchMove = function(event) {
  */
 realityEditor.device.onElementTouchEnter = function(event) {
     var target = event.currentTarget;
-    if (target.type !== "ui") {
+    
+    // show visual feedback for nodes unless you are dragging something around
+    if (target.type !== "ui" && !this.getEditingVehicle()) {
         var contentForFeedback;
 
         if (globalProgram.nodeA === target.nodeId || globalProgram.nodeA === false) {
@@ -550,7 +552,7 @@ realityEditor.device.onElementTouchUp = function(event) {
         if (globalProgram.objectA) {
 
             // open the crafting board if you tapped on a logic node
-            if (target.nodeId === globalProgram.nodeA && target.type === "logic") {
+            if (target.nodeId === globalProgram.nodeA && target.type === "logic" && !globalStates.editingMode && !this.getEditingVehicle()) {
                 realityEditor.gui.crafting.craftingBoardVisible(target.objectId, target.frameId, target.nodeId);
                 didDisplayCrafting = true;
             }
@@ -921,8 +923,10 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
+            var isDeletableVehicle = activeVehicle.type === 'logic' || (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global");
+            
             // visual feedback if you move over the trash
-            if (event.pageX >= this.layout.getTrashThresholdX()) {
+            if (event.pageX >= this.layout.getTrashThresholdX() && isDeletableVehicle) {
                 overlayDiv.classList.add('overlayNegative');
             } else {
                 overlayDiv.classList.remove('overlayNegative');

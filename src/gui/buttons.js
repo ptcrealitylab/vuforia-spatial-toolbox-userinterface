@@ -80,11 +80,7 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
     globalStates.guiState = "ui";
     
     if (globalStates.guiState !== "logic") {
-        if (DEBUG_DATACRAFTING) {
-            realityEditor.gui.crafting.craftingBoardVisible(); // TODO: BEN DEBUG - revert to previous line
-        } else {
-            realityEditor.gui.crafting.craftingBoardHide();
-        }
+        realityEditor.gui.crafting.craftingBoardHide();
     }
     
     realityEditor.device.resetEditingState();

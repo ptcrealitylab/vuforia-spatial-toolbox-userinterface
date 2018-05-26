@@ -258,13 +258,19 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 // preserve frame globally when object disappears if it is being moved in unconstrained editing
-                if (realityEditor.device.isEditingUnconstrained(this.activeVehicle)) {
+                if (realityEditor.device.isEditingUnconstrained(this.activeVehicle) && this.activeVehicle.location === 'global') {
                     
                     wereAnyFramesMovedToGlobal = true;
                     globalStates.inTransitionObject = objectKey;
                     globalStates.inTransitionFrame = frameKey;
                     
                 } else {
+                
+                    // TODO: ideally store the starting matrix when you begin unconstrained editing something, so that it can be returned to the same initial value
+                    // was unconstrained editing a local frame - can't transition it so just reset its matrix and hide
+                    if (realityEditor.device.isEditingUnconstrained(this.activeVehicle)) {
+                        realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeVehicle, []);
+                    }
 
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
 
@@ -1057,8 +1063,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                      } else {
                      context.strokeStyle = "#f0f0f0";
                      }*/
-
-                    if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword) {
+                    
+                    
+                    // don't show the logic ports if you are dragging anything around, or if this logic is locked
+                    if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword && !editingVehicle) {
                         if (activeVehicle.animationScale === 0 && !globalStates.editingMode)
                             globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
                         activeVehicle.animationScale = 1;

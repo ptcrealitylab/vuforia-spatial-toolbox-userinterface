@@ -273,7 +273,11 @@ createNameSpace("realityEditor.gui.crafting.grid");
 // -- GRID METHODS -- //
 
 //      -- GRID UTILITIES -- //
-    
+
+    /**
+     * Performs a search through all objects and frames in the system to find a logic node that matches this grid's logicID
+     * @return {Logic|undefined}
+     */
     Grid.prototype.parentLogic = function() {
         
         for (var objectKey in objects) {
@@ -291,12 +295,12 @@ createNameSpace("realityEditor.gui.crafting.grid");
         }
         console.warn("ERROR: DIDN'T FIND LOGIC NODE FOR THIS GRID");
     };
-
-
-
-
-// utility - returns the x,y coordinates of corners for a link so that they can be rendered
-// (includes the offsets - these are the actual points to draw on the screen exactly as is)
+    
+    /**
+     * Given a block link, gets the the actual points to draw on the screen to draw all of the line segments
+     * @param blockLink
+     * @return {Array.<{screenX: number, screenY: number}>} the x,y coordinates of corners for a link so that they can be rendered
+     */
     Grid.prototype.getPointsForLink = function(blockLink) {
         var points = [];
         if (blockLink.route !== null) {
