@@ -1705,7 +1705,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
         // but we want all of them to have a positive value so they are rendered in front of background canvas
         // and frames with developer=false should have the lowest positive value
-
+        
         // if (finalMatrix[14] < 10) {
         //     finalMatrix[14] = 10;
         // }

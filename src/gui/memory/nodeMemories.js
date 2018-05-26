@@ -191,6 +191,7 @@ realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
         overlayDiv.innerHTML = '';
         realityEditor.gui.memory.nodeMemories.renderMemories();
     }
+    realityEditor.gui.menus.on("main",[]);
 };
 
 // hide the pocket and add a new logic node to the closest visible object, and start dragging it to move under the finger

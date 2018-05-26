@@ -203,8 +203,6 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		var nodeAScreenZ =   nodeA.screenLinearZ*(nodeASize*1.5);
 		var nodeBScreenZ = nodeB.screenLinearZ*(nodeBSize*1.5);
 		
-		//console.log(nodeBScreenZ, nodeAScreenZ);
-		
 		var logicA;
 		if (link.logicA == null || link.logicA === false) {
 			logicA = 4;
