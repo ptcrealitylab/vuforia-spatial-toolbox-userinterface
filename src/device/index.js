@@ -81,6 +81,8 @@ realityEditor.device.currentScreenTouches = [];
  * @property {string|null} node
  * @property {{x: number, y: number}|null} touchOffset
  * @property {boolean} unconstrained
+ * @property {number|null} unconstrainedOffset
+ * @property {Array.<number>|null} startingMatrix
  */
 
 /**
@@ -92,7 +94,8 @@ realityEditor.device.editingState = {
     node: null,
     touchOffset: null,
     unconstrained: false,
-    unconstrainedOffset: null
+    unconstrainedOffset: null,
+    startingMatrix: null
 };
 
 /**
@@ -293,6 +296,7 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.touchOffset = null;
     this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
+    this.editingState.startingMatrix = null;
 };
 
 /**
@@ -384,6 +388,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     // }
     
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+
+    realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
 
     document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     
@@ -560,6 +566,10 @@ realityEditor.device.onElementTouchUp = function(event) {
             globalProgram.objectB = target.objectId;
             globalProgram.frameB = target.frameId;
             globalProgram.nodeB = target.nodeId;
+            
+            if (target.type !== "logic") {
+                globalProgram.logicB = false;
+            }
 
             realityEditor.network.postLinkToServer(globalProgram);
 
@@ -616,6 +626,9 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete it from the server
             realityEditor.network.deleteFrameFromObject(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
 
+            globalStates.inTransitionObject = null;
+            globalStates.inTransitionFrame = null;
+            
             delete objects[this.editingState.object].frames[this.editingState.frame];
         }
     }
@@ -641,7 +654,19 @@ realityEditor.device.onElementTouchUp = function(event) {
 realityEditor.device.onElementMultiTouchEnd = function(event) {
     
     var activeVehicle = this.getEditingVehicle();
-    if (activeVehicle) {
+    
+    var isOverTrash = false;
+    if (event.pageX >= this.layout.getTrashThresholdX()) {
+        if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
+            isOverTrash = true;
+        } else if (activeVehicle && activeVehicle.type === "logic") {
+            isOverTrash = true;
+        }
+    }
+    
+    if (isOverTrash) return;
+    
+    if (activeVehicle && !isOverTrash) {
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
         var content = {};
         content.x = positionData.x;
@@ -921,6 +946,14 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
                 return;
             }
             
+            // cannot move nodes inside static copy frames
+            if (typeof activeVehicle.objectId !== "undefined" && typeof activeVehicle.frameId !== "undefined") {
+                var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
+                if (parentFrame && parentFrame.staticCopy) {
+                    return;
+                }
+            }
+            
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
             var isDeletableVehicle = activeVehicle.type === 'logic' || (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global");
@@ -974,6 +1007,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
 
                 // tell the renderer to freeze the current matrix as the unconstrained position on the screen
                 realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+                realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
             }
         }
     }

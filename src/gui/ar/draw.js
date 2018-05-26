@@ -266,10 +266,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     
                 } else {
                 
-                    // TODO: ideally store the starting matrix when you begin unconstrained editing something, so that it can be returned to the same initial value
-                    // was unconstrained editing a local frame - can't transition it so just reset its matrix and hide
+                    // unconstrained editing local frame - can't transition reset its matrix to what it was before starting to edit
                     if (realityEditor.device.isEditingUnconstrained(this.activeVehicle)) {
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeVehicle, []);
+                        var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
+                        realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeVehicle, startingMatrix);
                     }
 
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
@@ -631,8 +631,13 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     // (activeKey, activeVehicle, globalDOMCache, cout
     var frameInMotion = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
     realityEditor.gui.ar.draw.hideTransformed(globalStates.inTransitionFrame, frameInMotion, globalDOMCache, cout);
-    var positionData = realityEditor.gui.ar.positioning.getPositionData(frameInMotion);
-    positionData.matrix = [];
+
+    var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
+    realityEditor.gui.ar.positioning.setPositionDataMatrix(frameInMotion, startingMatrix);
+    
+    // var positionData = realityEditor.gui.ar.positioning.getPositionData(frameInMotion);
+    // positionData.matrix = [];
+    
     frameInMotion.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
     frameInMotion.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
 
