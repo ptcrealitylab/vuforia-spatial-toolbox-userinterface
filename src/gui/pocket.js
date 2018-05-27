@@ -205,7 +205,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         keysToCopyOver.forEach( function(key) {
             addedLogic[key] = logicNodeMemory[key];
         });
+        
+        if (typeof logicNodeMemory.nodeMemoryCustomIconSrc !== 'undefined') {
+            addedLogic.nodeMemoryCustomIconSrc = logicNodeMemory.nodeMemoryCustomIconSrc;
+        }
+        
     }
+    
 
     // give new logic node a new unique identifier so each copy is stored separately
     var logicKey = realityEditor.device.utilities.uuidTime();

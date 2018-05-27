@@ -239,13 +239,19 @@ realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch
 };
 
 realityEditor.gui.crafting.getSrcForCustomIcon = function(logic) {
+    if (logic.nodeMemoryCustomIconSrc) {
+        return logic.nodeMemoryCustomIconSrc;
+    }
     var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
-    return 'http://' + keys.ip + ':' + httpPort + '/logicNodeIcon/' + realityEditor.getObject(keys.objectKey).name + "/" + keys.logicKey + ".jpg";
+    if (keys) {
+        return 'http://' + keys.ip + ':' + httpPort + '/logicNodeIcon/' + realityEditor.getObject(keys.objectKey).name + "/" + keys.logicKey + ".jpg";
+
+    }
 };
 
 realityEditor.gui.crafting.getSrcForAutoIcon = function(logic) {
     var validBlockIDs = Object.keys(logic.blocks).filter(function(id) {
-        return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
+    return  !realityEditor.gui.crafting.grid.isInOutBlock(id) &&
             !realityEditor.gui.crafting.grid.isEdgePlaceholderBlock(id);
     });
     console.log(validBlockIDs);

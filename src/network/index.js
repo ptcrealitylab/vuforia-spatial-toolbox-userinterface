@@ -1269,6 +1269,9 @@ realityEditor.network.loadLogicIcon = function(data) {
     var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
     if (logicNode) {
         logicNode.iconImage = iconImage;
+        if (typeof logicNode.nodeMemoryCustomIconSrc !== 'undefined') {
+            delete logicNode.nodeMemoryCustomIconSrc;
+        }
         realityEditor.gui.ar.draw.updateLogicNodeIcon(logicNode);
     }
 };
@@ -1281,12 +1284,17 @@ realityEditor.network.loadLogicName = function(data) {
     globalDOMCache["iframe" + logicNode.uuid].contentWindow.postMessage(
         JSON.stringify( { renameNode: logicNode.name }) , "*");
 
-    // update model and view for pocket menu
-    var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(logicNode);
-    if (savedIndex > -1) {
-        realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = logicNode.name;
-        document.querySelector('.nodeMemoryBar').children[savedIndex].firstChild.innerHTML = logicNode.name;
-    }
+    // // update model and view for pocket menu
+    // var savedIndex = realityEditor.gui.memory.nodeMemories.getIndexOfLogic(logicNode);
+    // if (savedIndex > -1) {
+    //     realityEditor.gui.memory.nodeMemories.states.memories[savedIndex].name = logicNode.name;
+    //     var nodeMemoryContainer = document.querySelector('.nodeMemoryBar').children[savedIndex];
+    //     [].slice.call(nodeMemoryContainer.children).forEach(function(child) {
+    //         if (!child.classList.contains('memoryNode') {
+    //             child.innerHeight = logicNode.name;
+    //         }
+    //     });
+    // }
     
     // upload name to server
     var object = realityEditor.getObject(data.object);
