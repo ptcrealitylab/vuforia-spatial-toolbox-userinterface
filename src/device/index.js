@@ -973,7 +973,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
     // pop into unconstrained mode if pull out z > threshold
     var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
                             !globalStates.freezeButtonState &&
-                            (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui') || activeVehicle.type === 'logic';
+                            (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
     
     if (ableToBePulled) {
 

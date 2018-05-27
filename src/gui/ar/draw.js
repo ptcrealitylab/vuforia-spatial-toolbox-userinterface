@@ -131,6 +131,15 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 
     this.visibleObjects = visibleObjects;
+    
+    // scale x, y, and z elements of matrix for mm to meter conversion ratio
+    for (var objectKey in this.visibleObjects) {
+        if (!this.visibleObjects.hasOwnProperty(objectKey)) continue;
+        // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
+        this.visibleObjects[objectKey][14] *= 1000;
+        this.visibleObjects[objectKey][13] *= 1000;
+        this.visibleObjects[objectKey][12] *= 1000;
+    }
 
     if (this.globalCanvas.hasContent === true) {
         this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);
@@ -280,6 +289,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         this.activeVehicle = this.activeNode;
                         this.activeType = this.activeNode.type;
                         // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
+
+                        // unconstrained editing local frame - can't transition reset its matrix to what it was before starting to edit
+                        if (realityEditor.device.isEditingUnconstrained(this.activeNode)) {
+                            var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
+                            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeNode, startingMatrix);
+                        }
+                        
                         this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                     }
 
@@ -802,6 +818,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 var finalOffsetX = positionData.x;
                 var finalOffsetY = positionData.y;
+                var finalScale = positionData.scale;
 
                 // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
                 // add node's position to its frame's position to gets its actual offset
@@ -810,16 +827,17 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var frame = realityEditor.getFrame(objectKey, frameKey);
                     if (frame) {
                         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                        finalOffsetX += parentFramePositionData.x;
-                        finalOffsetY += parentFramePositionData.y;
+                        finalOffsetX = finalOffsetX * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.x;
+                        finalOffsetY = finalOffsetY * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.y;
+                        finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
                     }
                 }
                 
                 // TODO: also multiply node's unconstrained matrix by frame's unconstrained matrix if necessary
                 
                 matrix.r3 = [
-                    positionData.scale, 0, 0, 0,
-                    0, positionData.scale, 0, 0,
+                    finalScale, 0, 0, 0,
+                    0, finalScale, 0, 0,
                     0, 0, 1, 0,
                     // positionData.x, positionData.y, 0, 1
                     finalOffsetX, finalOffsetY, 0, 1
@@ -949,9 +967,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 //     y: projectedPoint[1],
                 //     z: projectedPoint[2]
                 // };
-                
-                finalMatrix[14] = Math.abs(finalMatrix[14]);
-                projectedPoint[2] = Math.abs(projectedPoint[2]);
 
                 activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
@@ -965,24 +980,20 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var editedOrderData = this.getNodeRenderPriority(activeKey);
                     editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
                 }
-                
-                if (shouldRenderFramesInNodeView) {
-                    editedOrderZIncrease = -200;
-                }
-
-                // if (finalMatrix[14] < 10) {
-                //     finalMatrix[14] = 10;
-                // }
-                // finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 100000 / finalMatrix[14]; // TODO: does this mess anything up? it should fix the z-order problems
 
                 if (projectedPoint[2] < 10) {
                     projectedPoint[2] = 10;
                 }
-                finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / projectedPoint[2]; // TODO: does this mess anything up? it should fix the z-order problems
+                finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / projectedPoint[2];
 
 
-                //move non-developer frames to the back so they don't steal touches from interactable frames //TODO: is this still necessary / working?
-                if (activeVehicle.developer === false) {
+                //move non-developer frames to the back so they don't steal touches from interactable frames //TODO: test if this is still working for three.js content / use a different property other than developer
+                // if (activeVehicle.developer === false) {
+                //     finalMatrix[14] = 100;
+                // }
+
+                // put frames all the way in the back if you are in node view
+                if (shouldRenderFramesInNodeView) {
                     finalMatrix[14] = 100;
                 }
                 
@@ -1656,7 +1667,8 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
 
         var finalOffsetX = positionData.x;
         var finalOffsetY = positionData.y;
-
+        var finalScale = positionData.scale;
+        
         // // add node's position to its frame's position to gets its actual offset
         
         if (activeType !== "ui" && activeType !== "logic") {
@@ -1664,14 +1676,15 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame) {
                 var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                finalOffsetX += parentFramePositionData.x;
-                finalOffsetY += parentFramePositionData.y;
+                finalOffsetX = finalOffsetX * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.x;
+                finalOffsetY = finalOffsetY * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.y;
+                finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
             }
         }
 
         matrix.r3 = [
-            positionData.scale, 0, 0, 0,
-            0, positionData.scale, 0, 0,
+            finalScale, 0, 0, 0,
+            0, finalScale, 0, 0,
             0, 0, 1, 0,
             // positionData.x, positionData.y, 0, 1
             finalOffsetX, finalOffsetY, 0, 1
