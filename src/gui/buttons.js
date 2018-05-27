@@ -155,7 +155,6 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
                     for (var nodeKey in activeFrame.nodes) {
                         var activeNode = activeFrame.nodes[nodeKey];
                         
-                        // activeNode.relativeMatrix = [];
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
                         activeNode.scale = globalStates.defaultScale;
                         if (shouldPlaceCenter) {

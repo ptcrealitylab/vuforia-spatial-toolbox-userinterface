@@ -73,76 +73,6 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 };
 
-/*
-realityEditor.gui.pocket.createLogicNodeFromPocket = function() {
-    
-    pocketItemId = realityEditor.device.utilities.uuidTime();
-    console.log(pocketItemId);
-    pocketItem["pocket"].frames["pocket"].nodes[pocketItemId] = new Logic();
-
-    var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
-
-    thisItem.objectId = "pocket";
-    thisItem.frameId = "pocket";
-    thisItem.uuid = pocketItemId;
-
-    thisItem.x = globalStates.pointerPosition[0] - (globalStates.height / 2);
-    thisItem.y = globalStates.pointerPosition[1] - (globalStates.width / 2);
-
-    var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-    var closestObject = realityEditor.getObject(closestObjectKey);
-
-    thisItem.scale = closestObject ? closestObject.averageScale : globalStates.defaultScale;
-    thisItem.screenZ = 1000;
-
-    // else {
-    // var matrixTouch =  screenCoordinatesToMatrixXY(thisItem, [evt.clientX,evt.clientY]);
-    // thisItem.x = matrixTouch[0];
-    // thisItem.y = matrixTouch[1];
-    //}
-    thisItem.loaded = false;
-
-    var thisObject = pocketItem["pocket"];
-    // this is a work around to set the state of an objects to not being visible.
-    thisObject.objectId = "pocket";
-    thisObject.name = "pocket";
-
-    var thisFrame = thisObject.frames["pocket"];
-    thisFrame.objectId = "pocket";
-    thisFrame.name = "pocket";
-
-    // thisObject.objectVisible = false;
-    realityEditor.gui.ar.draw.setObjectVisible(thisObject, false); // TODO: should this function encapsulate the following 7 lines too?
-    thisObject.screenZ = 1000;
-    thisObject.fullScreen = false;
-    thisObject.sendMatrix = false;
-    thisObject.loaded = false;
-    thisObject.integerVersion = 170;
-
-    thisObject.type = 'logic';
-    thisObject.matrix = [];
-    thisObject.relativeMatrix = [];
-    thisObject.nodes = {};
-    // realityEditor.gui.ar.positioning.setPositionDataMatrix(thisObject, []);
-    // if (thisObject.type === "node") {
-    //     thisObject.relativeMatrix = [];
-    // }
-    // thisObject.matrix = [];
-    // thisObject.nodes = {};
-    thisObject.protocol = "R1";
-
-    //
-    //thisObject.visibleCounter = timeForContentLoaded;
-
-    //addElement("pocket", pocketItemId, "nodes/" + thisItem.type + "/index.html",  pocketItem["pocket"], "logic",globalStates);
-    
-    var closestFrameKey = realityEditor.gui.ar.getClosestFrame()[1];
-
-    realityEditor.gui.pocket.setPocketNode(thisItem, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
-
-};
-*/
-
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
 	if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
@@ -246,7 +176,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         addedLogic.screenZ = 1000;
         addedLogic.loaded = false;
         addedLogic.matrix = [];
-        addedLogic.relativeMatrix = [];
 
         // make sure that logic nodes only stick to 2.0 server version
         if(realityEditor.network.testVersion(closestObjectKey) > 165) {

@@ -237,80 +237,41 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
 // combinedPosition should be a read-only property, while position (x,y,scale,matrix) can be read-write
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
+    // frames use their ar data
+    
     if (activeVehicle.hasOwnProperty('visualization')) {
         return activeVehicle.ar;
     }
 
-    // add node's position to its frame's position to gets its actual offset
+    // nodes use their x, y, scale and their parent frame's matrix
     
     if (typeof activeVehicle.type !== 'undefined' && activeVehicle.type !== 'ui' && activeVehicle.type !== 'logic') {
         var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (frame) {
             var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-
-            if (typeof activeVehicle.relativeMatrix === 'undefined') { // TODO: temporary fix - make sure it gets initialized with one loaded in from server
-                activeVehicle.relativeMatrix = [];
-            }
-
-            // TODO: offload this computation into the setPositionDataMatrix function so it only runs on write, not on read (more common)
-            if (parentFramePositionData.matrix.length === 16) {
-                if (activeVehicle.relativeMatrix.length === 16) {
-                    // both have matrix -> multiply
-                    realityEditor.gui.ar.draw.utilities.multiplyMatrix(activeVehicle.relativeMatrix, parentFramePositionData.matrix, activeVehicle.matrix);
-
-                } else {
-                    // only parent frame has matrix -> just use that
-                    activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
-                }
-            } else {
-                // only this node has matrix -> just use that
-                activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(activeVehicle.relativeMatrix);
-            }
+            // only parent frame has matrix -> just use that
+            activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
         }
     }
     
-    // logic nodes and frames just use their own x, y, and matrix
+    // logic nodes just use their own x, y, and matrix
 
     return activeVehicle;
 };
 
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     
-    // logic nodes and frames don't need to update relativeMatrix
     if (typeof activeVehicle.type !== 'undefined' && activeVehicle.type !== 'ui' && activeVehicle.type !== 'logic') {
+        
+        console.warn('trying to set position data matrix for something other than a frame or logic');
         
         if (!newMatrixValue || newMatrixValue.constructor !== Array) {
             console.warn('trying to set relativeMatrix to a non-array value');
             return;
         }
-        
-        activeVehicle.relativeMatrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
-
-        // update the .matrix in response to the new .relativeMatrix value
-        var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
-        if (frame) {
-            var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-            if (typeof activeVehicle.relativeMatrix === 'undefined') { // TODO: temporary fix - make sure it gets initialized with one loaded in from server
-                activeVehicle.relativeMatrix = [];
-            }
-
-            if (parentFramePositionData.matrix.length === 16) {
-                if (activeVehicle.relativeMatrix.length === 16) {
-                    // both have matrix -> multiply
-                    realityEditor.gui.ar.draw.utilities.multiplyMatrix(realityEditor.gui.ar.utilities.invertMatrix(parentFramePositionData.matrix), activeVehicle.relativeMatrix, activeVehicle.matrix);
-                } else {
-                    // only parent frame has matrix -> just use that
-                    activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
-                }
-            } else {
-                // only this node has matrix -> just use that
-                activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(activeVehicle.relativeMatrix);
-            }
-        }
-        
     }
     
-    if ( activeVehicle.type === 'logic') {
+    if (activeVehicle.type === 'logic') {
         activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
         
     } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {

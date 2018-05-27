@@ -432,6 +432,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         
         globalStates.initialDistance = null;
         
+        var oldVisualizationPositionData = null;
+        
         if (this.screenObject.isScreenVisible) {
             console.log('hide frame -> screen');
             thisFrame.visualization = "screen";
@@ -451,7 +453,15 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             thisFrame.begin = [];
             thisFrame.ar.matrix = [];
             
+            oldVisualizationPositionData = thisFrame.ar;
+            
             realityEditor.device.resetEditingState();
+
+            // update position on server
+            // var urlEndpoint = 'http://' + objects[this.screenObject.object].ip + ':' + httpPort + '/object/' + this.screenObject.object + "/frame/" + this.screenObject.frame + "/node/" + null + "/size/";
+            // var content = thisFrame.ar;
+            // content.lastEditor = globalStates.tempUuid;
+            // realityEditor.network.postData(urlEndpoint, content);
             
         } else {
             console.log('show frame -> AR');
@@ -515,7 +525,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
         realityEditor.gui.screenExtension.sendScreenObject();
         
-        realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
+        realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization, oldVisualizationPositionData);
 
     }
 };

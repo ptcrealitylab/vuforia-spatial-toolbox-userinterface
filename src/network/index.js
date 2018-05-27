@@ -177,22 +177,6 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
                                 thisNode.matrix = [];
                             }
-
-                            
-                            // recover the relativeMatrix from the node's matrix and its frame's matrix by multiplying by the inverse
-                            var ar = realityEditor.gui.ar;
-                            var parentFramePositionData = ar.positioning.getPositionData(thisFrame);
-                            thisNode.relativeMatrix = [];
-                            console.log('set relativeMatrix to []');
-                            if (thisNode.matrix.length === 16) {
-                                if (parentFramePositionData.matrix.length === 16) {
-                                    ar.utilities.multiplyMatrix(ar.utilities.invertMatrix(parentFramePositionData.matrix), thisNode.matrix, thisNode.relativeMatrix);
-                                    console.log('recovered relativeMatrix from inverse multiplication');
-                                } else {
-                                    thisNode.relativeMatrix = ar.utilities.copyMatrix(thisNode.matrix);
-                                    console.log('relativeMatrix is just node matrix');
-                                }
-                            }
                             
                             thisNode.objectId = objectKey;
                             thisNode.frameId = frameKey;
@@ -479,11 +463,6 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
         if (remote.matrix) {
             origin.matrix = remote.matrix;
-            // TODO: recompute relativeMatrix based on this and parent frame's matrices
-            origin.relativeMatrix = [];
-            console.log('node matrix = ', origin.matrix);
-            console.log('frame matrix = ', realityEditor.getFrame(objectKey, frameKey).ar.matrix);
-            console.log('need to compute relativeMatrix for this node');
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
@@ -673,7 +652,15 @@ realityEditor.network.onAction = function (action) {
                         if (thisKey === 'ar' &&
                             thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
                             thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
-                            thisFrame['ar'].scale = res['ar'].scale;
+                            
+                            // this wasn't scaled -> update the x and y but not the scale
+                            if (thisFrame.ar.scale === res.ar.scale && !thisAction.reloadFrame.wasTriggeredFromEditor) {
+                                thisFrame.ar.x = res.ar.x;
+                                thisFrame.ar.y = res.ar.y;
+                            } else {
+                                // this was scaled -> update the scale but not the x and y
+                                thisFrame.ar.scale = res.ar.scale;
+                            }
                             continue;
                         }
                         
@@ -2106,14 +2093,15 @@ realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, li
  * @param ip
  * @param objectKey
  * @param frameKey
- * @param newVisualization
+ * @param newVisualization {string} either 'ar' or 'screen' - the new visualization mode you want to change to
+ * @param oldVisualizationPositionData {{x: number, y: number, scale: number, matrix: Array.<number>}|null} optionally sync the other position data to the server before changing visualization modes
  */
-realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKey, newVisualization) {
+realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKey, newVisualization, oldVisualizationPositionData) {
 
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/visualization/";
     var content = {
-        visualization: newVisualization
-        // positionData: thisFrame.ar
+        visualization: newVisualization,
+        oldVisualizationPositionData: oldVisualizationPositionData
     };
     this.postData(urlEndpoint, content, function (err, response) {
         console.log('set visualization to ' + newVisualization + ' on server');

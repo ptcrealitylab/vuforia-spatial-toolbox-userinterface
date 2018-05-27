@@ -869,9 +869,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             matrix.visual = utilities.copyMatrix(activeObjectMatrix);
                             
                             var matrixToUse = positionData.matrix;
-                            if (activeType !== 'ui' && activeType !== 'logic') {
-                                matrixToUse = positionData.relativeMatrix;
-                            }
                             
                             if (typeof matrixToUse === "object") {
                                 if (matrixToUse.length > 0) {
@@ -902,9 +899,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         // }
 
                     }
-
-                    // recomputes .matrix based on .relativeMatrix
-                    realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                     
                     if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0) {
                         if (realityEditor.device.isEditingUnconstrained(activeVehicle) && !(activeVehicle === pocketFrame.vehicle || activeVehicle === pocketNode.vehicle)) {
