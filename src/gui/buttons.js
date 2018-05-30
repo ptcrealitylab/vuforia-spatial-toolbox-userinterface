@@ -92,7 +92,7 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
 realityEditor.gui.buttons.logicButtonUp = function(event){
     if(event.button !== "logic") return;
 
-    if (!globalStates.logicButtonDown) return;
+    // if (!globalStates.logicButtonDown) return; // TODO: this would be nice but messes up programatically closing the crafting board 
     globalStates.logicButtonDown = false;
 
     realityEditor.gui.menus.buttonOff("main",["gui","logicPocket","logicSetting","setting","pocket"]);

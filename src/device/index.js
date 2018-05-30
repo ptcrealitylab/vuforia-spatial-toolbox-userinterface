@@ -637,7 +637,7 @@ realityEditor.device.onElementTouchUp = function(event) {
     globalCanvas.hasContent = true;
     
     // hide the trash menu
-    realityEditor.gui.menus.buttonOn("main",[]);
+    // realityEditor.gui.menus.buttonOn("main",[]);
     // if (!didDisplayCrafting) {
     //     realityEditor.gui.menus.on("main",[]);
     // }
@@ -1056,7 +1056,8 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         });
     } else {
         this.currentScreenTouches = [];
-        
+
+        realityEditor.gui.menus.buttonOn("main",[]);
         var didDisplayCrafting = globalStates.currentLogic; // proxy to determine if crafting board is open / we shouldn't reset the menu
         if (!didDisplayCrafting) {
             realityEditor.gui.menus.on("main",[]);
