@@ -68,9 +68,9 @@ realityEditor.gui.memory.nodeMemories.initMemoryBar = function() {
         memoryContainer.setAttribute('touch-action', 'none');
         memoryContainer.style.position = 'relative';
 
-
         var memoryNode = document.createElement('div');
         memoryNode.classList.add('memoryNode');
+        memoryNode.style.visibility = 'hidden';
         memoryContainer.appendChild(memoryNode);
         
         memoryBar.appendChild(memoryContainer);
@@ -159,11 +159,14 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
         memoryNode.style.backgroundImage = '';
         memoryNode.style.backgroundPositionX = '';
         memoryNode.style.backgroundPositionY = '';
+        memoryNode.style.visibility = 'hidden';
         memoryContainer.onclick = '';
 
         // stop if there isn't anything to render
         if (!logicNodeObject) return;
-        
+
+        memoryNode.style.visibility = 'visible';
+
         var iconToUse = 'none';
 
         // display contents. currently this is a generic node image and the node's name // TODO: give custom icons
@@ -252,6 +255,11 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
     
     // store each event listener in an array so that we can cancel them all later
     nodeMemories.states.dragEventListeners[i] = function(evt) {
+        
+        if (!logicNodeObject) {
+            console.log('cant add a logic node from here because there isnt one saved');
+            return;
+        }
         
         if (document.getElementById('overlay').storedLogicNode) {
             console.log("don't trigger drag events - we are carrying a logic node to save");
