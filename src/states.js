@@ -100,10 +100,14 @@ var globalStates = {
     lockingMode: false,
     //authenticatedUser: null,
     lockPassword: null,
-
+    
+    guiButtonDown: false,
+    logicButtonDown: false,
 	pocketButtonState: false,
 	pocketButtonDown: false,
 	pocketButtonUp: false,
+    resetButtonDown: false,
+    settingsButtonDown: false,
 	freezeButtonState: false,
 	logButtonState: false,
 	editingMode: false,

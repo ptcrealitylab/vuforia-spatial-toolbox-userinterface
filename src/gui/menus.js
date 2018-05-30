@@ -187,7 +187,7 @@ realityEditor.gui.menus.init = function () {
 };
 
 realityEditor.gui.menus.on = function(menuDiv, buttonArray) {
-    console.log(menuDiv);
+    cout(menuDiv);
     if(realityEditor.gui.menus.history.length>=realityEditor.gui.menus.historySteps) {
         realityEditor.gui.menus.history.shift();
     }
@@ -219,7 +219,7 @@ realityEditor.gui.menus.on = function(menuDiv, buttonArray) {
         var keyI = buttonArray[i];
         if(keyI in this.buttons){
     		if(keyI in this.menus[menuDiv]) {
-    			console.log(menuDiv);
+    			// console.log(menuDiv);
                 this.buttons[keyI].bg.setAttribute("class", this.menus[menuDiv][keyI]+" active");
 			}
 		}
@@ -380,7 +380,9 @@ realityEditor.gui.buttons.sendInterfaces = function (interface) {
 
 realityEditor.gui.menus.pointerDown = function(event) {
 //console.log("Down on: "+event.button);
-
+    
+    realityEditor.gui.buttons.guiButtonDown(event);
+    realityEditor.gui.buttons.logicButtonDown(event);
     realityEditor.gui.buttons.pocketButtonDown(event);
     realityEditor.gui.buttons.resetButtonDown(event);
     realityEditor.gui.buttons.settingButtonDown(event);
@@ -395,7 +397,6 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.guiButtonUp(event);
     realityEditor.gui.buttons.logicButtonUp(event);
     realityEditor.gui.buttons.resetButtonUp(event);
-    globalStates.isResetButtonDown = false;
     realityEditor.gui.buttons.unconstrainedButtonUp(event);
     realityEditor.gui.buttons.settingButtonUp(event);
     realityEditor.gui.buttons.freezeButtonUp(event);
@@ -448,6 +449,8 @@ realityEditor.gui.menus.pointerUp = function(event) {
             realityEditor.gui.buttons.logicButtonUp({button: "logic"}); // default option is to go back to main
         }
     });
+    
+    globalStates.buttonDown = null;
 };
 
 realityEditor.gui.menus.pointerEnter = function(event) {

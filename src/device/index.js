@@ -638,9 +638,9 @@ realityEditor.device.onElementTouchUp = function(event) {
     
     // hide the trash menu
     realityEditor.gui.menus.buttonOn("main",[]);
-    if (!didDisplayCrafting) {
-        realityEditor.gui.menus.on("main",[]);
-    }
+    // if (!didDisplayCrafting) {
+    //     realityEditor.gui.menus.on("main",[]);
+    // }
 
     cout("onElementTouchUp");
 };
@@ -686,7 +686,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
     if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
 
         // allow scaling with multiple fingers without dropping the frame in motion
-        var touchesOnActiveVehicle = this.currentScreenTouches.filter(function(touchTarget) {
+        var touchesOnActiveVehicle = this.currentScreenTouches.map(function(elt){ return elt.targetId; }).filter(function(touchTarget) {
             return (touchTarget === this.editingState.frame || touchTarget === this.editingState.node || touchTarget === "pocket-element");
         }.bind(this));
         if (touchesOnActiveVehicle.length > 1) {
@@ -869,9 +869,15 @@ realityEditor.device.onDocumentPointerUp = function(event) {
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
     cout("onDocumentMultiTouchStart");
-
-    this.currentScreenTouches.push(event.target.id.replace(/^(svg)/,""));
-    console.log(this.currentScreenTouches);
+    
+    [].slice.call(event.touches).forEach(function(touch) {
+        if (realityEditor.device.currentScreenTouches.map(function(elt) { return elt.identifier; }).indexOf(touch.identifier) === -1) {
+            realityEditor.device.currentScreenTouches.push({
+                targetId: touch.target.id.replace(/^(svg)/,""),
+                identifier: touch.identifier
+            });
+        }
+    });
 };
 
 /**
@@ -1024,23 +1030,42 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     cout("onDocumentMultiTouchEnd");
     
     // if you started editing with beginTouchEditing instead of touchevent on element, programmatically trigger onElementMultiTouchEnd
-    var editingVehicleTouchIndex = this.currentScreenTouches.indexOf((this.editingState.node || this.editingState.frame));
+    var editingVehicleTouchIndex = this.currentScreenTouches.map(function(elt) { return elt.target; }).indexOf((this.editingState.node || this.editingState.frame));
     if (editingVehicleTouchIndex === -1) {
         realityEditor.device.onElementMultiTouchEnd(event);
     }
-    
-    var index = this.currentScreenTouches.indexOf(event.target.id.replace(/^(svg)/,""));
-    if (index !== -1) {
-        this.currentScreenTouches.splice(index, 1);
-    } else {
-        console.warn('couldn\'t find the touch to remove - removing a random one instead');
-        this.currentScreenTouches.pop(); // always remove one even if target changes
-    }
-    console.log(this.currentScreenTouches);
 
+    // if multitouch, stop tracking the touches that were removed but keep tracking the ones still there
+    if (event.touches.length > 0) {
+        // find which touch to remove from the currentScreenTouches
+        var remainingTouches = [].slice.call(event.touches).map(function(touch) {
+            return touch.identifier; //touch.target.id.replace(/^(svg)/,"")
+        });
+        
+        var indicesToRemove = [];
+        this.currentScreenTouches.forEach(function(elt, index) {
+            // this touch isn't here anymore
+            if (remainingTouches.indexOf(elt.identifier) === -1) {
+                indicesToRemove.push(index);
+            }
+        });
+        
+        // remove them in a separate loop because it can cause problems to remove elements from the same loop you're iterating over
+        indicesToRemove.forEach(function(index) {
+            realityEditor.device.currentScreenTouches.splice(index, 1);
+        });
+    } else {
+        this.currentScreenTouches = [];
+        
+        var didDisplayCrafting = globalStates.currentLogic; // proxy to determine if crafting board is open / we shouldn't reset the menu
+        if (!didDisplayCrafting) {
+            realityEditor.gui.menus.on("main",[]);
+        }
+    }
+    
     // stop editing the active frame or node if there are no more touches on it
     if (this.editingState.object) {
-        var touchesOnActiveVehicle = this.currentScreenTouches.filter(function(touchTarget) {
+        var touchesOnActiveVehicle = this.currentScreenTouches.map(function(elt) { return elt.targetId; }).filter(function(touchTarget) {
             return (touchTarget === this.editingState.frame || touchTarget === this.editingState.node || touchTarget === "pocket-element");
         }.bind(this));
 

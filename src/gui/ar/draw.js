@@ -345,8 +345,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         
         this.ar.lines.drawInteractionLines();
         
+        var SPEECH_FEATURE_ENABLED = false;
         // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
-        if (globalStates.speechState) {
+        if (SPEECH_FEATURE_ENABLED && globalStates.speechState) {
 
             globalStates.nodeSpeechHighlightCounter++;
             if (globalStates.nodeSpeechHighlightCounter > 20) {
@@ -538,6 +539,8 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
             globalDOMCache['iframe' + newNodeKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + newNodeKey + '")');
             globalDOMCache['iframe' + newNodeKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+        } else {
+            node.loaded = false;
         }
         
     }
@@ -588,6 +591,8 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
         globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
         globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+    } else {
+        frame.loaded = false;
     }
     
     // add the frame to the new object and post the new frame on the server (must exist there before we can update the links)
@@ -1098,14 +1103,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             // temporary UI styling to visualize locks
 
-            if (activeType !== "ui") {
-                if (!!activeVehicle.lockPassword && activeVehicle.lockType === "full") {
-                    globalDOMCache["iframe" + activeKey].style.opacity = 0.25;
-                } else if (!!activeVehicle.lockPassword && activeVehicle.lockType === "half") {
-                    globalDOMCache["iframe" + activeKey].style.opacity = 0.75;
-                } else {
-                    globalDOMCache["iframe" + activeKey].style.opacity = 1.0;
-                }
+            var LOCK_FEATURE_ENABLED = false;
+            
+            if (LOCK_FEATURE_ENABLED) {
+                if (activeType !== "ui") {
+                    if (!!activeVehicle.lockPassword && activeVehicle.lockType === "full") {
+                        globalDOMCache["iframe" + activeKey].style.opacity = 0.25;
+                    } else if (!!activeVehicle.lockPassword && activeVehicle.lockType === "half") {
+                        globalDOMCache["iframe" + activeKey].style.opacity = 0.75;
+                    } else {
+                        globalDOMCache["iframe" + activeKey].style.opacity = 1.0;
+                    }
+                }                
             }
 
         }
@@ -1165,7 +1174,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     // }
 
     // only start editing it if you didn't do a quick tap that already released by the time it loads
-    if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.indexOf("pocket-element") > -1) {
+    if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
         var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
         var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
@@ -1222,6 +1231,12 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
  * @return
  **/
 realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, globalDOMCache, cout) {
+    
+    var doesDOMElementExist = !!globalDOMCache['object' + activeKey];
+    if (!doesDOMElementExist && activeVehicle.visible === true) {
+        console.warn('trying to hide a frame that doesn\'t exist');
+        return;
+    }
     
     var isVisible = activeVehicle.visible === true;
     if (!isVisible) {
