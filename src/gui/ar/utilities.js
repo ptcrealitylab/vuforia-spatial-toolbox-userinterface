@@ -881,6 +881,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     
     function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
         
+        // don't draw red lines unless it is something you are able to unconstrained reposition (frames and logic nodes)
+        if ( !(typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic') ) {
+            return;
+        }
+        
         // don't draw lines unless the marker has been unconstrained edited
         if (!hasBeenUnconstrainedPositioned(matrixSVG)) {
             return;

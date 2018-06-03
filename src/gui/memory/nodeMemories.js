@@ -67,6 +67,12 @@ realityEditor.gui.memory.nodeMemories.initMemoryBar = function() {
         memoryContainer.classList.add('memoryContainer');
         memoryContainer.setAttribute('touch-action', 'none');
         memoryContainer.style.position = 'relative';
+
+        var memoryNode = document.createElement('div');
+        memoryNode.classList.add('memoryNode');
+        memoryNode.style.visibility = 'hidden';
+        memoryContainer.appendChild(memoryNode);
+        
         memoryBar.appendChild(memoryContainer);
     }
     
@@ -87,10 +93,22 @@ realityEditor.gui.memory.nodeMemories.addMemoryAtIndex = function(logicNodeObjec
     var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logicNodeObject);
     realityEditor.network.updateNodeBlocksSettingsData(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey);
 
+    var iconSrc;
+    if (logicNodeObject.iconImage === 'custom' || logicNodeObject.iconImage === 'auto') {
+        iconSrc = realityEditor.gui.crafting.getLogicNodeIcon(logicNodeObject);
+    }
+
     // convert logic node to a serializable object and assign it a new UUID
     if (index >= 0 && index < 5) {
         var simpleLogic = this.realityEditor.gui.crafting.utilities.convertLogicToServerFormat(logicNodeObject);
         simpleLogic.uuid = realityEditor.device.utilities.uuidTime();
+        if (iconSrc) {
+            if (logicNodeObject.iconImage === 'custom') {
+                simpleLogic.nodeMemoryCustomIconSrc = iconSrc;
+            } else {
+                simpleLogic.nodeMemoryAutoIconSrc = iconSrc;
+            }
+        }
         this.states.memories[index] = simpleLogic;
     }
     
@@ -126,23 +144,59 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
         
         // reset contents
         var memoryContainer = memoryBar.children[i];
-        memoryContainer.innerHTML = '';
+        
+        var memoryNode;
+        [].slice.call(memoryContainer.children).forEach(function(child) {
+            if (child.classList.contains('memoryNode')) {
+                memoryNode = child;
+            } else {
+                memoryContainer.removeChild(child);
+            }
+        });
+
+        // memoryContainer.innerHTML = '';
         memoryContainer.style.backgroundImage = '';
+        memoryNode.style.backgroundImage = '';
+        memoryNode.style.backgroundPositionX = '';
+        memoryNode.style.backgroundPositionY = '';
+        memoryNode.style.visibility = 'hidden';
         memoryContainer.onclick = '';
 
         // stop if there isn't anything to render
         if (!logicNodeObject) return;
 
+        memoryNode.style.visibility = 'visible';
+
+        var iconToUse = 'none';
+
         // display contents. currently this is a generic node image and the node's name // TODO: give custom icons
-        memoryContainer.style.backgroundImage = 'url(/svg/logicNode.svg)';
+        // memoryContainer.style.backgroundImage = 'url(/svg/logicNode.svg)';
+        if (typeof logicNodeObject.nodeMemoryCustomIconSrc !== 'undefined') {
+            memoryNode.style.backgroundImage = 'url(' + logicNodeObject.nodeMemoryCustomIconSrc + ')';
+            memoryNode.style.backgroundSize = 'cover';
+            iconToUse = 'custom';
+        } else if (typeof logicNodeObject.nodeMemoryAutoIconSrc !== 'undefined') {
+            memoryNode.style.backgroundImage = 'url(' + logicNodeObject.nodeMemoryAutoIconSrc + ')';
+            memoryNode.style.backgroundSize = 'contain';
+            iconToUse = 'auto';
+            memoryNode.style.backgroundPositionX = 'center';
+            memoryNode.style.backgroundPositionY = '10px';
+        }
         
-        var nameText = document.createElement('div');
-        nameText.style.position = 'absolute';
-        nameText.style.top = '33px';
-        nameText.style.width = '100%';
-        nameText.style.textAlign = 'center';
-        nameText.innerHTML = logicNodeObject.name;
-        memoryContainer.appendChild(nameText);
+        if (iconToUse !== 'custom') {
+            var nameText = document.createElement('div');
+            nameText.style.position = 'absolute';
+            if (iconToUse === 'auto') {
+                nameText.style.top = 'calc(20vw - 55px)'
+                nameText.style.fontSize = '10px';
+            } else {
+                nameText.style.top = '33px';
+            }
+            nameText.style.width = '100%';
+            nameText.style.textAlign = 'center';
+            nameText.innerHTML = logicNodeObject.name;
+            memoryContainer.appendChild(nameText);
+        }
         
     });
 
@@ -191,6 +245,7 @@ realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
         overlayDiv.innerHTML = '';
         realityEditor.gui.memory.nodeMemories.renderMemories();
     }
+    realityEditor.gui.menus.on("main",[]);
 };
 
 // hide the pocket and add a new logic node to the closest visible object, and start dragging it to move under the finger
@@ -200,6 +255,11 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
     
     // store each event listener in an array so that we can cancel them all later
     nodeMemories.states.dragEventListeners[i] = function(evt) {
+        
+        if (!logicNodeObject) {
+            console.log('cant add a logic node from here because there isnt one saved');
+            return;
+        }
         
         if (document.getElementById('overlay').storedLogicNode) {
             console.log("don't trigger drag events - we are carrying a logic node to save");

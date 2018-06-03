@@ -72,6 +72,9 @@ realityEditor.gui.buttons.preload = function(array) {
 realityEditor.gui.buttons.guiButtonUp = function(event){
     if(event.button !== "gui") return;
 
+    if (!globalStates.guiButtonDown) return;
+    globalStates.guiButtonDown = false;
+
     realityEditor.gui.menus.buttonOff("main",["logic","logicPocket","logicSetting","setting","pocket"]);
     realityEditor.gui.menus.buttonOn("main",["gui"]);
     
@@ -80,11 +83,7 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
     globalStates.guiState = "ui";
     
     if (globalStates.guiState !== "logic") {
-        if (DEBUG_DATACRAFTING) {
-            realityEditor.gui.crafting.craftingBoardVisible(); // TODO: BEN DEBUG - revert to previous line
-        } else {
-            realityEditor.gui.crafting.craftingBoardHide();
-        }
+        realityEditor.gui.crafting.craftingBoardHide();
     }
     
     realityEditor.device.resetEditingState();
@@ -92,6 +91,9 @@ realityEditor.gui.buttons.guiButtonUp = function(event){
 
 realityEditor.gui.buttons.logicButtonUp = function(event){
     if(event.button !== "logic") return;
+
+    // if (!globalStates.logicButtonDown) return; // TODO: this would be nice but messes up programatically closing the crafting board 
+    globalStates.logicButtonDown = false;
 
     realityEditor.gui.menus.buttonOff("main",["gui","logicPocket","logicSetting","setting","pocket"]);
     realityEditor.gui.menus.buttonOn("main",["logic"]);
@@ -107,73 +109,76 @@ realityEditor.gui.buttons.logicButtonUp = function(event){
 
 realityEditor.gui.buttons.resetButtonDown = function(event) {
     if (event.button !== "reset") return;
-    globalStates.isResetButtonDown = true;
+    globalStates.resetButtonDown = true;
 };
 
 realityEditor.gui.buttons.resetButtonUp = function(event) {
-        if (event.button !== "reset") return;
+    if (event.button !== "reset") return;
 
-        realityEditor.gui.menus.off("editing",["reset"]);
+    realityEditor.gui.menus.off("editing",["reset"]);
 
-        if (!globalStates.isResetButtonDown) return;
+    if (!globalStates.resetButtonDown) return;
+    globalStates.resetButtonDown = false;
 
-        for (var objectKey in objects) {
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
-                continue;
-            }
+    for (var objectKey in objects) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
+            continue;
+        }
 
-            var tempResetObject = objects[objectKey];
-            var shouldPlaceCenter = false;
-            
-            if (globalStates.guiState ==="ui") {
+        var tempResetObject = objects[objectKey];
+        var shouldPlaceCenter = false;
 
-                shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
-                for (var frameKey in tempResetObject.frames) {
-                    var activeFrame = tempResetObject.frames[frameKey];
-                    if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames // TODO: could reset on-screen positions too
-                    var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
-                    positionData.matrix = [];
-                    if (shouldPlaceCenter) {
-                        positionData.x = 0;
-                        positionData.y = 0;
-                    } else {
-                        positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                        positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                    }
-                    positionData.scale = globalStates.defaultScale;
-                    realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
+        if (globalStates.guiState ==="ui") {
+
+            shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
+            for (var frameKey in tempResetObject.frames) {
+                var activeFrame = tempResetObject.frames[frameKey];
+                if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames
+                if (activeFrame.staticCopy) continue; // don't reset positions of staticCopy frames
+
+                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
+                positionData.matrix = [];
+                if (shouldPlaceCenter) {
+                    positionData.x = 0;
+                    positionData.y = 0;
+                } else {
+                    positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
                 }
-                
-            }
-
-            if (globalStates.guiState === "node") {
-                for (var frameKey in tempResetObject.frames) {
-                    
-                    var activeFrame = tempResetObject.frames[frameKey];
-                    
-                    var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
-                    for (var nodeKey in activeFrame.nodes) {
-                        var activeNode = activeFrame.nodes[nodeKey];
-                        // activeNode.relativeMatrix = [];
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
-                        activeNode.scale = globalStates.defaultScale;
-                        if (shouldPlaceCenter) {
-                            activeNode.x = 0;
-                            activeNode.y = 0;
-                        } else {
-                            activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                            activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                        }
-                        realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
-                    }
-                }
-                
+                positionData.scale = globalStates.defaultScale;
+                realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
             }
 
         }
-    };
 
+        if (globalStates.guiState === "node") {
+            for (var frameKey in tempResetObject.frames) {
 
+                var activeFrame = tempResetObject.frames[frameKey];
+                // cannot move nodes inside static copy frames
+                if (activeFrame && activeFrame.staticCopy) continue;
+
+                var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
+                for (var nodeKey in activeFrame.nodes) {
+                    var activeNode = activeFrame.nodes[nodeKey];
+
+                    realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
+                    activeNode.scale = globalStates.defaultScale;
+                    if (shouldPlaceCenter) {
+                        activeNode.x = 0;
+                        activeNode.y = 0;
+                    } else {
+                        activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                        activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    }
+                    realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
+                }
+            }
+
+        }
+
+    }
+};
 
 realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {
         if (event.button !== "unconstrained") return;
@@ -216,11 +221,16 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
         }
         
     }, 200);
-    
+
+    globalStates.settingsButtonDown = true;
+
 };
 
 realityEditor.gui.buttons.settingButtonUp = function(event) {
     if (event.button !== "setting" && event.button !== "logicSetting") return;
+
+    if (!globalStates.settingsButtonDown) return;
+    globalStates.settingsButtonDown = false;
 
    // realityEditor.gui.menus.on("main", ["setting"]);
     if(realityEditor.gui.buttons.settingTimer) {
@@ -335,15 +345,28 @@ realityEditor.gui.buttons.draw = function() {
 
 };
 
+realityEditor.gui.buttons.guiButtonDown = function(event) {
+    if (event.button !== "gui") return;
+
+    globalStates.guiButtonDown = true;
+};
+
+realityEditor.gui.buttons.logicButtonDown = function(event) {
+    if (event.button !== "logic") return;
+
+    globalStates.logicButtonDown = true;
+};
+
+
 
 realityEditor.gui.buttons.pocketButtonDown = function(event) {
-        if (event.button !== "pocket" && event.button !== "logicPocket") return;
+    if (event.button !== "pocket" && event.button !== "logicPocket") return;
 
-        if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
-            return;
-        }
+    if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
+        return;
+    }
 
-        globalStates.pocketButtonDown = true;
+    globalStates.pocketButtonDown = true;
 
 };
 

@@ -520,6 +520,17 @@ body {
     margin: 3px;
 }
 
+.memoryNode {
+    width: calc(20vw - 44px);
+    height: calc(20vw - 44px);
+    background: black;
+    border: 10px solid cyan;
+    border-radius: 30px;
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
 #overlay.overlayMemory, .memoryWeb > .memoryContainer {
     border-radius: 0;
     position: absolute;
@@ -656,6 +667,14 @@ body {
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 }
 
+.ignorePointerEvents {
+    pointer-events: none;
+}
+
+.usePointerEvents {
+    pointer-events: auto;
+}
+
 .visibleFrameContainer {
     display: inline;
     visibility: visible;
@@ -676,6 +695,7 @@ body {
 .hiddenFrame {
     visibility: visible;
     opacity: 0.3;
+    pointer-events: none;
 }
 
 .visibleNodeContainer {
@@ -683,6 +703,10 @@ body {
 }
 
 .hiddenNodeContainer {
+    display: none;
+}
+
+.displayNone {
     display: none;
 }
 

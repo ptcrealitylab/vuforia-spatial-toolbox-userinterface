@@ -69,6 +69,11 @@ realityEditor.gui.screenExtension.touchMove = function (eventObject){
     
     if (!this.shouldSendTouchesToScreen(eventObject)) return;
     
+    // this will retroactively set the screen object to a new frame when it gets added by dragging in from the pocket
+    if (eventObject.object && eventObject.frame && !this.screenObject.object && !this.screenObject.frame){
+        this.onScreenTouchDown(eventObject);
+    }
+    
     this.onScreenTouchMove(eventObject);
 
     // make sure we aren't manipulating a screenObject frame with AR visualization mode
@@ -314,8 +319,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
 
-    var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object];
-    if (screenFrame && isScreenObjectVisible) {
+    var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
+    if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
         
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
@@ -336,8 +341,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
             // is frame within screen bounds... don't push it in if you aren't located on top of a screen
             var object = realityEditor.getObject(this.screenObject.object);
-            var isWithinWidth = Math.abs(screenFrame.ar.x) < object.targetSize.width/2;
-            var isWithinHeight = Math.abs(screenFrame.ar.y) < object.targetSize.height/2;
+            var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
+            var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
             
             var didPushIn = false;
             
@@ -427,6 +432,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         
         globalStates.initialDistance = null;
         
+        var oldVisualizationPositionData = null;
+        
         if (this.screenObject.isScreenVisible) {
             console.log('hide frame -> screen');
             thisFrame.visualization = "screen";
@@ -446,7 +453,15 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             thisFrame.begin = [];
             thisFrame.ar.matrix = [];
             
+            oldVisualizationPositionData = thisFrame.ar;
+            
             realityEditor.device.resetEditingState();
+
+            // update position on server
+            // var urlEndpoint = 'http://' + objects[this.screenObject.object].ip + ':' + httpPort + '/object/' + this.screenObject.object + "/frame/" + this.screenObject.frame + "/node/" + null + "/size/";
+            // var content = thisFrame.ar;
+            // content.lastEditor = globalStates.tempUuid;
+            // realityEditor.network.postData(urlEndpoint, content);
             
         } else {
             console.log('show frame -> AR');
@@ -499,6 +514,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
                 x: convertedTouchOffsetX,
                 y: convertedTouchOffsetY
             };
+            
+            realityEditor.gui.ar.draw.showARFrame(activeKey);
 
             realityEditor.device.beginTouchEditing(thisFrame.objectId, activeKey);
             
@@ -508,7 +525,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
         realityEditor.gui.screenExtension.sendScreenObject();
         
-        realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization);
+        realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization, oldVisualizationPositionData);
 
     }
 };
