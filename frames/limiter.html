@@ -156,6 +156,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     var dataBar = document.querySelector('#data');
     var valueMax = document.querySelector('#valueMax');
     var limiterMax = document.querySelector('#limiterMax');
+    var screenIsTouched = false;
 
    // var outlineMinShadow = document.querySelector('#outlineMinShadow');
   //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
@@ -226,8 +227,23 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     
     limiterMax.addEventListener("pointermove",
         function (event) {
+            screenIsTouched = true;
             setMax(event.clientY);
             realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
+        }, false);
+
+
+    limiterMax.addEventListener("pointerdown",
+        function (event) {
+            screenIsTouched = true;
+            setMax(event.clientY);
+            realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
+        }, false);
+
+
+    limiterMax.addEventListener("pointerup",
+        function (event) {
+           screenIsTouched = false;
         }, false);
 
 
@@ -270,7 +286,6 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
  
     realityInterface.addReadListener('in_out', function (e) {
-    console.log(e);
         
         properties.value = e.value;
     if(e.unit) {
@@ -290,11 +305,10 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     
 
     realityInterface.addReadPublicDataListener('in_out', "max", function (e) {
-        console.log(e);
-        limits.currentMax =((1-e)*300)-35;
-        setMax(limits.currentMax+112);
-        
-  
+       if(screenIsTouched === false) {
+           limits.currentMax = ((1 - e) * 300) - 35;
+           setMax(limits.currentMax + 112);
+       }
     });
  
     realityInterface.setMoveDelay(1000);

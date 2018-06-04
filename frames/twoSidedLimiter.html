@@ -170,7 +170,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
    // var outlineMinShadow = document.querySelector('#outlineMinShadow');
   //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
 
-    
+    var screenIsTouched = false;
     
     var dataOverlayMin = document.querySelector('#dataOverlayMin');
     var dataOverlayMax = document.querySelector('#dataOverlayMax');
@@ -271,6 +271,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
     limiterMin.addEventListener("pointermove",
         function (event) {
+            screenIsTouched = true;
             setMin(event.clientY);
             realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
         }, false);
@@ -278,9 +279,40 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
     limiterMax.addEventListener("pointermove",
         function (event) {
+            screenIsTouched = true;
             setMax(event.clientY);
             realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
         }, false);
+
+    limiterMin.addEventListener("pointerdown",
+        function (event) {
+            screenIsTouched = true;
+            setMin(event.clientY);
+            realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
+        }, false);
+
+
+    limiterMax.addEventListener("pointerdown",
+        function (event) {
+            screenIsTouched = true;
+            setMax(event.clientY);
+            realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
+        }, false);
+
+
+
+    limiterMin.addEventListener("pointerup",
+        function (event) {
+            screenIsTouched = false;
+        }, false);
+
+
+    limiterMax.addEventListener("pointerup",
+        function (event) {
+            screenIsTouched = false;
+        }, false);
+    
+    
 
 
     function renderProperties() {
@@ -340,16 +372,20 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     properties.unit = "";
     
     realityInterface.addReadPublicDataListener('in_out', "min", function (e) {
-        limits.currentMin =98+((1-e)*300);
-        setMin(limits.currentMin+112);
+        if(screenIsTouched === false) {
+            limits.currentMin = 98 + ((1 - e) * 300);
+            setMin(limits.currentMin + 112);
+        }
     });
 
     realityInterface.addReadPublicDataListener('in_out', "max", function (e) {
-        console.log(e);
-        limits.currentMax =((1-e)*300)-35;
-        setMax(limits.currentMax+112);
-        
-     document.querySelector('#show').style.visibility = "visible";
+        if(screenIsTouched === false) {
+            limits.currentMax = ((1 - e) * 300) - 35;
+            setMax(limits.currentMax + 112);
+        }
+        if(document.querySelector('#show').style.visibility === "hidden") {
+            document.querySelector('#show').style.visibility = "visible";
+        }
     });
     
     realityInterface.setMoveDelay(1000);
