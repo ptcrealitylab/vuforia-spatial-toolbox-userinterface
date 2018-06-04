@@ -449,6 +449,25 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         frameKey = globalStates.inTransitionFrame;
 
         this.activeObjectMatrix = [];
+        
+        // TODO: finish this new method of transferring frames
+        /*
+        var numObjectsVisible =  Object.keys(this.visibleObjects).length;
+        var areAnyObjectsVisible = numObjectsVisible > 0;
+        var isSingleObjectVisible = numObjectsVisible === 1;
+        var isSingleScreenObjectVisible = false;
+        var isDifferentSingleScreenObjectVisible = false;
+        
+        if (isSingleObjectVisible) {
+            var visibleObjectKey = Object.keys(this.visibleObjects)[0];
+            var visibleObject = realityEditor.getObject(visibleObjectKey);
+            isSingleScreenObjectVisible = visibleObject.visualization === 'screen';
+            isDifferentObjectVisible = visibleObjectKey !== globalStates.inTransitionObject;
+            if (isSingleScreenObjectVisible && isDifferentObjectVisible) {
+                console.log('should attach to new object now');
+            }
+        }
+        */
 
         if (!this.visibleObjects.hasOwnProperty(objectKey)) {
 
@@ -799,6 +818,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         }
 
         if ((activeVehicle.visible || shouldRenderFramesInNodeView) || activePocketFrameWaiting || activePocketNodeWaiting) {
+            
+            // safety mechanism to prevent bugs where tries to manipulate a DOM element that doesn't exist
+            if (!globalDOMCache["object" + activeKey]) {
+                activeVehicle.visible = false;
+                return true;
+            }
             
             if (shouldRenderFramesInNodeView) {
                 globalDOMCache["object" + activeKey].classList.remove('displayNone');
