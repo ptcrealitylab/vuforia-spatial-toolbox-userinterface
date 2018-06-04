@@ -1522,6 +1522,12 @@ realityEditor.network.testVersion = function (objectKey) {
 
 realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) {
     this.cout("I am deleting a frame: " + ip);
+    var frameToDelete = realityEditor.getFrame(objectKey, frameKey);
+    if (frameToDelete) {
+        console.log('deleting ' + frame.location + ' frame', frameToDelete);
+    } else {
+        console.log('cant tell if local or global... frame has already been deleted on editor');
+    }
     var contents = {lastEditor: globalStates.tempUuid};
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey, contents);
 };

@@ -133,7 +133,7 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
     var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
-    this.applyParentScaleToDragPosition(activeVehicle, results.point);
+    // this.applyParentScaleToDragPosition(activeVehicle, results.point);
 
     var positionData = this.getPositionData(activeVehicle);
 
@@ -165,6 +165,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     }
 };
 
+// TODO: re-enable later once node position dragging gets fixed
 /**
  * Because node positions are affected by scale of parent while rendering, divide by scale of parent while dragging
  * @param activeVehicle
@@ -205,7 +206,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
 
     var objectKey = activeVehicle.objectId;
     var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix);
-    this.applyParentScaleToDragPosition(activeVehicle, point);
+    // this.applyParentScaleToDragPosition(activeVehicle, point);
 
     if (useTouchOffset) {
 
