@@ -100,36 +100,27 @@
 
 
     <script type="text/javascript">
+
         var realityInterface = new RealityInterface();
         realityInterface.setMoveDelay(500);
-        
-        var drawing = [];
 
+
+        var imageContent = [];
         var color = "rgb(41,253,47)";
-        var colorOld = "";
-        var thisColor = "";
 
         var ctx = document.getElementById("canvas").getContext("2d");
         ctx.strokeStyle = color;
         ctx.lineWidth = 10;
 
         document.addEventListener( "DOMContentLoaded", function(){
-
-            // setup a new canvas for drawing wait for device init
+            
             setTimeout(function(){
                 newCanvas();
             }, 100);
 
         }, false );
-
-        // function to setup a new canvas for drawing
+        
         function newCanvas(){
-            // setup canvas
-         
-
-            // setup to trigger drawing on mouse or touch
-            // drawTouch();
-            // drawPointer();
             drawPointerEvents();
 
             document.querySelector('#new').addEventListener('pointerdown', clearCanvas);
@@ -144,7 +135,7 @@
         function clearCanvas(){
             ctx = document.getElementById("canvas").getContext("2d");
             ctx.clearRect(0, 0, 600, 600);
-            drawing = [];
+            imageContent = [];
         }
 
         function selectColor(el){
@@ -163,25 +154,27 @@
         var drawPointerEvents = function() {
             var clicked = 0;
             var start = function(e) {
+                if(!imageContent) imageContent = [];
                 clicked = 1;
                 var x = e.pageX;
                 var y = e.pageY-44;
                 moveTo(x,y,color, ctx);
-                drawing.push({c : color, x : x, y : y});
+                imageContent.push({c : color, x : x, y : y});
             };
             var move = function(e) {
+          
                 if(clicked){
+                    if(!imageContent) imageContent = [];
                     x = e.pageX;
                     y = e.pageY-44;
                     lineTo(x,y, ctx);
-                    drawing.push({x : x, y : y});
+                    imageContent.push({x : x, y : y});
                 }
            
             };
             var stop = function(e) {
                 clicked = 0;
-                console.log(drawing.length);
-                realityInterface.writePublicData("storage", "data",  drawing);
+                realityInterface.writePublicData("storage", "data",  imageContent);
             };
             document.getElementById("canvas").addEventListener("pointerdown", start, false);
             document.getElementById("canvas").addEventListener("pointermove", move, false);
@@ -203,7 +196,10 @@
         realityInterface.addReadPublicDataListener('storage', "data", function (e) {
             var ctx = document.getElementById("canvas").getContext("2d");
             ctx.lineWidth = 10;
-            drawing = e;
+            
+            if(Array.isArray(e)) {
+                imageContent = e;
+            }
           for(var i =0; i<e.length; i++){
               var point = e[i];
               if("c" in point){
