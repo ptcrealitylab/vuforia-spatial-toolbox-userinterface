@@ -315,6 +315,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'storage', type: "storeData"}
             ]
         },
+        {
+            name: 'count',
+            width: 250,
+            height: 250,
+            nodes: [
+                {name: 'count', type: "count"}
+            ]
+        },
         
         {
             name: 'draw',

@@ -136,6 +136,7 @@
             ctx = document.getElementById("canvas").getContext("2d");
             ctx.clearRect(0, 0, 600, 600);
             imageContent = [];
+            realityInterface.writePublicData("storage", "data",  imageContent);
         }
 
         function selectColor(el){
