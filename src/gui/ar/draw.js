@@ -167,9 +167,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
             objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
             
-            // TODO: re-enable to generate memories for screens when needed
-            // realityEditor.gui.memory.createDefaultMemoriesIfNeeded(this.visibleObjects);
-            
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 

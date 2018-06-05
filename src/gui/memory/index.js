@@ -409,11 +409,7 @@ MemoryContainer.prototype.createImage = function() {
     this.image.addEventListener('touchend', this.onTouchEnd);
     this.image.addEventListener('pointerenter', this.onPointerEnter);
     this.image.addEventListener('pointerleave', this.onPointerLeave);
-
-    // this.image.onerror = function () {
-    //     alert('error loading ' + this.src);
-        // this.src = 'error.png'; // place your error.png image instead
-    // };
+    
 };
 
 
