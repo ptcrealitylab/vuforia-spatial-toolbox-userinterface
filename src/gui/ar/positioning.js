@@ -173,7 +173,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
  */
 realityEditor.gui.ar.positioning.applyParentScaleToDragPosition = function(activeVehicle, pointReference) {
 
-    if (typeof activeVehicle.type !== 'undefined' && activeVehicle.type !== 'logic' && activeVehicle.type !== 'ui') {
+    if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         // position is affected by parent frame scale
         var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (parentFrame) {
@@ -246,7 +246,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
     // nodes use their x, y, scale and their parent frame's matrix
     
-    if (typeof activeVehicle.type !== 'undefined' && activeVehicle.type !== 'ui' && activeVehicle.type !== 'logic') {
+    if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (frame) {
             var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
@@ -255,20 +255,36 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
         }
     }
     
-    // logic nodes just use their own x, y, and matrix
+    // edge case for node on local frame with no matrix -> use parent matrix as default
+    // if (activeVehicle.type === 'node' && activeVehicle.location === 'local' && activeVehicle.matrix.length === 0) {
+    //     var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
+    //     if (frame) {
+    //         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+    //         // only parent frame has matrix -> just use that
+    //         return realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
+    //     }
+    // }
+
+    // logic nodes and nodes on local frames just use their own x, y, and matrix
 
     return activeVehicle;
 };
 
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     
-    if (typeof activeVehicle.type !== 'undefined' && activeVehicle.type !== 'ui' && activeVehicle.type !== 'logic') {
-        
+    if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         console.warn('trying to set position data matrix for something other than a frame or logic');
         
         if (!newMatrixValue || newMatrixValue.constructor !== Array) {
             console.warn('trying to set relativeMatrix to a non-array value');
             return;
+        }
+    }
+    
+    if (activeVehicle.type === 'node') {
+        var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
+        if (parentFrame.location === 'local') {
+            activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
         }
     }
     
@@ -286,4 +302,21 @@ realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
         x: translate3d[0],
         y: translate3d[1]
     }
+};
+
+/**
+ * Nodes on local frames, all logic nodes, and all frames are able to be unconstrained edited
+ * @param {Frame|Node} activeVehicle
+ * @return {boolean}
+ */
+realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable = function(activeVehicle) {
+    
+    if (activeVehicle.type === 'node') {
+        var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
+        if (parentFrame) {
+            return parentFrame.location === 'local';
+        }
+    }
+    
+    return  (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
 };

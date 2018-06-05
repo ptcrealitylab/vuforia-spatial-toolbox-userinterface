@@ -868,8 +868,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var frame = realityEditor.getFrame(objectKey, frameKey);
                     if (frame) {
                         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                        finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
-                        finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                        if (frame.location !== 'local') {
+                            finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
+                            finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                        }
                         finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
                     }
                 }
@@ -1721,8 +1723,10 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame) {
                 var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
-                finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                if (frame.location !== 'local') {
+                    finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
+                    finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                }
                 finalScale *= 1.0; //(parentFramePositionData.scale/globalStates.defaultScale);
             }
         }

@@ -165,7 +165,7 @@ realityEditor.device.isEditingUnconstrained = function(vehicle) {
             }
         }
         // only frames and logic nodes can be unconstrained edited
-        return (typeof vehicle.type === 'undefined' || vehicle.type === 'ui' || vehicle.type === 'logic');
+        return realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(vehicle);
     }
     return false;
 };
@@ -979,7 +979,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
     // pop into unconstrained mode if pull out z > threshold
     var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
                             !globalStates.freezeButtonState &&
-                            (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
+                            realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle);
     
     if (ableToBePulled) {
 
@@ -1030,7 +1030,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     cout("onDocumentMultiTouchEnd");
     
     // if you started editing with beginTouchEditing instead of touchevent on element, programmatically trigger onElementMultiTouchEnd
-    var editingVehicleTouchIndex = this.currentScreenTouches.map(function(elt) { return elt.target; }).indexOf((this.editingState.node || this.editingState.frame));
+    var editingVehicleTouchIndex = this.currentScreenTouches.map(function(elt) { return elt.targetId; }).indexOf((this.editingState.node || this.editingState.frame));
     if (editingVehicleTouchIndex === -1) {
         realityEditor.device.onElementMultiTouchEnd(event);
     }
