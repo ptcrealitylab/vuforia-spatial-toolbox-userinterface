@@ -672,7 +672,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
         content.x = positionData.x;
         content.y = positionData.y;
         content.scale = positionData.scale;
-        if (this.editingState.unconstrained) {
+        if (this.editingState.unconstrained || globalStates.unconstrainedPositioning) {
             content.matrix = positionData.matrix;
         }
         content.lastEditor = globalStates.tempUuid;
