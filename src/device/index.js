@@ -759,7 +759,11 @@ realityEditor.device.onDocumentPointerDown = function(event) {
             }
         }
 
-        if (realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
+        // if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
+
+        var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
+        
+        if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
             // realityEditor.gui.menus.on("bigPocket", []);
             realityEditor.gui.memory.createMemory();
 
@@ -888,7 +892,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
 realityEditor.device.onDocumentMultiTouchMove = function (event) {
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
-
+    
     var activeVehicle = this.getEditingVehicle();
     
     if (activeVehicle) {
@@ -973,6 +977,35 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             
         }
     }
+};
+
+realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY) {
+
+    var isWithinBounds = false;
+    
+    // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
+    for (var frameKey in realityEditor.gui.screenExtension.visibleScreenObjects) {
+        if (!realityEditor.gui.screenExtension.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
+        var visibleScreenObject = realityEditor.gui.screenExtension.visibleScreenObjects[frameKey];
+        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, screenX, screenY);
+        // visibleScreenObject.x = point.x;
+        // visibleScreenObject.y = point.y;
+        
+        var object = realityEditor.getObject(visibleScreenObject.object);
+        
+        var isWithinWidth = Math.abs(point.x) < (object.targetSize.width * 1000)/2;
+        var isWithinHeight = Math.abs(point.y) < (object.targetSize.height * 1000)/2;
+
+        console.log(point, isWithinWidth, isWithinHeight);
+        
+        if (isWithinWidth && isWithinHeight) {
+            isWithinBounds = true;
+        }
+
+    }
+    
+    return isWithinBounds;
+
 };
 
 realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicle) {
