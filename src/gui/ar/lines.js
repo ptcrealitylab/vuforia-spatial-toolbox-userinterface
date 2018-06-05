@@ -158,11 +158,14 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameB.objectVisible) {
-            if (objectB.memory) {
+            if (objectB.memory && Object.keys(objectB.memory).length > 0) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
-				}
+				} else if (memoryPointer.memory.image.naturalWidth === 0 && memoryPointer.memory.image.naturalHeight === 0) {
+                    // console.log('fake image, needs replacement');
+                    // realityEditor.gui.memory.objectNeedsDefaultMemory(link.objectB);
+                }
 				memoryPointer.draw();
 
 				nodeB.screenX = memoryPointer.x;
@@ -172,18 +175,22 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 				nodeB.screenX = nodeA.screenX;
 				nodeB.screenY = -10;
 				nodeB.screenZ = nodeA.screenZ;
-			}
+                // realityEditor.gui.memory.objectNeedsDefaultMemory(link.objectB);
+            }
 			nodeB.screenZ = nodeA.screenZ;
 			nodeB.screenLinearZ = nodeA.screenLinearZ;
 			nodeBSize = objectA.averageScale;
 		}
 
 		if (!frameA.objectVisible) {
-            if (objectA.memory) {
+            if (objectA.memory && Object.keys(objectA.memory).length > 0) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
-				}
+				} else if (memoryPointer.memory.image.naturalWidth === 0 && memoryPointer.memory.image.naturalHeight === 0) {
+				    // console.log('fake image, needs replacement');
+                    // realityEditor.gui.memory.objectNeedsDefaultMemory(link.objectA);
+                }
 				memoryPointer.draw();
 
 				nodeA.screenX = memoryPointer.x;
@@ -191,6 +198,7 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 			} else {
 				nodeA.screenX = nodeB.screenX;
 				nodeA.screenY = -10;
+				// realityEditor.gui.memory.objectNeedsDefaultMemory(link.objectA);
 			}
 			nodeA.screenZ = nodeB.screenZ;
 			nodeA.screenLinearZ = nodeB.screenLinearZ;

@@ -355,11 +355,26 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
+        
+        var isPocketTapped = false;
+
+        pocket.addEventListener('pointerdown', function(evt) {
+            isPocketTapped = true;
+        });
+
+        pocket.addEventListener('pointerup', function(evt) {
+            isPocketTapped = false;
+        });
 
         // On touching an element-template, upload to currently visible object
         pocket.addEventListener('pointermove', function(evt) {
             
             if (!evt.target.classList.contains('element-template')) {
+                return;
+            }
+            
+            // pointermove gesture must have started with a tap on the pocket
+            if (!isPocketTapped) {
                 return;
             }
 

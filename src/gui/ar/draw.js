@@ -147,6 +147,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
     
     var editingVehicle = realityEditor.device.getEditingVehicle();
+    
 
     for (var objectKey in objects) {
         this.activeObject = realityEditor.getObject(objectKey);
@@ -165,6 +166,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
             objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
+            
+            // TODO: re-enable to generate memories for screens when needed
+            // realityEditor.gui.memory.createDefaultMemoriesIfNeeded(this.visibleObjects);
             
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -517,6 +521,11 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     var newObject = realityEditor.getObject(newObjectKey);
     
     var frame = realityEditor.getFrame(oldObjectKey, oldFrameKey);
+    
+    if (frame.location !== 'global') {
+        console.warn('WARNING: TRYING TO DELETE A LOCAL FRAME');
+        return;
+    }
 
     // rename nodes and give new keys
     var newNodes = {};
@@ -1712,7 +1721,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
                 var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
                 finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
                 finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
-                finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
+                finalScale *= 1.0; //(parentFramePositionData.scale/globalStates.defaultScale);
             }
         }
 

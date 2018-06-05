@@ -67,6 +67,7 @@ try {
     console.warn('Defaulting knownObjects due to data corruption');
 }
 
+var objectsNeedingDefaultMemory = {};
 
 function MemoryContainer(element) {
     this.element = element;
@@ -403,6 +404,10 @@ MemoryContainer.prototype.createImage = function() {
     this.image.addEventListener('pointerenter', this.onPointerEnter);
     this.image.addEventListener('pointerleave', this.onPointerLeave);
 
+    // this.image.onerror = function () {
+    //     alert('error loading ' + this.src);
+        // this.src = 'error.png'; // place your error.png image instead
+    // };
 };
 
 
@@ -541,6 +546,75 @@ function memoryCanCreate() {
     return false;
 }
 
+function defaultMemoryCanCreate() {
+    // Exactly one visible object
+    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1) {
+        return false;
+    }
+    // if (globalStates.freezeButtonState) {
+    //     return false;
+    // }
+    if (realityEditor.gui.pocket.pocketShown()) {
+        return false;
+    }
+    if (globalStates.settingsButtonState) {
+        return false;
+    }
+    // if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
+    //     return false;
+    // }
+    // if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
+    //     return false;
+    // }
+    // if (globalStates.guiState === 'ui') {
+    //     return true;
+    // }
+    // if (globalStates.guiState === 'node' && !globalProgram.objectA) { // TODO: shouldn't this draw dot line?
+    //     return true;
+    // }
+    return true;
+}
+
+function createDefaultMemory(objectKey) {
+    
+    realityEditor.app.appFunctionCall('createMemory', null, null);
+    setTimeout(function() {
+        realityEditor.app.appFunctionCall('memorize', null, null);
+        delete objectsNeedingDefaultMemory[objectKey];
+        console.log('added default memory', objectsNeedingDefaultMemory);
+        
+        var thisMemoryPointer = getMemoryPointerWithId(objectKey);
+
+        customIconImage.style.display = 'none'; // force re-render
+        var autoSrc = logicNodeData.autoImagePath || '../../../png/emptyLogicIcon.png'; //'../../../svg/menu/setting.svg';
+        customIconImage.src = autoSrc;// + '?' + new Date().getTime();
+        setTimeout(function() {
+            customIconImage.style.display = 'inline';
+        }, 100);
+        
+        thisMemoryPointer.memory.image
+
+    }, 500);
+    
+}
+
+function createDefaultMemoriesIfNeeded(visibleObjects) {
+    if (Object.keys(objectsNeedingDefaultMemory).length > 0) {
+        if (defaultMemoryCanCreate()) {
+            Object.keys(objectsNeedingDefaultMemory).forEach(function(objKeyNeedingMemory) {
+                if (Object.keys(visibleObjects).indexOf(objKeyNeedingMemory) > -1) {
+                    createDefaultMemory(objKeyNeedingMemory);
+                }
+            });
+        }
+    }
+}
+
+function objectNeedsDefaultMemory(objectKey) {
+    objectsNeedingDefaultMemory[objectKey] = true;
+    // console.log('needs default memory', objectsNeedingDefaultMemory);
+}
+
 exports.initMemoryBar = initMemoryBar;
 exports.removeMemoryBar = removeMemoryBar;
 exports.receiveThumbnail = receiveThumbnail;
@@ -549,5 +623,9 @@ exports.MemoryContainer = MemoryContainer;
 exports.getMemoryWithId = getMemoryWithId;
 exports.memoryCanCreate = memoryCanCreate;
 exports.createMemory = createMemory;
+// exports.defaultMemoryCanCreate = defaultMemoryCanCreate;
+// exports.createDefaultMemory = createDefaultMemory;
+exports.createDefaultMemoriesIfNeeded = createDefaultMemoriesIfNeeded;
+exports.objectNeedsDefaultMemory = objectNeedsDefaultMemory;
 
 }(realityEditor.gui.memory));
