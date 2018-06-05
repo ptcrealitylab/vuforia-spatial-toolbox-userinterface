@@ -147,6 +147,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
     
     var editingVehicle = realityEditor.device.getEditingVehicle();
+    
 
     for (var objectKey in objects) {
         this.activeObject = realityEditor.getObject(objectKey);
@@ -449,6 +450,25 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         frameKey = globalStates.inTransitionFrame;
 
         this.activeObjectMatrix = [];
+        
+        // TODO: finish this new method of transferring frames
+        /*
+        var numObjectsVisible =  Object.keys(this.visibleObjects).length;
+        var areAnyObjectsVisible = numObjectsVisible > 0;
+        var isSingleObjectVisible = numObjectsVisible === 1;
+        var isSingleScreenObjectVisible = false;
+        var isDifferentSingleScreenObjectVisible = false;
+        
+        if (isSingleObjectVisible) {
+            var visibleObjectKey = Object.keys(this.visibleObjects)[0];
+            var visibleObject = realityEditor.getObject(visibleObjectKey);
+            isSingleScreenObjectVisible = visibleObject.visualization === 'screen';
+            isDifferentObjectVisible = visibleObjectKey !== globalStates.inTransitionObject;
+            if (isSingleScreenObjectVisible && isDifferentObjectVisible) {
+                console.log('should attach to new object now');
+            }
+        }
+        */
 
         if (!this.visibleObjects.hasOwnProperty(objectKey)) {
 
@@ -498,6 +518,11 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     var newObject = realityEditor.getObject(newObjectKey);
     
     var frame = realityEditor.getFrame(oldObjectKey, oldFrameKey);
+    
+    if (frame.location !== 'global') {
+        console.warn('WARNING: TRYING TO DELETE A LOCAL FRAME');
+        return;
+    }
 
     // rename nodes and give new keys
     var newNodes = {};
@@ -738,6 +763,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             var overlay = globalDOMCache[activeKey];
             var canvas = globalDOMCache["svg" + activeKey];
             
+            if (!container) {
+                activeVehicle.loaded = false;
+                return true;
+            }
+            
             if (activeType === 'ui') {
                 container.classList.remove('hiddenFrameContainer');
                 container.classList.add('visibleFrameContainer');
@@ -800,6 +830,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
         if ((activeVehicle.visible || shouldRenderFramesInNodeView) || activePocketFrameWaiting || activePocketNodeWaiting) {
             
+            // safety mechanism to prevent bugs where tries to manipulate a DOM element that doesn't exist
+            if (!globalDOMCache["object" + activeKey]) {
+                activeVehicle.visible = false;
+                return true;
+            }
+            
             if (shouldRenderFramesInNodeView) {
                 globalDOMCache["object" + activeKey].classList.remove('displayNone');
             }
@@ -832,8 +868,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var frame = realityEditor.getFrame(objectKey, frameKey);
                     if (frame) {
                         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                        finalOffsetX = finalOffsetX * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.x;
-                        finalOffsetY = finalOffsetY * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.y;
+                        if (frame.location !== 'local') {
+                            finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
+                            finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                        }
                         finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
                     }
                 }
@@ -1685,9 +1723,11 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame) {
                 var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                finalOffsetX = finalOffsetX * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.x;
-                finalOffsetY = finalOffsetY * (parentFramePositionData.scale/globalStates.defaultScale) + parentFramePositionData.y;
-                finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
+                if (frame.location !== 'local') {
+                    finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
+                    finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                }
+                finalScale *= 1.0; //(parentFramePositionData.scale/globalStates.defaultScale);
             }
         }
 

@@ -158,39 +158,54 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameB.objectVisible) {
-            if (objectB.memory) {
+            if (objectB.memory && Object.keys(objectB.memory).length > 0 && objectB.visualization !== 'screen') {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
 				}
-				memoryPointer.draw();
 
 				nodeB.screenX = memoryPointer.x;
 				nodeB.screenY = memoryPointer.y;
 				nodeB.screenZ = nodeA.screenZ;
+
+                if (memoryPointer.memory.imageLoaded && memoryPointer.memory.image.naturalWidth === 0 && memoryPointer.memory.image.naturalHeight === 0) {
+                    nodeB.screenX = nodeA.screenX;
+                    nodeB.screenY = -10;
+                    delete objectB.memory;
+                } else {
+                    memoryPointer.draw();
+                }
 			} else {
 				nodeB.screenX = nodeA.screenX;
 				nodeB.screenY = -10;
 				nodeB.screenZ = nodeA.screenZ;
-			}
+            }
 			nodeB.screenZ = nodeA.screenZ;
 			nodeB.screenLinearZ = nodeA.screenLinearZ;
 			nodeBSize = objectA.averageScale;
 		}
 
 		if (!frameA.objectVisible) {
-            if (objectA.memory) {
+            if (objectA.memory && Object.keys(objectA.memory).length > 0 && objectA.visualization !== 'screen') {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
 				}
-				memoryPointer.draw();
 
 				nodeA.screenX = memoryPointer.x;
 				nodeA.screenY = memoryPointer.y;
+				
+                if (memoryPointer.memory.imageLoaded && memoryPointer.memory.image.naturalWidth === 0 && memoryPointer.memory.image.naturalHeight === 0) {
+                    nodeA.screenX = nodeB.screenX;
+                    nodeB.screenY = -10;
+                    delete objectA.memory;
+                } else {
+                    memoryPointer.draw();
+                }
 			} else {
 				nodeA.screenX = nodeB.screenX;
 				nodeA.screenY = -10;
+                nodeA.screenZ = nodeB.screenZ;
 			}
 			nodeA.screenZ = nodeB.screenZ;
 			nodeA.screenLinearZ = nodeB.screenLinearZ;

@@ -38,8 +38,11 @@
                     // this needs to contain the final interface source
                     , "*");
 
-            objects.node = msg.node;
-            objects.object = msg.object;
+            // TODO: what is this for?
+            if (typeof objects !== 'undefined') {
+                objects.node = msg.node;
+                objects.object = msg.object;
+            }
         }
     }, false);
 </script>

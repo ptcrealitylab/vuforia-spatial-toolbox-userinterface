@@ -229,7 +229,7 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
 realityEditor.gui.buttons.settingButtonUp = function(event) {
     if (event.button !== "setting" && event.button !== "logicSetting") return;
 
-    if (!globalStates.settingsButtonDown) return;
+    // if (!globalStates.settingsButtonDown) return;
     globalStates.settingsButtonDown = false;
 
    // realityEditor.gui.menus.on("main", ["setting"]);

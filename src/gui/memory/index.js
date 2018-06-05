@@ -67,7 +67,6 @@ try {
     console.warn('Defaulting knownObjects due to data corruption');
 }
 
-
 function MemoryContainer(element) {
     this.element = element;
     this.image = null;
@@ -75,6 +74,7 @@ function MemoryContainer(element) {
     this.memory = null;
     this.dragging = false;
     this.dragTimer = null;
+    this.imageLoaded = false;
 
     this.onTransitionEnd = this.onTransitionEnd.bind(this);
     this.onPointerUp = this.onPointerUp.bind(this);
@@ -97,6 +97,12 @@ MemoryContainer.prototype.set = function(obj) {
     this.backgroundImage = document.createElement('img');
     this.backgroundImage.classList.add('memoryBackgroundImage');
     this.backgroundImage.setAttribute('touch-action', 'none');
+    
+    var that = this;
+    this.backgroundImage.onload = function() {
+        that.imageLoaded = true;
+    };
+    
     this.backgroundImage.src = image;
     
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
@@ -144,6 +150,7 @@ MemoryContainer.prototype.removeImage = function() {
     this.image.removeEventListener('pointerleave', this.onPointerLeave);
     this.image.parentNode.removeChild(this.image);
     this.image = null;
+    this.imageLoaded = false;
 };
 
 MemoryContainer.prototype.onTouchStart = function(event) {
@@ -402,7 +409,7 @@ MemoryContainer.prototype.createImage = function() {
     this.image.addEventListener('touchend', this.onTouchEnd);
     this.image.addEventListener('pointerenter', this.onPointerEnter);
     this.image.addEventListener('pointerleave', this.onPointerLeave);
-
+    
 };
 
 
@@ -529,9 +536,9 @@ function memoryCanCreate() {
     if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
         return false;
     }
-    if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
-        return false;
-    }
+    // if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
+    //     return false;
+    // }
     if (globalStates.guiState === 'ui') {
         return true;
     }
