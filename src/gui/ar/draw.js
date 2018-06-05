@@ -766,6 +766,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             var overlay = globalDOMCache[activeKey];
             var canvas = globalDOMCache["svg" + activeKey];
             
+            if (!container) {
+                activeVehicle.loaded = false;
+                return true;
+            }
+            
             if (activeType === 'ui') {
                 container.classList.remove('hiddenFrameContainer');
                 container.classList.add('visibleFrameContainer');

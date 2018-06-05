@@ -67,8 +67,6 @@ try {
     console.warn('Defaulting knownObjects due to data corruption');
 }
 
-var objectsNeedingDefaultMemory = {};
-
 function MemoryContainer(element) {
     this.element = element;
     this.image = null;
@@ -76,6 +74,7 @@ function MemoryContainer(element) {
     this.memory = null;
     this.dragging = false;
     this.dragTimer = null;
+    this.imageLoaded = false;
 
     this.onTransitionEnd = this.onTransitionEnd.bind(this);
     this.onPointerUp = this.onPointerUp.bind(this);
@@ -98,6 +97,12 @@ MemoryContainer.prototype.set = function(obj) {
     this.backgroundImage = document.createElement('img');
     this.backgroundImage.classList.add('memoryBackgroundImage');
     this.backgroundImage.setAttribute('touch-action', 'none');
+    
+    var that = this;
+    this.backgroundImage.onload = function() {
+        that.imageLoaded = true;
+    };
+    
     this.backgroundImage.src = image;
     
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
@@ -145,6 +150,7 @@ MemoryContainer.prototype.removeImage = function() {
     this.image.removeEventListener('pointerleave', this.onPointerLeave);
     this.image.parentNode.removeChild(this.image);
     this.image = null;
+    this.imageLoaded = false;
 };
 
 MemoryContainer.prototype.onTouchStart = function(event) {
@@ -546,75 +552,6 @@ function memoryCanCreate() {
     return false;
 }
 
-function defaultMemoryCanCreate() {
-    // Exactly one visible object
-    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1) {
-        return false;
-    }
-    // if (globalStates.freezeButtonState) {
-    //     return false;
-    // }
-    if (realityEditor.gui.pocket.pocketShown()) {
-        return false;
-    }
-    if (globalStates.settingsButtonState) {
-        return false;
-    }
-    // if (globalStates.editingMode || realityEditor.device.getEditingVehicle()) {
-    //     return false;
-    // }
-    // if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
-    //     return false;
-    // }
-    // if (globalStates.guiState === 'ui') {
-    //     return true;
-    // }
-    // if (globalStates.guiState === 'node' && !globalProgram.objectA) { // TODO: shouldn't this draw dot line?
-    //     return true;
-    // }
-    return true;
-}
-
-function createDefaultMemory(objectKey) {
-    
-    realityEditor.app.appFunctionCall('createMemory', null, null);
-    setTimeout(function() {
-        realityEditor.app.appFunctionCall('memorize', null, null);
-        delete objectsNeedingDefaultMemory[objectKey];
-        console.log('added default memory', objectsNeedingDefaultMemory);
-        
-        var thisMemoryPointer = getMemoryPointerWithId(objectKey);
-
-        customIconImage.style.display = 'none'; // force re-render
-        var autoSrc = logicNodeData.autoImagePath || '../../../png/emptyLogicIcon.png'; //'../../../svg/menu/setting.svg';
-        customIconImage.src = autoSrc;// + '?' + new Date().getTime();
-        setTimeout(function() {
-            customIconImage.style.display = 'inline';
-        }, 100);
-        
-        thisMemoryPointer.memory.image
-
-    }, 500);
-    
-}
-
-function createDefaultMemoriesIfNeeded(visibleObjects) {
-    if (Object.keys(objectsNeedingDefaultMemory).length > 0) {
-        if (defaultMemoryCanCreate()) {
-            Object.keys(objectsNeedingDefaultMemory).forEach(function(objKeyNeedingMemory) {
-                if (Object.keys(visibleObjects).indexOf(objKeyNeedingMemory) > -1) {
-                    createDefaultMemory(objKeyNeedingMemory);
-                }
-            });
-        }
-    }
-}
-
-function objectNeedsDefaultMemory(objectKey) {
-    objectsNeedingDefaultMemory[objectKey] = true;
-    // console.log('needs default memory', objectsNeedingDefaultMemory);
-}
-
 exports.initMemoryBar = initMemoryBar;
 exports.removeMemoryBar = removeMemoryBar;
 exports.receiveThumbnail = receiveThumbnail;
@@ -623,9 +560,5 @@ exports.MemoryContainer = MemoryContainer;
 exports.getMemoryWithId = getMemoryWithId;
 exports.memoryCanCreate = memoryCanCreate;
 exports.createMemory = createMemory;
-// exports.defaultMemoryCanCreate = defaultMemoryCanCreate;
-// exports.createDefaultMemory = createDefaultMemory;
-exports.createDefaultMemoriesIfNeeded = createDefaultMemoriesIfNeeded;
-exports.objectNeedsDefaultMemory = objectNeedsDefaultMemory;
 
 }(realityEditor.gui.memory));

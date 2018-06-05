@@ -39,7 +39,7 @@
                     , "*");
 
             // TODO: what is this for?
-            if (objects) {
+            if (typeof objects !== 'undefined') {
                 objects.node = msg.node;
                 objects.object = msg.object;
             }
