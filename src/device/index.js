@@ -738,7 +738,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
 
     overlayDiv.style.display = "inline";
     // Translate up 6px to be above pocket layer
-    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 6px)';
+    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
     
     var activeVehicle = this.getEditingVehicle();
     
@@ -788,7 +788,7 @@ realityEditor.device.onDocumentPointerMove = function(event) {
     globalStates.pointerPosition = [event.clientX, event.clientY];
 
     // Translate up 6px to be above pocket layer
-    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 6px)';
+    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
 
     // if we are dragging a node in using the pocket, moves that element to this position
     realityEditor.gui.pocket.setPocketPosition(event);

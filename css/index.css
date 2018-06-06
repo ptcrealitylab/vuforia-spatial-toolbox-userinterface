@@ -534,7 +534,7 @@ body {
     height: 180px;
     margin-left: -90px;
     margin-top: -90px;
-    transition: all 0.5s;
+    transition: all 1.0s;
 }
 
 .memoryContainer {

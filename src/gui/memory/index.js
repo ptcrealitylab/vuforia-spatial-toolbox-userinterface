@@ -154,6 +154,11 @@ MemoryContainer.prototype.removeImage = function() {
 };
 
 MemoryContainer.prototype.onTouchStart = function(event) {
+
+    if (!realityEditor.gui.pocket.pocketShown()) { // we use the same memory container for pointers and pocket buttons - prevent certain events if in pointer
+        return; 
+    }
+
     this.lastTouch = {
         left: event.touches[0].clientX,
         top: event.touches[0].clientY

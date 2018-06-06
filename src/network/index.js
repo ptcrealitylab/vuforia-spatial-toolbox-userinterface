@@ -1204,8 +1204,8 @@ if (thisFrame) {
             // }
 
             globalStates.pointerPosition = [event.x, event.y];
-            // Translate up 6px to be above pocket layer
-            overlayDiv.style.transform = 'translate3d(' + event.x + 'px,' + event.y + 'px,6px)';
+            // Translate up 1200px to be above pocket layer, crafting board, settings menu, and menu buttons
+            overlayDiv.style.transform = 'translate3d(' + event.x + 'px, ' + event.y + 'px, 1200px)';
             
             // realityEditor.device.onDocumentPointerMove(fakeEvent);
             // realityEditor.device.onTouchMove(fakeEvent);

@@ -158,7 +158,7 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameB.objectVisible) {
-            if (objectB.memory && Object.keys(objectB.memory).length > 0 && objectB.visualization !== 'screen') {
+            if (objectB.memory && Object.keys(objectB.memory).length > 0) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
@@ -186,7 +186,7 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		}
 
 		if (!frameA.objectVisible) {
-            if (objectA.memory && Object.keys(objectA.memory).length > 0 && objectA.visualization !== 'screen') {
+            if (objectA.memory && Object.keys(objectA.memory).length > 0) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
