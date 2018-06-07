@@ -555,6 +555,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             globalDOMCache[newNodeKey].id = newNodeKey;
             globalDOMCache[newNodeKey].objectId = newObjectKey;
             globalDOMCache[newNodeKey].frameId = newFrameKey;
+            globalDOMCache[newNodeKey].nodeId = newNodeKey;
             globalDOMCache['svg' + newNodeKey].id = 'svg' + newNodeKey;
 
             // update iframe attributes
