@@ -224,6 +224,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     
     var inMemoryDeletion = false;
     // var pocketDestroyTimer = null;
+    
+    var isPocketTapped = false;
 
     var realityElements = [
       
@@ -356,7 +358,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         palette = document.querySelector('.palette');
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
         
-        var isPocketTapped = false;
+        // var isPocketTapped = false;
 
         pocket.addEventListener('pointerdown', function(evt) {
             isPocketTapped = true;
@@ -635,6 +637,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             nodeMemoryBar.style.display = 'none';
         }
         setPaletteElementDemo(true);
+        isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
     }
 
@@ -662,6 +665,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff('main', ['pocket']);
         setPaletteElementDemo(false);
+        isPocketTapped = false;
     }
 
     function pocketShown() {
