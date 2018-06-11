@@ -50,12 +50,18 @@
 createNameSpace("realityEditor.device");
 
 /**
+ * @fileOverview realityEditor.device.index.js
+ * Implements the touch event handlers for all major AR user interactions,
+ * keeping track of the editingState and modifying state of Objects, Frames, and Nodes as necessary.
+ */
+
+/**
  * @typedef {Object} TouchEditingTimer
  * @desc All the necessary state to track a tap-and-hold gesture that triggers a timeout callback.
- * @property startX {number}
- * @property startY {number}
- * @property moveTolerance {number}
- * @property timeoutFunction {Function}
+ * @property {number} startX
+ * @property {number} startY
+ * @property {number} moveTolerance
+ * @property {Function} timeoutFunction 
  */
 
 /**

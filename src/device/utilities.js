@@ -125,7 +125,6 @@ realityEditor.device.utilities.addBoundListener = function(element, eventType, f
     }
     boundListeners[functionUUID] = boundFunctionReference;
     element.addEventListener(eventType, boundFunctionReference, false);
-    ec++;
 };
 
 realityEditor.device.utilities.getEventUUID = function(element, eventType, functionReference) {
@@ -143,7 +142,6 @@ realityEditor.device.utilities.removeBoundListener = function(element, eventType
     if (boundFunctionReference) {
         element.removeEventListener(eventType, boundFunctionReference, false);
         delete boundListeners[functionUUID];
-        ec--;
     }
 };
 

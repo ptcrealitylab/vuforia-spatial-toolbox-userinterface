@@ -38,7 +38,26 @@
 
 createNameSpace("realityEditor.app");
 
-// response with a callback that indicates the device name.
+/**
+ * @fileOverview realityEditor.app.index.js
+ * Defines the API to communicate with the native iOS application.
+ * Calling realityEditor.app.{functionName} will trigger {functionName} in realityEditor.mm in the native iOS app.
+ * Note that as of 6/8/18, many of these are placeholders that lead to function stubs
+ */
+
+/**
+ * @typedef {string|function} FunctionName
+ * @desc The name of a function, in string form, with a path that can be reached from this file,
+ * e.g. "realityEditor.device.speechProcessor.speechRecordingCallback"
+ * Optional: if the function signature doesn't have any parameters, the entire function can be used instead of a string,
+ * e.g. function(){console.log("pong")})
+ */
+
+/**
+ * Response with a callback that indicates the device name.
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getDeviceReady = function(callBack) {
     this.appFunctionCall('getDeviceReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
@@ -46,44 +65,75 @@ realityEditor.app.getDeviceReady = function(callBack) {
 /**
  **************Vuforia****************
  **/
-// check if vuforia is ready and fires a callback once that’s the case
+
+/**
+ * Check if vuforia is ready and fires a callback once that’s the case.
+ * @param {FunctionName} callBack
+ */
 realityEditor.app.getVuforiaReady = function(callBack){
     console.log("ping");
     this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// adds a new marker and fires a callback with error or success
+/**
+ * Adds a new marker and fires a callback with error or success.
+ * @param {string} markerName
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.addNewMarker = function(markerName, callBack) {
     this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// gets the projection matrix
+/**
+ * Gets the projection matrix.
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getProjectionMatrix = function(callBack) {
     this.appFunctionCall('getProjectionMatrix', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// callback for all markers and matrices that are found
+/**
+ * Callback for all markers and matrices that are found
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getMatrixStream = function(callBack) {
     this.appFunctionCall('getMatrixStream', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// the callback will have a screenshot with base64. Size can be S,M,L 
+/**
+ * The callback will have a screenshot with base64. Size can be S,M,L
+ * @param {string} size - 'S', 'M', or 'L'
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getScreenShot = function(size, callBack) {
     this.appFunctionCall('getScreenShot', {size: size}, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// pauses the tracker
+/**
+ * Pauses the tracker.
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.setPause = function() {
     this.appFunctionCall('setPause', null, null);
 
 };
 
-// resumes the tracker
+/**
+ * Resumes the tracker.
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.setResume = function() {
     this.appFunctionCall('setResume', null, null);
 
 };
 
+/**
+ * Triggers a haptic feedback vibration.
+ */
 realityEditor.app.tap = function() {
     this.appFunctionCall('tap', null, null);
 
@@ -91,12 +141,21 @@ realityEditor.app.tap = function() {
  /**
  **************UDP****************
   **/
-// everytime there is a new message the callback is called.
+ 
+/**
+ * Every time there is a new message the callback is called.
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getUDPMessages = function(callBack) {
     this.appFunctionCall('getUDPMessages', null, '(realityEditor.app.callBack('+callBack+')');
 };
 
-// sends out a message over UDP broadcast.
+/**
+ * Sends out a message over UDP broadcast.
+ * @param {string} message
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.sentUDPMessage = function(message) {
     this.appFunctionCall('sentUDPMessage', {message: message}, null);
 };
@@ -104,22 +163,43 @@ realityEditor.app.sentUDPMessage = function(message) {
 /**
  **************File****************
   **/
-// boolean response if a file exists.
+
+/**
+ * Boolean response if a file exists.
+ * @param {string} fileName
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getFileExist = function(fileName, callBack) {
     this.appFunctionCall('getFileExist', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+')');
 };
 
-//downloads a file. The callback is an error or success message 
+/**
+ * Downloads a file. The callback is an error or success message.
+ * @param {string} fileName
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.downloadFile = function(fileName, callBack) {
     this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// boolean response if all files exists. fileNameArray should contain at least one filename
+/**
+ * Boolean response if all files exists. fileNameArray should contain at least one filename.
+ * @param {Array.<string>} fileNameArray
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getFilesExist = function (fileNameArray, callBack) {
     this.appFunctionCall('getFilesExist', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// returns the checksume of a group of files. fileNameArray should contain at least one filename
+/**
+ * Returns the checksum of a group of files. fileNameArray should contain at least one filename.
+ * @param {Array.<string>} fileNameArray
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getChecksum = function (fileNameArray, callBack) {
     this.appFunctionCall('getChecksum', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+')');
 };
@@ -127,12 +207,23 @@ realityEditor.app.getChecksum = function (fileNameArray, callBack) {
 /**
  **************Store Content****************
  **/
-//store a message on the app level for persistance 
+
+/**
+ * Store a message on the app level for persistence.
+ * @param {string} id
+ * @param {string} message
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.setStorage = function (id, message) {
     this.appFunctionCall('setStorage', {id: id, message: message}, null);
 };
 
-// recall the message.
+/**
+ * Recall the message.
+ * @param {string} id
+ * @param {FunctionName} callBack
+ * @todo implement within XCode - currently does nothing
+ */
 realityEditor.app.getStorage = function (id, callBack) {
     this.appFunctionCall('getStorage', {id: id}, 'realityEditor.app.callBack('+callBack+')');
 };
@@ -140,21 +231,30 @@ realityEditor.app.getStorage = function (id, callBack) {
  /**
  **************Speech****************
   **/
-// starts the apple speech engine
+
+/**
+ * Starts the native speech recognition engine.
+ * While active, this engine will send received words to any callbacks registered by realityEditor.app.addSpeechListener
+ */
 realityEditor.app.startSpeechRecording = function () {
     console.log("startSpeechRecording");
     this.appFunctionCall('startSpeechRecording', null, null);
 
 };
 
-// stops the speech engine
+/**
+ * Stops the speech engine.
+ */
 realityEditor.app.stopSpeechRecording = function () {
     console.log("stopSpeechRecording");
     this.appFunctionCall('stopSpeechRecording', null, null);
 
 };
 
-//sends every individual word that was found one by one to the callback.
+/**
+ * Sends every individual word that was found one by one to the callback.
+ * @param {FunctionName} callBack
+ */
 realityEditor.app.addSpeechListener = function (callBack) {
     console.log("addSpeechListener");
     this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -163,7 +263,10 @@ realityEditor.app.addSpeechListener = function (callBack) {
 /**
  **************Debugging****************
  **/
-//sends every individual word that was found one by one to the callback.
+
+/**
+ * Force clears the iOS WebView cache and force reloads the interface.
+ */
 realityEditor.app.clearCache = function () {
     this.appFunctionCall('clearCache', null, null);
     console.log('clearing cache and force reloading...');
@@ -179,7 +282,14 @@ cc = realityEditor.app.clearCache.bind(realityEditor.app);
 /**
  **************UTILITIES****************
  **/
-// encodes a javascript function call to be sent to the native app via the http interface or whatever interface will be available.
+
+/**
+ * Encodes a javascript function call to be sent to the native app via the webkit message interface.
+ * @param {string} functionName - the function to trigger in realityEditor.mm
+ * @param {Object|null} functionArguments - object with a key matching the name of each target function parameter,
+ *                                          and the value of each key is the value to pass into that parameter
+ * @param {FunctionName} callbackString - 'realityEditor.app.callBack('+callBack+')'
+ */
 realityEditor.app.appFunctionCall = function(functionName, functionArguments, callbackString) {
     var messageBody = {
         functionName: functionName
@@ -196,6 +306,11 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
     window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
 };
 
+/**
+ * Wrapper function for callbacks called by the native iOS application, applying any arguments as needed.
+ * @param {FunctionName} callBack
+ * @param {Array.<*>} callbackArguments
+ */
 realityEditor.app.callBack = function(callBack, callbackArguments){
     
     if (callbackArguments) {
