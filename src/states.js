@@ -187,6 +187,8 @@ var globalLogic ={
 	frontDepth: 1000000
 };
 
+var publicDataCache = {};
+
 var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";

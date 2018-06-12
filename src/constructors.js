@@ -97,8 +97,8 @@ function Objects() {
     
     // taken from target.xml. necessary to make the screens work correctly.
     this.targetSize = {
-        x: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
-        y: 0.3
+        width: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
+        height: 0.3
     }
 }
 
