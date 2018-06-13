@@ -42,7 +42,7 @@ var sendTouchEvents = false;
     document.getElementsByTagName('head')[0].appendChild(realityObject.style);
 
     var realityInterfaces = [];
-
+    
     function loadObjectSocketIo(object) {
         var script = document.createElement('script');
         script.type = 'text/javascript';
@@ -160,7 +160,14 @@ var sendTouchEvents = false;
 
         if (typeof msgContent.visibility !== 'undefined') {
             realityObject.visibility = msgContent.visibility;
-
+            
+            // reload public data
+            for (var i = 0; i < realityInterfaces.length; i++) {
+                if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                }
+            }
+            
             if(realityObject.visibility === "visible"){
                 if (typeof realityObject.node !== "undefined") {
                     if(realityObject.sendSticky) {
@@ -443,10 +450,24 @@ var sendTouchEvents = false;
         this.addReadPublicDataListener = function (node, valueName, callback) {
             self.ioObject.on("object/publicData", function (msg) {
                 var thisMsg = JSON.parse(msg);
+                
                 if (typeof thisMsg.publicData === "undefined")  return;
-                    if(typeof thisMsg.publicData[node] === "undefined") return;
-                    if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
-                        callback(thisMsg.publicData[node][valueName]);
+                if(typeof thisMsg.publicData[node] === "undefined") return;
+                if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
+                
+                if (thisMsg.publicData[node] !== realityObject.publicData[node]) {
+                    parent.postMessage(JSON.stringify(
+                        {
+                            version: realityObject.version,
+                            object: realityObject.object,
+                            frame: realityObject.frame,
+                            node: realityObject.frame + node,
+                            publicData: thisMsg.publicData[node]
+                        }
+                    ), "*");
+                }
+                
+                callback(thisMsg.publicData[node][valueName]);
             });
         };
 
