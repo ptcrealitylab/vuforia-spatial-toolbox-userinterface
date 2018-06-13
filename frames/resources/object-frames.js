@@ -160,6 +160,13 @@ var sendTouchEvents = false;
 
         if (typeof msgContent.visibility !== 'undefined') {
             realityObject.visibility = msgContent.visibility;
+
+            // reload public data when it becomes visible
+            for (var i = 0; i < realityInterfaces.length; i++) {
+                if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                }
+            }
             
             if(realityObject.visibility === "visible"){
                 if (typeof realityObject.node !== "undefined") {
@@ -177,13 +184,6 @@ var sendTouchEvents = false;
                                 fullScreen: realityObject.sendFullScreen,
                                 stickiness: realityObject.sendSticky
                             }), "*");
-                    }
-                }
-
-                // reload public data when it becomes visible
-                for (var i = 0; i < realityInterfaces.length; i++) {
-                    if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                        realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                     }
                 }
             }

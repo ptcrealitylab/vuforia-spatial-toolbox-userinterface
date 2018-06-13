@@ -248,6 +248,44 @@ realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix) {
 };
 
 /**
+ * Utility that returns true if the rectangle formed by topLeft and bottomRight A overlaps B
+ * https://www.geeksforgeeks.org/find-two-rectangles-overlap/
+ * 
+ *  topLeftA ----------------
+ *  |                       |
+ *  |                       |
+ *  |                       |
+ *  ------------ bottomRightA
+ *  
+ * topLeftB -----------------
+ *  |                       |
+ *  |                       |
+ *  |                       |
+ *  ------------ bottomRightB
+ * 
+ * @param {{x: number, y: number}} topLeftA
+ * @param {{x: number, y: number}} bottomRightA
+ * @param {{x: number, y: number}} topLeftB
+ * @param {{x: number, y: number}} bottomRightB
+ * @return {boolean}
+ */
+realityEditor.gui.ar.utilities.areRectsOverlapping = function(topLeftA, bottomRightA, topLeftB, bottomRightB) {
+
+    // can't overlap if one is completely to the left of the other
+    if (topLeftA.x > bottomRightB.x || topLeftB.x > bottomRightA.x) {
+        return false;
+    }
+    
+    // can't overlap is one is completely above the other
+    if (topLeftA.y > bottomRightB.y || topLeftB.y > bottomRightA.y) {
+        return false;
+    }
+    
+    // must overlap if neither of the above conditions are true
+    return true;
+};
+
+/**
  * Returns whether or not the given point is inside the polygon formed by the given vertices.
  * @param {Array.<Number>} point - [x,y]
  * @param {Array.<Array.<Number>>} vertices - [[x0, y0], [x1, y1], ... ]
@@ -299,6 +337,65 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
     ];
     return this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners);
     //console.log(thisNode.name, [thisNode.screenX, thisNode.screenY], isInsideScreen);
+};
+
+/**
+ * Efficient calculation to determine which frames are visible within the screen bounds.
+ * Only AR frames are counted. Considered visible if the rectangular bounding-box of the
+ * 3d-transformed div overlaps with the screen bounds at all.
+ * @return {Array.<Frame>}
+ */
+realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
+    
+    var visibleFrames = [];
+    
+    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
+    for (var objectKey in visibleObjects) {
+        if (!visibleObjects.hasOwnProperty(objectKey)) continue;
+        realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
+            
+            var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            
+            if (thisFrame.visualization !== 'ar') {
+                return;
+            }
+            
+            if (globalDOMCache['iframe' + frameKey]) {
+                
+                // Use the getBoundingClientRect to check approximate overlap between frame bounds and screen bounds
+
+                var upperLeftScreen = {
+                    x: 0,
+                    y: 0
+                };
+
+                // noinspection JSSuspiciousNameCombination - This is correct, globalStates.height is actually the width
+                var bottomRightScreen = {
+                    x: globalStates.height,
+                    y: globalStates.width
+                };
+
+                var frameClientRect = globalDOMCache['iframe' + frameKey].getBoundingClientRect();
+
+                var upperLeftFrame = {
+                    x: frameClientRect.left,
+                    y: frameClientRect.top
+                };
+
+                var bottomRightFrame = {
+                    x: frameClientRect.right,
+                    y: frameClientRect.bottom
+                };
+
+                if (realityEditor.gui.ar.utilities.areRectsOverlapping(upperLeftScreen, bottomRightScreen, upperLeftFrame, bottomRightFrame)) {
+                    visibleFrames.push(frameKey);
+                }
+            }
+
+        });
+    }
+    
+    return visibleFrames;
 };
 
 /**

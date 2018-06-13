@@ -149,6 +149,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     var editingVehicle = realityEditor.device.getEditingVehicle();
     
     var isObjectWithNoFramesVisible = false;
+    if (Object.keys(visibleObjects).length > 0) {
+        if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
+            isObjectWithNoFramesVisible = true;
+        }
+    }
     
     for (var objectKey in objects) {
         this.activeObject = realityEditor.getObject(objectKey);
@@ -168,13 +173,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
             objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
             
-            // toggle a flag if there are no frames on a visible object
-            // TODO: filter to only count AR frames - but currently still accurate because every frame has one permanently local AR frame
-            var numFrames = Object.keys(objects[objectKey].frames).length;
-            if (numFrames === 0) {
-                isObjectWithNoFramesVisible = true;
-            }
-
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 
@@ -528,7 +526,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // then tap every 2 seconds
             visibleObjectTapInterval = setInterval(function() {
                 realityEditor.app.tap();
-            }, 2000);
+            }, 500);
         }
     } else {
         if (visibleObjectTapInterval) {
