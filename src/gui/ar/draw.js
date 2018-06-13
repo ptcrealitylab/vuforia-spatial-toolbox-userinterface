@@ -148,7 +148,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     
     var editingVehicle = realityEditor.device.getEditingVehicle();
     
-
+    var isObjectWithNoFramesVisible = false;
+    
     for (var objectKey in objects) {
         this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
@@ -167,6 +168,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
             objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
             
+            // toggle a flag if there are no frames on a visible object
+            // TODO: filter to only count AR frames - but currently still accurate because every frame has one permanently local AR frame
+            var numFrames = Object.keys(objects[objectKey].frames).length;
+            if (numFrames === 0) {
+                isObjectWithNoFramesVisible = true;
+            }
+
             for (var frameKey in objects[objectKey].frames) {
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 
@@ -508,6 +516,26 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             motion: 0
         }
     }
+    
+    // Adds a pulsing vibration that you can feel when you are looking at an object that has no frames.
+    // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
+    if (isObjectWithNoFramesVisible) {
+        if (!visibleObjectTapInterval) {
+            
+            // tap once, immediately
+            realityEditor.app.tap();
+            
+            // then tap every 2 seconds
+            visibleObjectTapInterval = setInterval(function() {
+                realityEditor.app.tap();
+            }, 2000);
+        }
+    } else {
+        if (visibleObjectTapInterval) {
+            clearInterval(visibleObjectTapInterval);
+            visibleObjectTapInterval = null;
+        }
+    }
 };
 
 realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey) {
@@ -672,9 +700,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
             }
         });
-
-
-
+        
         // update the publicData on the server to point to the new path
         if (publicDataCache.hasOwnProperty(oldFrameKey)) {
             console.log('moving public data from ' + oldFrameKey);
