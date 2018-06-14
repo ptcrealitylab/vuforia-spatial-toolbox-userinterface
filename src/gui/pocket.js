@@ -256,18 +256,34 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         
         {
             name: 'twoSidedLimiter',
-            width: 640,
-            height: 600,
+            width: 600,
+            height: 505,
             nodes: [
                 {name: 'in_out', type: "twoSidedLimiter"}
             ]
         },
         {
             name: 'limiter',
-            width: 640,
-            height: 600,
+            width: 510,
+            height: 540,
             nodes: [
                 {name: 'in_out', type: "limiter"}
+            ]
+        },
+        {
+            name: 'progress',
+            width: 275,
+            height: 415,
+            nodes: [
+                {name: 'value', type: "node"}
+            ]
+        },
+        {
+            name: 'draw',
+            width: 600,
+            height: 500,
+            nodes: [
+                {name: 'storage', type: "storeData"}
             ]
         },
         {
@@ -323,15 +339,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             height: 400,
             nodes: [
                 {name: 'count', type: "count"}
-            ]
-        },
-        
-        {
-            name: 'draw',
-            width: 600,
-            height: 500,
-            nodes: [
-                {name: 'storage', type: "storeData"}
             ]
         },
           {
