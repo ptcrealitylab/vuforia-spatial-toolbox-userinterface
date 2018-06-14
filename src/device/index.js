@@ -728,8 +728,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 };
 
 /**
- * Show the touch overlay, and if its down on the background create a memory (in ui guiState) or
- * start drawing the dot line to cut links (in node guiState)
+ * Show the touch overlay, and start drawing the dot line to cut links (in node guiState)
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerDown = function(event) {
@@ -745,12 +744,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     // If the event is hitting the background and it isn't the multi-touch to scale an object
     if (event.target.id === "canvas" && !activeVehicle) {
 
-        /*if (globalStates.guiState === "ui" && !globalStates.freezeButtonState) {
-            
-            // overlayDiv.classList.add('overlayMemory');
-            realityEditor.gui.memory.createMemory();
-
-        } else */ if (globalStates.guiState === "node" && !globalStates.editingMode) {
+        if (globalStates.guiState === "node" && !globalStates.editingMode) {
 
             if (!globalProgram.objectA) {
                 globalStates.drawDotLine = true;
@@ -759,16 +753,6 @@ realityEditor.device.onDocumentPointerDown = function(event) {
             }
         }
 
-        // if (realityEditor.gui.screenExtension.areAnyScreensVisible()) {
-
-        var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
-        
-        if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
-            // realityEditor.gui.menus.on("bigPocket", []);
-            realityEditor.gui.memory.createMemory();
-
-        }
-        
     }
 
     cout("onDocumentPointerDown");
@@ -868,6 +852,7 @@ realityEditor.device.onDocumentPointerUp = function(event) {
 /**
  * Exposes all touchstart events to the touchInputs module for additional functionality (e.g. screens).
  * Also keeps track of how many touches are down on the screen right now.
+ * if its down on the background create a memory (in ui guiState)
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
@@ -882,6 +867,21 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             });
         }
     });
+
+    var activeVehicle = this.getEditingVehicle();
+
+    // If the event is hitting the background and it isn't the multi-touch to scale an object
+    if (event.target.id === "canvas" && !activeVehicle) {
+        if (event.touches.length < 2) {
+            var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
+
+            if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
+                // realityEditor.gui.menus.on("bigPocket", []);
+                realityEditor.gui.memory.createMemory();
+
+            }
+        }
+    }
 };
 
 /**
