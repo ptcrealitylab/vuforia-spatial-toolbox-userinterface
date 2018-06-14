@@ -113,13 +113,13 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform: translateZ(-1px)" >
 </div>
 -->
-<div id="show" style=" visibility: hidden">
+<div id="show" style=" visibility: visible;">
 
     <svg id="container" width="505" height="600" version="1.1" xmlns="http://www.w3.org/2000/svg" touch-action="none">
         <svg x="20" y="455">
-        <rect class="numberOutline redStroke" id="dataValueOutline" x="1" y="1" width="230" height="65" rx="0" ry="0"/>
-        <text class="dataFont red" id="dataValue" x="20" y="46">00.000</text>
-    </svg>
+            <rect class="numberOutline redStroke" id="dataValueOutline" x="1" y="1" width="230" height="65" rx="0" ry="0"/>
+            <text class="dataFont red" id="dataValue" x="20" y="46">00.000</text>
+        </svg>
 
 
         <svg x="20" y="145">
@@ -131,13 +131,13 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
             <rect id="dataOverlayMax" class="overlay" x="0" y="1" width="233" height="150" rx="0" ry="0"/>
             <rect id="dataOverlayMin" class="overlay" x="0" y="1" width="233" height="150" rx="0" ry="0"/>
-    </svg>
+        </svg>
 
         <svg x="20" y="380" id="limiterMin">
             <rect class="yellow" id="outlineMin" x="0" y="0" width="230" height="3" rx="0" ry="0"/>
             <svg x="233" y="0">
-            <rect class="numberOutline yellowStroke" id="outlineMin" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
-            <text class="dataFont yellow" id="valueMin" x="20" y="77">00.000</text>
+                <rect class="numberOutline yellowStroke" id="outlineMin" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
+                <text class="dataFont yellow" id="valueMin" x="20" y="77">00.000</text>
             </svg><svg x="165" y="0">
             <polygon class="yellow" points="0 0 68 68 68 0 0 0"/>
 
@@ -148,17 +148,17 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
         <svg x="20" y="12" id="limiterMax">
             <svg x="0" y="130">
             <rect class="yellow" id="outlineMin" x="0" y="0" width="230" height="3" rx="0" ry="0"/>
-    </svg>
+            </svg>
             <svg x="233" y="0">
-            <rect class="numberOutline yellowStroke" id="outlineMax" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
-            <text class="dataFont yellow" id="valueMax" x="20" y="77">00.000</text>
+                <rect class="numberOutline yellowStroke" id="outlineMax" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
+                <text class="dataFont yellow" id="valueMax" x="20" y="77">00.000</text>
             </svg>  <svg x="165" y="65">
             <polygon class="yellow" points="0 68 68 0 68 68 0 68"/>
         </svg>
+        </svg>
+
+
     </svg>
-
-
-</svg>
 </div>
 
 
@@ -172,11 +172,11 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     var limiterMin = document.querySelector('#limiterMin');
     var limiterMax = document.querySelector('#limiterMax');
 
-   // var outlineMinShadow = document.querySelector('#outlineMinShadow');
-  //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
+    // var outlineMinShadow = document.querySelector('#outlineMinShadow');
+    //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
 
     var screenIsTouched = false;
-    
+
     var dataOverlayMin = document.querySelector('#dataOverlayMin');
     var dataOverlayMax = document.querySelector('#dataOverlayMax');
     var sliderHeight = 300;
@@ -203,7 +203,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     }
 
     function numberToText(value) {
-        return scaleVal(value).toPrecision(5).substring(0, 6) + " " + properties.unit;
+        return scaleVal(value).toPrecision(4).substring(0, 6) + " " + properties.unit;
     }
 
 
@@ -243,7 +243,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
         limiterMin.setAttribute('y', move - 65 + "px");
 
         //outlineMinShadow.style.top =  move - 65 + "px";
-        
+
         limits.currentMin = move - 210;
 
         valueMin.textContent = numberToText((sliderHeight - limits.currentMin) / sliderHeight);
@@ -266,8 +266,8 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
         limiterMax.setAttribute('y', move - 65 + "px");
 
-       // outlineMaxShadow.style.top =  move - 65 + "px";
-        
+        // outlineMaxShadow.style.top =  move - 65 + "px";
+
         limits.currentMax = move - 77;
         valueMax.textContent = numberToText((sliderHeight - limits.currentMax) / sliderHeight);
         checkScope();
@@ -316,8 +316,8 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
         function (event) {
             screenIsTouched = false;
         }, false);
-    
-    
+
+
 
 
     function renderProperties() {
@@ -357,15 +357,15 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
         renderProperties();
     }, time);
 
- 
+
     realityInterface.addReadListener('in_out', function (e) {
 
         properties.value = e.value;
-    if(e.unit) {
-        properties.unit = e.unit;
-    } else {
-        properties.unit = ""; 
-    }
+        if(e.unit) {
+            properties.unit = e.unit;
+        } else {
+            properties.unit = "";
+        }
         properties.unitMax = e.unitMax;
         properties.unitMin = e.unitMin;
         // console.log(e);
@@ -375,7 +375,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     properties.unitMax = 100;
     properties.unitMin = 0;
     properties.unit = "";
-    
+
     realityInterface.addReadPublicDataListener('in_out', "min", function (e) {
         if(screenIsTouched === false) {
             limits.currentMin = 98 + ((1 - e) * 300);
@@ -388,9 +388,9 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
             limits.currentMax = ((1 - e) * 300) - 35;
             setMax(limits.currentMax + 112);
         }
-            document.querySelector('#show').style.visibility = "visible";
+        document.querySelector('#show').style.visibility = "visible";
     });
-    
+
     realityInterface.setMoveDelay(1000);
     //  {value: 0.4565680618804775, mode: "f", unit: "volt", unitMin: 300, unitMax: 0}
 </script>

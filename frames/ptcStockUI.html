@@ -25,6 +25,17 @@
             position: absolute;
             top:0;left:0;bottom:0;right:0;
         }
+        .chart {
+            height: 100%;
+            width: 100%;
+        }
+
+
+
+        * {
+            color: #00edff;
+        }
+
     </style>
 </head>
 <body style="height: 500px; width: 600px">
@@ -41,6 +52,7 @@
 </body>
 
 <script>
+
     var _now = new Date(),
         _chart;
 
@@ -232,19 +244,8 @@
             plotBackground :{backgroundColor: "rgba(0,0,0,1)"},
             rangeSelector: {
                 //3 months:
-                selected: 1
+                selected: 1,
 
-            },
-            buttons: {
-                'myButton': {
-                    symbol: 'circle',
-                    symbolFill: '#B5C9DF',
-                    hoverSymbolFill: '#779ABF',
-                    theme: {
-                        class: "myButton highcharts-button highcharts-button-normal",
-                        id: "myDiamondButton"
-                    }
-                }
             },
             tooltip: {
                 backgroundColor: 'rgba(20,150,150,0.6',
@@ -262,9 +263,11 @@
 
                 rules: [{
                     condition: {
+                        maxWidth: 500
                     },
                     chartOptions: {
                         chart: {
+                            height: 300
                         },
                         subtitle: {
                             text: null
@@ -314,45 +317,11 @@
                         fontFamily: 'Trebuchet MS, Verdana, sans-serif'
                     }
                 }
-            },
-            rangeSelector: {
-                buttonTheme: {
-                    fill: '#505053',
-                    stroke: '#00ffff',
-                    style: {
-                        color: '#00ffff'
-                    },
-                    states: {
-                        hover: {
-                            fill: '#707073',
-                            stroke: '#00ffff',
-                            style: {
-                                color: '#00ffff'
-                            }
-                        },
-                        select: {
-                            fill: '#cccccc',
-                            stroke: '#00ffff',
-                            style: {
-                                color: '#00ffff'
-                            }
-                        }
-                    }
-                },
-                inputBoxBorderColor: '#505053',
-                inputStyle: {
-                    backgroundColor: '#333',
-                    color: 'silver'
-                },
-                labelStyle: {
-                    color: 'silver'
-                },
-                selected: 1
             }
         });
 
 
-        var ticker = 'PTC';
+        var ticker = 'PTC'
         var to = new Date(_now);
         var from = new Date(to);
         // console.log(to.getFullYear()-6);
@@ -413,7 +382,6 @@
             el.dispatchEvent(ev);
         }
     }
-
 
     var realityInterface = new RealityInterface();
     realityInterface.setMoveDelay(200);

@@ -117,9 +117,9 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
     <svg id="container" width="510" height="540" version="1.1" xmlns="http://www.w3.org/2000/svg" touch-action="none">
         <svg x="20" y="455">
-        <rect class="numberOutline redStroke" id="dataValueOutline" x="1" y="1" width="230" height="65" rx="0" ry="0"/>
-        <text class="dataFont red" id="dataValue" x="20" y="46">00.000</text>
-    </svg>
+            <rect class="numberOutline redStroke" id="dataValueOutline" x="1" y="1" width="230" height="65" rx="0" ry="0"/>
+            <text class="dataFont red" id="dataValue" x="20" y="46">00.000</text>
+        </svg>
 
 
         <svg x="20" y="145">
@@ -130,23 +130,23 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
             <rect id="data" class="green" x="0" y="1" width="233" height="300" rx="0" ry="0"/>
 
             <rect id="dataOverlayMax" class="overlay" x="0" y="1" width="233" height="150" rx="0" ry="0"/>
-    </svg>
-    
+        </svg>
+
 
         <svg x="20" y="12" id="limiterMax">
             <svg x="0" y="130">
                 <rect class="yellow" id="outlineMin" x="0" y="0" width="230" height="3" rx="0" ry="0"/>
             </svg>
             <svg x="233" y="0">
-            <rect class="numberOutline yellowStroke" id="outlineMax" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
-            <text class="dataFont yellow" id="valueMax" x="20" y="77">00.000</text>
+                <rect class="numberOutline yellowStroke" id="outlineMax" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
+                <text class="dataFont yellow" id="valueMax" x="20" y="77">00.000</text>
             </svg>  <svg x="165" y="65">
             <polygon class="yellow" points="0 68 68 0 68 68 0 68"/>
         </svg>
+        </svg>
+
+
     </svg>
-
-
-</svg>
 </div>
 
 
@@ -160,9 +160,9 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     var limiterMax = document.querySelector('#limiterMax');
     var screenIsTouched = false;
 
-   // var outlineMinShadow = document.querySelector('#outlineMinShadow');
-  //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
-    
+    // var outlineMinShadow = document.querySelector('#outlineMinShadow');
+    //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
+
     var dataOverlayMax = document.querySelector('#dataOverlayMax');
     var sliderHeight = 300;
     var limits = {
@@ -188,7 +188,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     }
 
     function numberToText(value) {
-        return scaleVal(value).toPrecision(5).substring(0, 6) + " " + properties.unit;
+        return scaleVal(value).toPrecision(4).substring(0, 6) + " " + properties.unit;
     }
 
 
@@ -207,7 +207,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
         dataOverlayMax.setAttribute('y', 0 + "px");
 
     }
-    
+
     function setMax(pageY){
         var move = pageY;
 
@@ -217,7 +217,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
         if (move >= limits.max + 77) {
             move = limits.max + 77;
         }
-        
+
         limiterMax.setAttribute('y', move - 65 + "px");
 
         // outlineMaxShadow.style.top =  move - 65 + "px";
