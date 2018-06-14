@@ -154,6 +154,11 @@ MemoryContainer.prototype.removeImage = function() {
 };
 
 MemoryContainer.prototype.onTouchStart = function(event) {
+
+    if (!realityEditor.gui.pocket.pocketShown()) { // we use the same memory container for pointers and pocket buttons - prevent certain events if in pointer
+        return; 
+    }
+
     this.lastTouch = {
         left: event.touches[0].clientX,
         top: event.touches[0].clientY
@@ -172,7 +177,7 @@ MemoryContainer.prototype.startDragging = function() {
 
     var rect = this.image.getBoundingClientRect();
     this.image.classList.add('memoryDragging');
-    this.image.style.transform = 'translate3d(' + rect.left + 'px,' + rect.top + 'px, 3px)';
+    this.image.style.transform = 'translate3d(' + rect.left + 'px,' + rect.top + 'px, 1200px)';
 
     this.image.parentNode.removeChild(this.image);
     document.querySelector('.memoryDragContainer').appendChild(this.image);
@@ -202,7 +207,7 @@ MemoryContainer.prototype.onTouchMove = function() {
     if (this.dragging) {
         var top = touch.top + this.dragDelta.top + 'px';
         var left = touch.left + this.dragDelta.left + 'px';
-        this.image.style.transform = 'translate3d(' + left + ',' + top + ', 3px)';
+        this.image.style.transform = 'translate3d(' + left + ',' + top + ', 1200px)';
     }
 };
 

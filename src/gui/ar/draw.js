@@ -148,7 +148,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     
     var editingVehicle = realityEditor.device.getEditingVehicle();
     
-
+    var isObjectWithNoFramesVisible = false;
+    if (Object.keys(visibleObjects).length > 0) {
+        if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
+            isObjectWithNoFramesVisible = true;
+        }
+    }
+    
     for (var objectKey in objects) {
         this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
@@ -508,6 +514,26 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             motion: 0
         }
     }
+    
+    // Adds a pulsing vibration that you can feel when you are looking at an object that has no frames.
+    // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
+    if (isObjectWithNoFramesVisible) {
+        if (!visibleObjectTapInterval) {
+            
+            // tap once, immediately
+            realityEditor.app.tap();
+            
+            // then tap every 2 seconds
+            visibleObjectTapInterval = setInterval(function() {
+                realityEditor.app.tap();
+            }, 500);
+        }
+    } else {
+        if (visibleObjectTapInterval) {
+            clearInterval(visibleObjectTapInterval);
+            visibleObjectTapInterval = null;
+        }
+    }
 };
 
 realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey) {
@@ -555,6 +581,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             globalDOMCache[newNodeKey].id = newNodeKey;
             globalDOMCache[newNodeKey].objectId = newObjectKey;
             globalDOMCache[newNodeKey].frameId = newFrameKey;
+            globalDOMCache[newNodeKey].nodeId = newNodeKey;
             globalDOMCache['svg' + newNodeKey].id = 'svg' + newNodeKey;
 
             // update iframe attributes
@@ -623,53 +650,75 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     // add the frame to the new object and post the new frame on the server (must exist there before we can update the links)
     objects[newObjectKey].frames[newFrameKey] = frame;
     var newObjectIP = realityEditor.getObject(newObjectKey).ip;
-    realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame);
-    
-    // update all links locally and on the server
-    // loop through all frames
-    realityEditor.forEachFrameInAllObjects(function(thatObjectKey, thatFrameKey) {
-        var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
+    realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame, function(err, res) {
         
-        // loop through all links in that frame
-        for (var linkKey in thatFrame.links) {
-            var link = thatFrame.links[linkKey];
-            var didLinkChange = false;
-            
-            // update the start of the link
-            if (link.objectA === oldObjectKey && link.frameA === oldFrameKey) {
-                link.objectA = newObjectKey;
-                link.frameA = newFrameKey;
-                link.nodeA = newFrameKey + link.namesA[2];
-                link.namesA[0] = newObject.name;
-                didLinkChange = true;
-            }
-            
-            // update the end of the link
-            if (link.objectB === oldObjectKey && link.frameB === oldFrameKey) {
-                link.objectB = newObjectKey;
-                link.frameB = newFrameKey;
-                link.nodeB = newFrameKey + link.namesB[2];
-                link.namesB[0] = newObject.name;
-                didLinkChange = true;
-            }
-            
-            // only change the link on the server if its objectA or objectB changed
-            if (didLinkChange) {
-                var linkObjectIP = realityEditor.getObject(thatObjectKey).ip;
-                // remove link from old frame (locally and on the server)
-                delete thatFrame.links[linkKey];
-                realityEditor.network.deleteLinkFromObject(linkObjectIP, thatObjectKey, thatFrameKey, linkKey);
-                // add link to new frame (locally and on the server -- post link to server adds it locally too)
-                realityEditor.network.postLinkToServer(link, linkKey);
-            }
-
+        if (!err) {
+            console.log('successfully created frame on new object');
+        } else {
+            console.warn('server returned error when moving frame to new object');
         }
+
+        // update all links locally and on the server
+        // loop through all frames
+        realityEditor.forEachFrameInAllObjects(function(thatObjectKey, thatFrameKey) {
+            var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
+
+            // loop through all links in that frame
+            for (var linkKey in thatFrame.links) {
+                var link = thatFrame.links[linkKey];
+                var didLinkChange = false;
+
+                // update the start of the link
+                if (link.objectA === oldObjectKey && link.frameA === oldFrameKey) {
+                    link.objectA = newObjectKey;
+                    link.frameA = newFrameKey;
+                    link.nodeA = newFrameKey + link.namesA[2];
+                    link.namesA[0] = newObject.name;
+                    didLinkChange = true;
+                }
+
+                // update the end of the link
+                if (link.objectB === oldObjectKey && link.frameB === oldFrameKey) {
+                    link.objectB = newObjectKey;
+                    link.frameB = newFrameKey;
+                    link.nodeB = newFrameKey + link.namesB[2];
+                    link.namesB[0] = newObject.name;
+                    didLinkChange = true;
+                }
+
+                // only change the link on the server if its objectA or objectB changed
+                if (didLinkChange) {
+                    var linkObjectIP = realityEditor.getObject(thatObjectKey).ip;
+                    // remove link from old frame (locally and on the server)
+                    delete thatFrame.links[linkKey];
+                    realityEditor.network.deleteLinkFromObject(linkObjectIP, thatObjectKey, thatFrameKey, linkKey);
+                    // add link to new frame (locally and on the server -- post link to server adds it locally too)
+                    realityEditor.network.postLinkToServer(link, linkKey);
+                }
+
+            }
+        });
+        
+        // update the publicData on the server to point to the new path
+        if (publicDataCache.hasOwnProperty(oldFrameKey)) {
+            console.log('moving public data from ' + oldFrameKey);
+
+            // update locally
+            publicDataCache[newFrameKey] = publicDataCache[oldFrameKey];
+            delete publicDataCache[oldFrameKey];
+
+            // update on the server
+            realityEditor.network.deletePublicData(oldObject.ip, oldObjectKey, oldFrameKey);
+            realityEditor.network.postPublicData(newObject.ip, newObjectKey, newFrameKey, publicDataCache[newFrameKey]);
+
+            console.log('to ' + newFrameKey);
+        }
+
+        // remove the frame from the old object
+        delete objects[oldObjectKey].frames[oldFrameKey];
+        realityEditor.gui.ar.draw.removeFromEditedFramesList(oldFrameKey);
+        realityEditor.network.deleteFrameFromObject(oldObject.ip, oldObjectKey, oldFrameKey); 
     });
-    
-    // remove the frame from the old object
-    delete objects[oldObjectKey].frames[oldFrameKey];
-    realityEditor.gui.ar.draw.removeFromEditedFramesList(oldFrameKey);
-    realityEditor.network.deleteFrameFromObject(oldObject.ip, oldObjectKey, oldFrameKey);
 };
 
 realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
@@ -1480,8 +1529,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addSVG.style.width = "100%";
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";
-    addSVG.style.pointerEvents = 'auto'; // override parent (addContainer) pointerEvents value
     addSVG.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
+    addSVG.setAttribute('shape-rendering','geometricPrecision'); //'optimizeSpeed'
 
     return {
         addContainer: addContainer,

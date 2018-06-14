@@ -84,10 +84,17 @@ body {
     z-index: 1;
     position: fixed; /**/
     margin: 0;
-    padding: 0;
+    /*padding: 0;*/
     border-width: 0px;
     /*-webkit-user-select: none;    Disable selection/Copy of UIWebView */
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+
+    /* Trick to enable anti-aliasing of iframes (see: https://stackoverflow.com/questions/6492027/css-transform-jagged-edges-in-chrome) */ 
+    padding: 1px;
+    background-clip: content-box;
+    -webkit-background-clip: content-box;
+    /* May also need to enable... */
+    /*-webkit-backface-visibility: hidden;*/
 }
 
 .mainProgram {
@@ -126,6 +133,20 @@ body {
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
     pointer-events:none; /*stops canvas from capturing touches so they propogate to elements behind it*/
 
+    /* Trick to enable anti-aliasing of iframes (see: https://stackoverflow.com/questions/6492027/css-transform-jagged-edges-in-chrome) */
+    /*padding: 1px;*/
+    /*-webkit-background-clip: content-box;*/
+    /* May also need to enable... */
+    /*-webkit-backface-visibility: hidden;*/
+}
+
+.mainCanvas > svg {
+    /* Trick to enable anti-aliasing of iframes (see: https://stackoverflow.com/questions/6492027/css-transform-jagged-edges-in-chrome) */
+    padding: 1px;
+    background-clip: content-box;
+    -webkit-background-clip: content-box;
+    -webkit-font-smoothing: subpixel-antialiased;
+    -webkit-backface-visibility: hidden;
 }
 
 .mainProgramInvalid {
@@ -513,7 +534,7 @@ body {
     height: 180px;
     margin-left: -90px;
     margin-top: -90px;
-    transition: all 0.5s;
+    transition: all 1.0s;
 }
 
 .memoryContainer {

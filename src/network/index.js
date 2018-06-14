@@ -182,6 +182,14 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                             thisNode.frameId = frameKey;
                             thisNode.loaded = false;
                             thisNode.visible = false;
+                            
+                            if (typeof thisNode.publicData !== 'undefined') {
+                                if (!publicDataCache.hasOwnProperty(frameKey)) {
+                                    publicDataCache[frameKey] = {};
+                                }
+                                publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
+                                console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + thisNode.publicData);
+                            }
 
                             if (thisNode.type === "logic") {
                                 thisNode.guiState = new LogicGUIState();
@@ -1204,8 +1212,8 @@ if (thisFrame) {
             // }
 
             globalStates.pointerPosition = [event.x, event.y];
-            // Translate up 6px to be above pocket layer
-            overlayDiv.style.transform = 'translate3d(' + event.x + 'px,' + event.y + 'px,6px)';
+            // Translate up 1200px to be above pocket layer, crafting board, settings menu, and menu buttons
+            overlayDiv.style.transform = 'translate3d(' + event.x + 'px, ' + event.y + 'px, 1200px)';
             
             // realityEditor.device.onDocumentPointerMove(fakeEvent);
             // realityEditor.device.onTouchMove(fakeEvent);
@@ -1242,6 +1250,21 @@ if (thisFrame) {
     
     if (msgContent.loadLogicName) {
         this.loadLogicName(msgContent);
+    }
+    
+    if (typeof msgContent.publicData !== "undefined") {
+        
+        var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        var node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
+        
+        if (frame && node) {
+            if (!publicDataCache.hasOwnProperty(msgContent.frame)) {
+                publicDataCache[msgContent.frame] = {};
+            }
+            publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
+            console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
+        }
+        
     }
 
 
@@ -1536,10 +1559,10 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey, contents);
 };
 
-realityEditor.network.postNewFrame = function(ip, objectKey, contents) {
+realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback) {
     this.cout("I am adding a frame: " + ip);
     contents.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/addFrame/", contents);
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/addFrame/", contents, callback);
 };
 
 realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
@@ -2115,6 +2138,28 @@ realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKe
     };
     this.postData(urlEndpoint, content, function (err, response) {
         console.log('set visualization to ' + newVisualization + ' on server');
+        console.log(err, response);
+    });
+    
+};
+
+
+// update on the server
+realityEditor.network.deletePublicData = function(ip, objectKey, frameKey) {
+
+    this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/publicData");
+};
+
+realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicData) {
+
+    var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/publicData";
+    var content = {
+        publicData: publicData,
+        lastEditor: globalStates.tempUuid
+    };
+
+    this.postData(urlEndpoint, content, function (err, response) {
+        console.log('set publicData to ' + publicData + ' on server');
         console.log(err, response);
     });
     
