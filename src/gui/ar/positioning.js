@@ -110,14 +110,13 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 
     // draw a blue circle visualizing the initial radius
     var circleCenterCoordinates = [centerTouch.x, centerTouch.y];
-    var circleEdgeCoordinates = [outerTouch.x, outerTouch.y];
-    realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, this.initialScaleData.radius);
+    realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, this.initialScaleData.radius);
 
     // draw a red or green circle visualizing the new radius
     if (radius < this.initialScaleData.radius) {
-        realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+        realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, radius);
     } else {
-        realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+        realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, radius);
     }
 };
 
