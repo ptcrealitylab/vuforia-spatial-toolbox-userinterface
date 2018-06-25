@@ -50,6 +50,12 @@
 
 createNameSpace("realityEditor.gui.ar.lines");
 
+/**
+ * @fileOverview realityEditor.gui.ar.lines.js
+ * Contains all the functions for rendering different types of links, lines, and circles on the background canvas.
+ * Also contains logic for deleting lines crossed by a cutting line.
+ */
+
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
