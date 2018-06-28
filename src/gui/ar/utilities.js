@@ -50,6 +50,13 @@
 createNameSpace("realityEditor.gui.ar.utilities");
 
 /**
+ * @fileOverview realityEditor.gui.ar.utilities.js
+ * Various utility functions, mostly mathematical, for calculating AR geometry.
+ * Includes simply utilities like multiplying and inverting a matrix,
+ * as well as sophisticated algorithms for marker-plane intersections and raycasting points onto a plane.
+ */
+
+/**
  * Updates the timing object with the current timestamp and delta since last frame.
  * @param {{delta: number, now: number, then: number}} timing - reference to the timing object to modify
  */
