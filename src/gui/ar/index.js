@@ -193,7 +193,6 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
-    realityEditor.app.appFunctionCall("gotProjectionMatrix", null, null);
 
 };
 

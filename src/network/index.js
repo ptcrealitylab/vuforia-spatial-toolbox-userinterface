@@ -1393,10 +1393,10 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             console.log("jetzt aber mal richtig hier!!", globalStates.extendedTracking);
 
             if (globalStates.extendedTracking === true) {
-                realityEditor.app.appFunctionCall("extendedTrackingOn", null, null);
+                realityEditor.app.saveExtendedTrackingState(true);
 
             } else {
-                realityEditor.app.appFunctionCall("extendedTrackingOff", null, null);
+                realityEditor.app.saveExtendedTrackingState(false);
 
             }
         }
@@ -1405,40 +1405,37 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
             if (msgContent.settings.setSettings.editingMode) {
                 realityEditor.device.setEditingMode(true);
-                realityEditor.app.appFunctionCall("developerOn", null, null);
+                realityEditor.app.saveDeveloperState(true);
             } else {
                 realityEditor.device.setEditingMode(false);
-                realityEditor.app.appFunctionCall("developerOff", null, null);
-
+                realityEditor.app.saveDeveloperState(false);
             }
 
         }
 
         if (typeof msgContent.settings.setSettings.zoneText !== "undefined") {
-                realityEditor.app.appFunctionCall("zoneText", msgContent.settings.setSettings, null);
+            realityEditor.app.appFunctionCall("zoneText", msgContent.settings.setSettings, null); //TODO: change API
         }
 
         if (typeof msgContent.settings.setSettings.zoneState !== "undefined") {
             if (msgContent.settings.setSettings.zoneState) {
                 globalStates.zoneState = true;
-                realityEditor.app.appFunctionCall("zoneOn", null, null);
+                realityEditor.app.saveZoneState(true);
 
             } else {
                 globalStates.zoneState = false;
-                realityEditor.app.appFunctionCall("zoneOff", null, null);
-
+                realityEditor.app.saveZoneState(false);
             }
         }
         
         if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
             if (msgContent.settings.setSettings.instantState) {
                 globalStates.instantState = true;
-                realityEditor.app.appFunctionCall("instantOn", null, null);
+                realityEditor.app.saveInstantState(true);
 
             } else {
                 globalStates.instantState = false;
-                realityEditor.app.appFunctionCall("instantOff", null, null);
-
+                realityEditor.app.saveInstantState(false);
             }
         }
 
@@ -1465,11 +1462,11 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
             if (msgContent.settings.setSettings.clearSkyState) {
                 globalStates.clearSkyState = true;
-                realityEditor.app.appFunctionCall("clearSkyOn", null, null);
+                realityEditor.app.saveClearSkyState(true);
 
             } else {
                 globalStates.clearSkyState = false;
-                realityEditor.app.appFunctionCall("clearSkyOff", null, null);
+                realityEditor.app.saveClearSkyState(false);
 
             }
         }
@@ -1499,14 +1496,13 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             if (msgContent.settings.setSettings.realityState) {
                 realityEditor.gui.menus.on("reality", ["realityGui"]);
                 globalStates.realityState = true;
-                realityEditor.app.appFunctionCall("realityOn", null, null);
+                realityEditor.app.saveRealityState(true);
 
             } else {
                 realityEditor.gui.menus.off("main", ["gui", "reset", "unconstrained"]);
                 realityEditor.gui.menus.on("main", ["gui"]);
                 globalStates.realityState = false;
-                realityEditor.app.appFunctionCall("realityOff", null, null);
-                
+                realityEditor.app.saveRealityState(false);
             }
         }
     }

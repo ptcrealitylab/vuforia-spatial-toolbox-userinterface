@@ -88,6 +88,7 @@ realityEditor.app.tap = function() {
     this.appFunctionCall('tap', null, null);
 
 };
+
  /**
  **************UDP****************
   **/
@@ -111,17 +112,17 @@ realityEditor.app.getFileExists = function(fileName, callBack) {
 
 //downloads a file. The callback is an error or success message 
 realityEditor.app.downloadFile = function(fileName, callBack) {
-    this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 // boolean response if all files exists. fileNameArray should contain at least one filename
 realityEditor.app.getFilesExist = function (fileNameArray, callBack) {
-    this.appFunctionCall('getFilesExist', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getFilesExist', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 // returns the checksume of a group of files. fileNameArray should contain at least one filename
 realityEditor.app.getChecksum = function (fileNameArray, callBack) {
-    this.appFunctionCall('getChecksum', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getChecksum', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**
@@ -175,6 +176,54 @@ realityEditor.app.clearCache = function () {
 
 // global shortcut for clearing the cache
 cc = realityEditor.app.clearCache.bind(realityEditor.app);
+
+/**
+ ************** ADDITIONAL ROUTES ****************
+ */
+
+realityEditor.app.saveDeveloperState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:DEVELOPER', storedValue);
+};
+
+
+realityEditor.app.saveClearSkyState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:CLEARSKY', storedValue);
+};
+
+realityEditor.app.saveRealityState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:REALITY', storedValue);
+};
+
+realityEditor.app.saveInstantState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:INSTANT', storedValue);
+};
+
+realityEditor.app.saveZoneState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:ZONE', storedValue);
+};
+
+realityEditor.app.saveExtendedTrackingState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:TRACKING', storedValue);
+};
+
+realityEditor.app.saveZoneText = function(newZoneText) {
+    this.setStorage('SETUP:ZONETEXT', newZoneText);
+};
+
+realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
+    this.setStorage('SETUP:DISCOVERY', newDiscoveryText);
+};
+
+realityEditor.app.saveExternalText = function(newExternalText) {
+    this.setStorage('SETUP:EXTERNAL', newExternalText);
+};
+
 
 /**
  **************UTILITIES****************

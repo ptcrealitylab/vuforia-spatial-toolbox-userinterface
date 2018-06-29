@@ -415,7 +415,7 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
 
     globalStates.freezeStateBeforeCrafting = globalStates.freezeButtonState;
     globalStates.freezeButtonState = true;
-    realityEditor.app.appFunctionCall("freeze");
+    realityEditor.app.setPause();
     globalStates.pocketButtonState = true;
     
     this.cout("craftingBoardVisible for object: " + objectKey + ", frame: " + frameKey + " and node: "+nodeKey);
@@ -459,13 +459,13 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
             
             realityEditor.gui.menus.buttonOff("default", ["freeze"]);
             globalStates.freezeButtonState = false;
-            realityEditor.app.appFunctionCall("unfreeze");
+            realityEditor.app.setResume();
 
         } else if (!globalStates.freezeButtonState && globalStates.freezeStateBeforeCrafting) {
             
             realityEditor.gui.menus.buttonOn("default", ["freeze"]);
             globalStates.freezeButtonState = true;
-            realityEditor.app.appFunctionCall("freeze");
+            realityEditor.app.setPause();
         }
 
         // update the icon image of the current logic node in case it was based on the blocks
