@@ -294,13 +294,13 @@ realityEditor.gui.buttons.freezeButtonUp = function(event) {
         globalStates.freezeButtonState = false;
         var memoryBackground = document.querySelector('.memoryBackground');
         memoryBackground.innerHTML = '';
-        realityEditor.app.appFunctionCall("unfreeze", null, null);
+        realityEditor.app.setResume();
 
     }
     else {
         realityEditor.gui.menus.buttonOn("default", ["freeze"]);
         globalStates.freezeButtonState = true;
-        realityEditor.app.appFunctionCall("freeze", null, null);
+        realityEditor.app.setPause();
     }
 };
 

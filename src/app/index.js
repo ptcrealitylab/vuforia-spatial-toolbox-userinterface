@@ -54,17 +54,17 @@ realityEditor.app.getVuforiaReady = function(callBack){
 
 // adds a new marker and fires a callback with error or success
 realityEditor.app.addNewMarker = function(markerName, callBack) {
-    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 // gets the projection matrix
 realityEditor.app.getProjectionMatrix = function(callBack) {
-    this.appFunctionCall('getProjectionMatrix', null, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getProjectionMatrix', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 // callback for all markers and matrices that are found
 realityEditor.app.getMatrixStream = function(callBack) {
-    this.appFunctionCall('getMatrixStream', null, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getMatrixStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 // the callback will have a screenshot with base64. Size can be S,M,L 
@@ -93,20 +93,20 @@ realityEditor.app.tap = function() {
   **/
 // everytime there is a new message the callback is called.
 realityEditor.app.getUDPMessages = function(callBack) {
-    this.appFunctionCall('getUDPMessages', null, '(realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getUDPMessages', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
-// sends out a message over UDP broadcast.
-realityEditor.app.sentUDPMessage = function(message) {
-    this.appFunctionCall('sentUDPMessage', {message: message}, null);
+// sends out a message over UDP broadcast. message must be a json object.
+realityEditor.app.sendUDPMessage = function(message) {
+    this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
 };
 
 /**
  **************File****************
   **/
 // boolean response if a file exists.
-realityEditor.app.getFileExist = function(fileName, callBack) {
-    this.appFunctionCall('getFileExist', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+')');
+realityEditor.app.getFileExists = function(fileName, callBack) {
+    this.appFunctionCall('getFileExists', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 //downloads a file. The callback is an error or success message 
@@ -128,13 +128,13 @@ realityEditor.app.getChecksum = function (fileNameArray, callBack) {
  **************Store Content****************
  **/
 //store a message on the app level for persistance 
-realityEditor.app.setStorage = function (id, message) {
-    this.appFunctionCall('setStorage', {id: id, message: message}, null);
+realityEditor.app.setStorage = function (storageID, message) {
+    this.appFunctionCall('setStorage', {storageID: storageID, message: JSON.stringify(message)}, null);
 };
 
 // recall the message.
-realityEditor.app.getStorage = function (id, callBack) {
-    this.appFunctionCall('getStorage', {id: id}, 'realityEditor.app.callBack('+callBack+')');
+realityEditor.app.getStorage = function (storageID, callBack) {
+    this.appFunctionCall('getStorage', {storageID: storageID}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
  /**
