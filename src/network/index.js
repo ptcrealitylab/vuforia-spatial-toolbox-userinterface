@@ -1414,7 +1414,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         }
 
         if (typeof msgContent.settings.setSettings.zoneText !== "undefined") {
-            realityEditor.app.appFunctionCall("zoneText", msgContent.settings.setSettings, null); //TODO: change API
+            realityEditor.app.saveZoneText(msgContent.settings.setSettings.zoneText);
         }
 
         if (typeof msgContent.settings.setSettings.zoneState !== "undefined") {
@@ -1476,7 +1476,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             console.log("received message in settings");
 
             if (msgContent.settings.setSettings.lockingToggle) {
-                realityEditor.app.appFunctionCall("authenticateTouch", null, null);
+                realityEditor.app.authenticateTouch();
 
             } else {
                 globalStates.lockingMode = false;

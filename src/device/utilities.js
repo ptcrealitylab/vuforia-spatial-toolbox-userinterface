@@ -165,3 +165,46 @@ realityEditor.device.utilities.getAllDivsUnderCoordinate = function(x, y) {
     // console.log(res);
     return res;
 };
+
+/**
+ * Decodes an image/jpeg encoded as a base64 string, into a blobUrl that can be loaded as an img src
+ * https://stackoverflow.com/questions/7650587/using-javascript-to-display-blob
+ * @param {string} base64String - a Base64 encoded string representation of a jpg image
+ * @return {string}
+ */
+realityEditor.device.utilities.decodeBase64JpgToBlobUrl = function(base64String) {
+    var blob = this.b64toBlob(base64String, 'image/jpeg');
+    var blobUrl = URL.createObjectURL(blob);
+    return blobUrl;
+
+};
+
+/**
+ * https://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript
+ * @param {string} b64Data - a Base64 encoded string
+ * @param {string} contentType - the MIME type, e.g. 'image/jpeg', 'video/mp4', or 'text/plain' (
+ * @param {number|undefined} sliceSize - number of bytes to process at a time (default 512). Affects performance.
+ * @return {Blob}
+ */
+realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceSize) {
+    contentType = contentType || '';
+    sliceSize = sliceSize || 512;
+
+    var byteCharacters = atob(b64Data);
+    var byteArrays = [];
+
+    for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+        var byteNumbers = new Array(slice.length);
+        for (var i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        var byteArray = new Uint8Array(byteNumbers);
+
+        byteArrays.push(byteArray);
+    }
+
+    return new Blob(byteArrays, {type: contentType});
+}

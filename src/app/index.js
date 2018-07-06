@@ -68,14 +68,26 @@ realityEditor.app.getMatrixStream = function(callBack) {
 };
 
 // the callback will have a screenshot with base64. Size can be S,M,L 
-realityEditor.app.getScreenShot = function(size, callBack) {
-    this.appFunctionCall('getScreenShot', {size: size}, 'realityEditor.app.callBack('+callBack+')');
+realityEditor.app.getScreenshot = function(size, callBack) {
+    this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
+
+realityEditor.app.getScreenshotAsJpg = function() {
+    this.getScreenshot("L", function(base64String) {
+        var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
+        debugShowScreenshot(screenshotBlobUrl);
+    });
+};
+
+function debugShowScreenshot(blobUrl) {
+    document.querySelector('#pocket-element > img').src = blobUrl;
+    document.querySelector('#screenshotHolder').src = blobUrl;
+    document.querySelector('#screenshotHolder').style.display = 'inline';
+}
 
 // pauses the tracker
 realityEditor.app.setPause = function() {
     this.appFunctionCall('setPause', null, null);
-
 };
 
 // resumes the tracker
@@ -181,47 +193,117 @@ cc = realityEditor.app.clearCache.bind(realityEditor.app);
  ************** ADDITIONAL ROUTES ****************
  */
 
+/**
+ * Save the persistent setting to disk for developer (editing) mode.
+ * @param {boolean} newState
+ */
 realityEditor.app.saveDeveloperState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:DEVELOPER', storedValue);
 };
 
-
+/**
+ * Save the persistent setting to disk for clear sky mode.
+ * @param {boolean} newState
+ */
 realityEditor.app.saveClearSkyState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:CLEARSKY', storedValue);
 };
 
+/**
+ * Save the persistent setting to disk for reality (retail) mode.
+ * @param {boolean} newState
+ */
 realityEditor.app.saveRealityState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:REALITY', storedValue);
 };
 
+/**
+ * Save the persistent setting to disk for instant (capacitive touch) mode.
+ * @param {boolean} newState
+ */
 realityEditor.app.saveInstantState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:INSTANT', storedValue);
 };
 
+/**
+ * Save the persistent setting to disk for whether to use zone.
+ * @param {boolean} newState
+ */
 realityEditor.app.saveZoneState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:ZONE', storedValue);
 };
 
+/**
+ * Save the persistent setting to disk for extended tracking mode.
+ * @param {boolean} newState
+ */
 realityEditor.app.saveExtendedTrackingState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:TRACKING', storedValue);
 };
 
+/**
+ * Save the persistent setting to disk for the zone string.
+ * @param {string} newZoneText
+ */
 realityEditor.app.saveZoneText = function(newZoneText) {
     this.setStorage('SETUP:ZONETEXT', newZoneText);
 };
 
+/**
+ * Save the persistent setting to disk for the object discovery server string.
+ * @param {string} newDiscoveryText
+ */
 realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
     this.setStorage('SETUP:DISCOVERY', newDiscoveryText);
 };
 
+/**
+ * Save the persistent setting to disk for the IP address to load the external userinterface from.
+ * @param {string} newExternalText
+ */
 realityEditor.app.saveExternalText = function(newExternalText) {
     this.setStorage('SETUP:EXTERNAL', newExternalText);
+};
+
+/**
+ * Save the background image for a memory.
+ * @todo: fully understand the how this and "remember" and "createMemory" interact
+ */
+realityEditor.app.memorize = function() {
+    this.appFunctionCall("memorize", null, null);
+};
+
+/**
+ * Create a new memory in the native app.
+ * @todo: fully understand the how this and "remember" and "memorize" interact
+ */
+realityEditor.app.createMemory = function() {
+    this.appFunctionCall("createMemory", null, null);
+};
+
+/**
+ * Save an object's matrix in a memory.
+ * @param {string} memoryId
+ * @param {Array.<number>} memoryMatrix
+ * @todo: fully understand the how this and "memorize" and "createMemory" interact
+ */
+realityEditor.app.remember = function(memoryId, memoryMatrix) {
+
+    var memoryData = JSON.stringify(
+        {id: memoryId, matrix: memoryMatrix}
+    );
+    
+    this.appFunctionCall("remember", {dataStr: memoryData}, null);
+};
+
+realityEditor.app.authenticateTouch = function() {
+    realityEditor.app.appFunctionCall("authenticateTouch", null, null);
 };
 
 
