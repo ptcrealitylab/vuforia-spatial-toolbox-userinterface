@@ -45,7 +45,7 @@
 /**
  * Logic Node Memory Bar
  *
- * Allows user creation and selection of Logic Node memories.
+ * Allows user creation and selection of Logic Node memories (templates of pre-programmed Logic Nodes which the user can create instances of).
  */
 
 createNameSpace("realityEditor.gui.memory.nodeMemories");

@@ -49,6 +49,14 @@
 
 createNameSpace("realityEditor.gui.ar.draw");
 
+/**
+ * @fileOverview realityEditor.gui.ar.draw.js
+ * Contains the main rendering code for rendering frames and nodes into the 3D scene.
+ * Also determines when visual elements need to be hidden or shown, and has code for creating
+ * the DOM elements for new frames and nodes.
+ * @todo only added fileOverview so far
+ */
+
 /**********************************************************************************************************************
  ******************************************** update and draw the 3D Interface ****************************************
  **********************************************************************************************************************/
