@@ -55,7 +55,9 @@
 var objects = {};
 
 var realityEditor = realityEditor || {
-        app:{},
+        app:{
+            callbacks: {}
+        },
 		device: {
 		    security:{},
             utilities: {},
