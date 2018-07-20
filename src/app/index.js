@@ -105,7 +105,7 @@ realityEditor.app.getMatrixStream = function(callBack) {
  * @param {string} size - 'S', 'M', or 'L'
  * @param {FunctionName} callBack
  */
-realityEditor.app.getScreenShot = function(size, callBack) {
+realityEditor.app.getScreenshot = function(size, callBack) {
     this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
@@ -117,9 +117,12 @@ realityEditor.app.getScreenshotAsJpg = function() {
 };
 
 function debugShowScreenshot(blobUrl) {
-    document.querySelector('#pocket-element > img').src = blobUrl;
     document.querySelector('#screenshotHolder').src = blobUrl;
-    document.querySelector('#screenshotHolder').style.display = 'inline';
+    document.querySelector('#screenshotHolder').style.display ='inline';
+}
+
+function debugHideScreenshot() {
+    document.querySelector('#screenshotHolder').style.display ='none';
 }
 
 /**
@@ -127,6 +130,17 @@ function debugShowScreenshot(blobUrl) {
  */
 realityEditor.app.setPause = function() {
     this.appFunctionCall('setPause', null, null);
+    
+    // globalStates.frozenState = {
+    //     isFrozen: true,
+    //     visibleObjects: JSON.parse(JSON.stringify(realityEditor.gui.ar.draw.visibleObjects))
+    // };
+    //
+    // this.getScreenshot("L", function(base64String) {
+    //     var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
+    //     globalStates.frozenState.screenshotBlobUrl = screenshotBlobUrl;
+    //     debugShowScreenshot(screenshotBlobUrl, true);
+    // });
 };
 
 /**
@@ -134,7 +148,14 @@ realityEditor.app.setPause = function() {
  */
 realityEditor.app.setResume = function() {
     this.appFunctionCall('setResume', null, null);
-
+    
+    // globalStates.frozenState = {
+    //     isFrozen: false,
+    //     visibleObjects: "",
+    //     screenshotBlobUrl: undefined
+    // };
+    //
+    // debugHideScreenshot();
 };
 
 /**
@@ -161,7 +182,7 @@ realityEditor.app.getUDPMessages = function(callBack) {
  * Sends out a message over UDP broadcast.
  * @param {Object} message - must be a JSON object
  */
-realityEditor.app.sentUDPMessage = function(message) {
+realityEditor.app.sendUDPMessage = function(message) {
     this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
 };
 

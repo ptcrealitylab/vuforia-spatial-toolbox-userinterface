@@ -129,7 +129,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (globalStates.guiState === "logic") {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
-
+    
     this.visibleObjects = visibleObjects;
     
     // scale x, y, and z elements of matrix for mm to meter conversion ratio

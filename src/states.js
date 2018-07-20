@@ -172,7 +172,13 @@ var globalStates = {
      */
     mostRecentlyEditedNodes: [],
 
-    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : (0) // if iPhone X, offset the right edge by 74px
+    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : (0), // if iPhone X, offset the right edge by 74px
+
+    // frozenState: {
+    //     isFrozen: false,
+    //     visibleObjects: "",
+    //     screenshotBlobUrl: undefined
+    // }
 };
 
 var globalCanvas = {};

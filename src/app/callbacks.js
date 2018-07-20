@@ -56,15 +56,54 @@ var DownloadState = Object.freeze(
     });
 
 
+realityEditor.app.callbacks.vuforiaIsReady = function() {
+    console.log("Vuforia is ready");
+
+    // add heartbeat listener for UDP object discovery
+    realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
+
+    // send three action UDP pings to start object discovery
+    for (var i = 0; i < 3; i++) {
+        setTimeout(function() {
+            realityEditor.app.sendUDPMessage({action: 'ping'});
+        }, 50 * i); // space out each message by 50ms
+    }
+};
+
+realityEditor.app.callbacks.receivedUDPMessage = function(message) {
+    if (typeof message !== 'object') {
+        message = JSON.parse(message);
+    }
+    
+    realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
+    
+    if (typeof message.id !== 'undefined' &&
+        typeof message.ip !== 'undefined') {
+        // console.log('received heartbeat', message);
+        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(message);
+        realityEditor.network.addHeartbeatObject(message);
+    }
+};
+
+realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+    // console.log('got new visible matrices');
+
+    // if (globalStates.frozenState.isFrozen) {
+    //     visibleObjects = globalStates.frozenState.visibleObjects;
+    // }
+    
+    realityEditor.gui.ar.draw.update(visibleObjects);
+};
+
 /**
  * Callback when a UDP message discovers a new object
- * @param {{id: string, ip: string, vn: number, tcs: string}} beat
+ * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
  */
-realityEditor.app.callbacks.addHeartbeatObject = function(beat) {
+realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(objectHeartbeat) {
     // realityEditor.network.addHeartbeatObject(beat);
     // console.log(beat);
     
-    var objectName = beat.id.slice(0,-12); // get objectName from objectId
+    var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
     
     var needsXML = true;
     var needsDAT = true;
@@ -91,16 +130,16 @@ realityEditor.app.callbacks.addHeartbeatObject = function(beat) {
         return;
     }
     
-    console.log(beat);
+    console.log(objectHeartbeat);
     
     if (needsXML) {
-        var xmlAddress = 'http://' + beat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
+        var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
         realityEditor.app.downloadFile(xmlAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
         targetDownloadStates[objectName].XML = DownloadState.STARTED;
     }
     
     if (needsDAT) {
-        var datAddress = 'http://' + beat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
+        var datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
         realityEditor.app.downloadFile(datAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
         targetDownloadStates[objectName].DAT = DownloadState.STARTED;
     }
