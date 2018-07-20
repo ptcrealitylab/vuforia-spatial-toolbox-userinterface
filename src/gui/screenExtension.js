@@ -407,18 +407,25 @@ realityEditor.gui.screenExtension.sendScreenObject = function (){
  * @return {{x: number, y: number}}
  */
 realityEditor.gui.screenExtension.getTouchOffsetAsPercent = function(thisFrame) {
-    var touchOffset = realityEditor.device.editingState.touchOffset;
 
     var frameWidth = parseInt(thisFrame.width);
     var frameHeight = parseInt(thisFrame.height);
 
-    var frameCenter = {
-        x: (frameWidth * thisFrame.ar.scale) / 2,
-        y: (frameHeight * thisFrame.ar.scale) / 2
+    var frameDimensions = {
+        width: frameWidth * thisFrame.ar.scale,
+        height: frameHeight * thisFrame.ar.scale
     };
 
-    var xPercent = (frameCenter.x + (touchOffset.x - frameWidth/2) * thisFrame.ar.scale) / (frameWidth * thisFrame.ar.scale);
-    var yPercent = (frameCenter.y + (touchOffset.y - frameHeight/2) * thisFrame.ar.scale) / (frameHeight * thisFrame.ar.scale);
+    // touchOffset is only (0,0) on the upper left corner of an iframe if that frame has scale=1
+    // otherwise, the upper left corner "scales into" a higher x,y touchOffset coordinate
+    // this calculation corrects for that so that frames of any scale have (0,0) at upper left
+    var touchOffsetCorrectedForScale = {
+        x: realityEditor.device.editingState.touchOffset.x - frameWidth * (1.0 - thisFrame.ar.scale) / 2,
+        y: realityEditor.device.editingState.touchOffset.y - frameHeight * (1.0 - thisFrame.ar.scale) / 2
+    };
+    
+    var xPercent = (touchOffsetCorrectedForScale.x / frameDimensions.width);
+    var yPercent = (touchOffsetCorrectedForScale.y / frameDimensions.height);
 
     return {
         x: xPercent,
@@ -502,18 +509,19 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
 
             // 2. convert touch offset from percent scale to actual scale of the frame
-            var convertedTouchOffsetX = (this.screenObject.touchOffsetX) * thisFrame.width;
-            var convertedTouchOffsetY = (this.screenObject.touchOffsetY) * thisFrame.height;
-
+            var convertedTouchOffsetX = (this.screenObject.touchOffsetX) * parseFloat(thisFrame.width);
+            var convertedTouchOffsetY = (this.screenObject.touchOffsetY) * parseFloat(thisFrame.height);
+            
             // 3. manually apply the touchOffset to the results so that it gets rendered in the correct place on the first pass
-            thisFrame.ar.x -= (convertedTouchOffsetX - thisFrame.width/2 ); // TODO: figure out if/how thisFrame.ar.scale should be included here
-            thisFrame.ar.y -= (convertedTouchOffsetY - thisFrame.height/2 );
-
+            thisFrame.ar.x -= (convertedTouchOffsetX - thisFrame.width/2 ) * thisFrame.ar.scale;
+            thisFrame.ar.y -= (convertedTouchOffsetY - thisFrame.height/2 ) * thisFrame.ar.scale;
+            
+            // TODO: this causes a bug now with the offset... figure out why it used to be necessary but doesn't help anymore
             // 4. set the actual touchOffset so that it stays in the correct offset as you drag around
-            realityEditor.device.editingState.touchOffset = {
-                x: convertedTouchOffsetX,
-                y: convertedTouchOffsetY
-            };
+            // realityEditor.device.editingState.touchOffset = {
+            //     x: convertedTouchOffsetX,
+            //     y: convertedTouchOffsetY
+            // };
             
             realityEditor.gui.ar.draw.showARFrame(activeKey);
 

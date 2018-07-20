@@ -47,51 +47,71 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-
-/**
- * @desc
- **/
-
 createNameSpace("realityEditor.device");
 
+/**
+ * @fileOverview realityEditor.device.onLoad.js
+ * Sets the application's window.onload function to trigger this init method, which sets up the GUI and networking.
+ */
+
+/**
+ * When the index.html first finishes loading, set up the:
+ * Sidebar menu buttons,
+ * Pocket and memory bars,
+ * Background canvas,
+ * Touch Event Listeners,
+ * Network callback function,
+ * ... and notify the native iOS code that the user interface finished loading
+ */
 realityEditor.device.onload = function () {
 
-    this.cout("starting up GUI");
+    // Initialize some global variables for the device session
+    this.cout('Running on platform: ' + globalStates.platform);
+    if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
+        globalStates.platform = false;
+    }
+    globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
+    this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
-    // initialize menus in correct state
-    realityEditor.gui.menus.init();
-    realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
-    realityEditor.gui.menus.on("main",["gui"]);
-
-    // generate UUID for user session
-	globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
-	
-	// initialize global variables to commonly-used DOM elements
-	uiButtons = document.getElementById("GUI");
-	overlayDiv = document.getElementById('overlay');
+    // assign global pointers to frequently used UI elements
+    uiButtons = document.getElementById("GUI");
+    overlayDiv = document.getElementById('overlay');
     overlayDiv.addEventListener('touchstart', function (e) {
         e.preventDefault();
     });
     
+    // adds touch handlers for each of the menu buttons
+    realityEditor.gui.menus.init();
+    
+    // center the menu vertically if the screen is taller than 320 px
+    var MENU_HEIGHT = 320;
+    var menuHeightDifference = globalStates.width - MENU_HEIGHT;
+    document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
+    CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+
+    // set active buttons and preload some images
+    realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
+    realityEditor.gui.menus.on("main",["gui"]);
 	realityEditor.gui.buttons.draw();
+	
+	// set up the pocket and memory bars
 	realityEditor.gui.memory.initMemoryBar();
 	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
 
-	this.cout('platform = ' + globalStates.platform);
-	if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
-		globalStates.platform = false;
-	}
-
+	// set up the global canvas for drawing the links
 	globalCanvas.canvas = document.getElementById('canvas');
 	globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
 	globalCanvas.canvas.height = globalStates.width;
 	globalCanvas.context = canvas.getContext('2d');
-	
+
+    // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
-	
+		
 	// adds all the event handlers for setting up the editor
     realityEditor.device.addDocumentTouchListeners();
+    
+    // adjust for iPhoneX size if needed
     realityEditor.device.layout.adjustForScreenSize();
     
     // start TWEEN library for animations
@@ -107,8 +127,6 @@ realityEditor.device.onload = function () {
     });
     
 	this.cout("onload");
-
 };
-
 
 window.onload = realityEditor.device.onload;
