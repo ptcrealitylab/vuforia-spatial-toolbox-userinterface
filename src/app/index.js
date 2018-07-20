@@ -52,9 +52,9 @@ realityEditor.app.getVuforiaReady = function(callBack){
     this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
-// adds a new marker and fires a callback with error or success
+// adds a new marker and fires a callback with error or success and the markerName for reference
 realityEditor.app.addNewMarker = function(markerName, callBack) {
-    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 // gets the projection matrix
@@ -122,9 +122,9 @@ realityEditor.app.getFileExists = function(fileName, callBack) {
     this.appFunctionCall('getFileExists', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
-//downloads a file. The callback is an error or success message 
+//downloads a file. The callback is an error or success message and the fileName for reference
 realityEditor.app.downloadFile = function(fileName, callBack) {
-    this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 // boolean response if all files exists. fileNameArray should contain at least one filename
