@@ -61,6 +61,10 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 
     // add heartbeat listener for UDP object discovery
     realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
+    
+    realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
+
+    realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
 
     // send three action UDP pings to start object discovery
     for (var i = 0; i < 3; i++) {
@@ -70,12 +74,15 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
     }
 };
 
+realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
+    console.log('got projection matrix!', matrix);
+    realityEditor.gui.ar.setProjectionMatrix(matrix);
+};
+
 realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     if (typeof message !== 'object') {
         message = JSON.parse(message);
     }
-    
-    realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
     
     if (typeof message.id !== 'undefined' &&
         typeof message.ip !== 'undefined') {
