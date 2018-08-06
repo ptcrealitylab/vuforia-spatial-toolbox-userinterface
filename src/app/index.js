@@ -153,6 +153,7 @@ realityEditor.app.getStorage = function (storageID, callBack) {
  /**
  **************Speech****************
   **/
+ 
 // starts the apple speech engine
 realityEditor.app.startSpeechRecording = function () {
     console.log("startSpeechRecording");
@@ -171,6 +172,23 @@ realityEditor.app.stopSpeechRecording = function () {
 realityEditor.app.addSpeechListener = function (callBack) {
     console.log("addSpeechListener");
     this.appFunctionCall('addSpeechListener', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+
+/**
+ **************Video****************
+ **/
+
+// starts the screen recording of the camera background
+realityEditor.app.startVideoRecording = function (objectKey) {
+    console.log("startVideoRecording");
+    this.appFunctionCall('startVideoRecording', {objectKey: objectKey}, null);
+};
+
+// stops the screen recording of the camera background
+realityEditor.app.stopVideoRecording = function () {
+    console.log("stopVideoRecording");
+    this.appFunctionCall('stopVideoRecording', null, null);
 };
 
 /**
