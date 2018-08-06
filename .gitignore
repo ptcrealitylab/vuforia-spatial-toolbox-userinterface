@@ -5,3 +5,5 @@
 # osx directory files
 .DS_Store
 
+# documentation
+docs/
