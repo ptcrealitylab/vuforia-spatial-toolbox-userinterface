@@ -1253,19 +1253,21 @@ realityEditor.device.setDeviceName = function(deviceName) {
  * @param {boolean} clearSkyState - hides menu buttons for clean appearance
  * @param {boolean} instantState - enables instant connection mode when connected to enabled capacitive touch hardware
  * @param {boolean} speechState - enables Siri speech API to connect this to that
+ // TODO: add native app storage for this setting * @param {boolean} videoRecordingEnabled - enables video recording API to create frames from camera video stream
  * @param {string} externalState - the IP address of a userinterface directory that should be loaded in instead of default
  * @param {string} discoveryState - the IP address of a discovery server to be used instead of UDP
  * @param {boolean} realityState - sets retail mode on, showing a different menu for those use cases
  * @param {string} zoneText - the current zone that object discovery is limited to
  * @param {boolean} zoneState - whether to use zones or not
  */
-realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, externalState, discoveryState, realityState, zoneText, zoneState) {
+realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, /*videoRecordingEnabled,*/ externalState, discoveryState, realityState, zoneText, zoneState) {
 
     globalStates.extendedTrackingState = extendedTrackingState;
     globalStates.developerState = developerState;
     globalStates.clearSkyState = clearSkyState;
     globalStates.instantState = instantState;
     globalStates.speechState = speechState;
+    // globalStates.videoRecordingEnabled = videoRecordingEnabled;
     globalStates.externalState = externalState;
     globalStates.discoveryState = discoveryState;
     globalStates.realityState = realityState;

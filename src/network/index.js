@@ -1336,6 +1336,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 clearSkyState: globalStates.clearSkyState,
                 instantState: globalStates.instantState,
                 speechState: globalStates.speechState,
+                videoRecordingEnabled: globalStates.videoRecordingEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1452,6 +1453,22 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.speechState = false;
                     document.getElementById('speechConsole').style.display = 'none';
                     realityEditor.app.stopSpeechRecording();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.videoRecordingEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.videoRecordingEnabled) {
+                if (!globalStates.videoRecordingEnabled) {
+                    globalStates.videoRecordingEnabled = true;
+                    // add any one-time side-effects here
+                }
+            } else {
+                if (globalStates.videoRecordingEnabled) {
+                    globalStates.videoRecordingEnabled = false;
+                    // add any one-time side-effects here:
+                    // stop the recording if needed, otherwise there's no UI to stop it
+                    realityEditor.device.videoRecording.stopRecording();
                 }
             }
         }
