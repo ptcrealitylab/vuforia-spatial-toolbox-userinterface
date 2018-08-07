@@ -238,7 +238,7 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
  */
 realityEditor.device.shouldPostEventsIntoIframe = function() {
     var editingVehicle = this.getEditingVehicle();
-    return !(globalStates.editingMode || editingVehicle || this.touchEditingTimer);
+    return !(globalStates.editingMode || editingVehicle /*|| this.touchEditingTimer */); // TODO: pointerup never gets posted if this last isnt commented out... was it doing anything?
 };
 
 /**

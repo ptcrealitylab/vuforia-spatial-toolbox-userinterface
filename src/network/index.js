@@ -304,8 +304,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
 
-            origin.frames[frameKey].width = 300; // TODO: why is this hard-coded?
-            origin.frames[frameKey].height = 300;
+            origin.frames[frameKey].width = remote.frames[frameKey].width || 300;
+            origin.frames[frameKey].height = remote.frames[frameKey].height || 300;
             
             origin.frames[frameKey].uuid = frameKey;
 
@@ -498,15 +498,13 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         this.utilities.syncLinksWithRemote(origin, remote.links);
     }
 
-    if (remote.type === 'logic') {
-        if (nodeKey === globalStates.currentLogic.uuid) {
-            realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
-        }
-    }
-
     if (globalStates.currentLogic) {
 
         if (globalStates.currentLogic.uuid === nodeKey) {
+
+            if (remote.type === 'logic') {
+                realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
+            }
 
             // console.log("YES");
             realityEditor.gui.crafting.forceRedraw(globalStates.currentLogic);

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Recording</title>
+    <script src="resources/object-frames.js"></script>
+    <script src="resources/pep.min.js"></script>
+</head>
+<body>
+    <!--<div style="width: 800px; height: 600px; background-color: #00edff">-->
+        <!--Video Recording Placeholder-->
+    <!--</div>-->
+    
+    <div id="container" touch-action="none" style="width: 800px; height: 600px;">
+        <video id="recordedVideo" width="800" height="600" playsinline controls webkit-playsinline></video>
+    </div>
+    
+    <!--<video id="recordedVideo" width="800" height="600" controls touch-action="none">-->
+        <!--<source src="resources/o92o90ssbhqw.mp4" type="video/mp4">-->
+        <!--Your browser does not support the video tag.-->
+    <!--</video>-->
+    
+    <script>
+        var videoUrl = '';
+        var realityInterface = new RealityInterface();
+        realityInterface.setMoveDelay(300);
+        
+        realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
+            videoUrl = e;
+            console.log('load video from url: ' + e);
+
+            recordedVideo.pause();
+            source.setAttribute('src', videoUrl);
+            recordedVideo.load();
+        });
+        
+        console.log('video created');
+        
+        var recordedVideo = document.getElementById('recordedVideo');
+        var source = document.createElement('source');
+        source.setAttribute('src', videoUrl);
+        recordedVideo.appendChild(source);
+        
+        recordedVideo.addEventListener('pointerup', onPointerUp);
+
+        function onPointerUp(e) {
+            e.preventDefault();
+            recordedVideo.play();
+        }
+
+    </script>
+</body>
+</html>

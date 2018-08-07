@@ -225,6 +225,24 @@
     z-index: 20;
 }
 
+#recordButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 65px;
+    top: 260px;
+    visibility: hidden;
+}
+#recordButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 65px;
+    top: 260px;
+    visibility: hidden;
+    z-index: 20;
+}
+
 #bigTrashButton {
     position: fixed;
     top: 0px;

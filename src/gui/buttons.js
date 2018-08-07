@@ -330,6 +330,21 @@ realityEditor.gui.buttons.unlockButtonUp = function(event) {
     realityEditor.device.security.unlockVisibleNodesAndLinks();
 };
 
+realityEditor.gui.buttons.recordButtonUp = function(event) {
+    if (event.button !== "record") return;
+
+    console.log("activate record button");
+    
+    var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
+
+    if(!didStartRecording) {
+        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+    } else {
+        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+    }
+};
+
+
 realityEditor.gui.buttons.draw = function() {
 
     this.preload(blockTabImage,

@@ -101,6 +101,8 @@ var globalStates = {
     //authenticatedUser: null,
     lockPassword: null,
     
+    videoRecordingMode: true,
+    
     guiButtonDown: false,
     logicButtonDown: false,
 	pocketButtonState: false,

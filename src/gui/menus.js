@@ -74,6 +74,7 @@ realityEditor.gui.menus.buttons = {
 		lock:{},
         halflock:{},
 		unlock:{},
+        record: {},
     // reality UI
     realityGui : {},
     realityInfo : {},
@@ -97,7 +98,8 @@ realityEditor.gui.menus.menus = {
     lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue"},
     realityInfo: {realityGui: "blue", realityInfo: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
     reality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
-    settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"}
+    settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
+    videoRecording: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue"},
 };
 
 realityEditor.gui.menus.getVisibility = function(item){
@@ -195,7 +197,9 @@ realityEditor.gui.menus.on = function(menuDiv, buttonArray) {
 
     // show correct combination of sub-menus
     if ((menuDiv === "main" || menuDiv === "gui" ||menuDiv === "logic") && !globalStates.settingsButtonState) {
-        if (globalStates.editingMode && globalStates.lockingMode) {
+        if (globalStates.videoRecordingMode) {
+            menuDiv = "videoRecording"
+        } else if (globalStates.editingMode && globalStates.lockingMode) {
             menuDiv = "lockingEditing";
         } else if (globalStates.editingMode) {
             menuDiv = "editing";
@@ -404,6 +408,7 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.lockButtonUp(event);
     realityEditor.gui.buttons.halflockButtonUp(event);
     realityEditor.gui.buttons.unlockButtonUp(event);
+    realityEditor.gui.buttons.recordButtonUp(event);
 
     // Reality UI
 
