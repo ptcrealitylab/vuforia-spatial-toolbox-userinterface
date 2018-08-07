@@ -58,7 +58,7 @@ createNameSpace("realityEditor.gui.ar.draw");
  * @param visibleObjects
  **/
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
-realityEditor.gui.ar.draw.visibleObjects = "";
+realityEditor.gui.ar.draw.visibleObjects = {};
 realityEditor.gui.ar.draw.globalStates = globalStates;
 realityEditor.gui.ar.draw.globalDOMCache = globalDOMCache;
 realityEditor.gui.ar.draw.activeObject = {};
@@ -120,6 +120,13 @@ realityEditor.gui.ar.draw.type = "";
 realityEditor.gui.ar.draw.notLoading = "";
 realityEditor.gui.ar.draw.utilities = realityEditor.gui.ar.utilities;
 
+
+realityEditor.gui.ar.draw.updateListeners = [];
+
+realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
+    this.updateListeners.push(callback);
+};
+
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
     realityEditor.device.touchInputs.update();
     
@@ -154,6 +161,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             isObjectWithNoFramesVisible = true;
         }
     }
+    
+    // TODO: push more edge-case functionality from this function into extensible callbacks
+    // make the update loop extensible by additional features that wish to subscribe to matrix updates
+    this.updateListeners.forEach(function(callback) {
+        // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
+        callback( JSON.parse(JSON.stringify( realityEditor.gui.ar.draw.visibleObjects )) );
+    });
     
     for (var objectKey in objects) {
         this.activeObject = realityEditor.getObject(objectKey);

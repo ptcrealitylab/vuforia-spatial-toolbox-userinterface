@@ -117,6 +117,9 @@ realityEditor.device.onload = function () {
     }
     animate();
     
+    // initialize additional features
+    realityEditor.device.videoRecording.initFeature();
+    
 	this.cout("onload");
 
 };

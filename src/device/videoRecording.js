@@ -7,72 +7,96 @@ createNameSpace("realityEditor.device.videoRecording");
  * Shows visual feedback while recording.
  */
 
-var privateState = {
-    isRecording: false
-};
 
-/**
- * Starts or stops recording, and returns whether the recording is newly turned on (true) or off (false)
- * @return {boolean}
- */
-realityEditor.device.videoRecording.toggleRecording = function() {
-    if (privateState.isRecording) {
-        this.stopRecording();
-        return false;
-    } else {
-        this.startRecordingOnClosestObject();
-        return true;
+(function(exports) {
+
+    var privateState = {
+        isRecording: false
+    };
+    
+    function initFeature() {
+        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
+
+            // highlight or dim the video record button if there are visible objects, to show that it is able to be used
+            var noVisibleObjects = Object.keys(visibleObjects).length === 0;
+            if (globalStates.videoRecordingEnabled) {
+                var buttonOpacity = (noVisibleObjects && !privateState.isRecording) ? 0.2 : 1.0;
+                var recordButton = document.querySelector('#recordButton');
+                if (recordButton) {
+                    recordButton.style.opacity = buttonOpacity;
+                }
+            }
+            
+        });
     }
-};
-
-/**
- * Starts a camera recording that will attach itself as a frame to the closest object when finished
- */
-realityEditor.device.videoRecording.startRecordingOnClosestObject = function() {
-    if (privateState.isRecording) {
-        console.log('cannot start new recording until previous is finished');
-        return;
+    
+    /**
+     * Starts or stops recording, and returns whether the recording is newly turned on (true) or off (false)
+     * @return {boolean}
+     */
+    function toggleRecording() {
+        if (privateState.isRecording) {
+            stopRecording();
+            return false;
+        } else {
+            startRecordingOnClosestObject();
+            return true;
+        }
     }
-    var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-    if (closestObjectKey) {
-        realityEditor.app.startVideoRecording(closestObjectKey);
-        privateState.isRecording = true;
-        this.getRecordingIndicator().style.display = 'inline';
+    
+    /**
+     * Starts a camera recording that will attach itself as a frame to the closest object when finished
+     */
+    function startRecordingOnClosestObject() {
+        if (privateState.isRecording) {
+            console.log('cannot start new recording until previous is finished');
+            return;
+        }
+        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+        if (closestObjectKey) {
+            realityEditor.app.startVideoRecording(closestObjectKey);
+            privateState.isRecording = true;
+            getRecordingIndicator().style.display = 'inline';
+        }
     }
-};
-
-/**
- * Stops recording a current video and sends it to server to add as a frame
- */
-realityEditor.device.videoRecording.stopRecording = function() {
-    if (!privateState.isRecording) {
-        console.log('cannot stop a recording because a recording was not started');
-        return;
+    
+    /**
+     * Stops recording a current video and sends it to server to add as a frame
+     */
+    function stopRecording() {
+        if (!privateState.isRecording) {
+            console.log('cannot stop a recording because a recording was not started');
+            return;
+        }
+        realityEditor.app.stopVideoRecording();
+        privateState.isRecording = false;
+        getRecordingIndicator().style.display = 'none';
     }
-    realityEditor.app.stopVideoRecording();
-    privateState.isRecording = false;
-    this.getRecordingIndicator().style.display = 'none';
-};
-
-/**
- * Lazy instantiation and getter of a red dot element to indicate that a recording is in process
- * @return {Element}
- */
-realityEditor.device.videoRecording.getRecordingIndicator = function() {
-    var recordingIndicator = document.querySelector('#recordingIndicator');
-    if (!recordingIndicator) {
-        recordingIndicator = document.createElement('div');
-        recordingIndicator.id = 'recordingIndicator';
-        recordingIndicator.style.position = 'absolute';
-        recordingIndicator.style.left = '10px';
-        recordingIndicator.style.top = '10px';
-        recordingIndicator.style.width = '30px';
-        recordingIndicator.style.height = '30px';
-        recordingIndicator.style.backgroundColor = 'red';
-        recordingIndicator.style.borderRadius = '15px';
-        document.body.appendChild(recordingIndicator);
+    
+    /**
+     * Lazy instantiation and getter of a red dot element to indicate that a recording is in process
+     * @return {Element}
+     */
+    function getRecordingIndicator() {
+        var recordingIndicator = document.querySelector('#recordingIndicator');
+        if (!recordingIndicator) {
+            recordingIndicator = document.createElement('div');
+            recordingIndicator.id = 'recordingIndicator';
+            recordingIndicator.style.position = 'absolute';
+            recordingIndicator.style.left = '10px';
+            recordingIndicator.style.top = '10px';
+            recordingIndicator.style.width = '30px';
+            recordingIndicator.style.height = '30px';
+            recordingIndicator.style.backgroundColor = 'red';
+            recordingIndicator.style.borderRadius = '15px';
+            document.body.appendChild(recordingIndicator);
+        }
+        return recordingIndicator;
     }
-    return recordingIndicator;
-};
 
+    exports.toggleRecording = toggleRecording;
+    exports.startRecordingOnClosestObject = startRecordingOnClosestObject;
+    exports.stopRecording = stopRecording;
+    exports.initFeature = initFeature;
 
+}(realityEditor.device.videoRecording));
