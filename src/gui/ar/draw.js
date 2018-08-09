@@ -770,29 +770,50 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     
-    // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
-    // var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
-    // var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
-    // var scaleFactor = oldTargetSize.width / newTargetSize.width;
-    //
-    // realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
+    // fixme: quick fix to allow better pushing into screens
+    var newObject = realityEditor.getObject(newObjectKey);
     
-    // recompute frame.temp for the new object
-    this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
-    this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
+    if (newObject.visualization === 'screen') {
 
-    // frame.begin[0] /= scaleFactor;
-    // frame.begin[5] /= scaleFactor;
-    // frame.begin[10] /= scaleFactor;
-    // frame.begin[15] *= scaleFactor;
+        frame.ar.x = 0;
+        frame.ar.y = 0;
 
-    // compute frame.matrix based on new object
-    var resultMatrix = [];
-    this.utilities.multiplyMatrix(frame.begin, this.utilities.invertMatrix(frame.temp), resultMatrix);
-    realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
-    
-    // reset frame.begin
-    frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        if (optionalPosition) {
+            frame.ar.x = optionalPosition.x;
+            frame.ar.y = optionalPosition.y;
+        }
+
+        frame.ar.matrix = [];
+        frame.begin =  realityEditor.gui.ar.utilities.newIdentityMatrix();
+        frame.temp =  realityEditor.gui.ar.utilities.newIdentityMatrix();
+        
+    } else {
+        
+        // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
+        // var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
+        // var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
+        // var scaleFactor = oldTargetSize.width / newTargetSize.width;
+        //
+        // realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
+
+        // recompute frame.temp for the new object
+        this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
+        this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
+
+        // frame.begin[0] /= scaleFactor;
+        // frame.begin[5] /= scaleFactor;
+        // frame.begin[10] /= scaleFactor;
+        // frame.begin[15] *= scaleFactor;
+
+        // compute frame.matrix based on new object
+        var resultMatrix = [];
+        this.utilities.multiplyMatrix(frame.begin, this.utilities.invertMatrix(frame.temp), resultMatrix);
+        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+
+        // reset frame.begin
+        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        
+    }
     
 };
 
