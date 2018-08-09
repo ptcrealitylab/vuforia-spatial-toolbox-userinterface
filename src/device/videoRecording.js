@@ -11,10 +11,13 @@ createNameSpace("realityEditor.device.videoRecording");
 (function(exports) {
 
     var privateState = {
-        isRecording: false
+        isRecording: false,
+        visibleObjects: {},
+        recordingObjectKey: null
     };
     
     function initFeature() {
+        
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
 
             // highlight or dim the video record button if there are visible objects, to show that it is able to be used
@@ -26,6 +29,8 @@ createNameSpace("realityEditor.device.videoRecording");
                     recordButton.style.opacity = buttonOpacity;
                 }
             }
+            
+            privateState.visibleObjects = visibleObjects;
             
         });
     }
@@ -54,8 +59,11 @@ createNameSpace("realityEditor.device.videoRecording");
         }
         var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
         if (closestObjectKey) {
-            realityEditor.app.startVideoRecording(closestObjectKey);
+            // var startingMatrix = realityEditor.getObject(closestObjectKey)
+            var startingMatrix = privateState.visibleObjects[closestObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
+            realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix);
             privateState.isRecording = true;
+            privateState.recordingObjectKey = closestObjectKey;
             getRecordingIndicator().style.display = 'inline';
         }
     }
@@ -68,9 +76,97 @@ createNameSpace("realityEditor.device.videoRecording");
             console.log('cannot stop a recording because a recording was not started');
             return;
         }
-        realityEditor.app.stopVideoRecording();
+        
+        var videoId = realityEditor.device.utilities.uuidTime();
+        
+        createVideoFrame(privateState.recordingObjectKey, videoId, privateState.visibleObjects[privateState.recordingObjectKey]);
+        
+        // var endingMatrix = privateState.visibleObjects[privateState.recordingObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
+        realityEditor.app.stopVideoRecording(videoId);
         privateState.isRecording = false;
+        privateState.recordingObjectKey = null;
         getRecordingIndicator().style.display = 'none';
+    }
+    
+    function createVideoFrame(objectKey, videoId, objectMatrix) {
+        objectMatrix = objectMatrix || realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+        var frameType = 'videoRecording';
+        var frameKey = objectKey + frameType + videoId;
+
+        var frame = new Frame();
+
+        frame.objectId = objectKey;
+        frame.uuid = frameKey;
+        frame.name = frameType + videoId;
+        console.log('created video frame with name ' + frame.name);
+
+        frame.ar.x = 0;
+        frame.ar.y = 0;
+        frame.ar.scale = globalStates.defaultScale;
+        frame.frameSizeX = 800; //globalStates.height;
+        frame.frameSizeY = 600; //globalStates.width;
+
+        // console.log("closest Frame", closestObject.averageScale);
+
+        frame.location = 'global';
+        frame.src = frameType;
+
+        // set other properties
+
+        frame.animationScale = 0;
+        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        frame.width = frame.frameSizeX;
+        frame.height = frame.frameSizeY;
+        console.log('created video frame with width/height' + frame.width + '/' + frame.height);
+        frame.loaded = false;
+        // frame.objectVisible = true;
+        frame.screen = {
+            x: frame.ar.x,
+            y: frame.ar.y,
+            scale: frame.ar.scale
+        };
+        // frame.screenX = 0;
+        // frame.screenY = 0;
+        frame.screenZ = 1000;
+        frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+        frame.fullScreen = false;
+        frame.sendMatrix = false;
+        frame.sendAcceleration = false;
+        frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+        // thisFrame.visible = false;
+
+        // add each node with a non-empty name
+
+        var nodeName = 'storage';
+        var nodeType = 'storeData';
+        var nodeUuid = frameKey + nodeName;
+        frame.nodes[nodeUuid] = new Node();
+        var addedNode = frame.nodes[nodeUuid];
+        addedNode.objectId = objectKey;
+        addedNode.frameId = frameKey;
+        addedNode.name = nodeName;
+        addedNode.type = nodeType;
+        addedNode.frameSizeX = 220;
+        addedNode.frameSizeY = 220;
+        addedNode.scale = globalStates.defaultScale;
+
+        // // set the eventObject so that the frame can interact with screens as soon as you add it
+        // realityEditor.device.eventObject.object = closestObjectKey;
+        // realityEditor.device.eventObject.frame = frameID;
+        // realityEditor.device.eventObject.node = null;
+
+        var object = realityEditor.getObject(objectKey);
+        object.frames[frameKey] = frame;
+
+        console.log(frame);
+        // send it to the server
+        // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
+        realityEditor.network.postNewFrame(object.ip, objectKey, frame);
+        
+        moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix);
     }
     
     /**

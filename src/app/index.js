@@ -180,15 +180,15 @@ realityEditor.app.addSpeechListener = function (callBack) {
  **/
 
 // starts the screen recording of the camera background
-realityEditor.app.startVideoRecording = function (objectKey) {
+realityEditor.app.startVideoRecording = function (objectKey, objectMatrix) {
     console.log("startVideoRecording");
-    this.appFunctionCall('startVideoRecording', {objectKey: objectKey}, null);
+    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectMatrix: JSON.stringify(objectMatrix)}, null);
 };
 
 // stops the screen recording of the camera background
-realityEditor.app.stopVideoRecording = function () {
+realityEditor.app.stopVideoRecording = function (videoId) {
     console.log("stopVideoRecording");
-    this.appFunctionCall('stopVideoRecording', null, null);
+    this.appFunctionCall('stopVideoRecording', {objectMatrix: JSON.stringify(videoId)}, null);
 };
 
 /**
