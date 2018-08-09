@@ -923,6 +923,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             if (shouldRenderFramesInNodeView) {
                 globalDOMCache["object" + activeKey].classList.remove('displayNone');
             }
+            
+            if (activeKey === globalStates.inTransitionFrame) {
+                globalDOMCache["iframe" + activeKey].classList.add('inTransitionFrame');
+            } else {
+                globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
+            }
 
             if (activeVehicle.fullScreen !== true) {
 
