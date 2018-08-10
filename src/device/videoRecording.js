@@ -13,7 +13,8 @@ createNameSpace("realityEditor.device.videoRecording");
     var privateState = {
         isRecording: false,
         visibleObjects: {},
-        recordingObjectKey: null
+        recordingObjectKey: null,
+        startMatrix: null
     };
     
     function initFeature() {
@@ -61,9 +62,10 @@ createNameSpace("realityEditor.device.videoRecording");
         if (closestObjectKey) {
             // var startingMatrix = realityEditor.getObject(closestObjectKey)
             var startingMatrix = privateState.visibleObjects[closestObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
-            realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix);
+            realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
             privateState.isRecording = true;
             privateState.recordingObjectKey = closestObjectKey;
+            privateState.startMatrix = realityEditor.gui.ar.utilities.copyMatrix(privateState.visibleObjects[closestObjectKey]);
             getRecordingIndicator().style.display = 'inline';
         }
     }
@@ -81,7 +83,6 @@ createNameSpace("realityEditor.device.videoRecording");
         
         createVideoFrame(privateState.recordingObjectKey, videoId, privateState.visibleObjects[privateState.recordingObjectKey]);
         
-        // var endingMatrix = privateState.visibleObjects[privateState.recordingObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
         realityEditor.app.stopVideoRecording(videoId);
         privateState.isRecording = false;
         privateState.recordingObjectKey = null;
@@ -89,7 +90,11 @@ createNameSpace("realityEditor.device.videoRecording");
     }
     
     function createVideoFrame(objectKey, videoId, objectMatrix) {
-        objectMatrix = objectMatrix || realityEditor.gui.ar.utilities.newIdentityMatrix();
+        if (typeof objectMatrix === 'undefined') {
+            objectMatrix = privateState.startMatrix;
+        } 
+        
+        var object = realityEditor.getObject(objectKey);
 
         var frameType = 'videoRecording';
         var frameKey = objectKey + frameType + videoId;
@@ -104,8 +109,8 @@ createNameSpace("realityEditor.device.videoRecording");
         frame.ar.x = 0;
         frame.ar.y = 0;
         frame.ar.scale = globalStates.defaultScale;
-        frame.frameSizeX = 800; //globalStates.height;
-        frame.frameSizeY = 600; //globalStates.width;
+        frame.frameSizeX = 760; //globalStates.height;
+        frame.frameSizeY = 460; //globalStates.width;
 
         // console.log("closest Frame", closestObject.averageScale);
 
@@ -152,21 +157,57 @@ createNameSpace("realityEditor.device.videoRecording");
         addedNode.frameSizeX = 220;
         addedNode.frameSizeY = 220;
         addedNode.scale = globalStates.defaultScale;
-
-        // // set the eventObject so that the frame can interact with screens as soon as you add it
-        // realityEditor.device.eventObject.object = closestObjectKey;
-        // realityEditor.device.eventObject.frame = frameID;
-        // realityEditor.device.eventObject.node = null;
-
-        var object = realityEditor.getObject(objectKey);
-        object.frames[frameKey] = frame;
-
-        console.log(frame);
-        // send it to the server
-        // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
-        realityEditor.network.postNewFrame(object.ip, objectKey, frame);
         
+        var videoPath = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/' + videoId + '.mp4';
+        frame.nodes[nodeUuid].publicData = {
+            data: videoPath
+        };
+
+        object.frames[frameKey] = frame;
+        console.log(frame);
+
         moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix);
+        
+        // send it to the server
+        realityEditor.network.postNewFrame(object.ip, objectKey, frame);
+    }
+
+    // TODO: turn into a cleaner, more reusable function in a better location
+    function moveFrameToCamera(objectKey, frameKey) {
+        frame = realityEditor.getFrame(objectKey, frameKey);
+// recompute frame.temp for the new object
+        var res1 = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects['ipadScreenDT8dud76p1il'], globalStates.projectionMatrix, res1);
+        console.log(rotateX, res1, frame.temp);
+        realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
+        console.log('temp', frame.temp);
+        frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
+// compute frame.matrix based on new object
+        var resultMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
+        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+
+        // reset frame.begin
+        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    }
+
+    // TODO: turn into a cleaner, more reusable function in a better location
+    function moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix) {
+        frame = realityEditor.getFrame(objectKey, frameKey);
+// recompute frame.temp for the new object
+        var res1 = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(objectMatrix, globalStates.projectionMatrix, res1);
+        console.log(rotateX, res1, frame.temp)
+        realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
+        console.log('temp', frame.temp);
+        frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
+// compute frame.matrix based on new object
+        var resultMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
+        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+
+        // reset frame.begin
+        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
     }
     
     /**

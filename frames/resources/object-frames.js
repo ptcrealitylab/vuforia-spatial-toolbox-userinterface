@@ -344,6 +344,7 @@ var sendTouchEvents = false;
             this.addReadPublicDataListener = makeIoStub('addReadPublicDataListener');
             this.writePublicData = makeIoStub('writePublicData');
             this.writePrivateData = makeIoStub('writePrivateData');
+            this.reloadPublicData = makeIoStub('reloadPublicData');
         }
 
         realityInterfaces.push(this);
@@ -519,6 +520,15 @@ var sendTouchEvents = false;
                 node: realityObject.frame + node,
                 privateData: thisItem
             }));
+        };
+        
+        this.reloadPublicData = function() {
+            // reload public data when it becomes visible
+            for (var i = 0; i < realityInterfaces.length; i++) {
+                if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                }
+            }
         };
         
         console.log('socket.io is loaded and injected');

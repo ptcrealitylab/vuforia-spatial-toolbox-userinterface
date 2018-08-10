@@ -188,7 +188,7 @@ realityEditor.app.startVideoRecording = function (objectKey, objectMatrix) {
 // stops the screen recording of the camera background
 realityEditor.app.stopVideoRecording = function (videoId) {
     console.log("stopVideoRecording");
-    this.appFunctionCall('stopVideoRecording', {objectMatrix: JSON.stringify(videoId)}, null);
+    this.appFunctionCall('stopVideoRecording', {videoId: videoId}, null);
 };
 
 /**

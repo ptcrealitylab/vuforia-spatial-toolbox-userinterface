@@ -817,42 +817,6 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     
 };
 
-function moveFrameToCamera(objectKey, frameKey) {
-    frame = realityEditor.getFrame(objectKey, frameKey);
-// recompute frame.temp for the new object
-    var res1 = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects['ipadScreenDT8dud76p1il'], globalStates.projectionMatrix, res1);
-    console.log(rotateX, res1, frame.temp);
-    realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
-    console.log('temp', frame.temp);
-    frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
-// compute frame.matrix based on new object
-    var resultMatrix = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
-    realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
-
-    // reset frame.begin
-    frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-}
-
-function moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix) {
-    frame = realityEditor.getFrame(objectKey, frameKey);
-// recompute frame.temp for the new object
-    var res1 = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(objectMatrix, globalStates.projectionMatrix, res1);
-    console.log(rotateX, res1, frame.temp)
-    realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
-    console.log('temp', frame.temp);
-    frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
-// compute frame.matrix based on new object
-    var resultMatrix = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
-    realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
-
-    // reset frame.begin
-    frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-}
-
 /**
  * @desc
  * @return {Boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)

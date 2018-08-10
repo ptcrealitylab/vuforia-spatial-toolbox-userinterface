@@ -474,6 +474,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
+        origin.publicData = remote.publicData;
         // console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
 
         if (origin.type === "logic") {
