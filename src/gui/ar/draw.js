@@ -120,6 +120,11 @@ realityEditor.gui.ar.draw.type = "";
 realityEditor.gui.ar.draw.notLoading = "";
 realityEditor.gui.ar.draw.utilities = realityEditor.gui.ar.utilities;
 
+// don't render the following node types:
+realityEditor.gui.ar.draw.hiddenNodeTypes = [
+    'storeData',
+    'invisible'
+];
 
 realityEditor.gui.ar.draw.updateListeners = [];
 
@@ -220,6 +225,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         this.activeKey = nodeKey;
                         this.activeVehicle = this.activeNode;
                         this.activeType = this.activeNode.type;
+                        
+                        if (this.hiddenNodeTypes.indexOf(this.activeType) > -1) {
+                            console.log('don\'t render node of type ' + this.activeType);
+                            continue;
+                        }
 
                         var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
 
