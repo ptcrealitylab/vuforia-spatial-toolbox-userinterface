@@ -206,10 +206,11 @@ createNameSpace("realityEditor.device.videoRecording");
 
     // TODO: turn into a cleaner, more reusable function in a better location
     function moveFrameToCamera(objectKey, frameKey) {
+        
         frame = realityEditor.getFrame(objectKey, frameKey);
 // recompute frame.temp for the new object
         var res1 = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects['ipadScreenDT8dud76p1il'], globalStates.projectionMatrix, res1);
+        realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, res1);
         console.log(rotateX, res1, frame.temp);
         realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
         console.log('temp', frame.temp);
@@ -221,6 +222,7 @@ createNameSpace("realityEditor.device.videoRecording");
 
         // reset frame.begin
         frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        
     }
 
     // TODO: turn into a cleaner, more reusable function in a better location
@@ -267,5 +269,6 @@ createNameSpace("realityEditor.device.videoRecording");
     exports.startRecordingOnClosestObject = startRecordingOnClosestObject;
     exports.stopRecording = stopRecording;
     exports.initFeature = initFeature;
+    exports.moveFrameToCamera = moveFrameToCamera;
 
 }(realityEditor.device.videoRecording));

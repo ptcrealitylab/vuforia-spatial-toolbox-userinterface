@@ -783,6 +783,14 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     // fixme: quick fix to allow better pushing into screens
     var newObject = realityEditor.getObject(newObjectKey);
     
+   var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
+    var newObjectTargetWidth = newObject.targetSize.width;
+    var scaleFactor = 1;
+    if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
+        scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
+        frame.ar.scale *= scaleFactor;
+    }
+    
     if (newObject.visualization === 'screen') {
 
         frame.ar.x = 0;
@@ -799,6 +807,10 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         
     } else {
         
+        frame.ar.x = 0;
+        frame.ar.y = 0;
+        
+        /*
         // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
         // var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
         // var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
@@ -810,18 +822,21 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
         this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
 
-        // frame.begin[0] /= scaleFactor;
-        // frame.begin[5] /= scaleFactor;
-        // frame.begin[10] /= scaleFactor;
-        // frame.begin[15] *= scaleFactor;
+        frame.begin[0] /= scaleFactor;
+        frame.begin[5] /= scaleFactor;
+        frame.begin[10] /= scaleFactor;
 
         // compute frame.matrix based on new object
         var resultMatrix = [];
         this.utilities.multiplyMatrix(frame.begin, this.utilities.invertMatrix(frame.temp), resultMatrix);
         realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
-
+        
         // reset frame.begin
         frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        */
+
+        realityEditor.device.videoRecording.moveFrameToCamera(newObjectKey, newFrameKey);
+        
         
     }
     
