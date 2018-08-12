@@ -145,23 +145,55 @@ createNameSpace("realityEditor.device.videoRecording");
 
         // add each node with a non-empty name
 
-        var nodeName = 'storage';
-        var nodeType = 'storeData';
-        var nodeUuid = frameKey + nodeName;
-        frame.nodes[nodeUuid] = new Node();
-        var addedNode = frame.nodes[nodeUuid];
-        addedNode.objectId = objectKey;
-        addedNode.frameId = frameKey;
-        addedNode.name = nodeName;
-        addedNode.type = nodeType;
-        addedNode.frameSizeX = 220;
-        addedNode.frameSizeY = 220;
-        addedNode.scale = globalStates.defaultScale;
-        
         var videoPath = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/' + videoId + '.mp4';
-        frame.nodes[nodeUuid].publicData = {
-            data: videoPath
-        };
+
+        var nodes = [
+            {name: 'play', type: 'node'},
+            {name: 'progress', type: 'node'},
+            {name: 'storage', type: 'storeData', publicData: {data: videoPath}}
+        ];
+        
+        nodes.forEach( function (nodeData) {
+
+            var nodeName = nodeData.name;
+            var nodeType = nodeData.type;
+            var nodeUuid = frameKey + nodeName;
+            
+            frame.nodes[nodeUuid] = new Node();
+            var addedNode = frame.nodes[nodeUuid];
+            
+            addedNode.objectId = objectKey;
+            addedNode.frameId = frameKey;
+            addedNode.name = nodeName;
+            addedNode.type = nodeType;
+            addedNode.frameSizeX = 220;
+            addedNode.frameSizeY = 220;
+            addedNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+            addedNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+            addedNode.scale = globalStates.defaultScale;
+            
+            if (typeof nodeData.publicData !== 'undefined') {
+                addedNode.publicData = nodeData.publicData;
+            }
+            
+        });
+        
+        // var nodeName = 'storage';
+        // var nodeType = 'storeData';
+        // var nodeUuid = frameKey + nodeName;
+        // frame.nodes[nodeUuid] = new Node();
+        // var addedNode = frame.nodes[nodeUuid];
+        // addedNode.objectId = objectKey;
+        // addedNode.frameId = frameKey;
+        // addedNode.name = nodeName;
+        // addedNode.type = nodeType;
+        // addedNode.frameSizeX = 220;
+        // addedNode.frameSizeY = 220;
+        // addedNode.scale = globalStates.defaultScale;
+        
+        // frame.nodes[frameKey + 'storage'].publicData = {
+        //     data: videoPath
+        // };
 
         object.frames[frameKey] = frame;
         console.log(frame);

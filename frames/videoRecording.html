@@ -108,7 +108,12 @@
         recordedVideo.addEventListener('pointerup', onPointerUp);
         recordedVideo.addEventListener('progress', function(e) {
             console.log('progress', e);
+            recordedVideo.classList.remove('hidden');
+            recordedVideo.classList.add('visible');
+            spinner.classList.remove('visible');
+            spinner.classList.add('hidden');
             clearInterval(interval);
+            window.requestAnimationFrame(loop);
         });
         // recordedVideo.addEventListener('loadstart', function(e) {
         //     console.log('loadstart', e);
@@ -119,17 +124,37 @@
         // recordedVideo.addEventListener('loadstart', function(e) {
         //     console.log('canplay', e);
         // });
-        recordedVideo.addEventListener('progress', function(e) {
-            console.log('canplaythrough', e);
-            recordedVideo.classList.remove('hidden');
-            recordedVideo.classList.add('visible');
-            spinner.classList.remove('visible');
-            spinner.classList.add('hidden');
+        // recordedVideo.addEventListener('canplaythrough', function(e) {
+        //     console.log('canplaythrough', e);
+        //     // recordedVideo.play();
+        // });
+
+        recordedVideo.addEventListener('ended', function(e) {
+            realityInterface.write('play', 0.0);
         });
-        
+
         function onPointerUp(e) {
+            console.log('pointerup');
             e.preventDefault();
-            recordedVideo.play();
+
+            if (recordedVideo.paused) {
+                recordedVideo.play({
+                    onplay: function() {
+                        console.log('Yay, playing');
+                    },
+                    onerror: function(errorCode, description) {
+                        // maybe failure happened _during_ playback, maybe it failed to start.
+                        // depends on what is passed to the function.
+                        // errorCode is currently based on W3 specs for HTML5 playback failures.
+                        // https://html.spec.whatwg.org/multipage/embedded-content.html#error-codes
+                        console.log(errorCode, description);
+                    }
+                });
+                realityInterface.write('play', 1.0);
+            } else {
+                recordedVideo.pause();
+                realityInterface.write('play', 0.0);
+            }
         }
 
         var attemptsLeft = 10;
@@ -138,12 +163,50 @@
                 console.log('cant load non-string data:', e);
                 return;
             }
+            if (e === videoUrl) {
+                console.log('dont reload the same video');
+                return;
+            }
             videoUrl = e;
             
             attemptsLeft = 10;
             loadVideo();
         });
         
+        realityInterface.addReadListener('play', function(e) {
+            if (e.value > 0.5) {
+                if (recordedVideo.paused) {
+                    recordedVideo.play();
+                }
+            } else {
+                if (!recordedVideo.paused) {
+                    recordedVideo.pause();
+                }
+            }
+        });
+        
+        var lastProgess = 0;
+        function loop() {
+            if (!recordedVideo.paused) {
+                var thisProgress = recordedVideo.currentTime / recordedVideo.duration;
+                if (thisProgress !== lastProgess) {
+                    lastProgess = thisProgress;
+                    realityInterface.write('progress', thisProgress);
+                    console.log('new progress = ' + thisProgress);
+                }
+            }
+            window.requestAnimationFrame(loop);
+        }
+
+        realityInterface.addReadListener('progress', function(e) {
+
+            if (e.value === lastProgess) return;
+
+            if (recordedVideo.paused) {
+                recordedVideo.currentTime = e.value * recordedVideo.duration;
+            }
+        });
+
         function loadVideo() {
             attemptsLeft--;
             if (attemptsLeft <= 0) {
@@ -153,7 +216,7 @@
             }
             console.log('load video from url: ' + videoUrl);
             
-            recordedVideo.pause();
+            // recordedVideo.pause();
             source.addEventListener('error', function(e) {
                 console.log('failed to load');
                 setTimeout(function() {
