@@ -783,13 +783,13 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     // fixme: quick fix to allow better pushing into screens
     var newObject = realityEditor.getObject(newObjectKey);
     
-   var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
-    var newObjectTargetWidth = newObject.targetSize.width;
-    var scaleFactor = 1;
-    if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
-        scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
-        frame.ar.scale *= scaleFactor;
-    }
+    // var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
+    // var newObjectTargetWidth = newObject.targetSize.width;
+    // var scaleFactor = 1;
+    // if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
+    //     scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
+    //     frame.ar.scale *= scaleFactor;
+    // }
     
     if (newObject.visualization === 'screen') {
 
@@ -810,7 +810,6 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         frame.ar.x = 0;
         frame.ar.y = 0;
         
-        /*
         // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
         // var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
         // var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
@@ -833,9 +832,9 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         
         // reset frame.begin
         frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        */
+        
 
-        realityEditor.device.videoRecording.moveFrameToCamera(newObjectKey, newFrameKey);
+        // realityEditor.device.videoRecording.moveFrameToCamera(newObjectKey, newFrameKey);
         
         
     }
