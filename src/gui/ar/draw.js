@@ -821,9 +821,9 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
         this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
 
-        frame.begin[0] /= scaleFactor;
-        frame.begin[5] /= scaleFactor;
-        frame.begin[10] /= scaleFactor;
+        // frame.begin[0] /= scaleFactor;
+        // frame.begin[5] /= scaleFactor;
+        // frame.begin[10] /= scaleFactor;
 
         // compute frame.matrix based on new object
         var resultMatrix = [];
