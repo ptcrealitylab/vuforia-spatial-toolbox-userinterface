@@ -464,10 +464,20 @@ var sendTouchEvents = false;
                 var thisMsg = JSON.parse(msg);
                 
                 if (typeof thisMsg.publicData === "undefined")  return;
-                if(typeof thisMsg.publicData[node] === "undefined") return;
+                if (typeof thisMsg.publicData[node] === "undefined") return;
                 if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
                 
-                if (thisMsg.publicData[node] !== realityObject.publicData[node]) {
+                var isUnset =   (typeof realityObject.publicData[node] === "undefined") ||
+                                (typeof realityObject.publicData[node][valueName] === "undefined");
+
+                // only trigger the callback if there is new public data, otherwise infinite loop possible
+                if (isUnset || JSON.stringify(thisMsg.publicData[node][valueName]) !== JSON.stringify(realityObject.publicData[node][valueName])) {
+
+                    if(typeof realityObject.publicData[node] === "undefined") {
+                        realityObject.publicData[node] = {};
+                    }
+                    realityObject.publicData[node][valueName] = thisMsg.publicData[node][valueName];
+                    
                     parent.postMessage(JSON.stringify(
                         {
                             version: realityObject.version,
@@ -477,9 +487,10 @@ var sendTouchEvents = false;
                             publicData: thisMsg.publicData[node]
                         }
                     ), "*");
+                    
+                    callback(thisMsg.publicData[node][valueName]);
                 }
                 
-                callback(thisMsg.publicData[node][valueName]);
             });
         };
 
@@ -662,13 +673,8 @@ var sendTouchEvents = false;
     window.onload = function() {
 
         window.addEventListener('message', function (msg) {
-            // if (msg.origin === "https://www.youtube.com") return; // TODO: make a more generalized solution for this... 
             
             var msgContent = JSON.parse(msg.data);
-            
-            // if (msgContent.stopTouchEditing) {
-            //     sendTouchEvents = false;
-            // }
 
             if (msgContent.event && msgContent.event.pointerId) {
                 var eventData = msgContent.event;
