@@ -1136,10 +1136,6 @@ if (thisFrame) {
             tempThisObject.fullScreen = false;
             if (tempThisObject.uuid) {
                 globalDOMCache[tempThisObject.uuid].style.display = '';
-                if (tempThisObject.frameSizeX && tempThisObject.frameSizeY) {
-                    globalDOMCache['iframe' + tempThisObject.uuid].style.left = ((globalStates.height - tempThisObject.frameSizeX) / 2) + "px";
-                    globalDOMCache['iframe' + tempThisObject.uuid].style.top = ((globalStates.width - tempThisObject.frameSizeY) / 2) + "px";
-                }
             }
         }
 
