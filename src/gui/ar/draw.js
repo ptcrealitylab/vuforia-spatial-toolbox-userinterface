@@ -805,6 +805,10 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         frame.begin =  realityEditor.gui.ar.utilities.newIdentityMatrix();
         frame.temp =  realityEditor.gui.ar.utilities.newIdentityMatrix();
         
+        if (frame.ar.scale > globalStates.defaultScale/2) {
+            frame.ar.scale *= 0.5;
+        }
+        
     } else {
         
         frame.ar.x = 0;
@@ -833,9 +837,7 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         // reset frame.begin
         frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
-
         // realityEditor.device.videoRecording.moveFrameToCamera(newObjectKey, newFrameKey);
-        
         
     }
     
