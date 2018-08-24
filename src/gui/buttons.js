@@ -112,6 +112,7 @@ realityEditor.gui.buttons.resetButtonDown = function(event) {
     globalStates.resetButtonDown = true;
 };
 
+/*
 realityEditor.gui.buttons.resetButtonUp = function(event) {
     if (event.button !== "reset") return;
 
@@ -179,6 +180,46 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
 
     }
 };
+*/
+realityEditor.gui.buttons.resetButtonUp = function(event){
+    if (event.button !== "reset") return;
+
+    realityEditor.gui.menus.off("editing",["reset"]);
+
+    if (!globalStates.resetButtonDown) return;
+    globalStates.resetButtonDown = false;
+
+    for (var objectKey in objects) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
+            continue;
+        }
+        realityEditor.network.sendResetToLastCommit(objectKey);
+    }
+};
+
+realityEditor.gui.buttons.commitButtonDown = function(event) {
+    if (event.button !== "commit") return;
+    globalStates.commitButtonDown = true;
+};
+
+realityEditor.gui.buttons.commitButtonUp = function(event) {
+    if (event.button !== "commit") return;
+
+    realityEditor.gui.menus.off("editing",["commit"]);
+
+    if (!globalStates.commitButtonDown) return;
+    globalStates.commitButtonDown = false;
+
+    for (var objectKey in objects) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
+            continue;
+        }
+        realityEditor.network.sendSaveCommit(objectKey);
+    }
+};
+
+
+
 
 realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {
         if (event.button !== "unconstrained") return;

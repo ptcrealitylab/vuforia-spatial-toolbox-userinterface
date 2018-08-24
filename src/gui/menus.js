@@ -69,6 +69,7 @@ realityEditor.gui.menus.buttons = {
 		logic: {},
 		pocket: {},
 		reset: {},
+        commit: {},
 		setting: {},
 		unconstrained: {},
 		lock:{},
@@ -89,7 +90,7 @@ realityEditor.gui.menus.menus = {
     logic: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
     gui: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
     setting: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-    editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", reset: "blue", unconstrained: "blue"},
+    editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", commit: "blue", reset: "blue", unconstrained: "blue"},
     crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
     bigTrash: {bigTrash: "red"},
     bigPocket: {bigPocket: "green"},
@@ -100,7 +101,7 @@ realityEditor.gui.menus.menus = {
     reality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
     settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
     videoRecording: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue"},
-    videoRecordingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue", reset: "blue", unconstrained: "blue"}
+    videoRecordingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue", commit:"blue", reset: "blue", unconstrained: "blue"}
 };
 
 realityEditor.gui.menus.getVisibility = function(item){
@@ -392,6 +393,7 @@ realityEditor.gui.menus.pointerDown = function(event) {
     realityEditor.gui.buttons.logicButtonDown(event);
     realityEditor.gui.buttons.pocketButtonDown(event);
     realityEditor.gui.buttons.resetButtonDown(event);
+    realityEditor.gui.buttons.commitButtonDown(event);
     realityEditor.gui.buttons.settingButtonDown(event);
 
 };
@@ -404,6 +406,7 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.guiButtonUp(event);
     realityEditor.gui.buttons.logicButtonUp(event);
     realityEditor.gui.buttons.resetButtonUp(event);
+    realityEditor.gui.buttons.commitButtonUp(event);
     realityEditor.gui.buttons.unconstrainedButtonUp(event);
     realityEditor.gui.buttons.settingButtonUp(event);
     realityEditor.gui.buttons.freezeButtonUp(event);

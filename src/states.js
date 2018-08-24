@@ -110,6 +110,7 @@ var globalStates = {
 	pocketButtonDown: false,
 	pocketButtonUp: false,
     resetButtonDown: false,
+    commitButtonDown: false,
     settingsButtonDown: false,
 	freezeButtonState: false,
 	logButtonState: false,

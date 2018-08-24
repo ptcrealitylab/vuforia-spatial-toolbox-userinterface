@@ -299,6 +299,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     }
     
     // update each frame in the object
+
+    
     for (var frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
@@ -326,6 +328,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
             var originNodes = origin.frames[frameKey].nodes;
+
+      
             
             for (var nodeKey in remoteNodes) {
                 if (!remoteNodes.hasOwnProperty(nodeKey)) continue;
@@ -360,6 +364,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
                 //     }
                 // }
             }
+            
         }
         
         if (globalDOMCache["iframe" + frameKey]) {
@@ -367,6 +372,10 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
+    }
+
+    for (var linkKey in remote.links) {
+        origin.links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
     }
 
     // for (var nodeKey in remote.nodes) {
@@ -1998,6 +2007,20 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
   
 
 };
+
+realityEditor.network.sendSaveCommit = function (objectKey) {
+   var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/saveCommit/";
+    content ={};
+        this.postData(urlEndpoint, content, function(){});
+};
+
+realityEditor.network.sendResetToLastCommit = function (objectKey) {
+    var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/resetToLastCommit/";
+    content ={};
+    this.postData(urlEndpoint, content, function(){});
+};
+
+
 
 /**
  * @desc
