@@ -190,3 +190,26 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
         targetDownloadStates[objectName].MARKER_ADDED = DownloadState.FAILED;
     }
 };
+
+// callback for getScreenshot
+realityEditor.app.callbacks.uploadMemory = function(base64String) {
+
+    // var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
+    // debugShowScreenshot(screenshotBlobUrl);
+    // currentMemory.src = screenshotBlobUrl;
+    
+    var currentMemoryID = realityEditor.gui.ar.getClosestObject()[0];
+    var currentMemoryIP = realityEditor.getObject(currentMemoryID).ip;
+
+    var formData = new FormData();
+    // formData.append('ip', currentMemoryIP);
+    // formData.append('id', currentMemoryID);
+    formData.append('memoryInfo', JSON.stringify(realityEditor.gui.ar.draw.visibleObjects[currentMemoryID]));
+    var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
+    formData.append('memoryImage', blob);
+
+    var request = new XMLHttpRequest();
+    request.open("POST", "http://" + currentMemoryIP + ':' + httpPort + '/object/' + currentMemoryID + '/memory');
+    request.send(formData);
+
+};
