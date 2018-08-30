@@ -485,3 +485,8 @@ realityEditor.gui.ar.lines.drawSimpleLine = function(context, startX, startY, en
 	context.lineTo(endX, endY);
 	context.stroke();
 };
+
+
+// realityEditor.gui.ar.lines.drawGhostLines = function (thisFrame, context) {
+//    
+// };

@@ -215,6 +215,10 @@ realityEditor.gui.buttons.commitButtonUp = function(event) {
             continue;
         }
         realityEditor.network.sendSaveCommit(objectKey);
+        
+        // update local history instantly
+        var thisObject = realityEditor.getObject(objectKey);
+        thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
     }
 };
 

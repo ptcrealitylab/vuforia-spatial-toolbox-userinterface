@@ -119,6 +119,7 @@ realityEditor.device.onload = function () {
     
     // initialize additional features
     realityEditor.device.videoRecording.initFeature();
+    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
     
 	this.cout("onload");
 

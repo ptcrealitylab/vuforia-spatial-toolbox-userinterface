@@ -176,6 +176,15 @@ body {
 
 }
 
+.frameHistoryGhost {
+    /*width: 400px;*/
+    /*height: 300px;*/
+    /*border: 5px solid black;*/
+    /*background-color: rgba(0, 0, 0, 0.1);*/
+    /*background-color: rgba(0, 0, 0, 0.05);*/
+    border: 5px dashed rgba(0, 0, 0, 0.5);
+}
+
 /*
 .contentRotation {
     -webkit-transform-style: preserve-3d;
