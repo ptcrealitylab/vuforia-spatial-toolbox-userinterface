@@ -15,7 +15,8 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
     var linesToDraw = [];
 
     var privateState = {
-        visibleObjects: {}
+        visibleObjects: {},
+        ghostsAdded: []
     };
 
     function initFeature() {
@@ -44,8 +45,18 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 
                 privateState.visibleObjects = visibleObjects;
                 
+            } else {
+                hideAllGhosts();
+                // hideFrameGhosts(visibleObjects);
+                // hideNodeGhosts(visibleObjects);
             }
             
+        });
+    }
+    
+    function hideAllGhosts() {
+        privateState.ghostsAdded.forEach(function(ghostKey) {
+            hideGhost(ghostKey);
         });
     }
     
@@ -324,8 +335,13 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         
         if (isNode && ghostNode.type !== 'logic') {
             // var containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(ghostFrame); // TODO: decide if this or the other.. using ghost frame shows actually where it will reset to, but using the realFrame better shows the movement you've done
-            var realFrame = realityEditor.getFrame(objectKey, frameKey);
-            var containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(realFrame);
+            var containingFramePosition;
+            if (!wasFrameDeleted) {
+                var realFrame = realityEditor.getFrame(objectKey, frameKey);
+                containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(realFrame);
+            } else {
+                containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(ghostFrame);
+            }
             containingPosition.x += containingFramePosition.x;
             containingPosition.y += containingFramePosition.y;
             containingPosition.scale *= (containingFramePosition.scale/globalStates.defaultScale);
@@ -376,26 +392,31 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         if (globalDOMCache['ghost' + vehicleKey]) {
             globalDOMCache['ghost' + vehicleKey].parentNode.removeChild(globalDOMCache['ghost' + vehicleKey]);
             delete globalDOMCache['ghost' + vehicleKey];
+
+            var index = privateState.ghostsAdded.indexOf(vehicleKey);
+            if (index !== -1) privateState.ghostsAdded.splice(index, 1);
         }
         
     }
     
-    function createGhostElement(objectKey, frameKey, wasFrameDeleted) {
+    function createGhostElement(objectKey, vehicleKey, wasFrameDeleted) {
         
         var ghostDiv = document.createElement('div');
-        ghostDiv.id = 'ghost' + frameKey;
+        ghostDiv.id = 'ghost' + vehicleKey;
         ghostDiv.classList.add('frameHistoryGhost', 'main', 'ignorePointerEvents', 'visibleFrameContainer');
         if (wasFrameDeleted) {
             ghostDiv.classList.add('frameHistoryGhostDeleted');
         }
-        if (globalDOMCache['iframe' + frameKey]) {
-            ghostDiv.style.width = parseInt(globalDOMCache['iframe' + frameKey].style.width) + 'px';
-            ghostDiv.style.height = parseInt(globalDOMCache['iframe' + frameKey].style.height) + 'px';
-            ghostDiv.style.left = parseInt(globalDOMCache['iframe' + frameKey].style.left) + 'px';
-            ghostDiv.style.top = parseInt(globalDOMCache['iframe' + frameKey].style.top) + 'px';
+        if (globalDOMCache['iframe' + vehicleKey]) {
+            ghostDiv.style.width = parseInt(globalDOMCache['iframe' + vehicleKey].style.width) + 'px';
+            ghostDiv.style.height = parseInt(globalDOMCache['iframe' + vehicleKey].style.height) + 'px';
+            ghostDiv.style.left = parseInt(globalDOMCache['iframe' + vehicleKey].style.left) + 'px';
+            ghostDiv.style.top = parseInt(globalDOMCache['iframe' + vehicleKey].style.top) + 'px';
         }
         document.getElementById('GUI').appendChild(ghostDiv);
-        globalDOMCache['ghost' + frameKey] = ghostDiv;
+        globalDOMCache['ghost' + vehicleKey] = ghostDiv;
+        
+        privateState.ghostsAdded.push(vehicleKey);
         
     }
     
