@@ -193,7 +193,7 @@ realityEditor.gui.buttons.resetButtonUp = function(event){
         if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
             continue;
         }
-        realityEditor.network.sendResetToLastCommit(objectKey);
+        realityEditor.network.sendResetToLastCommit(objectKey); // TODO: this doesnt reset links yet, just positions
     }
 };
 
@@ -219,11 +219,10 @@ realityEditor.gui.buttons.commitButtonUp = function(event) {
         // update local history instantly
         var thisObject = realityEditor.getObject(objectKey);
         thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
+        
+        realityEditor.gui.ar.frameHistoryRenderer.refreshGhosts();
     }
 };
-
-
-
 
 realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {
         if (event.button !== "unconstrained") return;
