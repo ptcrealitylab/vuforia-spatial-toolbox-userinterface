@@ -363,7 +363,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 
     // draw all lines
-    if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && !globalStates.editingMode) {
+    if ((globalStates.guiState === "node" || globalStates.guiState === "logic")) {
         
         for (var objectKey in objects) {
             if (!objects.hasOwnProperty(objectKey)) continue;
@@ -374,35 +374,39 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             }
         }
         
-        this.ar.lines.drawInteractionLines();
-        
-        var SPEECH_FEATURE_ENABLED = false;
-        // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
-        if (SPEECH_FEATURE_ENABLED && globalStates.speechState) {
+        if (!globalStates.editingMode) { // TODO: might not actually need this here, but need to test if i can safely remove it...
 
-            globalStates.nodeSpeechHighlightCounter++;
-            if (globalStates.nodeSpeechHighlightCounter > 20) {
+            this.ar.lines.drawInteractionLines();
 
-                var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode(); //realityEditor.device.speech.getClosestObjectFrameNode(); //getClosestNode();
-                if (!closest) return;
-                
-                // reset all other nodes to full opacity
-                realityEditor.forEachNodeInAllObjects( function(objectKey, frameKey, nodeKey) {
-                    var nodeDom = document.getElementById('object' + nodeKey);
-                    if (nodeDom && nodeDom.style.opacity !== "1") {
-                        nodeDom.style.opacity = "1";
+            var SPEECH_FEATURE_ENABLED = false;
+            // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
+            if (SPEECH_FEATURE_ENABLED && globalStates.speechState) {
+
+                globalStates.nodeSpeechHighlightCounter++;
+                if (globalStates.nodeSpeechHighlightCounter > 20) {
+
+                    var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode(); //realityEditor.device.speech.getClosestObjectFrameNode(); //getClosestNode();
+                    if (!closest) return;
+
+                    // reset all other nodes to full opacity
+                    realityEditor.forEachNodeInAllObjects( function(objectKey, frameKey, nodeKey) {
+                        var nodeDom = document.getElementById('object' + nodeKey);
+                        if (nodeDom && nodeDom.style.opacity !== "1") {
+                            nodeDom.style.opacity = "1";
+                        }
+                    });
+
+                    // highlight the closest one with semi-transparency
+                    var closestNodeDom = document.getElementById('object' + closest.nodeKey);
+                    if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
+                        closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
                     }
-                });
 
-                // highlight the closest one with semi-transparency
-                var closestNodeDom = document.getElementById('object' + closest.nodeKey);
-                if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
-                    closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
+                    globalStates.nodeSpeechHighlightCounter = 0;
                 }
 
-                globalStates.nodeSpeechHighlightCounter = 0;
             }
-
+            
         }
         
     }

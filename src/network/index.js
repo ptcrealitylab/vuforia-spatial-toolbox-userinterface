@@ -328,8 +328,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
             var originNodes = origin.frames[frameKey].nodes;
-
-      
             
             for (var nodeKey in remoteNodes) {
                 if (!remoteNodes.hasOwnProperty(nodeKey)) continue;
@@ -366,16 +364,18 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             }
             
         }
+
+        origin.frames[frameKey].links = JSON.parse(JSON.stringify(remote.frames[frameKey].links));
+        
+        // for (var linkKey in remote.frames[frameKey].links) {
+        //     origin.frames[frameKey].links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
+        // }
         
         if (globalDOMCache["iframe" + frameKey]) {
             if (globalDOMCache["iframe" + frameKey]._loaded) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
-    }
-
-    for (var linkKey in remote.links) {
-        origin.links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
     }
 
     // for (var nodeKey in remote.nodes) {
@@ -465,6 +465,20 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
     if (!origin) {
 
         origin = remote;
+
+        if (origin.type === "logic") {
+            if (!origin.guiState) {
+                origin.guiState = new LogicGUIState();
+            }
+
+            if (!origin.grid) {
+                var container = document.getElementById('craftingBoard');
+                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
+            }
+
+        }
+
+        objects[objectKey].frames[frameKey].nodes[nodeKey] = origin;
 
     } else {
 
