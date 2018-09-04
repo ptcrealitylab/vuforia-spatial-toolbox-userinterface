@@ -13,6 +13,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
     var tempResMatrix = [];
     var activeObjectMatrix = [];
     var linesToDraw = [];
+    var missingLinksToDraw = [];
 
     var privateState = {
         visibleObjects: {},
@@ -25,6 +26,8 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             
             if (globalStates.editingMode) {
 
+                missingLinksToDraw = [];
+
                 if (globalStates.guiState === 'ui') {
                     hideNodeGhosts(visibleObjects);
                     renderGhostsForVisibleObjects(visibleObjects);
@@ -32,6 +35,8 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 } else if (globalStates.guiState === 'node') {
                     hideFrameGhosts(visibleObjects);
                     renderNodeGhostsForVisibleObjects(visibleObjects);
+                    
+                    renderLinkGhostsForVisibleObjects(visibleObjects);
                 }
 
                 // remove all ghosts when an object loses visibility
@@ -42,6 +47,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 // draw linesToDraw on canvas
 
                 drawLinesFromGhosts();
+                drawMissingLinks();
                 
                 privateState.visibleObjects = visibleObjects;
                 
@@ -107,6 +113,51 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         }
 
         linesToDraw = [];
+        
+    }
+    
+    function renderLinkGhostsForVisibleObjects(visibleObjects) {
+        
+        for (var objectKey in visibleObjects) {
+            if (!visibleObjects.hasOwnProperty(objectKey)) continue;
+
+            var thisObject = realityEditor.getObject(objectKey);
+
+            if (thisObject.hasOwnProperty('framesHistory')) {
+                var frameHistory = thisObject.framesHistory;
+
+                for (var frameKey in frameHistory) {
+                    if (!frameHistory.hasOwnProperty(frameKey)) continue;
+                    
+                    for (var linkKey in frameHistory[frameKey].links) {
+                        if (!frameHistory[frameKey].links.hasOwnProperty(linkKey)) continue;
+
+                        var ghostLink = frameHistory[frameKey].links[linkKey];
+                        
+                        var realFrame = realityEditor.getFrame(objectKey, frameKey);
+                        var wasFrameDeleted = !realFrame;
+                        
+                        if (!wasFrameDeleted) {
+                            var realLink = realFrame.links[linkKey];
+                            
+                            if (ghostLink && !realLink) {
+                                // console.log(realLink, ghostLink);
+
+                                var startNode = realityEditor.getNode(ghostLink.objectA, ghostLink.frameA, ghostLink.nodeA);
+                                var endNode = realityEditor.getNode(ghostLink.objectB, ghostLink.frameB, ghostLink.nodeB);
+                                
+                                missingLinksToDraw.push({
+                                    startX: startNode.screenX,
+                                    startY: startNode.screenY,
+                                    endX: endNode.screenX,
+                                    endY: endNode.screenY
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
     }
 
@@ -294,10 +345,23 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         });
         
     }
-    //
-    // function renderNodeGhost(objectKey, frameKey, nodeKey, ghostNode, markerMatrix, wasFrameDeleted, wasNodeDeleted) {
-    //    
-    // }
+    
+    function drawMissingLinks() {
+        missingLinksToDraw.forEach(function(line) {
+
+            // var distance = Math.sqrt( (line.startX - line.endX)*(line.startX - line.endX) + (line.startY - line.endY)*(line.startY - line.endY) );
+
+            // if (distance > 50) {
+
+                // var lineWidth = Math.max(1, Math.min(10, Math.sqrt(distance)/5));
+                var lineWidth = 3;
+
+                drawArrow(globalCanvas.context, line.startX, line.startY, line.endX, line.endY, 'rgba(255, 0, 0, 0.5)', lineWidth, 7);
+                globalCanvas.hasContent = true;
+            // }
+
+        });
+    }
     
     function renderGhost(objectKey, frameKey, nodeKey, ghostFrame, ghostNode, markerMatrix, wasFrameDeleted) {
         
