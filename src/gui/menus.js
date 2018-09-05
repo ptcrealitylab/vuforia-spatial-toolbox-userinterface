@@ -105,11 +105,11 @@ realityEditor.gui.menus.menus = {
 };
 
 realityEditor.gui.menus.getVisibility = function(item){
-if(this.buttons[item].item.style.visibility !== "hidden"){
-    return true;
-}else {
-    return false;
-}
+    if(this.buttons[item].item.style.visibility !== "hidden"){
+        return true;
+    }else {
+        return false;
+    }
 };
 
 realityEditor.gui.menus.getSelected = function(item){
@@ -119,7 +119,6 @@ realityEditor.gui.menus.getSelected = function(item){
         return false;
     }
 };
-
 
 realityEditor.gui.menus.history = [];
 
@@ -134,7 +133,6 @@ realityEditor.gui.menus.getElements = function (element) {
     }
 
     l = document.getElementById(element+"ButtonDiv");
-
 
     var svgElement;
 
@@ -186,7 +184,7 @@ realityEditor.gui.menus.init = function () {
                 }, false);
 
         }
-    };
+    }
 	//  document.getElementById("UIButtons").style.visibility = "visible";
 };
 

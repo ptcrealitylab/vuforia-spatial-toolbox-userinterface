@@ -303,7 +303,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'value', type: "node"}
             ]
         },
-        /*  {
+        // /*  
+        {
             name: 'skyNews',
             width: 660,
             height: 430,
@@ -324,7 +325,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
              height: 400,
              nodes: [
              ]
-         },*/
+         },
+        // */
         {
             name: 'label',
             width: 450,

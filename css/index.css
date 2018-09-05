@@ -1128,6 +1128,16 @@ Logic Interface CSS
     display: none;
 }
 
+
+#pocketScrollContainer {
+    /*background-color: #B7B7B7; !*#969696;*!*/
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 506px;
+    height: 320px;
+}
+
 .pocket.pocketShown {
     display: block;
 }
