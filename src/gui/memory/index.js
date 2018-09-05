@@ -418,6 +418,7 @@ var activeThumbnail = '';
 var barContainers = [];
 var pendingMemorizations = {};
 var memoryBarHeight = 80;
+var numMemoryContainers = 4;
 
 function getBarContainerAtLeft(left) {
     // Assumes bar containers are in order of DOM insertion
@@ -437,7 +438,7 @@ function url(href) {
 
 function initMemoryBar() {
     var memoryBar = document.querySelector('.memoryBar');
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < numMemoryContainers; i++) {
         var memoryContainer = document.createElement('div');
         memoryContainer.classList.add('memoryContainer');
         memoryContainer.setAttribute('touch-action', 'none');
