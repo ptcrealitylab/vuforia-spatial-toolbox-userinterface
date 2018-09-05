@@ -362,6 +362,13 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
                 //     }
                 // }
             }
+
+            // remove extra nodes from origin that don't exist in remote
+            for (var nodeKey in originNodes) {
+                if (originNodes.hasOwnProperty(nodeKey) && !remoteNodes.hasOwnProperty(nodeKey)) {
+                    realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
+                }
+            }
             
         }
 
@@ -375,6 +382,14 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
             if (globalDOMCache["iframe" + frameKey]._loaded) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
+        }
+    }
+
+    // remove extra frames from origin that don't exist in remote
+    for (var frameKey in origin.frames) {
+        if (origin.frames.hasOwnProperty(frameKey) && !remote.frames.hasOwnProperty(frameKey)) {
+            // delete origin.frames[frameKey];
+            realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
         }
     }
 
