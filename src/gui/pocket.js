@@ -658,6 +658,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         setPaletteElementDemo(true);
         isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
+
+        createPocketScrollbar();
     }
 
     function setPaletteElementDemo(value) {
@@ -745,6 +747,77 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // elt.style.marginTop = offsetY + 'px';
             // elt.style.marginLeft = offsetX + 'px';
         }
+    }
+    
+    function createPocketScrollbar() {
+        var scrollbar = document.getElementById('pocketScrollBar');
+        if (scrollbar.children.length > 0) {
+            console.log('already built the pocket scrollbar');
+            return;
+        }
+        var numMemoryContainers = 4;
+        var numFrames = realityElements.length + numMemoryContainers;
+        var pageHeight = 320;
+        var frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
+        var paddingHeight = 6; //parseFloat(document.querySelector('#pocket-element').style.margin) * 2;
+        var framesPerRow = 4;
+        var numRows = Math.ceil(numFrames / framesPerRow);
+        var numChapters = Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight );
+        console.log('building pocket scrollbar with ' + numChapters + ' chapters');
+        
+        var scrollbarHeight = 305;
+        
+        var allSegmentButtons = [];
+        
+        for (var i = 0; i < numChapters; i++) {
+            var segmentButton = document.createElement('div');
+            segmentButton.className = 'pocketScrollBarSegment';
+            segmentButton.id = 'pocketScrollBarSegment' + i;
+            segmentButton.style.height = (scrollbarHeight / numChapters) + 'px';
+            segmentButton.style.top = (i * scrollbarHeight / numChapters) + 'px';
+            if (i > 0) {
+                segmentButton.style.borderTop = '2px solid cyan';
+            }
+            // if (i < numChapters-1) {
+            //     segmentButton.style.borderBottom = '1px solid cyan';
+            // }
+            
+            segmentButton.dataset.index = i;
+
+            segmentButton.addEventListener('pointerdown', function(e) {
+                console.log('tapped segment ' + e.currentTarget.dataset.index);
+                allSegmentButtons.forEach(function(div){
+                    div.classList.remove('pocketScrollBarSegmentActive');
+                });
+                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+            });
+            segmentButton.addEventListener('pointerup', function(e) {
+                console.log('released segment ' + e.currentTarget.dataset.index);
+                allSegmentButtons.forEach(function(div){
+                    div.classList.remove('pocketScrollBarSegmentActive');
+                });
+                e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+                e.currentTarget.classList.add('pocketScrollBarSegmentActive');
+                scrollToSegmentIndex(e.currentTarget.dataset.index);
+            });
+            segmentButton.addEventListener('pointerenter', function(e) {
+                console.log('released segment ' + e.currentTarget.dataset.index);
+                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+                scrollToSegmentIndex(e.currentTarget.dataset.index);
+            });
+            segmentButton.addEventListener('pointerleave', function(e) {
+                console.log('released segment ' + e.currentTarget.dataset.index);
+                e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+            });
+            scrollbar.appendChild(segmentButton);
+            allSegmentButtons.push(segmentButton);
+        }
+        
+        function scrollToSegmentIndex(index) {
+            var scrollContainer = document.getElementById('pocketScrollContainer');
+            scrollContainer.scrollTop = index * pageHeight;
+        }
+        
     }
 
     exports.pocketInit = pocketInit;

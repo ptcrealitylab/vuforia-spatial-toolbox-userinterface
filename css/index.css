@@ -527,6 +527,10 @@ body {
     overflow: hidden;
 }
 
+.memoryContainer {
+    height: calc(15vw - 18px);
+}
+
 #overlay.overlayMemory {
     background-position: center center;
     background-size: cover;
@@ -1139,16 +1143,6 @@ Logic Interface CSS
     display: none;
 }
 
-
-#pocketScrollContainer {
-    /*background-color: #B7B7B7; !*#969696;*!*/
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 506px;
-    height: 320px;
-}
-
 .pocket.pocketShown {
     display: block;
 }
@@ -1172,3 +1166,41 @@ Logic Interface CSS
     height: 100%;
     display: none;
 }
+
+#pocketScrollContainer {
+    /*background-color: #B7B7B7; !*#969696;*!*/
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 506px;
+    height: 320px;
+}
+
+#pocketScrollBar {
+    position: absolute;
+    right: 75px;
+    top: 5px;
+    height: 305px;
+    width: 70px;
+    border: 3px solid cyan;
+    border-radius: 10px;
+}
+
+.pocketScrollBarSegment {
+    position: absolute;
+    /*border: 3px solid cyan;*/
+    /*border-radius: 10px;*/
+    width: 70px;
+    height: 305px;
+    left: 0px;
+    top: 0px;
+}
+
+.pocketScrollBarSegmentTouched {
+    background-color: rgba(0,255,255,0.6);
+}
+
+.pocketScrollBarSegmentActive {
+    background-color: rgba(0,255,255,0.3);
+}
+
