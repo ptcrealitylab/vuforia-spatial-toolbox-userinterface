@@ -28,6 +28,7 @@
             position: absolute;
             top: 0;
             left: 0;
+            z-index: -1;
         }
 
         .hidden {
@@ -79,7 +80,7 @@
               }
         }
         
-        #recordButtonOutline {
+        .buttonOutline {
             width: 100px;
             height: 100px;
             border-radius: 50%;
@@ -159,17 +160,48 @@
             animation: recordButtonHide 0.25s ease-out both;
         }
         
+        #playButton {
+            box-sizing: border-box;
+            height: 50px;
+
+            border-color: transparent transparent transparent white;
+            transition: 100ms all ease;
+            will-change: border-width;
+            cursor: pointer;
+
+            /*play state*/
+            border-style: solid;
+            border-width: 25px 0 25px 40px;
+            
+            margin-top: 23px;
+            margin-left: 13px;
+        }
+        
+        #playButton.currentlyPlaying {
+            border-style: double;
+            border-width: 0 0 0 40px;
+            margin-left: 1px;
+        }
+        
+        #playButtonOutline {
+            opacity: 1;
+            transition: 1000ms all ease;
+        }
+        
+        #playButtonOutline.currentlyPlaying {
+            opacity: 0;
+        }
+        
     </style>
 </head>
 <body>
     
     <div id="container" touch-action="none">
         <div>
-            <video id="recordedVideo" class="hidden" width="558" height="310" playsinline controls webkit-playsinline loop></video>
+            <video id="recordedVideo" class="hidden" width="558" height="310" playsinline webkit-playsinline loop></video>
             
-            <div id="recordButtonOutline" class="visible">
+            <div id="recordButtonOutline" class="buttonOutline hidden">
                 <div id="recordButton" class="visible">
-
                 </div>
             </div>
             
@@ -178,10 +210,15 @@
                 <div class="recordingText">REC</div>
             </div>
 
-            <div class="spinner hidden">
+            <div class="spinner visible">
                 <div class="bounce1"></div>
                 <div class="bounce2"></div>
                 <div class="bounce3"></div>
+            </div>
+
+            <div id="playButtonOutline" class="buttonOutline hidden">
+                <div id="playButton" class="visible">
+                </div>
             </div>
             
         </div>
@@ -193,10 +230,70 @@
         var isRecording = false;
         var secondsRecorded = 0;
         var recordingInterval = null;
-        
         var recordButton = document.getElementById('recordButton');
         
+        var isPlaying = false;
+        var playButton = document.getElementById('playButton');
+        var playButtonOutline = document.querySelector('#playButtonOutline');
+
+        var container = document.getElementById('container');
+        var recordedVideo = document.getElementById('recordedVideo');
+        var spinner = document.querySelector('.spinner');
+        var source = document.createElement('source');
+        
         var realityInterface = new RealityInterface();
+
+        var recordButtonAppearanceDelay = null;
+        
+        function initVideo() {
+            console.log('video created');
+            source.setAttribute('src', '');
+            recordedVideo.appendChild(source);
+
+            recordedVideo.addEventListener('progress', function(e) {
+                console.log('progress', e);
+
+                // hide record button
+                document.querySelector('#recordButtonOutline').classList.remove('visible');
+                document.querySelector('#recordButtonOutline').classList.add('hidden');
+
+                // show video
+                recordedVideo.classList.remove('hidden');
+                recordedVideo.classList.add('visible');
+
+                clearInterval(interval);
+                // window.requestAnimationFrame(loop);
+            });
+
+            recordedVideo.addEventListener('canplaythrough', function(e) {
+                console.log('canplaythrough', e);
+                // recordedVideo.play();
+
+                // hide loading spinner
+                spinner.classList.remove('visible');
+                spinner.classList.add('hidden');
+
+                // show play/stop button
+                document.querySelector('#playButtonOutline').classList.remove('hidden');
+                document.querySelector('#playButtonOutline').classList.add('visible');
+            });
+            
+            // decide whether to show record button or (play button + video)
+            recordButtonAppearanceDelay = setTimeout(showRecordButton, 3000);
+        }
+        initVideo();
+        
+        function showRecordButton() {
+            if (source.getAttribute('src') === '') {
+                // hide loading spinner
+                spinner.classList.remove('visible');
+                spinner.classList.add('hidden');
+
+                // show record button
+                document.querySelector('#recordButtonOutline').classList.remove('hidden');
+                document.querySelector('#recordButtonOutline').classList.add('visible');
+            }
+        }
 
         recordButton.addEventListener('pointerup', function(e) {
             isRecording = !isRecording;
@@ -238,8 +335,11 @@
             setTimeout(function() {
                 
                 realityInterface.setFullScreenOff();
+                
                 realityInterface.stopVideoRecording(function(videoFilePath) {
                     console.log('video was saved at path: ' + videoFilePath);
+                    realityInterface.writePublicData("storage", "data",  videoFilePath);
+                    loadVideoPath(videoFilePath);
                 });
 
                 // hide indicator and timer in corner
@@ -261,6 +361,31 @@
             }, 0);
         }
         
+        // playButtonOutline.addEventListener('pointerup', togglePlaying);
+        container.addEventListener('pointerup', togglePlaying);
+        
+        function togglePlaying(e) {
+            isPlaying = !isPlaying;
+
+            if (isPlaying) {
+                startPlaying();
+            } else {
+                stopPlaying();
+            }
+        }
+        
+        function startPlaying() {
+            playButton.classList.add('currentlyPlaying');
+            playButtonOutline.classList.add('currentlyPlaying');
+            recordedVideo.play();
+        }
+        
+        function stopPlaying() {
+            playButton.classList.remove('currentlyPlaying');
+            playButtonOutline.classList.remove('currentlyPlaying');
+            recordedVideo.pause();
+        }
+        
         function formatSecondsAsTime(seconds) {
             var hours = Math.floor(seconds / 3600);
             seconds -= hours * 3600;
@@ -274,6 +399,150 @@
             while (s.length < (size || 2)) {s = "0" + s;}
             return s;
         };
+
+        realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
+            if (typeof e !== 'string' || e.length === 0) {
+                clearTimeout(recordButtonAppearanceDelay);
+                showRecordButton();
+                console.log('cant load non-string data:', e);
+                return;
+            }
+            if (e === source.getAttribute('src')) {
+                console.log('dont reload the same video');
+                return;
+            }
+
+            loadVideoPath(e);
+        });
+        
+        function loadVideoPath(videoFilePath) {
+            attemptToLoadVideo(videoFilePath, 10);
+        }
+
+        function attemptToLoadVideo(videoUrl, attemptsLeft) {
+            if (attemptsLeft <= 0) {
+                console.log('no more attempts.. failed to load video');
+                // TODO: show error UI
+                return;
+            }
+            console.log('load video from url: ' + videoUrl);
+
+            // recordedVideo.pause();
+            source.addEventListener('error', function(e) {
+                console.log('failed to load');
+                setTimeout(function() {
+                    attemptToLoadVideo(videoUrl, attemptsLeft-1);
+                    console.log('trying again (' + attemptsLeft-1 + ' attempts left)');
+                }, 3000);
+            });
+            source.setAttribute('src', videoUrl);
+            clearTimeout(recordButtonAppearanceDelay);
+            recordedVideo.load();
+        }
+        
+        // networking to read and write public data
+
+        // var videoUrl = '';
+        // var realityInterface = new RealityInterface();
+        // realityInterface.setMoveDelay(300);
+
+        // var recordedVideo = document.getElementById('recordedVideo');
+        // var spinner = document.querySelector('.spinner');
+        // var source = document.createElement('source');
+        //
+        // console.log('video created');
+        // source.setAttribute('src', videoUrl);
+        // recordedVideo.appendChild(source);
+        // recordedVideo.addEventListener('pointerup', onPointerUp);
+        // recordedVideo.addEventListener('progress', function(e) {
+        //     console.log('progress', e);
+        //     recordedVideo.classList.remove('hidden');
+        //     recordedVideo.classList.add('visible');
+        //     spinner.classList.remove('visible');
+        //     spinner.classList.add('hidden');
+        //     clearInterval(interval);
+        //     window.requestAnimationFrame(loop);
+        // });
+
+        // var attemptsLeft = 10;
+        // realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
+        //     if (typeof e !== 'string' || e.length === 0) {
+        //         console.log('can\'t load non-string data:', e);
+        //         return;
+        //     }
+        //     if (e === videoUrl) {
+        //         console.log('don\'t reload the same video');
+        //         return;
+        //     }
+        //     videoUrl = e;
+        //
+        //     loadVideo(10);
+        // });
+
+        realityInterface.addReadListener('play', function(e) {
+            if (e.value > 0.5) {
+                if (recordedVideo.paused) {
+                    recordedVideo.play();
+                }
+            } else {
+                if (!recordedVideo.paused) {
+                    recordedVideo.pause();
+                }
+            }
+        });
+
+        var lastProgess = 0;
+        function loop() {
+            if (!recordedVideo.paused) {
+                var thisProgress = recordedVideo.currentTime / recordedVideo.duration;
+                if (thisProgress !== lastProgess) {
+                    lastProgess = thisProgress;
+                    realityInterface.write('progress', thisProgress);
+                    console.log('new progress = ' + thisProgress);
+                }
+            }
+            window.requestAnimationFrame(loop);
+        }
+
+        realityInterface.addReadListener('progress', function(e) {
+
+            if (e.value === lastProgess) return;
+
+            if (recordedVideo.paused) {
+                recordedVideo.currentTime = e.value * recordedVideo.duration;
+            }
+        });
+
+        // function loadVideo(attemptsLeft) {
+        //     attemptsLeft--;
+        //     if (attemptsLeft <= 0) {
+        //         console.log('no more attempts.. failed to load video');
+        //         // TODO: show error UI
+        //         return;
+        //     }
+        //     console.log('load video from url: ' + videoUrl);
+        //
+        //     // recordedVideo.pause();
+        //     source.addEventListener('error', function(e) {
+        //         console.log('failed to load');
+        //         setTimeout(function() {
+        //             loadVideo(attemptsLeft-1);
+        //             console.log('trying again (' + attemptsLeft-1 + ' attempts left)');
+        //         }, 3000);
+        //     });
+        //     source.setAttribute('src', videoUrl);
+        //     recordedVideo.load();
+        // }
+
+        var numRepetitions = 10;
+        var interval = setInterval(function() {
+            numRepetitions--;
+            if (numRepetitions <= 0) {
+                clearInterval(interval);
+                return;
+            }
+            realityInterface.reloadPublicData();
+        }, 3000);
         
     </script>
 

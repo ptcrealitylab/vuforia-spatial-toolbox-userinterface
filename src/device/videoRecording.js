@@ -269,13 +269,13 @@ createNameSpace("realityEditor.device.videoRecording");
     //     Video Recording Within Frame     //
     //////////////////////////////////////////
     
-    function triggerVideoStoppedCallback(objectKey, frameKey) {
-        var object = realityEditor.getObject(objectKey);
-        var thisMsg = {
-            videoFilePath: 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/test.mp4'
-        };
-        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
-    }
+    // function triggerVideoStoppedCallback(objectKey, frameKey) {
+    //     var object = realityEditor.getObject(objectKey);
+    //     var thisMsg = {
+    //         videoFilePath: 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/test.mp4'
+    //     };
+    //     globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+    // }
 
     function startRecordingForFrame(objectKey, frameKey) {
         var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
@@ -285,7 +285,13 @@ createNameSpace("realityEditor.device.videoRecording");
     function stopRecordingForFrame(objectKey, frameKey) {
         var videoId = realityEditor.device.utilities.uuidTime();
         realityEditor.app.stopVideoRecording(videoId);
-        triggerVideoStoppedCallback(objectKey, frameKey); // TODO: this isnt working yet
+        // triggerVideoStoppedCallback(objectKey, frameKey); // TODO: this isnt working yet
+        
+        var object = realityEditor.getObject(objectKey);
+        var thisMsg = {
+            videoFilePath: 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/' + videoId + '.mp4'
+        };
+        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
     }
 
     //////////////////////////////////////////
