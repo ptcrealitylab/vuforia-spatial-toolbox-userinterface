@@ -17,6 +17,7 @@ var sendTouchEvents = false;
         sendAcceleration: false,
         sendFullScreen: false,
         fullscreenZPosition: 0,
+        sendSticky : false,
         height: '100%',
         width: '100%',
         socketIoScript: {},
@@ -111,6 +112,7 @@ var sendTouchEvents = false;
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky,
                     moveDelay: realityObject.moveDelay
                 }
                 )
@@ -591,7 +593,8 @@ var sendTouchEvents = false;
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
-                    fullScreen: realityObject.sendFullScreen
+                    fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky
                 }), '*');
             }
         };
@@ -608,6 +611,7 @@ var sendTouchEvents = false;
                 width: realityObject.width,
                 sendMatrix: realityObject.sendMatrix,
                 sendAcceleration: realityObject.sendAcceleration,
+                stickiness: realityObject.sendSticky,
                 fullScreen: realityObject.sendFullScreen
             }), '*');
         };
@@ -633,7 +637,8 @@ var sendTouchEvents = false;
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
-                    fullscreenZPosition: realityObject.fullscreenZPosition
+                    fullscreenZPosition: realityObject.fullscreenZPosition,
+                    stickiness: realityObject.sendSticky
                 }), '*');
             }
         };
@@ -658,8 +663,94 @@ var sendTouchEvents = false;
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
-                    fullScreen: realityObject.sendFullScreen
+                    fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky
                 }), '*');
+            }
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.setStickyFullScreenOn = function () {
+            realityObject.sendFullScreen = "sticky";
+            realityObject.sendSticky = true;
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+
+                realityObject.height = "100%";
+                realityObject.width = "100%";
+
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        height: realityObject.height,
+                        width: realityObject.width,
+                        sendMatrix: realityObject.sendMatrix,
+                        sendAcceleration: realityObject.sendAcceleration,
+                        fullScreen: realityObject.sendFullScreen,
+                        stickiness: realityObject.sendSticky
+                    }), "*");
+            }
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.setStickinessOff = function () {
+            console.log(realityObject.visibility);
+            //if(realityObject.visibility === "hidden"){
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        height: realityObject.height,
+                        width: realityObject.width,
+                        sendMatrix: realityObject.sendMatrix,
+                        sendAcceleration: realityObject.sendAcceleration,
+                        fullScreen: realityObject.sendFullScreen,
+                        stickiness: false
+                    }), "*");
+            }
+
+        };
+        
+        this.startVideoRecording = function() {
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        videoRecording: true
+                    }), "*");
+            }
+        };
+        
+        this.stopVideoRecording = function(callback) {
+            realityObject.messageCallBacks.stopVideoRecording = function (msgContent) {
+                if (typeof msgContent.videoFilePath !== 'undefined') {
+                    callback(msgContent.videoFilePath);
+                }
+            };
+
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        videoRecording: false
+                    }), "*");
             }
         };
 

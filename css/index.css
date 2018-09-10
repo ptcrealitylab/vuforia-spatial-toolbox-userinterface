@@ -191,7 +191,7 @@ body {
     /*border: 5px solid black;*/
     /*background-color: rgba(0, 0, 0, 0.1);*/
     /*background-color: rgba(0, 0, 0, 0.05);*/
-    border: 5px dashed rgba(255, 0, 0, 0.3);
+    border: 5px dashed rgba(255, 0, 124, 0.3);
 }
 
 /*
@@ -1192,8 +1192,8 @@ Logic Interface CSS
     /*border-radius: 10px;*/
     width: 70px;
     height: 305px;
-    left: 0px;
-    top: 0px;
+    left: 0;
+    top: 0;
 }
 
 .pocketScrollBarSegmentTouched {

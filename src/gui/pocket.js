@@ -362,8 +362,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         },
         {
             name: 'videoCapture',
-            width: 760,
-            height: 460,
+            width: 568,
+            height: 320,
             nodes: [
                 {name: 'play', type: 'node'},
                 {name: 'progress', type: 'node'},

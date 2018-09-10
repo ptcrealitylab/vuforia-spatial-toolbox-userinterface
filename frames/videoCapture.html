@@ -2,17 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Video Recording</title>
-    <script src="resources/object-frames.js"></script>
+    <title>Video Test UI</title>
     <script src="resources/pep.min.js"></script>
+    <script src="resources/object-frames.js"></script>
     <style>
         body {
-            width: 760px;
-            height: 460px;
+            /*width: 548px;*/
+            /*height: 340px;*/
+            /*background-color: #4E4E4F;*/
+            overflow: visible;
         }
         #container {
-            width: 720px;
-            height: 415px;
+            width: 538px;
+            height: 290px;
             border: 5px solid cyan;
             border-radius: 10px;
             padding: 10px;
@@ -22,10 +24,16 @@
             text-align: center;
         }
         
+        #recordedVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
         .hidden {
             display: none;
         }
-        
+
         .visible {
             display: inline-block;
         }
@@ -70,174 +78,204 @@
                   transform: scale(1.0);
               }
         }
+        
+        #recordButtonOutline {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 5px solid white;
+        }
+        
+        #recordButton {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background-color: rgb(255,0,124);
+            margin-top: 13px;
+            -webkit-transform: scale(1);
+        }
+        
+        @keyframes recordButtonStart {
+            0% {
+                -webkit-transform: scale(1);
+                border-radius: 50%;
+            }
+            25% {
+                -webkit-transform: scale(1.1);
+                border-radius: 50%;
+            }
+            100% {
+                -webkit-transform: scale(0.6);
+                border-radius: 10%;
+            }
+        }
+        
+        .currentlyRecording {
+            -webkit-transform: scale(0.6);
+            border-radius: 10%;
+            -webkit-animation: recordButtonStart 0.25s ease-out both;
+            animation: recordButtonStart 0.25s ease-out both;
+        }
+        
+        .recordingIndicator {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+            color: white;
+            font-size: 22px;
+        }
+        
+        .recordingDot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: rgb(255,0,124);
+        }
+        
+        .recordingText {
+            position: absolute;
+            top: -4px;
+            left: 36px;
+            width: 300px;
+            text-align: left;
+        }
+
+        @keyframes recordButtonHide {
+            0% {
+                -webkit-transform: scale(1);
+            }
+            25% {
+                -webkit-transform: scale(1.1);
+            }
+            100% {
+                -webkit-transform: scale(0);
+            }
+        }
+
+        .hiddenRecordingButton {
+            -webkit-transform: scale(0);
+            -webkit-animation: recordButtonHide 0.25s ease-out both;
+            animation: recordButtonHide 0.25s ease-out both;
+        }
+        
     </style>
 </head>
 <body>
-    <!--<div style="width: 800px; height: 600px; background-color: #00edff">-->
-        <!--Video Recording Placeholder-->
-    <!--</div>-->
     
     <div id="container" touch-action="none">
         <div>
-            <video id="recordedVideo" class="hidden" width="720" height="415" playsinline controls webkit-playsinline loop></video>
-            <div class="spinner visible">
+            <video id="recordedVideo" class="hidden" width="558" height="310" playsinline controls webkit-playsinline loop></video>
+            
+            <div id="recordButtonOutline" class="visible">
+                <div id="recordButton" class="visible">
+
+                </div>
+            </div>
+            
+            <div class="recordingIndicator hidden">
+                <div class="recordingDot"></div>
+                <div class="recordingText">REC</div>
+            </div>
+
+            <div class="spinner hidden">
                 <div class="bounce1"></div>
                 <div class="bounce2"></div>
                 <div class="bounce3"></div>
             </div>
+            
         </div>
     </div>
-    
-    <!--<video id="recordedVideo" width="800" height="600" controls touch-action="none">-->
-        <!--<source src="resources/o92o90ssbhqw.mp4" type="video/mp4">-->
-        <!--Your browser does not support the video tag.-->
-    <!--</video>-->
-    
+
     <script>
-        var videoUrl = '';
+        
+        // TODO: programmatically set width and height based on phone screen size
+        var isRecording = false;
+        var secondsRecorded = 0;
+        var recordingInterval = null;
+        
+        var recordButton = document.getElementById('recordButton');
+        
         var realityInterface = new RealityInterface();
-        realityInterface.setMoveDelay(300);
 
-        var recordedVideo = document.getElementById('recordedVideo');
-        var spinner = document.querySelector('.spinner');
-        var source = document.createElement('source');
+        recordButton.addEventListener('pointerup', function(e) {
+            isRecording = !isRecording;
+
+            if (isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+
+        });
         
-        console.log('video created');
-        source.setAttribute('src', videoUrl);
-        recordedVideo.appendChild(source);
-        recordedVideo.addEventListener('pointerup', onPointerUp);
-        recordedVideo.addEventListener('progress', function(e) {
-            console.log('progress', e);
-            recordedVideo.classList.remove('hidden');
-            recordedVideo.classList.add('visible');
-            spinner.classList.remove('visible');
-            spinner.classList.add('hidden');
-            clearInterval(interval);
-            window.requestAnimationFrame(loop);
-        });
-        // recordedVideo.addEventListener('loadstart', function(e) {
-        //     console.log('loadstart', e);
-        // });
-        // recordedVideo.addEventListener('progress', function(e) {
-        //     console.log('loadeddata', e);
-        // });
-        // recordedVideo.addEventListener('loadstart', function(e) {
-        //     console.log('canplay', e);
-        // });
-        // recordedVideo.addEventListener('canplaythrough', function(e) {
-        //     console.log('canplaythrough', e);
-        //     // recordedVideo.play();
-        // });
+        function startRecording() {
+            recordButton.classList.add('currentlyRecording');
+            
+            setTimeout(function() {
 
-        recordedVideo.addEventListener('ended', function(e) {
-            realityInterface.write('play', 0.0);
-        });
+                realityInterface.setStickyFullScreenOn();
+                realityInterface.startVideoRecording();
 
-        function onPointerUp(e) {
-            console.log('pointerup');
-            e.preventDefault();
+                document.querySelector('.recordingIndicator').classList.remove('hidden');
+                document.querySelector('.recordingIndicator').classList.add('visible');
+                
+                secondsRecorded = 0;
+                document.querySelector('.recordingText').innerHTML = 'REC   ' + formatSecondsAsTime(secondsRecorded);
+                
+                recordingInterval = setInterval(function() {
+                    secondsRecorded += 1;
+                    document.querySelector('.recordingText').innerHTML = 'REC   ' + formatSecondsAsTime(secondsRecorded);
+                }, 1000);
+                
+            }, 250);
 
-            if (recordedVideo.paused) {
-                recordedVideo.play({
-                    onplay: function() {
-                        console.log('Yay, playing');
-                    },
-                    onerror: function(errorCode, description) {
-                        // maybe failure happened _during_ playback, maybe it failed to start.
-                        // depends on what is passed to the function.
-                        // errorCode is currently based on W3 specs for HTML5 playback failures.
-                        // https://html.spec.whatwg.org/multipage/embedded-content.html#error-codes
-                        console.log(errorCode, description);
-                    }
+        }
+        
+        function stopRecording() {
+            recordButton.classList.remove('currentlyRecording');
+            
+            setTimeout(function() {
+                
+                realityInterface.setFullScreenOff();
+                realityInterface.stopVideoRecording(function(videoFilePath) {
+                    console.log('video was saved at path: ' + videoFilePath);
                 });
-                realityInterface.write('play', 1.0);
-            } else {
-                recordedVideo.pause();
-                realityInterface.write('play', 0.0);
-            }
-        }
 
-        var attemptsLeft = 10;
-        realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
-            if (typeof e !== 'string' || e.length === 0) {
-                console.log('cant load non-string data:', e);
-                return;
-            }
-            if (e === videoUrl) {
-                console.log('dont reload the same video');
-                return;
-            }
-            videoUrl = e;
-            
-            attemptsLeft = 10;
-            loadVideo();
-        });
-        
-        realityInterface.addReadListener('play', function(e) {
-            if (e.value > 0.5) {
-                if (recordedVideo.paused) {
-                    recordedVideo.play();
-                }
-            } else {
-                if (!recordedVideo.paused) {
-                    recordedVideo.pause();
-                }
-            }
-        });
-        
-        var lastProgess = 0;
-        function loop() {
-            if (!recordedVideo.paused) {
-                var thisProgress = recordedVideo.currentTime / recordedVideo.duration;
-                if (thisProgress !== lastProgess) {
-                    lastProgess = thisProgress;
-                    realityInterface.write('progress', thisProgress);
-                    console.log('new progress = ' + thisProgress);
-                }
-            }
-            window.requestAnimationFrame(loop);
-        }
-
-        realityInterface.addReadListener('progress', function(e) {
-
-            if (e.value === lastProgess) return;
-
-            if (recordedVideo.paused) {
-                recordedVideo.currentTime = e.value * recordedVideo.duration;
-            }
-        });
-
-        function loadVideo() {
-            attemptsLeft--;
-            if (attemptsLeft <= 0) {
-                console.log('no more attempts.. failed to load video');
-                // TODO: show error UI
-                return;
-            }
-            console.log('load video from url: ' + videoUrl);
-            
-            // recordedVideo.pause();
-            source.addEventListener('error', function(e) {
-                console.log('failed to load');
+                // hide indicator and timer in corner
+                document.querySelector('.recordingIndicator').classList.remove('visible');
+                document.querySelector('.recordingIndicator').classList.add('hidden');
+                
+                document.querySelector('#recordButtonOutline').classList.add('hiddenRecordingButton');
+                
                 setTimeout(function() {
-                    loadVideo();
-                    console.log('trying again (' + attemptsLeft + ' attempts left)');
-                }, 3000);
-            });
-            source.setAttribute('src', videoUrl);
-            recordedVideo.load();
+                    // hide stop button
+                    document.querySelector('#recordButtonOutline').classList.remove('visible');
+                    document.querySelector('#recordButtonOutline').classList.add('hidden');
+
+                    // show loading indicator
+                    document.querySelector('.spinner').classList.remove('hidden');
+                    document.querySelector('.spinner').classList.add('visible');
+                }, 500);
+                
+            }, 0);
+        }
+        
+        function formatSecondsAsTime(seconds) {
+            var hours = Math.floor(seconds / 3600);
+            seconds -= hours * 3600;
+            var minutes = Math.floor(seconds / 60);
+            seconds -= minutes * 60;
+            return hours.pad() + ':' + minutes.pad() + ':' + seconds.pad();
         }
 
-        var numRepetitions = 10;
-        var interval = setInterval(function() {
-            numRepetitions--;
-            if (numRepetitions <= 0) {
-                clearInterval(interval);
-                return;
-            }
-            realityInterface.reloadPublicData();
-        }, 3000);
-
+        Number.prototype.pad = function(size) {
+            var s = String(this);
+            while (s.length < (size || 2)) {s = "0" + s;}
+            return s;
+        };
+        
     </script>
+
 </body>
 </html>

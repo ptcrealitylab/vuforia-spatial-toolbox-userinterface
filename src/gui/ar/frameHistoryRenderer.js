@@ -354,9 +354,9 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             // if (distance > 50) {
 
                 // var lineWidth = Math.max(1, Math.min(10, Math.sqrt(distance)/5));
-                var lineWidth = 3;
+                var lineWidth = 1;
 
-                drawArrow(globalCanvas.context, line.startX, line.startY, line.endX, line.endY, 'rgba(255, 0, 0, 0.5)', lineWidth, 7);
+                drawArrow(globalCanvas.context, line.startX, line.startY, line.endX, line.endY, 'rgba(255, 0, 124, 0.5)', lineWidth, 7);
                 globalCanvas.hasContent = true;
             // }
 

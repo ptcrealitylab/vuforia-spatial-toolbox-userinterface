@@ -960,7 +960,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
             }
 
-            if (activeVehicle.fullScreen !== true) {
+            if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
 
                 var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
@@ -1520,7 +1520,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             globalDOMCache["logic" + activeKey] = addLogic;
         }
 
-        if (activeVehicle.fullScreen === true) {
+        if (activeVehicle.fullScreen === true || activeVehicle.fullScreen === 'sticky') {
             addOverlay.style.display = 'none'; // TODO: is this the best way to move unconstrained editing into the three.js scene?
             addIframe.style.pointerEvents = 'none';
         }
@@ -1818,7 +1818,7 @@ realityEditor.gui.ar.draw.getNodeRenderPriority = function(nodeKey) {
 
 realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
 
-    if (activeVehicle.fullScreen !== true) {
+    if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
 
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];

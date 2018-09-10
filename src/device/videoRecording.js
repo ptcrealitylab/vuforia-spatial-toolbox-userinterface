@@ -264,11 +264,40 @@ createNameSpace("realityEditor.device.videoRecording");
         }
         return recordingIndicator;
     }
+    
+    //////////////////////////////////////////
+    //     Video Recording Within Frame     //
+    //////////////////////////////////////////
+    
+    function triggerVideoStoppedCallback(objectKey, frameKey) {
+        var object = realityEditor.getObject(objectKey);
+        var thisMsg = {
+            videoFilePath: 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/test.mp4'
+        };
+        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+    }
+
+    function startRecordingForFrame(objectKey, frameKey) {
+        var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
+        realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+    }
+    
+    function stopRecordingForFrame(objectKey, frameKey) {
+        var videoId = realityEditor.device.utilities.uuidTime();
+        realityEditor.app.stopVideoRecording(videoId);
+        triggerVideoStoppedCallback(objectKey, frameKey); // TODO: this isnt working yet
+    }
+
+    //////////////////////////////////////////
 
     exports.toggleRecording = toggleRecording;
     exports.startRecordingOnClosestObject = startRecordingOnClosestObject;
     exports.stopRecording = stopRecording;
     exports.initFeature = initFeature;
     exports.moveFrameToCamera = moveFrameToCamera;
+
+    exports.startRecordingForFrame = startRecordingForFrame;
+    exports.stopRecordingForFrame = stopRecordingForFrame;
+
 
 }(realityEditor.device.videoRecording));

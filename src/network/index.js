@@ -1155,6 +1155,7 @@ if (thisFrame) {
 
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
+            
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
             var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
@@ -1165,9 +1166,10 @@ if (thisFrame) {
                 '0, 0, ' + zIndex + ', 1)';
             
             globalDOMCache[tempThisObject.uuid].style.display = 'none';
-            globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none';
+            // globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none'; // TODO: fix touch model with something more robust than this, using a selective "raycast" to bubble or not
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
 
         }
         if (msgContent.fullScreen === false) {
@@ -1179,13 +1181,21 @@ if (thisFrame) {
 
     } else if(typeof msgContent.fullScreen === "string") {
         if (msgContent.fullScreen === "sticky") {
-
+            
             tempThisObject.fullScreen = "sticky";
-            document.getElementById("thisObject" + msgContent.frame).style.webkitTransform =
+            console.log("sticky fullscreen: " + tempThisObject.fullScreen);
+            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
-                '0, 0, 0, 1)';
+                '0, 0, ' + zIndex + ', 1)';
+
+            globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            // globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none'; // TODO: fix touch model with something more robust than this, using a selective "raycast" to bubble or not
+            globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
 
         }
     }
@@ -1306,6 +1316,15 @@ if (thisFrame) {
         
     }
 
+    if (typeof msgContent.videoRecording !== "undefined") {
+
+        if (msgContent.videoRecording) {
+            realityEditor.device.videoRecording.startRecordingForFrame(msgContent.object, msgContent.frame);
+        } else {
+            realityEditor.device.videoRecording.stopRecordingForFrame(msgContent.object, msgContent.frame);
+        }
+        
+    }
 
         /*    if (typeof msgContent.finishedLoading !== 'undefined') {
                 console.log('~~~ iframe finished loading ~~~')
