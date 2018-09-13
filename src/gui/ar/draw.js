@@ -856,7 +856,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     //console.log(JSON.stringify(activeObjectMatrix));
 
     // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
-    var shouldRenderFramesInNodeView = globalStates.guiState === 'node' && activeType === 'ui';
+    var shouldRenderFramesInNodeView = (globalStates.guiState === 'node' && activeType === 'ui'); // && globalStates.renderFrameGhostsInNodeViewEnabled;
 
     if (notLoading !== activeKey && activeVehicle.loaded === true && activeVehicle.visualization !== "screen") {
 
@@ -1283,6 +1283,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         // }
     }
     
+    if (shouldRenderFramesInNodeView && !globalStates.renderFrameGhostsInNodeViewEnabled) {
+        this.hideScreenFrame(activeKey);
+    }
+    
     return true;
 
 };
@@ -1394,6 +1398,13 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     if (!doesDOMElementExist && activeVehicle.visible === true) {
         console.warn('trying to hide a frame that doesn\'t exist');
         return;
+    }
+    
+    if (activeVehicle.hasOwnProperty('fullScreen')) {
+        if (activeVehicle.fullScreen === 'sticky') {
+            console.log('dont hide sticky frame');
+            return;
+        }
     }
     
     var isVisible = activeVehicle.visible === true;
@@ -1672,6 +1683,15 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
     return addLogic;
 };
 
+realityEditor.gui.ar.draw.doesObjectContainStickyFrame = function(objectKey) {
+    var object = realityEditor.getObject(objectKey);
+    return Object.keys(object.frames).map(function(frameKey) {
+        return realityEditor.getFrame(objectKey, frameKey).fullScreen;
+    }).some(function(fullScreen) {
+        return fullScreen === 'sticky';
+    });
+};
+
 /**
  * @desc
  * @param objectKey
@@ -1683,7 +1703,11 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     if(!activeVehicle.visibleCounter) {
         return;
     }
-    
+    if (this.doesObjectContainStickyFrame(activeVehicle.objectId)) {
+        console.log('dont kill object with sticky frame');
+        return;
+    }
+
     if (activeVehicle.visibleCounter > 1) {
         activeVehicle.visibleCounter--;
     } else {

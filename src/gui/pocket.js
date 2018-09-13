@@ -294,7 +294,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'value', type: "node"}
             ]
         },
-        
+        {
+            name: 'buttonOn',
+            width: 270,
+            height: 270,
+            nodes: [
+                {name: 'value', type: "node"}
+            ]
+        },
+        {
+            name: 'buttonOff',
+            width: 270,
+            height: 270,
+            nodes: [
+                {name: 'value', type: "node"}
+            ]
+        },
         {
             name: 'graphUI',
             width: 690,
@@ -365,11 +380,19 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             width: 568,
             height: 320,
             nodes: [
-                {name: 'play', type: 'node'},
-                {name: 'progress', type: 'node'},
+                {name: 'play', type: 'node', x: 0, y:0},
+                // {name: 'progress', type: 'node'},
+                // {name: 'next', type: 'node', x: 0, y: 100},
+                {name: 'next', type: 'node', x: 100, y: 0},
+                // {name: 'previous', type: 'node'},
+                
+                // {name: 'show', type: 'node', x: 0, y: -200},
+                // {name: 'hide', type: 'node', x: 0, y: -100},
+                
                 {name: 'storage', type: 'storeData'}
             ]
         }
+        
     ];
 
     function pocketInit() {
@@ -483,8 +506,16 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     addedNode.name = node.name;
                     addedNode.text = undefined;
                     addedNode.type = node.type;
-                    addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one
-                    addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // random otherwise
+                    if (typeof node.x !== 'undefined') {
+                        addedNode.x = node.x; // use specified position if provided
+                    } else {
+                        addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
+                    }
+                    if (typeof node.y !== 'undefined') {
+                        addedNode.y = node.y;
+                    } else {
+                        addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
+                    }
                     addedNode.frameSizeX = 220;
                     addedNode.frameSizeY = 220;
                     addedNode.scale = closestObject.averageScale;

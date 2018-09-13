@@ -7,9 +7,6 @@
     <script src="resources/object-frames.js"></script>
     <style>
         body {
-            /*width: 548px;*/
-            /*height: 340px;*/
-            /*background-color: #4E4E4F;*/
             overflow: visible;
         }
         #container {
@@ -24,11 +21,13 @@
             text-align: center;
         }
         
-        #recordedVideo {
+        #imageContainer {
             position: absolute;
             top: 0;
             left: 0;
             z-index: -1;
+            width: 558px;
+            height: 310px;
         }
 
         .hidden {
@@ -87,109 +86,13 @@
             border: 5px solid white;
         }
         
-        #recordButton {
+        #captureButton {
             width: 76px;
             height: 76px;
             border-radius: 50%;
-            background-color: rgb(255,0,124);
+            background-color: white;
             margin-top: 13px;
             -webkit-transform: scale(1);
-        }
-        
-        @keyframes recordButtonStart {
-            0% {
-                -webkit-transform: scale(1);
-                border-radius: 50%;
-            }
-            25% {
-                -webkit-transform: scale(1.1);
-                border-radius: 50%;
-            }
-            100% {
-                -webkit-transform: scale(0.6);
-                border-radius: 10%;
-            }
-        }
-        
-        .currentlyRecording {
-            -webkit-transform: scale(0.6);
-            border-radius: 10%;
-            -webkit-animation: recordButtonStart 0.25s ease-out both;
-            animation: recordButtonStart 0.25s ease-out both;
-        }
-        
-        .recordingIndicator {
-            position: absolute;
-            left: 20px;
-            top: 20px;
-            font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
-            color: white;
-            font-size: 22px;
-        }
-        
-        .recordingDot {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background-color: rgb(255,0,124);
-        }
-        
-        .recordingText {
-            position: absolute;
-            top: -4px;
-            left: 36px;
-            width: 300px;
-            text-align: left;
-        }
-
-        @keyframes recordButtonHide {
-            0% {
-                -webkit-transform: scale(1);
-            }
-            25% {
-                -webkit-transform: scale(1.1);
-            }
-            100% {
-                -webkit-transform: scale(0);
-            }
-        }
-
-        .hiddenRecordingButton {
-            -webkit-transform: scale(0);
-            -webkit-animation: recordButtonHide 0.25s ease-out both;
-            animation: recordButtonHide 0.25s ease-out both;
-        }
-        
-        #playButton {
-            box-sizing: border-box;
-            height: 50px;
-
-            border-color: transparent transparent transparent white;
-            transition: 100ms all ease;
-            will-change: border-width;
-            cursor: pointer;
-
-            /*play state*/
-            border-style: solid;
-            border-width: 25px 0 25px 40px;
-            
-            margin-top: 23px;
-            margin-left: 13px;
-        }
-        
-        #playButton.currentlyPlaying {
-            border-style: double;
-            border-width: 0 0 0 40px;
-            margin-left: 1px;
-        }
-        
-        #playButtonOutline {
-            opacity: 1;
-            transition: 1000ms all ease;
-        }
-        
-        #playButtonOutline.currentlyPlaying {
-            opacity: 0;
         }
         
     </style>
@@ -198,17 +101,18 @@
     
     <div id="container" touch-action="none">
         <div>
-            <video id="recordedVideo" class="hidden" width="558" height="310" playsinline webkit-playsinline></video>
+            <div id="imageContainer" class="hidden"></div>
+            <!--<video id="recordedVideo" class="hidden" width="558" height="310" playsinline webkit-playsinline></video>-->
             
-            <div id="recordButtonOutline" class="buttonOutline hidden">
-                <div id="recordButton" class="visible">
+            <div id="captureButtonOutline" class="buttonOutline visible">
+                <div id="captureButton" class="visible">
                 </div>
             </div>
             
-            <div class="recordingIndicator hidden">
-                <div class="recordingDot"></div>
-                <div class="recordingText">REC</div>
-            </div>
+            <!--<div class="recordingIndicator hidden">-->
+                <!--<div class="recordingDot"></div>-->
+                <!--<div class="recordingText">REC</div>-->
+            <!--</div>-->
 
             <div class="spinner visible">
                 <div class="bounce1"></div>
@@ -216,10 +120,10 @@
                 <div class="bounce3"></div>
             </div>
 
-            <div id="playButtonOutline" class="buttonOutline hidden">
-                <div id="playButton" class="visible">
-                </div>
-            </div>
+            <!--<div id="playButtonOutline" class="buttonOutline hidden">-->
+                <!--<div id="playButton" class="visible">-->
+                <!--</div>-->
+            <!--</div>-->
             
         </div>
     </div>
@@ -263,8 +167,6 @@
 
                 clearInterval(interval);
                 // window.requestAnimationFrame(loop);
-
-                container.style.opacity = '0.3';
             });
 
             recordedVideo.addEventListener('canplaythrough', function(e) {
@@ -285,13 +187,7 @@
             
             recordedVideo.addEventListener('ended', function(e) {
                 console.log('video ended');
-                realityInterface.write('next', 0.0);
                 realityInterface.write('next', 1.0);
-
-                stopPlaying();
-                recordedVideo.currentTime = 0;
-                container.style.opacity = '0.3';
-
             });
             
             // decide whether to show record button or (play button + video)
@@ -404,16 +300,7 @@
             playButton.classList.add('currentlyPlaying');
             playButtonOutline.classList.add('currentlyPlaying');
             recordedVideo.play();
-            
-            realityInterface.sendGlobalMessage('hideOtherVideosExcept'+source.getAttribute('src'));
-            container.style.opacity = '1';
         }
-        
-        realityInterface.addGlobalMessageListener(function(e) {
-            if (e.indexOf('hideOtherVideos') > -1 && e !== 'hideOtherVideosExcept'+source.getAttribute('src')) {
-                container.style.opacity = '0.3';
-            }
-        });
         
         function stopPlaying() {
             playButton.classList.remove('currentlyPlaying');
@@ -517,11 +404,11 @@
         realityInterface.addReadListener('play', function(e) {
             if (e.value > 0.5) {
                 if (recordedVideo.paused) {
-                    startPlaying();
+                    recordedVideo.play();
                 }
             } else {
                 if (!recordedVideo.paused) {
-                    stopPlaying();
+                    recordedVideo.pause();
                 }
             }
         });
@@ -541,9 +428,9 @@
 
         realityInterface.addReadListener('progress', function(e) {
 
-            // if (e.value === lastProgess) return;
+            if (e.value === lastProgess) return;
 
-            if (recordedVideo.paused || e.value === 0 || e.value === 1) {
+            if (recordedVideo.paused) {
                 recordedVideo.currentTime = e.value * recordedVideo.duration;
             }
         });
@@ -569,18 +456,6 @@
         //     recordedVideo.load();
         // }
 
-        // realityInterface.addReadListener('show', function(e) {
-        //     if (e.value > 0.5) {
-        //         container.style.opacity = '1';
-        //     }
-        // });
-        //
-        // realityInterface.addReadListener('hide', function(e) {
-        //     if (e.value > 0.5) {
-        //         container.style.opacity = '0.3';
-        //     }
-        // });
-
         var numRepetitions = 10;
         var interval = setInterval(function() {
             numRepetitions--;
@@ -590,10 +465,6 @@
             }
             realityInterface.reloadPublicData();
         }, 3000);
-        
-        realityInterface.addInterfaceListener(function(e) {
-            console.log('new interface = ', e);
-        });
         
     </script>
 

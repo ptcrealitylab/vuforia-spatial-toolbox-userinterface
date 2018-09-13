@@ -25,6 +25,7 @@ var sendTouchEvents = false;
         socketIoUrl: '',
         style: document.createElement('style'),
         messageCallBacks: {},
+        interface : "gui",
         version: 170,
         moveDelay: 400,
         eventObject : {
@@ -191,6 +192,10 @@ var sendTouchEvents = false;
             }
         }
 
+        if (typeof msgContent.interface !== "undefined") {
+            realityObject.interface = msgContent.interface
+        }
+
     };
 
     /**
@@ -266,6 +271,26 @@ var sendTouchEvents = false;
             realityObject.messageCallBacks.visibilityCall = function (msgContent) {
                 if (typeof msgContent.visibility !== 'undefined') {
                     callback(msgContent.visibility);
+                }
+            };
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.getInterface = function () {
+            return realityObject.interface;
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.addInterfaceListener = function (callback) {
+            realityObject.messageCallBacks.interfaceCall = function (msgContent) {
+                if (typeof msgContent.interface !== "undefined") {
+                    callback(msgContent.interface);
                 }
             };
         };

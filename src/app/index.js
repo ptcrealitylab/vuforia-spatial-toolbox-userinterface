@@ -204,6 +204,10 @@ realityEditor.app.clearCache = function () {
     }, 1000);
 };
 
+realityEditor.app.focusCamera = function() {
+    this.appFunctionCall('focusCamera', null, null);
+};
+
 // global shortcut for clearing the cache
 cc = realityEditor.app.clearCache.bind(realityEditor.app);
 

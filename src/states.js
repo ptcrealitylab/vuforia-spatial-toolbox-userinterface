@@ -101,8 +101,9 @@ var globalStates = {
     //authenticatedUser: null,
     lockPassword: null,
 
-    videoRecordingEnabled: true,
+    videoRecordingEnabled: false,
     // videoRecordingMode: true,
+    renderFrameGhostsInNodeViewEnabled: false,
     
     guiButtonDown: false,
     logicButtonDown: false,

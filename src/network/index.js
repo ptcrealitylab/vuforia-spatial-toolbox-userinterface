@@ -1177,6 +1177,10 @@ if (thisFrame) {
             if (tempThisObject.uuid) {
                 globalDOMCache[tempThisObject.uuid].style.display = '';
             }
+            var containingObject = realityEditor.getObject(msgContent.object);
+            if (!containingObject.objectVisible) {
+                containingObject.objectVisible = true;
+            }
         }
 
     } else if(typeof msgContent.fullScreen === "string") {
