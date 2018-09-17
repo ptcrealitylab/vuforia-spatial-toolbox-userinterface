@@ -8,7 +8,7 @@
     <style>
         body {
             width: 568px;
-            height: 380px;
+            height: 400px;
             /*background-color: #4E4E4F;*/
             overflow: visible;
         }
@@ -193,7 +193,7 @@
         
         .sequenceButton {
             width: 277px;
-            height: 50px;
+            height: 70px;
             border: 5px solid cyan;
             position: absolute;
             /*bottom: -70px;*/
@@ -277,9 +277,10 @@
 
         var State = Object.freeze({
             START: 'START',
-            LOADING: 'LOADING',
+            LOADING_INITIAL: 'LOADING',
             RECORD_READY: 'RECORD_READY',
             RECORDING: 'RECORDING',
+            LOADING_PLAYER: 'LOADING',
             PLAY_READY: 'PLAY_READY',
             PLAYING: 'PLAYING'
         });
@@ -306,10 +307,10 @@
             switch (currentState) {
                 case State.START:
                     if (action === Action.START_LOADING) {
-                        currentState = State.LOADING;
+                        currentState = State.LOADING_INITIAL;
                     }
                     break;
-                case State.LOADING:
+                case State.LOADING_INITIAL:
                     if (action === Action.TIMEOUT) {
                         currentState = State.RECORD_READY;
                     } else if (action === Action.LOAD_SUCCESSFUL) {
@@ -323,9 +324,13 @@
                     break;
                 case State.RECORDING:
                     if (action === Action.BUTTON_PRESSED) {
-                        currentState = State.LOADING;
+                        currentState = State.LOADING_PLAYER;
                     }
                     break;
+                case State.LOADING_PLAYER:
+                    if (action === Action.LOAD_SUCCESSFUL) {
+                        currentState = State.PLAY_READY;
+                    }
                 case State.PLAY_READY:
                     if (action === Action.BUTTON_PRESSED ||
                         action === Action.PLAY_NODE_ACTIVATED) {
@@ -428,7 +433,8 @@
                     processStateAction(Action.START_LOADING); // immediately try to start loading
                     break;
                     
-                case State.LOADING:
+                case State.LOADING_INITIAL:
+                case State.LOADING_PLAYER:
                     realityInterface.setFullScreenOff();
                     
                     loadTimeout = setTimeout(function() {
@@ -514,11 +520,17 @@
         function prevButtonPressed(e) {
             console.log('prev button pressed');
             realityInterface.write('prev', 1.0, 'f', false, 0, 1, true);
+            if (currentState === State.PLAYING) {
+                processStateAction(Action.BUTTON_PRESSED);
+            }
         }
 
         function nextButtonPressed(e) {
             console.log('next button pressed');
             realityInterface.write('next', 1.0, 'f', false, 0, 1, true);
+            if (currentState === State.PLAYING) {
+                processStateAction(Action.BUTTON_PRESSED);
+            }
         }
 
         function attemptToLoadVideo(videoUrl, attemptsLeft) {
