@@ -7,27 +7,27 @@
     <script src="resources/object-frames.js"></script>
     <style>
         body {
-            width: 568px;
-            height: 400px;
-            /*background-color: #4E4E4F;*/
+            width: 758px;
+            height: 320px;
             overflow: visible;
         }
         #container {
             width: 568px;
-            height: 290px;
+            height: 320px;
             border: 5px solid cyan;
             border-radius: 10px;
-            padding: 10px;
+            /*padding: 10px;*/
             position: relative;
             display: table-cell;
             vertical-align: middle;
             text-align: center;
+            left: 90px;
         }
         
         #recordedVideo {
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 10px;
+            left: 10px;
             z-index: -1;
         }
 
@@ -101,8 +101,8 @@
                 border-radius: 10%;
             }
         }
-        
-        .currentlyRecording {
+
+        #recordButton.stop {
             -webkit-transform: scale(0.6);
             border-radius: 10%;
             -webkit-animation: recordButtonStart 0.25s ease-out both;
@@ -183,21 +183,13 @@
             opacity: 0;
         }
         
-        .hiddenVideoForNodeView {
-            display: none;
-        }
-
-        .hiddenVideoWhenNotPlaying {
-            display: none;
-        }
-        
         .sequenceButton {
-            width: 277px;
-            height: 70px;
+            width: 95px;
+            height: 320px;
+            line-height: 320px;
             border: 5px solid cyan;
             position: absolute;
-            /*bottom: -70px;*/
-            top: 330px;
+            top: 0;
             border-radius: 10px;
             font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
             font-size: 30px;
@@ -210,20 +202,18 @@
         }
         
         #prevButton {
-            left: 0px;
+            left: 0;
             -webkit-border-bottom-right-radius: 0;
             -webkit-border-top-right-radius: 0;
+            border-right: none;
         }
         
         #nextButton {
-            left: 281px;
+            right: 0;
             -webkit-border-bottom-left-radius: 0;
             -webkit-border-top-left-radius: 0;
+            border-left: none;
         }
-        
-        /*#controlsContainer {*/
-            /*display: none;*/
-        /*}*/
 
         .visible {
             display: inline-block;
@@ -239,7 +229,7 @@
     
     <div id="container" touch-action="none">
         <div>
-            <video id="recordedVideo" class="visible" width="558" height="310" playsinline webkit-playsinline>
+            <video id="recordedVideo" class="visible" width="548" height="300" playsinline webkit-playsinline>
                 <source id="source" src="">
             </video>
             
@@ -498,6 +488,8 @@
                     
                 case State.PLAYING:
                     document.getElementById('recordedVideo').play();
+                    var messageToSend = 'hideOtherVideosExcept' + source.getAttribute('src');
+                    realityInterface.sendGlobalMessage(messageToSend);
                     
                     document.getElementById('playButton').classList.add('stop');
                     break;
