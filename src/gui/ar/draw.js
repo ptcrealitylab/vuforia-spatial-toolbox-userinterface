@@ -227,7 +227,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         this.activeType = this.activeNode.type;
                         
                         if (this.hiddenNodeTypes.indexOf(this.activeType) > -1) {
-                            console.log('don\'t render node of type ' + this.activeType);
+                            // console.log('don\'t render node of type ' + this.activeType);
                             continue;
                         }
 
@@ -1408,6 +1408,9 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     }
     
     var isVisible = activeVehicle.visible === true;
+    
+    // TODO: this makes frames disappear when object becomes invisible, but it's making the visibility message keep posting into the frame, which in response makes the node socket keep sending on loop while in the node view... 
+    /*
     if (!isVisible) {
         var isPartiallyHiddenFrame = (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') &&
                                      !globalDOMCache['object' + activeKey].classList.contains('displayNone');
@@ -1415,6 +1418,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
             isVisible = true;
         }
     }
+    */
 
     if (isVisible) {
         

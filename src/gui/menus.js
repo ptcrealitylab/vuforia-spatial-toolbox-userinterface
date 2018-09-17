@@ -353,6 +353,8 @@ realityEditor.gui.buttons.buttonActionLeave = function (event){
 realityEditor.gui.buttons.sendInterfaces = function (interface) {
 
 /// send active user interface status in to the AR-UI
+    
+    console.log('sendInterfaces', interface);
 
     globalStates.interface = interface;
 
@@ -361,20 +363,22 @@ realityEditor.gui.buttons.sendInterfaces = function (interface) {
     if(interface === "realitySearch"){
         msg.search = realityEditor.gui.search.getSearch();
     }
+    
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        // var object = realityEditor.getObject(objectKey);
+        var frame = realityEditor.getFrame(objectKey, frameKey);
+        if (frame.visible) {
+            
+            globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
 
-    for (var objectKey in objects) {
-        if (objects[objectKey].visible) {
-            globalDOMCache["iframe" + objectKey].contentWindow.postMessage(JSON.stringify(msg), "*");
-
-
+            realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
+                var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                if (node.visible) {
+                    globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                }
+            });
         }
-
-        for (var nodeKey in objects[objectKey].nodes) {
-            if (objects[objectKey].nodes[nodeKey].visible) {
-                globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
-            }
-        }
-    }
+    });
 };
 
 

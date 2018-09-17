@@ -167,7 +167,7 @@ var sendTouchEvents = false;
             // reload public data when it becomes visible
             for (var i = 0; i < realityInterfaces.length; i++) {
                 if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditorPublicData', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                 }
             }
             
@@ -411,7 +411,7 @@ var sendTouchEvents = false;
          */
 
 
-        this.write = function (node, value, mode, unit, unitMin, unitMax) {
+        this.write = function (node, value, mode, unit, unitMin, unitMax, forceWrite) {
             mode = mode || 'f';
             unit = unit || false;
             unitMin = unitMin || 0;
@@ -422,7 +422,7 @@ var sendTouchEvents = false;
                 self.oldNumberList[node] = null;
             }
 
-            if (self.oldNumberList[node] !== value) {
+            if (self.oldNumberList[node] !== value || forceWrite) {
                 this.ioObject.emit('object', JSON.stringify({
                     object: realityObject.object,
                     frame: realityObject.frame,

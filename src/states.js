@@ -103,7 +103,7 @@ var globalStates = {
 
     videoRecordingEnabled: false,
     // videoRecordingMode: true,
-    renderFrameGhostsInNodeViewEnabled: false,
+    renderFrameGhostsInNodeViewEnabled: true,
     
     guiButtonDown: false,
     logicButtonDown: false,
