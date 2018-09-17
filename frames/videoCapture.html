@@ -22,6 +22,19 @@
             vertical-align: middle;
             text-align: center;
             left: 90px;
+            transition: 250ms all ease;
+        }
+        
+        #container.initial {
+            left: 0;
+            width: 758px;
+            height: 320px;
+        }
+
+        #container.recording {
+            left: 0;
+            width: 558px;
+            height: 310px;
         }
         
         #recordedVideo {
@@ -34,6 +47,7 @@
         #spinner {
             width: 70px;
             text-align: center;
+            /*display: inline;*/
         }
 
         #spinner > div {
@@ -44,6 +58,8 @@
             border-radius: 100%;
             -webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;
             animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+            
+            display: inline-block;
         }
 
         #spinner .bounce1 {
@@ -184,7 +200,7 @@
         }
         
         .sequenceButton {
-            width: 95px;
+            width: 90px;
             height: 320px;
             line-height: 320px;
             border: 5px solid cyan;
@@ -192,14 +208,15 @@
             top: 0;
             border-radius: 10px;
             font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
-            font-size: 30px;
+            font-size: 40px; /* use 30px if using "Prev" and "Next" labels, 40px for << and >> */
             color: cyan;
             text-align: center;
+            background-color: transparent;
         }
         
-        .sequenceButton:active {
-            background-color: rgba(0, 255, 255, 0.6);
-        }
+        /*.sequenceButton:active {*/
+            /*background-color: rgba(0, 255, 255, 0.6);*/
+        /*}*/
         
         #prevButton {
             left: 0;
@@ -213,6 +230,14 @@
             -webkit-border-bottom-left-radius: 0;
             -webkit-border-top-left-radius: 0;
             border-left: none;
+        }
+        
+        #prevButton.ready {
+            background-color: rgba(0, 255, 255, 0.3);
+        }
+        
+        #nextButton.ready {
+            background-color: rgba(0, 255, 255, 0.3);
         }
 
         .visible {
@@ -257,8 +282,8 @@
     </div>
 
     <div id="controlsContainer" class="hidden">
-        <div id="prevButton" class="sequenceButton">Prev</div>
-        <div id="nextButton" class="sequenceButton">Next</div>
+        <div id="prevButton" class="sequenceButton"> << </div>
+        <div id="nextButton" class="sequenceButton"> >> </div>
     </div>
 
     <script>
@@ -267,10 +292,10 @@
 
         var State = Object.freeze({
             START: 'START',
-            LOADING_INITIAL: 'LOADING',
+            LOADING_INITIAL: 'LOADING_INITIAL',
             RECORD_READY: 'RECORD_READY',
             RECORDING: 'RECORDING',
-            LOADING_PLAYER: 'LOADING',
+            LOADING_PLAYER: 'LOADING_PLAYER',
             PLAY_READY: 'PLAY_READY',
             PLAYING: 'PLAYING'
         });
@@ -351,22 +376,23 @@
             
             switch (currentState) {
                 case State.START:
-                    divIdsToDisplay = ['container'];
+                    divIdsToDisplay = ['container initial:1'];
                     break;
-                case State.LOADING:
-                    divIdsToDisplay = ['container', 'spinner'];
+                case State.LOADING_INITIAL:
+                case State.LOADING_PLAYER:
+                    divIdsToDisplay = ['container recording:0 initial:1', 'spinner'];
                     break;
                 case State.RECORD_READY:
-                    divIdsToDisplay = ['container', 'recordButtonOutline stop:0'];
+                    divIdsToDisplay = ['container initial:1', 'recordButtonOutline'];
                     break;
                 case State.RECORDING:
-                    divIdsToDisplay = ['container', 'recordButtonOutline stop:1', 'recordingIndicator'];
+                    divIdsToDisplay = ['container recording:1 initial:0', 'recordButtonOutline', 'recordingIndicator'];
                     break;
                 case State.PLAY_READY:
-                    divIdsToDisplay = ['container', 'playButtonOutline stop:0', 'controlsContainer'];
+                    divIdsToDisplay = ['container initial:0', 'playButtonOutline stop:0', 'controlsContainer'];
                     break;
                 case State.PLAYING:
-                    divIdsToDisplay = ['container', 'playButtonOutline stop:1', 'controlsContainer', 'recordedVideo'];
+                    divIdsToDisplay = ['container initial:0', 'playButtonOutline stop:1', 'controlsContainer', 'recordedVideo'];
                     break;
                 default:
                     console.warn('couldn\'t find state:' + currentState);
@@ -382,20 +408,24 @@
             // ...then un-hide each div included by this state
             divIdsToDisplay.forEach(function(id) {
                 
+                var realId = id;
                 // adjust extra class if modified by state
                 if (id.split(' ').length > 1) {
-                    var classSelector = id.split(' ')[1];
-                    var className = classSelector.split(':')[0];
-                    var shouldAdd = !!parseInt(classSelector.split(':')[1]);
-                    id = id.split(' ')[0];
-                    if (shouldAdd) {
-                        document.getElementById(id).classList.add(className);
-                    } else {
-                        document.getElementById(id).classList.remove(className);
+                    realId = id.split(' ')[0];
+
+                    for (var i = 1; i < id.split(' ').length; i++) {
+                        var classSelector = id.split(' ')[1];
+                        var className = classSelector.split(':')[0];
+                        var shouldAdd = !!parseInt(classSelector.split(':')[1]);
+                        if (shouldAdd) {
+                            document.getElementById(realId).classList.add(className);
+                        } else {
+                            document.getElementById(realId).classList.remove(className);
+                        }
                     }
                 }
                 
-                document.getElementById(id).classList.remove('hidden');
+                document.getElementById(realId).classList.remove('hidden');
             });
             
         }
@@ -444,6 +474,7 @@
                     
                 case State.RECORD_READY:
                     document.getElementById('container').addEventListener('pointerup', buttonPressed);
+                    document.getElementById('recordButton').classList.remove('stop');
                     break;
                     
                 case State.RECORDING:
@@ -464,10 +495,11 @@
                         realityInterface.stopVideoRecording(function(videoFilePath) {
                             console.log('video was saved at path: ' + videoFilePath);
                             realityInterface.writePublicData("storage", "data",  videoFilePath);
-                            attemptToLoadVideo(videoFilePath, 10);
+                            attemptToLoadVideo(videoFilePath, 5);
                         });
                         buttonPressed();
                     });
+                    document.getElementById('recordButton').classList.add('stop');
                     break;
                     
                 case State.PLAY_READY:
@@ -484,6 +516,8 @@
                     });
 
                     document.getElementById('playButton').classList.remove('stop');
+                    document.getElementById('prevButton').classList.add('ready');
+                    document.getElementById('nextButton').classList.add('ready');
                     break;
                     
                 case State.PLAYING:
@@ -492,6 +526,8 @@
                     realityInterface.sendGlobalMessage(messageToSend);
                     
                     document.getElementById('playButton').classList.add('stop');
+                    document.getElementById('prevButton').classList.remove('ready');
+                    document.getElementById('nextButton').classList.remove('ready');
                     break;
                     
                 default:
