@@ -5,6 +5,8 @@
     <title>Video Test UI</title>
     <script src="resources/pep.min.js"></script>
     <script src="resources/object-frames.js"></script>
+    <script src="resources/navigation-arrow.js"></script>
+    <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
     <style>
         body {
             width: 758px;
@@ -252,43 +254,45 @@
 </head>
 <body>
     
-    <div id="container" touch-action="none">
-        <div>
-            <video id="recordedVideo" class="visible" width="548" height="300" playsinline webkit-playsinline>
-                <source id="source" src="">
-            </video>
-            
-            <div id="recordButtonOutline" class="buttonOutline visible">
-                <div id="recordButton" class="visible"></div>
+    <div id="navigationContainer">
+        <div id="container" touch-action="none">
+            <div>
+                <video id="recordedVideo" class="visible" width="548" height="300" playsinline webkit-playsinline>
+                    <source id="source" src="">
+                </video>
+                
+                <div id="recordButtonOutline" class="buttonOutline visible">
+                    <div id="recordButton" class="visible"></div>
+                </div>
+                
+                <div id="recordingIndicator">
+                    <div class="recordingDot"></div>
+                    <div class="recordingText">REC</div>
+                </div>
+    
+                <div id="spinner" class="visible">
+                    <div class="bounce1"></div>
+                    <div class="bounce2"></div>
+                    <div class="bounce3"></div>
+                </div>
+    
+                <div id="playButtonOutline" class="buttonOutline visible">
+                    <div id="playButton" class="visible"></div>
+                </div>
             </div>
-            
-            <div id="recordingIndicator">
-                <div class="recordingDot"></div>
-                <div class="recordingText">REC</div>
-            </div>
-
-            <div id="spinner" class="visible">
-                <div class="bounce1"></div>
-                <div class="bounce2"></div>
-                <div class="bounce3"></div>
-            </div>
-
-            <div id="playButtonOutline" class="buttonOutline visible">
-                <div id="playButton" class="visible"></div>
-            </div>
-            
         </div>
-        
-    </div>
-
-    <div id="controlsContainer" class="hidden">
-        <div id="prevButton" class="sequenceButton"> << </div>
-        <div id="nextButton" class="sequenceButton"> >> </div>
+    
+        <div id="controlsContainer" class="hidden">
+            <div id="prevButton" class="sequenceButton"> << </div>
+            <div id="nextButton" class="sequenceButton"> >> </div>
+        </div>
     </div>
 
     <script>
 
         var realityInterface = new RealityInterface();
+        
+        initNavigationArrow(document.getElementById('navigationContainer'), realityInterface, false);
 
         var State = Object.freeze({
             START: 'START',
@@ -454,8 +458,10 @@
                     break;
                     
                 case State.LOADING_INITIAL:
+                    resumeNavigationArrow();
                 case State.LOADING_PLAYER:
                     realityInterface.setFullScreenOff();
+                    realityInterface.setMoveDelay(400);
                     
                     loadTimeout = setTimeout(function() {
                         processStateAction(Action.TIMEOUT);
@@ -480,7 +486,9 @@
                 case State.RECORDING:
                     setTimeout(function() {
                         realityInterface.setStickyFullScreenOn();
+                        realityInterface.setMoveDelay(-1); // negative move delay disables movement while in fullscreen
                         realityInterface.startVideoRecording();
+                        pauseNavigationArrow();
                         // count how long you've been recording for
                         secondsRecorded = 0;
                         document.querySelector('.recordingText').innerHTML = 'REC   ' + formatSecondsAsTime(secondsRecorded);
@@ -511,7 +519,7 @@
                     document.getElementById('nextButton').addEventListener('pointerup', nextButtonPressed);
 
                     document.getElementById('recordedVideo').addEventListener('ended', function(e) {
-                        document.getElementById('recordedVideo').currentTime = 0;
+                        jumpToBeginningOfVideo();
                         processStateAction(Action.VIDEO_PLAYBACK_FINISHED);
                     });
 
@@ -540,6 +548,10 @@
             updateUIForNewState();
             updateSideEffectsForNewState();
         });
+        
+        function jumpToBeginningOfVideo() {
+            document.getElementById('recordedVideo').currentTime = 0;
+        }
         
         function buttonPressed(e) {
             processStateAction(Action.BUTTON_PRESSED);
@@ -624,6 +636,7 @@
 
         realityInterface.addReadListener('play', function(e) {
             if (e.value > 0.5) {
+                jumpToBeginningOfVideo();
                 processStateAction(Action.PLAY_NODE_ACTIVATED);
             } else {
                 processStateAction(Action.PLAY_NODE_DEACTIVATED);
@@ -637,6 +650,13 @@
                 processStateAction(Action.INTERFACE_CHANGED_LOGIC);
             }
         });
+        
+        // realityInterface.subscribeToMatrix();
+        // realityInterface.addMatrixListener(function(modelViewMatrix, projectionMatrix) {
+        //     // console.log(realityObject.frame + ': ' + modelViewMatrix); //, projectionMatrix);
+        //     // 1+1;
+        //     // return;
+        // });
         
     </script>
 

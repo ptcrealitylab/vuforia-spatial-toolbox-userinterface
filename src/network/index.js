@@ -1165,7 +1165,10 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
             
-            globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            // globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            globalDOMCache[tempThisObject.uuid].style.left = '0';
+            globalDOMCache[tempThisObject.uuid].style.top = '0';
+            
             // globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none'; // TODO: fix touch model with something more robust than this, using a selective "raycast" to bubble or not
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
@@ -1174,9 +1177,13 @@ if (thisFrame) {
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
-            if (tempThisObject.uuid) {
-                globalDOMCache[tempThisObject.uuid].style.display = '';
-            }
+            
+            // if (tempThisObject.uuid) {
+            //     globalDOMCache[tempThisObject.uuid].style.display = '';
+            // }
+            
+            // TODO: reset left/top offset when returns to non-fullscreen?
+            
             var containingObject = realityEditor.getObject(msgContent.object);
             if (!containingObject.objectVisible) {
                 containingObject.objectVisible = true;
@@ -1195,7 +1202,10 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
 
-            globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            // globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            globalDOMCache[tempThisObject.uuid].style.left = '0';
+            globalDOMCache[tempThisObject.uuid].style.top = '0';
+            
             // globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none'; // TODO: fix touch model with something more robust than this, using a selective "raycast" to bubble or not
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
@@ -1244,6 +1254,7 @@ if (thisFrame) {
             return;
         }
         var fakeEvent = {
+            target: target,
             currentTarget: target,
             clientX: event.x,
             clientY: event.y,

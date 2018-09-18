@@ -210,6 +210,67 @@ realityEditor.app.focusCamera = function() {
 
 // global shortcut for clearing the cache
 cc = realityEditor.app.clearCache.bind(realityEditor.app);
+// global shortcut for resetting the frame positions to object origin
+rr = function() {
+    for (var objectKey in objects) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
+            continue;
+        }
+
+        var tempResetObject = objects[objectKey];
+        // var shouldPlaceCenter = false;
+
+        if (globalStates.guiState ==="ui") {
+
+            // shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
+            for (var frameKey in tempResetObject.frames) {
+                var activeFrame = tempResetObject.frames[frameKey];
+                if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames
+                if (activeFrame.staticCopy) continue; // don't reset positions of staticCopy frames
+
+                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
+                positionData.matrix = [];
+                // if (shouldPlaceCenter) {
+                    positionData.x = 0;
+                    positionData.y = 0;
+                // } else {
+                //     positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                //     positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                // }
+                positionData.scale = globalStates.defaultScale;
+                realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
+            }
+
+        }
+
+        if (globalStates.guiState === "node") {
+            for (var frameKey in tempResetObject.frames) {
+
+                var activeFrame = tempResetObject.frames[frameKey];
+                // cannot move nodes inside static copy frames
+                if (activeFrame && activeFrame.staticCopy) continue;
+
+                var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
+                for (var nodeKey in activeFrame.nodes) {
+                    var activeNode = activeFrame.nodes[nodeKey];
+
+                    realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
+                    activeNode.scale = globalStates.defaultScale;
+                    if (shouldPlaceCenter) {
+                        activeNode.x = 0;
+                        activeNode.y = 0;
+                    } else {
+                        activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                        activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+                    }
+                    realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
+                }
+            }
+
+        }
+
+    }
+};
 
 /**
  ************** ADDITIONAL ROUTES ****************

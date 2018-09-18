@@ -239,8 +239,10 @@ var sendTouchEvents = false;
             };
         };
 
+        var numMatrixCallbacks = 0;
         this.addMatrixListener = function(callback) {
-            realityObject.messageCallBacks.matrixCall = function (msgContent) {
+            numMatrixCallbacks++;
+            realityObject.messageCallBacks['matrixCall'+numMatrixCallbacks] = function (msgContent) {
                 if (typeof msgContent.modelViewMatrix !== 'undefined') {
                     callback(msgContent.modelViewMatrix, realityObject.projectionMatrix);
                 }
@@ -341,6 +343,10 @@ var sendTouchEvents = false;
             return realityObject.modelViewMatrix;
         };
 
+        /**
+         * sets how long you need to tap and hold on the frame in order to start moving it.
+         * @param {number} delayInMilliseconds - if value < 0, disables movement
+         */
         this.setMoveDelay = function(delayInMilliseconds) {
             realityObject.moveDelay = delayInMilliseconds;
 

@@ -1177,7 +1177,35 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var thisMsg = {};
 
                     if (activeVehicle.sendMatrix === true) {
-                        thisMsg.modelViewMatrix = visibleObjects[objectKey];
+                        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+
+
+                        var tempMat = [];
+                        var mvm = [];
+                        
+                        matrix.r3 = [
+                            positionData.scale, 0, 0, 0,
+                            0, positionData.scale, 0, 0,
+                            0, 0, 1, 0,
+                            // positionData.x, positionData.y, 0, 1
+                            -positionData.x, -positionData.y, 0, 1
+                        ];
+
+                        utilities.multiplyMatrix(visibleObjects[objectKey], matrix.r3, mvm);
+                        // utilities.multiplyMatrix(tempMat, globalStates.projectionMatrix, mvm);
+                        // utilities.multiplyMatrix(visibleObjects[objectKey], matrix.r3, mvm);
+                        thisMsg.modelViewMatrix = mvm; //utilities.copyMatrix(visibleObjects[objectKey]); // uncomment to send the modelViewMatrix of the marker
+                        // thisMsg.modelViewMatrix[12] += positionData.x;
+                        // thisMsg.modelViewMatrix[13] += positionData.y;
+                        
+                        // var frameModelViewMatrix = [];
+                        // var tempMat = [];
+                        // var tempMat2 = [];
+                        // utilities.multiplyMatrix(visibleObjects[objectKey], positionData.matrix, tempMat);
+                        // utilities.multiplyMatrix(tempMat, rotateX, tempMat2);
+                        // utilities.multiplyMatrix(tempMat2, matrix.r3, frameModelViewMatrix);
+                        //
+                        // thisMsg.frameModelViewMatrix = frameModelViewMatrix; // this sends the modelViewMatrix of the frame
                     }
 
                     if (activeVehicle.sendAcceleration === true) {

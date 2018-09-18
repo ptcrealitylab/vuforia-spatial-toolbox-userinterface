@@ -121,7 +121,7 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
  */
 realityEditor.gui.screenExtension.getValidTouches = function(eventObject) {
     return eventObject.touches.filter(function(touch) {
-        return (typeof touch.screenX === "number" && typeof touch.screenY === "number");
+        return touch && (typeof touch.screenX === "number" && typeof touch.screenY === "number");
     });
 };
 
