@@ -1,4 +1,3 @@
-var sendTouchEvents = false;
 (function(exports) {
 
     if (typeof exports.realityObject !== 'undefined') {
@@ -35,7 +34,8 @@ var sendTouchEvents = false;
             node : null,
             x: 0,
             y: 0,
-            type: null}
+            type: null},
+        touchDecider: null
     };
 
     // adding css styles nessasary for acurate 3D transformations.
@@ -341,6 +341,10 @@ var sendTouchEvents = false;
 
         this.getModelViewMatrix = function () {
             return realityObject.modelViewMatrix;
+        };
+
+        this.registerTouchDecider = function(callback) {
+            realityObject.touchDecider = callback;
         };
 
         /**
@@ -815,6 +819,24 @@ var sendTouchEvents = false;
                     screenX: eventData.x,
                     screenY: eventData.y
                 });
+
+                if (realityObject.touchDecider) {
+                    var touchAccepted = realityObject.touchDecider(eventData);
+                    if (!touchAccepted) {
+                        console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
+                        if (realityObject.object && realityObject.frame) {
+
+                            parent.postMessage(JSON.stringify({
+                                version: realityObject.version,
+                                node: realityObject.node,
+                                frame: realityObject.frame,
+                                object: realityObject.object,
+                                unacceptedTouch : eventData
+                            }), '*');
+
+                        }
+                    }
+                }
                 
                 var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
                 elt.dispatchEvent(event);
