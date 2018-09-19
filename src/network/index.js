@@ -1341,6 +1341,62 @@ if (thisFrame) {
         
     }
 
+    if (typeof msgContent.unacceptedTouch !== "undefined") {
+
+        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+
+        // activeVehicle.moveDelay = msgContent.moveDelay;
+        // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
+
+        var eventData = msgContent.unacceptedTouch;
+
+        console.log('editor received unaccepted touch... ', eventData);
+        var element = globalDOMCache['object' + msgContent.frame];
+        
+        var prevDisplay = element.style.display;
+        element.style.display = 'none';
+
+        var syntheticEvent = new PointerEvent(eventData.type, {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+            pointerId: eventData.pointerId,
+            pointerType: eventData.pointerType,
+            x: eventData.x,
+            y: eventData.y,
+            clientX: eventData.x,
+            clientY: eventData.y,
+            pageX: eventData.x,
+            pageY: eventData.y,
+            screenX: eventData.x,
+            screenY: eventData.y
+        });
+        
+        realityEditor.device.resetEditingState();
+        realityEditor.device.clearTouchTimer();
+        
+        var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+        elt.dispatchEvent(syntheticEvent);
+
+        var targetFrameElt = globalDOMCache['iframe' + elt.id];// ? globalDOMCache['iframe' + elt.id].dataset.objectKey : null;
+        if (targetFrameElt) {
+            var frame = realityEditor.getFrame(targetFrameElt.dataset.objectKey, targetFrameElt.dataset.frameKey);
+            console.log(frame);
+            if (frame.fullScreen) {
+                setTimeout(function() {
+                    element.style.display = prevDisplay;
+                }, 10);
+            } else {
+                element.style.display = prevDisplay;
+            }
+        }
+
+
+    }
+    
+    // TODO: if type === 'acceptedTouch', go through a list of everything that was hidden from the 'unaccepted touch' step and show again...
+    // TODO: figure out how to trigger the same functionality if nothing ends up accepting it... you would trigger an event on document.body that can be listened to
+
         /*    if (typeof msgContent.finishedLoading !== 'undefined') {
                 console.log('~~~ iframe finished loading ~~~')
             }*/
