@@ -968,7 +968,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
             }
 
-            if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
+            if (true) {
 
                 var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
@@ -1164,8 +1164,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 activeVehicle.mostRecentFinalMatrix = finalMatrix;
                 activeVehicle.originMatrix = activeObjectMatrix;
+                
                 // draw transformed
-                globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+                if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
+                    globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+                }
 
                 // this is for later
                 // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
@@ -1178,6 +1181,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
 
             }
+            // if (activeVehicle.fullScreen === true) {
+            //     if (thisIsBeingEdited) {
+            //         realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
+            //     }
+            // }
+            
             if (activeType === "ui") {
 
                 if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true) {
@@ -1188,6 +1197,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
 
+                        /*
                         var tempMat = [];
                         var mvm = [];
                         
@@ -1198,8 +1208,21 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             // positionData.x, positionData.y, 0, 1
                             -positionData.x, -positionData.y, 0, 1
                         ];
-
-                        utilities.multiplyMatrix(visibleObjects[objectKey], matrix.r3, mvm);
+                        
+                        if (positionData.matrix.length === 16) {
+                            var temp2 = [];
+                            var invert = [
+                                1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                0, 0, 0, 1
+                            ];
+                            utilities.multiplyMatrix(visibleObjects[objectKey], positionData.matrix, temp2);
+                            utilities.multiplyMatrix(temp2, invert, tempMat);
+                        } else {
+                            tempMat = utilities.copyMatrix(visibleObjects[objectKey]);
+                        }
+                        utilities.multiplyMatrix(tempMat, matrix.r3, mvm);
                         // utilities.multiplyMatrix(tempMat, globalStates.projectionMatrix, mvm);
                         // utilities.multiplyMatrix(visibleObjects[objectKey], matrix.r3, mvm);
                         thisMsg.modelViewMatrix = mvm; //utilities.copyMatrix(visibleObjects[objectKey]); // uncomment to send the modelViewMatrix of the marker
@@ -1214,6 +1237,31 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         // utilities.multiplyMatrix(tempMat2, matrix.r3, frameModelViewMatrix);
                         //
                         // thisMsg.frameModelViewMatrix = frameModelViewMatrix; // this sends the modelViewMatrix of the frame
+                        
+                        */
+                        
+                        
+                        var activeObjectMatrix = [];
+                        
+                        // 1. 
+                        // include projection matrix
+                        // utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
+                        // utilities.multiplyMatrix(this.rotateX, this.matrix.r, activeObjectMatrix);
+                        // or ignore projection matrix
+                        utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], activeObjectMatrix);
+                        
+                        // 2.
+                        // include positionData if it exists
+                        if (positionData.matrix.length === 16) {
+                            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+                        } else {
+                            matrix.r = utilities.copyMatrix(activeObjectMatrix);
+                        }
+                        // utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                        finalMatrix = utilities.copyMatrix(matrix.r);
+
+                        thisMsg.modelViewMatrix = finalMatrix;
+                        
                     }
 
                     if (activeVehicle.sendAcceleration === true) {
