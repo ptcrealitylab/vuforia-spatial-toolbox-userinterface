@@ -134,6 +134,7 @@ realityEditor.device.onload = function () {
     // initialize additional features
     realityEditor.device.videoRecording.initFeature();
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
+    realityEditor.device.touchPropagation.initFeature();
     
 	this.cout("onload");
 };

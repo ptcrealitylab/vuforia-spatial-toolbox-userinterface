@@ -89,7 +89,6 @@ realityEditor.device.currentScreenTouches = [];
  * @property {boolean} unconstrained
  * @property {number|null} unconstrainedOffset
  * @property {Array.<number>|null} startingMatrix
- * @property {string} targetAcquired - the id of a frame you tapped on, captured even behind fullscreen content
  */
 
 /**
@@ -102,8 +101,7 @@ realityEditor.device.editingState = {
     touchOffset: null,
     unconstrained: false,
     unconstrainedOffset: null,
-    startingMatrix: null,
-    targetAcquired: null
+    startingMatrix: null
 };
 
 /**
@@ -294,11 +292,15 @@ realityEditor.device.resetGlobalProgram = function() {
     globalProgram.logicSelector = 4;
 };
 
+realityEditor.device.callbacks = {
+    resetEditingState: []
+};
+
 /**
  * Reset full editing state so that no object is set as being edited.
  */
 realityEditor.device.resetEditingState = function() {
-    this.sendEditingStateToFrameContents(this.editingState.frame, false);
+    this.sendEditingStateToFrameContents(this.editingState.frame, false); // TODO: move to a callback
 
     this.editingState.object = null;
     this.editingState.frame = null;
@@ -307,7 +309,30 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
-    this.editingState.targetAcquired = null;
+    
+    this.triggerCallbacks('resetEditingState');
+};
+
+realityEditor.device.registerCallback = function(functionName, callback) {
+    if (typeof this.callbacks[functionName] === 'undefined') {
+        this.callbacks[functionName] = [];
+    }
+    
+    this.callbacks[functionName].push(callback);
+};
+
+/**
+ * Utility for iterating calling all callbacks that other modules have registered for the given function
+ * @param {string} functionName
+ * @param {object|undefined} params
+ */
+realityEditor.device.triggerCallbacks = function(functionName, params) {
+    if (typeof this.callbacks[functionName] === 'undefined') return;
+    
+    // iterates over all registered frameMessageHandlers to trigger events in various modules
+    this.callbacks[functionName].forEach(function(callback) {
+        callback(params);
+    });
 };
 
 /**
@@ -1124,6 +1149,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     
     // stop editing the active frame or node if there are no more touches on it
     if (this.editingState.object) {
+        // TODO: touchesOnActiveVehicle returns 0 if you tapped through a fullscreen frame, because the touch targetId doesnt update to be the thing behind it
         var touchesOnActiveVehicle = this.currentScreenTouches.map(function(elt) { return elt.targetId; }).filter(function(touchTarget) {
             return (touchTarget === this.editingState.frame || touchTarget === this.editingState.node || touchTarget === "pocket-element");
         }.bind(this));
@@ -1168,8 +1194,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         }
     }
     
-    realityEditor.network.stopHidingFramesForTouchDuration();
-    this.editingState.targetAcquired = null;
+    this.triggerCallbacks('onDocumentMultiTouchEnd');
 };
 
 /**

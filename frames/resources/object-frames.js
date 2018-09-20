@@ -836,7 +836,7 @@
                 if (realityObject.touchDecider) {
                     var touchAccepted = realityObject.touchDecider(eventData);
                     if (!touchAccepted) {
-                        console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
+                        // console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
                         if (realityObject.object && realityObject.frame) {
 
                             parent.postMessage(JSON.stringify({

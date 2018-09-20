@@ -49,6 +49,24 @@
 
 createNameSpace("realityEditor.network");
 
+/**
+ * @type {Array.<{messageName: string, callback: function}>}
+ */
+realityEditor.network.frameMessageHandlers = [];
+
+/**
+ * Creates an extendable method for other modules to register callbacks that will be triggered
+ * from onInternalPostMessage events, without creating circular dependencies
+ * @param {string} messageName
+ * @param {function} callback
+ */
+realityEditor.network.addFrameMessageHandler = function(messageName, callback) {
+    this.frameMessageHandlers.push({
+        messageName: messageName,
+        callback: callback
+    });
+};
+
 realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey) {
     if (typeof frameKey === "undefined") {
         frameKey = objectKey;
@@ -1343,103 +1361,14 @@ if (thisFrame) {
         }
         
     }
-
-    if (typeof msgContent.unacceptedTouch !== "undefined") {
-        
-        var eventData = msgContent.unacceptedTouch;
-        realityEditor.device.clearTouchTimer(); // clear the timer that would start dragging the previous frame
-
-        console.log('editor received unaccepted touch... ', eventData);
-        
-        // targetAcquired lets us cache the frame we actually touched on touchdown...
-        // ...so we don't need to recalculate on every touchmove, etc.
-        if (realityEditor.device.editingState.targetAcquired) {
-            console.log('skip touch deciding bubbling, already acquired target');
-            this.stopHidingFramesForTouchDuration();
-            var elt = document.getElementById(realityEditor.device.editingState.targetAcquired);
-            this.dispatchSyntheticEvent(elt, eventData);
-            return;
-        }
-        
-        // tag the element that unaccepted the touch so that it becomes hidden
-        var previouslyTouchedElement = globalDOMCache['object' + msgContent.frame];
-        previouslyTouchedElement.dataset.displayAfterTouch = previouslyTouchedElement.style.display; // so we know what to restore its display to
-        
-        // hide each tagged element
-        // we may need to hide more than just this previouslyTouchedElement in case there are multiple fullscreen frames
-        var overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y);
-        overlappingDivs.filter(function(elt) {
-            return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
-        }).forEach(function(elt) {
-            elt.parentNode.style.display = 'none';
-        });
-        
-        var newTouchedElement = document.elementFromPoint(eventData.x, eventData.y) || document.body;
-        this.dispatchSyntheticEvent(newTouchedElement, eventData);
-        
-        // re-show each tagged element
-        overlappingDivs.filter(function(elt) {
-            return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
-        }).forEach(function(elt) {
-            elt.parentNode.style.display = elt.parentNode.dataset.displayAfterTouch;
-        });
-
-
-        var isFrameElement = newTouchedElement.id.indexOf(msgContent.object) > -1;
-
-        // we won't get an acceptedTouch message if the newTouchedElement isn't a frame
-        if (!isFrameElement) {
-            if (msgContent.unacceptedTouch.type === 'pointerdown') {
-                realityEditor.device.editingState.targetAcquired = newTouchedElement.id; //msgContent.frame;
-            }
-            this.stopHidingFramesForTouchDuration();
-        }
-
-    }
     
-    if (typeof msgContent.acceptedTouch !== "undefined") {
-        
-        console.log('accepted touch');
-        if (msgContent.acceptedTouch.type === 'pointerdown') {
-            realityEditor.device.editingState.targetAcquired = msgContent.frame;
+    // iterates over all registered frameMessageHandlers to trigger events in various modules
+    this.frameMessageHandlers.forEach(function(messageHandler) {
+        if (typeof msgContent[messageHandler.messageName] !== 'undefined') {
+            messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
         }
-
-        this.stopHidingFramesForTouchDuration();
-    }
+    });
     
-};
-
-/**
- * @param target {HTMLElement}
- * @param eventData {{x: number, y: number, pointerId: number, type: string, pointerType: string}}
- */
-realityEditor.network.dispatchSyntheticEvent = function(target, eventData) {
-    var syntheticEvent = new PointerEvent(eventData.type, {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-        pointerId: eventData.pointerId,
-        pointerType: eventData.pointerType,
-        x: eventData.x,
-        y: eventData.y,
-        clientX: eventData.x,
-        clientY: eventData.y,
-        pageX: eventData.x,
-        pageY: eventData.y,
-        screenX: eventData.x,
-        screenY: eventData.y
-    });
-
-    target.dispatchEvent(syntheticEvent);
-};
-
-/**
- * Remove tag from frames that have been hidden for the current touch
- */
-realityEditor.network.stopHidingFramesForTouchDuration = function() {
-    [].slice.call(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
-        delete element.dataset.displayAfterTouch;
-    });
 };
 
 realityEditor.network.loadLogicIcon = function(data) {
