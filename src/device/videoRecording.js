@@ -140,7 +140,7 @@ createNameSpace("realityEditor.device.videoRecording");
         frame.fullScreen = false;
         frame.sendMatrix = false;
         frame.sendAcceleration = false;
-        frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+        frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
         // thisFrame.visible = false;
 
         // add each node with a non-empty name

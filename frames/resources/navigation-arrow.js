@@ -68,9 +68,9 @@
                     if (!alwaysFullscreen) {
                         realityInterface.setFullScreenOff();
                         
-                        // become movable and listen for touches again
-                        realityInterface.setMoveDelay(400);
-                        realityInterface.unregisterTouchDecider();
+                        // // become movable and listen for touches again
+                        // realityInterface.setMoveDelay(400);
+                        // realityInterface.unregisterTouchDecider();
                     }
                     setTimeout(function() {
                         containerWrapper.style.display = '';
@@ -91,11 +91,11 @@
                     arrow.style.display = 'none';
                     realityInterface.setFullScreenOn();
                     
-                    // become immovable and ignore touches
-                    realityInterface.setMoveDelay(-1);
-                    realityInterface.registerTouchDecider(function() {
-                        return false;
-                    });
+                    // // become immovable and ignore touches
+                    // realityInterface.setMoveDelay(-1);
+                    // realityInterface.registerTouchDecider(function() {
+                    //     return false;
+                    // });
 
                     setTimeout(function() {
                         arrow.style.display = 'inline';

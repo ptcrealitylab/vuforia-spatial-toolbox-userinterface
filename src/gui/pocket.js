@@ -253,7 +253,33 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 'value'
             ]
         },*/
-        
+        {
+            name: 'sphere',
+            width: 568,
+            height: 320,
+            nodes: [
+                // {name: 'hue', type: "node"},
+                // {name: 'saturation', type: "node"},
+                // {name: 'lightness', type: "node"}
+            ]
+        },
+        {
+            name: 'videoCapture',
+            width: 568,
+            height: 320,
+            nodes: [
+                {name: 'play', type: 'node', x: 0, y: 0},
+                // {name: 'progress', type: 'node'},
+                // {name: 'next', type: 'node', x: 0, y: 100},
+                {name: 'next', type: 'node', x: 110, y: -80},
+                {name: 'prev', type: 'node', x: -110, y: 80},
+
+                // {name: 'show', type: 'node', x: 0, y: -200},
+                // {name: 'hide', type: 'node', x: 0, y: -100},
+
+                {name: 'storage', type: 'storeData'}
+            ]
+        },
         {
             name: 'twoSidedLimiter',
             width: 600,
@@ -374,23 +400,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'valueX', type: "node"},
                 {name: 'valueY', type: "node"}
             ]
-        },
-        {
-            name: 'videoCapture',
-            width: 568,
-            height: 320,
-            nodes: [
-                {name: 'play', type: 'node', x: 0, y: 0},
-                // {name: 'progress', type: 'node'},
-                // {name: 'next', type: 'node', x: 0, y: 100},
-                {name: 'next', type: 'node', x: 110, y: -80},
-                {name: 'prev', type: 'node', x: -110, y: 80},
-                
-                // {name: 'show', type: 'node', x: 0, y: -200},
-                // {name: 'hide', type: 'node', x: 0, y: -100},
-                
-                {name: 'storage', type: 'storeData'}
-            ]
         }
         
     ];
@@ -486,7 +495,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 frame.fullScreen = false;
                 frame.sendMatrix = false;
                 frame.sendAcceleration = false;
-                frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+                frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
                 // thisFrame.visible = false;
 
                 // add each node with a non-empty name
