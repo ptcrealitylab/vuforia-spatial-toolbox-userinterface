@@ -293,6 +293,7 @@
         var realityInterface = new RealityInterface();
         
         initNavigationArrow(document.getElementById('navigationContainer'), realityInterface, false);
+        setNavigationMargins(20, 20, 20, 82);
 
         var State = Object.freeze({
             START: 'START',
@@ -321,7 +322,7 @@
         
         function processStateAction(action) {
             
-            console.log('state ' + currentState + ' + action ' + action);
+            // console.log('state ' + currentState + ' + action ' + action);
             
             switch (currentState) {
                 case State.START:
@@ -369,7 +370,7 @@
                     break;
             }
             
-            console.log(' = ' + currentState);
+            // console.log(' = ' + currentState);
             
             updateUIForNewState();
             updateSideEffectsForNewState();
@@ -468,7 +469,7 @@
                     }, 3000);
                     
                     document.getElementById('recordedVideo').addEventListener('progress', function(e) {
-                        console.log('progress', e);
+                        // console.log('progress', e);
                         clearInterval(interval);
                         clearInterval(loadTimeout);
                     });

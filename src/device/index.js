@@ -83,6 +83,7 @@ realityEditor.device.currentScreenTouches = [];
  * @property {boolean} unconstrained
  * @property {number|null} unconstrainedOffset
  * @property {Array.<number>|null} startingMatrix
+ * @property {string} targetAcquired - the id of a frame you tapped on, captured even behind fullscreen content
  */
 
 /**
@@ -95,7 +96,8 @@ realityEditor.device.editingState = {
     touchOffset: null,
     unconstrained: false,
     unconstrainedOffset: null,
-    startingMatrix: null
+    startingMatrix: null,
+    targetAcquired: null
 };
 
 /**
@@ -290,6 +292,8 @@ realityEditor.device.resetGlobalProgram = function() {
  * Reset full editing state so that no object is set as being edited.
  */
 realityEditor.device.resetEditingState = function() {
+    this.sendEditingStateToFrameContents(this.editingState.frame, false);
+
     this.editingState.object = null;
     this.editingState.frame = null;
     this.editingState.node = null;
@@ -297,6 +301,7 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
+    this.editingState.targetAcquired = null;
 };
 
 /**
@@ -393,6 +398,18 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     
+    this.sendEditingStateToFrameContents(frameKey, true);
+};
+
+// post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
+realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameIsMoving) {
+    if (!frameKey) return;
+    var iframe = document.getElementById('iframe' + frameKey);
+    if (!iframe) return;
+    
+    iframe.contentWindow.postMessage(JSON.stringify({
+        frameIsMoving: frameIsMoving
+    }), '*');
 };
 
 /**
@@ -1144,6 +1161,9 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
             realityEditor.app.focusCamera();
         }
     }
+    
+    realityEditor.network.stopHidingFramesForTouchDuration();
+    this.editingState.targetAcquired = null;
 };
 
 /**

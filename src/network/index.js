@@ -1165,22 +1165,26 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
             
-            // globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            globalDOMCache[tempThisObject.uuid].style.opacity = '0'; // svg overlay still exists so we can reposition, but invisible
             globalDOMCache[tempThisObject.uuid].style.left = '0';
             globalDOMCache[tempThisObject.uuid].style.top = '0';
             
-            // globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none'; // TODO: fix touch model with something more robust than this, using a selective "raycast" to bubble or not
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
+            
+            if (realityEditor.device.editingState.frame === msgContent.frame) {
+                realityEditor.device.resetEditingState();
+                realityEditor.device.clearTouchTimer();
+            }
 
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
             
-            // if (tempThisObject.uuid) {
-            //     globalDOMCache[tempThisObject.uuid].style.display = '';
-            // }
+            if (tempThisObject.uuid) {
+                globalDOMCache[tempThisObject.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
+            }
             
             // TODO: reset left/top offset when returns to non-fullscreen?
             
@@ -1202,11 +1206,10 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
 
-            // globalDOMCache[tempThisObject.uuid].style.display = 'none';
+            globalDOMCache[tempThisObject.uuid].style.opacity = '0';
             globalDOMCache[tempThisObject.uuid].style.left = '0';
             globalDOMCache[tempThisObject.uuid].style.top = '0';
             
-            // globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none'; // TODO: fix touch model with something more robust than this, using a selective "raycast" to bubble or not
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
@@ -1342,65 +1345,101 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.unacceptedTouch !== "undefined") {
-
-        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
-
-        // activeVehicle.moveDelay = msgContent.moveDelay;
-        // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
-
+        
         var eventData = msgContent.unacceptedTouch;
+        realityEditor.device.clearTouchTimer(); // clear the timer that would start dragging the previous frame
 
         console.log('editor received unaccepted touch... ', eventData);
-        var element = globalDOMCache['object' + msgContent.frame];
         
-        var prevDisplay = element.style.display;
-        element.style.display = 'none';
-
-        var syntheticEvent = new PointerEvent(eventData.type, {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-            pointerId: eventData.pointerId,
-            pointerType: eventData.pointerType,
-            x: eventData.x,
-            y: eventData.y,
-            clientX: eventData.x,
-            clientY: eventData.y,
-            pageX: eventData.x,
-            pageY: eventData.y,
-            screenX: eventData.x,
-            screenY: eventData.y
+        // targetAcquired lets us cache the frame we actually touched on touchdown...
+        // ...so we don't need to recalculate on every touchmove, etc.
+        if (realityEditor.device.editingState.targetAcquired) {
+            console.log('skip touch deciding bubbling, already acquired target');
+            this.stopHidingFramesForTouchDuration();
+            var elt = document.getElementById(realityEditor.device.editingState.targetAcquired);
+            this.dispatchSyntheticEvent(elt, eventData);
+            return;
+        }
+        
+        // tag the element that unaccepted the touch so that it becomes hidden
+        var previouslyTouchedElement = globalDOMCache['object' + msgContent.frame];
+        previouslyTouchedElement.dataset.displayAfterTouch = previouslyTouchedElement.style.display; // so we know what to restore its display to
+        
+        // hide each tagged element
+        // we may need to hide more than just this previouslyTouchedElement in case there are multiple fullscreen frames
+        var overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y);
+        overlappingDivs.filter(function(elt) {
+            return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
+        }).forEach(function(elt) {
+            elt.parentNode.style.display = 'none';
         });
         
-        realityEditor.device.resetEditingState();
-        realityEditor.device.clearTouchTimer();
+        var newTouchedElement = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+        this.dispatchSyntheticEvent(newTouchedElement, eventData);
         
-        var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
-        elt.dispatchEvent(syntheticEvent);
+        // re-show each tagged element
+        overlappingDivs.filter(function(elt) {
+            return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
+        }).forEach(function(elt) {
+            elt.parentNode.style.display = elt.parentNode.dataset.displayAfterTouch;
+        });
 
-        var targetFrameElt = globalDOMCache['iframe' + elt.id];// ? globalDOMCache['iframe' + elt.id].dataset.objectKey : null;
-        if (targetFrameElt) {
-            var frame = realityEditor.getFrame(targetFrameElt.dataset.objectKey, targetFrameElt.dataset.frameKey);
-            console.log(frame);
-            if (frame.fullScreen) {
-                setTimeout(function() {
-                    element.style.display = prevDisplay;
-                }, 10);
-            } else {
-                element.style.display = prevDisplay;
+
+        var isFrameElement = newTouchedElement.id.indexOf(msgContent.object) > -1;
+
+        // we won't get an acceptedTouch message if the newTouchedElement isn't a frame
+        if (!isFrameElement) {
+            if (msgContent.unacceptedTouch.type === 'pointerdown') {
+                realityEditor.device.editingState.targetAcquired = newTouchedElement.id; //msgContent.frame;
             }
+            this.stopHidingFramesForTouchDuration();
         }
-
 
     }
     
-    // TODO: if type === 'acceptedTouch', go through a list of everything that was hidden from the 'unaccepted touch' step and show again...
-    // TODO: figure out how to trigger the same functionality if nothing ends up accepting it... you would trigger an event on document.body that can be listened to
+    if (typeof msgContent.acceptedTouch !== "undefined") {
+        
+        console.log('accepted touch');
+        if (msgContent.acceptedTouch.type === 'pointerdown') {
+            realityEditor.device.editingState.targetAcquired = msgContent.frame;
+        }
 
-        /*    if (typeof msgContent.finishedLoading !== 'undefined') {
-                console.log('~~~ iframe finished loading ~~~')
-            }*/
+        this.stopHidingFramesForTouchDuration();
+    }
+    
+};
 
+/**
+ * @param target {HTMLElement}
+ * @param eventData {{x: number, y: number, pointerId: number, type: string, pointerType: string}}
+ */
+realityEditor.network.dispatchSyntheticEvent = function(target, eventData) {
+    var syntheticEvent = new PointerEvent(eventData.type, {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        pointerId: eventData.pointerId,
+        pointerType: eventData.pointerType,
+        x: eventData.x,
+        y: eventData.y,
+        clientX: eventData.x,
+        clientY: eventData.y,
+        pageX: eventData.x,
+        pageY: eventData.y,
+        screenX: eventData.x,
+        screenY: eventData.y
+    });
+
+    target.dispatchEvent(syntheticEvent);
+};
+
+/**
+ * Remove tag from frames that have been hidden for the current touch
+ */
+realityEditor.network.stopHidingFramesForTouchDuration = function() {
+    [].slice.call(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
+        delete element.dataset.displayAfterTouch;
+    });
 };
 
 realityEditor.network.loadLogicIcon = function(data) {

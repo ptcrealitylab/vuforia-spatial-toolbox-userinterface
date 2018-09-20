@@ -67,6 +67,10 @@
                     arrow.style.display = 'none';
                     if (!alwaysFullscreen) {
                         realityInterface.setFullScreenOff();
+                        
+                        // become movable and listen for touches again
+                        realityInterface.setMoveDelay(400);
+                        realityInterface.unregisterTouchDecider();
                     }
                     setTimeout(function() {
                         containerWrapper.style.display = '';
@@ -86,6 +90,12 @@
                     containerWrapper.style.display = 'none';
                     arrow.style.display = 'none';
                     realityInterface.setFullScreenOn();
+                    
+                    // become immovable and ignore touches
+                    realityInterface.setMoveDelay(-1);
+                    realityInterface.registerTouchDecider(function() {
+                        return false;
+                    });
 
                     setTimeout(function() {
                         arrow.style.display = 'inline';
