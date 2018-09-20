@@ -49,6 +49,15 @@
 
 createNameSpace("realityEditor.device.layout");
 
+/**
+ * @fileOverview realityEditor.device.layout.js
+ * Adjusts the user interface layout for different screen sizes.
+ * @todo currently just adjusts for iPhoneX shape, but eventually all screen changes should be moved here
+ */
+
+/**
+ * Adjusts the CSS of various UI elements (buttons, pocket, settings menu, crafting board) to fit the iPhoneX screen.
+ */
 realityEditor.device.layout.adjustForScreenSize = function() {
 
     // in onLoad.js, (globalStates.device === 'iPhone10,3') is not set yet, so use other method to set up screen
@@ -89,6 +98,10 @@ realityEditor.device.layout.adjustForScreenSize = function() {
     }
 };
 
+/**
+ * Returns the x-coordinate of the edge of the trash drop-zone, adjusted for different screen sizes.
+ * @return {number}
+ */
 realityEditor.device.layout.getTrashThresholdX = function() {
     return (globalStates.height - 60 - globalStates.rightEdgeOffset);
 };

@@ -50,17 +50,22 @@
 
 createNameSpace("realityEditor.gui.ar.lines");
 
+/**
+ * @fileOverview realityEditor.gui.ar.lines.js
+ * Contains all the functions for rendering different types of links, lines, and circles on the background canvas.
+ * Also contains logic for deleting lines crossed by a cutting line.
+ */
+
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
 /**
- * @desc
- * @param x21 position x 1
- * @param y1 position y 1
- * @param x2 position x 2
- * @param y2 position y 2
- **/
-
+ * Deletes ("cuts") any links who cross the line between (x1, y1) and (x2, y2)
+ * @param {number} x1 
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ */
 realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
 
     // window.location.href = "of://gotsome";
@@ -114,11 +119,10 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
 };
 
 /**
- * @desc
- * @param thisObject is a reference to an Hybrid Object
- * @param context is a reference to a html5 canvas object
- **/
-
+ * Renders all links who start from a node on the given frame, drawn onto the provided HTML canvas context reference.
+ * @param {Frame} thisFrame
+ * @param {CanvasRenderingContext2D} context
+ */
 realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 
     // if (globalStates.editingMode || (realityEditor.device.editingState.node && realityEditor.device.currentScreenTouches.length > 1)) {
@@ -240,9 +244,9 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 };
 
 /**
- * @desc
- **/
-
+ * Draws a link from its start position to the touch position, if you are currently adding one.
+ * Draws the "cut" line to the touch position, if you are currently drawing one to delete links.
+ */
 realityEditor.gui.ar.lines.drawInteractionLines = function () {
 
     if (globalStates.editingMode || realityEditor.device.editingState.node) {
@@ -289,19 +293,18 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
  **********************************************************************************************************************/
 
 /**
- * @desc
- * @param context is html5 canvas object
- * @param lineStartPoint is an array of two numbers indicating the start for a line
- * @param lineEndPoint is an array of two numbers indicating the end for a line
- * @param lineStartWeight is a number indicating the weight of a line at start
- * @param lineEndWeight is a number indicating the weight of a line at end
- * @param linkObject that contains ballAnimationCount
- * @param timeCorrector is a number that is regulating the animation speed according to the frameRate
- * @param startColor beinning color
- * @param endColor end color
- * @return
- **/
-
+ * Draws a link object and animates it over time.
+ * @param {CanvasRenderingContext2D} context - canvas rendering context
+ * @param {[number, number]} lineStartPoint - the [x, y] coordinate of the start of a line
+ * @param {[number, number]} lineEndPoint - the [x, y] coordinate of the end of a line
+ * @param {number} lineStartWeight - width of a line at start (used to fake 3d depth)
+ * @param {number} lineEndWeight - width of a line at end (used to fake 3d depth)
+ * @param {Link} linkObject - the full link data object, including an added ballAnimationCount property
+ * @param {number} timeCorrector - automatically regulates the animation speed according to the frameRate
+ * @param {number} startColor - white for regular links, colored for logic links (0 = Blue, 1 = Green, 2 = Yellow, 3 = Red, 4 = White)
+ * @param {number} endColor - same mapping as startColor
+ * @param {number|undefined} speed - optionally adjusts how quickly the animation moves
+ */
 realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed) {
     if(!speed) speed = 1;
     var angle = Math.atan2((lineStartPoint[1] - lineEndPoint[1]), (lineStartPoint[0] - lineEndPoint[0]));
@@ -365,6 +368,12 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     linkObject.ballAnimationCount += (lineStartWeight * timeCorrector.delta)+speed;
 };
 
+/**
+ * @todo is this used anymore? unclear what it is used for.
+ * @param cxt
+ * @param weight
+ * @param object
+ */
 realityEditor.gui.ar.lines.transform = function (cxt, weight, object){
     var n = object;
     if(!n) return;
@@ -384,14 +393,14 @@ realityEditor.gui.ar.lines.transform = function (cxt, weight, object){
  **********************************************************************************************************************/
 
 /**
- * @desc
- * @param context
- * @param lineStartPoint
- * @param lineEndPoint
+ * Draws the dotted line used to cut links, between the start and end coordinates.
+ * @todo: (b1, b2) have (1, 1) passed in as an example, but aren't used anymore.
+ * @param {CanvasRenderingContext2D} context
+ * @param {[number, number]} lineStartPoint
+ * @param {[number, number]} lineEndPoint
  * @param b1
  * @param b2
- **/
-
+ */
 realityEditor.gui.ar.lines.drawDotLine = function(context, lineStartPoint, lineEndPoint, b1, b2) {
 	context.beginPath();
 	context.moveTo(lineStartPoint[0], lineStartPoint[1]);
@@ -404,16 +413,14 @@ realityEditor.gui.ar.lines.drawDotLine = function(context, lineStartPoint, lineE
 };
 
 /**
- * @desc
- * @param context
- * @param lineStartPoint
- * @param lineEndPoint
- * @param radius
- **/
-
-realityEditor.gui.ar.lines.drawGreen = function(context, lineStartPoint, lineEndPoint, radius) {
+ * Draws a green, dashed, circular line.
+ * @param {CanvasRenderingContext2D} context
+ * @param {[number, number]} circleCenterPoint
+ * @param {number} radius
+ */
+realityEditor.gui.ar.lines.drawGreen = function(context, circleCenterPoint, radius) {
 	context.beginPath();
-	context.arc(lineStartPoint[0], lineStartPoint[1], radius, 0, Math.PI * 2);
+	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
 	context.strokeStyle = "#7bff08";
 	context.lineWidth = 2;
 	context.setLineDash([7]);
@@ -423,16 +430,14 @@ realityEditor.gui.ar.lines.drawGreen = function(context, lineStartPoint, lineEnd
 };
 
 /**
- * @desc
- * @param context
- * @param lineStartPoint
- * @param lineEndPoint
- * @param radius
- **/
-
-realityEditor.gui.ar.lines.drawRed = function(context, lineStartPoint, lineEndPoint, radius) {
+ * Draws a red, dashed, circular line.
+ * @param {CanvasRenderingContext2D} context
+ * @param {[number, number]} circleCenterPoint
+ * @param {number} radius
+ */
+realityEditor.gui.ar.lines.drawRed = function(context, circleCenterPoint, radius) {
 	context.beginPath();
-	context.arc(lineStartPoint[0], lineStartPoint[1], radius, 0, Math.PI * 2);
+	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
 	context.strokeStyle = "#ff036a";
 	context.lineWidth = 2;
 	context.setLineDash([7]);
@@ -441,16 +446,14 @@ realityEditor.gui.ar.lines.drawRed = function(context, lineStartPoint, lineEndPo
 };
 
 /**
- * @desc
- * @param context
- * @param lineStartPoint
- * @param lineEndPoint
- * @param radius
- **/
-
-realityEditor.gui.ar.lines.drawBlue = function(context, lineStartPoint, lineEndPoint, radius) {
+ * Draws a blue, dashed, circular line.
+ * @param {CanvasRenderingContext2D} context
+ * @param {[number, number]} circleCenterPoint
+ * @param {number} radius
+ */
+realityEditor.gui.ar.lines.drawBlue = function(context, circleCenterPoint, radius) {
 	context.beginPath();
-	context.arc(lineStartPoint[0], lineStartPoint[1], radius, 0, Math.PI * 2);
+	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
 	context.strokeStyle = "#01fffd";
 	context.lineWidth = 2;
 	context.setLineDash([7]);
@@ -459,16 +462,14 @@ realityEditor.gui.ar.lines.drawBlue = function(context, lineStartPoint, lineEndP
 };
 
 /**
- * @desc
- * @param context
- * @param lineStartPoint
- * @param lineEndPoint
- * @param radius
- **/
-
-realityEditor.gui.ar.lines.drawYellow = function(context, lineStartPoint, lineEndPoint, radius) {
+ * Draws a yellow, dashed, circular line.
+ * @param {CanvasRenderingContext2D} context
+ * @param {[number, number]} circleCenterPoint
+ * @param {number} radius
+ */
+realityEditor.gui.ar.lines.drawYellow = function(context, circleCenterPoint, radius) {
 	context.beginPath();
-	context.arc(lineStartPoint[0], lineStartPoint[1], radius, 0, Math.PI * 2);
+	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
 	context.strokeStyle = "#FFFF00";
 	context.lineWidth = 2;
 	context.setLineDash([7]);
@@ -476,6 +477,16 @@ realityEditor.gui.ar.lines.drawYellow = function(context, lineStartPoint, lineEn
 	context.closePath();
 };
 
+/**
+ * Utility for drawing a line in the provided canvas context with the given coordinates, color, and width.
+ * @param {CanvasRenderingContext2D} context
+ * @param {number} startX
+ * @param {number} startY
+ * @param {number} endX
+ * @param {number} endY
+ * @param {string} color
+ * @param {number} width
+ */
 realityEditor.gui.ar.lines.drawSimpleLine = function(context, startX, startY, endX, endY, color, width) {
 	context.strokeStyle = color;
 	context.lineWidth = width;

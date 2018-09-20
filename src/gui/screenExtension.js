@@ -515,7 +515,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             // 3. manually apply the touchOffset to the results so that it gets rendered in the correct place on the first pass
             thisFrame.ar.x -= (convertedTouchOffsetX - thisFrame.width/2 ) * thisFrame.ar.scale;
             thisFrame.ar.y -= (convertedTouchOffsetY - thisFrame.height/2 ) * thisFrame.ar.scale;
-
+            
             // TODO: this causes a bug now with the offset... figure out why it used to be necessary but doesn't help anymore
             // 4. set the actual touchOffset so that it stays in the correct offset as you drag around
             // realityEditor.device.editingState.touchOffset = {

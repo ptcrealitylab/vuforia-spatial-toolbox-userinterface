@@ -53,6 +53,18 @@
 
 createNameSpace("realityEditor.device.security");
 
+/**
+ * @fileOverview realityEditor.device.security.js
+ * A collection of functions around user authentication and permissions.
+ * A user can authenticate using a password and fingerprint, and then "lock" sets of nodes
+ * and links to prevent unauthorized modifications.
+ * @todo the security features are not currently fully supported anymore
+ */
+
+/**
+ * Triggered by native iOS code when a fingerprint is presented, starting a locking session if successful. 
+ * @param encryptedId
+ */
 realityEditor.device.security.authenticateSessionForUser = function(encryptedId) {
     console.log("js did run");
     console.log("authenticating with userId: " + encryptedId);
@@ -94,6 +106,19 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
     }
 };
 
+/**
+ * @typedef {string} LockType
+ * "full" = LOCK_TYPE_FULL
+ *          prevents any modifications by anyone until unlocked with the same password
+ * "half" = LOCK_TYPE_HALF
+ *          allows all modifications but claims the node using the current password so
+ *          that no one else can lock it until it is fully unlocked with the current password
+ */
+
+/**
+ * Enables a lock with the current session password on all the unlocked nodes and links on currently visible objects
+ * @param {LockType} lockType
+ */
 realityEditor.device.security.lockVisibleNodesAndLinks = function(lockType) {
     var visibleNodes = realityEditor.gui.ar.getVisibleNodes();
     console.log("visibleNodes = ", visibleNodes);
@@ -118,6 +143,9 @@ realityEditor.device.security.lockVisibleNodesAndLinks = function(lockType) {
     });
 };
 
+/**
+ * Removes a lock from all nodes and links on currently visible objects, if the lock password of that node matches the current session password.
+ */
 realityEditor.device.security.unlockVisibleNodesAndLinks = function() {
     var visibleNodes = realityEditor.gui.ar.getVisibleNodes();
     console.log("visibleNodes = ", visibleNodes);
@@ -134,11 +162,22 @@ realityEditor.device.security.unlockVisibleNodesAndLinks = function() {
     });
 };
 
+/**
+ * @typedef {string} ActionType
+ * "edit"
+ * "create"
+ * "lock"
+ * "unlock"
+ */
 
-
-
-
-// actionType = "edit", "create", "lock", "unlock"
+/**
+ * Checks if the specified actionType is allowed on the specified node by checking how it is locked.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {ActionType} actionType
+ * @return {boolean}
+ */
 realityEditor.device.security.isNodeActionAllowed = function(objectKey, frameKey, nodeKey, actionType) {
     var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
     
@@ -161,7 +200,14 @@ realityEditor.device.security.isNodeActionAllowed = function(objectKey, frameKey
 };
 
 // TODO: do we need separate methods for link and node, or are they equivalent?
-// actionType = "delete", "lock", "unlock"
+/**
+ * Checks if the specified actionType is allowed on the specified link by checking how it is locked.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} linkKey
+ * @param {ActionType} actionType
+ * @return {boolean}
+ */
 realityEditor.device.security.isLinkActionAllowed = function(objectKey, frameKey, linkKey, actionType) {
     var link = realityEditor.getLink(objectKey, frameKey, linkKey);
     var lockPassword = link.lockPassword;
@@ -177,8 +223,10 @@ realityEditor.device.security.isLinkActionAllowed = function(objectKey, frameKey
     return false; // otherwise nothing is allowed
 };
 
-// TODO: debug only
-// temporary method that can be called from the console to unlock all objects, in case they get locked by an inaccessible device
+/**
+ * Temporary method that can be called from the console to unlock all objects, in case they get locked by an inaccessible device
+ * @todo auto-disable function if not in debug mode - shouldn't be possible to do in production
+ */
 realityEditor.device.security.debugUnlockAll = function() {
     for (var objectKey in objects) {
         for (var frameKey in objects[objectKey].frames) {

@@ -1,5 +1,11 @@
 createNameSpace("realityEditor.gui.ar.moveabilityOverlay");
 
+/**
+ * @fileOverview realityEditor.gui.ar.moveabilityOverlay
+ * Draws the green SVG overlay that indicates when you can drag a frame or node.
+ * Draws red lines over a given region when the frame moves behind the z=0 marker plane.
+ */
+
 realityEditor.gui.ar.moveabilityOverlay = {};
 realityEditor.gui.ar.moveabilityOverlay.element = document.body;
 realityEditor.gui.ar.moveabilityOverlay.svgNS = {};

@@ -47,19 +47,38 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-
-/**
- * @desc
- **/
-
-function helloWorld(cb){
- cb();
-}
-
 createNameSpace("realityEditor.device");
 
+/**
+ * @fileOverview realityEditor.device.onLoad.js
+ * Sets the application's window.onload function to trigger this init method, which sets up the GUI and networking.
+ */
+
+/**
+ * When the index.html first finishes loading, set up the:
+ * Sidebar menu buttons,
+ * Pocket and memory bars,
+ * Background canvas,
+ * Touch Event Listeners,
+ * Network callback function,
+ * ... and notify the native iOS code that the user interface finished loading
+ */
 realityEditor.device.onload = function () {
 
+    // Initialize some global variables for the device session
+    this.cout('Running on platform: ' + globalStates.platform);
+    if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
+        globalStates.platform = false;
+    }
+    globalStates.realityState= false;
+    globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
+    this.cout("This editor's session UUID: " + globalStates.tempUuid);
+
+    // assign global pointers to frequently used UI elements
+    uiButtons = document.getElementById("GUI");
+    overlayDiv = document.getElementById('overlay');
+
+    // adds touch handlers for each of the menu buttons
     realityEditor.gui.menus.init();
     
     // center the menu vertically if the screen is taller than 320 px
@@ -68,47 +87,42 @@ realityEditor.device.onload = function () {
     document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
     CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
 
+    // set active buttons and preload some images
     realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
     realityEditor.gui.menus.on("main",["gui"]);
-    globalStates.realityState= false;
-
-	globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
-	console.log("-----------------------------:  "+globalStates.tempUuid);
-	console.log("starting up GUI");
-	uiButtons = document.getElementById("GUI");
-	overlayDiv = document.getElementById('overlay');
-
 	realityEditor.gui.buttons.draw();
+	
+	// set up the pocket and memory bars
 	realityEditor.gui.memory.initMemoryBar();
 	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
 
-	console.log(globalStates.platform);
-
-	if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
-		globalStates.platform = false;
-	}
-
+	// set up the global canvas for drawing the links
 	globalCanvas.canvas = document.getElementById('canvas');
 	globalCanvas.canvas.width = globalStates.height;
 	globalCanvas.canvas.height = globalStates.width;
-
 	globalCanvas.context = canvas.getContext('2d');
     
+	// !! important call to the iOS native application to notify that the user interface has loaded successfully !!
+    // TODO: move this into app/index.js
     realityEditor.app.appFunctionCall("kickoff", null, null);
    
     // reference implementation
     setTimeout(realityEditor.app.getVuforiaReady(function(){console.log("pong")}), 5000);
     
+    // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
-	ec++;
-	overlayDiv.addEventListener('touchstart', function (e) {
-		e.preventDefault();
-	});
-	
+		
 	// adds all the event handlers for setting up the editor
     realityEditor.device.addDocumentTouchListeners();
+    
+    // adjust for iPhoneX size if needed
     realityEditor.device.layout.adjustForScreenSize();
+
+    // prevent touch events on overlayDiv
+    overlayDiv.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+    });
     
     // start TWEEN library for animations
     function animate(time) {
@@ -122,8 +136,6 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
     
 	this.cout("onload");
-
 };
-
 
 window.onload = realityEditor.device.onload;

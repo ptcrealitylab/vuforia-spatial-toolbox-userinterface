@@ -51,6 +51,12 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
 
 (function(exports) {
 
+    /**
+     * Creates the DOM elements for the logic block menu,
+     * load all the blocks and generate their DOM and data models,
+     * and call the callback function when fully loaded.
+     * @param {Function} callback
+     */
     function initializeBlockMenu(callback) {
         var logic = globalStates.currentLogic;
     
@@ -109,7 +115,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             logic.guiState.menuTabDivs.push(menuTab);
             menuSideContainer.appendChild(menuTab);
         }
-    
+        
         menuLoadBlocks.call(exports, function(blockData) {
     
             // load each block from the downloaded json and add it to the appropriate category
@@ -150,7 +156,10 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             callback();
         });
     }
-    
+
+    /**
+     * Remove all the menu block event handlers and DOM elements.
+     */
     function resetBlockMenu() {
         if (globalStates.currentLogic) {
             var guiState = globalStates.currentLogic.guiState;
@@ -168,7 +177,11 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             }
         }
     }
-    
+
+    /**
+     * Get the JSON data of all available logic blocks on the current logic node's server, and pass it into the callback function when loaded
+     * @param {Function} callback - function that accepts JSON data as first parameter
+     */
     function menuLoadBlocks(callback) {
         var keys = this.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic); // TODO: move to realityEditor.network module
         
@@ -178,7 +191,11 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             callback(req);
         });
     }
-    
+
+    /**
+     * Displays the set of logic blocks associated with the category of the tab that was tapped on.
+     * @param {PointerEvent} e
+     */
     function onMenuTabSelected(e) {
         e.preventDefault();
         var guiState = globalStates.currentLogic.guiState;
@@ -188,7 +205,10 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         redisplayTabSelection.call(exports);
         redisplayBlockSelection.call(exports);
     }
-    
+
+    /**
+     * Update the visuals for each tab to show which one is selected.
+     */
     function redisplayTabSelection() {
         var guiState = globalStates.currentLogic.guiState;
         guiState.menuTabDivs.forEach(function(tab) {
@@ -199,7 +219,11 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             }
         });
     }
-    
+
+    /**
+     * Update the visuals for each menu block to show the icon image of the block it will add.
+     * Hides excess blocks if this category has fewer than the maximum number.
+     */
     function redisplayBlockSelection() {
         var guiState = globalStates.currentLogic.guiState;
         var blocksObject = guiState.menuBlockData[guiState.menuSelectedTab];
@@ -248,7 +272,13 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             blockDiv.style.display = 'none';
         }
     }
-    
+
+    /**
+     * Changes internal state when you tap on a menu block to store which one you selected.
+     * Updates visuals to show it was selected.
+     * (Doesn't add the block yet - waits until pointermove event)
+     * @param {PointerEvent} e
+     */
     function onBlockMenuPointerDown(e) {
         e.preventDefault();
         var guiState = globalStates.currentLogic.guiState;
@@ -258,18 +288,26 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         guiState.menuSelectedBlock.parentNode.setAttribute('class', 'menuBlock blockDivMovingAble');
         guiState.menuBlockToAdd = e.currentTarget.parentNode;
     }
-    
+
+    /**
+     * Resets internal state and visuals to un-select the menu block that was selected.
+     * @param {PointerEvent} e
+     */
     function onBlockMenuPointerUp(e) {
         e.preventDefault();
         var guiState = globalStates.currentLogic.guiState;
-        guiState.menuIsPointerDown = false;
+        guiState.menuIsPointerDown = false; // TODO: this is only difference between this and onBlockMenuPointerLeave?
         if (guiState.menuSelectedBlock) {
             guiState.menuSelectedBlock.parentNode.setAttribute('class', 'menuBlock');
         }
         guiState.menuSelectedBlock = null;
         guiState.menuBlockToAdd = null;
     }
-    
+
+    /**
+     * Resets internal state and visuals to un-select the menu block that was selected.
+     * @param e
+     */
     function onBlockMenuPointerLeave(e) {
         e.preventDefault();
         var guiState = globalStates.currentLogic.guiState;
@@ -281,7 +319,11 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         guiState.menuSelectedBlock = null;
         guiState.menuBlockToAdd = null;
     }
-    
+
+    /**
+     * Actually adds the selected block to the crafting board and hides the menu when you drag on a menu block.
+     * @param {PointerEvent} e
+     */
     function onBlockMenuPointerMove(e) {
         e.preventDefault();
         var guiState = globalStates.currentLogic.guiState;
@@ -295,7 +337,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             var pointerY = blockRect.top + blockRect.height/2;
             
             this.crafting.blockMenuHide(); // hide menu before adding block otherwise the touchmove event it triggers will be stopped
-            this.crafting.eventHelper.addBlockFromMenu(blockJSON, pointerX, pointerY);
+            this.crafting.eventHelper.addBlockFromMenu(blockJSON, pointerX, pointerY); // actually adds it to the crafting board
             guiState.menuBlockToAdd = null;
         }
     }
