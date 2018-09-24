@@ -254,16 +254,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             ]
         },*/
         {
-            name: 'sphere',
-            width: 568,
-            height: 320,
-            nodes: [
-                // {name: 'hue', type: "node"},
-                // {name: 'saturation', type: "node"},
-                // {name: 'lightness', type: "node"}
-            ]
-        },
-        {
             name: 'videoCapture',
             width: 568,
             height: 320,
@@ -286,6 +276,16 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             height: 505,
             nodes: [
                 {name: 'in_out', type: "twoSidedLimiter"}
+            ]
+        },
+        {
+            name: 'sphere',
+            width: 568,
+            height: 320,
+            nodes: [
+                // {name: 'hue', type: "node"},
+                // {name: 'saturation', type: "node"},
+                // {name: 'lightness', type: "node"}
             ]
         },
         {
@@ -400,8 +400,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'valueX', type: "node"},
                 {name: 'valueY', type: "node"}
             ]
+        },
+        {
+            name: 'pushMe',
+            width: 600,
+            height: 600,
+            nodes: [
+            ]
         }
-        
     ];
 
     function pocketInit() {

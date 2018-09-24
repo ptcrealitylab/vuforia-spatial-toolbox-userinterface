@@ -1195,73 +1195,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     if (activeVehicle.sendMatrix === true) {
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-
-
-                        /*
-                        var tempMat = [];
-                        var mvm = [];
-                        
-                        matrix.r3 = [
-                            positionData.scale, 0, 0, 0,
-                            0, positionData.scale, 0, 0,
-                            0, 0, 1, 0,
-                            // positionData.x, positionData.y, 0, 1
-                            -positionData.x, -positionData.y, 0, 1
-                        ];
-                        
-                        if (positionData.matrix.length === 16) {
-                            var temp2 = [];
-                            var invert = [
-                                1, 0, 0, 0,
-                                0, 1, 0, 0,
-                                0, 0, 1, 0,
-                                0, 0, 0, 1
-                            ];
-                            utilities.multiplyMatrix(visibleObjects[objectKey], positionData.matrix, temp2);
-                            utilities.multiplyMatrix(temp2, invert, tempMat);
-                        } else {
-                            tempMat = utilities.copyMatrix(visibleObjects[objectKey]);
-                        }
-                        utilities.multiplyMatrix(tempMat, matrix.r3, mvm);
-                        // utilities.multiplyMatrix(tempMat, globalStates.projectionMatrix, mvm);
-                        // utilities.multiplyMatrix(visibleObjects[objectKey], matrix.r3, mvm);
-                        thisMsg.modelViewMatrix = mvm; //utilities.copyMatrix(visibleObjects[objectKey]); // uncomment to send the modelViewMatrix of the marker
-                        // thisMsg.modelViewMatrix[12] += positionData.x;
-                        // thisMsg.modelViewMatrix[13] += positionData.y;
-                        
-                        // var frameModelViewMatrix = [];
-                        // var tempMat = [];
-                        // var tempMat2 = [];
-                        // utilities.multiplyMatrix(visibleObjects[objectKey], positionData.matrix, tempMat);
-                        // utilities.multiplyMatrix(tempMat, rotateX, tempMat2);
-                        // utilities.multiplyMatrix(tempMat2, matrix.r3, frameModelViewMatrix);
-                        //
-                        // thisMsg.frameModelViewMatrix = frameModelViewMatrix; // this sends the modelViewMatrix of the frame
-                        
-                        */
-                        
-                        
-                        var activeObjectMatrix = [];
-                        
-                        // 1. 
-                        // include projection matrix
-                        // utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
-                        // utilities.multiplyMatrix(this.rotateX, this.matrix.r, activeObjectMatrix);
-                        // or ignore projection matrix
-                        utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], activeObjectMatrix);
-                        
-                        // 2.
-                        // include positionData if it exists
-                        if (positionData.matrix.length === 16) {
-                            utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
-                        } else {
-                            matrix.r = utilities.copyMatrix(activeObjectMatrix);
-                        }
-                        // utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-                        finalMatrix = utilities.copyMatrix(matrix.r);
-
-                        thisMsg.modelViewMatrix = finalMatrix;
-                        
+                        thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
                     }
 
                     if (activeVehicle.sendAcceleration === true) {
@@ -1373,6 +1307,43 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     
     return true;
 
+};
+
+/**
+ * Given the vuforia matrix for the marker, and the transformation of the frame relative to that, gives a final composite matrix
+ * @param {Array.<number>} visibleObjectMatrix
+ * @param {Array.<number>} frameMatrix
+ * @param {number} frameX
+ * @param {number} frameY
+ * @param {number} frameScale
+ * @return {Array}
+ */
+realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
+    var utils = realityEditor.gui.ar.utilities;
+    var r1 = [];
+    var r2 = [];
+    var finalMatrix = [];
+
+    // 1. rotate visibleObjects[objectKey] for screen orientation
+    utils.multiplyMatrix(rotateX, visibleObjectMatrix, r1);
+
+    // 2. include positionData if it exists
+    if (frameMatrix.length === 16) {
+        utils.multiplyMatrix(frameMatrix, r1, r2);
+    } else {
+        r2 = utils.copyMatrix(r1);
+    }
+
+    // 3. include x, y, scale, etc
+    var r3 = [
+        frameScale, 0, 0, 0,
+        0, frameScale, 0, 0,
+        0, 0, frameScale, 0,
+        frameX, frameY, 0, 1
+    ];
+
+    utils.multiplyMatrix(r3, r2, finalMatrix);
+    return finalMatrix;
 };
 
 realityEditor.gui.ar.draw.hideScreenFrame = function(activeKey) {

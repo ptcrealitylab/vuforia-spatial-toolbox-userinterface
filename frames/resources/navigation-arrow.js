@@ -17,6 +17,7 @@
         left: 20,
         right: 20
     };
+    var isMoving = false;
 
     var isTransitioningFullscreen = false;
 
@@ -27,6 +28,7 @@
 
         realityInterface.subscribeToMatrix();
         realityInterface.addMatrixListener(matrixCallback);
+        realityInterface.addIsMovingListener(isMovingCallback);
 
         containerWrapper = document.createElement('div');
         wrap(container, containerWrapper);
@@ -57,7 +59,7 @@
         var y = realityInterface.getPositionY();
 
         // noinspection JSSuspiciousNameCombination
-        if (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height) {
+        if (isMoving || (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height)) {
             // hideArrow();
 
             if (!isTransitioningFullscreen) {
@@ -176,6 +178,16 @@
         margins.bottom = bottom;
         margins.left = left;
         margins.right = right;
+    }
+    
+    function isMovingCallback(e) {
+        if (e) {
+            console.log('disable arrow mode until done moving... ');
+            isMoving = true;
+        } else {
+            console.log('enable arrow mode, not moving anymore');
+            isMoving = false;
+        }
     }
 
     exports.initNavigationArrow = init;

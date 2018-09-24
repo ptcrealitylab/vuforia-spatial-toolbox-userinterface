@@ -76,7 +76,7 @@
         // and subscribe to the modelview and projection matrices
         realityInterface = new RealityInterface();
         realityInterface.subscribeToMatrix();
-        realityInterface.setFullScreenOn(150);
+        realityInterface.setFullScreenOn();
 
         // whenever we receive new matrices from the editor, update the 3d scene
         realityInterface.addMatrixListener(renderScene);

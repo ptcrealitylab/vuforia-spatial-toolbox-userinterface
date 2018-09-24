@@ -351,8 +351,10 @@
             realityObject.touchDecider = null;
         };
 
+        var numMovingCallbacks = 0;
         this.addIsMovingListener = function(callback) {
-            realityObject.messageCallBacks.frameIsMovingCall = function (msgContent) {
+            numMovingCallbacks++;
+            realityObject.messageCallBacks['frameIsMovingCall'+numMovingCallbacks] = function (msgContent) {
                 if (typeof msgContent.frameIsMoving !== "undefined") {
                     callback(msgContent.frameIsMoving);
                 }
