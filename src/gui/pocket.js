@@ -254,6 +254,37 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             ]
         },*/
         {
+            name: 'dancer',
+            width: 568,
+            height: 320,
+            nodes: [
+            ]
+        },
+        {
+            name: 'machine-gltf',
+            width: 568,
+            height: 320,
+            nodes: [
+            ]
+        },
+        {
+            name: 'sphere',
+            width: 568,
+            height: 320,
+            nodes: [
+                // {name: 'hue', type: "node"},
+                // {name: 'saturation', type: "node"},
+                // {name: 'lightness', type: "node"}
+            ]
+        },
+        {
+            name: 'turtle',
+            width: 568,
+            height: 320,
+            nodes: [
+            ]
+        },
+        {
             name: 'videoCapture',
             width: 568,
             height: 320,
@@ -276,16 +307,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             height: 505,
             nodes: [
                 {name: 'in_out', type: "twoSidedLimiter"}
-            ]
-        },
-        {
-            name: 'sphere',
-            width: 568,
-            height: 320,
-            nodes: [
-                // {name: 'hue', type: "node"},
-                // {name: 'saturation', type: "node"},
-                // {name: 'lightness', type: "node"}
             ]
         },
         {

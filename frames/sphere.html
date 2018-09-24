@@ -5,7 +5,7 @@
     <title>THREE.js Sphere</title>
     <script src="resources/object-frames.js"></script>
     <script src="resources/pep.min.js"></script>
-    <script src="resources/three.min.js"></script>
+    <script src="resources/threejs-src/2016/three.min.js"></script>
     <script src="resources/navigation-arrow.js"></script>
     <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
 </head>
@@ -91,8 +91,6 @@
         var mouse = new THREE.Vector2(), INTERSECTED;
 
         realityInterface.registerTouchDecider(function(eventData) {
-            // console.log('decide for touch...', eventData);
-
             //1. sets the mouse position with a coordinate system where the center
             //   of the screen is the origin
             mouse.x = ( eventData.x / window.innerWidth ) * 2 - 1;
@@ -121,14 +119,6 @@
             }
         });
 
-        // document.body.addEventListener('pointerdown', function() {
-        //     console.log('3d pointerdown');
-        // });
-        //
-        // document.body.addEventListener('pointerup', function() {
-        //     console.log('3d pointerup');
-        // });
-
     });
 
     function setMatrixFromArray(matrix, array) {
@@ -152,8 +142,6 @@
             mesh.rotation.x += 0.005; // slow rotation, for aesthetic effect
             mesh.rotation.y += 0.01;
             // update model view matrix
-            modelViewMatrix[12] *= window.devicePixelRatio/2;
-            modelViewMatrix[13] *= window.devicePixelRatio/2;
             setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
             // render the scene
             threejsContainerObj.visible = true;

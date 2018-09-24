@@ -1322,27 +1322,42 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     var utils = realityEditor.gui.ar.utilities;
     var r1 = [];
     var r2 = [];
+    var r3 = [];
     var finalMatrix = [];
+
+    if (!visibleObjectMatrix) {
+        console.warn('cannot get finalMatrix without visibleObjectMatrix');
+    }
 
     // 1. rotate visibleObjects[objectKey] for screen orientation
     utils.multiplyMatrix(rotateX, visibleObjectMatrix, r1);
 
-    // 2. include positionData if it exists
-    if (frameMatrix.length === 16) {
-        utils.multiplyMatrix(frameMatrix, r1, r2);
-    } else {
-        r2 = utils.copyMatrix(r1);
-    }
-
-    // 3. include x, y, scale, etc
-    var r3 = [
+    // 2. include x, y, scale, etc
+    var scale = [
         frameScale, 0, 0, 0,
         0, frameScale, 0, 0,
         0, 0, frameScale, 0,
-        frameX, frameY, 0, 1
+        0, 0, 0, 1
     ];
 
-    utils.multiplyMatrix(r3, r2, finalMatrix);
+    utils.multiplyMatrix(scale, r1, r2);
+
+    var translation = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        -frameX/frameScale, -frameY/frameScale, 0, 1
+    ];
+
+    utils.multiplyMatrix(r2, translation, r3);
+    
+    // 3. include positionData if it exists
+    if (frameMatrix.length === 16) {
+        utils.multiplyMatrix(frameMatrix, r3, finalMatrix);
+    } else {
+        finalMatrix = utils.copyMatrix(r3);
+    }
+
     return finalMatrix;
 };
 
