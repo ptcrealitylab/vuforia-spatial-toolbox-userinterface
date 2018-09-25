@@ -8,6 +8,49 @@ createNameSpace('realityEditor.device.speechPerformer');
  * @todo speech is not fully supported anymore
  */
 
+/**
+ * Public init method sets up module and registers callbacks in other modules
+ */
+realityEditor.device.speechPerformer.initFeature = function() {
+    var SPEECH_FEATURE_ENABLED = false;
+    
+    if (SPEECH_FEATURE_ENABLED) {
+        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
+
+            if (!(globalStates.guiState === "node" || globalStates.guiState === "logic")) { return; }
+            if (globalStates.editingMode) { return; }
+
+            // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
+            if (globalStates.speechState) {
+
+                globalStates.nodeSpeechHighlightCounter++;
+                if (globalStates.nodeSpeechHighlightCounter > 20) {
+
+                    var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode();
+                    if (!closest) return;
+
+                    // reset all other nodes to full opacity
+                    realityEditor.forEachNodeInAllObjects( function(objectKey, frameKey, nodeKey) {
+                        var nodeDom = document.getElementById('object' + nodeKey);
+                        if (nodeDom && nodeDom.style.opacity !== "1") {
+                            nodeDom.style.opacity = "1";
+                        }
+                    });
+
+                    // highlight the closest one with semi-transparency
+                    var closestNodeDom = document.getElementById('object' + closest.nodeKey);
+                    if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
+                        closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
+                    }
+
+                    globalStates.nodeSpeechHighlightCounter = 0;
+                }
+
+            }
+        });
+    }
+};
+
 ///////// ROUTES //////////
 
 /**

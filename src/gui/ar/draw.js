@@ -152,10 +152,14 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
 };
 
 /**
- * Gets triggered 60fps by the native app when Vuforia updates with a new set of recognized markers
+ * Gets triggered ~60fps by the native app when the AR engine updates with a new set of recognized markers
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
+    var objectKey;
+    var frameKey;
+    var nodeKey;
+    var continueUpdate = true;
     
     this.ar.utilities.timeSynchronizer(timeCorrection);
     
@@ -166,7 +170,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     this.visibleObjects = visibleObjects;
     
     // scale x, y, and z elements of matrix for mm to meter conversion ratio
-    for (var objectKey in this.visibleObjects) {
+    for (objectKey in this.visibleObjects) {
         if (!this.visibleObjects.hasOwnProperty(objectKey)) continue;
         // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
         this.visibleObjects[objectKey][14] *= 1000;
@@ -174,13 +178,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.visibleObjects[objectKey][12] *= 1000;
     }
 
+    // erases anything on the background canvas
     if (this.globalCanvas.hasContent === true) {
         this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);
         this.globalCanvas.hasContent = false;
     }
     
-    var editingVehicle = realityEditor.device.getEditingVehicle();
-    
+    // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     var isObjectWithNoFramesVisible = false;
     if (Object.keys(visibleObjects).length > 0) {
         if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
@@ -195,306 +199,193 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         callback( JSON.parse(JSON.stringify( realityEditor.gui.ar.draw.visibleObjects )) );
     });
     
-    for (var objectKey in objects) {
+    // iterate over every object and decide whether or not to render it based on what the AR engine has detected
+    for (objectKey in objects) {
+        if (!objects.hasOwnProperty(objectKey)) { continue; }
+        
         this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
+        
+        // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
+            // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
 
-            // this.activeObjectMatrix = multiplyMatrix(rotateX, multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix));
+            // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
             this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
-            //  this.activeObjectMatrix2 = multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix);
-            //   document.getElementById("controls").innerHTML = (toAxisAngle(this.activeObjectMatrix2)[0]).toFixed(1)+" "+(toAxisAngle(this.activeObjectMatrix2)[1]).toFixed(1);
-
+            
+            // extract its projected (x,y) screen coordinates from the matrix
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
             objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
             
-            for (var frameKey in objects[objectKey].frames) {
+            // iterate over every frame it contains, add iframes if necessary, and update the iframe CSS3D matrix to render in correct position
+            for (frameKey in objects[objectKey].frames) {
+                if (!objects[objectKey].frames.hasOwnProperty(frameKey)) { continue; }
+                
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 
-                if (!this.activeFrame.hasOwnProperty('visualization')) { // TODO: temp fix
+                // allows backwards compatibility for frames that don't have a visualization property
+                if (!this.activeFrame.hasOwnProperty('visualization')) {
                     this.activeFrame.visualization = "ar";
                 }
 
-                // making sure that the node is always the object to draw
                 this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
                 
-                var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                // perform all the 3D calculations and CSS updates to actually show the frame and render in the correct position
+                continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                     this.globalDOMCache, this.globalStates, this.globalCanvas,
                     this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                     this.nodeCalculations, this.cout);
 
-                if (globalStates.guiState === 'ui' && !continueUpdate) return;
+                // currently there is no way that this will trigger, but it may be used in future
+                if (globalStates.guiState === 'ui' && !continueUpdate) { return; }
 
+                // if a DOM element hasn't been added for this frame yet, add it and load the correct src into an iframe
                 var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
                 this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
                 
+                // if we're not viewing frames (e.g. should be viewing nodes instead), hide the frame
                 if (globalStates.guiState !== 'ui') {
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                 }
 
-                for (var nodeKey in this.activeFrame.nodes) {
-                    // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) { continue; }
+                // iterate over every node in this frame, and perform the same rendering process as for the frames
+                for (nodeKey in this.activeFrame.nodes) {
+                    if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) { continue; }
+                    
+                    // render the nodes if we're in node/logic viewing mode
                     if (globalStates.guiState === "node" || globalStates.guiState === "logic") {
+                        
                         this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
                         this.activeKey = nodeKey;
                         this.activeVehicle = this.activeNode;
                         this.activeType = this.activeNode.type;
-                        
-                        if (this.hiddenNodeTypes.indexOf(this.activeType) > -1) {
-                            // console.log('don\'t render node of type ' + this.activeType);
-                            continue;
-                        }
 
-                        var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                        // nodes of certain types are invisible and don't need to be rendered (e.g. storeData nodes) 
+                        if (this.hiddenNodeTypes.indexOf(this.activeType) > -1) { continue; }
 
+                        // perform all the 3D calculations and CSS updates to actually show the node and render in the correct position
+                        continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                             this.globalDOMCache, this.globalStates, this.globalCanvas,
                             this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                             this.nodeCalculations, this.cout);
-                        
-                        if (!continueUpdate) return;
-                        
+
+                        // currently there is no way that this will trigger, but it may be used in future
+                        if (!continueUpdate) { return; }
+
+                        // if a DOM element hasn't been added for this node yet, add it and load the correct src into an iframe
                         var nodeUrl = "nodes/" + this.activeType + "/index.html";
                         this.addElement(nodeUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeVehicle);
 
                     } else {
+                        
+                        // if we're not in node/logic viewing mode, hide the nodes
                         this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
                         this.activeKey = nodeKey;
-
                         this.activeVehicle = this.activeNode;
-                      //  this.activeType = this.activeNode.type;
-                      
                         this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
-                    }
-                }
-
-                /*
-                for (nodeKey in this.activeObject.frames) {
-                    this.activeNode = this.activeObject.frames[nodeKey];
-                    if (globalStates.guiState === "ui") {
-                          this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
-
-                        this.globalDOMCache, this.globalStates, this.globalCanvas,
-                        this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                        this.nodeCalculations, this.cout, this.webkitTransformMatrix3d);
                         
-                        var keyedSrc = this.activeNode.src;
-                        if (keyedSrc.indexOf('?') >= 0) {
-                            keyedSrc += '&';
-                        } else {
-                            keyedSrc += '?';
-                        }
-                        keyedSrc += 'nodeKey=' + nodeKey;
-                        this.addElement(keyedSrc,
-                        this.activeKey, objectKey, frameKey, this.activeType, this.notLoading, this.activeVehicle, this.globalStates, this.globalDOMCache);
-                    } else {
-                        this.hideTransformed(objectKey, nodeKey, this.activeNode, "ui");
-
                     }
                 }
-                */
             }
-        }
-        else if (this.activeObject.objectVisible) {
-            // this.activeObject.objectVisible = false;
+        
+        // if this object was NOT detected by the AR engine, hide its nodes and frames or perform edge-case functionality
+        // check if objectVisible so that this only happens once for each object
+        } else if (this.activeObject.objectVisible) {
+
+            // setting objectVisible = false makes sure we don't unnecessarily repeatedly hide it
             realityEditor.gui.ar.draw.setObjectVisible(this.activeObject, false);
             
             var wereAnyFramesMovedToGlobal = false;
             
-            for (var frameKey in objects[objectKey].frames) {
+            for (frameKey in objects[objectKey].frames) {
+                if (!objects[objectKey].frames.hasOwnProperty(frameKey)) { continue; }
+                
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
-                if (!this.activeFrame) {
-                    console.log("break from frame: ", objectKey, frameKey);
-                    continue;
-                }
-                // making sure that the node is always the object to draw
+                if (!this.activeFrame) { continue; }
+                
                 this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
 
-                // preserve frame globally when object disappears if it is being moved in unconstrained editing
+                // preserve frame globally when its object disappears if it is being moved in unconstrained editing
                 if (realityEditor.device.isEditingUnconstrained(this.activeVehicle) && this.activeVehicle.location === 'global') {
                     
                     wereAnyFramesMovedToGlobal = true;
                     globalStates.inTransitionObject = objectKey;
                     globalStates.inTransitionFrame = frameKey;
                     
+                // if not unconstrained editing a global frame, hide it
                 } else {
+                    
+                    var startingMatrix;
                 
-                    // unconstrained editing local frame - can't transition reset its matrix to what it was before starting to edit
+                    // unconstrained editing local frame - can't transition to global, but reset its matrix to what it was before starting to edit
                     if (realityEditor.device.isEditingUnconstrained(this.activeVehicle)) {
-                        var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
+                        startingMatrix = realityEditor.device.editingState.startingMatrix || [];
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeVehicle, startingMatrix);
                     }
 
+                    // hide the frame
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
 
-                    for (var nodeKey in this.activeFrame.nodes) {
+                    // hide each node within this frame
+                    for (nodeKey in this.activeFrame.nodes) {
+                        if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) { continue; }
+
                         this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
                         this.activeKey = nodeKey;
                         this.activeVehicle = this.activeNode;
                         this.activeType = this.activeNode.type;
-                        // if (!this.activeObject.nodes.hasOwnProperty(nodeKey)) {  continue;  }
 
-                        // unconstrained editing local frame - can't transition reset its matrix to what it was before starting to edit
+                        // unconstrained editing local node - can't transition to global, but reset its matrix to what it was before starting to edit
                         if (realityEditor.device.isEditingUnconstrained(this.activeNode)) {
-                            var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
+                            startingMatrix = realityEditor.device.editingState.startingMatrix || [];
                             realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeNode, startingMatrix);
                         }
                         
+                        // hide the node
                         this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                     }
-
-                    /*
-                    for (nodeKey in this.activeObject.frames) {
-                        this.activeNode = realityEditor.getNode(objectKey, frameKey, frameKey);
-                        this.activeKey = nodeKey;
-                        this.activeVehicle = this.activeNode;
-                        this.activeType = this.activeNode.type;
-                        
-                        this.hideTransformed(objectKey, nodeKey, this.activeObject.frames[nodeKey], "ui");
-    
-                    }
-                    */
-
-                    // this.killObjects(this.activeKey, this.activeVehicle, this.globalDOMCache); // TODO: this only kills last node, not the frames (because activeKey changes)
-//                    this.killObjects(frameKey, this.activeFrame, this.globalDOMCache);
                     
                 }
                 
             }
             
-            if (!wereAnyFramesMovedToGlobal) {
-                // remove editing states related to this object
-                
-                if (realityEditor.device.editingState.object === objectKey) {
-                    realityEditor.device.resetEditingState();
-                }
+            // remove editing states related to this object (unless transitioned a frame to global)
+            if (!wereAnyFramesMovedToGlobal && realityEditor.device.editingState.object === objectKey) {
+                realityEditor.device.resetEditingState();
             }
+
+        // if this object was NOT detected by the AR engine, AND its frames/nodes have already been hidden, continuously
+        // continuously check if enough time has passed to completely kill its content from the DOM
         } else {
             this.killObjects(this.activeKey, this.activeObject, this.globalDOMCache);
         }
 
     }
 
-    // draw all lines
+    // draw all lines - links and cutting lines
     if ((globalStates.guiState === "node" || globalStates.guiState === "logic")) {
         
-        for (var objectKey in objects) {
-            if (!objects.hasOwnProperty(objectKey)) continue;
-            var object = objects[objectKey];
-            for (var frameKey in object.frames) {
-                if (!object.frames.hasOwnProperty(frameKey)) continue;
-                this.ar.lines.drawAllLines(realityEditor.getFrame(objectKey, frameKey), this.globalCanvas.context);
-            }
-        }
+        // render each link 
+        realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+            realityEditor.gui.ar.lines.drawAllLines(realityEditor.getFrame(objectKey, frameKey), globalCanvas.context);
+        });
         
-        if (!globalStates.editingMode) { // TODO: might not actually need this here, but need to test if i can safely remove it...
-
+        // render the cutting line if you are dragging on the background (not in editing mode)
+        if (!globalStates.editingMode) {
             this.ar.lines.drawInteractionLines();
-
-            var SPEECH_FEATURE_ENABLED = false;
-            // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
-            if (SPEECH_FEATURE_ENABLED && globalStates.speechState) {
-
-                globalStates.nodeSpeechHighlightCounter++;
-                if (globalStates.nodeSpeechHighlightCounter > 20) {
-
-                    var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode(); //realityEditor.device.speech.getClosestObjectFrameNode(); //getClosestNode();
-                    if (!closest) return;
-
-                    // reset all other nodes to full opacity
-                    realityEditor.forEachNodeInAllObjects( function(objectKey, frameKey, nodeKey) {
-                        var nodeDom = document.getElementById('object' + nodeKey);
-                        if (nodeDom && nodeDom.style.opacity !== "1") {
-                            nodeDom.style.opacity = "1";
-                        }
-                    });
-
-                    // highlight the closest one with semi-transparency
-                    var closestNodeDom = document.getElementById('object' + closest.nodeKey);
-                    if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
-                        closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
-                    }
-
-                    globalStates.nodeSpeechHighlightCounter = 0;
-                }
-
-            }
-            
         }
-        
     }
 
-    // temporarily aren't using this method anymore for the pocket, it immediately gets added to the closest object
-    /*
-    if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
-        
-        this.activeObject = pocketItem["pocket"];
-        this.activeObject.visibleCounter = timeForContentLoaded;
-        this.activeObject.objectVisible = true;
-        
-        objectKey = "pocket";
-        frameKey = "pocket";
-        
-        this.activeObjectMatrix = [];
-
-        // find the closest object
-        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-
-        if (this.visibleObjects.hasOwnProperty(closestObjectKey)) {
-
-            this.ar.utilities.multiplyMatrix(this.visibleObjects[closestObjectKey], globalStates.projectionMatrix, this.matrix.r);
-            this.ar.utilities.multiplyMatrix(rotateX, this.matrix.r, this.activeObjectMatrix);
-            
-        } else {
-
-            this.activeObjectMatrix = [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            ];
-
-        }
-        
-        // for (var frameKey in this.activeObject.frames) {
-        this.activeFrame = this.activeObject.frames["pocket"];
-        
-        this.activeKey = pocketItemId;
-             
-        for (var nodeKey in this.activeFrame.nodes) {
-            
-            this.activeNode = this.activeFrame.nodes[nodeKey];
-            this.activeType = this.activeNode.type;
-
-            if ((globalStates.guiState === "node" || globalStates.guiState === "logic") && this.activeType === "logic") {
-
-                this.activeNode.width = 100;
-                this.activeNode.height = 100;
-                
-                var thisUrl = "nodes/" + this.activeType + "/index.html";
-                this.addElement(thisUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeNode);
-                
-                var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeNode, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
-
-                if (!continueUpdate) return;
-                
-            }
-            
-        }
-        
-    }
-    */
-
-    // Render the inTransitionFrame 
-
+    // render the frame that was pulled off of one object and is being moved through global space to a new object
     if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
 
         this.activeObject = objects[globalStates.inTransitionObject];
@@ -506,7 +397,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
         this.activeObjectMatrix = [];
         
-        // TODO: finish this new method of transferring frames
+        // TODO: finish this new method of transferring frames immediately so they can be pushed into screens in one motion
         /*
         var numObjectsVisible =  Object.keys(this.visibleObjects).length;
         var areAnyObjectsVisible = numObjectsVisible > 0;
@@ -525,33 +416,21 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
         */
 
+        // render the transition frame even if its object is not visible
         if (!this.visibleObjects.hasOwnProperty(objectKey)) {
 
-            // this.ar.utilities.multiplyMatrix(this.visibleObjects[closestObjectKey], globalStates.projectionMatrix, this.matrix.r);
-            // this.ar.utilities.multiplyMatrix(rotateX, this.matrix.r, this.activeObjectMatrix);
-            
-            // for (var frameKey in this.activeObject.frames) {
             this.activeFrame = this.activeObject.frames[frameKey];
-
             this.activeKey = frameKey;
-            
             this.activeObjectMatrix = this.activeFrame.temp;
+            
+            continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
 
-            var continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
-
-            if (!continueUpdate) return;
+            if (!continueUpdate) { return; }
         }
 
     }
-    
-    /* // TODO: any updates to frames transitioning between objects should happen here
-    for (var frameKey in globalFrames) {
-        if (!globalFrames.hasOwnProperty(frameKey)) continue;
-        
-        console.log(frameKey + " is a global frame");
-    }
-    */
 
+    // if needed, reset acceleration data from devicemotion events
     if (globalStates.acceleration.motion !== 0) {
         globalStates.acceleration = {
             x: 0,
@@ -1866,8 +1745,8 @@ realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
 
 /**
  * Sets the objectVisible property of not only the object, but also all of its frames
- * @param object - Object reference to the object whose property you wish to set
- * @param shouldBeVisible - Boolean visible or not. Objects that are not visible do not render their interfaces, nodes, links.
+ * @param {Object} object - reference to the object whose property you wish to set
+ * @param {boolean} shouldBeVisible - objects that are not visible do not render their interfaces, nodes, links.
  */
 realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) {
     if (!object) return;

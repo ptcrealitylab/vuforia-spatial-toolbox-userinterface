@@ -136,6 +136,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.videoRecording.initFeature();
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
     realityEditor.device.touchPropagation.initFeature();
+    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
     
 	this.cout("onload");
 };
