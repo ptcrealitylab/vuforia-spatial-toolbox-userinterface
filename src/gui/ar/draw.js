@@ -128,22 +128,35 @@ realityEditor.gui.ar.draw.type = "";
 realityEditor.gui.ar.draw.notLoading = "";
 realityEditor.gui.ar.draw.utilities = realityEditor.gui.ar.utilities;
 
-// don't render the following node types:
+/**
+ * don't render the following node types:
+ * @type {Array.<string>}
+ */
 realityEditor.gui.ar.draw.hiddenNodeTypes = [
     'storeData',
     'invisible'
 ];
 
+/**
+ * Array of registered callbacks for the update function
+ * @type {Array}
+ */
 realityEditor.gui.ar.draw.updateListeners = [];
 
+/**
+ * Registers a callback from an external module to be updated every frame with the visibleObjects matrices
+ * @param {function} callback
+ */
 realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
 };
 
+/**
+ * Gets triggered 60fps by the native app when Vuforia updates with a new set of recognized markers
+ * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
+ */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
-    realityEditor.device.touchInputs.update();
     
-//    console.log(JSON.stringify(visibleObjects));
     this.ar.utilities.timeSynchronizer(timeCorrection);
     
     if (globalStates.guiState === "logic") {
@@ -1356,12 +1369,21 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     return finalMatrix;
 };
 
+/**
+ * Ensures that a frame gets display:none applied to it when it is pushed into the screen.
+ * @param {string} activeKey
+ */
 realityEditor.gui.ar.draw.hideScreenFrame = function(activeKey) {
     if (globalDOMCache["object" + activeKey]) {
         globalDOMCache["object" + activeKey].classList.add('displayNone');
     }
 };
 
+/**
+ * Triggered when a frame gets pulled into AR.
+ * Removes the display:none applied to a frame by the corresponding hideScreenFrame call.
+ * @param {string} activeKey
+ */
 realityEditor.gui.ar.draw.showARFrame = function(activeKey) {
     if (globalDOMCache["object" + activeKey]) {
         globalDOMCache["object" + activeKey].classList.remove('displayNone');
@@ -1370,33 +1392,27 @@ realityEditor.gui.ar.draw.showARFrame = function(activeKey) {
 
 /**
  * A one-time action that sets up the frame or node added from the pocket in the correct place and begins editing it
- * @param pocketContainer - either pocketFrame or pocketNode
- * @param matrix - reference to realityEditor.gui.ar.draw.matrix
+ * @param {PocketContainer} pocketContainer - either pocketFrame or pocketNode
+ * @param {Object.<string, Array.<number>>} matrix - reference to realityEditor.gui.ar.draw.matrix collection of matrices
  */
 realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     
-    // // drop frames directly down onto marker plane if you quick-tap the pocket or background is frozen
-    // if (pocketContainer.type === 'ui' && (globalStates.freezeButtonState || realityEditor.device.currentScreenTouches.indexOf("pocket-element") === -1)) {
-    //     realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, pocketContainer.positionOnLoad.pageX, pocketContainer.positionOnLoad.pageY, false);
-    //
-    // // otherwise float in front of screen in unconstrained mode
-    // } else {
-        var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
+    // drop frames in from pocket, floating in front of screen in unconstrained mode, aligned with the touch position
 
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(pocketContainer.vehicle);
+    // align with touch (x,y)
+    var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(pocketContainer.vehicle);
+    positionData.x = (pocketContainer.positionOnLoad.pageX - globalStates.height/2) * scaleRatio;
+    positionData.y = (pocketContainer.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
+    
+    // immediately start placing the pocket frame in unconstrained mode
+    realityEditor.device.editingState.unconstrained = true;
 
-        positionData.x = (pocketContainer.positionOnLoad.pageX - globalStates.height/2) * scaleRatio;
-        positionData.y = (pocketContainer.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
-        // immediately start placing the pocket frame in unconstrained mode
-        realityEditor.device.editingState.unconstrained = true;
-
-        // still need to set touchOffset...
-        realityEditor.device.editingState.touchOffset = {
-            x: parseFloat(pocketContainer.vehicle.frameSizeX)/2,
-            y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
-        };
-        
-    // }
+    // still need to set touchOffset...
+    realityEditor.device.editingState.touchOffset = {
+        x: parseFloat(pocketContainer.vehicle.frameSizeX)/2,
+        y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
+    };
 
     // only start editing it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
@@ -1407,10 +1423,10 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         realityEditor.device.beginTouchEditing(pocketContainer.vehicle.objectId, activeFrameKey, activeNodeKey);
         // animate it as flowing out of the pocket
         this.startPocketDropAnimation(250, 0.7, 1.0);
-        matrix.copyStillFromMatrixSwitch = false;
 
-        pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin); // a preset matrix hovering slightly in front of editor
-        
+        // these lines assign the frame a preset matrix hovering slightly in front of editor
+        matrix.copyStillFromMatrixSwitch = false;
+        pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
     }
 
     pocketContainer.positionOnLoad = null;

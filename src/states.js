@@ -197,6 +197,20 @@ var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
+/**
+ * @typedef {Object} PocketContainer
+ * @desc A data structure holding the frame or node to be dropped in from the pocket, with additional state.
+ * @property {string} type
+ * @property {Frame|Node} vehicle
+ * @property {string} closestObjectKey
+ * @property {{pageX: number, pageY: number}} positionOnLoad
+ * @property {boolean} waitingToRender
+ */
+
+/**
+ * Holds a frame when it is being dropped in from the pocket
+ * @type {PocketContainer}
+ */
 var pocketFrame = {
     type: 'ui',
     vehicle: null,
@@ -204,6 +218,11 @@ var pocketFrame = {
     positionOnLoad: null,
     waitingToRender: false
 };
+
+/**
+ * Holds a logic node when it is being dropped in from the pocket
+ * @type {PocketContainer}
+ */
 var pocketNode = {
     type: 'logic',
     vehicle: null,

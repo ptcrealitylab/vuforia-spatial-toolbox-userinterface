@@ -132,6 +132,7 @@ realityEditor.device.onload = function () {
     animate();
     
     // initialize additional features
+    realityEditor.device.touchInputs.initFeature();
     realityEditor.device.videoRecording.initFeature();
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
     realityEditor.device.touchPropagation.initFeature();

@@ -16,7 +16,10 @@ createNameSpace("realityEditor.device.videoRecording");
         recordingObjectKey: null,
         startMatrix: null
     };
-    
+
+    /**
+     * Public init method sets up module and registers callbacks in other modules
+     */
     function initFeature() {
         
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
@@ -296,10 +299,10 @@ createNameSpace("realityEditor.device.videoRecording");
 
     //////////////////////////////////////////
 
+    exports.initFeature = initFeature;
     exports.toggleRecording = toggleRecording;
     exports.startRecordingOnClosestObject = startRecordingOnClosestObject;
     exports.stopRecording = stopRecording;
-    exports.initFeature = initFeature;
     exports.moveFrameToCamera = moveFrameToCamera;
 
     exports.startRecordingForFrame = startRecordingForFrame;
