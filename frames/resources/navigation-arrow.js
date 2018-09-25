@@ -5,7 +5,13 @@
     var containerWrapper;
     var realityInterface;
     var alwaysFullscreen;
+    var originalTouchDecider;
     var isArrowShown = false;
+    var isWithinScreen = true;
+    var centerPosition = {
+        x: 0,
+        y: 0
+    };
     var arrow;
     var contentSize = {
         width: 100,
@@ -18,16 +24,19 @@
         right: 20
     };
     var isMoving = false;
+    var prevMoveDelay;
 
     var isTransitioningFullscreen = false;
 
-    function init(_container, _realityInterface, _alwaysFullscreen) {
+    function init(_container, _realityInterface, _alwaysFullscreen, _originalTouchDecider) {
         container = _container;
         realityInterface = _realityInterface;
         alwaysFullscreen = _alwaysFullscreen;
+        originalTouchDecider = _originalTouchDecider;
 
         realityInterface.subscribeToMatrix();
         realityInterface.addMatrixListener(matrixCallback);
+        realityInterface.addScreenPositionListener(screenPositionCallback);
         realityInterface.addIsMovingListener(isMovingCallback);
 
         containerWrapper = document.createElement('div');
@@ -51,15 +60,30 @@
         el.parentNode.insertBefore(wrapper, el);
         wrapper.appendChild(el);
     }
+    
+    function screenPositionCallback(frameScreenPosition) {
+        // console.log(frameScreenPosition);
+        isWithinScreen = !(frameScreenPosition.lowerRight.x < 0 || frameScreenPosition.lowerRight.y < 0 ||
+                frameScreenPosition.upperLeft.x > screen.height || frameScreenPosition.upperLeft.y > screen.width );
+        
+        centerPosition = frameScreenPosition.center;
+    }
 
     function matrixCallback(/*modelViewMatrix, projectionMatrix*/) {
         if (isPaused) return;
 
-        var x = realityInterface.getPositionX();
-        var y = realityInterface.getPositionY();
+        // var x = realityInterface.getPositionX();
+        // var y = realityInterface.getPositionY();
 
+        // var withinScreen = isWithinScreen;
+        // if (alwaysFullscreen || isArrowShown) {
+        //     // can't rely on screenPositionCallback when it is a fullscreen frame
+        //     withinScreen = (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height);
+        // }
+        
         // noinspection JSSuspiciousNameCombination
-        if (isMoving || (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height)) {
+        if (isMoving || isWithinScreen) {
+        // if (isMoving || (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height)) {
             // hideArrow();
 
             if (!isTransitioningFullscreen) {
@@ -70,9 +94,13 @@
                     if (!alwaysFullscreen) {
                         realityInterface.setFullScreenOff();
                         
-                        // // become movable and listen for touches again
-                        // realityInterface.setMoveDelay(400);
-                        // realityInterface.unregisterTouchDecider();
+                        // become movable and listen for touches again
+                        realityInterface.setMoveDelay(prevMoveDelay);
+                        if (originalTouchDecider) {
+                            realityInterface.registerTouchDecider(originalTouchDecider);
+                        } else {
+                            realityInterface.unregisterTouchDecider();
+                        }
                     }
                     setTimeout(function() {
                         containerWrapper.style.display = '';
@@ -93,11 +121,12 @@
                     arrow.style.display = 'none';
                     realityInterface.setFullScreenOn();
                     
-                    // // become immovable and ignore touches
-                    // realityInterface.setMoveDelay(-1);
-                    // realityInterface.registerTouchDecider(function() {
-                    //     return false;
-                    // });
+                    // become immovable and ignore touches
+                    prevMoveDelay = realityObject.moveDelay;
+                    realityInterface.setMoveDelay(-1);
+                    realityInterface.registerTouchDecider(function() {
+                        return false;
+                    });
 
                     setTimeout(function() {
                         arrow.style.display = 'inline';
@@ -114,8 +143,8 @@
 
         var arrowSize = 20;
 
-        var arrowX = realityInterface.getPositionX();
-        var arrowY = realityInterface.getPositionY();
+        var arrowX = centerPosition.x; //realityInterface.getPositionX();
+        var arrowY = centerPosition.y; //realityInterface.getPositionY();
         var centerX = (screen.height / 2) - arrowSize; // 20 is the width of the arrow
         var centerY = (screen.width / 2) - arrowSize; // 20 is the height of the arrow
 
@@ -128,41 +157,7 @@
         var newY = centerY + distance * Math.sin(arrowAngle+angleOffset);
         newX = Math.max(margins.left, Math.min(screen.height - 2*arrowSize - margins.right, newX));
         newY = Math.max(margins.top, Math.min(screen.width - 2*arrowSize - margins.bottom, newY));
-
-        // // to put it on closest edge to screen
-        // var X = arrowX;// - centerX;
-        // var Y = arrowY;// - centerY;
-        // console.log(X);
-        // var H = screen.width;
-        // var W = screen.height;
-        // var x;
-        // var y;
-        //
-        // if (Math.abs(Y) > H/2) {
-        //     y = -1 * (H/2);
-        //     x = y * (X/Y);
-        //
-        //     if (Y < 0) {
-        //         x *= -1;
-        //         y *= -1;
-        //     }
-        //
-        //     newX = centerX + x;
-        //     newY = centerY + y;
-        //
-        // } else if (Math.abs(X) > W/2) {
-        //     x = -1 * (W/2) ;
-        //     y = x * (Y/X);
-        //
-        //     if (X < 0) {
-        //         x *= -1;
-        //         y *= -1;
-        //     }
-        //
-        //     newX = centerX + x;
-        //     newY = centerY + y;
-        // }
-
+        
         arrow.style.left = newX + 'px';
         arrow.style.top = newY + 'px';
         arrow.style.transform = 'rotate(' + arrowAngle + 'rad)';

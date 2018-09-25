@@ -289,11 +289,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             width: 568,
             height: 320,
             nodes: [
-                {name: 'play', type: 'node', x: 0, y: 0},
+                {name: 'play', type: 'node', x: 0, y: 0, scaleFactor: 0.75},
                 // {name: 'progress', type: 'node'},
                 // {name: 'next', type: 'node', x: 0, y: 100},
-                {name: 'next', type: 'node', x: 110, y: -80},
-                {name: 'prev', type: 'node', x: -110, y: 80},
+                {name: 'next', type: 'node', x: 150, y: 0, scaleFactor: 0.6},
+                {name: 'prev', type: 'node', x: -150, y: 0, scaleFactor: 0.6},
 
                 // {name: 'show', type: 'node', x: 0, y: -200},
                 // {name: 'hide', type: 'node', x: 0, y: -100},
@@ -526,9 +526,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // thisFrame.visible = false;
 
                 // add each node with a non-empty name
-                
-              
-
                 var nodes = JSON.parse(evt.target.dataset.nodes);
                 var hasMultipleNodes = nodes.length > 1;
                 nodes.forEach(function(node) {
@@ -554,9 +551,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     }
                     addedNode.frameSizeX = 220;
                     addedNode.frameSizeY = 220;
-                    addedNode.scale = closestObject.averageScale;
-                    console.log("closest Node", closestObject.averageScale);
-
+                    var scaleFactor = 1;
+                    if (typeof node.scaleFactor !== 'undefined') {
+                        scaleFactor = node.scaleFactor;
+                    }
+                    addedNode.scale = globalStates.defaultScale * scaleFactor;
+                    
                 });
 
                 // // set the eventObject so that the frame can interact with screens as soon as you add it

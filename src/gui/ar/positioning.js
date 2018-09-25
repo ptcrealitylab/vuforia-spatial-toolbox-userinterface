@@ -336,3 +336,96 @@ realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable = function(activ
     
     return  (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
 };
+
+
+// TODO: must be computed without relying on the CSS, otherwise doesn't work for fullscreen frames
+realityEditor.gui.ar.positioning.getFrameBoundingRectScreenCoordinates = function(objectKey, frameKey) {
+    
+    // OLD METHOD.. relies on CSS so doesn't work for fullscreen frames
+    // var boundingRect = globalDOMCache["iframe" + frameKey].getClientRects()[0];
+    // return {
+    //     upperLeft:{x: boundingRect.left, y: boundingRect.top},
+    //     upperRight:{x: boundingRect.right, y: boundingRect.top},
+    //     lowerLeft:{x: boundingRect.left, y: boundingRect.bottom},
+    //     lowerRight:{x: boundingRect.right, y: boundingRect.bottom}
+    // };
+    
+    return getScreenPosition(objectKey, frameKey);
+};
+
+function getScreenPosition(objectKey, frameKey) {
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+
+    var utils = realityEditor.gui.ar.utilities;
+    var draw = realityEditor.gui.ar.draw;
+
+    // // compute its ModelViewProjection matrix
+    var activeObjectMatrix = [];
+    utils.multiplyMatrix(draw.visibleObjects[objectKey], globalStates.projectionMatrix, draw.matrix.r);
+    utils.multiplyMatrix(rotateX, draw.matrix.r, activeObjectMatrix);
+    
+    //
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+    var positionDataMatrix = positionData.matrix.length === 16 ? positionData.matrix : utils.newIdentityMatrix();
+    // var finalMatrix = draw.getFinalMatrixForFrame(draw.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
+    
+    var frameMatrixTemp = [];
+    var frameMatrix = [];
+    utils.multiplyMatrix(positionDataMatrix, activeObjectMatrix, frameMatrixTemp);
+    
+    // 4. Scale the final result.
+    var scale = [
+        positionData.scale, 0, 0, 0,
+        0, positionData.scale, 0, 0,
+        0, 0, positionData.scale, 0,
+        positionData.x, positionData.y, 0, 1
+    ];
+    utils.multiplyMatrix(scale, frameMatrixTemp, frameMatrix);
+
+    // var projected = realityEditor.gui.ar.utilities.multiplyMatrix4(vector, finalMatrix);
+    
+    // var markerScreenCenter = utils.perspectiveDivide(utils.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix));
+
+    var center = [0, 0, 0, 1];
+    var centerProjected = utils.perspectiveDivide(utils.multiplyMatrix4(center, frameMatrix));
+    centerProjected[0] += (globalStates.height / 2);
+    centerProjected[1] += (globalStates.width / 2);
+    
+    // console.log(frameScreenCenter[0]);
+    
+    var upperLeft = [parseInt(frame.frameSizeX)/-2, parseInt(frame.frameSizeY)/-2, 0, 1];
+    var upperLeftProjected = utils.perspectiveDivide(utils.multiplyMatrix4(upperLeft, frameMatrix));
+    upperLeftProjected[0] += (globalStates.height / 2);
+    upperLeftProjected[1] += (globalStates.width / 2);
+
+    var lowerRight = [parseInt(frame.frameSizeX)/2, parseInt(frame.frameSizeY)/2, 0, 1];
+    var lowerRightProjected = utils.perspectiveDivide(utils.multiplyMatrix4(lowerRight, frameMatrix));
+    lowerRightProjected[0] += (globalStates.height / 2);
+    lowerRightProjected[1] += (globalStates.width / 2);
+
+    // this.utilities.multiplyMatrix(frame.matrix, this.utilities.invertMatrix(frame.temp), );
+    
+    // console.log(finalMatrix[12]);
+
+    // // extract its projected (x,y) screen coordinates from the matrix
+    // var screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
+    // var screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
+    
+    // console.log(perspective);
+    
+    return {
+        center: {
+            x: centerProjected[0],
+            y: centerProjected[1]
+        },
+        upperLeft: {
+            x: upperLeftProjected[0],
+            y: upperLeftProjected[1]
+        },
+        lowerRight: {
+            x: lowerRightProjected[0],
+            y: lowerRightProjected[1]
+        }
+    }
+
+}

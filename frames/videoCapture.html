@@ -292,7 +292,7 @@
 
         var realityInterface = new RealityInterface();
         
-        initNavigationArrow(document.getElementById('navigationContainer'), realityInterface, false);
+        initNavigationArrow(document.getElementById('navigationContainer'), realityInterface, false, null);
         setNavigationMargins(20, 20, 20, 82);
 
         var State = Object.freeze({
@@ -459,11 +459,11 @@
                     break;
                     
                 case State.LOADING_INITIAL:
-                    resumeNavigationArrow();
                 case State.LOADING_PLAYER:
                     realityInterface.setFullScreenOff();
                     realityInterface.setMoveDelay(400);
-                    
+                    resumeNavigationArrow();
+
                     loadTimeout = setTimeout(function() {
                         processStateAction(Action.TIMEOUT);
                     }, 3000);
@@ -615,9 +615,14 @@
         
         realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
             if (typeof e !== 'string' || e.length === 0) {
-                // clearTimeout(loadTimeout);
                 // processStateAction(Action.TIMEOUT);
                 console.log('cant load non-string data:', e);
+                setTimeout(function() {
+                    if (currentState === State.LOADING_INITIAL) {
+                        processStateAction(Action.TIMEOUT);
+                        clearTimeout(loadTimeout);
+                    }
+                }, 300);
                 return;
             }
             if (e === document.getElementById('source').getAttribute('src')) {

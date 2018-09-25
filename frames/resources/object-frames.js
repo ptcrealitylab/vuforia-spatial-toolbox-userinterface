@@ -249,6 +249,16 @@
             };
         };
 
+        var numScreenPositionCallbacks = 0;
+        this.addScreenPositionListener = function(callback) {
+            numScreenPositionCallbacks++;
+            realityObject.messageCallBacks['screenPositionCall'+numScreenPositionCallbacks] = function (msgContent) {
+                if (typeof msgContent.frameScreenPosition !== 'undefined') {
+                    callback(msgContent.frameScreenPosition);
+                }
+            };
+        };
+
         this.addAccelerationListener = function (callback) {
             realityObject.messageCallBacks.AccelerationCall = function (msgContent) {
                 if (typeof msgContent.acceleration !== 'undefined') {

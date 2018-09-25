@@ -1094,6 +1094,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         thisMsg.acceleration = globalStates.acceleration;
                     }
 
+                    // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
+                    var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameBoundingRectScreenCoordinates(objectKey, activeKey);
+                    thisMsg.frameScreenPosition = frameScreenPosition;
+
                     // cout(thisMsg);
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
 
@@ -1220,14 +1224,17 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     // 1. Rotate visibleObjects[objectKey] for screen orientation.
     utils.multiplyMatrix(rotateX, visibleObjectMatrix, r1);
 
-    // 2. Translate by the drag amount. Dividing by the scale seems to fix the magnitude.
-    var translation = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        -frameX/frameScale, -frameY/frameScale, 0, 1
-    ];
-    utils.multiplyMatrix(r1, translation, r2);
+    // // 2. Translate by the drag amount. Dividing by the scale seems to fix the magnitude.
+    // var translation = [
+    //     1, 0, 0, 0,
+    //     0, 1, 0, 0,
+    //     0, 0, 1, 0,
+    //     -frameX/frameScale, -frameY/frameScale, 0, 1
+    // ];
+    // utils.multiplyMatrix(r1, translation, r2);
+
+    r2 = utils.copyMatrix(r1);
+
 
     // 3. include positionData if it exists, to match unconstrained position.
     if (frameMatrix.length === 16) {
@@ -1241,7 +1248,7 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
         frameScale, 0, 0, 0,
         0, frameScale, 0, 0,
         0, 0, frameScale, 0,
-        0, 0, 0, 1
+        frameX/frameScale, frameY/frameScale, 0, 1
     ];
     utils.multiplyMatrix(scale, r3, finalMatrix);
     
