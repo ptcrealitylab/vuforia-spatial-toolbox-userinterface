@@ -9,8 +9,47 @@
     <!--<link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">-->
     <script src="resources/threejs-src/2018/three.min.js"></script>
     <script src="resources/threejs-src/2018/loaders/GLTFLoader.js"></script>
+    <style>
+        .sequenceButton {
+            border: 2px solid cyan;
+            position: absolute;
+            bottom: 2px;
+            font-size: 20px;
+            font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+            /*padding: 10px;*/
+            color: cyan;
+            text-align: center;
+            width: 56px;
+            height: 56px;
+            line-height: 56px;
+            /*background-color: rgba(0,255,255,0.3);*/
+        }
+        
+        #prevButton {
+            left: 0;
+        }
+        
+        #nextButton {
+            right: 62px;
+        }
+        
+        #playButton {
+            width: 160px;
+            left: 173px;
+            /*right: 384px;*/
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+    </style>
 </head>
 <body>
+<div id="prevButton" class="sequenceButton hidden"> << </div>
+<div id="nextButton" class="sequenceButton hidden"> >> </div>
+<div id="playButton" class="sequenceButton hidden"> PLAY </div>
+    
 <script>
     var camera, scene, renderer;
     
@@ -26,6 +65,12 @@
     var aspectRatio = rendererWidth / rendererHeight;
 
     var clock = new THREE.Clock();
+    var currentStep = 0;
+    var timestamps = [0, 6.0, 9.25, 11.5]; // [0, 3, 6, 9, 12, 15]; // 
+    var animationDuration;
+    var animationAction;
+    
+    var isPaused = true;
 
     window.addEventListener('load', function() {
 
@@ -34,6 +79,7 @@
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( rendererWidth, rendererHeight );
         document.body.appendChild( renderer.domElement );
+        // renderer.domElement.style.zIndex = '-1';
 
         // create a threejs camera and scene
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 0.00001, Infinity );
@@ -65,8 +111,16 @@
                 console.log( gltf.animations, gltf.scene, gltf.scenes, gltf.cameras, gltf.asset );
 
                 mixer = new THREE.AnimationMixer(gltf.scene);
-                mixer.clipAction(gltf.animations[0]).play();
-                
+                animationAction = mixer.clipAction(gltf.animations[0]);
+                animationDuration = gltf.animations[0].duration;
+                animationAction.play();
+                clock.stop(); // begin paused
+
+                document.getElementById('playButton').classList.remove('hidden');
+                document.getElementById('prevButton').classList.remove('hidden');
+                document.getElementById('nextButton').classList.remove('hidden');
+                updateButtons();
+
                 startAnimation();
             },
             // called while loading is progressing
@@ -95,7 +149,13 @@
         light.shadow.camera.left = -120;
         light.shadow.camera.right = 120;
         scene.add( light );
-        
+        // add spotlight for the shadows
+        var spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.position.set(-30, -30, 150);
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+        scene.add( new THREE.AmbientLight( 0x666666 ) );
+
         // make the frame fullscreen within the reality editor,
         // and subscribe to the modelview and projection matrices
         realityInterface = new RealityInterface();
@@ -108,6 +168,12 @@
         var mouse = new THREE.Vector2(), INTERSECTED;
 
         realityInterface.registerTouchDecider(function(eventData) {
+            
+            if (document.elementFromPoint(eventData.x, eventData.y) && document.elementFromPoint(eventData.x, eventData.y).tagName !== 'CANVAS') {
+                console.log('hit real dom element within this fullscreen div');
+                return true;
+            }
+            
             //1. sets the mouse position with a coordinate system where the center
             //   of the screen is the origin
             mouse.x = ( eventData.x / window.innerWidth ) * 2 - 1;
@@ -122,7 +188,61 @@
             return intersects.length > 0;
         });
 
+        document.getElementById('prevButton').addEventListener('pointerup', function(e) {
+            console.log('prevButton pressed');
+            if (currentStep > 0) {
+                currentStep -= 1;
+            }
+            animationAction.time = timestamps[currentStep];
+            updateButtons();
+            // clock.start();
+        });
+        
+        document.getElementById('nextButton').addEventListener('pointerup', function(e) {
+            console.log('nextButton pressed');
+            if (currentStep < timestamps.length-1) {
+                currentStep += 1;
+            }
+            animationAction.time = timestamps[currentStep];
+            updateButtons();
+            // clock.start();
+        });
+        
+        document.getElementById('playButton').addEventListener('pointerup', function(e) {
+            console.log('playButton pressed');
+            
+            // isPaused = !isPaused;
+            
+            setPaused(!isPaused);
+            
+            // console.log('time = ' + animationAction.time);
+            //
+            // if (isPaused) {
+            //     document.getElementById('playButton').innerHTML = 'PLAY';
+            //     clock.stop();
+            // } else {
+            //     document.getElementById('playButton').innerHTML = 'PAUSE';
+            //     // mixer.time = 0;
+            //     // animationAction.time = 0;
+            //     clock.start();
+            // }
+        });
+
     });
+    
+    function setPaused(_isPaused) {
+        isPaused = _isPaused;
+        
+        console.log('time = ' + animationAction.time);
+        
+        updateButtons();
+
+        if (isPaused) {
+            clock.stop();
+        } else {
+            clock.start();
+        }
+    }
 
     function startAnimation() {
         // whenever we receive new matrices from the editor, update the 3d scene
@@ -146,27 +266,42 @@
 
         if (isProjectionMatrixSet) { // don't turn into else statement, both can happen
             setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
-
-            // var translation = new THREE.Vector3();
-            // var rotation = new THREE.Quaternion();
-            // var scale = new THREE.Vector3();
-            // threejsContainerObj.matrix.decompose(translation, rotation, scale);
-            // // // console.log(scale);
-            // threejsContainerObj.children.forEach(function(child) {
-            //     child.matrix = new THREE.Matrix4();
-            // //     // setMatrixFromArray(child.matrix, [scale.x, 0, 0, 0, 0, scale.y, 0, 0, 0, 0, scale.z, 0, 0, 0, 0, 1]);
-            // //     child.applyMatrix(new THREE.Matrix4().makeTranslation(-translation.x, -translation.y, -translation.z));
-            //     child.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI));
-            // //     child.applyMatrix(new THREE.Matrix4().makeTranslation(translation.x, translation.y, translation.z));
-            // //     // child.applyMatrix(new THREE.Matrix4().makeTranslation(translation.x*scale.x, translation.y*scale.y, translation.z*scale.z));
-            //     child.applyMatrix(new THREE.Matrix4().makeScale(scale.x, scale.y, scale.z));
-            // });
-
-            var delta = clock.getDelta();
-            if (mixer != null) {
-                mixer.update(delta);
+            
+            var newStep = getStepFromTimestamps(animationAction, timestamps);
+            if (newStep !== currentStep) {
+                currentStep = newStep;
+                console.log('reached step ' + currentStep);
+                // clock.stop();
+                setPaused(true);
             }
+            
+            // if (!isPaused) {
+                var delta = clock.getDelta();
+                if (mixer != null) {
+                    mixer.update(delta);
+                }
+            // }
+
             renderer.render( scene, camera );
+        }
+    }
+    
+    function getStepFromTimestamps(action, timestampArray) {
+        var stepReached = 0;
+        var currentTime = action.time;
+        for (var i = 0; i < timestampArray.length; i++) {
+            if (currentTime >= timestampArray[i]) {
+                stepReached = i;
+            }
+        }
+        return stepReached;
+    }
+    
+    function updateButtons() {
+        if (isPaused) {
+            document.getElementById('playButton').innerHTML = 'PLAY (' + (currentStep + 1) + '/' + timestamps.length + ')';
+        } else {
+            document.getElementById('playButton').innerHTML = 'PAUSE (' + (currentStep+1) + '/' + timestamps.length + ')';
         }
     }
 
