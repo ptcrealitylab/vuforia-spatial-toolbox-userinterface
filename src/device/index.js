@@ -82,13 +82,13 @@ realityEditor.device.currentScreenTouches = [];
 /**
  * @typedef {Object} EditingState
  * @desc All the necessary state about what's currently being repositioned. Everything else can be calculated from these.
- * @property {string|null} object
- * @property {string|null} frame
- * @property {string|null} node
- * @property {{x: number, y: number}|null} touchOffset
- * @property {boolean} unconstrained
- * @property {number|null} unconstrainedOffset
- * @property {Array.<number>|null} startingMatrix
+ * @property {string|null} object - objectId of the selected vehicle
+ * @property {string|null} frame - frameId of the selected vehicle
+ * @property {string|null} node - nodeIf of the selected node (null if vehicle is a frame, not a node)
+ * @property {{x: number, y: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
+ * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
+ * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
+ * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
  */
 
 /**
@@ -102,6 +102,17 @@ realityEditor.device.editingState = {
     unconstrained: false,
     unconstrainedOffset: null,
     startingMatrix: null
+};
+
+/**
+ * A set of arrays of callbacks that other modules can register to be notified of device/index actions.
+ * Contains a property for each method name in device/index.js that can trigger events in other modules.
+ * The value of each property is an array containing pointers to the callback functions that should be
+ *  triggered when that function is called.
+ * @type {{resetEditingState: Array.<function>}}
+ */
+realityEditor.device.callbacks = {
+    resetEditingState: []
 };
 
 /**
@@ -290,10 +301,6 @@ realityEditor.device.resetGlobalProgram = function() {
     globalProgram.nodeB = false;
     globalProgram.logicB = false;
     globalProgram.logicSelector = 4;
-};
-
-realityEditor.device.callbacks = {
-    resetEditingState: []
 };
 
 /**

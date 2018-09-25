@@ -1325,39 +1325,34 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     var r3 = [];
     var finalMatrix = [];
 
-    if (!visibleObjectMatrix) {
-        console.warn('cannot get finalMatrix without visibleObjectMatrix');
-    }
-
-    // 1. rotate visibleObjects[objectKey] for screen orientation
+    // 1. Rotate visibleObjects[objectKey] for screen orientation.
     utils.multiplyMatrix(rotateX, visibleObjectMatrix, r1);
 
-    // 2. include x, y, scale, etc
-    var scale = [
-        frameScale, 0, 0, 0,
-        0, frameScale, 0, 0,
-        0, 0, frameScale, 0,
-        0, 0, 0, 1
-    ];
-
-    utils.multiplyMatrix(scale, r1, r2);
-
+    // 2. Translate by the drag amount. Dividing by the scale seems to fix the magnitude.
     var translation = [
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         -frameX/frameScale, -frameY/frameScale, 0, 1
     ];
+    utils.multiplyMatrix(r1, translation, r2);
 
-    utils.multiplyMatrix(r2, translation, r3);
-    
-    // 3. include positionData if it exists
+    // 3. include positionData if it exists, to match unconstrained position.
     if (frameMatrix.length === 16) {
-        utils.multiplyMatrix(frameMatrix, r3, finalMatrix);
+        utils.multiplyMatrix(frameMatrix, r2, r3);
     } else {
-        finalMatrix = utils.copyMatrix(r3);
+        r3 = utils.copyMatrix(r2);
     }
 
+    // 4. Scale the final result.
+    var scale = [
+        frameScale, 0, 0, 0,
+        0, frameScale, 0, 0,
+        0, 0, frameScale, 0,
+        0, 0, 0, 1
+    ];
+    utils.multiplyMatrix(scale, r3, finalMatrix);
+    
     return finalMatrix;
 };
 
@@ -1372,8 +1367,6 @@ realityEditor.gui.ar.draw.showARFrame = function(activeKey) {
         globalDOMCache["object" + activeKey].classList.remove('displayNone');
     }
 };
-
-
 
 /**
  * A one-time action that sets up the frame or node added from the pocket in the correct place and begins editing it
