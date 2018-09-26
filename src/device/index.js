@@ -953,7 +953,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     var activeVehicle = this.getEditingVehicle();
     
     if (activeVehicle) {
-        
+
         // scale the element if you make a pinch gesture
         if (event.touches.length === 2) {
 

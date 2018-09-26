@@ -946,7 +946,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             var resultMatrix = [];
                             utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                             realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
-
+                            
                             matrix.copyStillFromMatrixSwitch = false;
                             
                         // if this isn't the first frame of unconstrained editing, just use the previously stored begin and temp
@@ -1012,6 +1012,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
                     finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
                 }
+                
+                // TODO: do this on frame touch up (snap position when editing ends), or if unconstrained editing (visual feedback when ready to snap)
+                // this.snapFrameMatrixIfNecessary(activeVehicle, activeKey);
                 
                 // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
                 // but we want all of them to have a positive value so they are rendered in front of background canvas
@@ -1095,7 +1098,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
-                    var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameBoundingRectScreenCoordinates(objectKey, activeKey);
+                    var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
                     thisMsg.frameScreenPosition = frameScreenPosition;
 
                     // cout(thisMsg);
@@ -1203,6 +1206,51 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     
     return true;
 
+};
+
+realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, activeKey) {
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+    
+    // snap to the marker plane if it is almost on it
+    var snappedMatrix = this.ar.utilities.copyMatrix(positionData.matrix);
+
+    var xRotation = this.ar.utilities.getRotationAboutAxisX(snappedMatrix);
+    var yRotation = this.ar.utilities.getRotationAboutAxisY(snappedMatrix);
+    var snapX = false;
+    var snapY = false;
+
+    if (0.5 - Math.abs( Math.abs(xRotation) / Math.PI - 0.5) < 0.05) {
+        // globalDOMCache["iframe" + activeKey].classList.add('snapX');
+        snapX = true;
+    } else {
+        // globalDOMCache["iframe" + activeKey].classList.remove('snapX');
+    }
+
+    if (0.5 - Math.abs( Math.abs(yRotation) / Math.PI - 0.5) < 0.05) {
+        // globalDOMCache["iframe" + activeKey].classList.add('snapY');
+        snapY = true;
+    } else {
+        // globalDOMCache["iframe" + activeKey].classList.remove('snapY');
+    }
+
+    function computeSnappedMatrix(mat) {
+        var res = [];
+        var rotationQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
+        var inverseRotationQuaternion = realityEditor.gui.ar.utilities.invertQuaternion(rotationQuaternion);
+        var inverseRotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(inverseRotationQuaternion);
+        realityEditor.gui.ar.utilities.multiplyMatrix(snappedMatrix, inverseRotationMatrix, res);
+        return res;
+    }
+
+    globalDOMCache["iframe" + activeKey].classList.remove('snappableFrame');
+
+    if ( !realityEditor.device.isEditingUnconstrained(activeVehicle) && snapX && snapY) {
+        snappedMatrix = computeSnappedMatrix(this.ar.utilities.copyMatrix(positionData.matrix));
+        realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
+        console.log('snapped');
+    } else if (snapX && snapY) {
+        globalDOMCache["iframe" + activeKey].classList.add('snappableFrame');
+    }
 };
 
 /**

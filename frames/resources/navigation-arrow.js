@@ -12,21 +12,17 @@
         x: 0,
         y: 0
     };
+    var isMoving = false;
+    var prevMoveDelay;
+    var isTransitioningFullscreen = false;
     var arrow;
-    var contentSize = {
-        width: 100,
-        height: 100
-    };
+    var arrowSize = 20;
     var margins = {
         top: 20,
         bottom: 20,
         left: 20,
-        right: 20
+        right: 82
     };
-    var isMoving = false;
-    var prevMoveDelay;
-
-    var isTransitioningFullscreen = false;
 
     function init(_container, _realityInterface, _alwaysFullscreen, _originalTouchDecider) {
         container = _container;
@@ -62,30 +58,17 @@
     }
     
     function screenPositionCallback(frameScreenPosition) {
-        // console.log(frameScreenPosition);
-        isWithinScreen = !(frameScreenPosition.lowerRight.x < 0 || frameScreenPosition.lowerRight.y < 0 ||
-                frameScreenPosition.upperLeft.x > screen.height || frameScreenPosition.upperLeft.y > screen.width );
-        
         centerPosition = frameScreenPosition.center;
+        
+        var extraPadding = 20;
+        isWithinScreen = !(frameScreenPosition.lowerRight.x < 0 - extraPadding || frameScreenPosition.lowerRight.y < 0 - extraPadding ||
+                frameScreenPosition.upperLeft.x > screen.height + extraPadding || frameScreenPosition.upperLeft.y > screen.width + extraPadding );
     }
 
     function matrixCallback(/*modelViewMatrix, projectionMatrix*/) {
         if (isPaused) return;
-
-        // var x = realityInterface.getPositionX();
-        // var y = realityInterface.getPositionY();
-
-        // var withinScreen = isWithinScreen;
-        // if (alwaysFullscreen || isArrowShown) {
-        //     // can't rely on screenPositionCallback when it is a fullscreen frame
-        //     withinScreen = (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height);
-        // }
         
-        // noinspection JSSuspiciousNameCombination
         if (isMoving || isWithinScreen) {
-        // if (isMoving || (Math.abs(x) < screen.height/2 + contentSize.width && Math.abs(y) < screen.width/2 + contentSize.height)) {
-            // hideArrow();
-
             if (!isTransitioningFullscreen) {
                 if (isArrowShown) {
                     isTransitioningFullscreen = true;
@@ -93,14 +76,13 @@
                     arrow.style.display = 'none';
                     if (!alwaysFullscreen) {
                         realityInterface.setFullScreenOff();
-                        
-                        // become movable and listen for touches again
-                        realityInterface.setMoveDelay(prevMoveDelay);
-                        if (originalTouchDecider) {
-                            realityInterface.registerTouchDecider(originalTouchDecider);
-                        } else {
-                            realityInterface.unregisterTouchDecider();
-                        }
+                    }
+                    // become movable and listen for touches again
+                    realityInterface.setMoveDelay(prevMoveDelay);
+                    if (originalTouchDecider) {
+                        realityInterface.registerTouchDecider(originalTouchDecider);
+                    } else {
+                        realityInterface.unregisterTouchDecider();
                     }
                     setTimeout(function() {
                         containerWrapper.style.display = '';
@@ -140,32 +122,27 @@
     }
 
     function updateArrow() {
-
-        var arrowSize = 20;
-
-        var arrowX = centerPosition.x; //realityInterface.getPositionX();
-        var arrowY = centerPosition.y; //realityInterface.getPositionY();
-        var centerX = (screen.height / 2) - arrowSize; // 20 is the width of the arrow
-        var centerY = (screen.width / 2) - arrowSize; // 20 is the height of the arrow
-
+        var arrowX = centerPosition.x;
+        var arrowY = centerPosition.y;
+        var centerX = (screen.height / 2);
+        var centerY = (screen.width / 2);
+        
+        var dx = arrowX - centerX;
+        var dy = arrowY - centerY;
+        
         var angleOffset = -1 * Math.PI / 4; // icon is naturally facing upper right... turn to point straight up
-        var arrowAngle = angleOffset + Math.atan2(arrowY, arrowX) - Math.PI/2;
-        // var distance = 75; // to put it on a center of fixed distance
+        var arrowAngle = angleOffset + Math.atan2(dy, dx) + Math.PI/2;
 
-        var distance = Math.sqrt(arrowX*arrowX + arrowY*arrowY); //to put it as far away as the object, limited to within the screen
+        var distance = Math.sqrt(dx*dx + dy*dy); //to put it as far away as the object, limited to within the screen
         var newX = centerX + distance * Math.cos(arrowAngle+angleOffset);
         var newY = centerY + distance * Math.sin(arrowAngle+angleOffset);
+
         newX = Math.max(margins.left, Math.min(screen.height - 2*arrowSize - margins.right, newX));
         newY = Math.max(margins.top, Math.min(screen.width - 2*arrowSize - margins.bottom, newY));
         
         arrow.style.left = newX + 'px';
         arrow.style.top = newY + 'px';
         arrow.style.transform = 'rotate(' + arrowAngle + 'rad)';
-    }
-
-    function setContentSize(width, height) {
-        contentSize.width = width;
-        contentSize.height = height;
     }
 
     function setMargins(top, bottom, left, right) {
@@ -188,7 +165,6 @@
     exports.initNavigationArrow = init;
     exports.pauseNavigationArrow = pause;
     exports.resumeNavigationArrow = resume;
-    exports.setNavigationContentSize = setContentSize;
     exports.setNavigationMargins = setMargins;
 
 })(window);

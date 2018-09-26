@@ -35,7 +35,8 @@
             x: 0,
             y: 0,
             type: null},
-        touchDecider: null
+        touchDecider: null,
+        touchDeciderRegistered: false
     };
 
     // adding css styles nessasary for acurate 3D transformations.
@@ -355,10 +356,12 @@
 
         this.registerTouchDecider = function(callback) {
             realityObject.touchDecider = callback;
+            realityObject.touchDeciderRegistered = true;
         };
         
         this.unregisterTouchDecider = function() {
-            realityObject.touchDecider = null;
+            // realityObject.touchDecider = null; // touchDecider is passed by reference, so this alters the function definition
+            realityObject.touchDeciderRegistered = false; // instead just set a flag to not use the callback anymore
         };
 
         var numMovingCallbacks = 0;
@@ -845,7 +848,7 @@
                 });
 
                 // send unacceptedTouch message if this interface wants touches to pass through it
-                if (realityObject.touchDecider) {
+                if (realityObject.touchDeciderRegistered) {
                     var touchAccepted = realityObject.touchDecider(eventData);
                     if (!touchAccepted) {
                         // console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
