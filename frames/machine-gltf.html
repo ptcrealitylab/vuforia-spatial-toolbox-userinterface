@@ -157,7 +157,7 @@
         spotLight.position.set(-30, -30, 150);
         spotLight.castShadow = true;
         scene.add(spotLight);
-        scene.add( new THREE.AmbientLight( 0x666666 ) );
+        scene.add( new THREE.AmbientLight( 0xffffff ) );
 
         // make the frame fullscreen within the reality editor,
         // and subscribe to the modelview and projection matrices
@@ -168,12 +168,12 @@
         realityInterface.setMoveDelay(400);
 
         var raycaster = new THREE.Raycaster();
-        var mouse = new THREE.Vector2(), INTERSECTED;
+        var mouse = new THREE.Vector2();
 
         realityInterface.registerTouchDecider(function(eventData) {
             
             if (document.elementFromPoint(eventData.x, eventData.y) && document.elementFromPoint(eventData.x, eventData.y).tagName !== 'CANVAS') {
-                console.log('hit real dom element within this fullscreen div');
+                // console.log('hit real dom element within this fullscreen div');
                 return true;
             }
             
@@ -275,7 +275,8 @@
                 currentStep = newStep;
                 console.log('reached step ' + currentStep);
                 // clock.stop();
-                setPaused(true);
+                // setPaused(true);
+                updateButtons();
             }
             
             // if (!isPaused) {
