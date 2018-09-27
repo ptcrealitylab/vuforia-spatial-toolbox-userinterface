@@ -253,13 +253,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 'value'
             ]
         },*/
-        {
-            name: 'dancer',
-            width: 568,
-            height: 320,
-            nodes: [
-            ]
-        },
+        // {
+        //     name: 'dancer',
+        //     width: 568,
+        //     height: 320,
+        //     nodes: [
+        //     ]
+        // },
         {
             name: 'machine-gltf',
             width: 568,
@@ -277,13 +277,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // {name: 'lightness', type: "node"}
             ]
         },
-        {
-            name: 'turtle',
-            width: 568,
-            height: 320,
-            nodes: [
-            ]
-        },
+        // {
+        //     name: 'turtle',
+        //     width: 568,
+        //     height: 320,
+        //     nodes: [
+        //     ]
+        // },
         {
             name: 'videoCapture',
             width: 568,
@@ -292,8 +292,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'play', type: 'node', x: 0, y: 0, scaleFactor: 0.75},
                 // {name: 'progress', type: 'node'},
                 // {name: 'next', type: 'node', x: 0, y: 100},
-                {name: 'next', type: 'node', x: 150, y: 0, scaleFactor: 0.6},
-                {name: 'prev', type: 'node', x: -150, y: 0, scaleFactor: 0.6},
+                {name: 'next', type: 'node', x: 50, y: 100, scaleFactor: 0.6},
+                {name: 'prev', type: 'node', x: -50, y: 100, scaleFactor: 0.6},
 
                 // {name: 'show', type: 'node', x: 0, y: -200},
                 // {name: 'hide', type: 'node', x: 0, y: -100},

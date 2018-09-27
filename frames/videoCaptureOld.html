@@ -9,35 +9,35 @@
     <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
     <style>
         body {
-            width: 568px;
+            width: 758px;
             height: 320px;
             overflow: visible;
         }
         #container {
             width: 568px;
             height: 320px;
-            /*border: 5px solid cyan;*/
-            /*border-radius: 10px;*/
+            border: 5px solid cyan;
+            border-radius: 10px;
             /*padding: 10px;*/
             position: relative;
             display: table-cell;
             vertical-align: middle;
             text-align: center;
-            /*left: 90px;*/
+            left: 90px;
             transition: 250ms all ease;
         }
         
-        /*#container.initial {*/
-            /*left: 0;*/
-            /*width: 758px;*/
-            /*height: 320px;*/
-        /*}*/
+        #container.initial {
+            left: 0;
+            width: 758px;
+            height: 320px;
+        }
 
-        /*#container.recording {*/
-            /*left: 0;*/
-            /*width: 558px;*/
-            /*height: 310px;*/
-        /*}*/
+        #container.recording {
+            left: 0;
+            width: 558px;
+            height: 310px;
+        }
         
         #recordedVideo {
             position: absolute;
@@ -168,46 +168,85 @@
             -webkit-animation: recordButtonHide 0.25s ease-out both;
             animation: recordButtonHide 0.25s ease-out both;
         }
+        
+        #playButton {
+            box-sizing: border-box;
+            height: 50px;
+
+            border-color: transparent transparent transparent white;
+            transition: 100ms all ease;
+            will-change: border-width;
+            cursor: pointer;
+
+            /*play state*/
+            border-style: solid;
+            border-width: 25px 0 25px 40px;
+            
+            margin-top: 23px;
+            margin-left: 13px;
+        }
+        
+        #playButton.stop {
+            border-style: double;
+            border-width: 0 0 0 40px;
+            margin-left: 1px;
+        }
+        
+        #playButtonOutline {
+            opacity: 1;
+            transition: 1000ms all ease;
+        }
+        
+        #playButtonOutline.stop {
+            opacity: 0;
+        }
+        
+        .sequenceButton {
+            width: 90px;
+            height: 320px;
+            line-height: 320px;
+            border: 5px solid cyan;
+            position: absolute;
+            top: 0;
+            border-radius: 10px;
+            font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+            font-size: 40px; /* use 30px if using "Prev" and "Next" labels, 40px for << and >> */
+            color: cyan;
+            text-align: center;
+            background-color: transparent;
+        }
+        
+        /*.sequenceButton:active {*/
+            /*background-color: rgba(0, 255, 255, 0.6);*/
+        /*}*/
+        
+        #prevButton {
+            left: 0;
+            -webkit-border-bottom-right-radius: 0;
+            -webkit-border-top-right-radius: 0;
+            border-right: none;
+        }
+        
+        #nextButton {
+            right: 0;
+            -webkit-border-bottom-left-radius: 0;
+            -webkit-border-top-left-radius: 0;
+            border-left: none;
+        }
+        
+        #prevButton.ready {
+            background-color: rgba(0, 255, 255, 0.3);
+        }
+        
+        #nextButton.ready {
+            background-color: rgba(0, 255, 255, 0.3);
+        }
 
         .visible {
             display: inline-block;
         }
         
         .hidden {
-            display: none;
-        }
-
-        /*#container {*/
-            /*width: 568px;*/
-            /*height: 320px;*/
-            /*border: 1px dashed lightgrey;*/
-        /*}*/
-        
-        #playButton {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            left: 224px;
-            top: 100px;
-        }
-        
-        #nextButton {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            left: 334px;
-            top: 310px;
-        }
-        
-        #prevButton {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            left: 134px;
-            top: 310px;
-        }
-        
-        .proximityFar {
             display: none;
         }
         
@@ -236,18 +275,17 @@
                     <div class="bounce2"></div>
                     <div class="bounce3"></div>
                 </div>
-
-                <img id="playButton" class="visible" src="resources/playCircle.svg">
-                <img id="nextButton" class="visible" src="resources/forwardButton.svg">
-                <img id="prevButton" class="visible" src="resources/backwardButton.svg">
-                
+    
+                <div id="playButtonOutline" class="buttonOutline visible">
+                    <div id="playButton" class="visible"></div>
+                </div>
             </div>
         </div>
     
-        <!--<div id="controlsContainer" class="hidden">-->
-            <!--<div id="prevButton" class="sequenceButton"> << </div>-->
-            <!--<div id="nextButton" class="sequenceButton"> >> </div>-->
-        <!--</div>-->
+        <div id="controlsContainer" class="hidden">
+            <div id="prevButton" class="sequenceButton"> << </div>
+            <div id="nextButton" class="sequenceButton"> >> </div>
+        </div>
     </div>
 
     <script>
@@ -255,7 +293,6 @@
         var realityInterface = new RealityInterface();
         
         initNavigationArrow(document.getElementById('navigationContainer'), realityInterface, false, null);
-        pauseNavigationArrow();
 
         var State = Object.freeze({
             START: 'START',
@@ -356,10 +393,10 @@
                     divIdsToDisplay = ['container recording:1 initial:0', 'recordButtonOutline', 'recordingIndicator'];
                     break;
                 case State.PLAY_READY:
-                    divIdsToDisplay = ['container initial:0', 'playButton stop:0', 'prevButton', 'nextButton'];
+                    divIdsToDisplay = ['container initial:0', 'playButtonOutline stop:0', 'controlsContainer'];
                     break;
                 case State.PLAYING:
-                    divIdsToDisplay = ['container initial:0', 'prevButton', 'nextButton', 'recordedVideo'];
+                    divIdsToDisplay = ['container initial:0', 'playButtonOutline stop:1', 'controlsContainer', 'recordedVideo'];
                     break;
                 default:
                     console.warn('couldn\'t find state:' + currentState);
@@ -367,7 +404,7 @@
             }
             
             // by default, hide all divs...
-            var allDivIds = ['container', 'spinner', 'recordButtonOutline', 'recordingIndicator', 'playButton', 'prevButton', 'nextButton', 'recordedVideo'];
+            var allDivIds = ['container', 'spinner', 'recordButtonOutline', 'recordingIndicator', 'playButtonOutline', 'controlsContainer', 'recordedVideo'];
             allDivIds.forEach(function(id) {
                 document.getElementById(id).classList.add('hidden');
             });
@@ -424,7 +461,7 @@
                 case State.LOADING_PLAYER:
                     realityInterface.setFullScreenOff();
                     realityInterface.setMoveDelay(400);
-                    // resumeNavigationArrow();
+                    resumeNavigationArrow();
 
                     loadTimeout = setTimeout(function() {
                         processStateAction(Action.TIMEOUT);
@@ -447,19 +484,19 @@
                     break;
                     
                 case State.RECORDING:
-                    // setTimeout(function() {
+                    setTimeout(function() {
                         realityInterface.setStickyFullScreenOn();
                         realityInterface.setMoveDelay(-1); // negative move delay disables movement while in fullscreen
                         realityInterface.startVideoRecording();
+                        pauseNavigationArrow();
                         // count how long you've been recording for
                         secondsRecorded = 0;
                         document.querySelector('.recordingText').innerHTML = 'REC   ' + formatSecondsAsTime(secondsRecorded);
-                        clearInterval(recordingInterval);
                         recordingInterval = setInterval(function() {
                             secondsRecorded += 1;
                             document.querySelector('.recordingText').innerHTML = 'REC   ' + formatSecondsAsTime(secondsRecorded);
                         }, 1000);
-                    // }, 250);
+                    }, 250);
                     
                     document.getElementById('container').removeEventListener('pointerup', buttonPressed);
                     document.getElementById('recordButtonOutline').addEventListener('pointerup', function() {
@@ -489,9 +526,6 @@
                     document.getElementById('playButton').classList.remove('stop');
                     document.getElementById('prevButton').classList.add('ready');
                     document.getElementById('nextButton').classList.add('ready');
-
-                    pauseNavigationArrow();
-
                     break;
                     
                 case State.PLAYING:
@@ -502,9 +536,6 @@
                     document.getElementById('playButton').classList.add('stop');
                     document.getElementById('prevButton').classList.remove('ready');
                     document.getElementById('nextButton').classList.remove('ready');
-                    
-                    resumeNavigationArrow();
-                    
                     break;
                     
                 default:
@@ -523,12 +554,10 @@
         }
         
         function buttonPressed(e) {
-            console.log('button pressed');
             processStateAction(Action.BUTTON_PRESSED);
         }
         
         function prevButtonPressed(e) {
-            e.stopPropagation();
             console.log('prev button pressed');
             realityInterface.write('prev', 1.0, 'f', false, 0, 1, true);
             if (currentState === State.PLAYING) {
@@ -537,7 +566,6 @@
         }
 
         function nextButtonPressed(e) {
-            e.stopPropagation();
             console.log('next button pressed');
             realityInterface.write('next', 1.0, 'f', false, 0, 1, true);
             if (currentState === State.PLAYING) {
@@ -628,23 +656,12 @@
             }
         });
         
-        realityInterface.subscribeToMatrix();
-        realityInterface.addMatrixListener(function(modelViewMatrix, projectionMatrix) {
-            // console.log(realityObject.frame + ': ' + modelViewMatrix); //, projectionMatrix);
-            // 1+1;
-            // return;
-            if (currentState === State.PLAYING || currentState === State.PLAY_READY) {
-                // console.log(modelViewMatrix[14]);
-                var distance = modelViewMatrix[14];
-                if (distance > 500) {
-                    document.getElementById('prevButton').classList.add('proximityFar');
-                    document.getElementById('nextButton').classList.add('proximityFar');
-                } else {
-                    document.getElementById('prevButton').classList.remove('proximityFar');
-                    document.getElementById('nextButton').classList.remove('proximityFar');
-                }
-            }
-        });
+        // realityInterface.subscribeToMatrix();
+        // realityInterface.addMatrixListener(function(modelViewMatrix, projectionMatrix) {
+        //     // console.log(realityObject.frame + ': ' + modelViewMatrix); //, projectionMatrix);
+        //     // 1+1;
+        //     // return;
+        // });
         
     </script>
 

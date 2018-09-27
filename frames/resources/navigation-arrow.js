@@ -45,11 +45,17 @@
     }
 
     function pause() {
+        // if (isWithinScreen) {
+            hideArrowIfNeeded();
+        // }
         isPaused = true;
     }
 
     function resume() {
         isPaused = false;
+        if (!isWithinScreen) {
+            showArrowIfNeeded();
+        }
     }
 
     function wrap(el, wrapper) {
@@ -64,60 +70,67 @@
         isWithinScreen = !(frameScreenPosition.lowerRight.x < 0 - extraPadding || frameScreenPosition.lowerRight.y < 0 - extraPadding ||
                 frameScreenPosition.upperLeft.x > screen.height + extraPadding || frameScreenPosition.upperLeft.y > screen.width + extraPadding );
     }
+    
+    function hideArrowIfNeeded() {
+        if (!isTransitioningFullscreen) {
+            if (isArrowShown) {
+                isTransitioningFullscreen = true;
+                containerWrapper.style.display = 'none';
+                arrow.style.display = 'none';
+                if (!alwaysFullscreen) {
+                    realityInterface.setFullScreenOff();
+                }
+                // become movable and listen for touches again
+                realityInterface.setMoveDelay(prevMoveDelay);
+                if (originalTouchDecider) {
+                    realityInterface.registerTouchDecider(originalTouchDecider);
+                } else {
+                    realityInterface.unregisterTouchDecider();
+                }
+                setTimeout(function() {
+                    containerWrapper.style.display = '';
+                    isTransitioningFullscreen = false;
+                    isArrowShown = false;
+                }, 100);
+            }
+        }
+    }
+    
+    function showArrowIfNeeded() {
+        if (!isTransitioningFullscreen) {
+            if (!isArrowShown) {
+
+                isTransitioningFullscreen = true;
+                containerWrapper.style.display = 'none';
+                arrow.style.display = 'none';
+                realityInterface.setFullScreenOn();
+
+                // become immovable and ignore touches
+                prevMoveDelay = realityObject.moveDelay;
+                realityInterface.setMoveDelay(-1);
+                realityInterface.registerTouchDecider(function() {
+                    return false;
+                });
+
+                setTimeout(function() {
+                    arrow.style.display = 'inline';
+                    isTransitioningFullscreen = false;
+                    isArrowShown = true;
+                }, 100);
+
+            }
+        }
+    }
 
     function matrixCallback(/*modelViewMatrix, projectionMatrix*/) {
         if (isPaused) return;
         
         if (isMoving || isWithinScreen) {
-            if (!isTransitioningFullscreen) {
-                if (isArrowShown) {
-                    isTransitioningFullscreen = true;
-                    containerWrapper.style.display = 'none';
-                    arrow.style.display = 'none';
-                    if (!alwaysFullscreen) {
-                        realityInterface.setFullScreenOff();
-                    }
-                    // become movable and listen for touches again
-                    realityInterface.setMoveDelay(prevMoveDelay);
-                    if (originalTouchDecider) {
-                        realityInterface.registerTouchDecider(originalTouchDecider);
-                    } else {
-                        realityInterface.unregisterTouchDecider();
-                    }
-                    setTimeout(function() {
-                        containerWrapper.style.display = '';
-                        isTransitioningFullscreen = false;
-                        isArrowShown = false;
-                    }, 100);
-                }
-            }
+            hideArrowIfNeeded();
 
         } else {
             updateArrow();
-
-            if (!isTransitioningFullscreen) {
-                if (!isArrowShown) {
-
-                    isTransitioningFullscreen = true;
-                    containerWrapper.style.display = 'none';
-                    arrow.style.display = 'none';
-                    realityInterface.setFullScreenOn();
-                    
-                    // become immovable and ignore touches
-                    prevMoveDelay = realityObject.moveDelay;
-                    realityInterface.setMoveDelay(-1);
-                    realityInterface.registerTouchDecider(function() {
-                        return false;
-                    });
-
-                    setTimeout(function() {
-                        arrow.style.display = 'inline';
-                        isTransitioningFullscreen = false;
-                        isArrowShown = true;
-                    }, 100);
-
-                }
-            }
+            showArrowIfNeeded();
         }
     }
 
