@@ -11,10 +11,10 @@
     <script src="resources/threejs-src/2018/loaders/GLTFLoader.js"></script>
     <style>
         .sequenceButton {
-            /*border: 2px solid cyan;*/
+            border: 2px solid cyan;
             position: absolute;
-            bottom: 5px;
-            font-size: 10px;
+            bottom: 2px;
+            font-size: 20px;
             font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
             /*padding: 10px;*/
             color: cyan;
@@ -26,11 +26,11 @@
         }
         
         #prevButton {
-            left: 75px;
+            left: 0;
         }
         
         #nextButton {
-            right: 137px;
+            right: 62px;
         }
         
         #playButton {
@@ -43,26 +43,13 @@
             display: none;
         }
         
-        #stepText {
-            position: absolute;
-            left: 238px;
-            bottom: 3px;
-            font-size: 12px;
-            font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
-            color: cyan;
-            text-align: center;
-        }
-        
     </style>
 </head>
 <body>
-<img id="prevButton" class="sequenceButton hidden" src="resources/backwardButton.svg" />
-<img id="nextButton" class="sequenceButton hidden" src="resources/forwardButton.svg" />
-<div id="playButton" class="sequenceButton hidden">
-    <img id="playButtonImage" src="resources/playButton.svg" width="50px" height="50px" />
-</div>
-<div id="stepText" class="hidden">(1/4)</div> 
-
+<div id="prevButton" class="sequenceButton hidden"> << </div>
+<div id="nextButton" class="sequenceButton hidden"> >> </div>
+<div id="playButton" class="sequenceButton hidden"> PLAY </div>
+    
 <script>
     var camera, scene, renderer;
     
@@ -135,7 +122,6 @@
                 document.getElementById('playButton').classList.remove('hidden');
                 document.getElementById('prevButton').classList.remove('hidden');
                 document.getElementById('nextButton').classList.remove('hidden');
-                document.getElementById('stepText').classList.remove('hidden');
                 updateButtons();
 
                 startAnimation();
@@ -317,13 +303,9 @@
     
     function updateButtons() {
         if (isPaused) {
-            // document.getElementById('playButton').innerHTML = 'PLAY (' + (currentStep + 1) + '/' + timestamps.length + ')';
-            document.getElementById('playButtonImage').src = 'resources/playButton.svg';
-            document.getElementById('stepText').innerHTML = '(' + (currentStep + 1) + '/' + timestamps.length + ')';
+            document.getElementById('playButton').innerHTML = 'PLAY (' + (currentStep + 1) + '/' + timestamps.length + ')';
         } else {
-            document.getElementById('playButtonImage').src = 'resources/pauseButton.svg';
-            document.getElementById('stepText').innerHTML = '(' + (currentStep + 1) + '/' + timestamps.length + ')';
-            // document.getElementById('playButton').innerHTML = 'PAUSE (' + (currentStep+1) + '/' + timestamps.length + ')';
+            document.getElementById('playButton').innerHTML = 'PAUSE (' + (currentStep+1) + '/' + timestamps.length + ')';
         }
     }
 

@@ -10,12 +10,12 @@
     <style>
         body {
             width: 568px;
-            height: 320px;
+            height: 430px;
             overflow: visible;
         }
         #container {
             width: 568px;
-            height: 320px;
+            height: 430px;
             /*border: 5px solid cyan;*/
             /*border-radius: 10px;*/
             /*padding: 10px;*/
@@ -237,9 +237,9 @@
                     <div class="bounce3"></div>
                 </div>
 
-                <img id="playButton" class="visible" src="resources/playCircle.svg">
-                <img id="nextButton" class="visible" src="resources/forwardButton.svg">
-                <img id="prevButton" class="visible" src="resources/backwardButton.svg">
+                <img id="playButton" class="visible" src="resources/playCircle%202.svg">
+                <img id="nextButton" class="visible" src="resources/forwardVideoButton.svg">
+                <img id="prevButton" class="visible" src="resources/backwardVideoButton.svg">
                 
             </div>
         </div>
@@ -256,6 +256,13 @@
         
         initNavigationArrow(document.getElementById('navigationContainer'), realityInterface, false, null);
         pauseNavigationArrow();
+        registerArrowShownListener(function(isArrowShown) {
+            if (!isArrowShown) {
+                if (playWhenAppears) {
+                    processStateAction(Action.PLAY_NODE_ACTIVATED);
+                }
+            }
+        });
 
         var State = Object.freeze({
             START: 'START',
@@ -611,10 +618,16 @@
             }
         });
 
+        var playWhenAppears = false;
         realityInterface.addReadListener('play', function(e) {
             if (e.value > 0.5) {
                 jumpToBeginningOfVideo();
-                processStateAction(Action.PLAY_NODE_ACTIVATED);
+                resumeNavigationArrow();
+                if (realityObject.sendFullScreen) {
+                    playWhenAppears = true;
+                } else {
+                    processStateAction(Action.PLAY_NODE_ACTIVATED);
+                }
             } else {
                 processStateAction(Action.PLAY_NODE_DEACTIVATED);
             }

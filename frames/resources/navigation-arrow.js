@@ -91,6 +91,7 @@
                     containerWrapper.style.display = '';
                     isTransitioningFullscreen = false;
                     isArrowShown = false;
+                    visibilityListener(false);
                 }, 100);
             }
         }
@@ -116,6 +117,7 @@
                     arrow.style.display = 'inline';
                     isTransitioningFullscreen = false;
                     isArrowShown = true;
+                    visibilityListener(true);
                 }, 100);
 
             }
@@ -174,10 +176,16 @@
             isMoving = false;
         }
     }
+    
+    var visibilityListener = null;
+    function registerArrowShownListener(callback) {
+        visibilityListener = callback;
+    }
 
     exports.initNavigationArrow = init;
     exports.pauseNavigationArrow = pause;
     exports.resumeNavigationArrow = resume;
     exports.setNavigationMargins = setMargins;
+    exports.registerArrowShownListener = registerArrowShownListener;
 
 })(window);
