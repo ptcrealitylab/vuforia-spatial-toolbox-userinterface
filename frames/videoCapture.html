@@ -41,9 +41,19 @@
         
         #recordedVideo {
             position: absolute;
-            top: 10px;
+            top: 15px;
             left: 10px;
             z-index: -1;
+        }
+
+        #videoOutline {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 538px;
+            height: 300px;
+            z-index: -2;
+            background-color:rgba(255,255,255,0.15);
         }
 
         #spinner {
@@ -218,10 +228,11 @@
     <div id="navigationContainer">
         <div id="container" touch-action="none">
             <div>
+                <div id="videoOutline"></div>
                 <video id="recordedVideo" class="visible" width="548" height="300" playsinline webkit-playsinline>
                     <source id="source" src="">
                 </video>
-                
+
                 <div id="recordButtonOutline" class="buttonOutline visible">
                     <div id="recordButton" class="visible"></div>
                 </div>
@@ -292,7 +303,9 @@
         
         function processStateAction(action) {
             
-            // console.log('state ' + currentState + ' + action ' + action);
+            console.log('state ' + currentState + ' + action ' + action);
+            
+            var previousState = currentState;
             
             switch (currentState) {
                 case State.START:
@@ -321,6 +334,7 @@
                     if (action === Action.LOAD_SUCCESSFUL) {
                         currentState = State.PLAY_READY;
                     }
+                    break;
                 case State.PLAY_READY:
                     if (action === Action.BUTTON_PRESSED ||
                         action === Action.PLAY_NODE_ACTIVATED) {
@@ -340,10 +354,13 @@
                     break;
             }
             
-            // console.log(' = ' + currentState);
+            console.log(' = ' + currentState);
             
-            updateUIForNewState();
-            updateSideEffectsForNewState();
+            
+            if (previousState !== currentState) {
+                updateUIForNewState();
+                updateSideEffectsForNewState();
+            }
         }
         
         function updateUIForNewState() {
@@ -364,7 +381,7 @@
                     divIdsToDisplay = ['container recording:1 initial:0', 'recordButtonOutline', 'recordingIndicator'];
                     break;
                 case State.PLAY_READY:
-                    divIdsToDisplay = ['container initial:0', 'playButton stop:0', 'prevButton', 'nextButton'];
+                    divIdsToDisplay = ['container initial:0', 'playButton stop:0', 'prevButton', 'nextButton', 'videoOutline'];
                     break;
                 case State.PLAYING:
                     divIdsToDisplay = ['container initial:0', 'prevButton', 'nextButton', 'recordedVideo'];
@@ -375,7 +392,7 @@
             }
             
             // by default, hide all divs...
-            var allDivIds = ['container', 'spinner', 'recordButtonOutline', 'recordingIndicator', 'playButton', 'prevButton', 'nextButton', 'recordedVideo'];
+            var allDivIds = ['container', 'spinner', 'recordButtonOutline', 'recordingIndicator', 'playButton', 'prevButton', 'nextButton', 'recordedVideo', 'videoOutline'];
             allDivIds.forEach(function(id) {
                 document.getElementById(id).classList.add('hidden');
             });
@@ -657,9 +674,11 @@
                 if (distance > 500) {
                     document.getElementById('prevButton').classList.add('proximityFar');
                     document.getElementById('nextButton').classList.add('proximityFar');
+                    document.getElementById('videoOutline').classList.add('proximityFar');
                 } else {
                     document.getElementById('prevButton').classList.remove('proximityFar');
                     document.getElementById('nextButton').classList.remove('proximityFar');
+                    document.getElementById('videoOutline').classList.remove('proximityFar');
                 }
             }
         });

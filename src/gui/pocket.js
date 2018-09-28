@@ -289,7 +289,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             width: 568,
             height: 320,
             nodes: [
-                {name: 'play', type: 'node', x: 0, y: 0, scaleFactor: 0.75},
+                {name: 'play', type: 'node', x: 0, y: -27, scaleFactor: 0.75},
                 // {name: 'progress', type: 'node'},
                 // {name: 'next', type: 'node', x: 0, y: 100},
                 {name: 'next', type: 'node', x: 50, y: 100, scaleFactor: 0.6},
