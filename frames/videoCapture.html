@@ -24,7 +24,7 @@
             vertical-align: middle;
             text-align: center;
             /*left: 90px;*/
-            transition: 250ms all ease;
+            /*transition: 250ms all ease;*/
         }
         
         /*#container.initial {*/
@@ -33,11 +33,11 @@
             /*height: 320px;*/
         /*}*/
 
-        /*#container.recording {*/
-            /*left: 0;*/
-            /*width: 558px;*/
-            /*height: 310px;*/
-        /*}*/
+        #container.recording {
+            left: 0;
+            width: 568px;
+            height: 320px;
+        }
         
         #recordedVideo {
             position: absolute;
@@ -259,6 +259,7 @@
         registerArrowShownListener(function(isArrowShown) {
             if (!isArrowShown) {
                 if (playWhenAppears) {
+                    playWhenAppears = false;
                     processStateAction(Action.PLAY_NODE_ACTIVATED);
                 }
             }
@@ -489,8 +490,10 @@
                     document.getElementById('nextButton').addEventListener('pointerup', nextButtonPressed);
 
                     document.getElementById('recordedVideo').addEventListener('ended', function(e) {
-                        jumpToBeginningOfVideo();
-                        processStateAction(Action.VIDEO_PLAYBACK_FINISHED);
+                        if (currentState === State.PLAYING) {
+                            jumpToBeginningOfVideo();
+                            processStateAction(Action.VIDEO_PLAYBACK_FINISHED);
+                        }
                     });
 
                     document.getElementById('playButton').classList.remove('stop');
@@ -614,7 +617,9 @@
 
         realityInterface.addGlobalMessageListener(function(e) {
             if (e.indexOf('hideOtherVideos') > -1 && e !== 'hideOtherVideosExcept'+source.getAttribute('src')) {
-                processStateAction(Action.OTHER_VIDEO_PLAYED);
+                if (!(realityObject.sendFullScreen && playWhenAppears)) {
+                    processStateAction(Action.OTHER_VIDEO_PLAYED);
+                }
             }
         });
 
