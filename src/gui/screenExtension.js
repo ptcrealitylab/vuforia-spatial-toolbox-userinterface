@@ -121,7 +121,7 @@ realityEditor.gui.screenExtension.touchEnd = function (eventObject){
  */
 realityEditor.gui.screenExtension.getValidTouches = function(eventObject) {
     return eventObject.touches.filter(function(touch) {
-        return (typeof touch.screenX === "number" && typeof touch.screenY === "number");
+        return touch && (typeof touch.screenX === "number" && typeof touch.screenY === "number");
     });
 };
 
@@ -423,7 +423,7 @@ realityEditor.gui.screenExtension.getTouchOffsetAsPercent = function(thisFrame) 
         x: realityEditor.device.editingState.touchOffset.x - frameWidth * (1.0 - thisFrame.ar.scale) / 2,
         y: realityEditor.device.editingState.touchOffset.y - frameHeight * (1.0 - thisFrame.ar.scale) / 2
     };
-    
+
     var xPercent = (touchOffsetCorrectedForScale.x / frameDimensions.width);
     var yPercent = (touchOffsetCorrectedForScale.y / frameDimensions.height);
 
@@ -511,7 +511,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             // 2. convert touch offset from percent scale to actual scale of the frame
             var convertedTouchOffsetX = (this.screenObject.touchOffsetX) * parseFloat(thisFrame.width);
             var convertedTouchOffsetY = (this.screenObject.touchOffsetY) * parseFloat(thisFrame.height);
-            
+
             // 3. manually apply the touchOffset to the results so that it gets rendered in the correct place on the first pass
             thisFrame.ar.x -= (convertedTouchOffsetX - thisFrame.width/2 ) * thisFrame.ar.scale;
             thisFrame.ar.y -= (convertedTouchOffsetY - thisFrame.height/2 ) * thisFrame.ar.scale;

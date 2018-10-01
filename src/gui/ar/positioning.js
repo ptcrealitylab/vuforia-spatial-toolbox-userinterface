@@ -336,3 +336,92 @@ realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable = function(activ
     
     return  (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
 };
+
+
+// TODO: must be computed without relying on the CSS, otherwise doesn't work for fullscreen frames
+realityEditor.gui.ar.positioning.getFrameScreenCoordinates = function(objectKey, frameKey) {
+    
+    // OLD METHOD.. relies on CSS so doesn't work for fullscreen frames
+    // var boundingRect = globalDOMCache["iframe" + frameKey].getClientRects()[0];
+    // return {
+    //     upperLeft:{x: boundingRect.left, y: boundingRect.top},
+    //     upperRight:{x: boundingRect.right, y: boundingRect.top},
+    //     lowerLeft:{x: boundingRect.left, y: boundingRect.bottom},
+    //     lowerRight:{x: boundingRect.right, y: boundingRect.bottom}
+    // };
+    
+    return getScreenPosition(objectKey, frameKey, true, true, false, false, true);
+};
+
+function getScreenPosition(objectKey, frameKey, includeCenter, includeUpperLeft, includeUpperRight, includeLowerLeft, includeLowerRight) {
+    var utils = realityEditor.gui.ar.utilities;
+    var draw = realityEditor.gui.ar.draw;
+    
+    // 1. recompute the ModelViewProjection matrix for the marker
+    var activeObjectMatrix = [];
+    utils.multiplyMatrix(draw.visibleObjects[objectKey], globalStates.projectionMatrix, draw.matrix.r);
+    utils.multiplyMatrix(rotateX, draw.matrix.r, activeObjectMatrix);
+    
+    // 2. Get the matrix of the frame and compute the composed matrix of the frame relative to the object.
+    //   *the order of multiplications is important*
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+    var positionDataMatrix = positionData.matrix.length === 16 ? positionData.matrix : utils.newIdentityMatrix();
+    var frameMatrixTemp = [];
+    var frameMatrix = [];
+    utils.multiplyMatrix(positionDataMatrix, activeObjectMatrix, frameMatrixTemp);
+    
+    // 4. Scale/translate the final result.
+    var scale = [
+        positionData.scale, 0, 0, 0,
+        0, positionData.scale, 0, 0,
+        0, 0, positionData.scale, 0,
+        positionData.x, positionData.y, 0, 1
+    ];
+    utils.multiplyMatrix(scale, frameMatrixTemp, frameMatrix);
+    
+    // compute the screen coordinates for various points within the frame
+    var screenCoordinates = {};
+    
+    var halfWidth = parseInt(frame.frameSizeX)/2;
+    var halfHeight = parseInt(frame.frameSizeY)/2;
+
+    // start with coordinates in frame-space -> compute coordinates in screen space
+    if (includeCenter) {
+        var center = [0, 0, 0, 1];
+        screenCoordinates.center = getProjectedCoordinates(center, frameMatrix);
+    }
+
+    if (includeUpperLeft) {
+        var upperLeft = [-1 * halfWidth, -1 * halfHeight, 0, 1];
+        screenCoordinates.upperLeft = getProjectedCoordinates(upperLeft, frameMatrix);
+    }
+
+    if (includeUpperRight) {
+        var upperRight = [halfWidth, -1 * halfHeight, 0, 1];
+        screenCoordinates.upperRight = getProjectedCoordinates(upperRight, frameMatrix);
+    }
+
+    if (includeLowerLeft) {
+        var lowerLeft = [-1 * halfWidth, halfHeight, 0, 1];
+        screenCoordinates.lowerLeft = getProjectedCoordinates(lowerLeft, frameMatrix);
+    }
+
+    if (includeLowerRight) {
+        var lowerRight = [halfWidth, halfHeight, 0, 1];
+        screenCoordinates.lowerRight = getProjectedCoordinates(lowerRight, frameMatrix);
+    }
+    
+    return screenCoordinates;
+}
+
+function getProjectedCoordinates(frameCoordinateVector, frameMatrix) {
+    var utils = realityEditor.gui.ar.utilities;
+    var projectedCoordinateVector = utils.perspectiveDivide(utils.multiplyMatrix4(frameCoordinateVector, frameMatrix));
+    projectedCoordinateVector[0] += (globalStates.height / 2);
+    projectedCoordinateVector[1] += (globalStates.width / 2);
+    return {
+        x: projectedCoordinateVector[0],
+        y: projectedCoordinateVector[1]
+    };
+}

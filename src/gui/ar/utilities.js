@@ -1170,3 +1170,132 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
 realityEditor.gui.ar.utilities.distance = function (matrix) {
     return   Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
 };
+
+/**
+ * Extracts rotation information from a 4x4 transformation matrix
+ * @param {Array.<number>} m - a 4x4 transformation matrix
+ * @author https://answers.unity.com/questions/11363/converting-matrix4x4-to-quaternion-vector3.html
+ */
+realityEditor.gui.ar.utilities.getQuaternionFromMatrix = function(m) {
+
+    // create identity Quaternion structure as a placeholder
+    var q = { x: 0, y: 0, z: 0, w: 1 };
+    
+    if (m.length === 0) { return q; } // also works to set m = this.newIdentityMatrix();
+
+    q.w = Math.sqrt( Math.max( 0, 1 + m[0] + m[5] + m[10] ) ) / 2;
+    q.x = Math.sqrt( Math.max( 0, 1 + m[0] - m[5] - m[10] ) ) / 2;
+    q.y = Math.sqrt( Math.max( 0, 1 - m[0] + m[5] - m[10] ) ) / 2;
+    q.z = Math.sqrt( Math.max( 0, 1 - m[0] - m[5] + m[10] ) ) / 2;
+    q.x *= Math.sign( q.x * ( m[6] - m[9] ) );
+    q.y *= Math.sign( q.y * ( m[8] - m[2] ) );
+    q.z *= Math.sign( q.z * ( m[1] - m[4] ) );
+    
+    return q;
+};
+
+// realityEditor.gui.ar.utilities.quaternionMagnitude = function(q) {
+//     // var identity = { x: 0, y: 0, z: 0, w: 1 };
+//     // qRot = q * inverse(identity); // identity inversed is still identity. identity multiplied by q gives q.
+//     var magnitude = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+//     var pureMagnitude = 2 * Math.atan2(magnitude, q.w);
+//     return pureMagnitude;
+//     // var mappedMagnitude = (pureMagnitude / (2 * Math.atan2(1, 1)));
+//     // return Math.sqrt( Math.max(0, Math.min(1, (mappedMagnitude - 1.0) * 4)) );
+// };
+
+realityEditor.gui.ar.utilities.quaternionToEulerAngles = function(q) {
+    var phi = Math.atan2(q.z * q.w + q.x * q.y, 0.5 - (q.y * q.y + q.z * q.z));
+    var theta = Math.asin(-2 * (q.y * q.w - q.x * q.z));
+    var psi = Math.atan2(q.y * q.z + q.x * q.w, 0.5 - (q.z * q.z + q.w * q.w));
+    return {
+        phi: phi,
+        theta: theta,
+        psi: psi
+    }
+};
+
+/**
+ * Tells you how much the frame was rotated by twisting the x-axis
+ * @param m
+ * @return {number}
+ */
+realityEditor.gui.ar.utilities.getRotationAboutAxisX = function(m) {
+    var q = this.getQuaternionFromMatrix(m);
+    var angles = this.quaternionToEulerAngles(q);
+    return angles.theta;
+};
+
+/**
+ * Tells you how much the frame was rotated by twisting the y-axis
+ * @param m
+ * @return {number}
+ */
+realityEditor.gui.ar.utilities.getRotationAboutAxisY = function(m) {
+    var q = this.getQuaternionFromMatrix(m);
+    var angles = this.quaternionToEulerAngles(q);
+    return angles.psi;
+};
+
+/**
+ * Tells you how much the frame was rotated by twisting the z-axis
+ * @param m
+ * @return {number}
+ */
+realityEditor.gui.ar.utilities.getRotationAboutAxisZ = function(m) {
+    var q = this.getQuaternionFromMatrix(m);
+    var angles = this.quaternionToEulerAngles(q);
+    return angles.phi;
+};
+
+
+realityEditor.gui.ar.utilities.getMatrixFromQuaternion = function(q) {
+
+    // Matrix<float, 4>(
+    //     1.0f - 2.0f*qy*qy - 2.0f*qz*qz, 2.0f*qx*qy - 2.0f*qz*qw, 2.0f*qx*qz + 2.0f*qy*qw, 0.0f,
+    //     2.0f*qx*qy + 2.0f*qz*qw, 1.0f - 2.0f*qx*qx - 2.0f*qz*qz, 2.0f*qy*qz - 2.0f*qx*qw, 0.0f,
+    //     2.0f*qx*qz - 2.0f*qy*qw, 2.0f*qy*qz + 2.0f*qx*qw, 1.0f - 2.0f*qx*qx - 2.0f*qy*qy, 0.0f,
+    //     0.0f, 0.0f, 0.0f, 1.0f);
+
+    var m = [];
+    m[0] = 1.0 - 2.0 * q.y * q.y - 2.0 * q.z * q.z;
+    m[1] = 2.0 * q.x * q.y - 2.0 * q.z * q.w;
+    m[2] = 2.0 * q.x * q.z + 2.0 * q.y * q.w;
+    m[3] = 0;
+    
+    m[4] = 2.0 * q.x * q.y + 2.0 * q.z * q.w;
+    m[5] = 1.0 - 2.0 * q.x * q.x - 2.0 * q.z * q.z;
+    m[6] = 2.0 * q.y * q.z - 2.0 * q.x * q.w;
+    m[7] = 0;
+    
+    m[8] = 2.0 * q.x * q.z - 2.0 * q.y * q.w;
+    m[9] = 2.0 * q.y * q.z + 2.0 * q.x * q.w;
+    m[10] = 1.0 - 2.0 * q.x * q.x - 2.0 * q.y * q.y;
+    m[11] = 0;
+
+    m[12] = 0;
+    m[13] = 0;
+    m[14] = 0;
+    m[15] = 1;
+
+    return m;
+};
+
+realityEditor.gui.ar.utilities.normalizeQuaternion = function(q) {
+    var n = 1.0 / Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+    q.x *= n;
+    q.y *= n;
+    q.z *= n;
+    q.w *= n;
+    return q;
+};
+
+realityEditor.gui.ar.utilities.invertQuaternion = function(q) {
+    var d = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+    return {
+        x: q.x/d,
+        y: q.y/d,
+        z: q.z/d,
+        w: q.w/d
+    }
+};

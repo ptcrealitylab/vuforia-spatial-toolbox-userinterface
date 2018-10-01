@@ -125,9 +125,9 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
  */
 realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 
-    if (globalStates.editingMode || (realityEditor.device.editingState.node && realityEditor.device.currentScreenTouches.length > 1)) {
-        return;
-    }
+    // if (globalStates.editingMode || (realityEditor.device.editingState.node && realityEditor.device.currentScreenTouches.length > 1)) {
+    //     return;
+    // }
     
     if(!thisFrame) return;
 	for (var linkKey in thisFrame.links) {
@@ -252,7 +252,6 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
     if (globalStates.editingMode || realityEditor.device.editingState.node) {
         return;
     }
-
 
     // this function here needs to be more precise
 
@@ -496,3 +495,8 @@ realityEditor.gui.ar.lines.drawSimpleLine = function(context, startX, startY, en
 	context.lineTo(endX, endY);
 	context.stroke();
 };
+
+
+// realityEditor.gui.ar.lines.drawGhostLines = function (thisFrame, context) {
+//    
+// };

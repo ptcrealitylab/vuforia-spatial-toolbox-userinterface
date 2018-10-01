@@ -1,4 +1,3 @@
-var sendTouchEvents = false;
 (function(exports) {
 
     if (typeof exports.realityObject !== 'undefined') {
@@ -17,6 +16,7 @@ var sendTouchEvents = false;
         sendAcceleration: false,
         sendFullScreen: false,
         fullscreenZPosition: 0,
+        sendSticky : false,
         height: '100%',
         width: '100%',
         socketIoScript: {},
@@ -24,6 +24,7 @@ var sendTouchEvents = false;
         socketIoUrl: '',
         style: document.createElement('style'),
         messageCallBacks: {},
+        interface : "gui",
         version: 170,
         moveDelay: 400,
         eventObject : {
@@ -33,7 +34,9 @@ var sendTouchEvents = false;
             node : null,
             x: 0,
             y: 0,
-            type: null}
+            type: null},
+        touchDecider: null,
+        touchDeciderRegistered: false
     };
 
     // adding css styles nessasary for acurate 3D transformations.
@@ -111,6 +114,7 @@ var sendTouchEvents = false;
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky,
                     moveDelay: realityObject.moveDelay
                 }
                 )
@@ -164,7 +168,7 @@ var sendTouchEvents = false;
             // reload public data when it becomes visible
             for (var i = 0; i < realityInterfaces.length; i++) {
                 if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditorPublicData', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                 }
             }
             
@@ -187,6 +191,10 @@ var sendTouchEvents = false;
                     }
                 }
             }
+        }
+
+        if (typeof msgContent.interface !== "undefined") {
+            realityObject.interface = msgContent.interface
         }
 
     };
@@ -232,10 +240,22 @@ var sendTouchEvents = false;
             };
         };
 
+        var numMatrixCallbacks = 0;
         this.addMatrixListener = function(callback) {
-            realityObject.messageCallBacks.matrixCall = function (msgContent) {
+            numMatrixCallbacks++;
+            realityObject.messageCallBacks['matrixCall'+numMatrixCallbacks] = function (msgContent) {
                 if (typeof msgContent.modelViewMatrix !== 'undefined') {
                     callback(msgContent.modelViewMatrix, realityObject.projectionMatrix);
+                }
+            };
+        };
+
+        var numScreenPositionCallbacks = 0;
+        this.addScreenPositionListener = function(callback) {
+            numScreenPositionCallbacks++;
+            realityObject.messageCallBacks['screenPositionCall'+numScreenPositionCallbacks] = function (msgContent) {
+                if (typeof msgContent.frameScreenPosition !== 'undefined') {
+                    callback(msgContent.frameScreenPosition);
                 }
             };
         };
@@ -264,6 +284,26 @@ var sendTouchEvents = false;
             realityObject.messageCallBacks.visibilityCall = function (msgContent) {
                 if (typeof msgContent.visibility !== 'undefined') {
                     callback(msgContent.visibility);
+                }
+            };
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.getInterface = function () {
+            return realityObject.interface;
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.addInterfaceListener = function (callback) {
+            realityObject.messageCallBacks.interfaceCall = function (msgContent) {
+                if (typeof msgContent.interface !== "undefined") {
+                    callback(msgContent.interface);
                 }
             };
         };
@@ -314,6 +354,30 @@ var sendTouchEvents = false;
             return realityObject.modelViewMatrix;
         };
 
+        this.registerTouchDecider = function(callback) {
+            realityObject.touchDecider = callback;
+            realityObject.touchDeciderRegistered = true;
+        };
+        
+        this.unregisterTouchDecider = function() {
+            // realityObject.touchDecider = null; // touchDecider is passed by reference, so this alters the function definition
+            realityObject.touchDeciderRegistered = false; // instead just set a flag to not use the callback anymore
+        };
+
+        var numMovingCallbacks = 0;
+        this.addIsMovingListener = function(callback) {
+            numMovingCallbacks++;
+            realityObject.messageCallBacks['frameIsMovingCall'+numMovingCallbacks] = function (msgContent) {
+                if (typeof msgContent.frameIsMoving !== "undefined") {
+                    callback(msgContent.frameIsMoving);
+                }
+            };
+        };
+
+        /**
+         * sets how long you need to tap and hold on the frame in order to start moving it.
+         * @param {number} delayInMilliseconds - if value < 0, disables movement
+         */
         this.setMoveDelay = function(delayInMilliseconds) {
             realityObject.moveDelay = delayInMilliseconds;
 
@@ -344,6 +408,7 @@ var sendTouchEvents = false;
             this.addReadPublicDataListener = makeIoStub('addReadPublicDataListener');
             this.writePublicData = makeIoStub('writePublicData');
             this.writePrivateData = makeIoStub('writePrivateData');
+            this.reloadPublicData = makeIoStub('reloadPublicData');
         }
 
         realityInterfaces.push(this);
@@ -383,7 +448,7 @@ var sendTouchEvents = false;
          */
 
 
-        this.write = function (node, value, mode, unit, unitMin, unitMax) {
+        this.write = function (node, value, mode, unit, unitMin, unitMax, forceWrite) {
             mode = mode || 'f';
             unit = unit || false;
             unitMin = unitMin || 0;
@@ -394,7 +459,7 @@ var sendTouchEvents = false;
                 self.oldNumberList[node] = null;
             }
 
-            if (self.oldNumberList[node] !== value) {
+            if (self.oldNumberList[node] !== value || forceWrite) {
                 this.ioObject.emit('object', JSON.stringify({
                     object: realityObject.object,
                     frame: realityObject.frame,
@@ -463,10 +528,20 @@ var sendTouchEvents = false;
                 var thisMsg = JSON.parse(msg);
                 
                 if (typeof thisMsg.publicData === "undefined")  return;
-                if(typeof thisMsg.publicData[node] === "undefined") return;
+                if (typeof thisMsg.publicData[node] === "undefined") return;
                 if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
                 
-                if (thisMsg.publicData[node] !== realityObject.publicData[node]) {
+                var isUnset =   (typeof realityObject.publicData[node] === "undefined") ||
+                                (typeof realityObject.publicData[node][valueName] === "undefined");
+
+                // only trigger the callback if there is new public data, otherwise infinite loop possible
+                if (isUnset || JSON.stringify(thisMsg.publicData[node][valueName]) !== JSON.stringify(realityObject.publicData[node][valueName])) {
+
+                    if(typeof realityObject.publicData[node] === "undefined") {
+                        realityObject.publicData[node] = {};
+                    }
+                    realityObject.publicData[node][valueName] = thisMsg.publicData[node][valueName];
+                    
                     parent.postMessage(JSON.stringify(
                         {
                             version: realityObject.version,
@@ -476,9 +551,10 @@ var sendTouchEvents = false;
                             publicData: thisMsg.publicData[node]
                         }
                     ), "*");
+                    
+                    callback(thisMsg.publicData[node][valueName]);
                 }
                 
-                callback(thisMsg.publicData[node][valueName]);
             });
         };
 
@@ -519,6 +595,15 @@ var sendTouchEvents = false;
                 node: realityObject.frame + node,
                 privateData: thisItem
             }));
+        };
+        
+        this.reloadPublicData = function() {
+            // reload public data when it becomes visible
+            for (var i = 0; i < realityInterfaces.length; i++) {
+                if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                }
+            }
         };
         
         console.log('socket.io is loaded and injected');
@@ -570,7 +655,8 @@ var sendTouchEvents = false;
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
-                    fullScreen: realityObject.sendFullScreen
+                    fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky
                 }), '*');
             }
         };
@@ -587,6 +673,7 @@ var sendTouchEvents = false;
                 width: realityObject.width,
                 sendMatrix: realityObject.sendMatrix,
                 sendAcceleration: realityObject.sendAcceleration,
+                stickiness: realityObject.sendSticky,
                 fullScreen: realityObject.sendFullScreen
             }), '*');
         };
@@ -612,7 +699,8 @@ var sendTouchEvents = false;
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
-                    fullscreenZPosition: realityObject.fullscreenZPosition
+                    fullscreenZPosition: realityObject.fullscreenZPosition,
+                    stickiness: realityObject.sendSticky
                 }), '*');
             }
         };
@@ -637,8 +725,94 @@ var sendTouchEvents = false;
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendAcceleration: realityObject.sendAcceleration,
-                    fullScreen: realityObject.sendFullScreen
+                    fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky
                 }), '*');
+            }
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.setStickyFullScreenOn = function () {
+            realityObject.sendFullScreen = "sticky";
+            realityObject.sendSticky = true;
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+
+                realityObject.height = "100%";
+                realityObject.width = "100%";
+
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        height: realityObject.height,
+                        width: realityObject.width,
+                        sendMatrix: realityObject.sendMatrix,
+                        sendAcceleration: realityObject.sendAcceleration,
+                        fullScreen: realityObject.sendFullScreen,
+                        stickiness: realityObject.sendSticky
+                    }), "*");
+            }
+        };
+
+        /**
+         ************************************************************
+         */
+
+        this.setStickinessOff = function () {
+            console.log(realityObject.visibility);
+            //if(realityObject.visibility === "hidden"){
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        height: realityObject.height,
+                        width: realityObject.width,
+                        sendMatrix: realityObject.sendMatrix,
+                        sendAcceleration: realityObject.sendAcceleration,
+                        fullScreen: realityObject.sendFullScreen,
+                        stickiness: false
+                    }), "*");
+            }
+
+        };
+        
+        this.startVideoRecording = function() {
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        videoRecording: true
+                    }), "*");
+            }
+        };
+        
+        this.stopVideoRecording = function(callback) {
+            realityObject.messageCallBacks.stopVideoRecording = function (msgContent) {
+                if (typeof msgContent.videoFilePath !== 'undefined') {
+                    callback(msgContent.videoFilePath);
+                }
+            };
+
+            if (typeof realityObject.node !== "undefined" || typeof realityObject.frame !== "undefined") {
+                parent.postMessage(JSON.stringify(
+                    {
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        videoRecording: false
+                    }), "*");
             }
         };
 
@@ -652,14 +826,9 @@ var sendTouchEvents = false;
     window.onload = function() {
 
         window.addEventListener('message', function (msg) {
-            // if (msg.origin === "https://www.youtube.com") return; // TODO: make a more generalized solution for this... 
             
             var msgContent = JSON.parse(msg.data);
             
-            // if (msgContent.stopTouchEditing) {
-            //     sendTouchEvents = false;
-            // }
-
             if (msgContent.event && msgContent.event.pointerId) {
                 var eventData = msgContent.event;
                 var event = new PointerEvent(eventData.type, {
@@ -677,9 +846,37 @@ var sendTouchEvents = false;
                     screenX: eventData.x,
                     screenY: eventData.y
                 });
-                
+
+                // send unacceptedTouch message if this interface wants touches to pass through it
+                if (realityObject.touchDeciderRegistered) {
+                    var touchAccepted = realityObject.touchDecider(eventData);
+                    if (!touchAccepted) {
+                        // console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
+                        if (realityObject.object && realityObject.frame) {
+
+                            parent.postMessage(JSON.stringify({
+                                version: realityObject.version,
+                                node: realityObject.node,
+                                frame: realityObject.frame,
+                                object: realityObject.object,
+                                unacceptedTouch : eventData
+                            }), '*');
+                            return;
+                        }
+                    }
+                }
+
                 var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
                 elt.dispatchEvent(event);
+
+                // otherwise send acceptedTouch message to stop the touch propagation
+                parent.postMessage(JSON.stringify({
+                    version: realityObject.version,
+                    node: realityObject.node,
+                    frame: realityObject.frame,
+                    object: realityObject.object,
+                    acceptedTouch : eventData
+                }), '*');
             }
         });
     };

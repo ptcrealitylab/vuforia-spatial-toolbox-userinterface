@@ -112,6 +112,7 @@ realityEditor.gui.buttons.resetButtonDown = function(event) {
     globalStates.resetButtonDown = true;
 };
 
+/*
 realityEditor.gui.buttons.resetButtonUp = function(event) {
     if (event.button !== "reset") return;
 
@@ -177,6 +178,49 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
 
         }
 
+    }
+};
+*/
+realityEditor.gui.buttons.resetButtonUp = function(event){
+    if (event.button !== "reset") return;
+
+    realityEditor.gui.menus.off("editing",["reset"]);
+
+    if (!globalStates.resetButtonDown) return;
+    globalStates.resetButtonDown = false;
+
+    for (var objectKey in objects) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
+            continue;
+        }
+        realityEditor.network.sendResetToLastCommit(objectKey); // TODO: this doesnt reset links yet, just positions
+    }
+};
+
+realityEditor.gui.buttons.commitButtonDown = function(event) {
+    if (event.button !== "commit") return;
+    globalStates.commitButtonDown = true;
+};
+
+realityEditor.gui.buttons.commitButtonUp = function(event) {
+    if (event.button !== "commit") return;
+
+    realityEditor.gui.menus.off("editing",["commit"]);
+
+    if (!globalStates.commitButtonDown) return;
+    globalStates.commitButtonDown = false;
+
+    for (var objectKey in objects) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
+            continue;
+        }
+        realityEditor.network.sendSaveCommit(objectKey);
+        
+        // update local history instantly
+        var thisObject = realityEditor.getObject(objectKey);
+        thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
+        
+        realityEditor.gui.ar.frameHistoryRenderer.refreshGhosts();
     }
 };
 
@@ -329,6 +373,21 @@ realityEditor.gui.buttons.unlockButtonUp = function(event) {
     
     realityEditor.device.security.unlockVisibleNodesAndLinks();
 };
+
+realityEditor.gui.buttons.recordButtonUp = function(event) {
+    if (event.button !== "record") return;
+
+    console.log("activate record button");
+    
+    var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
+
+    if(!didStartRecording) {
+        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+    } else {
+        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+    }
+};
+
 
 realityEditor.gui.buttons.draw = function() {
 

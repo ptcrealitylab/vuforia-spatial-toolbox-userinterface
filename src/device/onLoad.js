@@ -70,16 +70,14 @@ realityEditor.device.onload = function () {
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
         globalStates.platform = false;
     }
+    globalStates.realityState= false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
     // assign global pointers to frequently used UI elements
     uiButtons = document.getElementById("GUI");
     overlayDiv = document.getElementById('overlay');
-    overlayDiv.addEventListener('touchstart', function (e) {
-        e.preventDefault();
-    });
-    
+
     // adds touch handlers for each of the menu buttons
     realityEditor.gui.menus.init();
     
@@ -113,6 +111,11 @@ realityEditor.device.onload = function () {
     
     // adjust for iPhoneX size if needed
     realityEditor.device.layout.adjustForScreenSize();
+
+    // prevent touch events on overlayDiv
+    overlayDiv.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+    });
     
     // start TWEEN library for animations
     function animate(time) {
@@ -123,6 +126,13 @@ realityEditor.device.onload = function () {
     
     // start the AR framework in native iOS
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+    
+    // initialize additional features
+    realityEditor.device.touchInputs.initFeature();
+    realityEditor.device.videoRecording.initFeature();
+    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
+    realityEditor.device.touchPropagation.initFeature();
+    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
     
 	this.cout("onload");
 };
