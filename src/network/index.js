@@ -912,7 +912,12 @@ realityEditor.network.onAction = function (action) {
 
 realityEditor.network.onInternalPostMessage = function (e) {
     var msgContent = {};
-    if (e.data) {
+    
+    // catch error when safari sends a misc event
+    if (typeof e === 'object' && typeof e.data === 'object') {
+        msgContent = e.data;
+        
+    } else if (e.data && typeof e.data !== 'object') {
         msgContent = JSON.parse(e.data);
     } else {
         msgContent = JSON.parse(e);

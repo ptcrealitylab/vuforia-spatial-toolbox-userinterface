@@ -70,6 +70,13 @@ realityEditor.device.onload = function () {
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
         globalStates.platform = false;
     }
+    
+    if (realityEditor.device.utilities.isDesktop) {
+        console.log("RUNNING IN DESKTOP BROWSER");
+        realityEditor.device.desktopAdapter.modifyGlobalNamespace();
+        realityEditor.device.desktopAdapter.restyleForDesktop();
+    }
+    
     globalStates.realityState= false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);

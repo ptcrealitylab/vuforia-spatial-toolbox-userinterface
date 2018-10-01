@@ -249,4 +249,8 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
     }
 
     return new Blob(byteArrays, {type: contentType});
-}
+};
+
+realityEditor.device.utilities.isDesktop = function() {
+    return globalStates.platform === 'MacIntel';
+};

@@ -967,7 +967,7 @@ Logic Interface CSS
   position: absolute;
   left: 0;
   top: 0;
-  width: 506px;
+  width: calc(100vw - 62px);
   height: 320px;
   border: none;
 }
@@ -979,7 +979,7 @@ Logic Interface CSS
   position: absolute;
   left: 0;
   top: 0;
-  width: 506px;
+  width: calc(100vw - 62px);
   height: 320px;
 }
 
@@ -1176,15 +1176,15 @@ Logic Interface CSS
     position: absolute;
     left: 0;
     top: 0;
-    width: 506px;
-    height: 320px;
+    width: calc(100vw - 62px);
+    height: calc(100vh);
 }
 
 #pocketScrollBar {
     position: absolute;
     right: 75px;
     top: 5px;
-    height: 305px;
+    height: calc(100vh - 15px);
     width: 70px;
     border: 3px solid cyan;
     border-radius: 10px;
@@ -1195,7 +1195,7 @@ Logic Interface CSS
     /*border: 3px solid cyan;*/
     /*border-radius: 10px;*/
     width: 70px;
-    height: 305px;
+    height: calc(100vh - 15px);
     left: 0;
     top: 0;
 }
