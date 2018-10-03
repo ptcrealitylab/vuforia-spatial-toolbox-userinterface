@@ -63,7 +63,8 @@ var realityEditor = realityEditor || {
             utilities: {},
             speechProcessor: {},
             speechPerformer: {},
-            touchInputs : {}
+            touchInputs : {},
+            desktopAdapter: {}
 		},
 		gui: {
 			ar: {

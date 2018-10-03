@@ -177,8 +177,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         // matrixBroadcastCounter++;
         // if (matrixBroadcastCounter >= matrixBroadcastFrequency) {
         //     matrixBroadcastCounter = 0;
-            realityEditor.app.sendUDPMessage({matrixBroadcast: visibleObjects});
+        //     realityEditor.app.sendUDPMessage({matrixBroadcast: visibleObjects});
         // }
+        
+        realityEditor.device.desktopAdapter.broadcastMatrices(visibleObjects);
+        
     }
 
     // scale x, y, and z elements of matrix for mm to meter conversion ratio
