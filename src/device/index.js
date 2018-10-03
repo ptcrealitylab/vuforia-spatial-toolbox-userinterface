@@ -350,11 +350,18 @@ realityEditor.device.addDocumentTouchListeners = function() {
     document.addEventListener('pointerdown', this.onDocumentPointerDown.bind(this));
     document.addEventListener('pointermove', this.onDocumentPointerMove.bind(this));
     document.addEventListener('pointerup', this.onDocumentPointerUp.bind(this));
-
-    document.addEventListener('touchstart', this.onDocumentMultiTouchStart.bind(this));
-    document.addEventListener('touchmove', this.onDocumentMultiTouchMove.bind(this));
-    document.addEventListener('touchend', this.onDocumentMultiTouchEnd.bind(this));
-    document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+    
+    if (realityEditor.device.utilities.isDesktop()) {
+        document.addEventListener('mousedown', this.onDocumentMultiTouchStart.bind(this));
+        document.addEventListener('mousemove', this.onDocumentMultiTouchMove.bind(this));
+        document.addEventListener('mouseup', this.onDocumentMultiTouchEnd.bind(this));
+        // document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+    } else {
+        document.addEventListener('touchstart', this.onDocumentMultiTouchStart.bind(this));
+        document.addEventListener('touchmove', this.onDocumentMultiTouchMove.bind(this));
+        document.addEventListener('touchend', this.onDocumentMultiTouchEnd.bind(this));
+        document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+    }
 };
 
 /**
@@ -369,9 +376,15 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
     overlayDomElement.addEventListener('pointermove', this.onElementTouchMove.bind(this));
     overlayDomElement.addEventListener('pointerup', this.onElementTouchUp.bind(this));
 
-    // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
-    overlayDomElement.addEventListener('touchend', this.onElementMultiTouchEnd.bind(this));
-    overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
+    if (realityEditor.device.utilities.isDesktop()) {
+        // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
+        overlayDomElement.addEventListener('mouseup', this.onElementMultiTouchEnd.bind(this));
+        // overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
+    } else {
+        // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
+        overlayDomElement.addEventListener('touchend', this.onElementMultiTouchEnd.bind(this));
+        overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
+    }
     
     // give enter and leave events to nodes for when you draw links between them
     if (activeVehicle.type !== 'ui') {
@@ -906,6 +919,29 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     cout("onDocumentPointerUp");
 };
 
+function modifyTouchEventIfDesktop(event) {
+    if (realityEditor.device.utilities.isDesktop()) {
+        event.touches = [];
+        event.touches[0] = {
+            altitudeAngle: 0,
+            azimuthAngle: 0,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            force: 0,
+            identifier: event.timeStamp,
+            pageX: event.pageX,
+            pageY: event.pageY,
+            radiusX: 20,
+            radiusY: 20,
+            rotationAngle: 0,
+            screenX: event.screenX,
+            screenY: event.screenY,
+            target: event.target,
+            touchType: 'direct'
+        };
+    }
+}
+
 /**
  * Exposes all touchstart events to the touchInputs module for additional functionality (e.g. screens).
  * Also keeps track of how many touches are down on the screen right now.
@@ -913,6 +949,8 @@ realityEditor.device.onDocumentPointerUp = function(event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
+    modifyTouchEventIfDesktop(event);
+
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
     cout("onDocumentMultiTouchStart");
     
@@ -947,6 +985,8 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchMove = function (event) {
+    modifyTouchEventIfDesktop(event);
+
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
     
@@ -1116,6 +1156,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchEnd = function (event) {
+    modifyTouchEventIfDesktop(event);
+
     realityEditor.device.touchEventObject(event, "touchend", realityEditor.device.touchInputs.screenTouchEnd);
     cout("onDocumentMultiTouchEnd");
     

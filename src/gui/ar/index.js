@@ -74,6 +74,16 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         return;
     }
 
+    if (realityEditor.device.utilities.isDesktop()) {
+        var scaleFactor = Math.max(1, 0.5 * Math.min(window.innerWidth/568, window.innerHeight/320));
+        matrix[0] *= scaleFactor;
+        matrix[5] *= scaleFactor;
+        matrix[10] *= scaleFactor;
+        globalStates.realProjectionMatrix = matrix;
+        globalStates.projectionMatrix = matrix;
+        return;
+    }
+
     //  generate all transformations for the object that needs to be done ASAP
     var scaleZ = [
         1, 0, 0, 0,
