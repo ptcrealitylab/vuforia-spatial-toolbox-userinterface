@@ -881,8 +881,14 @@
         });
     };
 
+    function isDesktop() {
+        return window.navigator.userAgent.indexOf('Mobile') === -1 || window.navigator.userAgent.indexOf('Macintosh') > -1;
+    }
+
     exports.realityObject = realityObject;
     exports.RealityInterface = RealityInterface;
     exports.HybridObject = RealityInterface;
+    
+    exports.isDesktop = isDesktop;
 
 }(window));
