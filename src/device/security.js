@@ -88,6 +88,7 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
             instantState: globalStates.instantState,
             speechState: globalStates.speechState,
             videoRecordingEnabled: globalStates.videoRecordingEnabled,
+            matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
             externalState: globalStates.externalState,
             discoveryState: globalStates.discoveryState,
             settingsButton : globalStates.settingsButtonState,

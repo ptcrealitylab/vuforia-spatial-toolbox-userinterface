@@ -89,14 +89,18 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
         // console.log('received heartbeat', message);
         realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(message);
         realityEditor.network.addHeartbeatObject(message);
+    
+    } else if (typeof message.action !== 'undefined') {
+        realityEditor.network.onAction(message.action);
     }
+    
 };
 
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     // console.log('got new visible matrices');
 
     // if (globalStates.frozenState.isFrozen) {
-    //     visibleObjects = globalStates.frozenState.visibleObjects;
+    //     visibleObjects = JSON.parse(JSON.stringify(globalStates.frozenState.visibleObjects));
     // }
     
     realityEditor.gui.ar.draw.update(visibleObjects);

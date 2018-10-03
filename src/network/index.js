@@ -1441,6 +1441,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 instantState: globalStates.instantState,
                 speechState: globalStates.speechState,
                 videoRecordingEnabled: globalStates.videoRecordingEnabled,
+                matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1573,6 +1574,22 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     // add any one-time side-effects here:
                     // stop the recording if needed, otherwise there's no UI to stop it
                     realityEditor.device.videoRecording.stopRecording();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.matrixBroadcastEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.matrixBroadcastEnabled) {
+                if (!globalStates.matrixBroadcastEnabled) {
+                    globalStates.matrixBroadcastEnabled = true;
+                    // add any one-time side-effects here
+                    realityEditor.device.desktopAdapter.startBroadcast();
+                }
+            } else {
+                if (globalStates.matrixBroadcastEnabled) {
+                    globalStates.matrixBroadcastEnabled = false;
+                    // add any one-time side-effects here:
+                    realityEditor.device.desktopAdapter.stopBroadcast();
                 }
             }
         }

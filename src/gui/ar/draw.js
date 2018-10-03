@@ -151,6 +151,9 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
 };
 
+// var matrixBroadcastFrequency = 0;
+// var matrixBroadcastCounter = 0;
+
 /**
  * Gets triggered ~60fps by the native app when the AR engine updates with a new set of recognized markers
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
@@ -168,7 +171,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
     
     this.visibleObjects = visibleObjects;
-    
+
+    if (this.globalStates.matrixBroadcastEnabled) {
+        // console.log('send matrices', visibleObjects);
+        // matrixBroadcastCounter++;
+        // if (matrixBroadcastCounter >= matrixBroadcastFrequency) {
+        //     matrixBroadcastCounter = 0;
+            realityEditor.app.sendUDPMessage({matrixBroadcast: visibleObjects});
+        // }
+    }
+
     // scale x, y, and z elements of matrix for mm to meter conversion ratio
     for (objectKey in this.visibleObjects) {
         if (!this.visibleObjects.hasOwnProperty(objectKey)) continue;
@@ -177,7 +189,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.visibleObjects[objectKey][13] *= 1000;
         this.visibleObjects[objectKey][12] *= 1000;
     }
-
+    
     // erases anything on the background canvas
     if (this.globalCanvas.hasContent === true) {
         this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);

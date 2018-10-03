@@ -131,16 +131,16 @@ function debugHideScreenshot() {
 realityEditor.app.setPause = function() {
     this.appFunctionCall('setPause', null, null);
     
-    // globalStates.frozenState = {
-    //     isFrozen: true,
-    //     visibleObjects: JSON.parse(JSON.stringify(realityEditor.gui.ar.draw.visibleObjects))
-    // };
-    //
-    // this.getScreenshot("L", function(base64String) {
-    //     var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
-    //     globalStates.frozenState.screenshotBlobUrl = screenshotBlobUrl;
-    //     debugShowScreenshot(screenshotBlobUrl, true);
-    // });
+    globalStates.frozenState = {
+        isFrozen: true,
+        visibleObjects: JSON.parse(JSON.stringify(realityEditor.gui.ar.draw.visibleObjects))
+    };
+
+    this.getScreenshot("S", function(base64String) {
+        var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
+        globalStates.frozenState.screenshotBlobUrl = screenshotBlobUrl;
+        debugShowScreenshot(screenshotBlobUrl, true);
+    });
 };
 
 /**
@@ -149,13 +149,13 @@ realityEditor.app.setPause = function() {
 realityEditor.app.setResume = function() {
     this.appFunctionCall('setResume', null, null);
     
-    // globalStates.frozenState = {
-    //     isFrozen: false,
-    //     visibleObjects: "",
-    //     screenshotBlobUrl: undefined
-    // };
-    //
-    // debugHideScreenshot();
+    globalStates.frozenState = {
+        isFrozen: false,
+        visibleObjects: "",
+        screenshotBlobUrl: undefined
+    };
+
+    debugHideScreenshot();
 };
 
 /**

@@ -67,6 +67,12 @@ createNameSpace("realityEditor.gui.ar");
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     // globalStates.projectionMatrix = matrix;
+    
+    if (realityEditor.device.utilities.isDesktop()) {
+        globalStates.realProjectionMatrix = matrix;
+        globalStates.projectionMatrix = matrix;
+        return;
+    }
 
     //  generate all transformations for the object that needs to be done ASAP
     var scaleZ = [
@@ -189,7 +195,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         viewportScaling[0] = 568 * scaleRatio;
         viewportScaling[5] = -320 * scaleRatio;
     }
-
+    
     var r = [];
     globalStates.realProjectionMatrix = matrix;
 

@@ -202,6 +202,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.instantState = msg.getSettings.instantState;
             this.states.speechState = msg.getSettings.speechState;
             this.states.videoRecordingEnabled = msg.getSettings.videoRecordingEnabled;
+            this.states.matrixBroadcastEnabled = msg.getSettings.matrixBroadcastEnabled;
             this.states.externalState = msg.getSettings.externalState;
             this.states.discoveryState = msg.getSettings.discoveryState;
             this.states.settingsButton = msg.getSettings.settingsButton;
@@ -216,6 +217,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.setSettings("instantState", this.states.instantState);
             this.setSettings("speechState", this.states.speechState);
             this.setSettings("videoRecordingEnabled", this.states.videoRecordingEnabled);
+            this.setSettings("matrixBroadcastEnabled", this.states.matrixBroadcastEnabled)
             this.setSettings("editingMode", this.states.editingMode);
             this.setSettings("clearSkyState", this.states.clearSkyState);
             this.setSettings("externalText", this.states.externalState);

@@ -71,10 +71,15 @@ realityEditor.device.onload = function () {
         globalStates.platform = false;
     }
     
-    if (realityEditor.device.utilities.isDesktop) {
+    if (realityEditor.device.utilities.isDesktop()) {
         console.log("RUNNING IN DESKTOP BROWSER");
         realityEditor.device.desktopAdapter.modifyGlobalNamespace();
         realityEditor.device.desktopAdapter.restyleForDesktop();
+    } else {
+        console.log("running on mobile device, not desktop");
+        // send this editor's info every 3 seconds in case a new desktop screen opens up and needs the info
+        // // broadcastInterval = setInterval(broadcastEditorInformation, 3000);
+        // setInterval(broad)
     }
     
     globalStates.realityState= false;
