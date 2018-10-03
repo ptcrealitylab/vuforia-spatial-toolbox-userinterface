@@ -252,5 +252,5 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
 };
 
 realityEditor.device.utilities.isDesktop = function() {
-    return globalStates.platform === 'MacIntel';
+    return globalStates.platform === 'MacIntel' || globalStates.platform === false;
 };
