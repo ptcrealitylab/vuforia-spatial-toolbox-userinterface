@@ -69,6 +69,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
 
         container.classList.add('centerVerticallyAndHorizontally');
         
+        
         // center on iPads
         // nodeSettingsContainer.style.marginLeft = globalStates.currentLogic.grid.xMargin + 'px';
         // nodeSettingsContainer.style.marginTop = globalStates.currentLogic.grid.yMargin + 'px';
@@ -76,10 +77,27 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         // container.style.width = logic.grid.gridWidth + 'px';
         // container.style.height = logic.grid.gridHeight + 'px';
         
-        var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
-        container.style.transform = 'scale(' + scaleMultiplier + ')';
+        // container.style.width = 'calc(' + (100.0 / scaleMultiplier) + 'vw - 62px)';
+        container.style.width = '506px';
+        container.style.height = '320px';
+        
+        // TODO: move into desktop module
+        // change display for desktop programming
+        if (realityEditor.device.utilities.isDesktop()) {
+            container.style.left = 'unset';
+            craftingMenusContainer.style.background = 'rgba(0, 0, 0, 0.5)';
+            craftingMenusContainer.style.backdropFilter = 'blur(3px)';
+            craftingMenusContainer.style.webkitBackdropFilter = 'blur(3px)';
+            craftingMenusContainer.style.background = 'rgba(0, 0, 0, 0.5)';
+            var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
+            container.style.transformOrigin = '100% 50%';
+            container.style.transform = 'scale(' + scaleMultiplier + ')';
+        }
 
         craftingMenusContainer.appendChild(container);
+        
+        // var settingsContainer = document.createElement('div');
+        // container.appendChild(settingsContainer);
     
         var menuBlockContainer = document.createElement('div');
         menuBlockContainer.setAttribute('id', 'menuBlockContainer');
@@ -210,6 +228,14 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
      * Update the visuals for each tab to show which one is selected.
      */
     function redisplayTabSelection() {
+
+        // TODO: move into desktop adapter module
+        if (realityEditor.device.utilities.isDesktop()) {
+            document.getElementById("datacraftingCanvas").style.display = '';
+            document.getElementById("blockPlaceholders").style.display = '';
+            document.getElementById("blocks").style.display = '';
+        }
+        
         var guiState = globalStates.currentLogic.guiState;
         guiState.menuTabDivs.forEach(function(tab) {
             if (guiState.menuSelectedTab === tab.tabIndex) {

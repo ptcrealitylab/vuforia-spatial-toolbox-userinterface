@@ -977,10 +977,13 @@ Logic Interface CSS
 #menuContainer {
   /*background-color: #B7B7B7; !*#969696;*!*/
   position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(100vw - 62px);
-  height: 320px;
+  /*left: 0;*/
+  /*top: 0;*/
+  /*width: calc(100vw - 62px);*/
+  /*height: 320px;*/
+  /*top: 50%;*/
+  /*left: 50%;*/
+  /*transform: translate(-50%, -50%);*/
 }
 
 #menuBlockContainer {
@@ -1210,4 +1213,13 @@ Logic Interface CSS
 
 .snappableFrame {
     opacity: 0.6;
+}
+
+#connectionPrompt {
+    color: white;
+    position: absolute;
+    left: 50px;
+    top: 50px;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    size: 50px;
 }
