@@ -126,7 +126,7 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     
     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
     var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.scale' : 'scale';
-    realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
+    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
 };
 
 /**
@@ -174,9 +174,9 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 
     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
     var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.x' : 'x';
-    realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.x);
+    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.x);
     propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.y' : 'y';
-    realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
+    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
     
 };
 
@@ -323,7 +323,7 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     if (shouldBroadcastUpdate) {
         var keys = realityEditor.getKeysFromVehicle(activeVehicle);
         var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
-        realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
+        realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
     }
 };
 

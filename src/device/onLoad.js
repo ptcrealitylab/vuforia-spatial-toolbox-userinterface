@@ -70,6 +70,14 @@ realityEditor.device.onload = function () {
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
         globalStates.platform = false;
     }
+
+    // initialize additional features
+    realityEditor.device.touchInputs.initFeature();
+    realityEditor.device.videoRecording.initFeature();
+    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
+    realityEditor.device.touchPropagation.initFeature();
+    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
+    realityEditor.network.realtime.initFeature();
     
     if (realityEditor.device.utilities.isDesktop()) {
         console.log("RUNNING IN DESKTOP BROWSER");
@@ -138,14 +146,6 @@ realityEditor.device.onload = function () {
     
     // start the AR framework in native iOS
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
-    
-    // initialize additional features
-    realityEditor.device.touchInputs.initFeature();
-    realityEditor.device.videoRecording.initFeature();
-    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
-    realityEditor.device.touchPropagation.initFeature();
-    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
-    realityEditor.network.realtime.initFeature();
     
 	this.cout("onload");
 };
