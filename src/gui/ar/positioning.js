@@ -123,6 +123,10 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     } else {
         realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, radius);
     }
+    
+    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.scale' : 'scale';
+    realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
 };
 
 /**
@@ -167,6 +171,13 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
         positionData.y = newPosition.y;
 
     }
+
+    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.x' : 'x';
+    realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.x);
+    propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.y' : 'y';
+    realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
+    
 };
 
 /**
@@ -275,6 +286,8 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
  */
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     
+    var shouldBroadcastUpdate = false;
+    
     if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         console.warn('trying to set position data matrix for something other than a frame or logic');
         
@@ -290,6 +303,7 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
         var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (parentFrame.location === 'local') {
             activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+            shouldBroadcastUpdate = true;
         }
     }
     
@@ -297,11 +311,19 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     
     if (activeVehicle.type === 'logic') {
         activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        shouldBroadcastUpdate = true;
         
     // frames set their AR matrix
         
     } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
         activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        shouldBroadcastUpdate = true;
+    }
+
+    if (shouldBroadcastUpdate) {
+        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
+        realityEditor.device.desktopAdapter.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
     }
 };
 

@@ -145,6 +145,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
     realityEditor.device.touchPropagation.initFeature();
     realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
+    realityEditor.network.realtime.initFeature();
     
 	this.cout("onload");
 };
