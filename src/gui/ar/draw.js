@@ -82,6 +82,9 @@ realityEditor.gui.ar.draw.nodeCalculations = {
     y: 0,
     rectPoints: []
 };
+/**
+ * @type {{temp: number[], begin: number[], end: number[], r: number[], r2: number[], r3: number[]}}
+ */
 realityEditor.gui.ar.draw.matrix = {
     temp: [
         1, 0, 0, 0,
@@ -151,9 +154,6 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
 };
 
-// var matrixBroadcastFrequency = 0;
-// var matrixBroadcastCounter = 0;
-
 /**
  * Gets triggered ~60fps by the native app when the AR engine updates with a new set of recognized markers
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
@@ -172,16 +172,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     
     this.visibleObjects = visibleObjects;
 
+    // TODO: push into an updateListener so that there isn't a circular dependency with desktopAdapter
     if (this.globalStates.matrixBroadcastEnabled) {
-        // console.log('send matrices', visibleObjects);
-        // matrixBroadcastCounter++;
-        // if (matrixBroadcastCounter >= matrixBroadcastFrequency) {
-        //     matrixBroadcastCounter = 0;
-        //     realityEditor.app.sendUDPMessage({matrixBroadcast: visibleObjects});
-        // }
-        
         realityEditor.device.desktopAdapter.broadcastMatrices(visibleObjects);
-        
     }
 
     // scale x, y, and z elements of matrix for mm to meter conversion ratio
@@ -479,6 +472,20 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 };
 
+/**
+ * Detach the oldFrameKey frame from oldObjectKey object,
+ * and attach instead to newObjectKey object, assigning it a new uuid of newFrameKey.
+ * Also needs to rename all of its nodes with correct paths,
+ * update all relevant DOM element ids,
+ * possibly update the editing state and screen object pointers,
+ * delete the old frame from the old object server and upload to the new object server,
+ * and modify all of the links going to and from its nodes,
+ * syncing links with the server so that data gets routed correctly.
+ * @param {string} oldObjectKey
+ * @param {string} oldFrameKey
+ * @param {string} newObjectKey
+ * @param {string} newFrameKey
+ */
 realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey) {
     
     if (oldObjectKey === newObjectKey && oldFrameKey === newFrameKey) return; // don't need to do anything
@@ -664,6 +671,10 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     });
 };
 
+/**
+ * When a transition frame is dropped somewhere it cannot be transferred to (empty space, no object visible),
+ * returns the frame back to the position where it came from. Update state and remove DOM elements if necessary.
+ */
 realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     
     // (activeKey, activeVehicle, globalDOMCache, cout
@@ -690,6 +701,15 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     globalStates.inTransitionFrame = null;
 };
 
+/**
+ * When an inTransitionFrame is dropped onto an object, assign it new matrices to try to preserve its position,
+ * and call the moveFrameToNewObject function to do the majority of the work of reassigning it to the new object
+ * @param {string} oldObjectKey
+ * @param {string} oldFrameKey
+ * @param {string} newObjectKey
+ * @param {string} newFrameKey
+ * @param {{x: number, y: number}|undefined} optionalPosition - if provided, translate to that (x,y) otherwise use (0,0)
+ */
 realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
     
     this.moveFrameToNewObject(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey);
@@ -699,9 +719,9 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     
-    // fixme: quick fix to allow better pushing into screens
     var newObject = realityEditor.getObject(newObjectKey);
     
+    // TODO: figure out dropping frames between objects of different sizes
     // var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
     // var newObjectTargetWidth = newObject.targetSize.width;
     // var scaleFactor = 1;
@@ -710,6 +730,10 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     //     frame.ar.scale *= scaleFactor;
     // }
     
+    // TODO: bugfix this
+    // fixme: quick fix to allow better pushing into screens
+    // screen interactions break when we use the slightly buggy matrix computed in the other case, so if the new object
+    // is a screen object, instead we reset its matrix to the marker plane.
     if (newObject.visualization === 'screen') {
 
         frame.ar.x = 0;
@@ -721,8 +745,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         }
 
         frame.ar.matrix = [];
-        frame.begin =  realityEditor.gui.ar.utilities.newIdentityMatrix();
-        frame.temp =  realityEditor.gui.ar.utilities.newIdentityMatrix();
+        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
         if (frame.ar.scale > globalStates.defaultScale/2) {
             frame.ar.scale *= 0.5;
@@ -730,6 +754,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         
     } else {
         
+        // try to calculate the matrix that preserves the frame's visual location relative to the camera,
+        // but placed on the new object rather than its old object
         frame.ar.x = 0;
         frame.ar.y = 0;
         
@@ -763,10 +789,31 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
 };
 
 /**
- * @desc
- * @return {Boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
- **/
-
+ * (One of the most important and heavily-used functions in the Editor.)
+ * Renders a specific frame or node with the correct CSS3D transformations based on all application state.
+ * Also determines if the DOM element needs to be shown or hidden.
+ * The long list of parameters is for optimization purposes. Using a local variable is faster than a global one,
+ *   so references to many global variables are passed in as shortcuts. This function gets called 60 FPS for every
+ *   frame and node on any currently-visible objects, so small optimizations here make a big difference on performance.
+ * @param visibleObjects - contains the modelview matrices for visible objects
+ * @param objectKey - the uuid of the object that this frame or node belongs to
+ * @param activeKey - the uuid of the frame or node to render
+ * @param activeType - 'node' or 'ui' depending on if it's a node or frame element
+ * @param activeVehicle - the Frame or Node reference. "Vehicle" means "Frame or Node". (something you can move)
+ * @param notLoading - starts false when this vehicle's element is initialized. gets set to the vehicle's uuid when it loads
+ * @param globalDOMCache - reference to global variable
+ * @param globalStates - reference to global variable
+ * @param globalCanvas - reference to global variable
+ * @param activeObjectMatrix - the result of multiplying the object's modelview matrix, the projection matrix, and the screen rotation matrix
+ * @param matrix - object containing several matrix references that can be used as temporary registers for multiplication results.
+ *      includes matrix.temp, matrix.begin, matrix.end, matrix.r, matrix.r2, and matrix.r3
+ * @param finalMatrix - stores the resulting final CSS3D matrix for the vehicle @todo this doesnt seem to be used anywhere?
+ * @param utilities - reference to realityEditor.gui.ar.utilities
+ * @param nodeCalculations - reference to realityEditor.gui.ar.draw.nodeCalculations
+ * @param cout - reference to debug logging function
+ * @return {boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
+ * @todo finish documenting function
+ */
 realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
 
@@ -1223,17 +1270,26 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
 };
 
+/**
+ * Temporarily disabled function that will snap the frame to the marker plane
+ * (by removing its rotation components) if the amount of rotation is very small
+ * @todo: only do this if it is also close to the marker plane in the Z direction
+ * @param {Frame|Node} activeVehicle
+ * @param {string} activeKey
+ */
 realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, activeKey) {
     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
     
-    // snap to the marker plane if it is almost on it
+    // start with the frame's matrix
     var snappedMatrix = this.ar.utilities.copyMatrix(positionData.matrix);
 
+    // calculate its rotation in Euler Angles about the X and Y axis, using a bunch of quaternion math in the background
     var xRotation = this.ar.utilities.getRotationAboutAxisX(snappedMatrix);
     var yRotation = this.ar.utilities.getRotationAboutAxisY(snappedMatrix);
     var snapX = false;
     var snapY = false;
 
+    // see if the xRotation is close enough to neutral
     if (0.5 - Math.abs( Math.abs(xRotation) / Math.PI - 0.5) < 0.05) {
         // globalDOMCache["iframe" + activeKey].classList.add('snapX');
         snapX = true;
@@ -1241,6 +1297,7 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
         // globalDOMCache["iframe" + activeKey].classList.remove('snapX');
     }
 
+    // see if the yRotation is close enough to neutral
     if (0.5 - Math.abs( Math.abs(yRotation) / Math.PI - 0.5) < 0.05) {
         // globalDOMCache["iframe" + activeKey].classList.add('snapY');
         snapY = true;
@@ -1248,6 +1305,13 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
         // globalDOMCache["iframe" + activeKey].classList.remove('snapY');
     }
 
+    /**
+     * Removes all rotation components from a modelView matrix
+     * Given a modelview matrix, computes its rotation as a quaternion, find the inverse, and multiplies the original
+     * matrix by that inverse rotation to remove its rotation
+     * @param {Array.<number>} mat
+     * @return {Array}
+     */
     function computeSnappedMatrix(mat) {
         var res = [];
         var rotationQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
@@ -1257,13 +1321,19 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
         return res;
     }
 
+    
     globalDOMCache["iframe" + activeKey].classList.remove('snappableFrame');
 
     if ( !realityEditor.device.isEditingUnconstrained(activeVehicle) && snapX && snapY) {
+        
+        // actually update the frame's matrix if meets the conditions
         snappedMatrix = computeSnappedMatrix(this.ar.utilities.copyMatrix(positionData.matrix));
         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
         console.log('snapped');
+        
     } else if (snapX && snapY) {
+        
+        // otherwise if it is close but you are still moving it, show some visual feedback to warn you it will snap
         globalDOMCache["iframe" + activeKey].classList.add('snappableFrame');
     }
 };
@@ -1276,6 +1346,7 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  * @param {number} frameY
  * @param {number} frameScale
  * @return {Array}
+ * @todo: still unsure if this is completely correct. order of rotation, scale, and translation matters.
  */
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
     var utils = realityEditor.gui.ar.utilities;
@@ -1417,9 +1488,12 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
 };
 
 /**
- * @desc
- * @return
- **/
+ * Hides the DOM elements for a specified frame or node if they still exist and are visible
+ * @param {string} activeKey
+ * @param {Frame|Node} activeVehicle
+ * @param {Object} globalDOMCache
+ * @param {function} cout
+ */
 realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, globalDOMCache, cout) {
     
     var doesDOMElementExist = !!globalDOMCache['object' + activeKey];
@@ -1490,10 +1564,16 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 };
 
 /**
- * @desc
- * @return
- **/
-
+ * If needed, creates the DOM element for a given frame or node
+ * Can be safely called multiple times for the same element (knows to ignore if its already been loaded)
+ * @param {string} thisUrl - the iframe src url
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} activeType - 'ui', 'node', 'logic', etc, to tag the element with
+ * @param {Frame|Node} activeVehicle - reference to the frame or node to create.
+ *                                     it's properties are used to instantiate the correct DOM element.
+ */
 realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, nodeKey, activeType, activeVehicle) {
 
     var activeKey = (!!nodeKey) ? nodeKey : frameKey;
@@ -1502,45 +1582,38 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
         
         console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
-        // console.log("(active key is " + activeKey + ")");
 
         this.notLoading = activeKey;
         
         // assign the element some default properties if they don't exist
-
         if (typeof activeVehicle.frameSizeX === 'undefined') {
             activeVehicle.frameSizeX = activeVehicle.width || 220;
         } 
         if (typeof activeVehicle.width === 'undefined') {
             activeVehicle.width = activeVehicle.frameSizeX;
         }
-
         if (typeof activeVehicle.frameSizeY === 'undefined') {
             activeVehicle.frameSizeY = activeVehicle.height || 220;
         }
         if (typeof activeVehicle.height === 'undefined') {
             activeVehicle.height = activeVehicle.frameSizeY;
         }
-        
-        activeVehicle.animationScale = 0;
-        activeVehicle.loaded = true;
-        activeVehicle.visibleEditing = false;
-
         if (typeof activeVehicle.begin !== "object") {
             activeVehicle.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
-
         if (typeof activeVehicle.temp !== "object") {
             activeVehicle.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
+        activeVehicle.animationScale = 0;
+        activeVehicle.loaded = true;
+        activeVehicle.visibleEditing = false;
         
-        // Create DOM elements for everything associated with this frame/node
-        
+        // determine if the frame should be loaded locally or from the server (by default thisUrl points to server)
         if (isFrameElement && activeVehicle.location === 'global') {
-            // This line loads frame locally from userinterface/frames directory
-            thisUrl = 'frames/' + activeVehicle.src + '.html';
+            thisUrl = 'frames/' + activeVehicle.src + '.html'; // loads the frame locally from the /frames/ directory
         }
 
+        // Create DOM elements for everything associated with this frame/node
         var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
         var addContainer = domElements.addContainer;
         var addIframe = domElements.addIframe;
@@ -1563,26 +1636,36 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
             globalDOMCache["logic" + activeKey] = addLogic;
         }
 
-        // Finally, append all the created elements to the DOM in the correct order...
-        
+        // append all the created elements to the DOM in the correct order...
         document.getElementById("GUI").appendChild(addContainer);
         addContainer.appendChild(addIframe);
         addContainer.appendChild(addOverlay);
         addOverlay.appendChild(addSVG);
 
+        // cache references to these elements to more efficiently retrieve them in the future
         globalDOMCache[addContainer.id] = addContainer;
         globalDOMCache[addIframe.id] = addIframe;
         globalDOMCache[addOverlay.id] = addOverlay;
         globalDOMCache[addSVG.id] = addSVG;
         
-        // Add touch event listeners
-        
+        // add touch event listeners
         realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
-        
     }
-    
 };
 
+/**
+ * Instantiates the many different DOM elements that make up a frame or node.
+ *      addContainer - holds all the different pieces of this element
+ *      addIframe - loads in the content for this frame, e.g. a graph or three.js scene, or a node graphic
+ *      addOverlay - an invisible overlay that catches touch events and passes into the iframe if needed
+ *      addSVG - a visual feedback image that displays when you are dragging the element around
+ * @param {string} iframeSrc
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {Frame|Node} activeVehicle
+ * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement}}
+ */
 realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
 
     var activeKey = (!!nodeKey) ? nodeKey : frameKey;
@@ -1663,6 +1746,12 @@ realityEditor.gui.ar.draw.updateLogicNodeIcon = function(activeVehicle) {
     }
 };
 
+/**
+ * Creates the DOM element for a Logic Node
+ * @param {Frame|Node} activeVehicle
+ * @param {string} activeKey
+ * @return {HTMLDivElement}
+ */
 realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey) {
     var size = 200;
     var addLogic = document.createElement('div');
@@ -1710,6 +1799,11 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
     return addLogic;
 };
 
+/**
+ * Helper function checks if the specified object contains any frame with sticky fullscreen property.
+ * @param {string} objectKey
+ * @return {boolean}
+ */
 realityEditor.gui.ar.draw.doesObjectContainStickyFrame = function(objectKey) {
     var object = realityEditor.getObject(objectKey);
     return Object.keys(object.frames).map(function(frameKey) {
@@ -1720,12 +1814,11 @@ realityEditor.gui.ar.draw.doesObjectContainStickyFrame = function(objectKey) {
 };
 
 /**
- * @desc
- * @param objectKey
- * @param thisObject
- * @return
- **/
-
+ * Fully deletes DOM elements and unloads frames and nodes if they have been invisible for 3+ seconds
+ * @param {string} activeKey
+ * @param {string} activeVehicle
+ * @param {Object} globalDOMCache
+ */
 realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, globalDOMCache) {
     if(!activeVehicle.visibleCounter) {
         return;
@@ -1775,6 +1868,12 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     }
 };
 
+/**
+ * Fully delete the DOM element for a specific frame or node
+ * (to be triggered when that frame or node is dropped on the trash)
+ * @param {string} thisActiveVehicleKey
+ * @param {Frame|Node} thisActiveVehicle
+ */
 realityEditor.gui.ar.draw.killElement = function (thisActiveVehicleKey, thisActiveVehicle) {
     thisActiveVehicle.loaded = false;
     globalDOMCache["object" + thisActiveVehicleKey].parentNode.removeChild(globalDOMCache["object" + thisActiveVehicleKey]);
@@ -1785,9 +1884,15 @@ realityEditor.gui.ar.draw.killElement = function (thisActiveVehicleKey, thisActi
     delete globalDOMCache[thisActiveVehicleKey];
 };
 
+/**
+ * Delete a node from a frame. Remove it from the frame's nodes list, and remove the DOM elements.
+ * @param {string} objectId
+ * @param {string} frameId
+ * @param {string} nodeId
+ */
 realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
     var thisFrame = realityEditor.getFrame(objectId, frameId);
-    if (!thisFrame) return null;
+    if (!thisFrame) return;
 
     delete thisFrame.nodes[nodeId];
     if (this.globalDOMCache["object" + nodeId]) {
@@ -1799,9 +1904,13 @@ realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
     delete this.globalDOMCache["iframe" + nodeId];
     delete this.globalDOMCache[nodeId];
     delete this.globalDOMCache["svg" + nodeId];
-
 };
 
+/**
+ * Delete a frame from an object. Remove it from the objects's frames list, and remove the DOM elements.
+ * @param {string} objectId
+ * @param {string} frameId
+ */
 realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
 
     delete objects[objectId].frames[frameId];
@@ -1827,6 +1936,10 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
     }
 };
 
+////////////////////////////////////////////////////////////////////////////////////////
+// Not used currently, but maintains a stack of the most recently dragged frames/nodes,
+// can be used for z-index depth issues, e.g. render more recently editing frames on top
+////////////////////////////////////////////////////////////////////////////////////////
 realityEditor.gui.ar.draw.pushEditedNodeToFront = function(nodeKey) {
     this.removeFromEditedNodesList(nodeKey);
     globalStates.mostRecentlyEditedNodes.push(nodeKey);
@@ -1864,9 +1977,34 @@ realityEditor.gui.ar.draw.getNodeRenderPriority = function(nodeKey) {
         length: globalStates.mostRecentlyEditedNodes.length
     }
 };
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 
 // simulates drawing... TODO: simplify this and make it only work for frames? or maybe nodes too...
 
+/**
+ * Simulates the calculations from drawTransformed, for the purpose of updating a frame's mostRecentFinalMatrix,
+ * but without changing the CSS. Necessary for the moveVehicleToScreenCoordinate calculations, which reset the frame's
+ * ar.x and ar.y coordinates before moving, so we need to calculate the final matrix without x and y.
+ * @param visibleObjects
+ * @param objectKey
+ * @param activeKey
+ * @param activeType
+ * @param activeVehicle
+ * @param notLoading
+ * @param globalDOMCache
+ * @param globalStates
+ * @param globalCanvas
+ * @param activeObjectMatrix
+ * @param matrix
+ * @param finalMatrix
+ * @param utilities
+ * @param nodeCalculations
+ * @param cout
+ * @return {*}
+ * @todo: simplify this! there shouldnt be a need for so much duplicate code. might even be a simple matrix multiplication to take
+ * @todo:       mostRecentFinalMatrix * translation^-1    which would give the same result as this function for the use cases I'm doing
+ */
 realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
 
     if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
