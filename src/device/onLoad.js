@@ -79,19 +79,9 @@ realityEditor.device.onload = function () {
     realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
     realityEditor.network.realtime.initFeature();
     realityEditor.device.hololensAdapter.initFeature();
+    realityEditor.device.desktopAdapter.initFeature();
     
-    if (realityEditor.device.utilities.isDesktop()) {
-        console.log("RUNNING IN DESKTOP BROWSER");
-        realityEditor.device.desktopAdapter.modifyGlobalNamespace();
-        realityEditor.device.desktopAdapter.restyleForDesktop();
-    } else {
-        console.log("running on mobile device, not desktop");
-        // send this editor's info every 3 seconds in case a new desktop screen opens up and needs the info
-        // // broadcastInterval = setInterval(broadcastEditorInformation, 3000);
-        // setInterval(broad)
-    }
-    
-    globalStates.realityState= false;
+    globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
@@ -120,8 +110,8 @@ realityEditor.device.onload = function () {
 
 	// set up the global canvas for drawing the links
 	globalCanvas.canvas = document.getElementById('canvas');
-	globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
-	globalCanvas.canvas.height = globalStates.width;
+    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
+    globalCanvas.canvas.height = globalStates.width;
 	globalCanvas.context = canvas.getContext('2d');
 
     // add a callback for messages posted up to the application from children iframes
@@ -139,11 +129,10 @@ realityEditor.device.onload = function () {
     });
     
     // start TWEEN library for animations
-    function animate(time) {
+    (function animate(time) {
         requestAnimationFrame(animate);
         TWEEN.update(time);
-    }
-    animate();
+    })();
     
     // start the AR framework in native iOS
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
