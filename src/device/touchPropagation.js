@@ -12,9 +12,9 @@ createNameSpace("realityEditor.device.touchPropagation");
     
     function initFeature() {
         
-        realityEditor.network.addFrameMessageHandler('unacceptedTouch', handleUnacceptedTouch);
+        realityEditor.network.addPostMessageHandler('unacceptedTouch', handleUnacceptedTouch);
 
-        realityEditor.network.addFrameMessageHandler('acceptedTouch', handleAcceptedTouch);
+        realityEditor.network.addPostMessageHandler('acceptedTouch', handleAcceptedTouch);
 
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);

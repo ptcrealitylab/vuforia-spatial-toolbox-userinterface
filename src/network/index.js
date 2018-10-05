@@ -52,7 +52,7 @@ createNameSpace("realityEditor.network");
 /**
  * @type {Array.<{messageName: string, callback: function}>}
  */
-realityEditor.network.frameMessageHandlers = [];
+realityEditor.network.postMessageHandlers = [];
 
 /**
  * Creates an extendable method for other modules to register callbacks that will be triggered
@@ -60,8 +60,8 @@ realityEditor.network.frameMessageHandlers = [];
  * @param {string} messageName
  * @param {function} callback
  */
-realityEditor.network.addFrameMessageHandler = function(messageName, callback) {
-    this.frameMessageHandlers.push({
+realityEditor.network.addPostMessageHandler = function(messageName, callback) {
+    this.postMessageHandlers.push({
         messageName: messageName,
         callback: callback
     });
@@ -922,11 +922,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
     } else {
         msgContent = JSON.parse(e);
     }
-
+    
     // console.log("      onInternalPostMessage");
     // console.log("frame: " + msgContent.frame + ", node: " + msgContent.node + ", width: " + msgContent.width);
     // console.log("\n\n");
 
+    // iterates over all registered postMessageHandlers to trigger events in various modules
+    this.postMessageHandlers.forEach(function(messageHandler) {
+        if (typeof msgContent[messageHandler.messageName] !== 'undefined') {
+            messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
+        }
+    });
+    
     if (typeof msgContent.settings !== "undefined") {
         realityEditor.network.onSettingPostMessage(msgContent);
         return;
@@ -1367,13 +1374,6 @@ if (thisFrame) {
         
     }
     
-    // iterates over all registered frameMessageHandlers to trigger events in various modules
-    this.frameMessageHandlers.forEach(function(messageHandler) {
-        if (typeof msgContent[messageHandler.messageName] !== 'undefined') {
-            messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
-        }
-    });
-    
 };
 
 realityEditor.network.loadLogicIcon = function(data) {
@@ -1442,6 +1442,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 speechState: globalStates.speechState,
                 videoRecordingEnabled: globalStates.videoRecordingEnabled,
                 matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
+                hololensModeEnabled: globalStates.hololensModeEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1590,6 +1591,26 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.matrixBroadcastEnabled = false;
                     // add any one-time side-effects here:
                     realityEditor.device.desktopAdapter.stopBroadcast();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.hololensModeEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.hololensModeEnabled) {
+                if (!globalStates.hololensModeEnabled) {
+                    globalStates.hololensModeEnabled = true;
+                    // add any one-time side-effects here
+                    // realityEditor.device.desktopAdapter.startBroadcast();
+                    console.log('hololens mode enabled...');
+                    realityEditor.device.hololensAdapter.toggleHololensMode(true);
+                }
+            } else {
+                if (globalStates.hololensModeEnabled) {
+                    globalStates.hololensModeEnabled = false;
+                    // add any one-time side-effects here:
+                    // realityEditor.device.desktopAdapter.stopBroadcast();
+                    console.log('hololens mode disabled...');
+                    realityEditor.device.hololensAdapter.toggleHololensMode(false);
                 }
             }
         }

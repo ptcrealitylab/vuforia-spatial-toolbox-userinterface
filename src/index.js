@@ -65,8 +65,9 @@ var realityEditor = realityEditor || {
             speechPerformer: {},
             touchInputs : {},
             touchPropagation: {},
-            desktopAdapter: {}
-		},
+            desktopAdapter: {},
+            hololensAdapter: {}
+        },
 		gui: {
 			ar: {
 				draw: {

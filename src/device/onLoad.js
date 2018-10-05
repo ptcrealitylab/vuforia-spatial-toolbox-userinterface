@@ -78,6 +78,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.touchPropagation.initFeature();
     realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
     realityEditor.network.realtime.initFeature();
+    realityEditor.device.hololensAdapter.initFeature();
     
     if (realityEditor.device.utilities.isDesktop()) {
         console.log("RUNNING IN DESKTOP BROWSER");

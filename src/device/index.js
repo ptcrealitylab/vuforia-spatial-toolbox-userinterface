@@ -336,7 +336,7 @@ realityEditor.device.registerCallback = function(functionName, callback) {
 realityEditor.device.triggerCallbacks = function(functionName, params) {
     if (typeof this.callbacks[functionName] === 'undefined') return;
     
-    // iterates over all registered frameMessageHandlers to trigger events in various modules
+    // iterates over all registered callbacks to trigger events in various modules
     this.callbacks[functionName].forEach(function(callback) {
         callback(params);
     });
