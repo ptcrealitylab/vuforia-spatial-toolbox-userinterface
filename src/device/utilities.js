@@ -251,6 +251,11 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
     return new Blob(byteArrays, {type: contentType});
 };
 
+/**
+ * Utility function to determine if the editor is loaded on a desktop browser or within the full mobile app.
+ * @todo: make more robust so that loading on a mobile safari browser is distinguisable from within the Reality Editor app
+ * @return {boolean}
+ */
 realityEditor.device.utilities.isDesktop = function() {
     return window.navigator.userAgent.indexOf('Mobile') === -1 || window.navigator.userAgent.indexOf('Macintosh') > -1;
     // return globalStates.platform === 'MacIntel' || globalStates.platform === false;

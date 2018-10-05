@@ -10,6 +10,7 @@ createNameSpace("realityEditor.device.videoRecording");
 
 (function(exports) {
 
+    //TODO: no need to keep in privateState object - can be independent local variables
     var privateState = {
         isRecording: false,
         visibleObjects: {},
@@ -91,7 +92,15 @@ createNameSpace("realityEditor.device.videoRecording");
         privateState.recordingObjectKey = null;
         getRecordingIndicator().style.display = 'none';
     }
-    
+
+    /**
+     * Programmatically generates a videoRecording frame, attached to the specified object at the given location,
+     * with the provided videoId which can be used to download the video file from the server.
+     * @param {string} objectKey - objectId to attach to
+     * @param {string} videoId - uuid of the video file (without the .mp4)
+     * @param {Array.<number>} objectMatrix - the matrix at the camera position when you stop recording.
+     *   if the object isn't visible, uses the camera position from when you started recording.
+     */
     function createVideoFrame(objectKey, videoId, objectMatrix) {
         if (typeof objectMatrix === 'undefined') {
             objectMatrix = privateState.startMatrix;
@@ -128,23 +137,18 @@ createNameSpace("realityEditor.device.videoRecording");
         frame.height = frame.frameSizeY;
         console.log('created video frame with width/height' + frame.width + '/' + frame.height);
         frame.loaded = false;
-        // frame.objectVisible = true;
         frame.screen = {
             x: frame.ar.x,
             y: frame.ar.y,
             scale: frame.ar.scale
         };
-        // frame.screenX = 0;
-        // frame.screenY = 0;
         frame.screenZ = 1000;
         frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
 
-        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
         frame.fullScreen = false;
         frame.sendMatrix = false;
         frame.sendAcceleration = false;
-        frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
-        // thisFrame.visible = false;
+        frame.integerVersion = 300;
 
         // add each node with a non-empty name
 
@@ -180,27 +184,11 @@ createNameSpace("realityEditor.device.videoRecording");
             }
             
         });
-        
-        // var nodeName = 'storage';
-        // var nodeType = 'storeData';
-        // var nodeUuid = frameKey + nodeName;
-        // frame.nodes[nodeUuid] = new Node();
-        // var addedNode = frame.nodes[nodeUuid];
-        // addedNode.objectId = objectKey;
-        // addedNode.frameId = frameKey;
-        // addedNode.name = nodeName;
-        // addedNode.type = nodeType;
-        // addedNode.frameSizeX = 220;
-        // addedNode.frameSizeY = 220;
-        // addedNode.scale = globalStates.defaultScale;
-        
-        // frame.nodes[frameKey + 'storage'].publicData = {
-        //     data: videoPath
-        // };
 
         object.frames[frameKey] = frame;
         console.log(frame);
 
+        // position it in front of the camera
         moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix);
         
         // send it to the server
@@ -229,16 +217,24 @@ createNameSpace("realityEditor.device.videoRecording");
     }
 
     // TODO: turn into a cleaner, more reusable function in a better location
+    /**
+     * Calculates what the frame.ar.matrix needs to be in order to place the frame at the camera position on the provided object.
+     * Usually objectMatrix is the current visibleObjects matrix for this object, but by saving the matrix from a previous
+     * time, you can place the frame at the camera position that the camera was at at the time you saved the objectMatrix.
+     * @param {string} objectKey
+     * @param {string} frameKey
+     * @param {Array.<number>} objectMatrix
+     */
     function moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix) {
         frame = realityEditor.getFrame(objectKey, frameKey);
-// recompute frame.temp for the new object
+        
+        // recompute frame.temp for the new object
         var res1 = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(objectMatrix, globalStates.projectionMatrix, res1);
-        console.log(rotateX, res1, frame.temp)
         realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
-        console.log('temp', frame.temp);
         frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
-// compute frame.matrix based on new object
+        
+        // compute frame.matrix based on new object
         var resultMatrix = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
         realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
@@ -271,25 +267,26 @@ createNameSpace("realityEditor.device.videoRecording");
     //////////////////////////////////////////
     //     Video Recording Within Frame     //
     //////////////////////////////////////////
-    
-    // function triggerVideoStoppedCallback(objectKey, frameKey) {
-    //     var object = realityEditor.getObject(objectKey);
-    //     var thisMsg = {
-    //         videoFilePath: 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/test.mp4'
-    //     };
-    //     globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
-    // }
 
+    /**
+     * Public method that lets another module trigger video recording. Providing the frame path allows us to store
+     * the object's matrix at the time of starting the recording, so that the resulting frame can be placed correctly.
+     * @param {string} objectKey
+     * @param {string} frameKey
+     */
     function startRecordingForFrame(objectKey, frameKey) {
         var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
         realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
     }
-    
+
+    /**
+     * Stop the video recording, and send a message with its videoFilePath into the frame that triggered the action 
+     * @param {string} objectKey
+     * @param {string} frameKey
+     */
     function stopRecordingForFrame(objectKey, frameKey) {
         var videoId = realityEditor.device.utilities.uuidTime();
         realityEditor.app.stopVideoRecording(videoId);
-        // triggerVideoStoppedCallback(objectKey, frameKey); // TODO: this isnt working yet
-        
         var object = realityEditor.getObject(objectKey);
         var thisMsg = {
             videoFilePath: 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/' + videoId + '.mp4'
@@ -307,6 +304,5 @@ createNameSpace("realityEditor.device.videoRecording");
 
     exports.startRecordingForFrame = startRecordingForFrame;
     exports.stopRecordingForFrame = stopRecordingForFrame;
-
-
+    
 }(realityEditor.device.videoRecording));

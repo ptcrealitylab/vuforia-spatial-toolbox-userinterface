@@ -7,20 +7,34 @@ createNameSpace("realityEditor.device.touchPropagation");
  */
 
 (function(exports) {
-    
-    var cachedTarget = null;
-    
-    function initFeature() {
-        
-        realityEditor.network.addPostMessageHandler('unacceptedTouch', handleUnacceptedTouch);
 
+    /**
+     * The cachedTarget stores which frame ultimately accepted your touchdown event,
+     * so that it can be used as the target for future touchmove events rather than recalculating each time.
+     * @type {string} - uuid of the frame
+     */
+    var cachedTarget = null;
+
+    /**
+     * Sets up the touch propagation model by listening for accepted and unaccepted touches
+     */
+    function initFeature() {
+        // listen for messages posted up from frame content windows
+        realityEditor.network.addPostMessageHandler('unacceptedTouch', handleUnacceptedTouch);
         realityEditor.network.addPostMessageHandler('acceptedTouch', handleAcceptedTouch);
 
+        // be notified when certain touch event functions get triggered in device/index.js
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
-        
     }
-    
+
+    /**
+     * When a touch goes into an frame that has registered a touchDecider function, it has the option to reject a touch
+     * (meaning the touch did not collide with any of its contents). In this case, we calculate the next frame underneath
+     * that one, (if any), and send the touch into it to see whether this one will accept it.
+     * @param {{x: number, y: number, pointerId: number, type: string, pointerType: string}} eventData - touch event data
+     * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
+     */
     function handleUnacceptedTouch(eventData, fullMessageContent) {
 
         // clear the timer that would start dragging the previously traversed frame
@@ -65,7 +79,14 @@ createNameSpace("realityEditor.device.touchPropagation");
         }
 
     }
-    
+
+    /**
+     * When a touch goes into a frame and the frame doesn't actively reject it, it will send back
+     * an acceptedTouch message. When we receive this, cache the target frame as a shortcut for
+     * future touch events, and restore any state that was modified while searching for this target.
+     * @param {{x: number, y: number, pointerId: number, type: string, pointerType: string}} eventData - touch event data
+     * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
+     */
     function handleAcceptedTouch(eventData, fullMessageContent) {
         if (eventData.type === 'pointerdown') {
             cachedTarget = fullMessageContent.frame;
@@ -75,7 +96,7 @@ createNameSpace("realityEditor.device.touchPropagation");
     }
 
     /**
-     * Remove tag from frames that have been hidden for the current touch
+     * Remove tag from frames that have been hidden for the current touch.
      */
     function stopHidingFramesForTouchDuration() {
         [].slice.call(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
@@ -84,6 +105,7 @@ createNameSpace("realityEditor.device.touchPropagation");
     }
 
     /**
+     * Helper function to trigger a fake pointer event on the specified target
      * @param {HTMLElement} target
      * @param {{x: number, y: number, pointerId: number, type: string, pointerType: string}} eventData
      */
@@ -105,7 +127,11 @@ createNameSpace("realityEditor.device.touchPropagation");
         });
         target.dispatchEvent(syntheticEvent);
     }
-    
+
+    /**
+     * On touch up (or any other reason editing state should reset), clears the cached target frame
+     * so that we can recalculate a new target on the next touch down event
+     */
     function resetCachedTarget() {
         cachedTarget = null;
         stopHidingFramesForTouchDuration();

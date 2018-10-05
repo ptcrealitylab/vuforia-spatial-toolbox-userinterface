@@ -172,7 +172,7 @@ realityEditor.gui.utilities.calculateY = function (seg1, x) {
  **/
 
 realityEditor.gui.utilities.checkBetween = function (e1, e2, p) {
-	const marg2 = 2;
+	var marg2 = 2;
 	// cout("e1,e2,p :",e1,e2,p);
 	if (e1 - marg2 <= p && p <= e2 + marg2) {
 		return true;
