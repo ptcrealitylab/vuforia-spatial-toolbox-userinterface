@@ -61,11 +61,11 @@ createNameSpace("realityEditor.gui.ar.draw");
  ******************************************** update and draw the 3D Interface ****************************************
  **********************************************************************************************************************/
 
-/**
- * @desc main update loop called 30 fps with an array of found transformation matrices
- * @param visibleObjects
- **/
+
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
+/**
+ * @type {Object.<string, Array.<number>>}
+ */
 realityEditor.gui.ar.draw.visibleObjects = {};
 realityEditor.gui.ar.draw.globalStates = globalStates;
 realityEditor.gui.ar.draw.globalDOMCache = globalDOMCache;
@@ -155,6 +155,7 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
 };
 
 /**
+ * Main update loop.
  * Gets triggered ~60fps by the native app when the AR engine updates with a new set of recognized markers
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
@@ -1102,12 +1103,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var editedOrderData = this.getNodeRenderPriority(activeKey);
                     editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
                 }
-
-                if (projectedPoint[2] < 10) {
-                    projectedPoint[2] = 10;
-                }
-                finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / projectedPoint[2];
-
+                
+                finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / Math.max(10, projectedPoint[2]);
 
                 //move non-developer frames to the back so they don't steal touches from interactable frames //TODO: test if this is still working for three.js content / use a different property other than developer
                 // if (activeVehicle.developer === false) {
@@ -1940,16 +1937,29 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
 // Not used currently, but maintains a stack of the most recently dragged frames/nodes,
 // can be used for z-index depth issues, e.g. render more recently editing frames on top
 ////////////////////////////////////////////////////////////////////////////////////////
-realityEditor.gui.ar.draw.pushEditedNodeToFront = function(nodeKey) {
-    this.removeFromEditedNodesList(nodeKey);
-    globalStates.mostRecentlyEditedNodes.push(nodeKey);
-};
 
+/**
+ * Moves the frame reference from its current spot to the front of the stack
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.draw.pushEditedFrameToFront = function(frameKey) {
     this.removeFromEditedFramesList(frameKey);
     globalStates.mostRecentlyEditedFrames.push(frameKey);
 };
 
+/**
+ * Moves the node reference from its current spot to the front of the stack
+ * @param {string} nodeKey
+ */
+realityEditor.gui.ar.draw.pushEditedNodeToFront = function(nodeKey) {
+    this.removeFromEditedNodesList(nodeKey);
+    globalStates.mostRecentlyEditedNodes.push(nodeKey);
+};
+
+/**
+ * Removes the frame reference from the stack
+ * @param frameKey
+ */
 realityEditor.gui.ar.draw.removeFromEditedFramesList = function(frameKey) {
     var existingIndex = globalStates.mostRecentlyEditedFrames.indexOf(frameKey);
     if (existingIndex > -1) {
@@ -1957,6 +1967,10 @@ realityEditor.gui.ar.draw.removeFromEditedFramesList = function(frameKey) {
     }
 };
 
+/**
+ * Removes the node reference from the stack
+ * @param {string} nodeKey
+ */
 realityEditor.gui.ar.draw.removeFromEditedNodesList = function(nodeKey) {
     var existingIndex = globalStates.mostRecentlyEditedNodes.indexOf(nodeKey);
     if (existingIndex > -1) {
@@ -1964,6 +1978,13 @@ realityEditor.gui.ar.draw.removeFromEditedNodesList = function(nodeKey) {
     }
 };
 
+/**
+ * Tells how recently a frame has been edited, so that more recent ones can be rendered on top of less recent ones.
+ * An index of 0 means rendered on top. Index of length-1 means render in back.
+ * Also returns length of edited frames so that it can be handled differently if no frames have been edited (length=0)
+ * @param {string} frameKey
+ * @return {{index: number, length: number}}
+ */
 realityEditor.gui.ar.draw.getFrameRenderPriority = function(frameKey) {
     return {
         index: globalStates.mostRecentlyEditedFrames.indexOf(frameKey),
@@ -1971,12 +1992,18 @@ realityEditor.gui.ar.draw.getFrameRenderPriority = function(frameKey) {
     }
 };
 
+/**
+ * See documentation for getFrameRenderPriority. Same but for nodes.
+ * @param {string} nodeKey
+ * @return {{index: number, length: number}}
+ */
 realityEditor.gui.ar.draw.getNodeRenderPriority = function(nodeKey) {
     return {
         index: globalStates.mostRecentlyEditedNodes.indexOf(nodeKey),
         length: globalStates.mostRecentlyEditedNodes.length
     }
 };
+
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2017,8 +2044,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         } else {
             activeObjectMatrixCopy = utilities.copyMatrix(activeObjectMatrix);
         }
-
-
+        
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
         var finalOffsetX = positionData.x;
