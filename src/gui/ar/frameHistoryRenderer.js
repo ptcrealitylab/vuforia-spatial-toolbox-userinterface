@@ -560,9 +560,9 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
 
     /**
      * Draws a line with an arrow head on the provided canvas context.
-     * @param {Object} ctx - HTML5 Canvas context to draw on
+     * @param {CanvasRenderingContext2D} ctx - HTML5 Canvas context to draw on
      * @param {number} startX
-     * @param {number} fromy
+     * @param {number} startY
      * @param {number} endX
      * @param {number} endY
      * @param {string} color
@@ -608,4 +608,3 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
     exports.refreshGhosts = refreshGhosts;
 
 }(realityEditor.gui.ar.frameHistoryRenderer));
-

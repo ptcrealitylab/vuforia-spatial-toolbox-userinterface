@@ -359,23 +359,29 @@ realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable = function(activ
     return  (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
 };
 
-
-// TODO: must be computed without relying on the CSS, otherwise doesn't work for fullscreen frames
+/**
+ * Provides the screen coordinates of the center, upperLeft and lowerRight coordinates of the provided frame
+ * (enough points to determine whether the frame overlaps with any rectangular region of the screen)
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @return {{ center: {x: number, y: number}, upperLeft: {x: number, y: number}, lowerRight: {x: number, y: number} }}
+ */
 realityEditor.gui.ar.positioning.getFrameScreenCoordinates = function(objectKey, frameKey) {
-    
-    // OLD METHOD.. relies on CSS so doesn't work for fullscreen frames
-    // var boundingRect = globalDOMCache["iframe" + frameKey].getClientRects()[0];
-    // return {
-    //     upperLeft:{x: boundingRect.left, y: boundingRect.top},
-    //     upperRight:{x: boundingRect.right, y: boundingRect.top},
-    //     lowerLeft:{x: boundingRect.left, y: boundingRect.bottom},
-    //     lowerRight:{x: boundingRect.right, y: boundingRect.bottom}
-    // };
-    
-    return getScreenPosition(objectKey, frameKey, true, true, false, false, true);
+    return this.getScreenPosition(objectKey, frameKey, true, true, false, false, true);
 };
 
-function getScreenPosition(objectKey, frameKey, includeCenter, includeUpperLeft, includeUpperRight, includeLowerLeft, includeLowerRight) {
+/**
+ * Calculates the exact screen coordinates corresponding to the center and corner points of the provided frame.
+ * Passing in true or false for the last 5 arguments controls which points to calculate and include in the result.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {boolean} includeCenter
+ * @param {boolean} includeUpperLeft
+ * @param {boolean} includeUpperRight
+ * @param {boolean} includeLowerLeft
+ * @param {boolean} includeLowerRight
+ */
+realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKey, includeCenter, includeUpperLeft, includeUpperRight, includeLowerLeft, includeLowerRight) {
     var utils = realityEditor.gui.ar.utilities;
     var draw = realityEditor.gui.ar.draw;
     
@@ -409,35 +415,44 @@ function getScreenPosition(objectKey, frameKey, includeCenter, includeUpperLeft,
     var halfHeight = parseInt(frame.frameSizeY)/2;
 
     // start with coordinates in frame-space -> compute coordinates in screen space
+    
+    // for each "include..." parameter, add a value to the result with that coordinate
     if (includeCenter) {
         var center = [0, 0, 0, 1];
-        screenCoordinates.center = getProjectedCoordinates(center, frameMatrix);
+        screenCoordinates.center = this.getProjectedCoordinates(center, frameMatrix);
     }
 
     if (includeUpperLeft) {
         var upperLeft = [-1 * halfWidth, -1 * halfHeight, 0, 1];
-        screenCoordinates.upperLeft = getProjectedCoordinates(upperLeft, frameMatrix);
+        screenCoordinates.upperLeft = this.getProjectedCoordinates(upperLeft, frameMatrix);
     }
 
     if (includeUpperRight) {
         var upperRight = [halfWidth, -1 * halfHeight, 0, 1];
-        screenCoordinates.upperRight = getProjectedCoordinates(upperRight, frameMatrix);
+        screenCoordinates.upperRight = this.getProjectedCoordinates(upperRight, frameMatrix);
     }
 
     if (includeLowerLeft) {
         var lowerLeft = [-1 * halfWidth, halfHeight, 0, 1];
-        screenCoordinates.lowerLeft = getProjectedCoordinates(lowerLeft, frameMatrix);
+        screenCoordinates.lowerLeft = this.getProjectedCoordinates(lowerLeft, frameMatrix);
     }
 
     if (includeLowerRight) {
         var lowerRight = [halfWidth, halfHeight, 0, 1];
-        screenCoordinates.lowerRight = getProjectedCoordinates(lowerRight, frameMatrix);
+        screenCoordinates.lowerRight = this.getProjectedCoordinates(lowerRight, frameMatrix);
     }
     
     return screenCoordinates;
-}
+};
 
-function getProjectedCoordinates(frameCoordinateVector, frameMatrix) {
+/**
+ * Converts [frameX, frameY, 0, 1] into screen coordinates based on the provided ModelViewProjection matrix
+ * @param {Array.<number>} frameCoordinateVector - a length-4 vector [x, y, 0, 1] of the position in frame space
+ *      e.g. [0, 0, 0, 1] represents the center of the frame and [-halfWidth, -halfHeight, 0, 1] represents the top-left
+ * @param {Array.<number>} frameMatrix - 4x4 MVP matrix, composition of the object and frame transformations
+ * @return {{x: number, y: number}}
+ */
+realityEditor.gui.ar.positioning.getProjectedCoordinates = function(frameCoordinateVector, frameMatrix) {
     var utils = realityEditor.gui.ar.utilities;
     var projectedCoordinateVector = utils.perspectiveDivide(utils.multiplyMatrix4(frameCoordinateVector, frameMatrix));
     projectedCoordinateVector[0] += (globalStates.height / 2);
@@ -446,4 +461,4 @@ function getProjectedCoordinates(frameCoordinateVector, frameMatrix) {
         x: projectedCoordinateVector[0],
         y: projectedCoordinateVector[1]
     };
-}
+};
