@@ -588,19 +588,21 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     function addMenuButtonActions() {
+        
+        var ButtonNames = realityEditor.gui.buttons.ButtonNames;
 
         // add callbacks for menu buttons -> hide pocket
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.GUI, hidePocketOnButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.LOGIC, hidePocketOnButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.SETTING, hidePocketOnButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.LOGIC_SETTING, hidePocketOnButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.FREEZE, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.GUI, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.SETTING, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC_SETTING, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.FREEZE, hidePocketOnButtonPressed);
 
         // add callbacks for pocket button actions
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.POCKET, pocketButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.LOGIC_POCKET, pocketButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.BIG_POCKET, bigPocketButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.HALF_POCKET, halfPocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.POCKET, pocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC_POCKET, pocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.BIG_POCKET, bigPocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.HALF_POCKET, halfPocketButtonPressed);
 
         function hidePocketOnButtonPressed(buttonName, newButtonState) {
             if (newButtonState === 'up') {
@@ -618,7 +620,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     return;
                 }
 
-                if (realityEditor.gui.buttons.buttonStates[buttonName] === 'down') {
+                if (realityEditor.gui.buttons.getButtonState(buttonName) === 'down') {
                     realityEditor.gui.pocket.pocketButtonAction();
                 }
 
@@ -642,7 +644,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
                 // this is where the virtual point creates object
 
-                if (realityEditor.gui.buttons.buttonStates[buttonName] === 'down' && globalStates.guiState === "node") {
+                if (realityEditor.gui.buttons.getButtonState(buttonName) === 'down' && globalStates.guiState === "node") {
 
                     // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
                     var addedElement = realityEditor.gui.pocket.createLogicNode();

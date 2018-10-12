@@ -884,7 +884,7 @@ realityEditor.device.onDocumentPointerMove = function(event) {
 realityEditor.device.onDocumentPointerUp = function(event) {
     
     // add the pocket node to the closest frame
-    if (realityEditor.gui.buttons.buttonStates['pocket'] === 'down') {
+    if (realityEditor.gui.buttons.getButtonState('pocket') === 'down') {
 
         // hide the pocket node
         realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);

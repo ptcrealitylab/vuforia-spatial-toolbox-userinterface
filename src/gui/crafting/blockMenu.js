@@ -51,6 +51,8 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
 
 (function(exports) {
 
+    var blockTabImage = [];
+
     /**
      * Creates the DOM elements for the logic block menu,
      * load all the blocks and generate their DOM and data models,
@@ -68,7 +70,13 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         // container.style.top = logic.grid.yMargin + 'px';
 
         container.classList.add('centerVerticallyAndHorizontally');
-        
+
+        // pre-load any necessary assets
+        if (blockTabImage.length === 0) {
+            realityEditor.gui.utilities.preload(blockTabImage,
+                'png/iconBlocks.png', 'png/iconEvents.png', 'png/iconSignals.png', 'png/iconMath.png', 'png/iconWeb.png'
+            );
+        }
         
         // center on iPads
         // nodeSettingsContainer.style.marginLeft = globalStates.currentLogic.grid.xMargin + 'px';
@@ -115,7 +123,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         logic.guiState.menuIsPointerDown = false;
         logic.guiState.menuSelectedBlock = null;
         logic.guiState.menuBlockDivs = [];
-    
+        
         // create menu tabs for block categories
         for (var i = 0; i < menuNumTabs; i++) {
             var menuTab = document.createElement('div');
@@ -126,7 +134,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
             var menuTabIcon = document.createElement('img');
             menuTabIcon.setAttribute('class', 'menuTabIcon');
-            menuTabIcon.setAttribute('src', realityEditor.gui.buttons.blockTabImage[i].src);
+            menuTabIcon.setAttribute('src', blockTabImage[i].src);
             menuTabIcon.setAttribute('touch-action', 'none');
             menuTab.appendChild(menuTabIcon);
     
