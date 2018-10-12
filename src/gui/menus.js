@@ -186,6 +186,167 @@ realityEditor.gui.menus.init = function () {
         }
     }
 	//  document.getElementById("UIButtons").style.visibility = "visible";
+    
+    // register callbacks for buttons
+
+    realityEditor.gui.buttons.registerCallbackForButton('gui', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            // updates the button visuals to highlight only the GUI button
+            this.buttonOff("main",["logic","logicPocket","logicSetting","setting","pocket"]);
+            realityEditor.gui.menus.buttonOn("main",["gui"]);
+            // update the global gui state
+            globalStates.guiState = "ui";
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('logic', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            this.buttonOff("main",["gui","logicPocket","logicSetting","setting","pocket"]);
+            this.buttonOn("main",["logic"]);
+
+            globalStates.guiState = "node";
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('reset', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            this.off("editing",["reset"]);
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('commit', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            realityEditor.gui.menus.off("editing",["commit"]);
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('unconstrained', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            // TODO: decide whether to keep this here
+            if (globalStates.unconstrainedPositioning === true) {
+                realityEditor.gui.menus.off("editing", ["unconstrained"]);
+                globalStates.unconstrainedPositioning = false;
+            } else {
+                realityEditor.gui.menus.on("editing", ["unconstrained"]);
+                globalStates.unconstrainedPositioning = true;
+            }
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('freeze', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            // TODO: decide whether to keep this here
+            if (globalStates.freezeButtonState === true) {
+
+                realityEditor.gui.menus.buttonOff("default", ["freeze"]);
+
+                globalStates.freezeButtonState = false;
+                var memoryBackground = document.querySelector('.memoryBackground');
+                memoryBackground.innerHTML = '';
+                realityEditor.app.setResume();
+
+            } else {
+                realityEditor.gui.menus.buttonOn("default", ["freeze"]);
+                globalStates.freezeButtonState = true;
+                realityEditor.app.setPause();
+            }
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('record', function(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
+            // TODO: move to record module... but need to know whether on or off?
+            var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
+
+            if(!didStartRecording) {
+                realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+            } else {
+                realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+            }
+        }
+    }.bind(this));
+    
+    function settingButtonCallback(buttonName, newButtonState) {
+        if (newButtonState === 'down' && buttonName === 'setting') { // only works for setting, not logicSetting
+
+            // TODO: decide whether to keep this here
+            realityEditor.gui.buttons.settingTimer = setTimeout(function(){
+                realityEditor.gui.buttons.wasTimed = true;
+
+                if(!globalStates.realityState) {
+                    realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+                } else {
+                    realityEditor.gui.menus.buttonOff("reality", ["setting"]);
+                }
+
+                if (!globalStates.editingMode) {
+                    realityEditor.device.setEditingMode(true);
+                    realityEditor.gui.menus.on("editing", []);
+                    realityEditor.app.saveDeveloperState(true);
+
+                } else {
+                    realityEditor.device.setEditingMode(false);
+                    realityEditor.gui.menus.on("main",[]);
+                    realityEditor.app.saveDeveloperState(false);
+                }
+
+                // realityEditor.gui.buttons.triggerCallbacksForButton(event.button, {buttonState: 'timeout'});
+
+            }, 200);
+
+
+        } else if (newButtonState === 'up') { // works for setting or logicSetting
+
+            // TODO: decide whether to keep this here
+            if(realityEditor.gui.buttons.settingTimer) {
+                clearTimeout(realityEditor.gui.buttons.settingTimer);
+            }
+
+            if(realityEditor.gui.buttons.wasTimed) {
+                realityEditor.gui.buttons.wasTimed = false;
+                return;
+            }
+
+            if (globalStates.guiState === "logic") {
+                console.log(" LOGIC SETTINGS PRESSED ");
+                var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
+                realityEditor.gui.menus.off("crafting", ["logicSetting"]);
+                if (!wasBlockSettingsOpen) {
+                    var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
+                    if (!wasNodeSettingsOpen) {
+                        console.log("Open Node Settings");
+                        realityEditor.gui.crafting.eventHelper.openNodeSettings();
+                    }
+                }
+                return;
+            }
+
+            if (globalStates.settingsButtonState === true) {
+
+                realityEditor.gui.settings.hideSettings();
+
+                if(!globalStates.realityState) {
+                    realityEditor.gui.menus.buttonOff("setting", ["setting"]);
+                } else {
+                    realityEditor.gui.menus.buttonOff("reality", ["setting"]);
+                }
+
+                overlayDiv.style.display = "inline";
+
+                if (globalStates.editingMode) {
+                    realityEditor.gui.menus.on("editing", []);
+                }
+            }
+            else {
+                realityEditor.gui.settings.showSettings();
+            }
+
+        }
+    }
+
+    realityEditor.gui.buttons.registerCallbackForButton('setting', settingButtonCallback.bind(this));
+    realityEditor.gui.buttons.registerCallbackForButton('logicSetting', settingButtonCallback.bind(this));
+    
 };
 
 realityEditor.gui.menus.on = function(menuDiv, buttonArray) {
@@ -391,13 +552,16 @@ realityEditor.gui.buttons.sendInterfaces = function (interface) {
 realityEditor.gui.menus.pointerDown = function(event) {
 //console.log("Down on: "+event.button);
     
+    // these functions get generated automatically at runtime
     realityEditor.gui.buttons.guiButtonDown(event);
     realityEditor.gui.buttons.logicButtonDown(event);
     realityEditor.gui.buttons.pocketButtonDown(event);
+    realityEditor.gui.buttons.logicPocketButtonDown(event);
     realityEditor.gui.buttons.resetButtonDown(event);
     realityEditor.gui.buttons.commitButtonDown(event);
     realityEditor.gui.buttons.unconstrainedButtonDown(event);
     realityEditor.gui.buttons.settingButtonDown(event);
+    realityEditor.gui.buttons.logicSettingButtonDown(event);
     realityEditor.gui.buttons.freezeButtonDown(event);
     realityEditor.gui.buttons.lockButtonDown(event);
     realityEditor.gui.buttons.halflockButtonDown(event);
@@ -417,8 +581,10 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.commitButtonUp(event);
     realityEditor.gui.buttons.unconstrainedButtonUp(event);
     realityEditor.gui.buttons.settingButtonUp(event);
+    realityEditor.gui.buttons.logicSettingButtonUp(event);
     realityEditor.gui.buttons.freezeButtonUp(event);
     realityEditor.gui.buttons.pocketButtonUp(event);
+    realityEditor.gui.buttons.logicPocketButtonUp(event);
     realityEditor.gui.buttons.lockButtonUp(event);
     realityEditor.gui.buttons.halflockButtonUp(event);
     realityEditor.gui.buttons.unlockButtonUp(event);

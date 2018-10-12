@@ -24,6 +24,38 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
      */
     function initFeature() {
 
+        // register callbacks to various buttons to perform commits
+        realityEditor.gui.buttons.registerCallbackForButton('reset', function(buttonName, newButtonState) {
+            if (newButtonState === 'up') {
+                for (var objectKey in objects) {
+                    if (!objects.hasOwnProperty(objectKey)) continue;
+                    // only reset currently visible objects to their last commit, not everything
+                    if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
+                    
+                    realityEditor.network.sendResetToLastCommit(objectKey);
+                }
+            }
+        });
+
+        // register callbacks to various buttons to perform commits
+        realityEditor.gui.buttons.registerCallbackForButton('commit', function(buttonName, newButtonState) {
+            if (newButtonState === 'up') {
+                for (var objectKey in objects) {
+                    if (!objects.hasOwnProperty(objectKey)) continue;
+
+                    // only commit currently visible objects, not everything
+                    if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
+                    
+                    realityEditor.network.sendSaveCommit(objectKey);
+
+                    // update local history instantly so that client and server are synchronized
+                    var thisObject = realityEditor.getObject(objectKey);
+                    thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
+                    refreshGhosts();
+                }
+            }
+        });
+
         // registers a callback to the gui.ar.draw.update loop so that this module can manage its own rendering
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
             
@@ -605,6 +637,5 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
     }
     
     exports.initFeature = initFeature;
-    exports.refreshGhosts = refreshGhosts;
 
 }(realityEditor.gui.ar.frameHistoryRenderer));

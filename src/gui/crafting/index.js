@@ -53,8 +53,8 @@ realityEditor.gui.crafting.initFeature = function() {
     realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', hideCraftingOnButtonUp);
 
-    function hideCraftingOnButtonUp(buttonName, params) {
-        if (params.buttonState === 'up') {
+    function hideCraftingOnButtonUp(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
             realityEditor.gui.crafting.craftingBoardHide();
         }
     }

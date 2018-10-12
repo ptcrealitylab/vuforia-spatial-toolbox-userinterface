@@ -602,15 +602,15 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.BIG_POCKET, bigPocketButtonPressed);
         realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.HALF_POCKET, halfPocketButtonPressed);
 
-        function hidePocketOnButtonPressed(buttonName, params) {
-            if (params.buttonState === 'up') {
+        function hidePocketOnButtonPressed(buttonName, newButtonState) {
+            if (newButtonState === 'up') {
                 // hide the pocket
                 pocketHide();
             }
         }
 
-        function pocketButtonPressed(buttonName, params) {
-            if (params.buttonState === 'up') {
+        function pocketButtonPressed(buttonName, newButtonState) {
+            if (newButtonState === 'up') {
 
                 onPocketButtonUp();
 
@@ -622,7 +622,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     realityEditor.gui.pocket.pocketButtonAction();
                 }
 
-            } else if (params.buttonState === 'enter') {
+            } else if (newButtonState === 'enter') {
 
                 realityEditor.gui.pocket.onPocketButtonEnter();
 
@@ -638,7 +638,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
                 }
 
-            } else if (params.buttonState === 'leave') {
+            } else if (newButtonState === 'leave') {
 
                 // this is where the virtual point creates object
 
@@ -674,14 +674,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
         }
 
-        function bigPocketButtonPressed(buttonName, params) {
-            if (params.buttonState === 'enter') {
+        function bigPocketButtonPressed(buttonName, newButtonState) {
+            if (newButtonState === 'enter') {
                 onBigPocketButtonEnter();
             }
         }
 
-        function halfPocketButtonPressed(buttonName, params) {
-            if (params.buttonState === 'enter') {
+        function halfPocketButtonPressed(buttonName, newButtonState) {
+            if (newButtonState === 'enter') {
                 onHalfPocketButtonEnter();
             }
         }

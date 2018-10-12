@@ -109,10 +109,6 @@ var globalStates = {
     hololensModeEnabled: false,
 
 	pocketButtonState: false,
-	pocketButtonDown: false,
-	pocketButtonUp: false,
-    resetButtonDown: false,
-    settingsButtonDown: false,
     
 	freezeButtonState: false,
 	logButtonState: false,

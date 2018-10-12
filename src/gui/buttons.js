@@ -54,8 +54,17 @@ createNameSpace("realityEditor.gui.buttons");
  * @todo finish documentation
  */
 
+/**
+ * @typedef {PointerEvent} ButtonEvent
+ * @desc A pointerevent with an additional property containing the button id that was pressed
+ * @property {string} button - the ID of the button that was pressed
+ * @property {boolean|undefined} ignoreIsDown - if included, don't require that the button was pressed down first in order for up event to trigger
+ *                                              (can be used to synthetically trigger button events)
+ */
 
-var blockTabImage = [];
+realityEditor.gui.buttons.blockTabImage = [];
+realityEditor.gui.buttons.settingTimer = null;
+realityEditor.gui.buttons.wasTimed = false;
 
 /**
  * @type {Readonly<{GUI: string, LOGIC: string, RESET: string, COMMIT: string, UNCONSTRAINED: string, SETTING: string, LOGIC_SETTING: string, FREEZE: string, LOCK: string, HALF_LOCK: string, UNLOCK: string, RECORD: string, POCKET: string, LOGIC_POCKET: string, BIG_POCKET: string, HALF_POCKET: string, REALITY_GUI: string, REALITY_INFO: string, REALITY_TAG: string, REALITY_SEARCH: string, REALITY_WORK: string}>}
@@ -139,18 +148,101 @@ realityEditor.gui.buttons.preload = function(array) {
     this.cout("preload");
 };
 
+// create placeholders for these functions that get generated automatically at runtime
+
+realityEditor.gui.buttons.guiButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.logicButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.pocketButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.logicPocketButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.resetButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.commitButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.unconstrainedButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.settingButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.logicSettingButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.freezeButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.lockButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.halflockButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.unlockButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.recordButtonDown = function(){ console.warn('function stub should be overridden at runtime'); };
+
+realityEditor.gui.buttons.guiButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.logicButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.resetButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.commitButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.unconstrainedButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.settingButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.logicSettingButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.freezeButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.pocketButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.logicPocketButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.lockButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.halflockButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.unlockButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.recordButtonUp = function(){ console.warn('function stub should be overridden at runtime'); };
+
+realityEditor.gui.buttons.pocketButtonEnter = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.bigPocketButtonEnter = function(){ console.warn('function stub should be overridden at runtime'); };
+realityEditor.gui.buttons.halfPocketButtonEnter = function(){ console.warn('function stub should be overridden at runtime'); };
+
+realityEditor.gui.buttons.pocketButtonLeave = function(){ console.warn('function stub should be overridden at runtime'); };
+
+
 /**
- * Called from device/onLoad to initialize the buttons (by pre-loading any necessary assets)
+ * Called from device/onLoad to initialize the buttons with assets and event listeners
  */
 realityEditor.gui.buttons.initButtons = function() {
-    this.preload(blockTabImage,
+    
+    // pre-loading any necessary assets
+    this.preload(this.blockTabImage,
         'png/iconBlocks.png', 'png/iconEvents.png', 'png/iconSignals.png', 'png/iconMath.png', 'png/iconWeb.png'
     );
     
-    // populate the default states for each button
     Object.keys(this.gui.buttons.ButtonName).forEach(function(buttonKey) {
-        this.buttonStates[this.gui.buttons.ButtonName[buttonKey]] = this.ButtonState.UP;
+        var buttonName = this.gui.buttons.ButtonName[buttonKey];
+
+        // populate the default states for each button
+        this.buttonStates[buttonName] = this.ButtonState.UP;
+
+        // generate onButtonDown functions that trigger externally-registered callbacks and update the buttonState...
+        var functionName = buttonName + 'ButtonDown';
+        /** @param {ButtonEvent} event */
+        realityEditor.gui.buttons[functionName] = function(event) {
+            if (event.button !== buttonName) return;
+            this.triggerCallbacksForButton(event.button, 'down');
+            this.setButtonStateDown(event.button);
+        };
+
+        // ...generate onButtonUp functions
+        functionName = buttonName + 'ButtonUp';
+        /** @param {ButtonEvent} event */
+        realityEditor.gui.buttons[functionName] = function(event) {
+            if (event.button !== buttonName) return;
+            // only works if the tap down originated on the button
+            if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return;
+            this.triggerCallbacksForButton(event.button, 'up');
+            this.setButtonStateUp(event.button);
+        };
+
+        // ...generate onButtonEnter functions
+        functionName = buttonName + 'ButtonEnter';
+        /** @param {ButtonEvent} event */
+        realityEditor.gui.buttons[functionName] = function(event) {
+            if (event.button !== buttonName) return;
+            this.triggerCallbacksForButton(event.button, 'leave');
+            this.setButtonStateEntered(event.button);
+        };
+
+        // ...generate onButtonEnter functions
+        functionName = buttonName + 'ButtonLeave';
+        /** @param {ButtonEvent} event */
+        realityEditor.gui.buttons[functionName] = function(event) {
+            if (event.button !== buttonName) return;
+            this.triggerCallbacksForButton(event.button, 'enter');
+            this.setButtonStateEntered(event.button);
+        };
+
     }.bind(this));
+    
 };
 
 /**
@@ -180,408 +272,19 @@ realityEditor.gui.buttons.registerCallbackForButton = function(buttonName, callb
  * @param {string} buttonName
  * @param {object|undefined} params
  */
-realityEditor.gui.buttons.triggerCallbacksForButton = function(buttonName, params) {
+realityEditor.gui.buttons.triggerCallbacksForButton = function(buttonName, newButtonState) {
     if (typeof this.callbacks[buttonName] === 'undefined') return;
 
     // iterates over all registered callbacks to trigger events in various modules
     this.callbacks[buttonName].forEach(function(callback) {
-        callback(buttonName, params);
+        callback(buttonName, newButtonState);
     });
-};
-
-/**
- * @typedef {PointerEvent} ButtonEvent
- * @desc A pointerevent with an additional property containing the button id that was pressed
- * @property {string} button - the ID of the button that was pressed
- * @property {boolean|undefined} ignoreIsDown - if included, don't require that the button was pressed down first in order for up event to trigger
- *                                              (can be used to synthetically trigger button events)
- */
-
-realityEditor.gui.buttons.guiButtonDown = function(event) {
-    if (event.button !== "gui") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-/**
- * Triggers the effects when the GUI button is pressed.
- * Changes the menu to highlight the GUI button.
- * Updates the global guiState.
- * Triggers callbacks that external modules have registered for this button events.
- * Updates the button state to track whether this button is pressed or not.
- * @param {ButtonEvent} event
- */
-realityEditor.gui.buttons.guiButtonUp = function(event) {
-    if (event.button !== "gui") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    // updates the button visuals to highlight only the GUI button
-    realityEditor.gui.menus.buttonOff("main",["logic","logicPocket","logicSetting","setting","pocket"]);
-    realityEditor.gui.menus.buttonOn("main",["gui"]);
-
-    // update the global gui state
-    globalStates.guiState = "ui";
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.logicButtonDown = function(event) {
-    if (event.button !== "logic") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.logicButtonUp = function(event){
-    if (event.button !== "logic") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    realityEditor.gui.menus.buttonOff("main",["gui","logicPocket","logicSetting","setting","pocket"]);
-    realityEditor.gui.menus.buttonOn("main",["logic"]);
-    
-    globalStates.guiState = "node";
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.resetButtonDown = function(event) {
-    if (event.button !== "reset") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.resetButtonUp = function(event){
-    if (event.button !== "reset") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    realityEditor.gui.menus.off("editing",["reset"]);
-    
-    // TODO: move to frameHistory module
-    for (var objectKey in objects) {
-        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
-            continue;
-        }
-        realityEditor.network.sendResetToLastCommit(objectKey);
-    }
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.commitButtonDown = function(event) {
-    if (event.button !== "commit") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.commitButtonUp = function(event) {
-    if (event.button !== "commit") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    realityEditor.gui.menus.off("editing",["commit"]);
-
-    // TODO: move to frameHistory module
-    for (var objectKey in objects) {
-        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
-            continue;
-        }
-        realityEditor.network.sendSaveCommit(objectKey);
-
-        // update local history instantly
-        var thisObject = realityEditor.getObject(objectKey);
-        thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
-
-        realityEditor.gui.ar.frameHistoryRenderer.refreshGhosts();
-    }
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.unconstrainedButtonDown = function(event) {
-    if (event.button !== "unconstrained") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {
-    if (event.button !== "unconstrained") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    // TODO: decide whether to keep this here
-    if (globalStates.unconstrainedPositioning === true) {
-        realityEditor.gui.menus.off("editing", ["unconstrained"]);
-        globalStates.unconstrainedPositioning = false;
-    } else {
-        realityEditor.gui.menus.on("editing", ["unconstrained"]);
-        globalStates.unconstrainedPositioning = true;
-    }
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.settingTimer = null;
-realityEditor.gui.buttons.wasTimed = false;
-
-realityEditor.gui.buttons.settingButtonDown = function(event) {
-    if (event.button !== "setting") return;
-
-    // TODO: decide whether to keep this here
-    realityEditor.gui.buttons.settingTimer = setTimeout(function(){
-        realityEditor.gui.buttons.wasTimed = true;
-
-        if(!globalStates.realityState) {
-            realityEditor.gui.menus.buttonOff("setting", ["setting"]);
-        } else {
-            realityEditor.gui.menus.buttonOff("reality", ["setting"]);
-        }
-
-        if (!globalStates.editingMode) {
-            realityEditor.device.setEditingMode(true);
-            realityEditor.gui.menus.on("editing", []);
-            realityEditor.app.saveDeveloperState(true);
-
-        } else {
-            realityEditor.device.setEditingMode(false);
-            realityEditor.gui.menus.on("main",[]);
-            realityEditor.app.saveDeveloperState(false);
-        }
-
-        realityEditor.gui.buttons.triggerCallbacksForButton(event.button, {buttonState: 'timeout'});
-
-    }, 200);
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.settingButtonUp = function(event) {
-    if (event.button !== "setting" && event.button !== "logicSetting") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    // TODO: decide whether to keep this here
-    if(realityEditor.gui.buttons.settingTimer) {
-        clearTimeout(realityEditor.gui.buttons.settingTimer);
-    }
-    
-    if(realityEditor.gui.buttons.wasTimed) {
-        realityEditor.gui.buttons.wasTimed = false;
-        return;
-    }
-    
-    if (globalStates.guiState === "logic") {
-        console.log(" LOGIC SETTINGS PRESSED ");
-        var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
-        realityEditor.gui.menus.off("crafting", ["logicSetting"]);
-        if (!wasBlockSettingsOpen) {
-            var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
-            if (!wasNodeSettingsOpen) {
-                console.log("Open Node Settings");
-                realityEditor.gui.crafting.eventHelper.openNodeSettings();
-            }
-        }
-        return;
-    }
-    
-    if (globalStates.settingsButtonState === true) {
-
-        this.gui.settings.hideSettings();
-
-        if(!globalStates.realityState) {
-            realityEditor.gui.menus.buttonOff("setting", ["setting"]);
-        } else {
-            realityEditor.gui.menus.buttonOff("reality", ["setting"]);
-        }
-
-        overlayDiv.style.display = "inline";
-
-        if (globalStates.editingMode) {
-            realityEditor.gui.menus.on("editing", []);
-        }
-    }
-    else {
-        this.gui.settings.showSettings();
-    }
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.freezeButtonDown = function(event) {
-    if (event.button !== "freeze") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.freezeButtonUp = function(event) {
-    if (event.button !== "freeze") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    // TODO: decide whether to keep this here
-    if (globalStates.freezeButtonState === true) {
-
-        realityEditor.gui.menus.buttonOff("default", ["freeze"]);
-
-        globalStates.freezeButtonState = false;
-        var memoryBackground = document.querySelector('.memoryBackground');
-        memoryBackground.innerHTML = '';
-        realityEditor.app.setResume();
-
-    } else {
-        realityEditor.gui.menus.buttonOn("default", ["freeze"]);
-        globalStates.freezeButtonState = true;
-        realityEditor.app.setPause();
-    }
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.lockButtonDown = function(event) {
-    if (event.button !== "lock") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.lockButtonUp = function(event) {
-    if (event.button !== "lock") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    console.log("activate lock button");
-
-    var LOCK_TYPE_FULL = "full";
-    realityEditor.device.security.lockVisibleNodesAndLinks(LOCK_TYPE_FULL);
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.halflockButtonDown = function(event) {
-    if (event.button !== "halflock") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.halflockButtonUp = function(event) {
-    if (event.button !== "halflock") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    console.log("activate halflock button");
-
-    var LOCK_TYPE_HALF = "half";
-    realityEditor.device.security.lockVisibleNodesAndLinks(LOCK_TYPE_HALF);
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.unlockButtonDown = function(event) {
-    if (event.button !== "unlock") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.unlockButtonUp = function(event) {
-    if (event.button !== "unlock") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-
-    console.log("activate unlock button");
-
-    realityEditor.device.security.unlockVisibleNodesAndLinks();
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.recordButtonDown = function(event) {
-    if (event.button !== "record") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.recordButtonUp = function(event) {
-    if (event.button !== "record") return;
-    if (!event.ignoreIsDown && this.buttonStates[event.button] !== this.ButtonState.DOWN) return; // only works if the tap down originated on the button
-    
-    // TODO: move to record module
-    var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
-
-    if(!didStartRecording) {
-        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
-    } else {
-        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
-    }
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.pocketButtonDown = function(event) {
-    if (event.button !== "pocket" && event.button !== "logicPocket") return;
-
-    // if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
-    //     return;
-    // }
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'down'});
-    this.setButtonStateDown(event.button);
-};
-
-realityEditor.gui.buttons.pocketButtonUp = function(event) {
-    if (event.button !== "pocket" && event.button !== "logicPocket") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.pocketButtonEnter = function(event) {
-    if (event.button !== "pocket") return;
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'enter'});
-    this.setButtonStateEntered(event.button);
-};
-
-realityEditor.gui.buttons.pocketButtonLeave = function(event) {
-    if (event.button !== "pocket") return;
-
-    // if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
-    //     return;
-    // }
-
-    this.triggerCallbacksForButton(event.button, {buttonState: 'leave'});
-    this.setButtonStateUp(event.button);
-};
-
-realityEditor.gui.buttons.bigPocketButtonEnter = function(event) {
-    if (event.button !== "bigPocket") return;
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'enter'});
-    this.setButtonStateEntered(event.button);
-};
-
-realityEditor.gui.buttons.halfPocketButtonEnter = function(event) {
-    if (event.button !== "halfPocket") return;
-    
-    this.triggerCallbacksForButton(event.button, {buttonState: 'enter'});
-    this.setButtonStateEntered(event.button);
 };
 
 /**
  *
  *   REALITY (RETAIL GUI BUTTONS)
- *
+ *   @todo modernize these functions the same way as the others
  */
 
 realityEditor.gui.buttons.realityGuiButtonUp = function (event) {
@@ -591,7 +294,7 @@ realityEditor.gui.buttons.realityGuiButtonUp = function (event) {
     realityEditor.gui.menus.on("realityInfo", ["realityGui"]);
 
     // Add your functionality here.
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
+    this.triggerCallbacksForButton(event.button, 'up');
     this.setButtonStateUp(event.button);
 };
 
@@ -602,7 +305,7 @@ realityEditor.gui.buttons.realityInfoButtonUp = function (event) {
     realityEditor.gui.menus.on("realityInfo", ["realityInfo", "realityGui"]);
 
     // Add your functionality here.
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
+    this.triggerCallbacksForButton(event.button, 'up');
     this.setButtonStateUp(event.button);
 };
 
@@ -613,7 +316,7 @@ realityEditor.gui.buttons.realityTagButtonUp = function (event) {
     realityEditor.gui.menus.on("reality", ["realityTag"]);
 
     // Add your functionality here.
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
+    this.triggerCallbacksForButton(event.button, 'up');
     this.setButtonStateUp(event.button);
 };
 
@@ -630,7 +333,7 @@ realityEditor.gui.buttons.realitySearchButtonUp = function (event) {
     }
 
     // Add your functionality here.
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
+    this.triggerCallbacksForButton(event.button, 'up');
     this.setButtonStateUp(event.button);
 };
 
@@ -641,6 +344,6 @@ realityEditor.gui.buttons.realityWorkButtonUp = function (event) {
     realityEditor.gui.menus.on("reality", ["realityWork"]);
 
     // Add your functionality here.
-    this.triggerCallbacksForButton(event.button, {buttonState: 'up'});
+    this.triggerCallbacksForButton(event.button, 'up');
     this.setButtonStateUp(event.button);
 };

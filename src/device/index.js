@@ -125,8 +125,8 @@ realityEditor.device.initFeature = function() {
     realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('setting', resetEditingOnButtonUp);
     
-    function resetEditingOnButtonUp(buttonName, params) {
-        if (params.buttonState === 'up') {
+    function resetEditingOnButtonUp(buttonName, newButtonState) {
+        if (newButtonState === 'up') {
             realityEditor.device.resetEditingState();
         }
     }
@@ -884,7 +884,7 @@ realityEditor.device.onDocumentPointerMove = function(event) {
 realityEditor.device.onDocumentPointerUp = function(event) {
     
     // add the pocket node to the closest frame
-    if (globalStates.pocketButtonDown) {
+    if (realityEditor.gui.buttons.buttonStates['pocket'] === 'down') {
 
         // hide the pocket node
         realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
@@ -934,10 +934,6 @@ realityEditor.device.onDocumentPointerUp = function(event) {
         overlayDiv.style.backgroundImage = 'none';
         realityEditor.app.appFunctionCall("clearMemory");
     }
-
-    // this is relevant for the pocket button to be interacted with
-    globalStates.pocketButtonDown = false;
-    globalStates.pocketButtonUp = false; // TODO: pocketButtonUp doesn't seem to be used for anything anymore
     
     cout("onDocumentPointerUp");
 };

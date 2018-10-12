@@ -126,7 +126,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
             var menuTabIcon = document.createElement('img');
             menuTabIcon.setAttribute('class', 'menuTabIcon');
-            menuTabIcon.setAttribute('src', blockTabImage[i].src);
+            menuTabIcon.setAttribute('src', realityEditor.gui.buttons.blockTabImage[i].src);
             menuTabIcon.setAttribute('touch-action', 'none');
             menuTab.appendChild(menuTabIcon);
     
