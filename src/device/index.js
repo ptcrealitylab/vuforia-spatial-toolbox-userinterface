@@ -109,10 +109,28 @@ realityEditor.device.editingState = {
  * Contains a property for each method name in device/index.js that can trigger events in other modules.
  * The value of each property is an array containing pointers to the callback functions that should be
  *  triggered when that function is called.
- * @type {{resetEditingState: Array.<function>}}
+ * @type {Object.<string, Array.<function>>}
  */
 realityEditor.device.callbacks = {
-    resetEditingState: []
+    resetEditingState: [],
+    onDocumentMultiTouchEnd: [] // don't actually need to add each function manually here, they get created automatically
+};
+
+/**
+ * Initialize the device module by registering callbacks to other modules
+ */
+realityEditor.device.initFeature = function() {
+
+    realityEditor.gui.buttons.registerCallbackForButton('gui', resetEditingOnButtonUp);
+    realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);
+    realityEditor.gui.buttons.registerCallbackForButton('setting', resetEditingOnButtonUp);
+    
+    function resetEditingOnButtonUp(buttonName, params) {
+        if (params.buttonState === 'up') {
+            realityEditor.device.resetEditingState();
+        }
+    }
+    
 };
 
 /**
@@ -320,6 +338,11 @@ realityEditor.device.resetEditingState = function() {
     this.triggerCallbacks('resetEditingState');
 };
 
+/**
+ * Adds a callback function that will be invoked when the realityEditor.device.[functionName] is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
 realityEditor.device.registerCallback = function(functionName, callback) {
     if (typeof this.callbacks[functionName] === 'undefined') {
         this.callbacks[functionName] = [];

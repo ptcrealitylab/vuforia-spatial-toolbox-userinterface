@@ -65,11 +65,9 @@ createNameSpace("realityEditor.device.hololensAdapter");
         console.log('toggle node view', isNodeView);
 
         if (isNodeView) {
-            globalStates.logicButtonDown = true;
-            realityEditor.gui.buttons.logicButtonUp({button: "logic"});
+            realityEditor.gui.buttons.logicButtonUp({button: "logic", ignoreIsDown: true});
         } else {
-            globalStates.guiButtonDown = true;
-            realityEditor.gui.buttons.guiButtonUp({button: "gui"});
+            realityEditor.gui.buttons.guiButtonUp({button: "gui", ignoreIsDown: true});
         }
     }
 

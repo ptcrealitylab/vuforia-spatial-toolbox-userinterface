@@ -72,6 +72,7 @@ realityEditor.device.onload = function () {
     }
 
     // initialize additional features
+    realityEditor.device.initFeature();
     realityEditor.device.touchInputs.initFeature();
     realityEditor.device.videoRecording.initFeature();
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
@@ -80,7 +81,8 @@ realityEditor.device.onload = function () {
     realityEditor.network.realtime.initFeature();
     realityEditor.device.hololensAdapter.initFeature();
     realityEditor.device.desktopAdapter.initFeature();
-    
+    realityEditor.gui.crafting.initFeature();
+
     globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
@@ -101,7 +103,7 @@ realityEditor.device.onload = function () {
     // set active buttons and preload some images
     realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
     realityEditor.gui.menus.on("main",["gui"]);
-	realityEditor.gui.buttons.draw();
+	realityEditor.gui.buttons.initButtons();
 	
 	// set up the pocket and memory bars
 	realityEditor.gui.memory.initMemoryBar();

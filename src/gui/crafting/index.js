@@ -49,6 +49,17 @@
 
 createNameSpace("realityEditor.gui.crafting");
 
+realityEditor.gui.crafting.initFeature = function() {
+    realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
+    realityEditor.gui.buttons.registerCallbackForButton('logic', hideCraftingOnButtonUp);
+
+    function hideCraftingOnButtonUp(buttonName, params) {
+        if (params.buttonState === 'up') {
+            realityEditor.gui.crafting.craftingBoardHide();
+        }
+    }
+};
+
 realityEditor.gui.crafting.updateGrid = function(grid) {
     console.log("update grid!");
 
@@ -492,30 +503,27 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
     if (document.getElementById('nodeSettingsContainer') && document.getElementById('nodeSettingsContainer').style.display !== "none") {
         return;
     }
-
+    
     realityEditor.gui.menus.on("crafting",["logicPocket"]);
     
     // hide block settings if necessary
     blockSettingsContainer = document.getElementById('blockSettingsContainer');
     if (blockSettingsContainer) {
-        realityEditor.gui.buttons.settingButtonUp({button: "setting"});
+        realityEditor.gui.buttons.settingButtonUp({button: "setting", ignoreIsDown: true});
     }
     
-    var _this = this;
-    
     this.eventHelper.changeDatacraftingDisplayForMenu('none');
-
+    
     // create the menu if it doesn't already exist, otherwise just show it
     var existingMenu = document.getElementById('menuContainer');
     if (existingMenu) {
         existingMenu.style.display = 'inline';
         this.blockMenu.redisplayTabSelection();
-        // this.blockMenu.redisplayBlockSelection();
     } else {
         this.blockMenu.initializeBlockMenu(function() {
-            _this.blockMenu.redisplayTabSelection(); // wait for callback to ensure menu fully loaded
-            _this.blockMenu.redisplayBlockSelection();
-        });
+            this.blockMenu.redisplayTabSelection(); // wait for callback to ensure menu fully loaded
+            this.blockMenu.redisplayBlockSelection();
+        }.bind(this));
     }
 };
 

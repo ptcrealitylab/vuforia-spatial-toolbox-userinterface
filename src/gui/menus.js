@@ -396,7 +396,13 @@ realityEditor.gui.menus.pointerDown = function(event) {
     realityEditor.gui.buttons.pocketButtonDown(event);
     realityEditor.gui.buttons.resetButtonDown(event);
     realityEditor.gui.buttons.commitButtonDown(event);
+    realityEditor.gui.buttons.unconstrainedButtonDown(event);
     realityEditor.gui.buttons.settingButtonDown(event);
+    realityEditor.gui.buttons.freezeButtonDown(event);
+    realityEditor.gui.buttons.lockButtonDown(event);
+    realityEditor.gui.buttons.halflockButtonDown(event);
+    realityEditor.gui.buttons.unlockButtonDown(event);
+    realityEditor.gui.buttons.recordButtonDown(event);
 
 };
 
@@ -442,24 +448,24 @@ realityEditor.gui.menus.pointerUp = function(event) {
         
         // if you want action based on the menu item, place it here
         if (lastMenu === "main") {
-            realityEditor.gui.buttons.logicButtonUp({button: "logic"});
+            realityEditor.gui.buttons.logicButtonUp({button: "logic", ignoreIsDown: true});
         
         } else if (lastMenu === "crafting") {
 
             var existingMenu = document.getElementById('menuContainer');
             if (existingMenu && existingMenu.style.display !== 'none') {
-                globalStates.pocketButtonDown = true; // hack to trigger pocket button using back button
-                realityEditor.gui.buttons.pocketButtonUp({button: "logicPocket"});
+                realityEditor.gui.buttons.setButtonStateDown('logicPocket'); // hack to trigger pocket button using back button
+                realityEditor.gui.buttons.pocketButtonUp({button: "logicPocket", ignoreIsDown: true});
             } else {
                 var blockSettingsContainer = document.getElementById('blockSettingsContainer');
                 if (blockSettingsContainer) {
-                    realityEditor.gui.buttons.settingButtonUp({button: "setting"});
+                    realityEditor.gui.buttons.settingButtonUp({button: "setting", ignoreIsDown: true});
                 } else {
-                    realityEditor.gui.buttons.logicButtonUp({button: "logic"}); // default option is to go back to main
+                    realityEditor.gui.buttons.logicButtonUp({button: "logic", ignoreIsDown: true}); // default option is to go back to main
                 }
             }
         } else {
-            realityEditor.gui.buttons.logicButtonUp({button: "logic"}); // default option is to go back to main
+            realityEditor.gui.buttons.logicButtonUp({button: "logic", ignoreIsDown: true}); // default option is to go back to main
         }
     });
     

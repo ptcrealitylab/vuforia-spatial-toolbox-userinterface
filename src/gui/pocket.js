@@ -436,6 +436,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         palette = document.querySelector('.palette');
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
         
+        addMenuButtonActions();
+        
         // var isPocketTapped = false;
 
         pocket.addEventListener('pointerdown', function(evt) {
@@ -583,6 +585,107 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         createPocketUIPalette();
 		// pocketHide();
+    }
+
+    function addMenuButtonActions() {
+
+        // add callbacks for menu buttons -> hide pocket
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.GUI, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.LOGIC, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.SETTING, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.LOGIC_SETTING, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.FREEZE, hidePocketOnButtonPressed);
+
+        // add callbacks for pocket button actions
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.POCKET, pocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.LOGIC_POCKET, pocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.BIG_POCKET, bigPocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(realityEditor.gui.buttons.ButtonName.HALF_POCKET, halfPocketButtonPressed);
+
+        function hidePocketOnButtonPressed(buttonName, params) {
+            if (params.buttonState === 'up') {
+                // hide the pocket
+                pocketHide();
+            }
+        }
+
+        function pocketButtonPressed(buttonName, params) {
+            if (params.buttonState === 'up') {
+
+                onPocketButtonUp();
+
+                if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
+                    return;
+                }
+
+                if (realityEditor.gui.buttons.buttonStates[buttonName] === 'down') {
+                    realityEditor.gui.pocket.pocketButtonAction();
+                }
+
+            } else if (params.buttonState === 'enter') {
+
+                realityEditor.gui.pocket.onPocketButtonEnter();
+
+                if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
+                    return;
+                }
+
+                if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
+                    // pocketItem["pocket"].objectVisible = false;
+                    realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
+
+                    this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic"); // TODO: change arguments
+                    delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+                }
+
+            } else if (params.buttonState === 'leave') {
+
+                // this is where the virtual point creates object
+
+                if (realityEditor.gui.buttons.buttonStates[buttonName] === 'down' && globalStates.guiState === "node") {
+
+                    // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
+                    var addedElement = realityEditor.gui.pocket.createLogicNode();
+
+                    // set the name of the node by counting how many logic nodes the frame already has
+                    var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
+                    var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
+                        return node.type === 'logic'
+                    }).length;
+                    addedElement.logicNode.name = "LOGIC" + logicCount;
+
+                    // upload new name to server when you change it
+                    var object = realityEditor.getObject(addedElement.objectKey);
+                    realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
+
+                    var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
+
+                    realityEditor.device.editingState.touchOffset = {
+                        x: logicNodeSize/2,
+                        y: logicNodeSize/2
+                    };
+
+                    realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
+
+                    realityEditor.gui.menus.on("bigTrash",[]);
+
+                }
+
+            }
+        }
+
+        function bigPocketButtonPressed(buttonName, params) {
+            if (params.buttonState === 'enter') {
+                onBigPocketButtonEnter();
+            }
+        }
+
+        function halfPocketButtonPressed(buttonName, params) {
+            if (params.buttonState === 'enter') {
+                onHalfPocketButtonEnter();
+            }
+        }
+
     }
 
     function isPocketWanted() {

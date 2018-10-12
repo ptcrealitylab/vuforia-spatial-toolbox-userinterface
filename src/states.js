@@ -108,14 +108,12 @@ var globalStates = {
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
 
-    guiButtonDown: false,
-    logicButtonDown: false,
 	pocketButtonState: false,
 	pocketButtonDown: false,
 	pocketButtonUp: false,
     resetButtonDown: false,
-    commitButtonDown: false,
     settingsButtonDown: false,
+    
 	freezeButtonState: false,
 	logButtonState: false,
 	editingMode: false,
