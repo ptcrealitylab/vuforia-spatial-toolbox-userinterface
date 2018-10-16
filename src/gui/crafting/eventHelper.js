@@ -698,7 +698,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     
     craftingMenusContainer.appendChild(blockSettingsContainer);
     
-    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+    realityEditor.gui.menus.buttonOn(["logicSetting"]);
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {

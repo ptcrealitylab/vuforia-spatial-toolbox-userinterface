@@ -468,13 +468,13 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
         
         if (globalStates.freezeButtonState && !globalStates.freezeStateBeforeCrafting) {
             
-            realityEditor.gui.menus.buttonOff("default", ["freeze"]);
+            realityEditor.gui.menus.buttonOff(["freeze"]);
             globalStates.freezeButtonState = false;
             realityEditor.app.setResume();
 
         } else if (!globalStates.freezeButtonState && globalStates.freezeStateBeforeCrafting) {
             
-            realityEditor.gui.menus.buttonOn("default", ["freeze"]);
+            realityEditor.gui.menus.buttonOn(["freeze"]);
             globalStates.freezeButtonState = true;
             realityEditor.app.setPause();
         }

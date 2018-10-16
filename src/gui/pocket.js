@@ -819,7 +819,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         // }
         
         pocket.classList.add('pocketShown');
-        realityEditor.gui.menus.buttonOn('main', ['pocket']);
+        realityEditor.gui.menus.buttonOn(['pocket']);
         if (globalStates.guiState === "node") {
             palette.style.display = 'none';
             nodeMemoryBar.style.display = 'block';
@@ -827,22 +827,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             palette.style.display = 'block';
             nodeMemoryBar.style.display = 'none';
         }
-        setPaletteElementDemo(true);
         isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
 
         createPocketScrollbar();
-    }
-
-    function setPaletteElementDemo(value) {
-        // var paletteElements = document.querySelectorAll('.palette-element');
-        // for (var i = 0; i < paletteElements.length; i++) {
-        //     var elt = paletteElements[i];
-        //     // TODO(hobinjk): stringify is not required except for legacy reasons
-        //     elt.contentWindow.postMessage(JSON.stringify({demo: value}), '*');
-        //     // elt.contentWindow.postMessage({demo: value}, '*');
-        //
-        // }
     }
 
     function pocketHide() {
@@ -856,8 +844,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         //     }
         // }, 5000);
         pocket.classList.remove('pocketShown');
-        realityEditor.gui.menus.buttonOff('main', ['pocket']);
-        setPaletteElementDemo(false);
+        realityEditor.gui.menus.buttonOff(['pocket']);
         isPocketTapped = false;
     }
 

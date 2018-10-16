@@ -51,7 +51,8 @@ createNameSpace("realityEditor.gui.buttons");
 
 /**
  * @fileOverview realityEditor.gui.buttons.js
- * Handles touch events and button state for each menu button. Provides default behavior for each button,
+ * Manages the model of each button, whereas realityEditor.gui.menus.js manages the view.
+ * Handles touch events and tracks button state for each menu button. Provides default behavior for each button,
  * and provides an interface for other modules to register callbacks for custom button behavior.
  */
 
@@ -90,7 +91,8 @@ createNameSpace("realityEditor.gui.buttons");
             REALITY_INFO: 'realityInfo',
             REALITY_TAG: 'realityTag',
             REALITY_SEARCH: 'realitySearch',
-            REALITY_WORK: 'realityWork'
+            REALITY_WORK: 'realityWork',
+            BACK: 'back'
         });
 
     /**

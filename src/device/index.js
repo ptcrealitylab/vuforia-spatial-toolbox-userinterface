@@ -608,11 +608,11 @@ realityEditor.device.onElementTouchOut = function(event) {
         // stop node hold timer // TODO: handle node move same as frame by calculating dist^2 > threshold
         this.clearTouchTimer();
 
-        if (this.editingState.node) { //TODO: do i need to add editingModeKind back in to handle node vs logic? or can it be calculated by another method?
-            realityEditor.gui.menus.buttonOn("main",[]); // endTrash 
-        }
+        // if (this.editingState.node) {
+        //     realityEditor.gui.menus.buttonOn([]); // endTrash // TODO: need a new method to end trash programmatically ??? 
+        // }
 
-        globalProgram.logicSelector = 4; // TODO: why 4?
+        globalProgram.logicSelector = 4; // 4 means default link (not one of the colored ports)
 
         // reset touch overlay
         overlayDiv.classList.remove('overlayPositive');
@@ -1208,7 +1208,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     } else {
         this.currentScreenTouches = [];
 
-        realityEditor.gui.menus.buttonOn("main",[]);
+        // realityEditor.gui.menus.buttonOn([]);
         var didDisplayCrafting = globalStates.currentLogic; // proxy to determine if crafting board is open / we shouldn't reset the menu
         if (!didDisplayCrafting) {
             realityEditor.gui.menus.on("main",[]);
