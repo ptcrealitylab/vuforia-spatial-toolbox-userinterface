@@ -165,7 +165,7 @@ realityEditor.gui.menusModule = {};
      */
     function init() {
         addButtonEventListeners();
-        // registerButtonCallbacks();
+        registerButtonCallbacks();
     }
     
     function addButtonEventListeners() {
@@ -175,45 +175,63 @@ realityEditor.gui.menusModule = {};
 
             // add event listeners to each button to trigger custom behavior in gui/buttons.js 
             if(buttons[buttonName].overlay) {
+                
                 buttons[buttonName].overlay.addEventListener("pointerdown", function (event) {
                     event.button = this.button; // points to the buttonObject.overlay.button property, which = buttonName
-                    realityEditor.gui.menus.pointerDown(event);
+                    // pointerDown(event);
+                    realityEditor.gui.buttons[buttonName + 'ButtonDown'](event);
                 }, false);
 
-                this.buttons[key].overlay.addEventListener("pointerup", function (event) {
+                buttons[buttonName].overlay.addEventListener("pointerup", function (event) {
+
+                    // Note: if you don't trigger the _x_ButtonDown for button named _x_, you will need to trigger _x_ButtonUp with
+                    // event.ignoreIsDown=true because otherwise it won't register that you intended to press it
+                    
                     event.button = this.button;
-                    realityEditor.gui.menus.pointerUp(event);
+                    // pointerUp(event);
+                    
+                    // these functions get generated automatically at runtime
+                    realityEditor.gui.buttons[buttonName + 'ButtonUp'](event);
+                    
+                    sendInterfaces(event.button);
+                    if(realityEditor.gui.search.getVisibility() && event.button !== "realitySearch"){
+                        realityEditor.gui.search.remove();
+                    }
+                    
                 }, false);
 
-                this.buttons[key].overlay.addEventListener("pointerenter", function (event) {
+                buttons[buttonName].overlay.addEventListener("pointerenter", function (event) {
                     event.button = this.button;
-                    realityEditor.gui.menus.pointerEnter(event);
+                    // pointerEnter(event);
+                    realityEditor.gui.buttons[buttonName + 'ButtonEnter'](event);
+                    buttonActionEnter(event);
+
                 }, false);
 
-                this.buttons[key].overlay.addEventListener("pointerleave", function (event) {
+                buttons[buttonName].overlay.addEventListener("pointerleave", function (event) {
                     event.button = this.button;
-                    realityEditor.gui.menus.pointerLeave(event);
-                }, false);
+                    // pointerLeave(event);
+                    realityEditor.gui.buttons[buttonName + 'ButtonLeave'](event);
+                    buttonActionLeave(event);
 
-                this.buttons[key].overlay.addEventListener("pointermove", function (event) {
-                    event.button = this.button;
-                    realityEditor.gui.menus.pointerMove(event);
                 }, false);
-
+                
             }
         }
     }
-    
-    /*
+
+
+    /**
+     * register callbacks for buttons
+     * TODO: move non-menu actions to other modules
+     */
     function registerButtonCallbacks() {
-        // register callbacks for buttons
-        // TODO: move non-menu actions to other modules
 
         realityEditor.gui.buttons.registerCallbackForButton('gui', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
                 // updates the button visuals to highlight only the GUI button
-                this.buttonOff(["logic","logicPocket","logicSetting","setting","pocket"]);
-                this.buttonOn(["gui"]);
+                buttonOff(["logic","logicPocket","logicSetting","setting","pocket"]);
+                buttonOn(["gui"]);
                 // update the global gui state
                 globalStates.guiState = "ui";
             }
@@ -221,8 +239,8 @@ realityEditor.gui.menusModule = {};
 
         realityEditor.gui.buttons.registerCallbackForButton('logic', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.buttonOff(["gui","logicPocket","logicSetting","setting","pocket"]);
-                this.buttonOn(["logic"]);
+                buttonOff(["gui","logicPocket","logicSetting","setting","pocket"]);
+                buttonOn(["logic"]);
 
                 globalStates.guiState = "node";
             }
@@ -230,13 +248,13 @@ realityEditor.gui.menusModule = {};
 
         realityEditor.gui.buttons.registerCallbackForButton('reset', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.off("editing",["reset"]);
+                switchToMenu("editing", null, ["reset"]);
             }
         }.bind(this));
 
         realityEditor.gui.buttons.registerCallbackForButton('commit', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                realityEditor.gui.menus.off("editing",["commit"]);
+                switchToMenu("editing", null, ["commit"]);
             }
         }.bind(this));
 
@@ -244,10 +262,10 @@ realityEditor.gui.menusModule = {};
             if (newButtonState === 'up') {
                 // TODO: decide whether to keep this here
                 if (globalStates.unconstrainedPositioning === true) {
-                    realityEditor.gui.menus.off("editing", ["unconstrained"]);
+                    switchToMenu("editing", null, ["unconstrained"]);
                     globalStates.unconstrainedPositioning = false;
                 } else {
-                    realityEditor.gui.menus.on("editing", ["unconstrained"]);
+                    switchToMenu("editing", ["unconstrained"], null);
                     globalStates.unconstrainedPositioning = true;
                 }
             }
@@ -257,16 +275,14 @@ realityEditor.gui.menusModule = {};
             if (newButtonState === 'up') {
                 // TODO: decide whether to keep this here
                 if (globalStates.freezeButtonState === true) {
-
-                    realityEditor.gui.menus.buttonOff(["freeze"]);
-
+                    buttonOff(["freeze"]);
                     globalStates.freezeButtonState = false;
                     var memoryBackground = document.querySelector('.memoryBackground');
                     memoryBackground.innerHTML = '';
                     realityEditor.app.setResume();
 
                 } else {
-                    realityEditor.gui.menus.buttonOn(["freeze"]);
+                    buttonOn(["freeze"]);
                     globalStates.freezeButtonState = true;
                     realityEditor.app.setPause();
                 }
@@ -279,9 +295,9 @@ realityEditor.gui.menusModule = {};
                 var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
 
                 if(!didStartRecording) {
-                    realityEditor.gui.menus.buttonOff(["record"]);
+                    buttonOff(["record"]);
                 } else {
-                    realityEditor.gui.menus.buttonOff(["record"]);
+                    buttonOff(["record"]);
                 }
             }
         }.bind(this));
@@ -290,15 +306,14 @@ realityEditor.gui.menusModule = {};
             if (newButtonState === 'up') {
                 console.log('back button pressed');
 
-                this.buttonOff(["back"]);
+                buttonOff(["back"]);
 
-                if (this.history.length>0) {
+                if (history.length > 0) {
                     console.log("history: " + this.history);
-                    this.history.pop();
-                    var lastMenu = this.history[this.history.length - 1];
-                    this.on(lastMenu, []); // TODO: history should auto-remember which buttons should be highlighted
-
-                    this.adjustAfterBackButton(lastMenu);
+                    history.pop();
+                    var lastMenu = history[history.length - 1];
+                    switchToMenu(lastMenu, null, null); // TODO: history should auto-remember which buttons should be highlighted
+                    adjustAfterBackButton(lastMenu);
                 }
             }
         }.bind(this));
@@ -318,12 +333,12 @@ realityEditor.gui.menusModule = {};
 
                     if (!globalStates.editingMode) {
                         realityEditor.device.setEditingMode(true);
-                        realityEditor.gui.menus.on("editing", []);
+                        switchToMenu("editing", null, null);
                         realityEditor.app.saveDeveloperState(true);
 
                     } else {
                         realityEditor.device.setEditingMode(false);
-                        realityEditor.gui.menus.on("main",[]);
+                        switchToMenu("main", null, null);
                         realityEditor.app.saveDeveloperState(false);
                     }
 
@@ -345,7 +360,7 @@ realityEditor.gui.menusModule = {};
                 if (globalStates.guiState === "logic") {
                     console.log(" LOGIC SETTINGS PRESSED ");
                     var wasBlockSettingsOpen = realityEditor.gui.crafting.eventHelper.hideBlockSettings();
-                    realityEditor.gui.menus.off("crafting", ["logicSetting"]);
+                    switchToMenu("crafting", null, ["logicSetting"]);
                     if (!wasBlockSettingsOpen) {
                         var wasNodeSettingsOpen = realityEditor.gui.crafting.eventHelper.hideNodeSettings();
                         if (!wasNodeSettingsOpen) {
@@ -360,12 +375,12 @@ realityEditor.gui.menusModule = {};
 
                     realityEditor.gui.settings.hideSettings();
 
-                    realityEditor.gui.menus.buttonOff(["setting"]);
+                    buttonOff(["setting"]);
 
                     overlayDiv.style.display = "inline";
 
                     if (globalStates.editingMode) {
-                        realityEditor.gui.menus.on("editing", []);
+                        switchToMenu("editing", null, null);
                     }
                 }
                 else {
@@ -377,35 +392,34 @@ realityEditor.gui.menusModule = {};
 
         realityEditor.gui.buttons.registerCallbackForButton('setting', settingButtonCallback.bind(this));
         realityEditor.gui.buttons.registerCallbackForButton('logicSetting', settingButtonCallback.bind(this));
-
-
+        
         // Retail Button Callbacks
 
         realityEditor.gui.buttons.registerCallbackForButton('realityGui', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
-                this.on("realityInfo", ["realityGui"]);
+                buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
+                switchToMenu("realityInfo", ["realityGui"], null);
             }
         }.bind(this));
 
         realityEditor.gui.buttons.registerCallbackForButton('realityInfo', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.buttonOff(["realityTag", "realitySearch", "realityWork"]);
-                this.on("realityInfo", ["realityInfo", "realityGui"]);
+                buttonOff(["realityTag", "realitySearch", "realityWork"]);
+                switchToMenu("realityInfo", ["realityInfo", "realityGui"], null);
             }
         }.bind(this));
 
         realityEditor.gui.buttons.registerCallbackForButton('realityTag', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
-                this.on("reality", ["realityTag"]);
+                buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
+                switchToMenu("reality", ["realityTag"], null);
             }
         }.bind(this));
 
         realityEditor.gui.buttons.registerCallbackForButton('realitySearch', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
-                this.on("reality", ["realitySearch"]);
+                buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
+                switchToMenu("reality", ["realitySearch"], null);
 
                 if (realityEditor.gui.search.getVisibility()) {
                     realityEditor.gui.search.remove();
@@ -417,13 +431,11 @@ realityEditor.gui.menusModule = {};
 
         realityEditor.gui.buttons.registerCallbackForButton('realityWork', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
-                this.buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
-                this.on("reality", ["realityWork"]);
+                buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
+                switchToMenu("reality", ["realityWork"], null);
             }
         }.bind(this));
     }
-    */
-
 
     /**
      * Remove the oldest history item and add this menu as the newest
@@ -523,12 +535,87 @@ realityEditor.gui.menusModule = {};
             highlightButton(buttonName, false);
         });
     }
+
+    /**
+     * Triggers any side effects when the back button is pressed and you arrive at the new menu
+     * @param {string} newMenu
+     */
+    function adjustAfterBackButton(newMenu) {
+
+        if (newMenu === 'crafting') {
+            // if the blockMenu is visible, close it
+            var existingMenu = document.getElementById('menuContainer');
+            if (existingMenu && existingMenu.style.display !== 'none') {
+                realityEditor.gui.buttons.logicPocketButtonUp({button: "logicPocket", ignoreIsDown: true});
+                return;
+                // if the blockSettings view is visible, close it
+            } else if (document.getElementById('blockSettingsContainer')) {
+                realityEditor.gui.buttons.settingButtonUp({button: "setting", ignoreIsDown: true});
+                return;
+            }
+        }
+
+        // default option is to close the crafting board
+        realityEditor.gui.buttons.logicButtonUp({button: "logic", ignoreIsDown: true});
+    }
+
+    /**
+     * Highlight a particular button on touch enter
+     * @param {ButtonEvent} event
+     */
+    function buttonActionEnter(event) {
+        buttons[event.button].bg.classList.add('touched');
+    }
+
+    /**
+     * Un-highlight a particular button on touch leave
+     * @param {ButtonEvent} event
+     */
+    function buttonActionLeave(event) {
+        buttons[event.button].bg.classList.remove('touched');
+    }
+
+    /**
+     * Posts the name of the button that was pressed into any visible frames and nodes
+     * @param {string} interfaceName
+     */
+    function sendInterfaces(interfaceName) {
+        
+        // update the global app state to know which button was most recently pressed
+        globalStates.interface = interfaceName;
+
+        // send active user interfaceName status in to the AR-UI
+        var msg = { interface: globalStates.interface };
+
+        // include the search state in the message if we are in realitySearch mode
+        if (interfaceName === "realitySearch") {
+            msg.search = realityEditor.gui.search.getSearch();
+        }
+
+        realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
+
+            // post into each visible frame
+            var frame = realityEditor.getFrame(objectKey, frameKey);
+            if (frame.visible) {
+                globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+
+                // post into each visible node
+                realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
+                    var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                    if (node.visible) {
+                        globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                    }
+                });
+            }
+        });
+    }
     
     exports.getVisibility = getVisibility;
     exports.init = init;
     exports.switchToMenu = switchToMenu;
     exports.buttonOn = buttonOn;
     exports.buttonOff = buttonOff;
+    exports.sendInterfaces = sendInterfaces; // public so other events e.g. search button can send current interface to frames
     
 })(realityEditor.gui.menusModule);
 //////////////////////////////////
