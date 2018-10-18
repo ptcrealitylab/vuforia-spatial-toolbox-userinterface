@@ -82,6 +82,7 @@ realityEditor.device.onload = function () {
     realityEditor.network.realtime.initFeature();
     realityEditor.device.hololensAdapter.initFeature();
     realityEditor.device.desktopAdapter.initFeature();
+    realityEditor.gui.ar.desktopRenderer.initFeature();
     realityEditor.gui.crafting.initFeature();
 
     globalStates.realityState = false;

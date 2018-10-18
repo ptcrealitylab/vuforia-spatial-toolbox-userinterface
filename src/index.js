@@ -77,6 +77,7 @@ var realityEditor = realityEditor || {
                 positioning: {},
                 lines: {},
                 frameHistoryRenderer: {},
+                desktopRenderer: {},
                 utilities: {}
             },
             crafting: {

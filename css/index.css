@@ -194,6 +194,11 @@ body {
     border: 5px dashed rgba(255, 0, 124, 0.3);
 }
 
+.markerPlaneElement {
+    background-color: rgba(0,255,255,0.5);
+    position: absolute;
+}
+
 /*
 .contentRotation {
     -webkit-transform-style: preserve-3d;
