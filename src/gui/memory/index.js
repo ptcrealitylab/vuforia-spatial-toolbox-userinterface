@@ -199,10 +199,10 @@ MemoryContainer.prototype.startDragging = function() {
     var isBar = barContainers.indexOf(this) >= 0;
 
     if (isBar) {
-        realityEditor.gui.menus.on("bigTrash",[]);
+        realityEditor.gui.menus.switchToMenu("bigTrash");
         //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
     } else {
-        realityEditor.gui.menus.on("bigPocket",[]);
+        realityEditor.gui.menus.switchToMenu("bigPocket");
        // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
     }
 };
@@ -229,10 +229,10 @@ MemoryContainer.prototype.stopDragging = function() {
     var isBar = barContainers.indexOf(this) >= 0;
 
     if (isBar) {
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
         //realityEditor.gui.pocket.pocketOnMemoryDeletionStop();
     } else {
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
        //realityEditor.gui.pocket.pocketOnMemoryCreationStop();
     }
 
@@ -314,7 +314,7 @@ MemoryContainer.prototype.onPointerUp = function() {
             
             event.stopPropagation();
         }
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
       //  realityEditor.gui.pocket.pocketOnMemoryCreationStop();
     } else if (this.dragging) {
         return;
@@ -397,7 +397,7 @@ MemoryContainer.prototype.remember = function() {
     
     realityEditor.app.remember(this.memory.id, this.memory.matrix);
 
-    realityEditor.gui.menus.on('main', ['freeze']);
+    realityEditor.gui.menus.switchToMenu('main', ['freeze'], null);
     globalStates.freezeButtonState = true;
 };
 
@@ -484,7 +484,7 @@ function createMemory() {
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
     currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
 
-    realityEditor.gui.menus.on("bigPocket",[]);
+    realityEditor.gui.menus.switchToMenu("bigPocket");
    // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
 }
 

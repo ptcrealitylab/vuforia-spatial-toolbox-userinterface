@@ -1651,13 +1651,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         if (typeof msgContent.settings.setSettings.realityState !== "undefined") {
 
             if (msgContent.settings.setSettings.realityState) {
-                realityEditor.gui.menus.on("reality", ["realityGui"]);
+                realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
                 globalStates.realityState = true;
                 realityEditor.app.saveRealityState(true);
 
             } else {
-                realityEditor.gui.menus.off("main", ["gui", "reset", "unconstrained"]);
-                realityEditor.gui.menus.on("main", ["gui"]);
+                realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
                 globalStates.realityState = false;
                 realityEditor.app.saveRealityState(false);
             }

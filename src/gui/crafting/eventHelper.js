@@ -774,7 +774,7 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     craftingMenusContainer.appendChild(nodeSettingsContainer);
 
-    realityEditor.gui.menus.on("crafting",["logicSetting"]);
+    realityEditor.gui.menus.switchToMenu("crafting", ["logicSetting"], null);
 };
 
 realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {

@@ -102,8 +102,7 @@ realityEditor.device.onload = function () {
     CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
 
     // set active buttons and preload some images
-    realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
-    realityEditor.gui.menus.on("main",["gui"]);
+    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
 	realityEditor.gui.buttons.initButtons();
 	
 	// set up the pocket and memory bars

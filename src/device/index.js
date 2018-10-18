@@ -442,8 +442,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
         // show the trash and pocket
         if (activeVehicle.type === "logic") {
-            realityEditor.gui.menus.on("trashOrSave", []); // TODO: use this to enable logic node pocket again
-            // realityEditor.gui.menus.on("bigTrash", []);
+            realityEditor.gui.menus.switchToMenu("trashOrSave"); // TODO: use this to enable logic node pocket again
+            // realityEditor.gui.menus.switchToMenu("bigTrash");
 
         }
 
@@ -453,7 +453,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
         if (activeVehicle.location === "global") {
             // show the trash if this is a reusable frame
-            realityEditor.gui.menus.on("bigTrash", []);            
+            realityEditor.gui.menus.switchToMenu("bigTrash");            
         }
 
     }
@@ -730,9 +730,9 @@ realityEditor.device.onElementTouchUp = function(event) {
     globalCanvas.hasContent = true;
     
     // hide the trash menu
-    // realityEditor.gui.menus.buttonOn("main",[]);
+    // realityEditor.gui.menus.buttonOn("main");
     // if (!didDisplayCrafting) {
-    //     realityEditor.gui.menus.on("main",[]);
+    //     realityEditor.gui.menus.switchToMenu("main");
     // }
 
     cout("onElementTouchUp");
@@ -926,7 +926,7 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     
     // if not in crafting board, reset menu back to main
     if (globalStates.guiState !== "logic" && this.currentScreenTouches.length === 1) {
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
     }
 
     // clear the memory being saved in the touch overlay
@@ -990,7 +990,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
-                // realityEditor.gui.menus.on("bigPocket", []);
+                // realityEditor.gui.menus.switchToMenu("bigPocket");
                 realityEditor.gui.memory.createMemory();
 
             }
@@ -1211,7 +1211,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         // realityEditor.gui.menus.buttonOn([]);
         var didDisplayCrafting = globalStates.currentLogic; // proxy to determine if crafting board is open / we shouldn't reset the menu
         if (!didDisplayCrafting) {
-            realityEditor.gui.menus.on("main",[]);
+            realityEditor.gui.menus.switchToMenu("main");
         }
     }
     
@@ -1411,11 +1411,10 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
     }
 
     if (globalStates.realityState) {
-        realityEditor.gui.menus.on("realityInfo",["realityGui"]);
+        realityEditor.gui.menus.switchToMenu("realityInfo", ["realityGui"], null);
         globalStates.realityState = true;
     } else {
-        realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
-        realityEditor.gui.menus.on("main",["gui"]);
+        realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
         globalStates.realityState = false;
     }
 
@@ -1428,7 +1427,7 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
     }
 
     if (globalStates.editingMode) {
-        realityEditor.gui.menus.on("editing", []);
+        realityEditor.gui.menus.switchToMenu("editing");
     }
     
     cout("setStates");

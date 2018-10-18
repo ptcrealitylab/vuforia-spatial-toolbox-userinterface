@@ -246,7 +246,7 @@ realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
         overlayDiv.innerHTML = '';
         realityEditor.gui.memory.nodeMemories.renderMemories();
     }
-    realityEditor.gui.menus.on("main",[]);
+    realityEditor.gui.menus.switchToMenu("main");
 };
 
 // hide the pocket and add a new logic node to the closest visible object, and start dragging it to move under the finger
@@ -283,7 +283,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
 
         realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
             
-        realityEditor.gui.menus.on("bigTrash",[]);
+        realityEditor.gui.menus.switchToMenu("bigTrash");
 
         // remove the touch event listener so that it doesn't fire twice and create two Logic Nodes by accident
         memoryContainer.removeEventListener('pointermove', nodeMemories.states.dragEventListeners[i], false);

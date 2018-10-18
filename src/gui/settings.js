@@ -103,7 +103,7 @@ document.body.classList.add('clearSky');
 } else {
 
 
-    // realityEditor.gui.menus.on("main",[]);
+    // realityEditor.gui.menus.switchToMenu("main",[]);
 
 
     globalStates.UIOffMode = false;
@@ -114,10 +114,10 @@ document.body.classList.add('clearSky');
 realityEditor.gui.settings.showSettings = function() {
 
     if(!globalStates.realityState) {
-        realityEditor.gui.menus.on("setting", ["setting"]);
+        realityEditor.gui.menus.switchToMenu("setting", ["setting"], null);
     }
     else {
-        realityEditor.gui.menus.on("settingReality", ["setting"]);
+        realityEditor.gui.menus.switchToMenu("settingReality", ["setting"], null);
     }
 
 

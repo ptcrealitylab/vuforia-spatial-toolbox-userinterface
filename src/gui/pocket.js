@@ -67,7 +67,7 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 		if (globalStates.guiState === 'logic') {
 			realityEditor.gui.crafting.blockMenuHide();
-            realityEditor.gui.menus.off("crafting",["logicPocket"]);
+            realityEditor.gui.menus.switchToMenu("crafting", null, ["logicPocket"]);
         }
 	}
 
@@ -620,9 +620,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     return;
                 }
 
-                if (realityEditor.gui.buttons.getButtonState(buttonName) === 'down') {
-                    realityEditor.gui.pocket.pocketButtonAction();
-                }
+                realityEditor.gui.pocket.pocketButtonAction();
 
             } else if (newButtonState === 'enter') {
 
@@ -669,7 +667,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
                     realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
 
-                    realityEditor.gui.menus.on("bigTrash",[]);
+                    realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
 
                 }
 

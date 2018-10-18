@@ -435,7 +435,7 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
     document.getElementById("craftingBoard").style.visibility = "visible";
     document.getElementById("craftingBoard").style.display = "inline";
     
-    realityEditor.gui.menus.on("crafting", ["freeze"]);
+    realityEditor.gui.menus.switchToMenu("crafting", ["freeze"], null);
     
     if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
         
@@ -460,7 +460,7 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
 realityEditor.gui.crafting.craftingBoardHide = function() {
 
     if(globalStates.currentLogic) {
-        //realityEditor.gui.menus.off("logic",["freeze"]);
+        //realityEditor.gui.menus.switchToMenu("logic", null, ["freeze"]);
 
         //globalStates.freezeButtonState = false;
         var memoryBackground = document.querySelector('.memoryBackground');
@@ -486,7 +486,7 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
     // remove the block menu if it's showing
     this.blockMenu.resetBlockMenu();
     // reset side menu buttons
-    realityEditor.gui.menus.off("logic",["setting","pocket"]);
+    realityEditor.gui.menus.switchToMenu("logic", null, ["setting","pocket"]);
 
     // hide the crafting board div
     document.getElementById("craftingBoard").style.visibility = "hidden";
@@ -504,7 +504,7 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
         return;
     }
     
-    realityEditor.gui.menus.on("crafting",["logicPocket"]);
+    realityEditor.gui.menus.switchToMenu("crafting", ["logicPocket"], null);
     
     // hide block settings if necessary
     blockSettingsContainer = document.getElementById('blockSettingsContainer');
@@ -542,7 +542,7 @@ realityEditor.gui.crafting.blockMenuHide = function() {
         if (!globalStates.pocketButtonState) {
             globalStates.pocketButtonState = true;
             //document.getElementById('pocketButton').src = pocketButtonImage[4].src;
-            realityEditor.gui.menus.off("crafting",["logicPocket"]);
+            realityEditor.gui.menus.switchToMenu("crafting", null, ["logicPocket"]);
         }
     }
     
