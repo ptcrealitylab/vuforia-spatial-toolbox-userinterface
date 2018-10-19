@@ -40,19 +40,37 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         // register callbacks to various buttons to perform commits
         realityEditor.gui.buttons.registerCallbackForButton('commit', function(buttonName, newButtonState) {
             if (newButtonState === 'up') {
+                
+                var objectKeysToDelete = [];
                 for (var objectKey in objects) {
                     if (!objects.hasOwnProperty(objectKey)) continue;
-
                     // only commit currently visible objects, not everything
                     if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
-                    
-                    realityEditor.network.sendSaveCommit(objectKey);
-
-                    // update local history instantly so that client and server are synchronized
-                    var thisObject = realityEditor.getObject(objectKey);
-                    thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
-                    refreshGhosts();
+                    objectKeysToDelete.push(objectKey);
                 }
+                
+                var objectNames = objectKeysToDelete.map(function(objectKey) {
+                    return realityEditor.getObject(objectKey).name;
+                });
+                
+                var description = 'The following objects will be saved: ' + objectNames.join(', ');
+                console.log(description);
+                
+                realityEditor.gui.modal.openRealityModal('Cancel', 'Overwrite Saved State', function() {
+                    console.log('commit cancelled');
+                }, function() {
+                    console.log('commit confirmed!');
+                    
+                    objectKeysToDelete.forEach(function(objectKey) {
+                        realityEditor.network.sendSaveCommit(objectKey);
+                        // update local history instantly so that client and server are synchronized
+                        var thisObject = realityEditor.getObject(objectKey);
+                        thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
+                        refreshGhosts();
+                    });
+                    
+                });
+                
             }
         });
 

@@ -49,7 +49,6 @@
 
 createNameSpace("realityEditor.gui.menus");
 
-///////////////////////////////////
 (function(exports) {
 
     /**

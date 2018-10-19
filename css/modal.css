@@ -1,0 +1,219 @@
+#modalFade {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.7);
+    -webkit-backdrop-filter: blur(2px);
+    -webkit-transform: translateZ(900px)
+}
+
+#modalContainer {
+    position: absolute;
+    width: 60vw;
+    height: 60vh;
+    left: 20vw;
+    top: 20vh;
+    text-align: center;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    border-radius: 5px;
+    -webkit-transform: translateZ(901px)
+}
+
+#modalDescription {
+    position: absolute;
+    width: 50vw;
+    height: 30vh;
+    left: 5vw;
+    top: 5vh;
+    display: table;
+}
+
+#modelDescription p {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.modalButton {
+    position: absolute;
+    width: 25vw;
+    height: 7vh;
+    line-height: 7vh;
+    padding: 3vh;
+    top: 26.5vh;
+}
+
+#modalCancel {
+    left: 5vw;
+    width: 15vw;
+}
+
+#modalSubmit {
+    right: 5vw;
+}
+
+.buttonGreen {
+    color: rgb(41,253,47);
+    border: 2px solid rgb(41,253,47);
+    background-color: rgba(41,253,47,0.05);
+}
+
+.buttonRed {
+    color: rgba(255, 1, 159, 1);
+    border: 2px solid rgba(255, 1, 159, 1);
+    background-color: rgba(255, 1, 159, 0.05);
+}
+
+.buttonRed:active {
+    background-color: rgba(255, 1, 159, 0.3);
+}
+
+.buttonBlue {
+    color: rgb(45,255,255);
+    border: 2px solid rgb(45,255,255);
+    background-color: rgba(45,255,255,0.05);
+}
+
+.buttonBlue:active {
+    background-color: rgba(45,255,255,0.3);
+}
+
+.buttonPurple {
+    color: rgb(210,113,255);
+    border: 2px solid rgb(210,113,255);
+    background-color: rgba(210,113,255,0.05);
+}
+
+.buttonPurple:active {
+    background-color: rgba(210,113,255,0.3);
+}
+
+.buttonYellow {
+    color: rgb(255,255,45);
+    border: 2px solid rgb(255,255,45);
+    background-color: rgba(255,255,45,0.05);
+}
+
+.buttonYellow:active {
+    background-color: rgba(255,255,45,0.3);
+}
+
+.buttonWhite {
+    color: rgb(255,255,255);
+    border: 2px solid rgb(255,255,255);
+    background-color: rgba(255,255,255,0.05);
+}
+
+.buttonWhite:active {
+    background-color: rgba(255,255,255,0.3);
+}
+
+.buttonHidden {
+    visibility: hidden;
+    color: rgba(255,255,255,0.0);;
+    background-color: rgba(255,255,255,0.0);
+}
+
+@keyframes modalFadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+
+    }
+}
+
+@keyframes modalFadeOut {
+    0% {
+        opacity:1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.modalVisibleFadeIn {
+    opacity: 1;
+
+    animation-name: fadeIn;
+    animation-duration: 250ms;
+    -webkit-animation-fill-mode: forwards; /* Chrome, Safari, Opera */
+    -webkit-animation-timing-function: ease-out;
+}
+
+.modalInvisibleFadeOut {
+    opacity:1;
+
+    animation-name: fadeOut;
+    animation-duration: 250ms;
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-out;
+}
+
+#modalFadeClassic {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
+    -webkit-backdrop-filter: blur(2px);
+    -webkit-transform: translateZ(900px)
+}
+#modalContainerClassic {
+    position: absolute;
+    width: 60vw;
+    height: 60vh;
+    left: 20vw;
+    top: 20vh;
+    /*border: 3px solid cyan;*/
+    text-align: center;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    border-radius: 5px;
+    background-color: rgba(255,255,255,0.8);
+    -webkit-transform: translateZ(901px)
+}
+#modalDescriptionClassic {
+    position: absolute;
+    width: 50vw;
+    height: 30vh;
+    left: 5vw;
+    top: 5vh;
+    /*border: 1px solid cyan;*/
+    display: table;
+}
+#modalDescriptionClassic p {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
+.modalButtonClassic {
+    position: absolute;
+    /*border: 1px solid cyan;*/
+    width: 15vw;
+    height: 7vh;
+    line-height: 7vh;
+    padding: 3vh;
+    top: 40vh;
+    border-radius: 5px;
+
+}
+#modalCancelClassic {
+    left: 5vw;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: rgb(80,80,80);
+}
+#modalCancelClassic:active {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+#modalSubmitClassic {
+    right: 5vw;
+    background-color: rgba(255, 1, 159, 1);
+    color: white;
+}
+#modalSubmitClassic:active {
+    background-color: rgba(255, 1, 159, 0.5);
+}

@@ -64,6 +64,19 @@ createNameSpace("realityEditor.device");
  * ... and notify the native iOS code that the user interface finished loading
  */
 realityEditor.device.onload = function () {
+    
+    realityEditor.app.getExternalText(function(savedState) {
+        if (savedState === '(null)') { savedState = 'null'; };
+        console.log('saved external text = ', JSON.parse(savedState));
+        if (savedState) {
+            this.appFunctionCall("loadNewUI", {reloadURL: savedState});
+        }
+    });
+
+    realityEditor.app.getDiscoveryText(function(savedState) {
+        if (savedState === '(null)') { savedState = 'null'; };
+        console.log('saved discovery text = ', JSON.parse(savedState));
+    });
 
     // Initialize some global variables for the device session
     this.cout('Running on platform: ' + globalStates.platform);

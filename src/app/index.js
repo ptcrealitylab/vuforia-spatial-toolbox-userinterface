@@ -382,7 +382,7 @@ rr = function() {
 };
 
 /**
- ************** ADDITIONAL ROUTES ****************
+ ************** SAVE AND LOAD DATA FROM DISK ****************
  */
 
 /**
@@ -462,6 +462,87 @@ realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
 realityEditor.app.saveExternalText = function(newExternalText) {
     this.setStorage('SETUP:EXTERNAL', newExternalText);
 };
+
+/**
+ * Getters for each property saved to disk
+ */
+
+
+/**
+ * Get the persistent setting for developer (editing) mode.
+ * @param {function} callback
+ */
+realityEditor.app.getDeveloperState = function(callback) {
+    this.getStorage('SETUP:DEVELOPER', callback);
+};
+
+/**
+ * Get the persistent setting for clear sky mode.
+ * @param {function} callback
+ */
+realityEditor.app.getClearSkyState = function(callback) {
+    this.getStorage('SETUP:CLEARSKY', callback);
+};
+
+/**
+ * Get the persistent setting for reality (retail) mode.
+ * @param {function} callback
+ */
+realityEditor.app.getRealityState = function(callback) {
+    this.getStorage('SETUP:REALITY', callback);
+};
+
+/**
+ * Get the persistent setting for instant (capacitive touch) mode.
+ * @param {function} callback
+ */
+realityEditor.app.getInstantState = function(callback) {
+    this.getStorage('SETUP:INSTANT', callback);
+};
+
+/**
+ * Get the persistent setting for whether to use zone.
+ * @param {function} callback
+ */
+realityEditor.app.getZoneState = function(callback) {
+    this.getStorage('SETUP:ZONE', callback);
+};
+
+/**
+ * Get the persistent setting for extended tracking mode.
+ * @param {function} callback
+ */
+realityEditor.app.getExtendedTrackingState = function(callback) {
+    this.getStorage('SETUP:TRACKING', callback);
+};
+
+/**
+ * Get the persistent setting for the zone string.
+ * @param {function} callback
+ */
+realityEditor.app.getZoneText = function(callback) {
+    this.getStorage('SETUP:ZONETEXT', callback);
+};
+
+/**
+ * Get the persistent setting for the object discovery server string.
+ * @param {function} callback
+ */
+realityEditor.app.getDiscoveryText = function(callback) {
+    this.getStorage('SETUP:DISCOVERY', callback);
+};
+
+/**
+ * Get the persistent setting for the IP address to load the external userinterface from.
+ * @param {function} callback
+ */
+realityEditor.app.getExternalText = function(callback) {
+    this.getStorage('SETUP:EXTERNAL', callback);
+};
+
+/**
+ ************** ADDITIONAL ROUTES ****************
+ */
 
 /**
  * Save the background image for a memory.
