@@ -1502,7 +1502,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         }
     }
     
-    var isVisible = activeVehicle.visible === true;
+    // var isVisible = activeVehicle.visible === true;
     
     // TODO: this makes frames disappear when object becomes invisible, but it's making the visibility message keep posting into the frame, which in response makes the node socket keep sending on loop while in the node view... 
     /*
@@ -1515,7 +1515,9 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     }
     */
 
-    if (isVisible) {
+    // if (isVisible) {
+    
+    if (globalDOMCache['object' + activeKey]) {
         
         if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
             globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
@@ -1820,6 +1822,22 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
         console.log('dont kill object with sticky frame');
         return;
     }
+    
+    if (globalProgram.objectA) {
+        console.log('dont kill object while drawing a link');
+        return;
+    }
+    
+    // var keys = realityEditor.getKeysFromKey(activeKey);
+    // if (keys.objectKey === globalProgram.objectA) {
+    //     console.log('dont kill object while dragging line from it');
+    //     return;
+    // }
+    
+    // if (activeKey === globalProgram.frameA || activeKey === globalProgram.nodeA) {
+    //     console.log('dont kill object while dragging line from it');
+    //     return;
+    // }
 
     if (activeVehicle.visibleCounter > 1) {
         activeVehicle.visibleCounter--;

@@ -377,3 +377,34 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
         nodeKey: nodeKey
     };
 };
+
+/**
+ * unknownKey is an objectKey, frameKey, or nodeKey
+ * @param {string} unknownKey
+ * @return {{objectKey: string|null, frameKey: string|null, nodeKey: string|null}}
+ */
+realityEditor.getKeysFromKey = function(unknownKey) {
+    var keys = {
+        objectKey: null,
+        frameKey: null,
+        nodeKey: null
+    };
+    
+    Object.keys(objects).forEach(function(objectKey) {
+        if (unknownKey.indexOf(objectKey) > -1) {
+            keys.objectKey = objectKey;
+            realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
+                if (unknownKey.indexOf(frameKey) > -1) {
+                    keys.frameKey = frameKey;
+                    realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
+                        if (unknownKey.indexOf(nodeKey) > -1) {
+                            keys.nodeKey = nodeKey;
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    return keys;
+};
