@@ -132,7 +132,7 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
     var newDisplay = newEditingMode ? 'inline' : 'none';
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var svg = document.getElementById('svg' + frameKey);
-        if (svg) {
+        if (svg && globalStates.guiState === "ui") { // don't show green outline for frames if in node view
             svg.style.display = newDisplay;
         }
         realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
@@ -320,6 +320,11 @@ realityEditor.device.resetEditingState = function() {
     this.triggerCallbacks('resetEditingState');
 };
 
+/**
+ * Adds a callback function that will be invoked when the realityEditor.device.[functionName] is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
 realityEditor.device.registerCallback = function(functionName, callback) {
     if (typeof this.callbacks[functionName] === 'undefined') {
         this.callbacks[functionName] = [];
@@ -336,7 +341,7 @@ realityEditor.device.registerCallback = function(functionName, callback) {
 realityEditor.device.triggerCallbacks = function(functionName, params) {
     if (typeof this.callbacks[functionName] === 'undefined') return;
     
-    // iterates over all registered frameMessageHandlers to trigger events in various modules
+    // iterates over all registered callbacks to trigger events in various modules
     this.callbacks[functionName].forEach(function(callback) {
         callback(params);
     });
@@ -462,6 +467,10 @@ realityEditor.device.onElementTouchDown = function(event) {
     // how long it takes to move the element:
     // instant if editing mode on, 400ms if not (or touchMoveDelay if specially configured for that element)
     var moveDelay = this.defaultMoveDelay;
+    // take a lot longer to move nodes, otherwise it's hard to draw links
+    if (globalStates.guiState === "node") {
+        moveDelay = this.defaultMoveDelay * 3;
+    }
     if (globalStates.editingMode) {
         moveDelay = 0;
     } else if (activeVehicle.moveDelay) {
@@ -482,7 +491,7 @@ realityEditor.device.onElementTouchDown = function(event) {
     }
     
     // after a certain amount of time, start editing this element
-    if (moveDelay > 0) {
+    if (moveDelay >= 0) {
         var timeoutFunction = setTimeout(function () {
             realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
         }, moveDelay);
@@ -576,7 +585,7 @@ realityEditor.device.onElementTouchOut = function(event) {
             realityEditor.gui.menus.buttonOn("main",[]); // endTrash 
         }
 
-        globalProgram.logicSelector = 4; // TODO: why 4?
+        globalProgram.logicSelector = 4; // 4 means default link (not one of the colored ports)
 
         // reset touch overlay
         overlayDiv.classList.remove('overlayPositive');

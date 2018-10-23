@@ -52,7 +52,7 @@ createNameSpace("realityEditor.network");
 /**
  * @type {Array.<{messageName: string, callback: function}>}
  */
-realityEditor.network.frameMessageHandlers = [];
+realityEditor.network.postMessageHandlers = [];
 
 /**
  * Creates an extendable method for other modules to register callbacks that will be triggered
@@ -60,8 +60,8 @@ realityEditor.network.frameMessageHandlers = [];
  * @param {string} messageName
  * @param {function} callback
  */
-realityEditor.network.addFrameMessageHandler = function(messageName, callback) {
-    this.frameMessageHandlers.push({
+realityEditor.network.addPostMessageHandler = function(messageName, callback) {
+    this.postMessageHandlers.push({
         messageName: messageName,
         callback: callback
     });
@@ -912,16 +912,28 @@ realityEditor.network.onAction = function (action) {
 
 realityEditor.network.onInternalPostMessage = function (e) {
     var msgContent = {};
-    if (e.data) {
+    
+    // catch error when safari sends a misc event
+    if (typeof e === 'object' && typeof e.data === 'object') {
+        msgContent = e.data;
+        
+    } else if (e.data && typeof e.data !== 'object') {
         msgContent = JSON.parse(e.data);
     } else {
         msgContent = JSON.parse(e);
     }
-
+    
     // console.log("      onInternalPostMessage");
     // console.log("frame: " + msgContent.frame + ", node: " + msgContent.node + ", width: " + msgContent.width);
     // console.log("\n\n");
 
+    // iterates over all registered postMessageHandlers to trigger events in various modules
+    this.postMessageHandlers.forEach(function(messageHandler) {
+        if (typeof msgContent[messageHandler.messageName] !== 'undefined') {
+            messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
+        }
+    });
+    
     if (typeof msgContent.settings !== "undefined") {
         realityEditor.network.onSettingPostMessage(msgContent);
         return;
@@ -1361,13 +1373,6 @@ if (thisFrame) {
         }
         
     }
-    
-    // iterates over all registered frameMessageHandlers to trigger events in various modules
-    this.frameMessageHandlers.forEach(function(messageHandler) {
-        if (typeof msgContent[messageHandler.messageName] !== 'undefined') {
-            messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
-        }
-    });
     
 };
 
@@ -2090,9 +2095,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
     }
-
-  
-
+    
 };
 
 realityEditor.network.sendSaveCommit = function (objectKey) {

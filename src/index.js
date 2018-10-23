@@ -63,7 +63,8 @@ var realityEditor = realityEditor || {
             utilities: {},
             speechProcessor: {},
             speechPerformer: {},
-            touchInputs : {}
+            touchInputs : {},
+            touchPropagation: {}
 		},
 		gui: {
 			ar: {
@@ -73,6 +74,8 @@ var realityEditor = realityEditor || {
 				},
                 positioning: {},
                 lines: {},
+                frameHistoryRenderer: {},
+                desktopRenderer: {},
                 utilities: {}
             },
             crafting: {
@@ -98,7 +101,8 @@ var realityEditor = realityEditor || {
             utilities: {},
             canvasCache: {},
             domCache: {},
-            setup: {}
+            setup: {},
+            modal: {}
 		},
         network: {
             utilities: {}
@@ -339,4 +343,37 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
         if (!object.frames.hasOwnProperty(frameKey)) continue;
         callback(objectKey, frameKey);
     }
+};
+
+/**
+ * Extracts the object and/or frame and/or node keys depending on the type of vehicle
+ * @param {Object|Frame|Node} vehicle
+ * @return {{objectKey: string|null, frameKey: string|null, nodeKey: string|null}}
+ */
+realityEditor.getKeysFromVehicle = function(vehicle) {
+    var objectKey = null;
+    var frameKey = null;
+    var nodeKey = null;
+
+    if (typeof vehicle.objectId !== 'undefined') {
+        objectKey = vehicle.objectId;
+    }
+    if (typeof vehicle.frameId !== 'undefined') {
+        frameKey = vehicle.frameId;
+    }
+    if (typeof vehicle.uuid !== 'undefined') {
+        if (objectKey && frameKey) {
+            nodeKey = vehicle.uuid;
+        } else if (objectKey) {
+            frameKey = vehicle.uuid;
+        } else {
+            objectKey = vehicle.uuid;
+        }
+    }
+    
+    return {
+        objectKey: objectKey,
+        frameKey: frameKey,
+        nodeKey: nodeKey
+    };
 };

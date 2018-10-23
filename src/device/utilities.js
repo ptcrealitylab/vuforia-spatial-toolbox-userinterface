@@ -69,13 +69,6 @@ function cout() {
 }
 
 /**
- * @desc
- * @param
- * @param
- * @return {String}
- **/
-
-/**
  * Generates a random 12 character unique identifier using uppercase, lowercase, and numbers (e.g. "OXezc4urfwja")
  * @return {string}
  */

@@ -60,6 +60,12 @@ createNameSpace("realityEditor.device.layout");
  */
 realityEditor.device.layout.adjustForScreenSize = function() {
 
+    // center the menu vertically if the screen is taller than 320 px
+    var MENU_HEIGHT = 320;
+    var menuHeightDifference = globalStates.width - MENU_HEIGHT;
+    document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
+    CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+
     // in onLoad.js, (globalStates.device === 'iPhone10,3') is not set yet, so use other method to set up screen
     if (globalStates.rightEdgeOffset) { 
 

@@ -70,7 +70,8 @@ realityEditor.device.onload = function () {
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
         globalStates.platform = false;
     }
-    globalStates.realityState= false;
+    
+    globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
@@ -125,11 +126,10 @@ realityEditor.device.onload = function () {
     });
     
     // start TWEEN library for animations
-    function animate(time) {
+    (function animate(time) {
         requestAnimationFrame(animate);
         TWEEN.update(time);
-    }
-    animate();
+    })();
     
     // initialize additional features
     realityEditor.device.touchInputs.initFeature();

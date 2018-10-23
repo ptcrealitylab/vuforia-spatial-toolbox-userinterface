@@ -58,7 +58,6 @@ createNameSpace("realityEditor.gui.ar");
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/
-// set projection matrix
 
 /**
  * Called from the native iOS Vuforia engine with the projection matrix for rendering to the screen correctly.
@@ -189,7 +188,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         viewportScaling[0] = 568 * scaleRatio;
         viewportScaling[5] = -320 * scaleRatio;
     }
-
+    
     var r = [];
     globalStates.realProjectionMatrix = matrix;
 

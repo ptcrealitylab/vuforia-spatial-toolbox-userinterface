@@ -188,13 +188,8 @@ realityEditor.gui.buttons.resetButtonUp = function(event){
 
     if (!globalStates.resetButtonDown) return;
     globalStates.resetButtonDown = false;
-
-    for (var objectKey in objects) {
-        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
-            continue;
-        }
-        realityEditor.network.sendResetToLastCommit(objectKey); // TODO: this doesnt reset links yet, just positions
-    }
+    
+    realityEditor.gui.ar.frameHistoryRenderer.onResetButtonPressed();
 };
 
 realityEditor.gui.buttons.commitButtonDown = function(event) {
@@ -209,19 +204,8 @@ realityEditor.gui.buttons.commitButtonUp = function(event) {
 
     if (!globalStates.commitButtonDown) return;
     globalStates.commitButtonDown = false;
-
-    for (var objectKey in objects) {
-        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
-            continue;
-        }
-        realityEditor.network.sendSaveCommit(objectKey);
-        
-        // update local history instantly
-        var thisObject = realityEditor.getObject(objectKey);
-        thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
-        
-        realityEditor.gui.ar.frameHistoryRenderer.refreshGhosts();
-    }
+    
+    realityEditor.gui.ar.frameHistoryRenderer.onCommitButtonPressed();
 };
 
 realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {

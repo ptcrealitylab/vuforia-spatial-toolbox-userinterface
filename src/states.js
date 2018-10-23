@@ -78,7 +78,7 @@ var globalStates = {
     
     width: window.innerHeight,
     height: window.innerWidth,
-	guiState: "ui",
+	guiState: "ui", // possible values: "ui"=(frames visible), "node"=(nodes visible), "logic"=(crafting board)
 	UIOffMode: false,
 	settingsButtonState: false,
 	extendedTracking: false,

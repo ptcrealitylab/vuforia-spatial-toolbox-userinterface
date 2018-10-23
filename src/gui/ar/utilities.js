@@ -1299,3 +1299,30 @@ realityEditor.gui.ar.utilities.invertQuaternion = function(q) {
         w: q.w/d
     }
 };
+
+/**
+ * @author https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+ * @param {number} pitch
+ * @param {number} roll
+ * @param {number} yaw
+ * @return {q}
+ */
+realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw = function(pitch, roll, yaw) {
+
+    // create identity Quaternion structure as a placeholder
+    var q = { x: 0, y: 0, z: 0, w: 1 };
+    
+    // Abbreviations for the various angular functions
+    var cy = Math.cos(yaw * 0.5);
+    var sy = Math.sin(yaw * 0.5);
+    var cr = Math.cos(roll * 0.5);
+    var sr = Math.sin(roll * 0.5);
+    var cp = Math.cos(pitch * 0.5);
+    var sp = Math.sin(pitch * 0.5);
+
+    q.w = cy * cr * cp + sy * sr * sp;
+    q.x = cy * sr * cp - sy * cr * sp;
+    q.y = cy * cr * sp + sy * sr * cp;
+    q.z = sy * cr * cp - cy * sr * sp;
+    return q;
+};
