@@ -37,7 +37,6 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 } else if (globalStates.guiState === 'node') {
                     hideFrameGhosts(visibleObjects);
                     renderNodeGhostsForVisibleObjects(visibleObjects);
-                    
                     renderLinkGhostsForVisibleObjects(visibleObjects);
                 }
 
@@ -230,7 +229,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                         //   1) we deleted the frame that contains it
                         //   2) we deleted the node itself
                         //   3) the node was repositioned (x, y, scale, or matrix)
-                        if (wasFrameDeleted || wasNodeDeleted || didPositionChange(ghostPosition, realPosition)) {
+                        if (ghostFrame.visualization !== 'screen' && (wasFrameDeleted || wasNodeDeleted || didPositionChange(ghostPosition, realPosition))) {
 
                             // actually draw the outline as a DOM element
                             renderGhost(objectKey, ghostFrameKey, ghostNodeKey, ghostFrame, ghostNode, visibleObjects[objectKey], wasFrameDeleted || wasNodeDeleted);
@@ -291,7 +290,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                     // we need to render a ghost outline at the old node position if:
                     //   1) we deleted the frame
                     //   3) the frame was repositioned (x, y, scale, or matrix)
-                    if (wasFrameDeleted || didPositionChange(ghostPosition, realPosition)) {
+                    if (ghostFrame.visualization !== 'screen' && (wasFrameDeleted || didPositionChange(ghostPosition, realPosition))) {
                         
                         // actually render the outline as a DOM element
                         renderGhost(objectKey, ghostFrameKey, null, ghostFrame, null, visibleObjects[objectKey], wasFrameDeleted);

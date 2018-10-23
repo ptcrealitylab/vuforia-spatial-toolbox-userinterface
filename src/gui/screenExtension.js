@@ -318,9 +318,10 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     if (globalStates.freezeButtonState) return; // don't allow pushing and pulling if the background is frozen
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
-
+    
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
-    if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
+    var isFullscreenFrame = screenFrame.fullScreen !== false; // can only push in frames that aren't fullscreen (e.g. three.js)
+    if (screenFrame && isScreenObjectVisible && !isFullscreenFrame && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
         
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
