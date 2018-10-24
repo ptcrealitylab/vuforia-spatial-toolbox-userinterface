@@ -45,7 +45,7 @@
 /**
  * Logic Node Memory Bar
  *
- * Allows user creation and selection of Logic Node memories.
+ * Allows user creation and selection of Logic Node memories (templates of pre-programmed Logic Nodes which the user can create instances of).
  */
 
 createNameSpace("realityEditor.gui.memory.nodeMemories");
@@ -65,6 +65,7 @@ realityEditor.gui.memory.nodeMemories.initMemoryBar = function() {
     for (var i = 0; i < 5; i++) {
         var memoryContainer = document.createElement('div');
         memoryContainer.classList.add('memoryContainer');
+        memoryContainer.classList.add('nodeMemoryContainer');
         memoryContainer.setAttribute('touch-action', 'none');
         memoryContainer.style.position = 'relative';
 

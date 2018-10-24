@@ -228,32 +228,61 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     var isPocketTapped = false;
 
     var realityElements = [
-      
-        /*{
-            name: 'sensor-graph',
-            width: 304,
-            height: 304,
+
+        {
+            name: 'graphUI',
+            width: 690,
+            height: 410,
             nodes: [
-                'value'
+                {name: 'value', type: "node"}
             ]
         },
         {
-            name: 'sensor-linear',
-            width: 204,
-            height: 52,
+            name: 'slider',
+            width: 206,
+            height: 526,
             nodes: [
-                'value'
+                {name: 'value', type: "node"}
             ]
         },
         {
-            name: 'sensor-digital',
-            width: 100,
-            height: 100,
+            name: 'slider-2d',
+            width: 526,
+            height: 526,
             nodes: [
-                'value'
+                {name: 'valueX', type: "node"},
+                {name: 'valueY', type: "node"}
             ]
-        },*/
-        
+        },
+ 
+        // {
+        //     name: 'machine-gltf',
+        //     width: 568,
+        //     height: 320,
+        //     nodes: [
+        //     ]
+        // },
+        {
+            name: 'sphere',
+            width: 568,
+            height: 320,
+            nodes: [
+                // {name: 'hue', type: "node"},
+                // {name: 'saturation', type: "node"},
+                // {name: 'lightness', type: "node"}
+            ]
+        },
+        {
+            name: 'videoCapture',
+            width: 568,
+            height: 320,
+            nodes: [
+                {name: 'play', type: 'node', x: 0, y: -27, scaleFactor: 0.75},
+                {name: 'next', type: 'node', x: 50, y: 100, scaleFactor: 0.6},
+                {name: 'prev', type: 'node', x: -50, y: 100, scaleFactor: 0.6},
+                {name: 'storage', type: 'storeData'}
+            ]
+        },
         {
             name: 'twoSidedLimiter',
             width: 600,
@@ -294,45 +323,53 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'value', type: "node"}
             ]
         },
-        
         {
-            name: 'graphUI',
-            width: 690,
-            height: 410,
+            name: 'buttonOn',
+            width: 270,
+            height: 270,
             nodes: [
                 {name: 'value', type: "node"}
             ]
         },
-        /*  {
-            name: 'skyNews',
-            width: 660,
-            height: 430,
+        {
+            name: 'buttonOff',
+            width: 270,
+            height: 270,
             nodes: [
-                {name: 'play', type: "node"}
+                {name: 'value', type: "node"}
             ]
         },
-        {
-             name: 'ptcStockUI',
-             width: 600,
-             height: 500,
-             nodes: [
-             ]
-         },
-        {
-             name: 'ptcTwitter',
-             width: 400,
-             height: 400,
-             nodes: [
-             ]
-         },*/
-        {
-            name: 'label',
-            width: 450,
-            height: 150,
-            nodes: [
-                {name: 'storage', type: "storeData"}
-            ]
-        },
+
+        // {
+        //     name: 'skyNews',
+        //     width: 660,
+        //     height: 430,
+        //     nodes: [
+        //         {name: 'play', type: "node"}
+        //     ]
+        // },
+        // {
+        //      name: 'ptcStockUI',
+        //      width: 600,
+        //      height: 500,
+        //      nodes: [
+        //      ]
+        //  },
+        // {
+        //      name: 'ptcTwitter',
+        //      width: 400,
+        //      height: 400,
+        //      nodes: [
+        //      ]
+        //  },
+        // {
+        //     name: 'label',
+        //     width: 450,
+        //     height: 150,
+        //     nodes: [
+        //         {name: 'storage', type: "storeData"}
+        //     ]
+        // },
         {
             name: 'count',
             width: 515,
@@ -341,21 +378,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 {name: 'count', type: "count"}
             ]
         },
-          {
-            name: 'slider',
-            width: 206,
-            height: 526,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
         {
-            name: 'slider-2d',
-            width: 526,
-            height: 526,
+            name: 'pushMe',
+            width: 600,
+            height: 600,
             nodes: [
-                {name: 'valueX', type: "node"},
-                {name: 'valueY', type: "node"}
             ]
         }
     ];
@@ -451,13 +478,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 frame.fullScreen = false;
                 frame.sendMatrix = false;
                 frame.sendAcceleration = false;
-                frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+                frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
                 // thisFrame.visible = false;
 
                 // add each node with a non-empty name
-                
-              
-
                 var nodes = JSON.parse(evt.target.dataset.nodes);
                 var hasMultipleNodes = nodes.length > 1;
                 nodes.forEach(function(node) {
@@ -471,13 +495,24 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     addedNode.name = node.name;
                     addedNode.text = undefined;
                     addedNode.type = node.type;
-                    addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one
-                    addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // random otherwise
+                    if (typeof node.x !== 'undefined') {
+                        addedNode.x = node.x; // use specified position if provided
+                    } else {
+                        addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
+                    }
+                    if (typeof node.y !== 'undefined') {
+                        addedNode.y = node.y;
+                    } else {
+                        addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
+                    }
                     addedNode.frameSizeX = 220;
                     addedNode.frameSizeY = 220;
-                    addedNode.scale = closestObject.averageScale;
-                    console.log("closest Node", closestObject.averageScale);
-
+                    var scaleFactor = 1;
+                    if (typeof node.scaleFactor !== 'undefined') {
+                        scaleFactor = node.scaleFactor;
+                    }
+                    addedNode.scale = globalStates.defaultScale * scaleFactor;
+                    
                 });
 
                 // // set the eventObject so that the frame can interact with screens as soon as you add it
@@ -646,6 +681,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         setPaletteElementDemo(true);
         isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
+
+        createPocketScrollbar();
     }
 
     function setPaletteElementDemo(value) {
@@ -733,6 +770,77 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // elt.style.marginTop = offsetY + 'px';
             // elt.style.marginLeft = offsetX + 'px';
         }
+    }
+    
+    function createPocketScrollbar() {
+        var scrollbar = document.getElementById('pocketScrollBar');
+        if (scrollbar.children.length > 0) {
+            console.log('already built the pocket scrollbar');
+            return;
+        }
+        var numMemoryContainers = 4;
+        var numFrames = realityElements.length + numMemoryContainers;
+        var pageHeight = 320;
+        var frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
+        var paddingHeight = 6; //parseFloat(document.querySelector('#pocket-element').style.margin) * 2;
+        var framesPerRow = 4;
+        var numRows = Math.ceil(numFrames / framesPerRow);
+        var numChapters = Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight );
+        console.log('building pocket scrollbar with ' + numChapters + ' chapters');
+        
+        var scrollbarHeight = 305;
+        
+        var allSegmentButtons = [];
+        
+        for (var i = 0; i < numChapters; i++) {
+            var segmentButton = document.createElement('div');
+            segmentButton.className = 'pocketScrollBarSegment';
+            segmentButton.id = 'pocketScrollBarSegment' + i;
+            segmentButton.style.height = (scrollbarHeight / numChapters) + 'px';
+            segmentButton.style.top = (i * scrollbarHeight / numChapters) + 'px';
+            if (i > 0) {
+                segmentButton.style.borderTop = '2px solid cyan';
+            }
+            // if (i < numChapters-1) {
+            //     segmentButton.style.borderBottom = '1px solid cyan';
+            // }
+            
+            segmentButton.dataset.index = i;
+
+            segmentButton.addEventListener('pointerdown', function(e) {
+                console.log('tapped segment ' + e.currentTarget.dataset.index);
+                allSegmentButtons.forEach(function(div){
+                    div.classList.remove('pocketScrollBarSegmentActive');
+                });
+                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+            });
+            segmentButton.addEventListener('pointerup', function(e) {
+                console.log('released segment ' + e.currentTarget.dataset.index);
+                allSegmentButtons.forEach(function(div){
+                    div.classList.remove('pocketScrollBarSegmentActive');
+                });
+                e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+                e.currentTarget.classList.add('pocketScrollBarSegmentActive');
+                scrollToSegmentIndex(e.currentTarget.dataset.index);
+            });
+            segmentButton.addEventListener('pointerenter', function(e) {
+                console.log('released segment ' + e.currentTarget.dataset.index);
+                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+                scrollToSegmentIndex(e.currentTarget.dataset.index);
+            });
+            segmentButton.addEventListener('pointerleave', function(e) {
+                console.log('released segment ' + e.currentTarget.dataset.index);
+                e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+            });
+            scrollbar.appendChild(segmentButton);
+            allSegmentButtons.push(segmentButton);
+        }
+        
+        function scrollToSegmentIndex(index) {
+            var scrollContainer = document.getElementById('pocketScrollContainer');
+            scrollContainer.scrollTop = index * pageHeight;
+        }
+        
     }
 
     exports.pocketInit = pocketInit;

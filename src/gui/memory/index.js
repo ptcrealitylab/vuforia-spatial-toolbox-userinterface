@@ -298,7 +298,7 @@ MemoryContainer.prototype.onPointerUp = function() {
             });
 
             pendingMemorizations[objId || ''] = this;
-            realityEditor.app.appFunctionCall("memorize", null, null);
+            realityEditor.app.memorize();
             event.stopPropagation();
         }
         realityEditor.gui.menus.on("main",[]);
@@ -381,12 +381,8 @@ MemoryContainer.prototype.remember = function() {
         memoryBackground.innerHTML = '';
         memoryBackground.appendChild(this.backgroundImage);
     }
-
-    var memoryData = JSON.stringify(
-        {id: this.memory.id, matrix: this.memory.matrix}
-    );
     
-    realityEditor.app.appFunctionCall("remember", {dataStr: memoryData}, null);
+    realityEditor.app.remember(this.memory.id, this.memory.matrix);
 
     realityEditor.gui.menus.on('main', ['freeze']);
     globalStates.freezeButtonState = true;
@@ -422,6 +418,7 @@ var activeThumbnail = '';
 var barContainers = [];
 var pendingMemorizations = {};
 var memoryBarHeight = 80;
+var numMemoryContainers = 4;
 
 function getBarContainerAtLeft(left) {
     // Assumes bar containers are in order of DOM insertion
@@ -441,7 +438,7 @@ function url(href) {
 
 function initMemoryBar() {
     var memoryBar = document.querySelector('.memoryBar');
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < numMemoryContainers; i++) {
         var memoryContainer = document.createElement('div');
         memoryContainer.classList.add('memoryContainer');
         memoryContainer.setAttribute('touch-action', 'none');
@@ -461,7 +458,7 @@ function removeMemoryBar() {
 
 function createMemory() {
     overlayDiv.classList.add('overlayMemory');
-    realityEditor.app.appFunctionCall("createMemory", null, null);
+    realityEditor.app.createMemory();
     realityEditor.gui.menus.on("bigPocket",[]);
    // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
 }

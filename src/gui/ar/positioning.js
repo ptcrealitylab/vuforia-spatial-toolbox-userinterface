@@ -51,18 +51,23 @@
 createNameSpace("realityEditor.gui.ar.positioning");
 
 /**
+ * @fileOverview realityEditor.gui.ar.positioning.js
+ * Contains all functions relating to repositioning or rescaling a frame or node.
+ */
+
+/**
  * @typedef initialScaleData
- * @property radius {number} how far apart in pixels the two touches are to begin with
- * @property scale {number} the frame or node's initial scale value before the gesture, to use as a base multiplier
+ * @property {number} radius - how far apart in pixels the two touches are to begin with
+ * @property {number} scale - the frame or node's initial scale value before the gesture, to use as a base multiplier
  */
 realityEditor.gui.ar.positioning.initialScaleData = null;
 
 /**
  * Scales the specified frame or node using the first two touches.
  * The new scale starts at the initial scale and varies linearly with the changing touch radius.
- * @param {Frame|Node} activeVehicle the frame or node you are scaling
- * @param {Object.<x,y>} centerTouch the first touch event, where the scale is centered from
- * @param {Object.<x,y>} outerTouch the other touch, where the scale extends to
+ * @param {Frame|Node} activeVehicle - the frame or node you are scaling
+ * @param {Object.<x,y>} centerTouch - the first touch event, where the scale is centered from
+ * @param {Object.<x,y>} outerTouch - the other touch, where the scale extends to
  */
 realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTouch, outerTouch) {
     
@@ -110,25 +115,24 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 
     // draw a blue circle visualizing the initial radius
     var circleCenterCoordinates = [centerTouch.x, centerTouch.y];
-    var circleEdgeCoordinates = [outerTouch.x, outerTouch.y];
-    realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, this.initialScaleData.radius);
+    realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, this.initialScaleData.radius);
 
     // draw a red or green circle visualizing the new radius
     if (radius < this.initialScaleData.radius) {
-        realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+        realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, radius);
     } else {
-        realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, circleEdgeCoordinates, radius);
+        realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, radius);
     }
 };
 
 /**
  * Primary method to move a transformed frame or node to the (x,y) point on its plane where the (screenX,screenY) ray cast intersects
- * @param activeVehicle {Frame|Node}
- * @param screenX {number}
- * @param screenY {number} 
- * @param useTouchOffset {boolean}  if false, puts (0,0) coordinate of frame/node at the resulting point.
- *                                  if true, the first time you call it, it determines the x,y offset to drag the frame/node
- *                                  from the ray cast without it jumping, and subsequently drags it from that point
+ * @param {Frame|Node} activeVehicle
+ * @param {number} screenX
+ * @param {number} screenY
+ * @param {boolean} useTouchOffset - if false, puts (0,0) coordinate of frame/node at the resulting point.
+ *                                   if true, the first time you call it, it determines the x,y offset to drag the frame/node
+ *                                   from the ray cast without it jumping, and subsequently drags it from that point
  */
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
@@ -165,11 +169,11 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     }
 };
 
-// TODO: re-enable later once node position dragging gets fixed
 /**
  * Because node positions are affected by scale of parent while rendering, divide by scale of parent while dragging
- * @param activeVehicle
- * @param pointReference {{x: number, y: number}} object containing the x and y values you want to adjust
+ * @param {Frame|Node} activeVehicle
+ * @param {{x: number, y: number}} pointReference - object containing the x and y values you want to adjust
+ * @todo: currently not in use. re-enable later once node position dragging gets fixed
  */
 realityEditor.gui.ar.positioning.applyParentScaleToDragPosition = function(activeVehicle, pointReference) {
 
@@ -188,10 +192,10 @@ realityEditor.gui.ar.positioning.applyParentScaleToDragPosition = function(activ
 /**
  * Similar to moveVehicleToScreenCoordinate, but instead of using the frame/node's matrix, uses visibleObject matrix of
  *      the marker plane as the basis for the computation. Simpler computation but doesn't work for unconstrained repositioning (I think?)
- * @param activeVehicle
- * @param screenX
- * @param screenY
- * @param useTouchOffset
+ * @param {Frame|Node} activeVehicle
+ * @param {number} screenX
+ * @param {number} screenY
+ * @param {boolean} useTouchOffset - see moveVehicleToScreenCoordinate documentation for usage
  */
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = function(activeVehicle, screenX, screenY, useTouchOffset) {
 
@@ -231,20 +235,23 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
     }
 };
 
-// TODO: outdated documentation
-// for frames, return position data within 'ar' property (no need to return 'screen' anymore since that never happens within the editor)
-// for nodes, return position data directly from the object.
-// for nodes, also compute 'combinedPosition' which is the final transformation including the frame it belongs to.
-// combinedPosition should be a read-only property, while position (x,y,scale,matrix) can be read-write
+/**
+ * Gets the object reference containing 'x', 'y', 'scale', and 'matrix' variables describing this vehicle's position
+ *  - frames: return position data within 'ar' property (no need to return 'screen' anymore since that never happens within the editor)
+ *  - nodes that aren't unconstrained editable: return the parent frame's matrix but the node's x, y, and scale
+ *  - unconstrained editable frames: return their own x, y, scale, and matrix
+ * @param {Frame|Node} activeVehicle
+ * @return {{x: number, y: number, scale: number, matrix: Array.<number>, ...}}
+ */
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
-    // frames use their ar data
+    // frames use their AR data
     
     if (activeVehicle.hasOwnProperty('visualization')) {
         return activeVehicle.ar;
     }
 
-    // nodes use their x, y, scale and their parent frame's matrix
+    // nodes on global frames use their x, y, scale and their parent frame's matrix
     
     if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
@@ -254,48 +261,54 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
             activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
         }
     }
-    
-    // edge case for node on local frame with no matrix -> use parent matrix as default
-    // if (activeVehicle.type === 'node' && activeVehicle.location === 'local' && activeVehicle.matrix.length === 0) {
-    //     var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
-    //     if (frame) {
-    //         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-    //         // only parent frame has matrix -> just use that
-    //         return realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
-    //     }
-    // }
 
     // logic nodes and nodes on local frames just use their own x, y, and matrix
 
     return activeVehicle;
 };
 
+/**
+ * Sets the correct matrix for this vehicle's position data to the new value.
+ * @param {Frame|Node} activeVehicle
+ * @param {Array.<number>} newMatrixValue
+ * @todo: ensure fully implemented
+ */
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
     
     if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         console.warn('trying to set position data matrix for something other than a frame or logic');
         
         if (!newMatrixValue || newMatrixValue.constructor !== Array) {
-            console.warn('trying to set relativeMatrix to a non-array value');
+            console.warn('trying to set matrix to a non-array value');
             return;
         }
     }
     
-    if (activeVehicle.type === 'node') {
+    // nodes on local frames set their own matrix
+    
+    if (activeVehicle.type === 'node') { // TODO: work for other node types, e.g. delay
         var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (parentFrame.location === 'local') {
             activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
         }
     }
     
+    // logic nodes set their own matrix
+    
     if (activeVehicle.type === 'logic') {
         activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        
+    // frames set their AR matrix
         
     } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
         activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
     }
 };
 
+/**
+ * Returns the last position that was touched, by extracting the CSS location of the touch overlay div.
+ * @return {{x: number, y: number}}
+ */
 realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
     var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
     return {
@@ -305,7 +318,10 @@ realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
 };
 
 /**
- * Nodes on local frames, all logic nodes, and all frames are able to be unconstrained edited
+ * Able to unconstrained edit:
+ * - all logic nodes
+ * - all frames
+ * - nodes on local frames
  * @param {Frame|Node} activeVehicle
  * @return {boolean}
  */
@@ -319,4 +335,108 @@ realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable = function(activ
     }
     
     return  (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
+};
+
+/**
+ * Provides the screen coordinates of the center, upperLeft and lowerRight coordinates of the provided frame
+ * (enough points to determine whether the frame overlaps with any rectangular region of the screen)
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @return {{ center: {x: number, y: number}, upperLeft: {x: number, y: number}, lowerRight: {x: number, y: number} }}
+ */
+realityEditor.gui.ar.positioning.getFrameScreenCoordinates = function(objectKey, frameKey) {
+    return this.getScreenPosition(objectKey, frameKey, true, true, false, false, true);
+};
+
+/**
+ * Calculates the exact screen coordinates corresponding to the center and corner points of the provided frame.
+ * Passing in true or false for the last 5 arguments controls which points to calculate and include in the result.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {boolean} includeCenter
+ * @param {boolean} includeUpperLeft
+ * @param {boolean} includeUpperRight
+ * @param {boolean} includeLowerLeft
+ * @param {boolean} includeLowerRight
+ */
+realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKey, includeCenter, includeUpperLeft, includeUpperRight, includeLowerLeft, includeLowerRight) {
+    var utils = realityEditor.gui.ar.utilities;
+    var draw = realityEditor.gui.ar.draw;
+    
+    // 1. recompute the ModelViewProjection matrix for the marker
+    var activeObjectMatrix = [];
+    utils.multiplyMatrix(draw.visibleObjects[objectKey], globalStates.projectionMatrix, draw.matrix.r);
+    utils.multiplyMatrix(rotateX, draw.matrix.r, activeObjectMatrix);
+    
+    // 2. Get the matrix of the frame and compute the composed matrix of the frame relative to the object.
+    //   *the order of multiplications is important*
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+    var positionDataMatrix = positionData.matrix.length === 16 ? positionData.matrix : utils.newIdentityMatrix();
+    var frameMatrixTemp = [];
+    var frameMatrix = [];
+    utils.multiplyMatrix(positionDataMatrix, activeObjectMatrix, frameMatrixTemp);
+    
+    // 4. Scale/translate the final result.
+    var scale = [
+        positionData.scale, 0, 0, 0,
+        0, positionData.scale, 0, 0,
+        0, 0, positionData.scale, 0,
+        positionData.x, positionData.y, 0, 1
+    ];
+    utils.multiplyMatrix(scale, frameMatrixTemp, frameMatrix);
+    
+    // compute the screen coordinates for various points within the frame
+    var screenCoordinates = {};
+    
+    var halfWidth = parseInt(frame.frameSizeX)/2;
+    var halfHeight = parseInt(frame.frameSizeY)/2;
+
+    // start with coordinates in frame-space -> compute coordinates in screen space
+    
+    // for each "include..." parameter, add a value to the result with that coordinate
+    if (includeCenter) {
+        var center = [0, 0, 0, 1];
+        screenCoordinates.center = this.getProjectedCoordinates(center, frameMatrix);
+    }
+
+    if (includeUpperLeft) {
+        var upperLeft = [-1 * halfWidth, -1 * halfHeight, 0, 1];
+        screenCoordinates.upperLeft = this.getProjectedCoordinates(upperLeft, frameMatrix);
+    }
+
+    if (includeUpperRight) {
+        var upperRight = [halfWidth, -1 * halfHeight, 0, 1];
+        screenCoordinates.upperRight = this.getProjectedCoordinates(upperRight, frameMatrix);
+    }
+
+    if (includeLowerLeft) {
+        var lowerLeft = [-1 * halfWidth, halfHeight, 0, 1];
+        screenCoordinates.lowerLeft = this.getProjectedCoordinates(lowerLeft, frameMatrix);
+    }
+
+    if (includeLowerRight) {
+        var lowerRight = [halfWidth, halfHeight, 0, 1];
+        screenCoordinates.lowerRight = this.getProjectedCoordinates(lowerRight, frameMatrix);
+    }
+    
+    return screenCoordinates;
+};
+
+/**
+ * Converts [frameX, frameY, 0, 1] into screen coordinates based on the provided ModelViewProjection matrix
+ * @param {Array.<number>} frameCoordinateVector - a length-4 vector [x, y, 0, 1] of the position in frame space
+ *      e.g. [0, 0, 0, 1] represents the center of the frame and [-halfWidth, -halfHeight, 0, 1] represents the top-left
+ * @param {Array.<number>} frameMatrix - 4x4 MVP matrix, composition of the object and frame transformations
+ * @return {{x: number, y: number}}
+ */
+realityEditor.gui.ar.positioning.getProjectedCoordinates = function(frameCoordinateVector, frameMatrix) {
+    var utils = realityEditor.gui.ar.utilities;
+    var projectedCoordinateVector = utils.perspectiveDivide(utils.multiplyMatrix4(frameCoordinateVector, frameMatrix));
+    projectedCoordinateVector[0] += (globalStates.height / 2);
+    projectedCoordinateVector[1] += (globalStates.width / 2);
+    return {
+        x: projectedCoordinateVector[0],
+        y: projectedCoordinateVector[1]
+    };
 };

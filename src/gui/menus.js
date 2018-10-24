@@ -69,11 +69,13 @@ realityEditor.gui.menus.buttons = {
 		logic: {},
 		pocket: {},
 		reset: {},
+        commit: {},
 		setting: {},
 		unconstrained: {},
 		lock:{},
         halflock:{},
 		unlock:{},
+        record: {},
     // reality UI
     realityGui : {},
     realityInfo : {},
@@ -88,7 +90,7 @@ realityEditor.gui.menus.menus = {
     logic: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
     gui: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
     setting: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-    editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", reset: "blue", unconstrained: "blue"},
+    editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", commit: "blue", reset: "blue", unconstrained: "blue"},
     crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
     bigTrash: {bigTrash: "red"},
     bigPocket: {bigPocket: "green"},
@@ -97,15 +99,17 @@ realityEditor.gui.menus.menus = {
     lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue"},
     realityInfo: {realityGui: "blue", realityInfo: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
     reality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
-    settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"}
+    settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
+    videoRecording: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue"},
+    videoRecordingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue", commit:"blue", reset: "blue", unconstrained: "blue"}
 };
 
 realityEditor.gui.menus.getVisibility = function(item){
-if(this.buttons[item].item.style.visibility !== "hidden"){
-    return true;
-}else {
-    return false;
-}
+    if(this.buttons[item].item.style.visibility !== "hidden"){
+        return true;
+    }else {
+        return false;
+    }
 };
 
 realityEditor.gui.menus.getSelected = function(item){
@@ -115,7 +119,6 @@ realityEditor.gui.menus.getSelected = function(item){
         return false;
     }
 };
-
 
 realityEditor.gui.menus.history = [];
 
@@ -130,7 +133,6 @@ realityEditor.gui.menus.getElements = function (element) {
     }
 
     l = document.getElementById(element+"ButtonDiv");
-
 
     var svgElement;
 
@@ -182,7 +184,7 @@ realityEditor.gui.menus.init = function () {
                 }, false);
 
         }
-    };
+    }
 	//  document.getElementById("UIButtons").style.visibility = "visible";
 };
 
@@ -195,10 +197,14 @@ realityEditor.gui.menus.on = function(menuDiv, buttonArray) {
 
     // show correct combination of sub-menus
     if ((menuDiv === "main" || menuDiv === "gui" ||menuDiv === "logic") && !globalStates.settingsButtonState) {
-        if (globalStates.editingMode && globalStates.lockingMode) {
+        if (globalStates.editingMode && globalStates.videoRecordingEnabled) {
+            menuDiv = "videoRecordingEditing"
+        } else if (globalStates.editingMode && globalStates.lockingMode) {
             menuDiv = "lockingEditing";
         } else if (globalStates.editingMode) {
             menuDiv = "editing";
+        } else if (globalStates.videoRecordingEnabled) {
+            menuDiv = "videoRecording"
         } else if (globalStates.lockingMode) {
             menuDiv = "locking";
         }
@@ -347,6 +353,8 @@ realityEditor.gui.buttons.buttonActionLeave = function (event){
 realityEditor.gui.buttons.sendInterfaces = function (interface) {
 
 /// send active user interface status in to the AR-UI
+    
+    console.log('sendInterfaces', interface);
 
     globalStates.interface = interface;
 
@@ -355,20 +363,22 @@ realityEditor.gui.buttons.sendInterfaces = function (interface) {
     if(interface === "realitySearch"){
         msg.search = realityEditor.gui.search.getSearch();
     }
+    
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        // var object = realityEditor.getObject(objectKey);
+        var frame = realityEditor.getFrame(objectKey, frameKey);
+        if (frame.visible) {
+            
+            globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
 
-    for (var objectKey in objects) {
-        if (objects[objectKey].visible) {
-            globalDOMCache["iframe" + objectKey].contentWindow.postMessage(JSON.stringify(msg), "*");
-
-
+            realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
+                var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                if (node.visible) {
+                    globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                }
+            });
         }
-
-        for (var nodeKey in objects[objectKey].nodes) {
-            if (objects[objectKey].nodes[nodeKey].visible) {
-                globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
-            }
-        }
-    }
+    });
 };
 
 
@@ -385,6 +395,7 @@ realityEditor.gui.menus.pointerDown = function(event) {
     realityEditor.gui.buttons.logicButtonDown(event);
     realityEditor.gui.buttons.pocketButtonDown(event);
     realityEditor.gui.buttons.resetButtonDown(event);
+    realityEditor.gui.buttons.commitButtonDown(event);
     realityEditor.gui.buttons.settingButtonDown(event);
 
 };
@@ -397,6 +408,7 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.guiButtonUp(event);
     realityEditor.gui.buttons.logicButtonUp(event);
     realityEditor.gui.buttons.resetButtonUp(event);
+    realityEditor.gui.buttons.commitButtonUp(event);
     realityEditor.gui.buttons.unconstrainedButtonUp(event);
     realityEditor.gui.buttons.settingButtonUp(event);
     realityEditor.gui.buttons.freezeButtonUp(event);
@@ -404,6 +416,7 @@ realityEditor.gui.menus.pointerUp = function(event) {
     realityEditor.gui.buttons.lockButtonUp(event);
     realityEditor.gui.buttons.halflockButtonUp(event);
     realityEditor.gui.buttons.unlockButtonUp(event);
+    realityEditor.gui.buttons.recordButtonUp(event);
 
     // Reality UI
 

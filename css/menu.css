@@ -155,6 +155,25 @@
     visibility: hidden;
     z-index: 20;
 }
+
+#commitButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 260px;
+    top: 0px;
+    visibility: hidden;
+}
+#commitButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 260px;
+    top: 0px;
+    visibility: hidden;
+    z-index: 20;
+}
+
 #unconstrainedButton {
     position: fixed;
     width: 60px;
@@ -220,6 +239,24 @@
     width: 60px;
     height: 60px;
     right: 195px;
+    top: 260px;
+    visibility: hidden;
+    z-index: 20;
+}
+
+#recordButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 65px;
+    top: 260px;
+    visibility: hidden;
+}
+#recordButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 65px;
     top: 260px;
     visibility: hidden;
     z-index: 20;

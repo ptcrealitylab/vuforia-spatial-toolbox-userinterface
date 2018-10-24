@@ -13,7 +13,8 @@ realityEditor.gui.settings.states = {
     settingsButton:false,
     animationFrameRequested: false,
     setInt : false,
-    realityState: false
+    realityState: false,
+    videoRecordingEnabled: false
 };
 
 realityEditor.gui.settings.objectInterval = null;

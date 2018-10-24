@@ -47,18 +47,27 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @fileOverview realityEditor.gui.utilities.js
+ * Contains utility functions related to the onscreen graphics, such as line calculations and image preloading.
+ */
 
 createNameSpace("realityEditor.gui.utilities");
 
-/**********************************************************************************************************************
- **********************************************************************************************************************/
-
 /**
- * @desc
- * @param
- * @param
- * @return {Boolean}
- **/
+ * Checks if the line (x11,y11) -> (x12,y12) intersects with the line (x21,y21) -> (x22,y22)
+ * @param {number} x11
+ * @param {number} y11
+ * @param {number} x12
+ * @param {number} y12
+ * @param {number} x21
+ * @param {number} y21
+ * @param {number} x22
+ * @param {number} y22
+ * @param {number} w - width of canvas
+ * @param {number} h - height of canvas (ignores intersections outside of canvas
+ * @return {boolean}
+ */
 realityEditor.gui.utilities.checkLineCross = function (x11, y11, x12, y12, x21, y21, x22, y22, w, h) {
 	var l1 = this.lineEq(x11, y11, x12, y12),
 		l2 = this.lineEq(x21, y21, x22, y22);
@@ -81,20 +90,16 @@ realityEditor.gui.utilities.checkLineCross = function (x11, y11, x12, y12, x21, 
 	&& this.checkBetween(x21, x22, interX) && this.checkBetween(y21, y22, interY));
 };
 
-/**********************************************************************************************************************
- **********************************************************************************************************************/
-
-//function for calculating the line equation.
-//returns [m, b], where this corresponds to y = mx + b
-//y = [(y1-y2)/(x1-x2), -(y1-y2)/(x1-x2)*x1 + y1]
-
 /**
- * @desc
- * @param
- * @param
- * @return {Number|Array}
- **/
-
+ * function for calculating the line equation given the endpoints of a line.
+ * returns [m, b], where this corresponds to y = mx + b
+ * y = [(y1-y2)/(x1-x2), -(y1-y2)/(x1-x2)*x1 + y1]
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @return {Array.<number>} - length 2 array. first entry is m (slope), seconds is b (y-intercept)
+ */
 realityEditor.gui.utilities.lineEq = function (x1, y1, x2, y2) {
 	var m = this.slopeCalc(x1, y1, x2, y2);
 	// if(m == 'vertical'){
@@ -104,76 +109,54 @@ realityEditor.gui.utilities.lineEq = function (x1, y1, x2, y2) {
 
 };
 
-/**********************************************************************************************************************
- **********************************************************************************************************************/
-
-//function for calucating the slope of given points
-//slope has to be multiplied by -1 because the y-axis value increases we we go down
-
 /**
- * @desc
- * @param
- * @param
- * @return {Number}
- **/
-
+ * Calculates the slope of the line defined by the provided endpoints (x1,y1) -> (x2,y2)
+ * slope has to be multiplied by -1 because the y-axis value increases we we go down
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @return {number}
+ */
 realityEditor.gui.utilities.slopeCalc = function (x1, y1, x2, y2) {
-	if ((x1 - x2) == 0) {
+	if ((x1 - x2) === 0) {
 		return 9999; //handle cases when slope is infinity
 	}
 	return (y1 - y2) / (x1 - x2);
 };
 
-/**********************************************************************************************************************
- **********************************************************************************************************************/
-
-//calculate the intersection x value given two line segment
-//param: [m1,b1], [m2,b2]
-//return x -> the x value
-
 /**
- * @desc
- * @param
- * @param
- * @return {Number}
- **/
-
+ * calculate the intersection x value given two line segment
+ * @param {Array.<number>} seg1 - [slope of line 1, y-intercept of line 1]
+ * @param {Array.<number>} seg2 - [slope of line 2, y-intercept of line 2]
+ * @return {number} - the x value of their intersection
+ */
 realityEditor.gui.utilities.calculateX = function (seg1, seg2) {
 	return (seg2[1] - seg1[1]) / (seg1[0] - seg2[0]);
 };
 
-/**********************************************************************************************************************
- **********************************************************************************************************************/
-
-//calculate y given x and the line equation
-
 /**
- * @desc
- * @param
- * @param
- * @return {Number}
- **/
-
+ * calculate y given x and the line equation 
+ * @param {Array.<number>} seg1 - [slope of line 1, y-intercept of line 1]
+ * @param {number} x
+ * @return {number} - returns (y = mx + b)
+ */
 realityEditor.gui.utilities.calculateY = function (seg1, x) {
 	return seg1[0] * x + seg1[1];
 };
 
-/**********************************************************************************************************************
- **********************************************************************************************************************/
-
-//given two end points of the segment and some other point p,
-//return true - if p is between thw two segment points,  false otherwise
-
 /**
- * @desc
- * @param
- * @param
- * @return {Boolean}
- **/
-
+ * Given two end points of the segment and some other point p,
+ * return true if p is between the two segment points.
+ * (utility that helps with e.g. checking if two lines cross)
+ * @param {number} e1
+ * @param {number} e2
+ * @param {number} p
+ * @return {boolean}
+ */
 realityEditor.gui.utilities.checkBetween = function (e1, e2, p) {
-	const marg2 = 2;
-	// cout("e1,e2,p :",e1,e2,p);
+	var marg2 = 2;
+
 	if (e1 - marg2 <= p && p <= e2 + marg2) {
 		return true;
 	}

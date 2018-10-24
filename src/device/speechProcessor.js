@@ -1,11 +1,28 @@
 createNameSpace('realityEditor.device.speechProcessor');
 
+/**
+ * @fileOverview realityEditor.device.speechProcessor.js
+ * A "home made" library for processing a speech transcript given by the Siri speech API,
+ * and extracting Reality Editor actions that the speech should trigger.
+ * Generally works by parsing phrases into actions and things to act upon, sometimes using
+ * visual context of what you are currently look at to disambiguate.
+ * @todo speech is not fully supported anymore
+ */
+
+/**
+ * @type {{pendingWordData: Array, previousTranscription: null, highlightedLocation: null}}
+ */
 realityEditor.device.speechProcessor.states = {
     pendingWordData: [],
     previousTranscription: null,
     highlightedLocation: null
 };
 
+/**
+ * Called directly by native iOS app whenever a new word is detected.
+ * Triggers the full parsing process to handle the incoming speech.
+ * @param {string} bestTranscription - a phrase containing all text since the last time speech recognition was reset
+ */
 realityEditor.device.speechProcessor.speechRecordingCallback = function(bestTranscription) {
     if (bestTranscription !== realityEditor.device.speechProcessor.states.previousTranscription) {
         realityEditor.device.speechProcessor.parsePhrase(bestTranscription);
@@ -13,6 +30,13 @@ realityEditor.device.speechProcessor.speechRecordingCallback = function(bestTran
     }
 };
 
+/**
+ * When a new phrase is received, extracts the new word that the user just said,
+ * tags it with location context (which object/frame/node you are looking at),
+ * categorizes them into actions, locations, and data words, and tries to match
+ * the phrase structure against a set of known ways to say something meaningful.
+ * @param {string} phrase
+ */
 realityEditor.device.speechProcessor.parsePhrase = function(phrase) {
     
     // 1. get last word
@@ -30,9 +54,15 @@ realityEditor.device.speechProcessor.parsePhrase = function(phrase) {
     // 4. match against action recipes
     this.recipeMatcher(lastWordData);
 
+    // optional: debug print the full phrase to the speech console
     realityEditor.device.speechPerformer.updateSpeechConsole();
 };
 
+/**
+ * Finds the last word in a string and returns it (lowercase) along with its index in the string
+ * @param {string} phrase
+ * @return {{word: string, index: number}}
+ */
 realityEditor.device.speechProcessor.lastWordExtractor = function(phrase) {
     
     var lowerCasePhrase = phrase.toLowerCase();
@@ -47,6 +77,11 @@ realityEditor.device.speechProcessor.lastWordExtractor = function(phrase) {
     
 };
 
+/**
+ * Attaches the context object, frame, and node to a word data, based on what you are looking at
+ * @param {{word: string, index: number}} wordData
+ * @return {{word: string, index: number, contextObject: string, contextFrame: string, contextNode: string}}
+ */
 realityEditor.device.speechProcessor.contextTagger = function(wordData) {
     
     var context = this.getClosestObjectFrameNode();
@@ -54,6 +89,7 @@ realityEditor.device.speechProcessor.contextTagger = function(wordData) {
         context = {objectKey: null, frameKey: null, nodeKey: null};
     }
     
+    // adds context to the wordData object
     return {
         word: wordData.word,
         index: wordData.index,
@@ -61,9 +97,14 @@ realityEditor.device.speechProcessor.contextTagger = function(wordData) {
         contextFrame: context.frameKey,
         contextNode: context.nodeKey 
     };
-    
 };
 
+/**
+ * Assigns one of the following categories to the wordData, by checking it against certain known vocabulary lists:
+ * [NONE, LOCATION, ACTION, DATA, PIVOT]
+ * @param {{word: string, index: number, contextObject: string, contextFrame: string, contextNode: string} wordData
+ * @return {{word: string, index: number, contextObject: string, contextFrame: string, contextNode: string, category: string}}
+ */
 realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
     
     var locationVocab = [
@@ -71,6 +112,7 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
         'that'
     ];
     
+    // names of nodes in the word's context frame are considered valid locations
     if (wordData.contextObject && wordData.contextFrame) {
         var nodeNamesAndKeys = this.getNodeNamesAndKeys(wordData.contextObject, wordData.contextFrame);
         locationVocab.push.apply(locationVocab, nodeNamesAndKeys.map(function(elt) { return elt.name; }));
@@ -96,6 +138,7 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
         'half'
     ];
     
+    // a "pivot" is something breaking the phrase in two, from a start location to an end location
     var pivotVocab = [
         'with',
         'to',
@@ -131,6 +174,7 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
         realityEditor.device.speechPerformer.highlightLocation(location);
     }
     
+    // adds category to the wordData object
     return {
         word: wordData.word,
         index: wordData.index,
@@ -142,6 +186,13 @@ realityEditor.device.speechProcessor.wordTypeCategorizer = function(wordData) {
     
 };
 
+/**
+ * Tries to match the entirety of the recognized phrase (stored in this.states.pendingWordData) against
+ * a set of known ways to phrase a meaningful action.
+ * If any are matched, triggers the resulting action in the speechPerformer module.
+ * @todo some actions still need to be implemented
+ * @param {{word: string, index: number, contextObject: string, contextFrame: string, contextNode: string, category: string}} lastWordData
+ */
 realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
 
     this.states.pendingWordData.push(lastWordData);
@@ -257,7 +308,12 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
 ///////////////////////////// Helper Methods ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-// gets a random frame on the given object (or the first, if chooseRandom is false)
+/**
+ * Gets a random frame on the given object (or the first, if chooseRandom is false).
+ * @param {string} objectKey
+ * @param {boolean} chooseRandom
+ * @return {Frame}
+ */
 realityEditor.device.speechProcessor.getFrameOnObject = function(objectKey, chooseRandom) {
 
     var frameKeys = [];
@@ -270,7 +326,13 @@ realityEditor.device.speechProcessor.getFrameOnObject = function(objectKey, choo
     return frameKeys[index];
 };
 
-// gets a random node on the given frame (or the first, if chooseRandom is false)
+/**
+ * Gets a random node on the given frame (or the first, if chooseRandom is false)
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {boolean} chooseRandom
+ * @return {Node}
+ */
 realityEditor.device.speechProcessor.getNodeOnFrame = function(objectKey, frameKey, chooseRandom) {
 
     var nodeKeys = this.getNodeNamesAndKeys(objectKey, frameKey).map(function(elt) {
@@ -282,6 +344,12 @@ realityEditor.device.speechProcessor.getNodeOnFrame = function(objectKey, frameK
 
 };
 
+/**
+ * Get a list of all the node names and nodeKeys on the specified frame.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @return {Array<{name: string, key: string}>}
+ */
 realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey, frameKey) {
     var nodeNames = [];
     realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
@@ -297,6 +365,11 @@ realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey, f
 // };
 
 // TODO: use one of these that uses frames too
+/**
+ * Gets the object, frame, and node that the user is looking at right now.
+ * @todo use realityEditor.gui.ar.getClosestNode instead, or realityEditor.gui.ar.getClosestFrameToScreenCoordinates(width/2,height/2)
+ * @return {Location}
+ */
 realityEditor.device.speechProcessor.getClosestObjectFrameNode = function() {
     var visibleObjectKeys = this.getVisibleObjectKeys();
     if (visibleObjectKeys.length === 0) return null;
@@ -324,6 +397,11 @@ realityEditor.device.speechProcessor.getClosestObjectFrameNode = function() {
     }
 };
 
+/**
+ * Takes in a spoken word and interprets it into an object/frame/node path, using context when necessary.
+ * @param {{word: string, index: number, contextObject: string, contextFrame: string, contextNode: string, category: string}} wordData
+ * @return {Location}
+ */
 realityEditor.device.speechProcessor.resolveLocation = function(wordData) {
 
     var objectKey = null;
@@ -355,6 +433,11 @@ realityEditor.device.speechProcessor.resolveLocation = function(wordData) {
     };
 };
 
+/**
+ * Helper function that returns an array of all the objectKeys of currently visible objects.
+ * @todo: this can be done more efficiently with Object.keys(realityObject.gui.ar.draw.visibleObjects)
+ * @return {Array.<string>}
+ */
 realityEditor.device.speechProcessor.getVisibleObjectKeys = function() {
     var visibleObjectKeys = [];
     realityEditor.forEachObject( function(object, objectKey) {
@@ -365,6 +448,11 @@ realityEditor.device.speechProcessor.getVisibleObjectKeys = function() {
     return visibleObjectKeys;
 };
 
+/**
+ * Given an object, finds the node on it whose screen coordinate is closest to the center of the screen.
+ * @param {string} objectKey
+ * @return {{objectKey: string, frameKey: string, nodeKey: string, distanceSquared: number}}
+ */
 realityEditor.device.speechProcessor.getClosestNodeOnObject = function(objectKey) {
     
     var screenCenter = [284, 160]; // TODO: calculate each time based on screen size

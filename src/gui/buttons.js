@@ -112,6 +112,7 @@ realityEditor.gui.buttons.resetButtonDown = function(event) {
     globalStates.resetButtonDown = true;
 };
 
+/*
 realityEditor.gui.buttons.resetButtonUp = function(event) {
     if (event.button !== "reset") return;
 
@@ -179,6 +180,33 @@ realityEditor.gui.buttons.resetButtonUp = function(event) {
 
     }
 };
+*/
+realityEditor.gui.buttons.resetButtonUp = function(event){
+    if (event.button !== "reset") return;
+
+    realityEditor.gui.menus.off("editing",["reset"]);
+
+    if (!globalStates.resetButtonDown) return;
+    globalStates.resetButtonDown = false;
+    
+    realityEditor.gui.ar.frameHistoryRenderer.onResetButtonPressed();
+};
+
+realityEditor.gui.buttons.commitButtonDown = function(event) {
+    if (event.button !== "commit") return;
+    globalStates.commitButtonDown = true;
+};
+
+realityEditor.gui.buttons.commitButtonUp = function(event) {
+    if (event.button !== "commit") return;
+
+    realityEditor.gui.menus.off("editing",["commit"]);
+
+    if (!globalStates.commitButtonDown) return;
+    globalStates.commitButtonDown = false;
+    
+    realityEditor.gui.ar.frameHistoryRenderer.onCommitButtonPressed();
+};
 
 realityEditor.gui.buttons.unconstrainedButtonUp = function(event) {
         if (event.button !== "unconstrained") return;
@@ -212,12 +240,12 @@ realityEditor.gui.buttons.settingButtonDown = function(event) {
         if (!globalStates.editingMode) {
             realityEditor.device.setEditingMode(true);
             realityEditor.gui.menus.on("editing", []);
-            realityEditor.app.appFunctionCall("developerOn", null, null);
+            realityEditor.app.saveDeveloperState(true);
             
         } else {
             realityEditor.device.setEditingMode(false);
             realityEditor.gui.menus.on("main",[]);
-            realityEditor.app.appFunctionCall("developerOff", null, null);
+            realityEditor.app.saveDeveloperState(false);
         }
         
     }, 200);
@@ -294,13 +322,13 @@ realityEditor.gui.buttons.freezeButtonUp = function(event) {
         globalStates.freezeButtonState = false;
         var memoryBackground = document.querySelector('.memoryBackground');
         memoryBackground.innerHTML = '';
-        realityEditor.app.appFunctionCall("unfreeze", null, null);
+        realityEditor.app.setResume();
 
     }
     else {
         realityEditor.gui.menus.buttonOn("default", ["freeze"]);
         globalStates.freezeButtonState = true;
-        realityEditor.app.appFunctionCall("freeze", null, null);
+        realityEditor.app.setPause();
     }
 };
 
@@ -329,6 +357,21 @@ realityEditor.gui.buttons.unlockButtonUp = function(event) {
     
     realityEditor.device.security.unlockVisibleNodesAndLinks();
 };
+
+realityEditor.gui.buttons.recordButtonUp = function(event) {
+    if (event.button !== "record") return;
+
+    console.log("activate record button");
+    
+    var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
+
+    if(!didStartRecording) {
+        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+    } else {
+        realityEditor.gui.menus.buttonOff("videoRecording", ["record"]);
+    }
+};
+
 
 realityEditor.gui.buttons.draw = function() {
 

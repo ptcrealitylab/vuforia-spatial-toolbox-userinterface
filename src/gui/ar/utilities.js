@@ -49,6 +49,17 @@
 
 createNameSpace("realityEditor.gui.ar.utilities");
 
+/**
+ * @fileOverview realityEditor.gui.ar.utilities.js
+ * Various utility functions, mostly mathematical, for calculating AR geometry.
+ * Includes simply utilities like multiplying and inverting a matrix,
+ * as well as sophisticated algorithms for marker-plane intersections and raycasting points onto a plane.
+ */
+
+/**
+ * Updates the timing object with the current timestamp and delta since last frame.
+ * @param {{delta: number, now: number, then: number}} timing - reference to the timing object to modify
+ */
 realityEditor.gui.ar.utilities.timeSynchronizer = function(timing) {
     timing.now = Date.now();
     timing.delta = (timing.now - timing.then) / 198;
@@ -56,27 +67,28 @@ realityEditor.gui.ar.utilities.timeSynchronizer = function(timing) {
 };
 
 /**
- * @desc
- * @param
- * @param
- * @return {Number}
- **/
-
+ * Rescales x from the original range (in_min, in_max) to the new range (out_min, out_max)
+ * @example map(5, 0, 10, 100, 200) would return 150, because 5 is halfway between 0 and 10, so it finds the number halfway between 100 and 200
+ * 
+ * @param {number} x
+ * @param {number} in_min
+ * @param {number} in_max
+ * @param {number} out_min
+ * @param {number} out_max
+ * @return {number}
+ */
 realityEditor.gui.ar.utilities.map = function(x, in_min, in_max, out_min, out_max) {
 	if (x > in_max) x = in_max;
 	if (x < in_min) x = in_min;
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 };
 
-
-
 /**
  * @desc This function multiplies one m16 matrix with a second m16 matrix
- * @param m2 origin matrix to be multiplied with
- * @param m1 second matrix that multiplies.
- * @return {Number|Array} m16 matrix result of the multiplication
- **/
-
+ * @param {Array.<number>} m2 - origin matrix to be multiplied with
+ * @param {Array.<number>} m1 - second matrix that multiplies.
+ * @return {Array.<number>} m16 matrix result of the multiplication
+ */
 realityEditor.gui.ar.utilities.multiplyMatrix = function(m2, m1, r) {
 	// var r = [];
 	// Cm1che only the current line of the second mm1trix
@@ -104,11 +116,10 @@ realityEditor.gui.ar.utilities.multiplyMatrix = function(m2, m1, r) {
 
 /**
  * @desc multiply m4 matrix with m16 matrix
- * @param m1 origin m4 matrix
- * @param m2 m16 matrix to multiply with
- * @return {Number|Array} is m16 matrix
- **/
-
+ * @param {Array.<number>} m1 - origin m4 matrix
+ * @param {Array.<number>} m2 - m16 matrix to multiply with
+ * @return {Array.<number>} is m16 matrix
+ */
 realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
 	var r = [];
 	var x = m1[0], y = m1[1], z = m1[2], w = m1[3];
@@ -121,10 +132,9 @@ realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
 
 /**
  * @desc copies one m16 matrix in to another m16 matrix
- * @param matrix source matrix
- * @return {Number|Array} resulting copy of the matrix
- **/
-
+ * @param {Array.<number>}matrix - source matrix
+ * @return {Array.<number>} resulting copy of the matrix
+ */
 realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
     if (matrix.length === 0) return [];
     
@@ -150,10 +160,9 @@ realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
 
 /**
  * @desc inverting a matrix
- * @param a origin matrix
- * @return {Number|Array} a inverted copy of the origin matrix
- **/
-
+ * @param {Array.<number>} a origin matrix
+ * @return {Array.<number>} a inverted copy of the origin matrix
+ */
 realityEditor.gui.ar.utilities.invertMatrix = function (a) {
 	var b = [];
 	var c = a[0], d = a[1], e = a[2], g = a[3], f = a[4], h = a[5], i = a[6], j = a[7], k = a[8], l = a[9], o = a[10], m = a[11], n = a[12], p = a[13], r = a[14], s = a[15], A = c * h - d * f, B = c * i - e * f, t = c * j - g * f, u = d * i - e * h, v = d * j - g * h, w = e * j - g * i, x = k * p - l * n, y = k * r - o * n, z = k * s - m * n, C = l * r - o * p, D = l * s - m * p, E = o * s - m * r, q = 1 / (A * E - B * D + t * C + u * z - v * y + w * x);
@@ -178,9 +187,9 @@ realityEditor.gui.ar.utilities.invertMatrix = function (a) {
 
 /**
  * Efficient method for multiplying each element in a length 4 array by the same number
- * @param {Array.<Number>} vector4
- * @param {Number} scalar
- * @return {Array.<Number>}
+ * @param {Array.<number>} vector4
+ * @param {number} scalar
+ * @return {Array.<number>}
  */
 realityEditor.gui.ar.utilities.scalarMultiplyVector = function(vector4, scalar) {
     var r = [];
@@ -193,9 +202,9 @@ realityEditor.gui.ar.utilities.scalarMultiplyVector = function(vector4, scalar) 
 
 /**
  * Efficient method for multiplying each element in a length 16 array by the same number
- * @param {Array.<Number>} matrix
- * @param {Number} scalar
- * @return {Array.<Number>}
+ * @param {Array.<number>} matrix
+ * @param {number} scalar
+ * @return {Array.<number>}
  */
 realityEditor.gui.ar.utilities.scalarMultiplyMatrix = function(matrix, scalar) {
     var r = [];
@@ -221,8 +230,8 @@ realityEditor.gui.ar.utilities.scalarMultiplyMatrix = function(matrix, scalar) {
 /**
  * Divides every element in a vector or matrix by its last element so that the last element becomes 1.
  * (see explanation of homogeneous coordinates http://robotics.stanford.edu/~birch/projective/node4.html)
- * @param {Array.<Number>} matrix - can have any length (so it works for vectors and matrices)
- * @return {Array.<Number>}
+ * @param {Array.<number>} matrix - can have any length (so it works for vectors and matrices)
+ * @return {Array.<number>}
  */
 realityEditor.gui.ar.utilities.perspectiveDivide = function(matrix) {
     var lastElement = matrix[matrix.length-1];
@@ -235,7 +244,7 @@ realityEditor.gui.ar.utilities.perspectiveDivide = function(matrix) {
 
 /**
  * Helper function for printing a matrix in human-readable format
- * @param {Array.<Number>} matrix
+ * @param {Array.<number>} matrix
  */
 realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix) {
     // Note that this assumes, row-major order, while CSS 3D matrices actually use column-major
@@ -287,8 +296,8 @@ realityEditor.gui.ar.utilities.areRectsOverlapping = function(topLeftA, bottomRi
 
 /**
  * Returns whether or not the given point is inside the polygon formed by the given vertices.
- * @param {Array.<Number>} point - [x,y]
- * @param {Array.<Array.<Number>>} vertices - [[x0, y0], [x1, y1], ... ]
+ * @param {Array.<number>} point - [x,y]
+ * @param {Array.<Array.<number>>} vertices - [[x0, y0], [x1, y1], ... ]
  * @return {boolean}
  */
 realityEditor.gui.ar.utilities.insidePoly = function(point, vertices) {
@@ -400,7 +409,7 @@ realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
 
 /**
  * Helper method for creating a new 4x4 identity matrix
- * @return {Number[]}
+ * @return {Array.<number>}
  */
 realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     return [
@@ -411,6 +420,11 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
     ];
 };
 
+/**
+ * Updates the averageScale property of the object by averaging the scale properties of all its frames and nodes
+ * @todo move to another file
+ * @param object
+ */
 realityEditor.gui.ar.utilities.setAverageScale = function(object) {
   var amount = 0;
   var sum = 0;
@@ -437,13 +451,14 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     object.averageScale = Math.max(0.01, sum/amount); // TODO: put more thought into minimum scale
 };
 
-
-
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
-// @author Ben Reynolds
-// private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
+/**
+ * private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
+ * @author Ben Reynolds
+ * @todo: simplify and then document individually
+ */
 (function(exports) {
 
     function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
@@ -783,8 +798,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
-// @author Ben Reynolds
-// private helper functions for realityEditor.gui.ar.utilities.drawMarkerPlaneIntersection
+/**
+ * private helper functions for realityEditor.gui.ar.utilities.drawMarkerPlaneIntersection
+ * @author Ben Reynolds
+ * @todo: simplify and then document individually
+ */
 (function(exports) {
     
     /**
@@ -1115,8 +1133,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
  * @param {Array} matrix of the object
  * @param {Object} object that is used for calculation
  * @return {Array} calculated array
- **/
-
+ */
 realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
     var intermediateMatrix = [];
     var intermediateMatrix2 = [];
@@ -1146,11 +1163,166 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
 };
 
 /**
- * @desc Returns the distance of a 3D point.
- * @param {Array} matrix of the point
- * @return {Number} distance
- **/
-
+ * @desc Uses Pythagorean theorem to return the 3D distance to the origin of the transformation matrix.
+ * @param {Array} matrix of the point - should be provided in the format taken from realityEditor.gui.ar.draw.visibleObjects
+ * @return {number} distance
+ */
 realityEditor.gui.ar.utilities.distance = function (matrix) {
     return   Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+};
+
+/**
+ * Extracts rotation information from a 4x4 transformation matrix
+ * @param {Array.<number>} m - a 4x4 transformation matrix
+ * @author https://answers.unity.com/questions/11363/converting-matrix4x4-to-quaternion-vector3.html
+ */
+realityEditor.gui.ar.utilities.getQuaternionFromMatrix = function(m) {
+
+    // create identity Quaternion structure as a placeholder
+    var q = { x: 0, y: 0, z: 0, w: 1 };
+    
+    if (m.length === 0) { return q; } // also works to set m = this.newIdentityMatrix();
+
+    q.w = Math.sqrt( Math.max( 0, 1 + m[0] + m[5] + m[10] ) ) / 2;
+    q.x = Math.sqrt( Math.max( 0, 1 + m[0] - m[5] - m[10] ) ) / 2;
+    q.y = Math.sqrt( Math.max( 0, 1 - m[0] + m[5] - m[10] ) ) / 2;
+    q.z = Math.sqrt( Math.max( 0, 1 - m[0] - m[5] + m[10] ) ) / 2;
+    q.x *= Math.sign( q.x * ( m[6] - m[9] ) );
+    q.y *= Math.sign( q.y * ( m[8] - m[2] ) );
+    q.z *= Math.sign( q.z * ( m[1] - m[4] ) );
+    
+    return q;
+};
+
+// realityEditor.gui.ar.utilities.quaternionMagnitude = function(q) {
+//     // var identity = { x: 0, y: 0, z: 0, w: 1 };
+//     // qRot = q * inverse(identity); // identity inversed is still identity. identity multiplied by q gives q.
+//     var magnitude = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+//     var pureMagnitude = 2 * Math.atan2(magnitude, q.w);
+//     return pureMagnitude;
+//     // var mappedMagnitude = (pureMagnitude / (2 * Math.atan2(1, 1)));
+//     // return Math.sqrt( Math.max(0, Math.min(1, (mappedMagnitude - 1.0) * 4)) );
+// };
+
+realityEditor.gui.ar.utilities.quaternionToEulerAngles = function(q) {
+    var phi = Math.atan2(q.z * q.w + q.x * q.y, 0.5 - (q.y * q.y + q.z * q.z));
+    var theta = Math.asin(-2 * (q.y * q.w - q.x * q.z));
+    var psi = Math.atan2(q.y * q.z + q.x * q.w, 0.5 - (q.z * q.z + q.w * q.w));
+    return {
+        phi: phi,
+        theta: theta,
+        psi: psi
+    }
+};
+
+/**
+ * Tells you how much the frame was rotated by twisting the x-axis
+ * @param m
+ * @return {number}
+ */
+realityEditor.gui.ar.utilities.getRotationAboutAxisX = function(m) {
+    var q = this.getQuaternionFromMatrix(m);
+    var angles = this.quaternionToEulerAngles(q);
+    return angles.theta;
+};
+
+/**
+ * Tells you how much the frame was rotated by twisting the y-axis
+ * @param m
+ * @return {number}
+ */
+realityEditor.gui.ar.utilities.getRotationAboutAxisY = function(m) {
+    var q = this.getQuaternionFromMatrix(m);
+    var angles = this.quaternionToEulerAngles(q);
+    return angles.psi;
+};
+
+/**
+ * Tells you how much the frame was rotated by twisting the z-axis
+ * @param m
+ * @return {number}
+ */
+realityEditor.gui.ar.utilities.getRotationAboutAxisZ = function(m) {
+    var q = this.getQuaternionFromMatrix(m);
+    var angles = this.quaternionToEulerAngles(q);
+    return angles.phi;
+};
+
+
+realityEditor.gui.ar.utilities.getMatrixFromQuaternion = function(q) {
+
+    // Matrix<float, 4>(
+    //     1.0f - 2.0f*qy*qy - 2.0f*qz*qz, 2.0f*qx*qy - 2.0f*qz*qw, 2.0f*qx*qz + 2.0f*qy*qw, 0.0f,
+    //     2.0f*qx*qy + 2.0f*qz*qw, 1.0f - 2.0f*qx*qx - 2.0f*qz*qz, 2.0f*qy*qz - 2.0f*qx*qw, 0.0f,
+    //     2.0f*qx*qz - 2.0f*qy*qw, 2.0f*qy*qz + 2.0f*qx*qw, 1.0f - 2.0f*qx*qx - 2.0f*qy*qy, 0.0f,
+    //     0.0f, 0.0f, 0.0f, 1.0f);
+
+    var m = [];
+    m[0] = 1.0 - 2.0 * q.y * q.y - 2.0 * q.z * q.z;
+    m[1] = 2.0 * q.x * q.y - 2.0 * q.z * q.w;
+    m[2] = 2.0 * q.x * q.z + 2.0 * q.y * q.w;
+    m[3] = 0;
+    
+    m[4] = 2.0 * q.x * q.y + 2.0 * q.z * q.w;
+    m[5] = 1.0 - 2.0 * q.x * q.x - 2.0 * q.z * q.z;
+    m[6] = 2.0 * q.y * q.z - 2.0 * q.x * q.w;
+    m[7] = 0;
+    
+    m[8] = 2.0 * q.x * q.z - 2.0 * q.y * q.w;
+    m[9] = 2.0 * q.y * q.z + 2.0 * q.x * q.w;
+    m[10] = 1.0 - 2.0 * q.x * q.x - 2.0 * q.y * q.y;
+    m[11] = 0;
+
+    m[12] = 0;
+    m[13] = 0;
+    m[14] = 0;
+    m[15] = 1;
+
+    return m;
+};
+
+realityEditor.gui.ar.utilities.normalizeQuaternion = function(q) {
+    var n = 1.0 / Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+    q.x *= n;
+    q.y *= n;
+    q.z *= n;
+    q.w *= n;
+    return q;
+};
+
+realityEditor.gui.ar.utilities.invertQuaternion = function(q) {
+    var d = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+    return {
+        x: q.x/d,
+        y: q.y/d,
+        z: q.z/d,
+        w: q.w/d
+    }
+};
+
+/**
+ * @author https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+ * @param {number} pitch
+ * @param {number} roll
+ * @param {number} yaw
+ * @return {q}
+ */
+realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw = function(pitch, roll, yaw) {
+
+    // create identity Quaternion structure as a placeholder
+    var q = { x: 0, y: 0, z: 0, w: 1 };
+    
+    // Abbreviations for the various angular functions
+    var cy = Math.cos(yaw * 0.5);
+    var sy = Math.sin(yaw * 0.5);
+    var cr = Math.cos(roll * 0.5);
+    var sr = Math.sin(roll * 0.5);
+    var cp = Math.cos(pitch * 0.5);
+    var sp = Math.sin(pitch * 0.5);
+
+    q.w = cy * cr * cp + sy * sr * sp;
+    q.x = cy * sr * cp - sy * cr * sp;
+    q.y = cy * cr * sp + sy * sr * cp;
+    q.z = sy * cr * cp - cy * sr * sp;
+    return q;
 };

@@ -50,12 +50,18 @@
 createNameSpace("realityEditor.device");
 
 /**
+ * @fileOverview realityEditor.device.index.js
+ * Implements the touch event handlers for all major AR user interactions,
+ * keeping track of the editingState and modifying state of Objects, Frames, and Nodes as necessary.
+ */
+
+/**
  * @typedef {Object} TouchEditingTimer
  * @desc All the necessary state to track a tap-and-hold gesture that triggers a timeout callback.
- * @property startX {number}
- * @property startY {number}
- * @property moveTolerance {number}
- * @property timeoutFunction {Function}
+ * @property {number} startX
+ * @property {number} startY
+ * @property {number} moveTolerance
+ * @property {Function} timeoutFunction 
  */
 
 /**
@@ -76,13 +82,13 @@ realityEditor.device.currentScreenTouches = [];
 /**
  * @typedef {Object} EditingState
  * @desc All the necessary state about what's currently being repositioned. Everything else can be calculated from these.
- * @property {string|null} object
- * @property {string|null} frame
- * @property {string|null} node
- * @property {{x: number, y: number}|null} touchOffset
- * @property {boolean} unconstrained
- * @property {number|null} unconstrainedOffset
- * @property {Array.<number>|null} startingMatrix
+ * @property {string|null} object - objectId of the selected vehicle
+ * @property {string|null} frame - frameId of the selected vehicle
+ * @property {string|null} node - nodeIf of the selected node (null if vehicle is a frame, not a node)
+ * @property {{x: number, y: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
+ * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
+ * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
+ * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
  */
 
 /**
@@ -96,6 +102,17 @@ realityEditor.device.editingState = {
     unconstrained: false,
     unconstrainedOffset: null,
     startingMatrix: null
+};
+
+/**
+ * A set of arrays of callbacks that other modules can register to be notified of device/index actions.
+ * Contains a property for each method name in device/index.js that can trigger events in other modules.
+ * The value of each property is an array containing pointers to the callback functions that should be
+ *  triggered when that function is called.
+ * @type {{resetEditingState: Array.<function>}}
+ */
+realityEditor.device.callbacks = {
+    resetEditingState: []
 };
 
 /**
@@ -115,7 +132,7 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
     var newDisplay = newEditingMode ? 'inline' : 'none';
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var svg = document.getElementById('svg' + frameKey);
-        if (svg) {
+        if (svg && globalStates.guiState === "ui") { // don't show green outline for frames if in node view
             svg.style.display = newDisplay;
         }
         realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
@@ -238,7 +255,7 @@ realityEditor.device.addPocketNodeToClosestFrame = function(pocketNode) {
  */
 realityEditor.device.shouldPostEventsIntoIframe = function() {
     var editingVehicle = this.getEditingVehicle();
-    return !(globalStates.editingMode || editingVehicle || this.touchEditingTimer);
+    return !(globalStates.editingMode || editingVehicle /*|| this.touchEditingTimer */); // TODO: pointerup never gets posted if this last isnt commented out... was it doing anything?
 };
 
 /**
@@ -290,6 +307,8 @@ realityEditor.device.resetGlobalProgram = function() {
  * Reset full editing state so that no object is set as being edited.
  */
 realityEditor.device.resetEditingState = function() {
+    this.sendEditingStateToFrameContents(this.editingState.frame, false); // TODO: move to a callback
+
     this.editingState.object = null;
     this.editingState.frame = null;
     this.editingState.node = null;
@@ -297,6 +316,35 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
+    
+    this.triggerCallbacks('resetEditingState');
+};
+
+/**
+ * Adds a callback function that will be invoked when the realityEditor.device.[functionName] is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.device.registerCallback = function(functionName, callback) {
+    if (typeof this.callbacks[functionName] === 'undefined') {
+        this.callbacks[functionName] = [];
+    }
+    
+    this.callbacks[functionName].push(callback);
+};
+
+/**
+ * Utility for iterating calling all callbacks that other modules have registered for the given function
+ * @param {string} functionName
+ * @param {object|undefined} params
+ */
+realityEditor.device.triggerCallbacks = function(functionName, params) {
+    if (typeof this.callbacks[functionName] === 'undefined') return;
+    
+    // iterates over all registered callbacks to trigger events in various modules
+    this.callbacks[functionName].forEach(function(callback) {
+        callback(params);
+    });
 };
 
 /**
@@ -393,6 +441,18 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     
+    this.sendEditingStateToFrameContents(frameKey, true);
+};
+
+// post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
+realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameIsMoving) {
+    if (!frameKey) return;
+    var iframe = document.getElementById('iframe' + frameKey);
+    if (!iframe) return;
+    
+    iframe.contentWindow.postMessage(JSON.stringify({
+        frameIsMoving: frameIsMoving
+    }), '*');
 };
 
 /**
@@ -407,6 +467,10 @@ realityEditor.device.onElementTouchDown = function(event) {
     // how long it takes to move the element:
     // instant if editing mode on, 400ms if not (or touchMoveDelay if specially configured for that element)
     var moveDelay = this.defaultMoveDelay;
+    // take a lot longer to move nodes, otherwise it's hard to draw links
+    if (globalStates.guiState === "node") {
+        moveDelay = this.defaultMoveDelay * 3;
+    }
     if (globalStates.editingMode) {
         moveDelay = 0;
     } else if (activeVehicle.moveDelay) {
@@ -427,9 +491,11 @@ realityEditor.device.onElementTouchDown = function(event) {
     }
     
     // after a certain amount of time, start editing this element
-    var timeoutFunction = setTimeout(function () {
-        realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
-    }, moveDelay); 
+    if (moveDelay >= 0) {
+        var timeoutFunction = setTimeout(function () {
+            realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
+        }, moveDelay);
+    }
     
     this.touchEditingTimer = {
         startX: event.pageX,
@@ -519,7 +585,7 @@ realityEditor.device.onElementTouchOut = function(event) {
             realityEditor.gui.menus.buttonOn("main",[]); // endTrash 
         }
 
-        globalProgram.logicSelector = 4; // TODO: why 4?
+        globalProgram.logicSelector = 4; // 4 means default link (not one of the colored ports)
 
         // reset touch overlay
         overlayDiv.classList.remove('overlayPositive');
@@ -896,7 +962,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     var activeVehicle = this.getEditingVehicle();
     
     if (activeVehicle) {
-        
+
         // scale the element if you make a pinch gesture
         if (event.touches.length === 2) {
 
@@ -1099,6 +1165,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     
     // stop editing the active frame or node if there are no more touches on it
     if (this.editingState.object) {
+        // TODO: touchesOnActiveVehicle returns 0 if you tapped through a fullscreen frame, because the touch targetId doesnt update to be the thing behind it
         var touchesOnActiveVehicle = this.currentScreenTouches.map(function(elt) { return elt.targetId; }).filter(function(touchTarget) {
             return (touchTarget === this.editingState.frame || touchTarget === this.editingState.node || touchTarget === "pocket-element");
         }.bind(this));
@@ -1135,6 +1202,15 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
 
         }
     }
+    
+    // if tap on background when no visible objects, auto-focus camera
+    if (event.target.id === 'canvas') {
+        if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length === 0) {
+            realityEditor.app.focusCamera();
+        }
+    }
+    
+    this.triggerCallbacks('onDocumentMultiTouchEnd');
 };
 
 /**
@@ -1253,19 +1329,21 @@ realityEditor.device.setDeviceName = function(deviceName) {
  * @param {boolean} clearSkyState - hides menu buttons for clean appearance
  * @param {boolean} instantState - enables instant connection mode when connected to enabled capacitive touch hardware
  * @param {boolean} speechState - enables Siri speech API to connect this to that
+ // TODO: add native app storage for this setting * @param {boolean} videoRecordingEnabled - enables video recording API to create frames from camera video stream
  * @param {string} externalState - the IP address of a userinterface directory that should be loaded in instead of default
  * @param {string} discoveryState - the IP address of a discovery server to be used instead of UDP
  * @param {boolean} realityState - sets retail mode on, showing a different menu for those use cases
  * @param {string} zoneText - the current zone that object discovery is limited to
  * @param {boolean} zoneState - whether to use zones or not
  */
-realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, externalState, discoveryState, realityState, zoneText, zoneState) {
+realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, /*videoRecordingEnabled,*/ externalState, discoveryState, realityState, zoneText, zoneState) {
 
     globalStates.extendedTrackingState = extendedTrackingState;
     globalStates.developerState = developerState;
     globalStates.clearSkyState = clearSkyState;
     globalStates.instantState = instantState;
     globalStates.speechState = speechState;
+    // globalStates.videoRecordingEnabled = videoRecordingEnabled;
     globalStates.externalState = externalState;
     globalStates.discoveryState = discoveryState;
     globalStates.realityState = realityState;

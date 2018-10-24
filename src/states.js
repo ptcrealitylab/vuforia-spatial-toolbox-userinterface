@@ -51,7 +51,6 @@
  ******************************************** constant settings *******************************************************
  **********************************************************************************************************************/
 
-var ec = 0;
 var disp = {};
 var uiButtons;
 var httpPort = 8080;
@@ -79,7 +78,7 @@ var globalStates = {
     
     width: window.innerHeight,
     height: window.innerWidth,
-	guiState: "ui",
+	guiState: "ui", // possible values: "ui"=(frames visible), "node"=(nodes visible), "logic"=(crafting board)
 	UIOffMode: false,
 	settingsButtonState: false,
 	extendedTracking: false,
@@ -100,6 +99,10 @@ var globalStates = {
     lockingMode: false,
     //authenticatedUser: null,
     lockPassword: null,
+
+    videoRecordingEnabled: false,
+    // videoRecordingMode: true,
+    renderFrameGhostsInNodeViewEnabled: true,
     
     guiButtonDown: false,
     logicButtonDown: false,
@@ -107,6 +110,7 @@ var globalStates = {
 	pocketButtonDown: false,
 	pocketButtonUp: false,
     resetButtonDown: false,
+    commitButtonDown: false,
     settingsButtonDown: false,
 	freezeButtonState: false,
 	logButtonState: false,
@@ -193,6 +197,20 @@ var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
+/**
+ * @typedef {Object} PocketContainer
+ * @desc A data structure holding the frame or node to be dropped in from the pocket, with additional state.
+ * @property {string} type
+ * @property {Frame|Node} vehicle
+ * @property {string} closestObjectKey
+ * @property {{pageX: number, pageY: number}} positionOnLoad
+ * @property {boolean} waitingToRender
+ */
+
+/**
+ * Holds a frame when it is being dropped in from the pocket
+ * @type {PocketContainer}
+ */
 var pocketFrame = {
     type: 'ui',
     vehicle: null,
@@ -200,6 +218,11 @@ var pocketFrame = {
     positionOnLoad: null,
     waitingToRender: false
 };
+
+/**
+ * Holds a logic node when it is being dropped in from the pocket
+ * @type {PocketContainer}
+ */
 var pocketNode = {
     type: 'logic',
     vehicle: null,

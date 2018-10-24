@@ -49,6 +49,24 @@
 
 createNameSpace("realityEditor.network");
 
+/**
+ * @type {Array.<{messageName: string, callback: function}>}
+ */
+realityEditor.network.postMessageHandlers = [];
+
+/**
+ * Creates an extendable method for other modules to register callbacks that will be triggered
+ * from onInternalPostMessage events, without creating circular dependencies
+ * @param {string} messageName
+ * @param {function} callback
+ */
+realityEditor.network.addPostMessageHandler = function(messageName, callback) {
+    this.postMessageHandlers.push({
+        messageName: messageName,
+        callback: callback
+    });
+};
+
 realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey) {
     if (typeof frameKey === "undefined") {
         frameKey = objectKey;
@@ -299,13 +317,15 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     }
     
     // update each frame in the object
+
+    
     for (var frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
 
-            origin.frames[frameKey].width = 300; // TODO: why is this hard-coded?
-            origin.frames[frameKey].height = 300;
+            origin.frames[frameKey].width = remote.frames[frameKey].width || 300;
+            origin.frames[frameKey].height = remote.frames[frameKey].height || 300;
             
             origin.frames[frameKey].uuid = frameKey;
 
@@ -360,12 +380,34 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
                 //     }
                 // }
             }
+
+            // remove extra nodes from origin that don't exist in remote
+            for (var nodeKey in originNodes) {
+                if (originNodes.hasOwnProperty(nodeKey) && !remoteNodes.hasOwnProperty(nodeKey)) {
+                    realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
+                }
+            }
+            
         }
+
+        origin.frames[frameKey].links = JSON.parse(JSON.stringify(remote.frames[frameKey].links));
+        
+        // for (var linkKey in remote.frames[frameKey].links) {
+        //     origin.frames[frameKey].links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
+        // }
         
         if (globalDOMCache["iframe" + frameKey]) {
             if (globalDOMCache["iframe" + frameKey]._loaded) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
+        }
+    }
+
+    // remove extra frames from origin that don't exist in remote
+    for (var frameKey in origin.frames) {
+        if (origin.frames.hasOwnProperty(frameKey) && !remote.frames.hasOwnProperty(frameKey)) {
+            // delete origin.frames[frameKey];
+            realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
         }
     }
 
@@ -457,6 +499,20 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
         origin = remote;
 
+        if (origin.type === "logic") {
+            if (!origin.guiState) {
+                origin.guiState = new LogicGUIState();
+            }
+
+            if (!origin.grid) {
+                var container = document.getElementById('craftingBoard');
+                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
+            }
+
+        }
+
+        objects[objectKey].frames[frameKey].nodes[nodeKey] = origin;
+
     } else {
 
         origin.x = remote.x;
@@ -474,6 +530,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
         origin.lockPassword = remote.lockPassword;
         origin.lockType = remote.lockType;
+        origin.publicData = remote.publicData;
         // console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
 
         if (origin.type === "logic") {
@@ -498,15 +555,13 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         this.utilities.syncLinksWithRemote(origin, remote.links);
     }
 
-    if (remote.type === 'logic') {
-        if (nodeKey === globalStates.currentLogic.uuid) {
-            realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
-        }
-    }
-
     if (globalStates.currentLogic) {
 
         if (globalStates.currentLogic.uuid === nodeKey) {
+
+            if (remote.type === 'logic') {
+                realityEditor.gui.crafting.updateGrid(objects[objectKey].frames[frameKey].nodes[nodeKey].grid);
+            }
 
             // console.log("YES");
             realityEditor.gui.crafting.forceRedraw(globalStates.currentLogic);
@@ -799,7 +854,7 @@ realityEditor.network.onAction = function (action) {
             frame.fullScreen = false;
             frame.sendMatrix = false;
             frame.sendAcceleration = false;
-            frame.integerVersion = "3.0.0"; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+            frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
             
             var nodeNames = thisAction.addFrame.nodeNames;
@@ -857,16 +912,28 @@ realityEditor.network.onAction = function (action) {
 
 realityEditor.network.onInternalPostMessage = function (e) {
     var msgContent = {};
-    if (e.data) {
+    
+    // catch error when safari sends a misc event
+    if (typeof e === 'object' && typeof e.data === 'object') {
+        msgContent = e.data;
+        
+    } else if (e.data && typeof e.data !== 'object') {
         msgContent = JSON.parse(e.data);
     } else {
         msgContent = JSON.parse(e);
     }
-
+    
     // console.log("      onInternalPostMessage");
     // console.log("frame: " + msgContent.frame + ", node: " + msgContent.node + ", width: " + msgContent.width);
     // console.log("\n\n");
 
+    // iterates over all registered postMessageHandlers to trigger events in various modules
+    this.postMessageHandlers.forEach(function(messageHandler) {
+        if (typeof msgContent[messageHandler.messageName] !== 'undefined') {
+            messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
+        }
+    });
+    
     if (typeof msgContent.settings !== "undefined") {
         realityEditor.network.onSettingPostMessage(msgContent);
         return;
@@ -1118,6 +1185,7 @@ if (thisFrame) {
 
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
+            
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
             var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
@@ -1127,26 +1195,54 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
             
-            globalDOMCache[tempThisObject.uuid].style.display = 'none';
-            globalDOMCache['iframe' + tempThisObject.uuid].style.pointerEvents = 'none';
+            globalDOMCache[tempThisObject.uuid].style.opacity = '0'; // svg overlay still exists so we can reposition, but invisible
+            globalDOMCache[tempThisObject.uuid].style.left = '0';
+            globalDOMCache[tempThisObject.uuid].style.top = '0';
+            
+            globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
+            
+            if (realityEditor.device.editingState.frame === msgContent.frame) {
+                realityEditor.device.resetEditingState();
+                realityEditor.device.clearTouchTimer();
+            }
 
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
+            
             if (tempThisObject.uuid) {
-                globalDOMCache[tempThisObject.uuid].style.display = '';
+                globalDOMCache[tempThisObject.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
+            }
+            
+            // TODO: reset left/top offset when returns to non-fullscreen?
+            
+            var containingObject = realityEditor.getObject(msgContent.object);
+            if (!containingObject.objectVisible) {
+                containingObject.objectVisible = true;
             }
         }
 
     } else if(typeof msgContent.fullScreen === "string") {
         if (msgContent.fullScreen === "sticky") {
-
+            
             tempThisObject.fullScreen = "sticky";
-            document.getElementById("thisObject" + msgContent.frame).style.webkitTransform =
+            console.log("sticky fullscreen: " + tempThisObject.fullScreen);
+            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
-                '0, 0, 0, 1)';
+                '0, 0, ' + zIndex + ', 1)';
+
+            globalDOMCache[tempThisObject.uuid].style.opacity = '0';
+            globalDOMCache[tempThisObject.uuid].style.left = '0';
+            globalDOMCache[tempThisObject.uuid].style.top = '0';
+            
+            globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
+            globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
 
         }
     }
@@ -1191,6 +1287,7 @@ if (thisFrame) {
             return;
         }
         var fakeEvent = {
+            target: target,
             currentTarget: target,
             clientX: event.x,
             clientY: event.y,
@@ -1267,11 +1364,16 @@ if (thisFrame) {
         
     }
 
+    if (typeof msgContent.videoRecording !== "undefined") {
 
-        /*    if (typeof msgContent.finishedLoading !== 'undefined') {
-                console.log('~~~ iframe finished loading ~~~')
-            }*/
-
+        if (msgContent.videoRecording) {
+            realityEditor.device.videoRecording.startRecordingForFrame(msgContent.object, msgContent.frame);
+        } else {
+            realityEditor.device.videoRecording.stopRecordingForFrame(msgContent.object, msgContent.frame);
+        }
+        
+    }
+    
 };
 
 realityEditor.network.loadLogicIcon = function(data) {
@@ -1338,6 +1440,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 clearSkyState: globalStates.clearSkyState,
                 instantState: globalStates.instantState,
                 speechState: globalStates.speechState,
+                videoRecordingEnabled: globalStates.videoRecordingEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1393,10 +1496,10 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             console.log("jetzt aber mal richtig hier!!", globalStates.extendedTracking);
 
             if (globalStates.extendedTracking === true) {
-                realityEditor.app.appFunctionCall("extendedTrackingOn", null, null);
+                realityEditor.app.saveExtendedTrackingState(true);
 
             } else {
-                realityEditor.app.appFunctionCall("extendedTrackingOff", null, null);
+                realityEditor.app.saveExtendedTrackingState(false);
 
             }
         }
@@ -1405,40 +1508,37 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
             if (msgContent.settings.setSettings.editingMode) {
                 realityEditor.device.setEditingMode(true);
-                realityEditor.app.appFunctionCall("developerOn", null, null);
+                realityEditor.app.saveDeveloperState(true);
             } else {
                 realityEditor.device.setEditingMode(false);
-                realityEditor.app.appFunctionCall("developerOff", null, null);
-
+                realityEditor.app.saveDeveloperState(false);
             }
 
         }
 
         if (typeof msgContent.settings.setSettings.zoneText !== "undefined") {
-                realityEditor.app.appFunctionCall("zoneText", msgContent.settings.setSettings, null);
+            realityEditor.app.saveZoneText(msgContent.settings.setSettings.zoneText);
         }
 
         if (typeof msgContent.settings.setSettings.zoneState !== "undefined") {
             if (msgContent.settings.setSettings.zoneState) {
                 globalStates.zoneState = true;
-                realityEditor.app.appFunctionCall("zoneOn", null, null);
+                realityEditor.app.saveZoneState(true);
 
             } else {
                 globalStates.zoneState = false;
-                realityEditor.app.appFunctionCall("zoneOff", null, null);
-
+                realityEditor.app.saveZoneState(false);
             }
         }
         
         if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
             if (msgContent.settings.setSettings.instantState) {
                 globalStates.instantState = true;
-                realityEditor.app.appFunctionCall("instantOn", null, null);
+                realityEditor.app.saveInstantState(true);
 
             } else {
                 globalStates.instantState = false;
-                realityEditor.app.appFunctionCall("instantOff", null, null);
-
+                realityEditor.app.saveInstantState(false);
             }
         }
 
@@ -1461,15 +1561,31 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
+        if (typeof msgContent.settings.setSettings.videoRecordingEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.videoRecordingEnabled) {
+                if (!globalStates.videoRecordingEnabled) {
+                    globalStates.videoRecordingEnabled = true;
+                    // add any one-time side-effects here
+                }
+            } else {
+                if (globalStates.videoRecordingEnabled) {
+                    globalStates.videoRecordingEnabled = false;
+                    // add any one-time side-effects here:
+                    // stop the recording if needed, otherwise there's no UI to stop it
+                    realityEditor.device.videoRecording.stopRecording();
+                }
+            }
+        }
+
         if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
 
             if (msgContent.settings.setSettings.clearSkyState) {
                 globalStates.clearSkyState = true;
-                realityEditor.app.appFunctionCall("clearSkyOn", null, null);
+                realityEditor.app.saveClearSkyState(true);
 
             } else {
                 globalStates.clearSkyState = false;
-                realityEditor.app.appFunctionCall("clearSkyOff", null, null);
+                realityEditor.app.saveClearSkyState(false);
 
             }
         }
@@ -1479,7 +1595,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             console.log("received message in settings");
 
             if (msgContent.settings.setSettings.lockingToggle) {
-                realityEditor.app.appFunctionCall("authenticateTouch", null, null);
+                realityEditor.app.authenticateTouch();
 
             } else {
                 globalStates.lockingMode = false;
@@ -1499,14 +1615,13 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             if (msgContent.settings.setSettings.realityState) {
                 realityEditor.gui.menus.on("reality", ["realityGui"]);
                 globalStates.realityState = true;
-                realityEditor.app.appFunctionCall("realityOn", null, null);
+                realityEditor.app.saveRealityState(true);
 
             } else {
                 realityEditor.gui.menus.off("main", ["gui", "reset", "unconstrained"]);
                 realityEditor.gui.menus.on("main", ["gui"]);
                 globalStates.realityState = false;
-                realityEditor.app.appFunctionCall("realityOff", null, null);
-                
+                realityEditor.app.saveRealityState(false);
             }
         }
     }
@@ -1980,10 +2095,22 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
     }
-
-  
-
+    
 };
+
+realityEditor.network.sendSaveCommit = function (objectKey) {
+   var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/saveCommit/";
+    content ={};
+        this.postData(urlEndpoint, content, function(){});
+};
+
+realityEditor.network.sendResetToLastCommit = function (objectKey) {
+    var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/resetToLastCommit/";
+    content ={};
+    this.postData(urlEndpoint, content, function(){});
+};
+
+
 
 /**
  * @desc
