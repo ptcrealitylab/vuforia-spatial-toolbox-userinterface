@@ -1188,7 +1188,7 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
             document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1229,7 +1229,7 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
             document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1371,6 +1371,22 @@ if (thisFrame) {
         } else {
             realityEditor.device.videoRecording.stopRecordingForFrame(msgContent.object, msgContent.frame);
         }
+        
+    }
+
+    if (typeof msgContent.sendToBackground !== "undefined") {
+
+        var iframe = globalDOMCache['iframe' + tempThisObject.uuid];
+        var src = iframe.src;
+        
+        var desktopBackgroundRenderer = document.getElementById('desktopBackgroundRenderer');
+        if (desktopBackgroundRenderer) {
+            if (desktopBackgroundRenderer.src !== src) {
+                desktopBackgroundRenderer.src = src;
+            }
+        }
+        
+        iframe.style.display = 'none';
         
     }
     

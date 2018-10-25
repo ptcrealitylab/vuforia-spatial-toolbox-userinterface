@@ -36,7 +36,8 @@
             y: 0,
             type: null},
         touchDecider: null,
-        touchDeciderRegistered: false
+        touchDeciderRegistered: false,
+        onload: null
     };
 
     // adding css styles nessasary for acurate 3D transformations.
@@ -129,6 +130,10 @@
             if (!alreadyLoaded) {
                 for (var i = 0; i < realityInterfaces.length; i++) {
                     realityInterfaces[i].injectPostMessage();
+                }
+                
+                if (realityObject.onload) {
+                    realityObject.onload();
                 }
             }
         } else if (typeof msgContent.logic !== "undefined") {
@@ -389,6 +394,28 @@
                     object: realityObject.object,
                     moveDelay : delayInMilliseconds
                 }), '*');
+            }
+        };
+
+        this.sendToBackground = function() {
+            if (realityObject.sendFullScreen) {
+                if (realityObject.object && realityObject.frame) {
+                    parent.postMessage(JSON.stringify({
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        sendToBackground : true
+                    }), '*');
+                }
+            }
+        };
+        
+        this.onRealityInterfaceLoaded = function(callback) {
+            if (realityObject.object && realityObject.frame) {
+                callback();
+            } else {
+                realityObject.onload = callback;
             }
         };
 

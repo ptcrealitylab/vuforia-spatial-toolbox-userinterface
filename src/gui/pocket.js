@@ -228,6 +228,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     var isPocketTapped = false;
 
     var realityElements = [
+
+        {
+            name: 'background',
+            width: 660,
+            height: 430,
+            nodes: [
+            ]
+        },
       
         /*{
             name: 'sensor-graph',

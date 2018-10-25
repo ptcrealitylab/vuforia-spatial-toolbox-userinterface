@@ -1256,11 +1256,11 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     }
     
     // if tap on background when no visible objects, auto-focus camera
-    if (event.target.id === 'canvas') {
-        if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length === 0) {
-            realityEditor.app.focusCamera();
-        }
-    }
+    // if (event.target.id === 'canvas') {
+    //     if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length === 0) {
+    //         realityEditor.app.focusCamera();
+    //     }
+    // }
     
     this.triggerCallbacks('onDocumentMultiTouchEnd');
 };

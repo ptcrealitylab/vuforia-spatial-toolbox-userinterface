@@ -1228,3 +1228,11 @@ Logic Interface CSS
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     size: 50px;
 }
+
+#desktopBackgroundRenderer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
