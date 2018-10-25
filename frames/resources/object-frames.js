@@ -397,6 +397,9 @@
             }
         };
 
+        /**
+         * Hides the frame itself and instead populates a background context within the editor with this frame's contents
+         */
         this.sendToBackground = function() {
             if (realityObject.sendFullScreen) {
                 if (realityObject.object && realityObject.frame) {
@@ -410,7 +413,11 @@
                 }
             }
         };
-        
+
+        /**
+         * Adds an onload callback that will wait until this RealityInterfaces receives its object/frame data
+         * @param {function} callback
+         */
         this.onRealityInterfaceLoaded = function(callback) {
             if (realityObject.object && realityObject.frame) {
                 callback();
