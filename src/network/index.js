@@ -1386,7 +1386,15 @@ if (thisFrame) {
             }
         }
         
-        iframe.style.display = 'none';
+        if (iframe) {
+            iframe.style.display = 'none';
+        }
+        
+        var div = globalDOMCache[tempThisObject.uuid]; //globalDOMCache['object' + tempThisObject.uuid];
+        if (div) {
+            // div.style.pointerEvents = 'none';
+            globalDOMCache[tempThisObject.uuid].style.display = 'none';
+        }
         
     }
     
