@@ -1204,7 +1204,7 @@ realityEditor.gui.ar.utilities.getQuaternionFromMatrix = function(m) {
 //     // return Math.sqrt( Math.max(0, Math.min(1, (mappedMagnitude - 1.0) * 4)) );
 // };
 
-realityEditor.gui.ar.utilities.quaternionToEulerAngles = function(q) {
+realityEditor.gui.ar.utilities.quaternionToEulerAngles = function(q) { // TODO: rename to getEulerAnglesFromQuaternion to be consistent
     var phi = Math.atan2(q.z * q.w + q.x * q.y, 0.5 - (q.y * q.y + q.z * q.z));
     var theta = Math.asin(-2 * (q.y * q.w - q.x * q.z));
     var psi = Math.atan2(q.y * q.z + q.x * q.w, 0.5 - (q.z * q.z + q.w * q.w));
