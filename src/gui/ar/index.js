@@ -73,7 +73,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     }
 
     if (realityEditor.device.utilities.isDesktop()) {
-        var scaleFactor = Math.max(1, 0.5 * Math.min(window.innerWidth/568, window.innerHeight/320));
+        var scaleFactor = window.innerWidth/568;
         matrix[0] *= scaleFactor;
         matrix[5] *= scaleFactor;
         matrix[10] *= scaleFactor;
