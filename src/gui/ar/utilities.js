@@ -294,6 +294,21 @@ realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix) {
 };
 
 /**
+ * Returns the dot product of the two vectors
+ */
+realityEditor.gui.ar.utilities.dotProduct = function(v1, v2) {
+    if (v1.length !== v2.length) {
+        console.warn('trying to dot two vectors of different lengths');
+        return 0;
+    }
+    var sum = 0;
+    for (var i = 0; i < v1.length; i++) {
+        sum += v1[i] * v2[i];
+    }
+    return sum;
+};
+
+/**
  * Utility that returns true if the rectangle formed by topLeft and bottomRight A overlaps B
  * https://www.geeksforgeeks.org/find-two-rectangles-overlap/
  * 
