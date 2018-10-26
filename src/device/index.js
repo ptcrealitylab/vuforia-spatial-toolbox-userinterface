@@ -1127,7 +1127,7 @@ realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY)
 realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicle) {
     // pop into unconstrained mode if pull out z > threshold
     var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
-                            !globalStates.freezeButtonState &&
+                            (!globalStates.freezeButtonState || realityEditor.device.utilities.isDesktop()) &&
                             realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle);
     
     if (ableToBePulled) {

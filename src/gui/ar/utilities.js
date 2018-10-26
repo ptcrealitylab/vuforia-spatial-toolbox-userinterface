@@ -159,6 +159,43 @@ realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
 };
 
 /**
+ * Returns a matrix that linearly interpolated each element of two matrices
+ * @param {Array.<number>} existingMatrix - source matrix
+ * @param {Array.<number>} newMatrix - new value
+ * @param {number} alpha - if 0, sets to existing matrix, if 1, sets to new matrix, if 0.5, averages the two
+ * @return {Array.<number>} resulting interpolated matrix
+ */
+realityEditor.gui.ar.utilities.lerpMatrices = function(existingMatrix, newMatrix, alpha) {
+    if (existingMatrix.length !== newMatrix.length) {
+        console.warn('trying to lerp incompatible matrices');
+        return;
+    }
+    if (typeof alpha === 'undefined' || alpha < 0 || alpha > 1) {
+        console.log('lerping with incompatible alpha value (' + alpha + ') -> using 0.5 instead');
+        alpha = 0.5;
+    }
+
+    var r = [];
+    r[0] = newMatrix[0] * alpha + existingMatrix[0] * (1 - alpha);
+    r[1] = newMatrix[1] * alpha + existingMatrix[1] * (1 - alpha);
+    r[2] = newMatrix[2] * alpha + existingMatrix[2] * (1 - alpha);
+    r[3] = newMatrix[3] * alpha + existingMatrix[3] * (1 - alpha);
+    r[4] = newMatrix[4] * alpha + existingMatrix[4] * (1 - alpha);
+    r[5] = newMatrix[5] * alpha + existingMatrix[5] * (1 - alpha);
+    r[6] = newMatrix[6] * alpha + existingMatrix[6] * (1 - alpha);
+    r[7] = newMatrix[7] * alpha + existingMatrix[7] * (1 - alpha);
+    r[8] = newMatrix[8] * alpha + existingMatrix[8] * (1 - alpha);
+    r[9] = newMatrix[9] * alpha + existingMatrix[9] * (1 - alpha);
+    r[10] = newMatrix[10] * alpha + existingMatrix[10] * (1 - alpha);
+    r[11] = newMatrix[11] * alpha + existingMatrix[11] * (1 - alpha);
+    r[12] = newMatrix[12] * alpha + existingMatrix[12] * (1 - alpha);
+    r[13] = newMatrix[13] * alpha + existingMatrix[13] * (1 - alpha);
+    r[14] = newMatrix[14] * alpha + existingMatrix[14] * (1 - alpha);
+    r[15] = newMatrix[15] * alpha + existingMatrix[15] * (1 - alpha);
+    return r;
+};
+
+/**
  * @desc inverting a matrix
  * @param {Array.<number>} a origin matrix
  * @return {Array.<number>} a inverted copy of the origin matrix
