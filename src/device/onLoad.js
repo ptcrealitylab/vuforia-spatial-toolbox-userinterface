@@ -153,6 +153,10 @@ realityEditor.device.onload = function () {
     // start the AR framework in native iOS
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
     
+    // window.addEventListener('resize', function(event) {
+    //     console.log(window.innerWidth, window.innerHeight);
+    // });
+    
 	this.cout("onload");
 };
 

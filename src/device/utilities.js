@@ -251,5 +251,4 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
  */
 realityEditor.device.utilities.isDesktop = function() {
     return window.navigator.userAgent.indexOf('Mobile') === -1 || window.navigator.userAgent.indexOf('Macintosh') > -1;
-    // return globalStates.platform === 'MacIntel' || globalStates.platform === false;
 };
