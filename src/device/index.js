@@ -835,7 +835,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     var activeVehicle = this.getEditingVehicle();
     
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if (event.target.id === "canvas" && !activeVehicle) {
+    if ((event.target.id === "canvas" || event.target.className === "memoryBackground") && !activeVehicle) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
 
