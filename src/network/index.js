@@ -734,6 +734,7 @@ realityEditor.network.onAction = function (action) {
                                     thisFrame.nodes[nodeKey] = res.nodes[nodeKey];
                                 } else {
                                     for (var propertyKey in res.nodes[nodeKey]) {
+                                        if (propertyKey === 'loaded') { continue; }
                                         thisFrame.nodes[nodeKey][propertyKey] = res.nodes[nodeKey][propertyKey];
                                     }
                                 }

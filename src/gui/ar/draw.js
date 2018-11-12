@@ -718,13 +718,13 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     var newObject = realityEditor.getObject(newObjectKey);
     
     // TODO: figure out dropping frames between objects of different sizes
-    // var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
-    // var newObjectTargetWidth = newObject.targetSize.width;
-    // var scaleFactor = 1;
-    // if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
-    //     scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
-    //     frame.ar.scale *= scaleFactor;
-    // }
+    var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
+    var newObjectTargetWidth = newObject.targetSize.width;
+    var scaleFactor = 1;
+    if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
+        scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
+        frame.ar.scale *= scaleFactor;
+    }
     
     // TODO: bugfix this
     // fixme: quick fix to allow better pushing into screens
@@ -744,9 +744,9 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
         frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
-        if (frame.ar.scale > globalStates.defaultScale/2) {
-            frame.ar.scale *= 0.5;
-        }
+        // if (frame.ar.scale > globalStates.defaultScale/2) {
+        //     frame.ar.scale *= 0.5;
+        // }
         
     } else {
         
