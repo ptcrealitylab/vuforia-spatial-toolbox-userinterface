@@ -197,19 +197,24 @@
         realityInterface.addReadPublicDataListener('storage', "data", function (e) {
             var ctx = document.getElementById("canvas").getContext("2d");
             ctx.lineWidth = 10;
-            
+
             if(Array.isArray(e)) {
                 imageContent = e;
             }
-          for(var i =0; i<e.length; i++){
-              var point = e[i];
-              if("c" in point){
-                  moveTo(point.x, point.y, point.c, ctx);
-              } else {
-                  lineTo(point.x, point.y, ctx);
-              }
-          }
-           // document.querySelector('#show').style.visibility = "visible";
+            
+            if (e.length === 0) {
+                clearCanvas();
+            }
+            
+            for(var i =0; i<e.length; i++){
+                var point = e[i];
+                if("c" in point){
+                    moveTo(point.x, point.y, point.c, ctx);
+                } else {
+                    lineTo(point.x, point.y, ctx);
+                }
+            }
+            // document.querySelector('#show').style.visibility = "visible";
         });
         
     </script>

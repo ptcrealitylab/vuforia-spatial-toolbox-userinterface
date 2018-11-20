@@ -635,7 +635,7 @@
             // reload public data when it becomes visible
             for (var i = 0; i < realityInterfaces.length; i++) {
                 if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame})); //TODO: change to subscribe/realityEditorPublicData ??
                 }
             }
         };
@@ -862,6 +862,11 @@
         window.addEventListener('message', function (msg) {
             
             var msgContent = JSON.parse(msg.data);
+            
+            if (msgContent.reloadPublicData) {
+                console.log('frame reload public data from post message');
+                realityInterface.reloadPublicData();
+            }
             
             if (msgContent.event && msgContent.event.pointerId) {
                 var eventData = msgContent.event;

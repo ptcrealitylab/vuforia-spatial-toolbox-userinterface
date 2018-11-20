@@ -64,6 +64,11 @@ createNameSpace("realityEditor.network.realtime");
 
         setObjectValueAtPath(frame, msgContent.propertyPath, msgContent.newValue);
         console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        
+        // trigger secondary effects for certain properties
+        if (msgContent.propertyPath === 'publicData') {
+            globalDOMCache["iframe" + msgContent.frameKey].contentWindow.postMessage(JSON.stringify({reloadPublicData: true}), "*");
+        }
     }
 
     /**
