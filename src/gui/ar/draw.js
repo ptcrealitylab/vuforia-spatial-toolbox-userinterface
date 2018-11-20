@@ -154,8 +154,26 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
 };
 
 /**
+ * The most recently received set of matrices for the currently visible objects.
+ * A set of {objectId: matrix} pairs, one per recognized marker
+ * @type {Object.<string, Array.<number>>}
+ */
+realityEditor.gui.ar.draw.visibleObjectsCopy = {};
+
+/**
  * Main update loop.
- * Gets triggered ~60fps by the native app when the AR engine updates with a new set of recognized markers
+ * A wrapper for the real realityEditor.gui.ar.draw.update update function.
+ * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
+ * (A different update loop inside of desktopAdapter is used on desktop devices to include camera manipulations)
+ */
+realityEditor.gui.ar.draw.updateLoop = function () {
+    realityEditor.gui.ar.draw.update(JSON.parse(JSON.stringify(realityEditor.gui.ar.draw.visibleObjectsCopy)));
+    requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
+};
+
+/**
+ * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
+ * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {

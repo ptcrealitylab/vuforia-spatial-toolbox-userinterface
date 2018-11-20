@@ -96,14 +96,15 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     
 };
 
+/**
+ * Callback ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
+ * @param {Object.<string, Array.<number>>} visibleObjects
+ */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     // console.log('got new visible matrices');
-
-    // if (globalStates.frozenState.isFrozen) {
-    //     visibleObjects = JSON.parse(JSON.stringify(globalStates.frozenState.visibleObjects));
-    // }
-    
-    realityEditor.gui.ar.draw.update(visibleObjects);
+    if (!globalStates.freezeButtonState) {
+        realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
+    }
 };
 
 /**

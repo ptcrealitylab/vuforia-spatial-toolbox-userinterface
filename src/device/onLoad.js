@@ -84,7 +84,12 @@ realityEditor.device.onload = function () {
     realityEditor.device.desktopAdapter.initFeature();
     realityEditor.gui.ar.desktopRenderer.initFeature();
     realityEditor.gui.crafting.initFeature();
-    
+
+    // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
+    if (!realityEditor.device.utilities.isDesktop()) {
+        realityEditor.gui.ar.draw.updateLoop();
+    }
+
     realityEditor.app.getExternalText(function(savedState) {
         if (savedState === '(null)') { savedState = 'null'; };
         console.log('saved external text = ', JSON.parse(savedState));
