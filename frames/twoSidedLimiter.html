@@ -171,6 +171,8 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
     var valueMax = document.querySelector('#valueMax');
     var limiterMin = document.querySelector('#limiterMin');
     var limiterMax = document.querySelector('#limiterMax');
+    
+    var container = document.querySelector('#container');
 
     // var outlineMinShadow = document.querySelector('#outlineMinShadow');
     //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
@@ -276,7 +278,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
     limiterMin.addEventListener("pointermove",
         function (event) {
-            screenIsTouched = true;
+            // screenIsTouched = true;
             setMin(event.clientY);
             realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
         }, false);
@@ -284,7 +286,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
     limiterMax.addEventListener("pointermove",
         function (event) {
-            screenIsTouched = true;
+            // screenIsTouched = true;
             setMax(event.clientY);
             realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
         }, false);
