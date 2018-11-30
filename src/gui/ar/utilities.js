@@ -223,6 +223,32 @@ realityEditor.gui.ar.utilities.invertMatrix = function (a) {
 };
 
 /**
+ * Returns the transpose of a 4x4 matrix
+ * @param {Array.<number>} matrix
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.transposeMatrix = function(matrix) {
+    var r = [];
+    r[0] = matrix[0];
+    r[1] = matrix[4];
+    r[2] = matrix[8];
+    r[3] = matrix[12];
+    r[4] = matrix[1];
+    r[5] = matrix[5];
+    r[6] = matrix[9];
+    r[7] = matrix[13];
+    r[8] = matrix[2];
+    r[9] = matrix[6];
+    r[10] = matrix[10];
+    r[11] = matrix[14];
+    r[12] = matrix[3];
+    r[13] = matrix[7];
+    r[14] = matrix[11];
+    r[15] = matrix[15];
+    return r;
+};
+
+/**
  * Efficient method for multiplying each element in a length 4 array by the same number
  * @param {Array.<number>} vector4
  * @param {number} scalar
@@ -1220,7 +1246,7 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
  * @return {number} distance
  */
 realityEditor.gui.ar.utilities.distance = function (matrix) {
-    return   Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    return Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
 };
 
 /**

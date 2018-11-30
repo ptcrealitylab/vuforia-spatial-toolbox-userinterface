@@ -109,7 +109,8 @@ var realityEditor = realityEditor || {
         network: {
             realtime: {},
             utilities: {}
-        }
+        },
+        worldObjects: {}
 	};
 
 /**
@@ -198,6 +199,7 @@ realityEditor.getShadowNode = function (objectKey, frameKey, nodeKey){
  */
 realityEditor.getObject = function (objectKey){
     if(!objectKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject; }
     if(!(objectKey in this.objects)) return null;
     return this.objects[objectKey];
 };
@@ -211,6 +213,7 @@ realityEditor.getObject = function (objectKey){
 realityEditor.getFrame = function (objectKey, frameKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     return this.objects[objectKey].frames[frameKey];
@@ -227,6 +230,7 @@ realityEditor.getNode = function (objectKey, frameKey, nodeKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!nodeKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].nodes[nodeKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodes)) return null;
@@ -238,6 +242,7 @@ realityEditor.getLink = function (objectKey, frameKey, linkKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!linkKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].links[linkKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(linkKey in this.objects[objectKey].frames[frameKey].links)) return null;
@@ -250,11 +255,12 @@ realityEditor.getBlock = function (objectKey, frameKey, nodeKey, block){
     if(!frameKey) return null;
     if(!nodeKey) return null;
     if(!block) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].nodes[nodeKey].blocks[block]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
     if(!(block in this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks)) return null;
-    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].block[block];
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks[block];
 };
 
 // return a block link in a logic node
@@ -263,6 +269,7 @@ realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
     if(!frameKey) return null;
     if(!nodeKey) return null;
     if(!linkKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].nodes[nodeKey].links[linkKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;

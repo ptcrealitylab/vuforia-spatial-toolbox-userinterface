@@ -84,6 +84,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.desktopAdapter.initFeature();
     realityEditor.gui.ar.desktopRenderer.initFeature();
     realityEditor.gui.crafting.initFeature();
+    realityEditor.worldObjects.initFeature();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     if (!realityEditor.device.utilities.isDesktop()) {
@@ -161,8 +162,14 @@ realityEditor.device.onload = function () {
     // window.addEventListener('resize', function(event) {
     //     console.log(window.innerWidth, window.innerHeight);
     // });
-    
-	this.cout("onload");
+
+    if (globalStates.debugSpeechConsole) {
+        document.getElementById('speechConsole').style.display = 'inline';
+    }
+
+    // initWorldObject();
+
+    this.cout("onload");
 };
 
 window.onload = realityEditor.device.onload;

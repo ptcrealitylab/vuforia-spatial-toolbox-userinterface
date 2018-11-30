@@ -67,6 +67,27 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
     });
 };
 
+/**
+ * @type {Array.<function>}
+ */
+realityEditor.network.objectDiscoveredCallbacks = [];
+
+/**
+ * Allow other modules to be notified when a new object is discovered and added to the system.
+ * @param {function} callback
+ */
+realityEditor.network.addObjectDiscoveredCallback = function(callback) {
+    this.objectDiscoveredCallbacks.push(callback);
+};
+
+/**
+ * Converts an object with version < 1.7.0 to the new format:
+ * Objects now have frames, which can have nodes, but in the old version there were no frames
+ *  and the nodes just existed on the object itself
+ * @param {Object} thisObject
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey) {
     if (typeof frameKey === "undefined") {
         frameKey = objectKey;
@@ -289,11 +310,15 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
                     realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
 
-                        _this.cout(JSON.stringify(objects[objectKey]));
+                    _this.cout(JSON.stringify(objects[objectKey]));
 
                     // todo this needs to be looked at
                     _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
-                 
+
+                    realityEditor.network.objectDiscoveredCallbacks.forEach(function(callback) {
+                        callback(objects[objectKey], objectKey);
+                    });
+
                 }
             });
         }
@@ -1575,7 +1600,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             if (msgContent.settings.setSettings.speechState) {
                 if (!globalStates.speechState) { 
                     globalStates.speechState = true;
-                    if (globalStates.instantState) { //(globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
+                    if (globalStates.instantState || globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
                         document.getElementById('speechConsole').style.display = 'inline';
                     }
                     realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");

@@ -294,16 +294,27 @@ realityEditor.gui.ar.getClosestObject = function () {
     var object = null;
     var frame = null;
     var node = null;
-    var closest = 10000000000;
-    var distance = 10000000000;
+    var MAX_DISTANCE = 10000000000;
+    var closest = MAX_DISTANCE;
+    var distance = MAX_DISTANCE;
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+        if (objectKey.indexOf(worldObjectId) > -1) {
+            distance = MAX_DISTANCE - 1;
+        }
+        
         if (distance < closest) {
             object = objectKey;
             closest = distance;
         }
     }
+    
+    // default to world object if no visible objects
+    if (!object) {
+        object = realityEditor.worldObjects.getAnyWorldObject().objectId; //worldObjectId;
+    }
+    
     return [object, frame, node];
 };
 
@@ -337,6 +348,9 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
 
         }
     }
+    
+    // TODO: include frames from world object
+    
     return [object, frame, node];
 };
 

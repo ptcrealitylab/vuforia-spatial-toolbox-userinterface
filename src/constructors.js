@@ -95,7 +95,7 @@ function Objects() {
 
     this.averageScale = 0.5;
     
-    // taken from target.xml. necessary to make the screens work correctly.
+    // taken from target.xml. necessary to make the screens work correctly. Units = meters
     this.targetSize = {
         width: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
         height: 0.3

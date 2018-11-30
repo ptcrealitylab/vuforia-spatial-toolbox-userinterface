@@ -161,6 +161,17 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
 realityEditor.gui.ar.draw.visibleObjectsCopy = {};
 
 /**
+ * The most recently received camera matrix
+ * @type {Array.<number>}
+ */
+realityEditor.gui.ar.draw.cameraMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
+/**
  * Main update loop.
  * A wrapper for the real realityEditor.gui.ar.draw.update update function.
  * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
@@ -187,6 +198,20 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (globalStates.guiState === "logic") {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
+    
+    // render the world object too, with camera matrix
+    // if (worldObject) {
+    //     if (this.cameraMatrix) {
+    //         visibleObjects[worldObjectId] = realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix);
+    //     }
+    // }
+    
+    realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
+        if (realityEditor.gui.ar.draw.cameraMatrix) {
+            // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix);
+            visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.cameraMatrix;
+        }
+    });
     
     this.visibleObjects = visibleObjects;
 
@@ -238,11 +263,48 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
+            
+            // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
+            // var modelViewMatrix = [];
+            // this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.cameraMatrix, modelViewMatrix);
 
+            // invert the roll...
+            
+            // var yaw = this.ar.utilities.getRotationAboutAxisX(this.visibleObjects[objectKey]);
+            // var pitch = this.ar.utilities.getRotationAboutAxisY(this.visibleObjects[objectKey]);
+            // var roll = this.ar.utilities.getRotationAboutAxisZ(this.visibleObjects[objectKey]);
+            // // roll *= -1;
+            //
+            // var q1 = this.ar.utilities.getQuaternionFromPitchRollYaw(0, roll, 0);
+            // var q2 = this.ar.utilities.invertQuaternion(q1);
+            // var m1 = this.ar.utilities.getMatrixFromQuaternion(q2);
+            // var m2 = [];
+            // this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], m1, m2);
+            
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
+            // this.ar.utilities.multiplyMatrix(/*this.visibleObjects[objectKey]*/ m2, this.globalStates.projectionMatrix, this.matrix.r);
             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
+            // this.ar.utilities.multiplyMatrix(modelViewMatrix, this.globalStates.projectionMatrix, this.matrix.r);
             this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
+
+
+            var consoleElement = document.getElementById('speechConsole');
+            if (consoleElement) {
+                consoleElement.innerHTML = '';
+                
+                function prettyPrint(matrix, numDecimals) {
+                    return ("[ " + matrix[0].toFixed(numDecimals) + ", " + matrix[1].toFixed(numDecimals) + ", " + matrix[2].toFixed(numDecimals) + ", " + matrix[3].toFixed(numDecimals) + ", <br>" +
+                        "  " + matrix[4].toFixed(numDecimals) + ", " + matrix[5].toFixed(numDecimals) + ", " + matrix[6].toFixed(numDecimals) + ", " + matrix[7].toFixed(numDecimals) + ", <br>" +
+                        "  " + matrix[8].toFixed(numDecimals) + ", " + matrix[9].toFixed(numDecimals) + ", " + matrix[10].toFixed(numDecimals) + ", " + matrix[11].toFixed(numDecimals) + ", <br>" +
+                        "  " + matrix[12].toFixed(numDecimals) + ", " + matrix[13].toFixed(numDecimals) + ", " + matrix[14].toFixed(numDecimals) + ", " + matrix[15].toFixed(numDecimals) + " ]" )
+                }
+                
+                consoleElement.innerHTML = prettyPrint(this.visibleObjects[objectKey], 3);
+            }
+
+            
+            // console.log(roll);
             
             // extract its projected (x,y) screen coordinates from the matrix
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);

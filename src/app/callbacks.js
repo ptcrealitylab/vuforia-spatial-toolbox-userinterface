@@ -66,6 +66,8 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 
     realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
 
+    realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
+
     // send three action UDP pings to start object discovery
     for (var i = 0; i < 3; i++) {
         setTimeout(function() {
@@ -104,6 +106,20 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     // console.log('got new visible matrices');
     if (!globalStates.freezeButtonState) {
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
+    }
+};
+
+/**
+ * Callback ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
+ * @param {Object.<string, Array.<number>>} visibleObjects
+ */
+realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
+    // console.log('got new visible matrices');
+    if (!globalStates.freezeButtonState) {
+        // realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
+        // console.log(cameraMatrix);
+        // realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
+        realityEditor.gui.ar.draw.cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix));
     }
 };
 
