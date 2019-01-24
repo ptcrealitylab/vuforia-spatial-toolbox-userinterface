@@ -212,10 +212,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix);
             // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.draw.cameraMatrix));
             // visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.cameraMatrix;
-            visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix));
+            
+            // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix));
+            
+            var m1 = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix));
             
             // calculate rotation component of the transformation matrix
-            var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(visibleObjects[worldObjectKey]);
+            var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
             var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
             eulerAngles.theta *= -1;
             eulerAngles.psi *= -1;
@@ -228,10 +231,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // translation[13] = visibleObjects[worldObjectKey][13];
             // translation[14] = visibleObjects[worldObjectKey][14];
             // translation[15] = visibleObjects[worldObjectKey][15];
-            translation[3] = visibleObjects[worldObjectKey][12];
-            translation[7] = visibleObjects[worldObjectKey][13];
-            translation[11] = visibleObjects[worldObjectKey][14];
-            translation[15] = visibleObjects[worldObjectKey][15];
+            translation[3] = realityEditor.gui.ar.draw.cameraMatrix[3];
+            translation[7] = realityEditor.gui.ar.draw.cameraMatrix[7];
+            translation[11] = realityEditor.gui.ar.draw.cameraMatrix[11];
+            translation[15] = realityEditor.gui.ar.draw.cameraMatrix[15];
             
             // var transformationMatrix = rotationMatrix;
             var transformationMatrix = [];
