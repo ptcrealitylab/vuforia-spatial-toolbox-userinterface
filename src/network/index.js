@@ -1808,18 +1808,6 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
     });
 };
 
-// TODO: this isn't used anywhere anymore?
-realityEditor.network.sendFrameToScreen = function(ip, objectKey, frameKey, contents) {
-    //(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
-    this.cout("I am sending a frame to the screen: " + ip);
-    // var contents = {lastEditor: globalStates.tempUuid};
-    contents.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + httpPort + '/screen/' + objectKey + "/frames/" + frameKey, contents, function (err, response) {
-        console.log(err, response);
-    });
-};
-
-
 realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, linkKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a link: " + ip);

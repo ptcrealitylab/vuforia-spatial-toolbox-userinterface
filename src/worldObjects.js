@@ -5,6 +5,8 @@ createNameSpace("realityEditor.worldObjects");
     
     var worldObjects;
     var discoveredServerIPs;
+    
+    var cameraMatrixOffset;
 
     /**
      * Init world object module
@@ -18,6 +20,8 @@ createNameSpace("realityEditor.worldObjects");
         worldObjects = {};
         
         discoveredServerIPs = [];
+        
+        cameraMatrixOffset = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
            
@@ -50,6 +54,8 @@ createNameSpace("realityEditor.worldObjects");
                 if (typeof msg.integerVersion === 'undefined') {
                     msg.integerVersion = 300;
                 }
+
+                realityEditor.gui.ar.utilities.setAverageScale(msg);
                 
                 // add to the internal world objects
                 worldObjects[msg.objectId] = msg;
@@ -122,12 +128,24 @@ createNameSpace("realityEditor.worldObjects");
     function getWorldObjectKeys() {
         return Object.keys(worldObjects);
     }
+
+    /**
+     * Relocalize the camera origin to the current camera position...
+     */
+    function relocalize(currentCameraMatrix) {
+        cameraMatrixOffset = currentCameraMatrix; //realityEditor.gui.ar.draw.cameraMatrix;
+    }
+    
+    function getCameraMatrixOffset() {
+        return cameraMatrixOffset;
+    }
     
     exports.initFeature = initFeature;
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
     exports.getAnyWorldObject = getAnyWorldObject;
     exports.addFrameToWorldObject = addFrameToWorldObject;
-
+    exports.relocalize = relocalize;
+    exports.getCameraMatrixOffset = getCameraMatrixOffset;
 
 }(realityEditor.worldObjects));
