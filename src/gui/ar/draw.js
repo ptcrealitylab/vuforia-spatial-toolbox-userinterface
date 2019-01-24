@@ -220,28 +220,37 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // calculate rotation component of the transformation matrix
             var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
             var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-            eulerAngles.theta *= -1;
+            // eulerAngles.theta *= -1;
             eulerAngles.psi *= -1;
             var q2 = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
             var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q2);
             
             // add the translation component
             var translation = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            // translation[12] = visibleObjects[worldObjectKey][12];
-            // translation[13] = visibleObjects[worldObjectKey][13];
-            // translation[14] = visibleObjects[worldObjectKey][14];
-            // translation[15] = visibleObjects[worldObjectKey][15];
-            translation[3] = realityEditor.gui.ar.draw.cameraMatrix[3];
-            translation[7] = realityEditor.gui.ar.draw.cameraMatrix[7];
-            translation[11] = realityEditor.gui.ar.draw.cameraMatrix[11];
-            translation[15] = realityEditor.gui.ar.draw.cameraMatrix[15];
+            translation[12] = m1[12];
+            translation[13] = m1[13];
+            translation[14] = m1[14];
+            translation[15] = m1[15];
+            
+            // translation[3] = realityEditor.gui.ar.draw.cameraMatrix[3];
+            // translation[7] = realityEditor.gui.ar.draw.cameraMatrix[7];
+            // translation[11] = realityEditor.gui.ar.draw.cameraMatrix[11];
+            // translation[15] = realityEditor.gui.ar.draw.cameraMatrix[15];
+
+            // translation[12] = realityEditor.gui.ar.draw.cameraMatrix[3];
+            // translation[13] = realityEditor.gui.ar.draw.cameraMatrix[7];
+            // translation[14] = realityEditor.gui.ar.draw.cameraMatrix[11];
+            // translation[15] = realityEditor.gui.ar.draw.cameraMatrix[15];
             
             // var transformationMatrix = rotationMatrix;
             var transformationMatrix = [];
             realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translation, transformationMatrix);
 
-            visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(transformationMatrix));
-            
+            // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(transformationMatrix));
+
+            visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.invertMatrix(transformationMatrix);
+
+
             // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.draw.cameraMatrix);
 
 
@@ -250,6 +259,31 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // visibleObjects[worldObjectKey][6] *= -1;
             // visibleObjects[worldObjectKey][8] *= -1;
             // visibleObjects[worldObjectKey][9] *= -1;
+
+
+            var consoleElement = document.getElementById('speechConsole');
+            if (consoleElement) {
+                consoleElement.innerHTML = '';
+                var numDecimals = 3;
+                consoleElement.innerHTML =
+                    'X:' + realityEditor.gui.ar.utilities.getRotationAboutAxisX(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
+                    'Y:' + realityEditor.gui.ar.utilities.getRotationAboutAxisY(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
+                    'Z:' + realityEditor.gui.ar.utilities.getRotationAboutAxisZ(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals);
+
+                // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
+            }
+
+            var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
+            // var invQ = realityEditor.gui.ar.utilities.invertQuaternion(q);
+            // realityEditor.gui.ar.utilities.normalizeQuaternion()
+
+            var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
+            eulerAngles.theta *= -1;
+            eulerAngles.psi *= -1;
+            // eulerAngles.phi *= -1;
+            var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
+            var mInv = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
+            visibleObjects[worldObjectKey] = mInv;
 
         }
     });
@@ -333,20 +367,20 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
             // this.activeObjectMatrix = this.ar.utilities.transposeMatrix(this.activeObjectMatrix);
 
-            var consoleElement = document.getElementById('speechConsole');
-            if (consoleElement) {
-                consoleElement.innerHTML = '';
-                
-                function prettyPrint(matrix, numDecimals) {
-                    return ("[ " + matrix[0].toFixed(numDecimals) + ", " + matrix[1].toFixed(numDecimals) + ", " + matrix[2].toFixed(numDecimals) + ", " + matrix[3].toFixed(numDecimals) + ", <br>" +
-                        "  " + matrix[4].toFixed(numDecimals) + ", " + matrix[5].toFixed(numDecimals) + ", " + matrix[6].toFixed(numDecimals) + ", " + matrix[7].toFixed(numDecimals) + ", <br>" +
-                        "  " + matrix[8].toFixed(numDecimals) + ", " + matrix[9].toFixed(numDecimals) + ", " + matrix[10].toFixed(numDecimals) + ", " + matrix[11].toFixed(numDecimals) + ", <br>" +
-                        "  " + matrix[12].toFixed(numDecimals) + ", " + matrix[13].toFixed(numDecimals) + ", " + matrix[14].toFixed(numDecimals) + ", " + matrix[15].toFixed(numDecimals) + " ]" )
-                }
-
-                consoleElement.innerHTML = prettyPrint(this.visibleObjects[objectKey], 3);
-                // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
-            }
+            // var consoleElement = document.getElementById('speechConsole');
+            // if (consoleElement) {
+            //     consoleElement.innerHTML = '';
+            //    
+            //     function prettyPrint(matrix, numDecimals) {
+            //         return ("[ " + matrix[0].toFixed(numDecimals) + ", " + matrix[1].toFixed(numDecimals) + ", " + matrix[2].toFixed(numDecimals) + ", " + matrix[3].toFixed(numDecimals) + ", <br>" +
+            //             "  " + matrix[4].toFixed(numDecimals) + ", " + matrix[5].toFixed(numDecimals) + ", " + matrix[6].toFixed(numDecimals) + ", " + matrix[7].toFixed(numDecimals) + ", <br>" +
+            //             "  " + matrix[8].toFixed(numDecimals) + ", " + matrix[9].toFixed(numDecimals) + ", " + matrix[10].toFixed(numDecimals) + ", " + matrix[11].toFixed(numDecimals) + ", <br>" +
+            //             "  " + matrix[12].toFixed(numDecimals) + ", " + matrix[13].toFixed(numDecimals) + ", " + matrix[14].toFixed(numDecimals) + ", " + matrix[15].toFixed(numDecimals) + " ]" )
+            //     }
+            //
+            //     consoleElement.innerHTML = prettyPrint(this.visibleObjects[objectKey], 3);
+            //     // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
+            // }
 
             
             // console.log(roll);
