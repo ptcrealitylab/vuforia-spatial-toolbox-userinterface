@@ -260,19 +260,32 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // visibleObjects[worldObjectKey][8] *= -1;
             // visibleObjects[worldObjectKey][9] *= -1;
 
-
             var consoleElement = document.getElementById('speechConsole');
             if (consoleElement) {
                 consoleElement.innerHTML = '';
                 var numDecimals = 3;
                 consoleElement.innerHTML =
-                    'X:' + realityEditor.gui.ar.utilities.getRotationAboutAxisX(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
-                    'Y:' + realityEditor.gui.ar.utilities.getRotationAboutAxisY(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
-                    'Z:' + realityEditor.gui.ar.utilities.getRotationAboutAxisZ(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals);
+                    'X:' + (realityEditor.gui.ar.draw.cameraMatrix[3]).toFixed(numDecimals) + '<br>' +
+                    'Y:' + (realityEditor.gui.ar.draw.cameraMatrix[7]).toFixed(numDecimals) + '<br>' +
+                    'Z:' + (realityEditor.gui.ar.draw.cameraMatrix[11]).toFixed(numDecimals);
 
                 // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
             }
 
+
+            // var consoleElement = document.getElementById('speechConsole');
+            // if (consoleElement) {
+            //     consoleElement.innerHTML = '';
+            //     var numDecimals = 3;
+            //     consoleElement.innerHTML =
+            //         'X:' + realityEditor.gui.ar.utilities.getRotationAboutAxisX(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
+            //         'Y:' + realityEditor.gui.ar.utilities.getRotationAboutAxisY(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
+            //         'Z:' + realityEditor.gui.ar.utilities.getRotationAboutAxisZ(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals);
+            //
+            //     // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
+            // }
+
+            // gives correct rotation
             var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
             // var invQ = realityEditor.gui.ar.utilities.invertQuaternion(q);
             // realityEditor.gui.ar.utilities.normalizeQuaternion()
@@ -284,6 +297,20 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
             var mInv = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
             visibleObjects[worldObjectKey] = mInv;
+
+            // visibleObjects[worldObjectKey][12] = realityEditor.gui.ar.draw.cameraMatrix[3];
+            // visibleObjects[worldObjectKey][13] = realityEditor.gui.ar.draw.cameraMatrix[7];
+            // visibleObjects[worldObjectKey][14] = -1 * realityEditor.gui.ar.draw.cameraMatrix[11];
+
+            // add the translation component
+            var tx = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            tx[12] = -1 * realityEditor.gui.ar.draw.cameraMatrix[3];
+            tx[13] = -1 * realityEditor.gui.ar.draw.cameraMatrix[7];
+            tx[14] = realityEditor.gui.ar.draw.cameraMatrix[11];
+            var m3 = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(tx, visibleObjects[worldObjectKey], m3);
+
+            visibleObjects[worldObjectKey] = m3;
 
         }
     });
