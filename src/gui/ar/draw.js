@@ -304,11 +304,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
             // add the translation component
             var tx = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            tx[12] = -1 * realityEditor.gui.ar.draw.cameraMatrix[3];
+            tx[12] = realityEditor.gui.ar.draw.cameraMatrix[3];
             tx[13] = -1 * realityEditor.gui.ar.draw.cameraMatrix[7];
-            tx[14] = realityEditor.gui.ar.draw.cameraMatrix[11];
+            tx[14] = -1 * realityEditor.gui.ar.draw.cameraMatrix[11];
             var m3 = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(tx, visibleObjects[worldObjectKey], m3);
+            realityEditor.gui.ar.utilities.multiplyMatrix(visibleObjects[worldObjectKey], tx, m3);
 
             visibleObjects[worldObjectKey] = m3;
 
