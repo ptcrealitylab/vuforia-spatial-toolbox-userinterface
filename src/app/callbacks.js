@@ -110,8 +110,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 };
 
 /**
- * Callback ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
- * @param {Object.<string, Array.<number>>} visibleObjects
+ * Callback ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
+ * @param {Array.<number>} cameraMatrix
  */
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
     // console.log('got new visible matrices');
