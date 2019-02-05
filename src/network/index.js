@@ -615,7 +615,9 @@ realityEditor.network.onAction = function (action) {
         while (action.charAt(action.length - 1) === ' ') action = action.substring(0, action.length - 1);
         while (action.charAt(action.length - 1) === '"') action = action.substring(0, action.length - 1);
 
-        thisAction = JSON.parse(action);
+        thisAction = {
+            action: action
+        };
     }
 
     if (thisAction.lastEditor === globalStates.tempUuid) {
