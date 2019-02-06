@@ -1829,6 +1829,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         var addIframe = domElements.addIframe;
         var addOverlay = domElements.addOverlay;
         var addSVG = domElements.addSVG;
+        var addDistanceUI = domElements.addDistanceUI;
 
         addOverlay.objectId = objectKey;
         addOverlay.frameId = frameKey;
@@ -1851,6 +1852,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addContainer.appendChild(addIframe);
         addContainer.appendChild(addOverlay);
         addOverlay.appendChild(addSVG);
+        addOverlay.appendChild(addDistanceUI);
 
         // cache references to these elements to more efficiently retrieve them in the future
         globalDOMCache[addContainer.id] = addContainer;
@@ -1874,7 +1876,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
  * @param {string} frameKey
  * @param {string} nodeKey
  * @param {Frame|Node} activeVehicle
- * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement}}
+ * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement, addDistanceUI: HTMLElement}}
  */
 realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
 
@@ -1933,12 +1935,18 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addSVG.style.zIndex = "3";
     addSVG.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
     addSVG.setAttribute('shape-rendering','geometricPrecision'); //'optimizeSpeed'
-
+    
+    var addDistanceUI = document.createElement('div');
+    addDistanceUI.id = 'distance' + activeKey;
+    addDistanceUI.classList.add('main');
+    addDistanceUI.classList.add('distanceUI');
+    
     return {
         addContainer: addContainer,
         addIframe: addIframe,
         addOverlay: addOverlay,
-        addSVG: addSVG
+        addSVG: addSVG,
+        addDistanceUI: addDistanceUI
     };
 };
 
