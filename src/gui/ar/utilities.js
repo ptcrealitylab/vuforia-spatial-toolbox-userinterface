@@ -1404,3 +1404,30 @@ realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw = function(pitch, r
     q.z = sy * cr * cp - cy * sr * sp;
     return q;
 };
+
+// TODO: calculate camera distance to frame, not origin distance to frame...?
+
+realityEditor.gui.ar.utilities.getDistanceToWorldFrame = function(objectKey, frameKey) {
+    /*
+    var frameMatrix = [];
+    var objectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
+    // visibleObjects[worldObjectKey] = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix)
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+    if (positionData.matrix && positionData.matrix.length === 16) {
+        this.multiplyMatrix(objectMatrix, positionData.matrix, frameMatrix);
+    } else {
+        frameMatrix = objectMatrix;
+    }
+    
+    // console.log(realityEditor.gui.ar.draw.visibleObjects[objectKey][14], frameMatrix[14]);
+    var distanceMaybe = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    distanceMaybe[12] = realityEditor.gui.ar.draw.visibleObjects[objectKey][12] - frameMatrix[12];
+    distanceMaybe[13] = realityEditor.gui.ar.draw.visibleObjects[objectKey][13] - frameMatrix[13];
+    distanceMaybe[14] = realityEditor.gui.ar.draw.visibleObjects[objectKey][14] - frameMatrix[14];
+    
+    return this.distance(distanceMaybe);
+    */
+    
+    return realityEditor.getFrame(objectKey, frameKey).screenZ;
+};

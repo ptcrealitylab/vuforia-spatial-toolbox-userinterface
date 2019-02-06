@@ -160,8 +160,9 @@ var globalStates = {
     
     // default scale for new frames and nodes
     defaultScale: 0.5,
+    defaultVisibleDistance: 4000,
     
-	// rettail
+	// retail
 	reality: false,
 	interface: "gui",
 

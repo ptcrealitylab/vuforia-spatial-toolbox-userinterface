@@ -777,6 +777,10 @@ body {
     opacity: 0.7;
 }
 
+.distantFrame {
+    display: none;
+}
+
 /*
 *
 *
