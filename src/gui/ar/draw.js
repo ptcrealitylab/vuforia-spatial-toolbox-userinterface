@@ -1829,7 +1829,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         var addIframe = domElements.addIframe;
         var addOverlay = domElements.addOverlay;
         var addSVG = domElements.addSVG;
-        var addDistanceUI = domElements.addDistanceUI;
+        // var addDistanceUI = domElements.addDistanceUI;
 
         addOverlay.objectId = objectKey;
         addOverlay.frameId = frameKey;
@@ -1852,7 +1852,8 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         addContainer.appendChild(addIframe);
         addContainer.appendChild(addOverlay);
         addOverlay.appendChild(addSVG);
-        addOverlay.appendChild(addDistanceUI);
+        // document.getElementById("GUI").appendChild(addDistanceUI);
+        // addOverlay.appendChild(addDistanceUI);
 
         // cache references to these elements to more efficiently retrieve them in the future
         globalDOMCache[addContainer.id] = addContainer;
@@ -1936,17 +1937,17 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addSVG.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
     addSVG.setAttribute('shape-rendering','geometricPrecision'); //'optimizeSpeed'
     
-    var addDistanceUI = document.createElement('div');
-    addDistanceUI.id = 'distance' + activeKey;
-    addDistanceUI.classList.add('main');
-    addDistanceUI.classList.add('distanceUI');
+    // var addDistanceUI = document.createElement('div');
+    // addDistanceUI.id = 'distance' + activeKey;
+    // addDistanceUI.classList.add('main');
+    // addDistanceUI.classList.add('distanceUI');
     
     return {
         addContainer: addContainer,
         addIframe: addIframe,
         addOverlay: addOverlay,
         addSVG: addSVG,
-        addDistanceUI: addDistanceUI
+        // addDistanceUI: addDistanceUI
     };
 };
 

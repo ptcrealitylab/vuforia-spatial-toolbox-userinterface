@@ -782,16 +782,31 @@ body {
 }
 
 .distanceUI {
-    width: 500px;
-    height: 500px;
-    border-radius: 250px;
+    width: 200px;
+    height: 200px;
+    /*width: 100%;*/
+    /*height: 100%;*/
+    transform-origin: center;
+    border-radius: 50%;
     border: 20px solid yellow;
     /*background-color: rgba(255,255,0,0.3);*/
     visibility: visible;
-    transform: rotateX(90deg);
+    /*transform: rotateX(90deg);*/
     position: absolute;
     left: 0;
     top: 0;
+}
+
+#distanceUI2 {
+    border: 20px solid goldenrod;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin-left: -20px;
+    margin-top: -20px;
+    transform: translateZ(1000px);
 }
 
 /*

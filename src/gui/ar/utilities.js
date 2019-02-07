@@ -1250,6 +1250,35 @@ realityEditor.gui.ar.utilities.distance = function (matrix) {
 };
 
 /**
+ * Returns a matrix containing the inverse rotation of the 4x4 matrix passed in
+ * @param {Array.<number>} m
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.invertRotationMatrix = function(m) {
+    var mInv = [];
+    
+    // transpose the first 3x3, identity for the rest
+    mInv[0] = m[0];
+    mInv[1] = m[4];
+    mInv[2] = m[8];
+    mInv[3] = 0;
+    mInv[4] = m[1];
+    mInv[5] = m[5];
+    mInv[6] = m[9];
+    mInv[7] = 0;
+    mInv[8] = m[2];
+    mInv[9] = m[6];
+    mInv[10] = m[10];
+    mInv[11] = 0;
+    mInv[12] = 0;
+    mInv[13] = 0;
+    mInv[14] = 0;
+    mInv[15] = 1;
+    
+    return mInv;
+};
+
+/**
  * Extracts rotation information from a 4x4 transformation matrix
  * @param {Array.<number>} m - a 4x4 transformation matrix
  * @author https://answers.unity.com/questions/11363/converting-matrix4x4-to-quaternion-vector3.html
@@ -1372,9 +1401,9 @@ realityEditor.gui.ar.utilities.invertQuaternion = function(q) {
     var d = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
     return {
         x: q.x/d,
-        y: q.y/d,
-        z: q.z/d,
-        w: q.w/d
+        y: -q.y/d,
+        z: -q.z/d,
+        w: -q.w/d
     }
 };
 
@@ -1430,4 +1459,14 @@ realityEditor.gui.ar.utilities.getDistanceToWorldFrame = function(objectKey, fra
     */
     
     return realityEditor.getFrame(objectKey, frameKey).screenZ;
+};
+
+/**
+ * Normalizes a 4x4 transformation matrix by dividing by the last element
+ * @param m
+ * @return {Array<number>}
+ */
+realityEditor.gui.ar.utilities.normalizeMatrix = function(m) {
+    var divisor = m[15];
+    return this.scalarMultiplyMatrix(m, (1.0/divisor));
 };

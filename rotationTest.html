@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            background-color: #4E4E4F;
+        }
+        
+        #frame {
+            width: 200px;
+            height: 400px;
+            position: absolute;
+            -webkit-transform-style: preserve-3d;
+            -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+            background-color: rgba(0,255,255,0.5);
+            outline: #00edff;
+        }
+        
+        #circle {
+            -webkit-transform-style: preserve-3d;
+            width: 200px;
+            height: 200px;
+            transform-origin: center;
+            border-radius: 250px;
+            border: 20px solid yellow;
+            /*background-color: rgba(255,255,0,0.3);*/
+            visibility: visible;
+            /*transform: rotateX(90deg);*/
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+    <script src="src/index.js"></script>
+    <script src="src/gui/ar/utilities.js"></script>
+</head>
+<body>
+    <div id="frame">
+        <div id="circle"></div>
+    </div>
+</body>
+
+<script>
+    
+    var frame = document.getElementById('frame');
+    var circle = document.getElementById('circle');
+    
+    function setMatrix3d(element, matrix) {
+        element.style.webkitTransform = 'matrix3d(' + matrix.toString() + ')';
+    }
+    
+    // var frameMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    // frameMatrix[0] = 2;
+    // frameMatrix = [468.9852803977251, -79.84857435356332, -0.14595300683599693, -0.14566139272775597, 92.39460672627585, 471.18569109463635, 0.12406362921082871, 0.12381575007917016, -187.64453404526904, 174.89319158528824, -1.9553909555884184, -1.951484084451346, -2927.971468034055, 5959.621927676817, 7499.405738744524, 572.6899104590457];
+
+    frameMatrix = [0.8189166105996262, -0.13942724133128145, -0.0002548552090240367, -0.00025434600831538925, 0.16133444127244354, 0.8227588481818241, 0.0002166331673477261, 0.00021620033427850044, -0.3276546881974236, 0.30538898693902383, -0.0034143974249887764, -0.003407575458920017, 100.112664662953653, 100.406367946834997, 13.09505476136867, 1];
+
+    frameMatrix = [172.22997311906704, -96.1674354900251, -0.7596493252540972, -0.758131545899207, 215.0212659349383, 426.97362383623573, 0.00014827658123334775, 0.00014798032462343108, -924.4975071557132, 471.0039667243534, -0.8732417280590541, -0.8714969910829057, 9833.354564363937, 36983.6477880334, 346.9713800014513, 938.7347414451465];
+
+
+    // frameMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(frameMatrix);
+    
+    var m2 = realityEditor.gui.ar.utilities.copyMatrix(frameMatrix);
+    
+    // don't invert translation
+    m2[12] = 0;
+    m2[13] = 0;
+    m2[14] = 0;
+    
+    // don't invert scale
+    m2[0] = 1;
+    m2[5] = 1;
+    m2[10] = 1;
+    
+    circleMatrix = realityEditor.gui.ar.utilities.invertMatrix(frameMatrix);
+    // circleMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    
+    circleMatrix = [0.273605, -0.586786, 0, -0.00434,
+        0.038704, 3.154816, 0, 0.000387,
+        0, 0, 1, 0,
+        100, 100, 0, 1];
+
+    setMatrix3d(frame, frameMatrix);
+    setMatrix3d(circle, circleMatrix);
+
+    function getTransform(ele) {
+        // var st = window.getComputedStyle(ele, null);
+        // tr = st.getPropertyValue("-webkit-transform") ||
+        //     st.getPropertyValue("-moz-transform") ||
+        //     st.getPropertyValue("-ms-transform") ||
+        //     st.getPropertyValue("-o-transform") ||
+        //     st.getPropertyValue("transform");
+
+        var tr = ele.style.webkitTransform;
+
+        var values = tr.split('(')[1].split(')')[0].split(',');
+
+        var out = [ 0, 0, 0, 1 ];
+        for (var i = 0; i < values.length; ++i) {
+            out[i] = parseFloat(values[i]);
+        }
+
+        return out;
+    }
+    
+    document.addEventListener('mousemove', function(e) {
+        // return;
+        // var x = e.pageX;
+        
+        // var q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(e.pageX/180, e.pageY/180, 0);
+        // var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
+        // var r = [];
+        // realityEditor.gui.ar.utilities.multiplyMatrix(frameMatrix, rotationMatrix, r);
+
+        var frameMatrix = getTransform(frame);
+        var scaleFactor = 1.01;  //0.9 * Math.random() * 0.2;
+        if (e.pageX < 100) {
+            scaleFactor = 0.99;
+        }
+        
+        // var scaleMatrix = realityEditor.gui.ar.utilities.scalarMultiplyMatrix(frameMatrix,);
+        // realityEditor.gui.ar.utilities.multiplyMatrix(frameMatrix, rotationMatrix, r);
+        frameMatrix[0] *= scaleFactor;
+        frameMatrix[5] *= scaleFactor;
+        frameMatrix[10] *= scaleFactor;
+        
+        setMatrix3d(frame, frameMatrix);
+        
+        var circleMatrix = realityEditor.gui.ar.utilities.invertMatrix(frameMatrix)
+
+        setMatrix3d(circle, realityEditor.gui.ar.utilities.invertMatrix(frameMatrix));
+
+        // var finalMatrix = [];
+        // circleMatrix = realityEditor.gui.ar.utilities.invertMatrix(r);
+        // // setMatrix3d(circle, circleMatrix);
+        // realityEditor.gui.ar.utilities.multiplyMatrix(r, circleMatrix, finalMatrix);
+        //
+        // setMatrix3d(frame, circleMatrix);
+
+        // var m2 = realityEditor.gui.ar.utilities.copyMatrix(r);
+        // don't invert translation
+        // m2[12] = 0;
+        // m2[13] = 0;
+        // m2[14] = 0;
+        // // don't invert scale
+        // m2[0] = 1;
+        // m2[5] = 1;
+        // m2[10] = 1;
+        // circleMatrix = realityEditor.gui.ar.utilities.invertMatrix(r);
+        
+        // circleMatrix = realityEditor.gui.ar.utilities.invertRotationMatrix(r);
+        // circleMatrix = realityEditor.gui.ar.utilities.transposeMatrix(circleMatrix);
+        // console.log(circleMatrix);
+        // setMatrix3d(circle, circleMatrix);
+
+    });
+    
+    var i = 0;
+    
+    document.addEventListener('click', function(e) {
+
+        var frameMatrix = getTransform(frame);
+        // var circleMatrix = getTransform(circle);
+        
+        var r = [];
+        // realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.utilities.invertMatrix(frameMatrix), frameMatrix, r);
+        
+        // if (i === 0) {
+            setMatrix3d(circle, realityEditor.gui.ar.utilities.invertMatrix(frameMatrix));
+        // } else if (i === 1) {
+        //     setMatrix3d(frame, [0.8189166105996262, -0.13942724133128145, -0.0002548552090240367, -0.00025434600831538925, 0.16133444127244354, 0.8227588481818241, 0.0002166331673477261, 0.00021620033427850044, -0.3276546881974236, 0.30538898693902383, -0.0034143974249887764, -0.003407575458920017, 100.112664662953653, 100.406367946834997, 13.09505476136867, 1]);
+        // } else if (i === 2) {
+        //     setMatrix3d(circle, realityEditor.gui.ar.utilities.invertMatrix(frameMatrix));
+        // }
+        //
+        // i++;
+        
+    });
+    
+    
+    
+</script>
+
+
+</html>

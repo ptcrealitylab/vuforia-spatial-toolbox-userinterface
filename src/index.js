@@ -66,7 +66,8 @@ var realityEditor = realityEditor || {
             touchInputs : {},
             touchPropagation: {},
             desktopAdapter: {},
-            hololensAdapter: {}
+            hololensAdapter: {},
+            orientation: {}
         },
 		gui: {
 			ar: {
@@ -346,6 +347,7 @@ realityEditor.forEachFrameInAllObjects = function(callback) {
  * @param objectKey
  * @param callback
  */
+// TODO: simplify signature: doesnt need to include objectKey in callback since its an arg
 realityEditor.forEachFrameInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;

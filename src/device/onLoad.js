@@ -85,6 +85,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.desktopRenderer.initFeature();
     realityEditor.gui.crafting.initFeature();
     realityEditor.worldObjects.initFeature();
+    realityEditor.device.orientation.initFeature();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     if (!realityEditor.device.utilities.isDesktop()) {
