@@ -4,306 +4,273 @@ createNameSpace("realityEditor.device.orientation");
  * @fileOverview realityEditor.device.orientation.js
  */
 
-// var xTranslation = -200;
-// var yTranslation = -400;
-// var zTranslation = 3;
-
-var yScale = 1;
-var yTranslate = -125;
-
-var distanceScale = 1;
-
 (function(exports) {
     
-    var deviceOrientation;
-    // var screenOrientation;
     var distanceUI;
     var distanceUI2;
+
+    var distanceScale = 1;
+    
+    var deviceOrientation;
+    
+    var isScalingDistance = false;
     
     function initFeature() {
-
+        // adds a bright yellow circle that indicates the maximum distance you can be from the frame for it to be rendered
         distanceUI = document.createElement('div');
         distanceUI.id = 'distanceUI';
         distanceUI.classList.add('main');
         distanceUI.classList.add('distanceUI');
         document.body.appendChild(distanceUI);
         
+        // adds a darker circle underneath the top circle, so you can tell if you're looking at it from above or below
         distanceUI2 = document.createElement('div');
         distanceUI2.id = 'distanceUI2';
         distanceUI2.classList.add('main');
         distanceUI2.classList.add('distanceUI');
         distanceUI.appendChild(distanceUI2);
         
-        // distanceUI.style.transform = 'rotateX(45deg)';
-        
-        // window.addEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
+        // keep the ui flat with the ground plane
         window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
         
-        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
-            // realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
-            //     var frame = realityEditor.getFrame(objectKey, frameKey);
-            //     var editingVehicle = realityEditor.device.getEditingVehicle();
-            //     var thisIsBeingEdited = (editingVehicle === frame);
-            //
-            //     if (thisIsBeingEdited) {
-            //         xTranslation = -200;
-            //         yTranslation = -400;
-            //         zTranslation = 2;
-            //         console.log(frame);
-            //         console.log(xTranslation, yTranslation, zTranslation);
-            //     }
-            //
-            // });
-            
+        realityEditor.gui.ar.draw.addUpdateListener( function(visibleObjects) {
             // on each frame, hide the distance UI if no frames are being edited
             var editingVehicle = realityEditor.device.getEditingVehicle();
-            if (editingVehicle && editingVehicle.type === 'ui') {
+            if (editingVehicle && globalStates.guiState === 'ui') {
                 distanceUI.style.display = 'inline';
             } else {
                 distanceUI.style.display = 'none';
             }
             
+            if (isScalingDistance) {
+                // scaleEditingFrameDistance();
+            }
         });
-        
+
+        realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
+        realityEditor.device.registerCallback('onDocumentMultiTouchMove', onDocumentMultiTouchMove);
+        realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
+    }
+    
+    function onDocumentMultiTouchStart(params) {
+        console.log(params.event);
     }
 
-    var onDeviceOrientationChangeEvent = function ( event ) {
+    function onDocumentMultiTouchMove(params) {
+        if (params.event.touches.length === 3) {
+            // console.log(params.event.touches);
 
-        deviceOrientation = event;
-        // console.log(deviceOrientation);
+            var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
+            
+            if (touchTargets.indexOf(realityEditor.device.editingState.frame) > -1) {
+                console.log('change distance');
+                isScalingDistance = true;
+                
+                var activeVehicle = realityEditor.device.getEditingVehicle();
+
+                // var areBothOnElement = touchTargets[0] === touchTargets[1];
+                
+                var centerTouch;
+                var outerTouch;
+                
+                // if (areBothOnElement) {
+                //
+                //     // if you do a pinch gesture with both fingers on the frame
+                //     // center the scale event around the first touch the user made
+                //     centerTouch = {
+                //         x: event.touches[0].pageX,
+                //         y: event.touches[0].pageY
+                //     };
+                //
+                //     outerTouch = {
+                //         x: event.touches[1].pageX,
+                //         y: event.touches[1].pageY
+                //     };
+                //
+                // } else {
+                //
+                // if you have two fingers on the screen (one on the frame, one on the canvas)
+                // make sure the scale event is centered around the frame
+                [].slice.call(event.touches).forEach(function(touch){
+
+                    var didTouchOnFrame = touch.target.id.replace(/^(svg)/,"") === activeVehicle.uuid;
+                    // var didTouchOnNode = touch.target.id.replace(/^(svg)/,"") === activeVehicle.frameId + activeVehicle.name;
+                    // var didTouchOnPocketContainer = touch.target.className === "element-template";
+                    if (didTouchOnFrame && !centerTouch) {
+                        centerTouch = {
+                            x: touch.pageX,
+                            y: touch.pageY
+                        };
+                    } else {
+                        if (!outerTouch) {
+                            outerTouch = {
+                                x: touch.pageX,
+                                y: touch.pageY
+                            };
+                        } else {
+                            outerTouch = {
+                                x: (outerTouch.x + touch.pageX) / 2,
+                                y: (outerTouch.y + touch.pageY) / 2
+                            }
+                        }
+                        
+                    }
+                });
+                //
+                // }
+                //
+                distanceScaleVehicle(activeVehicle, centerTouch, outerTouch);
+                
+            }
+            
+        }
+    }
+    
+    function scaleEditingFrameDistance() {
+        var editingFrame = realityEditor.device.getEditingVehicle();
+        editingFrame.distanceScale = editingFrame.screenZ / 200; // 200 is the default size in pixels of the radius
+    }
+
+    function onDocumentMultiTouchEnd(params) {
+        console.log(params.event);
+        // if (params.event.touches.length === 0) {
+            isScalingDistance = false;
+        // }
+        initialDistanceScaleData = null;
+    }
+
+    var onDeviceOrientationChangeEvent = function(event) {
         
-        var groundPlaneAngle = deviceOrientation.gamma;
-        // distanceUI.style.webkitTransform = 'rotateX(' + -1 * groundPlaneAngle + ')';
-        // distanceUI.style.transform = 'rotateX(' + groundPlaneAngle + 'deg)';
+        // only update the ground plane orientation if not frozen
+        if (!globalStates.freezeButtonState) {
+            deviceOrientation = event;
+        }
+        
+        if (!deviceOrientation) {
+            return;
+        }
 
         var q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(deviceOrientation.beta * Math.PI/180, deviceOrientation.gamma * Math.PI/180, 0);
-        var m = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
+        var groundPlaneRotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
 
-        // var translation = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        // translation[12] = xTranslation;
-        // translation[13] = yTranslation;
-        // translation[14] = zTranslation;
-
-        // var m2 = [];
-        // realityEditor.gui.ar.utilities.multiplyMatrix(m, translation, m2);
-
-        // m2[15] = zTranslation;
-
-        // distanceUI.style.transform = 'rotate3d(1,0,0,' + groundPlaneAngle + 'deg)';
-        // distanceUI.style.transform =
-        // distanceUI.style.webkitTransform = 'matrix3d(' + m2.toString() + ')';
-
-        realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
             var frame = realityEditor.getFrame(objectKey, frameKey);
             var editingVehicle = realityEditor.device.getEditingVehicle();
             var thisIsBeingEdited = (editingVehicle === frame);
 
             if (thisIsBeingEdited) {
-
-                function getTransform(ele) {
-                    // var st = window.getComputedStyle(ele, null);
-                    // tr = st.getPropertyValue("-webkit-transform") ||
-                    //     st.getPropertyValue("-moz-transform") ||
-                    //     st.getPropertyValue("-ms-transform") ||
-                    //     st.getPropertyValue("-o-transform") ||
-                    //     st.getPropertyValue("transform");
-
-                    var tr = ele.style.webkitTransform;
-
-                    var values = tr.split('(')[1].split(')')[0].split(',');
-
-                    var out = [ 0, 0, 0, 1 ];
-                    for (var i = 0; i < values.length; ++i) {
-                        out[i] = parseFloat(values[i]);
-                    }
-
-                    return out;
-                }
+                var m1 = realityEditor.gui.ar.utilities.getTransform(globalDOMCache['object'+frameKey]);
                 
-                var m1 = getTransform(globalDOMCache['object'+frameKey]); //frame.mostRecentFinalMatrix;
+                var distanceScale = frame.distanceScale || 1.0;
+                var circleScale = 5.0;
                 
-                var scale = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                scale[0] = m1[0] * distanceScale;
-                scale[5] = m1[0] * distanceScale; // use same scale for x and y to preserve circle shape
-                scale[10] = m1[10] * distanceScale;
+                var scaleMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                scaleMatrix[0] = m1[0] * distanceScale * circleScale;
+                scaleMatrix[5] = m1[0] * distanceScale * circleScale; // use same scale (m[0]) for x and y to preserve circle shape
+                scaleMatrix[10] = m1[10] * distanceScale * circleScale;
                 
-                var translate = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                translate[12] = m1[12];
-                translate[13] = m1[13] * yScale + (yTranslate * m1[15]);
-                translate[14] = m1[14];
-                translate[15] = m1[15];
+                var translateMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                translateMatrix[12] = m1[12];
+                var yTranslate = -125;
+                translateMatrix[13] = m1[13] + (yTranslate * m1[15]); // TODO: -125 * m1[15] is a hack to move it up to center of object
+                translateMatrix[14] = m1[14];
+                translateMatrix[15] = m1[15];
 
                 var m2 = [];
-                var m3 = [];
+                var transformationMatrix = [];
                 
-                realityEditor.gui.ar.utilities.multiplyMatrix(scale, m, m2);
-                realityEditor.gui.ar.utilities.multiplyMatrix(m2, translate, m3);
+                realityEditor.gui.ar.utilities.multiplyMatrix(scaleMatrix, groundPlaneRotationMatrix, m2);
+                realityEditor.gui.ar.utilities.multiplyMatrix(m2, translateMatrix, transformationMatrix);
                 
+                distanceUI.style.webkitTransform = 'matrix3d(' + transformationMatrix.toString() + ')';
+
                 var diameterString = globalDOMCache['object'+frameKey].style.width;
                 distanceUI.style.width = diameterString;
                 distanceUI.style.height = diameterString;
-                // distanceUI.style.borderRadius = parseFloat(diameterString)/2 + 'px';
-                
-                distanceUI.style.webkitTransform = 'matrix3d(' + m3.toString() + ')';
-
             }
-            
         });
-
-        
-        /*
-        realityEditor.worldObjects.getWorldObjectKeys().forEach( function(objectKey) {
-            realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
-                var frame = realityEditor.getFrame(objectKey, frameKey);
-                // get relative orientation of frame to phone's ground plane
-
-                // start with the frame's matrix
-                var positionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                var snappedMatrix = computeSnappedMatrix(realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix));
-                // realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, snappedMatrix);
-                
-                
-
-                // // start with the frame's matrix
-                // var positionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                // var snappedMatrix = realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix);
-                //
-                // // calculate its rotation in Euler Angles about the X and Y axis, using a bunch of quaternion math in the background
-                // var xRotation = realityEditor.gui.ar.utilities.getRotationAboutAxisX(snappedMatrix);
-                // var yRotation = realityEditor.gui.ar.utilities.getRotationAboutAxisY(snappedMatrix);
-                // var zRotation = realityEditor.gui.ar.utilities.getRotationAboutAxisZ(snappedMatrix);
-                
-                // var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(snappedMatrix);
-                // var invQ = 
-                
-                // console.log(xRotation, yRotation, zRotation);
-
-                var distanceUI = document.getElementById('distance' + frameKey);
-                if (distanceUI) {
-                    distanceUI.style.transform = 'rotateX(' + -1 * groundPlaneAngle + 'deg)'
-                    // distanceUI.style.transform = 'matrix3d'
-                    // distanceUI.style.webkitTransform = 'matrix3d(' + snappedMatrix.toString() + ')';
-
-                    var normalizedFrameMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(frame.mostRecentFinalMatrix);
-
-                    // var inverseRotationMatrix = realityEditor.gui.ar.utilities.invertRotationMatrix(positionData.matrix);
-                    // var inverseRotationMatrix = realityEditor.gui.ar.utilities.invertRotationMatrix(normalizedFrameMatrix);
-                    // var inverseRotationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-
-                    // gives correct rotation
-                    // var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(positionData.matrix);
-                    // var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(frame.mostRecentFinalMatrix);
-                    // var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-                    // eulerAngles.theta *= -1; // flips one axis of rotation
-                    // eulerAngles.psi *= -1;
-                    // eulerAngles.phi *= -1; 
-                    // var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-                    // var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
-
-                    // var rotationQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(frame.mostRecentFinalMatrix);
-                    // var inverseRotationQuaternion = realityEditor.gui.ar.utilities.invertQuaternion(rotationQuaternion);
-                    // var inverseRotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(inverseRotationQuaternion);
-                    
-                    // var rotationMatrix = realityEditor.gui.ar.utilities.invertMatrix(frame.mostRecentFinalMatrix);
-                    
-                    var rotationQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(normalizedFrameMatrix);
-                    realityEditor.gui.ar.utilities.normalizeQuaternion(rotationQuaternion);
-                    var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(rotationQuaternion);
-                    var inverseRotationMatrix = realityEditor.gui.ar.utilities.invertRotationMatrix(rotationMatrix);
-                    
-                    // distanceUI.style.webkitTransform = 'matrix3d(' + inverseRotationMatrix.toString() + ')';
-
-                }
-                
-            });
-        });
-        */
     };
 
     /**
-     * Removes all rotation components from a modelView matrix
-     * Given a modelview matrix, computes its rotation as a quaternion, find the inverse, and multiplies the original
-     * matrix by that inverse rotation to remove its rotation
-     * @param {Array.<number>} mat
-     * @return {Array}
+     * @typedef initialScaleData
+     * @property {number} radius - how far apart in pixels the two touches are to begin with
+     * @property {number} scale - the frame or node's initial scale value before the gesture, to use as a base multiplier
      */
-    function computeSnappedMatrix(mat) {
-        var res = [];
-        var rotationQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
-        var inverseRotationQuaternion = realityEditor.gui.ar.utilities.invertQuaternion(rotationQuaternion);
-        var inverseRotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(inverseRotationQuaternion);
-        realityEditor.gui.ar.utilities.multiplyMatrix(mat, inverseRotationMatrix, res);
-        return res;
-    }
+    var initialDistanceScaleData = null;
 
-    // /**
-    //  * Temporarily disabled function that will snap the frame to the marker plane
-    //  * (by removing its rotation components) if the amount of rotation is very small
-    //  * @todo: only do this if it is also close to the marker plane in the Z direction
-    //  * @param {Frame|Node} activeVehicle
-    //  * @param {string} activeKey
-    //  */
-    // function snapFrameMatrixIfNecessary(activeVehicle, activeKey) {
-    //     var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-    //
-    //     // start with the frame's matrix
-    //     var snappedMatrix = this.ar.utilities.copyMatrix(positionData.matrix);
-    //
-    //     // calculate its rotation in Euler Angles about the X and Y axis, using a bunch of quaternion math in the background
-    //     var xRotation = this.ar.utilities.getRotationAboutAxisX(snappedMatrix);
-    //     var yRotation = this.ar.utilities.getRotationAboutAxisY(snappedMatrix);
-    //     var snapX = false;
-    //     var snapY = false;
-    //
-    //     // see if the xRotation is close enough to neutral
-    //     if (0.5 - Math.abs( Math.abs(xRotation) / Math.PI - 0.5) < 0.05) {
-    //         // globalDOMCache["iframe" + activeKey].classList.add('snapX');
-    //         snapX = true;
-    //     } else {
-    //         // globalDOMCache["iframe" + activeKey].classList.remove('snapX');
-    //     }
-    //
-    //     // see if the yRotation is close enough to neutral
-    //     if (0.5 - Math.abs( Math.abs(yRotation) / Math.PI - 0.5) < 0.05) {
-    //         // globalDOMCache["iframe" + activeKey].classList.add('snapY');
-    //         snapY = true;
-    //     } else {
-    //         // globalDOMCache["iframe" + activeKey].classList.remove('snapY');
-    //     }
-    //
-    //     /**
-    //      * Removes all rotation components from a modelView matrix
-    //      * Given a modelview matrix, computes its rotation as a quaternion, find the inverse, and multiplies the original
-    //      * matrix by that inverse rotation to remove its rotation
-    //      * @param {Array.<number>} mat
-    //      * @return {Array}
-    //      */
-    //     function computeSnappedMatrix(mat) {
-    //         var res = [];
-    //         var rotationQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
-    //         var inverseRotationQuaternion = realityEditor.gui.ar.utilities.invertQuaternion(rotationQuaternion);
-    //         var inverseRotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(inverseRotationQuaternion);
-    //         realityEditor.gui.ar.utilities.multiplyMatrix(snappedMatrix, inverseRotationMatrix, res);
-    //         return res;
-    //     }
-    //
-    //
-    //     globalDOMCache["iframe" + activeKey].classList.remove('snappableFrame');
-    //
-    //     if ( !realityEditor.device.isEditingUnconstrained(activeVehicle) && snapX && snapY) {
-    //
-    //         // actually update the frame's matrix if meets the conditions
-    //         snappedMatrix = computeSnappedMatrix(this.ar.utilities.copyMatrix(positionData.matrix));
-    //         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
-    //         console.log('snapped');
-    //
-    //     } else if (snapX && snapY) {
-    //
-    //         // otherwise if it is close but you are still moving it, show some visual feedback to warn you it will snap
-    //         globalDOMCache["iframe" + activeKey].classList.add('snappableFrame');
-    //     }
-    // }
+    /**
+     * Scales the specified frame or node using the first two touches.
+     * The new scale starts at the initial scale and varies linearly with the changing touch radius.
+     * @param {Frame|Node} activeVehicle - the frame or node you are scaling
+     * @param {Object.<x,y>} centerTouch - the first touch event, where the scale is centered from
+     * @param {Object.<x,y>} outerTouch - the other touch, where the scale extends to
+     */
+    function distanceScaleVehicle(activeVehicle, centerTouch, outerTouch) {
+
+        if (!centerTouch || !outerTouch || !centerTouch.x || !centerTouch.y || !outerTouch.x || !outerTouch.y) {
+            console.warn('trying to scale vehicle using improperly formatted touches');
+            return;
+        }
+
+        var dx = centerTouch.x - outerTouch.x;
+        var dy = centerTouch.y - outerTouch.y;
+        var radius = Math.sqrt(dx * dx + dy * dy);
+        
+        if (!initialDistanceScaleData) {
+            initialDistanceScaleData = {
+                radius: radius,
+                scale: (activeVehicle.distanceScale || 1.0)
+            };
+            return;
+        }
+
+        // calculate the new scale based on the radius between the two touches
+        var newScale = initialDistanceScaleData.scale + (radius - initialDistanceScaleData.radius) / 300;
+        if (typeof newScale !== 'number') return;
+        
+        newScale = Math.max(0.2, newScale); // can't scale below 0.2 scale factor
+        
+        activeVehicle.distanceScale = newScale;
+        
+        console.log(activeVehicle.distanceScale);
+
+        // // TODO: this only works for frames right now, not nodes (at least not after scaling nodes twice in one gesture)
+        // // manually calculate positionData.x and y to keep centerTouch in the same place relative to the vehicle
+        // var overlayDiv = document.getElementById(activeVehicle.uuid);
+        // var touchOffset = realityEditor.device.editingState.touchOffset;
+        // if (overlayDiv && touchOffset) {
+        //     var touchOffsetFromCenter = {
+        //         x: overlayDiv.clientWidth/2 - touchOffset.x,
+        //         y: overlayDiv.clientHeight/2 - touchOffset.y
+        //     };
+        //     var scaleDifference = Math.max(0.2, newScale) - positionData.scale;
+        //     positionData.x += touchOffsetFromCenter.x * scaleDifference;
+        //     positionData.y += touchOffsetFromCenter.y * scaleDifference;
+        // }
+        //
+        // positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
+        //
+        // // redraw circles to visualize the new scaling
+        // globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
+        //
+        // // draw a blue circle visualizing the initial radius
+        // var circleCenterCoordinates = [centerTouch.x, centerTouch.y];
+        // realityEditor.gui.ar.lines.drawBlue(globalCanvas.context, circleCenterCoordinates, this.initialScaleData.radius);
+        //
+        // // draw a red or green circle visualizing the new radius
+        // if (radius < this.initialScaleData.radius) {
+        //     realityEditor.gui.ar.lines.drawRed(globalCanvas.context, circleCenterCoordinates, radius);
+        // } else {
+        //     realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, radius);
+        // }
+        //
+        // var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        // var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.scale' : 'scale';
+        // realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
+        //
+    }
     
     exports.initFeature = initFeature;
+    // exports.setDistanceScale = 
 
 })(realityEditor.device.orientation);

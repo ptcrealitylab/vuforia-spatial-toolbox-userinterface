@@ -85,6 +85,11 @@
     setMatrix3d(frame, frameMatrix);
     setMatrix3d(circle, circleMatrix);
 
+    /**
+     * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d 
+     * @param {HTMLElement} ele
+     * @return {number[]}
+     */
     function getTransform(ele) {
         // var st = window.getComputedStyle(ele, null);
         // tr = st.getPropertyValue("-webkit-transform") ||

@@ -996,6 +996,8 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             }
         }
     }
+
+    this.triggerCallbacks('onDocumentMultiTouchStart', {event: event});
 };
 
 /**
@@ -1093,6 +1095,8 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             
         }
     }
+
+    this.triggerCallbacks('onDocumentMultiTouchMove', {event: event});
 };
 
 realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY) {
@@ -1124,8 +1128,13 @@ realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY)
 
 };
 
+/**
+ * pop into unconstrained mode if pull out z > threshold
+ * @param {Frame|Node} activeVehicle
+ */
 realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicle) {
-    // pop into unconstrained mode if pull out z > threshold
+
+    // many conditions to check to see if it has this feature enabled
     var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
                             (!globalStates.freezeButtonState || realityEditor.device.utilities.isDesktop()) &&
                             realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle);
@@ -1134,7 +1143,10 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
 
         // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId], activeVehicle);
         // var distanceToFrame = screenFrameMatrix[14];
-        var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId]);
+        
+        // TODO: this doesn't work for 
+        //var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId]);
+        var distanceToObject = activeVehicle.screenZ; // TODO: needs to factor in dot product of x,y translation // TODO: or directly look at camera matrix vs this frame matrix
 
         // the first time, detect how far you are from the element and use that as a baseline
         if (!this.editingState.unconstrainedOffset) {
@@ -1262,7 +1274,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     //     }
     // }
     
-    this.triggerCallbacks('onDocumentMultiTouchEnd');
+    this.triggerCallbacks('onDocumentMultiTouchEnd', {event: event});
 };
 
 /**

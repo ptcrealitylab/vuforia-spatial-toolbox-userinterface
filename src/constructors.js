@@ -152,7 +152,8 @@ function Frame() {
     // if true, cannot move the frame but copies are made from it when you pull into unconstrained
     this.staticCopy = false;
     // the maximum distance (in meters) to the camera within which it will be rendered
-    this.visibleDistance = 2000.0; 
+    this.visibleDistance = 2000.0;
+    this.distanceScale = 1.0;
 }
 
 /**

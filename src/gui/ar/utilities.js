@@ -814,6 +814,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         return out;
     }
 
+    /**
+     * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
+     * @param {HTMLElement} ele
+     * @return {Array.<number>}
+     */
     function getTransform(ele) {
         // var st = window.getComputedStyle(ele, null);
         // tr = st.getPropertyValue("-webkit-transform") ||
@@ -870,7 +875,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
     exports.screenCoordinatesToMatrixXY_finalMatrix = screenCoordinatesToMatrixXY_finalMatrix;
     exports.computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
-    
+    exports.getTransform = getTransform;
+
 }(realityEditor.gui.ar.utilities));
 
 /**********************************************************************************************************************
@@ -1081,6 +1087,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         
         // don't draw lines unless the marker has been unconstrained edited
         if (!hasBeenUnconstrainedPositioned(matrixSVG)) {
+            return;
+        }
+
+        // don't draw red lines on frames in a world object (doesn't make sense to have a "plane" intersection in world)
+        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        var object = realityEditor.getObject(keys.objectKey);
+        if (object.isWorldObject) {
             return;
         }
         
