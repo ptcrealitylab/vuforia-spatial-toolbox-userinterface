@@ -1002,7 +1002,7 @@ Logic Interface CSS
   /*background-color: #B7B7B7; !*#969696;*!*/
   background-color: transparent;
   position: absolute;
-  left: 0;
+  left: 100px;
   top: 0;
   width: calc(100vw - 62px);
   height: 320px;
