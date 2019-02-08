@@ -368,6 +368,12 @@ realityEditor.gui.ar.getClosestNode = function () {
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
             for(var nodeKey in this.objects[objectKey].frames[frameKey].nodes) {
+
+                // don't include hidden node types (e.g. dataStore) when finding closest
+                if (realityEditor.gui.ar.draw.hiddenNodeTypes.indexOf(realityEditor.getNode(objectKey, frameKey, nodeKey).type) > -1) {
+                    break;
+                }
+                
                 distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey].nodes[nodeKey]));
                 if (distance < closest) {
                     object = objectKey;

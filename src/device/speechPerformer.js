@@ -12,7 +12,7 @@ createNameSpace('realityEditor.device.speechPerformer');
  * Public init method sets up module and registers callbacks in other modules
  */
 realityEditor.device.speechPerformer.initFeature = function() {
-    var SPEECH_FEATURE_ENABLED = false;
+    var SPEECH_FEATURE_ENABLED = true;
     
     if (SPEECH_FEATURE_ENABLED) {
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
@@ -26,7 +26,7 @@ realityEditor.device.speechPerformer.initFeature = function() {
                 globalStates.nodeSpeechHighlightCounter++;
                 if (globalStates.nodeSpeechHighlightCounter > 20) {
 
-                    var closest = realityEditor.device.speechProcessor.getClosestObjectFrameNode();
+                    var closest = realityEditor.gui.ar.getClosestNode(); //realityEditor.device.speechProcessor.getClosestObjectFrameNode();
                     if (!closest) return;
 
                     // reset all other nodes to full opacity
@@ -38,7 +38,7 @@ realityEditor.device.speechPerformer.initFeature = function() {
                     });
 
                     // highlight the closest one with semi-transparency
-                    var closestNodeDom = document.getElementById('object' + closest.nodeKey);
+                    var closestNodeDom = document.getElementById('object' + closest[2]);
                     if (closestNodeDom && closestNodeDom.style.opacity !== "0.33") {
                         closestNodeDom.style.opacity = "0.33"; // opacity = 0.33;
                     }
@@ -70,27 +70,35 @@ realityEditor.device.speechPerformer.createLink = function(locationA, locationB)
     var speechProcessor = realityEditor.device.speechProcessor;
     
     if (!locationA.objectKey || !locationB.objectKey) {
-        console.log("Can't create link - provide two valid objects!");
+        console.warn("Can't create link - provide two valid objects!");
         return;
     }
     
-    var frameA = locationA.frameKey || speechProcessor.getFrameOnObject(locationA.objectKey, false); // guess a frame if only the object was specified
-    var frameB = locationB.frameKey || speechProcessor.getFrameOnObject(locationB.objectKey, false);
+    var frameKeyA = locationA.frameKey || speechProcessor.getFrameOnObject(locationA.objectKey, false); // guess a frame if only the object was specified
+    var frameKeyB = locationB.frameKey || speechProcessor.getFrameOnObject(locationB.objectKey, false);
 
-    if (!frameA || !frameB) {
-        console.log("Can't create link - provide two valid frames!");
+    if (!frameKeyA || !frameKeyB) {
+        console.warn("Can't create link - provide two valid frames!");
         return;
     }
     
-    var nodeA = locationA.nodeKey || speechProcessor.getNodeOnFrame(locationA.objectKey, frameA, false); // guess a node if only the object was specified
-    var nodeB = locationB.nodeKey || speechProcessor.getNodeOnFrame(locationB.objectKey, frameB, false);
+    var nodeKeyA = locationA.nodeKey || speechProcessor.getNodeOnFrame(locationA.objectKey, frameKeyA, false); // guess a node if only the object was specified
+    var nodeKeyB = locationB.nodeKey || speechProcessor.getNodeOnFrame(locationB.objectKey, frameKeyB, false);
     
+    if (!nodeKeyA || !nodeKeyB) {
+        console.warn("Can't create link - the objects you chose don't both have nodes!");
+        return;
+    }
+
+    var nodeA = realityEditor.getNode(locationA.objectKey, frameKeyA, nodeKeyA);
+    var nodeB = realityEditor.getNode(locationB.objectKey, frameKeyB, nodeKeyB);
+
     if (!nodeA || !nodeB) {
-        console.log("Can't create link - the objects you chose don't both have nodes!");
+        console.warn("Can't create link - the specified nodes don't exist!");
         return;
     }
-
-    if (objects[locationA.objectKey].frames[frameA].nodes[nodeA].type === 'logic' || objects[locationB.objectKey].frames[frameA].nodes[nodeB].type === 'logic') {
+    
+    if (nodeA.type === 'logic' || nodeB.type === 'logic') {
         console.warn("!!! can't handle logic nodes yet with speech !!!"); // TODO: make it work with logic nodes too
         return;
     }
@@ -99,10 +107,10 @@ realityEditor.device.speechPerformer.createLink = function(locationA, locationB)
         logicA: false,
         logicB: false,
         logicSelector: 4, // doesn't matter right now
-        nodeA: nodeA,
-        nodeB: nodeB,
-        frameA: frameA,
-        frameB: frameB,
+        nodeA: nodeKeyA,
+        nodeB: nodeKeyB,
+        frameA: frameKeyA,
+        frameB: frameKeyB,
         objectA: locationA.objectKey,
         objectB: locationB.objectKey
     };
