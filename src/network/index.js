@@ -1085,9 +1085,11 @@ if (thisFrame) {
         realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
         
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
-            svg.style.display = 'inline';
+            // svg.style.display = 'inline';
+            svg.classList.add('visibleEditingSVG');
         } else {
-            svg.style.display = 'none';
+            // svg.style.display = 'none';
+            svg.classList.remove('visibleEditingSVG');
         }
 
         // if (tempThisObject.frameTouchSynthesizer) {
@@ -1606,6 +1608,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                         document.getElementById('speechConsole').style.display = 'inline';
                     }
                     realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");
+                    
                     realityEditor.app.startSpeechRecording();
                 }
             } else {

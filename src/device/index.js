@@ -89,6 +89,7 @@ realityEditor.device.currentScreenTouches = [];
  * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
  * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
+ * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
  */
 
 /**
@@ -101,7 +102,8 @@ realityEditor.device.editingState = {
     touchOffset: null,
     unconstrained: false,
     unconstrainedOffset: null,
-    startingMatrix: null
+    startingMatrix: null,
+    unconstrainedDisabled: false
 };
 
 /**
@@ -112,8 +114,10 @@ realityEditor.device.editingState = {
  * @type {Object.<string, Array.<function>>}
  */
 realityEditor.device.callbacks = {
-    resetEditingState: [],
-    onDocumentMultiTouchEnd: [] // don't actually need to add each function manually here, they get created automatically
+    resetEditingState: [], // don't actually need to add each function manually here, they get created automatically
+    onDocumentMultiTouchStart: [], // but it helps with auto-correct / code completion
+    onDocumentMultiTouchMove: [],
+    onDocumentMultiTouchEnd: [] 
 };
 
 /**
@@ -147,16 +151,26 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
     
     // TODO: how will svg overlays update when toggle between frames and nodes?
     
-    var newDisplay = newEditingMode ? 'inline' : 'none';
+    // var newDisplay = newEditingMode ? 'inline' : 'none';
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var svg = document.getElementById('svg' + frameKey);
         if (svg) {
-            svg.style.display = newDisplay;
+            // svg.style.display = newDisplay;
+            if (newEditingMode) {
+                svg.classList.add('visibleEditingSVG');
+            } else {
+                svg.classList.remove('visibleEditingSVG');
+            }
         }
         realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
             svg = document.getElementById('svg' + nodeKey);
             if (svg) {
-                svg.style.display = newDisplay;
+                // svg.style.display = newDisplay;
+                if (newEditingMode) {
+                    svg.classList.add('visibleEditingSVG');
+                } else {
+                    svg.classList.remove('visibleEditingSVG');
+                }
             }
         });
     });
@@ -192,7 +206,7 @@ realityEditor.device.getEditingVehicle = function() {
  * @return {boolean}
  */
 realityEditor.device.isEditingUnconstrained = function(vehicle) {
-    if (vehicle === this.getEditingVehicle() && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+    if (vehicle === this.getEditingVehicle() && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning) && !realityEditor.device.editingState.unconstrainedDisabled) {
         // staticCopy frames cannot be unconstrained edited
         if (typeof vehicle.staticCopy !== 'undefined') {
             if (vehicle.staticCopy) {
@@ -470,7 +484,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
 
-    document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
+    // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
+    document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
     
     this.sendEditingStateToFrameContents(frameKey, true);
 };
@@ -484,6 +499,17 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
     iframe.contentWindow.postMessage(JSON.stringify({
         frameIsMoving: frameIsMoving
     }), '*');
+};
+
+realityEditor.device.enableUnconstrained = function() {
+    this.editingState.unconstrainedDisabled = false;
+    this.editingState.unconstrained = false;
+    this.editingState.unconstrainedOffset = null;
+};
+
+realityEditor.device.disableUnconstrained = function() {
+    this.editingState.unconstrainedDisabled = true;
+    this.editingState.unconstrained = false;
 };
 
 /**
@@ -938,6 +964,11 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     cout("onDocumentPointerUp");
 };
 
+/**
+ * Converts MouseEvents from a desktop screen to one touch in a multi-touch data structure (TouchEvents),
+ * so that they can be handled by the same functions that expect multi-touch
+ * @param {MouseEvent} event
+ */
 function modifyTouchEventIfDesktop(event) {
     if (realityEditor.device.utilities.isDesktop()) {
         event.touches = [];
@@ -1254,7 +1285,8 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
             // }
 
             if (activeVehicle && !globalStates.editingMode) {
-                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
+                // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
+                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).classList.remove('visibleEditingSVG');
             }
 
             this.resetEditingState();

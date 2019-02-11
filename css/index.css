@@ -132,6 +132,8 @@ body {
     z-index: 2;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
     pointer-events:none; /*stops canvas from capturing touches so they propogate to elements behind it*/
+    
+    display: none;
 
     /* Trick to enable anti-aliasing of iframes (see: https://stackoverflow.com/questions/6492027/css-transform-jagged-edges-in-chrome) */
     /*padding: 1px;*/
@@ -197,6 +199,10 @@ body {
 .markerPlaneElement {
     background-color: rgba(0,255,255,0.5);
     position: absolute;
+}
+
+.svgDefaultState {
+    display: none;
 }
 
 /*
@@ -779,6 +785,7 @@ body {
 
 .distantFrame {
     display: none;
+    /*pointer-events: none;*/
 }
 
 .distanceUI {
@@ -807,6 +814,15 @@ body {
     margin-left: -20px;
     margin-top: -20px;
     transform: translateZ(1000px);
+}
+
+.visibleEditingSVG {
+    visibility: visible;
+    display: inline;
+}
+
+.hiddenForDistance {
+    display: none;
 }
 
 /*

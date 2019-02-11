@@ -1049,10 +1049,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             overlay.style.visibility = 'visible';
             
             if (globalStates.editingMode || thisIsBeingEdited) {
-                canvas.style.visibility = 'visible';
-                canvas.style.display = 'inline';
+                canvas.classList.add('visibleEditingSVG');
+                // canvas.style.visibility = 'visible';
+                // canvas.style.display = 'inline';
             } else {
-                canvas.style.display = 'none';
+                // canvas.style.display = 'none';
+                canvas.classList.remove('visibleEditingSVG');
             }
             
             iFrame.contentWindow.postMessage(
@@ -1766,7 +1768,8 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         activeVehicle.visibleEditing = false;
 
         globalDOMCache[activeKey].style.visibility = 'hidden';
-        globalDOMCache["svg" + activeKey].style.display = 'none';
+        // globalDOMCache["svg" + activeKey].style.display = 'none';
+        globalDOMCache["svg" + activeKey].classList.remove('visibleEditingSVG');
         
         // reset the active screen object when it disappears
         if (realityEditor.gui.screenExtension.visibleScreenObjects[activeKey]) {
@@ -1938,6 +1941,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addSVG.style.width = "100%";
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";
+    // addSVG.style.display = 'none';
+    addSVG.classList.add('svgDefaultState');
     addSVG.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
     addSVG.setAttribute('shape-rendering','geometricPrecision'); //'optimizeSpeed'
     
@@ -1950,7 +1955,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
         addContainer: addContainer,
         addIframe: addIframe,
         addOverlay: addOverlay,
-        addSVG: addSVG,
+        addSVG: addSVG
         // addDistanceUI: addDistanceUI
     };
 };

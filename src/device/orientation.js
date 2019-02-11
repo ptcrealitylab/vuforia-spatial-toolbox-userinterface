@@ -30,105 +30,144 @@ createNameSpace("realityEditor.device.orientation");
         distanceUI2.classList.add('distanceUI');
         distanceUI.appendChild(distanceUI2);
         
+        // the distance UI starts out invisible until you make a 3-finger-pinch gesture
+        hideDistanceUI();
+        
         // keep the ui flat with the ground plane
         window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
         
+        
         realityEditor.gui.ar.draw.addUpdateListener( function(visibleObjects) {
-            // on each frame, hide the distance UI if no frames are being edited
-            var editingVehicle = realityEditor.device.getEditingVehicle();
-            if (editingVehicle && globalStates.guiState === 'ui') {
-                distanceUI.style.display = 'inline';
-            } else {
-                distanceUI.style.display = 'none';
-            }
-            
+            // //on each frame, hide the distance UI if no frames are being edited
+            // var editingVehicle = realityEditor.device.getEditingVehicle();
+            // if (editingVehicle && globalStates.guiState === 'ui') {
+            //     distanceUI.style.display = 'inline';
+            // } else {
+            //     distanceUI.style.display = 'none';
+            // }
+
             if (isScalingDistance) {
-                // scaleEditingFrameDistance();
+                scaleEditingFrameDistance();
             }
         });
 
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
-        realityEditor.device.registerCallback('onDocumentMultiTouchMove', onDocumentMultiTouchMove);
+        // realityEditor.device.registerCallback('onDocumentMultiTouchMove', onDocumentMultiTouchMove);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
     }
     
     function onDocumentMultiTouchStart(params) {
         console.log(params.event);
-    }
-
-    function onDocumentMultiTouchMove(params) {
+        
         if (params.event.touches.length === 3) {
-            // console.log(params.event.touches);
-
             var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
-            
             if (touchTargets.indexOf(realityEditor.device.editingState.frame) > -1) {
-                console.log('change distance');
+                // console.log('change distance');
                 isScalingDistance = true;
-                
-                var activeVehicle = realityEditor.device.getEditingVehicle();
-
-                // var areBothOnElement = touchTargets[0] === touchTargets[1];
-                
-                var centerTouch;
-                var outerTouch;
-                
-                // if (areBothOnElement) {
-                //
-                //     // if you do a pinch gesture with both fingers on the frame
-                //     // center the scale event around the first touch the user made
-                //     centerTouch = {
-                //         x: event.touches[0].pageX,
-                //         y: event.touches[0].pageY
-                //     };
-                //
-                //     outerTouch = {
-                //         x: event.touches[1].pageX,
-                //         y: event.touches[1].pageY
-                //     };
-                //
-                // } else {
-                //
-                // if you have two fingers on the screen (one on the frame, one on the canvas)
-                // make sure the scale event is centered around the frame
-                [].slice.call(event.touches).forEach(function(touch){
-
-                    var didTouchOnFrame = touch.target.id.replace(/^(svg)/,"") === activeVehicle.uuid;
-                    // var didTouchOnNode = touch.target.id.replace(/^(svg)/,"") === activeVehicle.frameId + activeVehicle.name;
-                    // var didTouchOnPocketContainer = touch.target.className === "element-template";
-                    if (didTouchOnFrame && !centerTouch) {
-                        centerTouch = {
-                            x: touch.pageX,
-                            y: touch.pageY
-                        };
-                    } else {
-                        if (!outerTouch) {
-                            outerTouch = {
-                                x: touch.pageX,
-                                y: touch.pageY
-                            };
-                        } else {
-                            outerTouch = {
-                                x: (outerTouch.x + touch.pageX) / 2,
-                                y: (outerTouch.y + touch.pageY) / 2
-                            }
-                        }
-                        
-                    }
-                });
-                //
-                // }
-                //
-                distanceScaleVehicle(activeVehicle, centerTouch, outerTouch);
-                
+                showDistanceUI();
+                console.log('start 3 finger pinch');
+                realityEditor.device.disableUnconstrained();
             }
-            
         }
     }
     
+    // function onDocumentMultiTouchMove(params) {
+    //     if (params.event.touches.length === 3) {
+    //         // console.log(params.event.touches);
+    //        
+    //         // showDistanceUI();
+    //        
+    //         var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
+    //        
+    //         if (touchTargets.indexOf(realityEditor.device.editingState.frame) > -1) {
+    //             // console.log('change distance');
+    //             // isScalingDistance = true;
+    //            
+    //             var activeVehicle = realityEditor.device.getEditingVehicle();
+    //
+    //             // var areBothOnElement = touchTargets[0] === touchTargets[1];
+    //            
+    //             var centerTouch;
+    //             var outerTouch;
+    //            
+    //             // if (areBothOnElement) {
+    //             //
+    //             //     // if you do a pinch gesture with both fingers on the frame
+    //             //     // center the scale event around the first touch the user made
+    //             //     centerTouch = {
+    //             //         x: event.touches[0].pageX,
+    //             //         y: event.touches[0].pageY
+    //             //     };
+    //             //
+    //             //     outerTouch = {
+    //             //         x: event.touches[1].pageX,
+    //             //         y: event.touches[1].pageY
+    //             //     };
+    //             //
+    //             // } else {
+    //             //
+    //             // if you have two fingers on the screen (one on the frame, one on the canvas)
+    //             // make sure the scale event is centered around the frame
+    //            
+    //             [].slice.call(event.touches).forEach(function(touch){
+    //
+    //                 var didTouchOnFrame = touch.target.id.replace(/^(svg)/,"") === activeVehicle.uuid;
+    //                 // var didTouchOnNode = touch.target.id.replace(/^(svg)/,"") === activeVehicle.frameId + activeVehicle.name;
+    //                 // var didTouchOnPocketContainer = touch.target.className === "element-template";
+    //                 if (didTouchOnFrame && !centerTouch) {
+    //                     centerTouch = {
+    //                         x: touch.pageX,
+    //                         y: touch.pageY
+    //                     };
+    //                 } else {
+    //                     if (!outerTouch) {
+    //                         outerTouch = {
+    //                             x: touch.pageX,
+    //                             y: touch.pageY
+    //                         };
+    //                     } else {
+    //                         outerTouch = {
+    //                             x: (outerTouch.x + touch.pageX) / 2,
+    //                             y: (outerTouch.y + touch.pageY) / 2
+    //                         }
+    //                     }
+    //                    
+    //                 }
+    //             });
+    //             //
+    //             // }
+    //             //
+    //             distanceScaleVehicle(activeVehicle, centerTouch, outerTouch);
+    //            
+    //         }
+    //        
+    //     }
+    // }
+    
     function scaleEditingFrameDistance() {
         var editingFrame = realityEditor.device.getEditingVehicle();
-        editingFrame.distanceScale = editingFrame.screenZ / 200; // 200 is the default size in pixels of the radius
+        editingFrame.distanceScale = (editingFrame.screenZ / 2000) / 0.9; // 2000 is the default size in pixels of the radius
+        // divide by 0.9 since 0.8 is when it fades out entirely, 1.0 is visible entirely, so 0.9 is on the border
+    }
+    
+    function showDistanceUI() {
+        distanceUI.style.display = 'inline';
+
+        // don't show the green overlay at the same time as changing the distance
+        var activeVehicle = realityEditor.device.getEditingVehicle();
+        if (activeVehicle) {
+            globalDOMCache['svg' + realityEditor.device.editingState.frame].classList.add('hiddenForDistance');
+        }
+    }
+    
+    function hideDistanceUI() {
+        distanceUI.style.display = 'none';
+
+        // able to show the green overlay again
+        var activeVehicle = realityEditor.device.getEditingVehicle();
+        if (activeVehicle) {
+            globalDOMCache['svg' + realityEditor.device.editingState.frame].classList.remove('hiddenForDistance');
+        }
     }
 
     function onDocumentMultiTouchEnd(params) {
@@ -137,6 +176,10 @@ createNameSpace("realityEditor.device.orientation");
             isScalingDistance = false;
         // }
         initialDistanceScaleData = null;
+        
+        hideDistanceUI();
+        realityEditor.device.enableUnconstrained();
+
     }
 
     var onDeviceOrientationChangeEvent = function(event) {
@@ -161,13 +204,16 @@ createNameSpace("realityEditor.device.orientation");
             if (thisIsBeingEdited) {
                 var m1 = realityEditor.gui.ar.utilities.getTransform(globalDOMCache['object'+frameKey]);
                 
-                var distanceScale = frame.distanceScale || 1.0;
-                var circleScale = 5.0;
+                var framePositionData = realityEditor.gui.ar.positioning.getPositionData(frame); // inverse scale on circle
+                var frameScaleFactor = (framePositionData.scale / globalStates.defaultScale);
+                
+                var distanceScale = frame.distanceScale || 1.0; // 1 is the default if it hasn't been set yet
+                var circleScaleConstant = 5.0;
                 
                 var scaleMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                scaleMatrix[0] = m1[0] * distanceScale * circleScale;
-                scaleMatrix[5] = m1[0] * distanceScale * circleScale; // use same scale (m[0]) for x and y to preserve circle shape
-                scaleMatrix[10] = m1[10] * distanceScale * circleScale;
+                scaleMatrix[0] = m1[0] * circleScaleConstant * distanceScale / frameScaleFactor;
+                scaleMatrix[5] = m1[0] * circleScaleConstant * distanceScale / frameScaleFactor; // use same scale (m[0]) for x and y to preserve circle shape
+                scaleMatrix[10] = m1[10] * circleScaleConstant * distanceScale  / frameScaleFactor;
                 
                 var translateMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
                 translateMatrix[12] = m1[12];
@@ -232,7 +278,7 @@ createNameSpace("realityEditor.device.orientation");
         
         activeVehicle.distanceScale = newScale;
         
-        console.log(activeVehicle.distanceScale);
+        // console.log(activeVehicle.distanceScale);
 
         // // TODO: this only works for frames right now, not nodes (at least not after scaling nodes twice in one gesture)
         // // manually calculate positionData.x and y to keep centerTouch in the same place relative to the vehicle
