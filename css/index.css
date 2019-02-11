@@ -785,7 +785,6 @@ body {
 
 .distantFrame {
     display: none;
-    /*pointer-events: none;*/
 }
 
 .distanceUI {

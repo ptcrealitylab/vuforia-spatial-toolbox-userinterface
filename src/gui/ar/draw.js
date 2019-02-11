@@ -1125,9 +1125,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var isDistantFrame = distance > distanceThreshold;
                     var isAlmostDistantFrame = distance > (distanceThreshold * 0.8);
                     if (isDistantFrame) {
-                        globalDOMCache["iframe" + activeKey].classList.add('distantFrame');
+                        globalDOMCache["object" + activeKey].classList.add('distantFrame'); // hide visuals
                     } else {
-                        globalDOMCache["iframe" + activeKey].classList.remove('distantFrame');
+                        globalDOMCache["object" + activeKey].classList.remove('distantFrame'); // 
                         if (isAlmostDistantFrame) {
                             globalDOMCache["iframe" + activeKey].style.opacity = 1.0 - ((distance - 0.8 * distanceThreshold) / (0.2 * distanceThreshold));
                         } else {
