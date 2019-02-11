@@ -1121,7 +1121,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var scale = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).scale;
                     var distance = realityEditor.gui.ar.utilities.getDistanceToWorldFrame(objectKey, activeKey);
                     // var distanceThreshold = (activeVehicle.visibleDistance * Math.max(1.0, scale / globalStates.defaultScale) );
-                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * (scale / globalStates.defaultScale) * 2000);  // 2000 is default min distance
+                    // var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * (scale / globalStates.defaultScale) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
+                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
                     var isDistantFrame = distance > distanceThreshold;
                     var isAlmostDistantFrame = distance > (distanceThreshold * 0.8);
                     if (isDistantFrame) {
@@ -1383,13 +1384,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
 
                 }
-            } else {
+            } //else {
 
                 activeVehicle.screenLinearZ = (((10001 - (20000 / activeVehicle.screenZ)) / 9999) + 1) / 2;
                 // map the linearized zBuffer to the final ball size
                 activeVehicle.screenLinearZ = utilities.map(activeVehicle.screenLinearZ, 0.996, 1, 50, 1);
                 
-            }
+            //}
 
 
             if (activeType === "logic" && objectKey !== "pocket") {

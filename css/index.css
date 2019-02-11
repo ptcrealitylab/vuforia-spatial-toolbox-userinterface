@@ -794,8 +794,8 @@ body {
     /*height: 100%;*/
     transform-origin: center;
     border-radius: 50%;
-    border: 20px solid yellow;
-    /*background-color: rgba(255,255,0,0.3);*/
+    /*border: 20px solid yellow;*/
+    background-color: rgba(255,255,255,0.3);
     visibility: visible;
     /*transform: rotateX(90deg);*/
     position: absolute;

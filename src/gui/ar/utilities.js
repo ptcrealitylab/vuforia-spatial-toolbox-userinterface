@@ -622,7 +622,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         
         // translation matrix if the element has a different transform origin
         // var originTranslationVector = getTransformOrigin(transformedDiv);
-        var originTranslationVector = [284, 160, 0, 1];
+        var originTranslationVector = [284, 160, 0, 1]; // TODO: this depends on screen size?
 
         // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
         // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);

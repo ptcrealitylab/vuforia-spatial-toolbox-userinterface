@@ -4,16 +4,27 @@ createNameSpace("realityEditor.device.orientation");
  * @fileOverview realityEditor.device.orientation.js
  */
 
+var rx = 0;
+var ry = 0;
+
 (function(exports) {
     
     var distanceUI;
     var distanceUI2;
+    
+    var linkObject = {
+        ballAnimationCount: 0
+    };
 
-    var distanceScale = 1;
+    // var distanceScale = 1;
+    
+    var defaultDistance = 2000;
     
     var deviceOrientation;
     
     var isScalingDistance = false;
+    
+    var frameAdjusted = null;
     
     function initFeature() {
         // adds a bright yellow circle that indicates the maximum distance you can be from the frame for it to be rendered
@@ -24,11 +35,11 @@ createNameSpace("realityEditor.device.orientation");
         document.body.appendChild(distanceUI);
         
         // adds a darker circle underneath the top circle, so you can tell if you're looking at it from above or below
-        distanceUI2 = document.createElement('div');
-        distanceUI2.id = 'distanceUI2';
-        distanceUI2.classList.add('main');
-        distanceUI2.classList.add('distanceUI');
-        distanceUI.appendChild(distanceUI2);
+        // distanceUI2 = document.createElement('div');
+        // distanceUI2.id = 'distanceUI2';
+        // distanceUI2.classList.add('main');
+        // distanceUI2.classList.add('distanceUI');
+        // distanceUI.appendChild(distanceUI2);
         
         // the distance UI starts out invisible until you make a 3-finger-pinch gesture
         hideDistanceUI();
@@ -36,24 +47,32 @@ createNameSpace("realityEditor.device.orientation");
         // keep the ui flat with the ground plane
         window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
         
-        
-        realityEditor.gui.ar.draw.addUpdateListener( function(visibleObjects) {
-            // //on each frame, hide the distance UI if no frames are being edited
-            // var editingVehicle = realityEditor.device.getEditingVehicle();
-            // if (editingVehicle && globalStates.guiState === 'ui') {
-            //     distanceUI.style.display = 'inline';
-            // } else {
-            //     distanceUI.style.display = 'none';
-            // }
-
-            if (isScalingDistance) {
-                scaleEditingFrameDistance();
-            }
-        });
+        realityEditor.gui.ar.draw.addUpdateListener(loop);
+        // loop();
 
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
         // realityEditor.device.registerCallback('onDocumentMultiTouchMove', onDocumentMultiTouchMove);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
+    }
+    
+    function loop() {
+        if (isScalingDistance) {
+            scaleEditingFrameDistance();
+
+            globalCanvas.hasContent = true;
+            var frame = realityEditor.device.getEditingVehicle();
+            // noinspection JSSuspiciousNameCombination
+            var screenWidth = globalStates.height;
+            // noinspection JSSuspiciousNameCombination
+            var screenHeight = globalStates.width;
+            var startPoint = [screenWidth/2, screenHeight/2];
+            var startWeight = 30;
+            var colorCode = 4; // white
+            var widthFactor = 0.25;
+            linkObject.ballAnimationCount = 0; // prevent animation by resetting animation count each time
+            realityEditor.gui.ar.lines.drawLine(globalCanvas.context, startPoint, [frame.screenX, frame.screenY], startWeight * widthFactor, frame.screenLinearZ * widthFactor, linkObject, timeCorrection, colorCode, colorCode);
+        }
+        // requestAnimationFrame(loop);
     }
     
     function onDocumentMultiTouchStart(params) {
@@ -146,8 +165,10 @@ createNameSpace("realityEditor.device.orientation");
     
     function scaleEditingFrameDistance() {
         var editingFrame = realityEditor.device.getEditingVehicle();
-        editingFrame.distanceScale = (editingFrame.screenZ / 2000) / 0.9; // 2000 is the default size in pixels of the radius
-        // divide by 0.9 since 0.8 is when it fades out entirely, 1.0 is visible entirely, so 0.9 is on the border
+
+        // defaultDistance = 2000 is the default size in pixels of the radius
+        // we divide by 0.9 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is just around the border
+        editingFrame.distanceScale = (editingFrame.screenZ / defaultDistance) / 0.85; 
     }
     
     function showDistanceUI() {
@@ -157,6 +178,7 @@ createNameSpace("realityEditor.device.orientation");
         var activeVehicle = realityEditor.device.getEditingVehicle();
         if (activeVehicle) {
             globalDOMCache['svg' + realityEditor.device.editingState.frame].classList.add('hiddenForDistance');
+            frameAdjusted = realityEditor.device.editingState.frame;
         }
     }
     
@@ -164,9 +186,13 @@ createNameSpace("realityEditor.device.orientation");
         distanceUI.style.display = 'none';
 
         // able to show the green overlay again
-        var activeVehicle = realityEditor.device.getEditingVehicle();
-        if (activeVehicle) {
-            globalDOMCache['svg' + realityEditor.device.editingState.frame].classList.remove('hiddenForDistance');
+        // var activeVehicle = realityEditor.device.getEditingVehicle();
+        // if (activeVehicle) {
+        //     globalDOMCache['svg' + realityEditor.device.editingState.frame].classList.remove('hiddenForDistance');
+        // }
+        if (frameAdjusted) {
+            globalDOMCache['svg' + frameAdjusted].classList.remove('hiddenForDistance');
+            frameAdjusted = null;
         }
     }
 
@@ -193,7 +219,9 @@ createNameSpace("realityEditor.device.orientation");
             return;
         }
 
-        var q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(deviceOrientation.beta * Math.PI/180, deviceOrientation.gamma * Math.PI/180, 0);
+        // var q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(deviceOrientation.beta * Math.PI/180, deviceOrientation.gamma * Math.PI/180, 0);
+        // rx = deviceOrientation.beta;
+        var q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(rx * Math.PI / 180, ry * Math.PI / 180, 0);
         var groundPlaneRotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
 
         realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
@@ -208,7 +236,7 @@ createNameSpace("realityEditor.device.orientation");
                 var frameScaleFactor = (framePositionData.scale / globalStates.defaultScale);
                 
                 var distanceScale = frame.distanceScale || 1.0; // 1 is the default if it hasn't been set yet
-                var circleScaleConstant = 5.0;
+                var circleScaleConstant = 3.0; //5.0;
                 
                 var scaleMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
                 scaleMatrix[0] = m1[0] * circleScaleConstant * distanceScale / frameScaleFactor;
@@ -227,12 +255,13 @@ createNameSpace("realityEditor.device.orientation");
                 
                 realityEditor.gui.ar.utilities.multiplyMatrix(scaleMatrix, groundPlaneRotationMatrix, m2);
                 realityEditor.gui.ar.utilities.multiplyMatrix(m2, translateMatrix, transformationMatrix);
-                
+
                 distanceUI.style.webkitTransform = 'matrix3d(' + transformationMatrix.toString() + ')';
 
                 var diameterString = globalDOMCache['object'+frameKey].style.width;
                 distanceUI.style.width = diameterString;
                 distanceUI.style.height = diameterString;
+                
             }
         });
     };
@@ -317,6 +346,6 @@ createNameSpace("realityEditor.device.orientation");
     }
     
     exports.initFeature = initFeature;
-    // exports.setDistanceScale = 
+    exports.defaultDistance = defaultDistance;
 
 })(realityEditor.device.orientation);
