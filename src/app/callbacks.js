@@ -45,8 +45,20 @@ createNameSpace("realityEditor.app.callbacks");
  * but this acts to organize all API calls in a single place.
  */
 
+/**
+ * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, MARKER_ADDED: DownloadState}>}
+ * Maps object names to the download states of their XML and DAT files, and whether the tracking engine has added the resulting marker
+ */
 var targetDownloadStates = {};
 
+/**
+ * @typedef {Readonly<{NOT_STARTED: number, STARTED: number, FAILED: number, SUCCEEDED: number}>} DownloadState
+ */
+
+/**
+ * @type DownloadState
+ * enum defining whether a particular download has started, failed, or succeeded
+ */
 var DownloadState = Object.freeze(
     {
         NOT_STARTED: 0,
@@ -55,18 +67,25 @@ var DownloadState = Object.freeze(
         SUCCEEDED: 3
     });
 
-
+/**
+ * Callback for realityEditor.app.getVuforiaReady
+ * Retrieves the projection matrix and starts streaming the model matrices and camera matrix
+ * Also starts the object discovery and download process
+ */
 realityEditor.app.callbacks.vuforiaIsReady = function() {
     console.log("Vuforia is ready");
+    
+    // projection matrix only needs to be retrieved once
+    realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
+
+    // subscribe to the model matrices from each recognized image or object target
+    realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
+    
+    // subscribe to the camera matrix from the positional device tracker
+    realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
     // add heartbeat listener for UDP object discovery
     realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
-    
-    realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
-
-    realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
-
-    realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
     // send three action UDP pings to start object discovery
     for (var i = 0; i < 3; i++) {
@@ -76,22 +95,35 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
     }
 };
 
+/**
+ * Callback for realityEditor.app.getProjectionMatrix
+ * Sets the projection matrix once using the value from the AR engine
+ * @param {Array.<number>} matrix
+ */
 realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
     console.log('got projection matrix!', matrix);
     realityEditor.gui.ar.setProjectionMatrix(matrix);
 };
 
+/**
+ * Callback for realityEditor.app.getUDPMessages
+ * Handles any UDP messages received by the app.
+ * A case can be added for any additional messages to listen to.
+ * Currently supports object discovery messages ("ip"/"id" pairs) and state synchronization ("action") messages
+ * @param {string|Object} message
+ */
 realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     if (typeof message !== 'object') {
         message = JSON.parse(message);
     }
     
+    // upon a new object discovery message, add the object and download its target files
     if (typeof message.id !== 'undefined' &&
         typeof message.ip !== 'undefined') {
-        // console.log('received heartbeat', message);
         realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(message);
         realityEditor.network.addHeartbeatObject(message);
-    
+        
+    // forward the action message to the network module, to synchronize state across multiple clients
     } else if (typeof message.action !== 'undefined') {
         realityEditor.network.onAction(message.action);
     }
@@ -99,38 +131,42 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
 };
 
 /**
- * Callback ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
+ * Callback for realityEditor.app.getMatrixStream
+ * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
+ * Stores those matrices in the draw module to be rendered in the next draw frame
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
-    // console.log('got new visible matrices');
+    // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
 };
 
 /**
- * Callback ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
+ * Callback for realityEditor.app.getCameraMatrixStream
+ * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
  * @param {Array.<number>} cameraMatrix
  */
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
-    // console.log('got new visible matrices');
+    // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        // realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
-        // console.log(cameraMatrix);
-        // realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
+        // realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix; // TODO: should it be invert-transposed here or later on?
         realityEditor.gui.ar.draw.cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix));
     }
 };
 
 /**
- * Callback when a UDP message discovers a new object
+ * Downloads the XML and DAT files, and adds the AR marker to the tracking engine, when a new UDP object heartbeat is detected
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
+ * id: the objectId
+ * ip: the IP address of the server hosting this object 
+ * vn: the object's version number, e.g. 300 for version 3.0.0
+ * tcs: the checksum which can be used to tell if anything has changed since last loading this object
+ * zone: the name of the zone this object is in, so we can ignore objects outside this editor's zone if we have previously specified one
  */
 realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(objectHeartbeat) {
-    // realityEditor.network.addHeartbeatObject(beat);
-    // console.log(beat);
-    
+
     var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
     
     var needsXML = true;
@@ -159,13 +195,15 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
     }
     
     console.log(objectHeartbeat);
-    
+
+    // downloads the vuforia target.xml file if it doesn't have it yet
     if (needsXML) {
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
         realityEditor.app.downloadFile(xmlAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
         targetDownloadStates[objectName].XML = DownloadState.STARTED;
     }
     
+    // downloads the vuforia target.dat file it it doesn't have it yet
     if (needsDAT) {
         var datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
         realityEditor.app.downloadFile(datAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
@@ -174,8 +212,16 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
 
 };
 
+/**
+ * Callback for realityEditor.app.downloadFile for either target.xml or target.dat
+ * Updates the corresponding object's targetDownloadState,
+ * and if both the XML and DAT are finished downloading, adds the resulting marker to the AR engine
+ * @param {boolean} success
+ * @param {string} fileName
+ */
 realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName) {
     
+    // we don't have the objectID but luckily it can be extracted from the fileName
     var objectName = fileName.split('/')[4];
     var isXML = fileName.split('/')[fileName.split('/').length-1].indexOf('xml') > -1;
     
@@ -192,6 +238,7 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
     var markerNotAdded = (targetDownloadStates[objectName].MARKER_ADDED === DownloadState.NOT_STARTED ||
                           targetDownloadStates[objectName].MARKER_ADDED === DownloadState.FAILED);
     
+    // synchronizes the two async download calls to add the marker when both tasks have completed
     var xmlFileName = isXML ? fileName : fileName.slice(0, -3) + 'xml';
     if (hasXML && hasDAT && markerNotAdded) {
         realityEditor.app.addNewMarker(xmlFileName, 'realityEditor.app.callbacks.onMarkerAdded');
@@ -199,6 +246,13 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
     }
 };
 
+/**
+ * Callback for realityEditor.app.addNewMarker
+ * Updates the download state for that object to mark it as fully initialized in the AR engine
+ * @todo: include some form of error handling / retry if success=false
+ * @param {boolean} success
+ * @param {string} fileName
+ */
 realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     console.log('marker added: ' + fileName + ', success? ' + success);
     var objectName = fileName.split('/')[4];
@@ -212,7 +266,12 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     }
 };
 
-// callback for getScreenshot
+
+/**
+ * @todo: not currently used
+ * // callback for getScreenshot
+ * @param base64String
+ */
 realityEditor.app.callbacks.uploadMemory = function(base64String) {
 
     // var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);

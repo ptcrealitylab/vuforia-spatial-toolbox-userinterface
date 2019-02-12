@@ -66,11 +66,10 @@ realityEditor.app.getDeviceReady = function(callBack) {
  **/
 
 /**
- * Check if vuforia is ready and fires a callback once that’s the case.
+ * Starts the AR engine. Fires a callback once it is ready.
  * @param {FunctionName} callBack
  */
 realityEditor.app.getVuforiaReady = function(callBack){
-    console.log("ping");
     this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
