@@ -86,12 +86,12 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 
     // add heartbeat listener for UDP object discovery
     realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
-
+    
     // send three action UDP pings to start object discovery
     for (var i = 0; i < 3; i++) {
         setTimeout(function() {
             realityEditor.app.sendUDPMessage({action: 'ping'});
-        }, 50 * i); // space out each message by 50ms
+        }, 500 * i); // space out each message by 500ms
     }
 };
 
@@ -128,6 +128,8 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
         realityEditor.network.onAction(message.action);
     }
     
+    // forward the message to a generic message handler that various modules use to subscribe to different messages
+    realityEditor.network.onUDPMessage(message);
 };
 
 /**

@@ -23,17 +23,30 @@ createNameSpace("realityEditor.worldObjects");
         
         cameraMatrixOffset = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
+        // when an object is detected, check if we need to add a world object for its server
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
-           
-            var serverIP = object.ip;
-            if (discoveredServerIPs.indexOf(serverIP) < 0) {
-                discoveredServerIPs.push(serverIP);
-
-                onNewServerDiscovered(serverIP);
-            }
-            
+            handleServerDiscovered(object.ip);
         });
         
+        // when an explicit worldObject message is detected, check if we still need to add that world object
+        realityEditor.network.addUDPMessageHandler('worldObject', function(message) {
+            console.log('interface discovered world object:', message);
+            if (typeof message.worldObject.ip !== 'undefined') {
+                handleServerDiscovered(message.worldObject.ip)
+            }
+        });
+        
+    }
+
+    /**
+     * Determines if the discovered server is new and triggers the world object downloader if so
+     * @param serverIP
+     */
+    function handleServerDiscovered(serverIP) {
+        if (discoveredServerIPs.indexOf(serverIP) < 0) {
+            discoveredServerIPs.push(serverIP);
+            onNewServerDiscovered(serverIP);
+        }
     }
 
     /**
@@ -66,14 +79,12 @@ createNameSpace("realityEditor.worldObjects");
             
         });
         
-        // add that world object to the discovered worldObjects
-        
-        // add that world object to the global "objects" dictionary
-        
     }
 
     /**
-     * arbitrarily choose a world object to add this frame to
+     * Arbitrarily chooses a world object to add this frame to.
+     * Right now it just chooses the first one.
+     * @todo: in the future, add to ~global world server if it exists, if not, add to the world server on this phone
      * @param {Frame} frame
      * @return {Object}
      */
@@ -88,6 +99,7 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
+     * @todo: finish implementing so you can pick a frame off of an object and drop onto the world
      * @param {Frame} frame
      */
     function addFrameToWorldObject(frame) {
@@ -109,6 +121,7 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
+     * @todo: not currently used
      * @return {*}
      */
     function getWorldObjects() {
@@ -116,13 +129,16 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
-     * @return {Object}
+     * Returns an arbitrary world object (or the only one, or null if none exist)
+     * @return {Object|null}
      */
     function getAnyWorldObject() {
         return getWorldObjectForNewFrame(null);
     }
 
     /**
+     * Returns an array of the IDs of all world objects
+     * A world object ID has the format: _WORLD_OBJECT_Vz64bk5uozss (where the last 12 characters come from uuidTime())
      * @return {Array.<string>}
      */
     function getWorldObjectKeys() {
@@ -130,12 +146,19 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
-     * Relocalize the camera origin to the current camera position...
+     * @todo: this hasn't been tested or used anywhere yet
+     * @todo: replace with a terrain target or spatial anchor solution
+     * Re-localize the camera origin to the current camera position...
+     * @param {Array.<number>} currentCameraMatrix
      */
     function relocalize(currentCameraMatrix) {
         cameraMatrixOffset = currentCameraMatrix; //realityEditor.gui.ar.draw.cameraMatrix;
     }
-    
+
+    /**
+     * Getter method for the camera matrix offset, used for re-localization
+     * @return {Array.<number>}
+     */
     function getCameraMatrixOffset() {
         return cameraMatrixOffset;
     }

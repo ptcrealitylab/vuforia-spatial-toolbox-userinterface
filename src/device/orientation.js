@@ -4,13 +4,13 @@ createNameSpace("realityEditor.device.orientation");
  * @fileOverview realityEditor.device.orientation.js
  */
 
-var rx = 0;
-var ry = 0;
-
 (function(exports) {
+
+    var rx = 0;
+    var ry = 0;
     
+    // this is the div element visualizing the distance 
     var distanceUI;
-    var distanceUI2;
     
     var linkObject = {
         ballAnimationCount: 0
@@ -27,19 +27,9 @@ var ry = 0;
     var frameAdjusted = null;
     
     function initFeature() {
-        // adds a bright yellow circle that indicates the maximum distance you can be from the frame for it to be rendered
-        distanceUI = document.createElement('div');
-        distanceUI.id = 'distanceUI';
-        distanceUI.classList.add('main');
-        distanceUI.classList.add('distanceUI');
-        document.body.appendChild(distanceUI);
         
-        // adds a darker circle underneath the top circle, so you can tell if you're looking at it from above or below
-        // distanceUI2 = document.createElement('div');
-        // distanceUI2.id = 'distanceUI2';
-        // distanceUI2.classList.add('main');
-        // distanceUI2.classList.add('distanceUI');
-        // distanceUI.appendChild(distanceUI2);
+        // adds a semi-transparent circle/sphere that indicates the maximum distance you can be from the frame for it to be rendered
+        distanceUI = createDistanceUI();
         
         // the distance UI starts out invisible until you make a 3-finger-pinch gesture
         hideDistanceUI();
@@ -48,11 +38,18 @@ var ry = 0;
         window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
         
         realityEditor.gui.ar.draw.addUpdateListener(loop);
-        // loop();
 
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
-        // realityEditor.device.registerCallback('onDocumentMultiTouchMove', onDocumentMultiTouchMove);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
+    }
+    
+    function createDistanceUI() {
+        var element = document.createElement('div');
+        element.id = 'distanceUI';
+        element.classList.add('main');
+        element.classList.add('distanceUI');
+        document.body.appendChild(element);
+        return element;
     }
     
     function loop() {
@@ -89,79 +86,6 @@ var ry = 0;
             }
         }
     }
-    
-    // function onDocumentMultiTouchMove(params) {
-    //     if (params.event.touches.length === 3) {
-    //         // console.log(params.event.touches);
-    //        
-    //         // showDistanceUI();
-    //        
-    //         var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
-    //        
-    //         if (touchTargets.indexOf(realityEditor.device.editingState.frame) > -1) {
-    //             // console.log('change distance');
-    //             // isScalingDistance = true;
-    //            
-    //             var activeVehicle = realityEditor.device.getEditingVehicle();
-    //
-    //             // var areBothOnElement = touchTargets[0] === touchTargets[1];
-    //            
-    //             var centerTouch;
-    //             var outerTouch;
-    //            
-    //             // if (areBothOnElement) {
-    //             //
-    //             //     // if you do a pinch gesture with both fingers on the frame
-    //             //     // center the scale event around the first touch the user made
-    //             //     centerTouch = {
-    //             //         x: event.touches[0].pageX,
-    //             //         y: event.touches[0].pageY
-    //             //     };
-    //             //
-    //             //     outerTouch = {
-    //             //         x: event.touches[1].pageX,
-    //             //         y: event.touches[1].pageY
-    //             //     };
-    //             //
-    //             // } else {
-    //             //
-    //             // if you have two fingers on the screen (one on the frame, one on the canvas)
-    //             // make sure the scale event is centered around the frame
-    //            
-    //             [].slice.call(event.touches).forEach(function(touch){
-    //
-    //                 var didTouchOnFrame = touch.target.id.replace(/^(svg)/,"") === activeVehicle.uuid;
-    //                 // var didTouchOnNode = touch.target.id.replace(/^(svg)/,"") === activeVehicle.frameId + activeVehicle.name;
-    //                 // var didTouchOnPocketContainer = touch.target.className === "element-template";
-    //                 if (didTouchOnFrame && !centerTouch) {
-    //                     centerTouch = {
-    //                         x: touch.pageX,
-    //                         y: touch.pageY
-    //                     };
-    //                 } else {
-    //                     if (!outerTouch) {
-    //                         outerTouch = {
-    //                             x: touch.pageX,
-    //                             y: touch.pageY
-    //                         };
-    //                     } else {
-    //                         outerTouch = {
-    //                             x: (outerTouch.x + touch.pageX) / 2,
-    //                             y: (outerTouch.y + touch.pageY) / 2
-    //                         }
-    //                     }
-    //                    
-    //                 }
-    //             });
-    //             //
-    //             // }
-    //             //
-    //             distanceScaleVehicle(activeVehicle, centerTouch, outerTouch);
-    //            
-    //         }
-    //        
-    //     }
-    // }
     
     function scaleEditingFrameDistance() {
         var editingFrame = realityEditor.device.getEditingVehicle();

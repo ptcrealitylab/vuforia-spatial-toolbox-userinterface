@@ -68,6 +68,24 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
 };
 
 /**
+ * @type {Array.<{messageName: string, callback: function}>}
+ */
+realityEditor.network.udpMessageHandlers = [];
+
+/**
+ * Creates an extendable method for other modules to register callbacks that will be triggered
+ * when the interface receives any UDP message, without creating circular dependencies
+ * @param {string} messageName
+ * @param {function} callback
+ */
+realityEditor.network.addUDPMessageHandler = function(messageName, callback) {
+    this.udpMessageHandlers.push({
+        messageName: messageName,
+        callback: callback
+    });
+};
+
+/**
  * @type {Array.<function>}
  */
 realityEditor.network.objectDiscoveredCallbacks = [];
@@ -79,6 +97,8 @@ realityEditor.network.objectDiscoveredCallbacks = [];
 realityEditor.network.addObjectDiscoveredCallback = function(callback) {
     this.objectDiscoveredCallbacks.push(callback);
 };
+
+
 
 /**
  * Converts an object with version < 1.7.0 to the new format:
@@ -602,6 +622,22 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
     }
 
+};
+
+/**
+ * When we receive any UDP message, this function triggers so that subscribed modules can react to specific messages
+ * @param {string|object} message
+ */
+realityEditor.network.onUDPMessage = function(message) {
+    if (typeof message === "string") {
+        message = JSON.parse(message);
+    }
+    
+    this.udpMessageHandlers.forEach(function(messageHandler) {
+        if (typeof message[messageHandler.messageName] !== "undefined") {
+            messageHandler.callback(message);
+        }
+    });
 };
 
 realityEditor.network.onAction = function (action) {
