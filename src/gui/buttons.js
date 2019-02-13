@@ -67,7 +67,7 @@ createNameSpace("realityEditor.gui.buttons");
      */
 
     /**
-     * @type {Readonly<{GUI: string, LOGIC: string, RESET: string, COMMIT: string, UNCONSTRAINED: string, SETTING: string, LOGIC_SETTING: string, FREEZE: string, LOCK: string, HALF_LOCK: string, UNLOCK: string, RECORD: string, POCKET: string, LOGIC_POCKET: string, BIG_POCKET: string, HALF_POCKET: string, REALITY_GUI: string, REALITY_INFO: string, REALITY_TAG: string, REALITY_SEARCH: string, REALITY_WORK: string}>}
+     * @type {Readonly<{GUI: string, LOGIC: string, RESET: string, COMMIT: string, UNCONSTRAINED: string, DISTANCE: string, SETTING: string, LOGIC_SETTING: string, FREEZE: string, LOCK: string, HALF_LOCK: string, UNLOCK: string, RECORD: string, POCKET: string, LOGIC_POCKET: string, BIG_POCKET: string, HALF_POCKET: string, REALITY_GUI: string, REALITY_INFO: string, REALITY_TAG: string, REALITY_SEARCH: string, REALITY_WORK: string}>}
      */
     var ButtonNames = Object.freeze(
         {
@@ -76,6 +76,7 @@ createNameSpace("realityEditor.gui.buttons");
             RESET: 'reset',
             COMMIT: 'commit',
             UNCONSTRAINED: 'unconstrained',
+            DISTANCE: 'distance',
             SETTING: 'setting',
             LOGIC_SETTING: 'logicSetting',
             FREEZE: 'freeze',

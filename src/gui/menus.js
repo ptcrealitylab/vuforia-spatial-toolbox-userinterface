@@ -65,7 +65,7 @@ createNameSpace("realityEditor.gui.menus");
 
     /**
      * A set of all possible buttons, which will be populated with their DOM elements
-     * @type {{back: {}, bigPocket: {}, bigTrash: {}, halfTrash: {}, halfPocket: {}, freeze: {}, logicPocket: {}, logicSetting: {}, gui: {}, logic: {}, pocket: {}, reset: {}, commit: {}, setting: {}, unconstrained: {}, lock: {}, halflock: {}, unlock: {}, record: {}, realityGui: {}, realityInfo: {}, realityTag: {}, realitySearch: {}, realityWork: {}}}
+     * @type {{back: {}, bigPocket: {}, bigTrash: {}, halfTrash: {}, halfPocket: {}, freeze: {}, logicPocket: {}, logicSetting: {}, gui: {}, logic: {}, pocket: {}, reset: {}, commit: {}, setting: {}, unconstrained: {}, distance: {}, lock: {}, halflock: {}, unlock: {}, record: {}, realityGui: {}, realityInfo: {}, realityTag: {}, realitySearch: {}, realityWork: {}}}
      */
     var buttons = {
         back: {},
@@ -83,6 +83,7 @@ createNameSpace("realityEditor.gui.menus");
         commit: {},
         setting: {},
         unconstrained: {},
+        distance: {},
         lock:{},
         halflock:{},
         unlock:{},
@@ -105,18 +106,18 @@ createNameSpace("realityEditor.gui.menus");
         logic: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
         gui: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
         setting: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-        editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", commit: "blue", reset: "blue", unconstrained: "blue"},
+        editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", commit: "blue", reset: "blue", unconstrained: "blue", distance: "blue"},
         crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
         bigTrash: {bigTrash: "red"},
         bigPocket: {bigPocket: "green"},
         trashOrSave: {halfTrash: "red", halfPocket: "green"},
         locking: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue"},
-        lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue"},
+        lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue", distance: "blue"},
         realityInfo: {realityGui: "blue", realityInfo: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
         reality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
         settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
         videoRecording: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue"},
-        videoRecordingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue", commit:"blue", reset: "blue", unconstrained: "blue"}
+        videoRecordingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue", commit:"blue", reset: "blue", unconstrained: "blue", distance: "blue"}
     };
 
     /**
@@ -280,6 +281,20 @@ createNameSpace("realityEditor.gui.menus");
                 } else {
                     switchToMenu("editing", ["unconstrained"], null);
                     globalStates.unconstrainedPositioning = true;
+                }
+            }
+        }.bind(this));
+        
+        realityEditor.gui.buttons.registerCallbackForButton('distance', function(buttonName, newButtonState) {
+            console.log('registered in buttons module', newButtonState, globalStates.distanceEditingMode);
+            if (newButtonState === 'up') {
+                // TODO: decide whether to keep this here or move to orientation.js
+                if (globalStates.distanceEditingMode === true) {
+                    switchToMenu("editing", null, ["distance"]);
+                    globalStates.distanceEditingMode = false;
+                } else {
+                    switchToMenu("editing", ["distance"], null);
+                    globalStates.distanceEditingMode = true;
                 }
             }
         }.bind(this));

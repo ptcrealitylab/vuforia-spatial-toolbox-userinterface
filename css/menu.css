@@ -192,6 +192,24 @@
     z-index: 20;
 }
 
+#distanceButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 65px;
+    top: 130px;
+    visibility: hidden;
+}
+#distanceButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 65px;
+    top: 130px;
+    visibility: hidden;
+    z-index: 20;
+}
+
 #lockButton {
     position: fixed;
     width: 60px;

@@ -151,6 +151,8 @@ var globalStates = {
 	angY: 0,
 	angZ: 0,
 	unconstrainedPositioning: false,
+    distanceEditingMode: false,
+    
 	thisAndthat : {
 		interval: undefined,
 		timeout: undefined
