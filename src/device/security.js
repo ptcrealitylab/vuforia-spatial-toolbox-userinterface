@@ -63,24 +63,24 @@ createNameSpace("realityEditor.device.security");
 
 realityEditor.device.security.initFeature = function() {
 
-    realityEditor.gui.buttons.registerCallbackForButton('lock', function(buttonName, newButtonState) {
-        if (newButtonState === 'up') {
+    realityEditor.gui.buttons.registerCallbackForButton('lock', function(params) {
+        if (params.newButtonState === 'up') {
             console.log("activate lock button");
             var LOCK_TYPE_FULL = "full";
             this.lockVisibleNodesAndLinks(LOCK_TYPE_FULL);
         }
     }.bind(this));
 
-    realityEditor.gui.buttons.registerCallbackForButton('halflock', function(buttonName, newButtonState) {
-        if (newButtonState === 'up') {
+    realityEditor.gui.buttons.registerCallbackForButton('halflock', function(params) {
+        if (params.newButtonState === 'up') {
             console.log("activate halflock button");
             var LOCK_TYPE_HALF = "half";
             this.lockVisibleNodesAndLinks(LOCK_TYPE_HALF);
         }
     }.bind(this));
 
-    realityEditor.gui.buttons.registerCallbackForButton('unlock', function(buttonName, newButtonState) {
-        if (newButtonState === 'up') {
+    realityEditor.gui.buttons.registerCallbackForButton('unlock', function(params) {
+        if (params.newButtonState === 'up') {
             console.log("activate unlock button");
             this.unlockVisibleNodesAndLinks();
         }

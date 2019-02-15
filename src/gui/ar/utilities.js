@@ -499,6 +499,64 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
 };
 
 /**
+ * Checks if a 4x4 matrix is the identity matrix.
+ * optimized for the cases when it is not, as that is more common in this application.
+ * @param {Array.<number>} matrix
+ * @param {number|undefined} precision - how many digits  to when checking (to prevent small rounding errors)
+ * @return {boolean}
+ */
+realityEditor.gui.ar.utilities.isIdentityMatrix = function(matrix, precision) {
+    precision = precision || 3; // defaults to 3 digits of precision
+    // unrolled loop to be faster at expense of longer function body
+    if (parseFloat(matrix[0].toFixed(precision)) !== 1) {
+        return false;
+    }
+    if (parseFloat(matrix[1].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[2].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[3].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[4].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[5].toFixed(precision)) !== 1) {
+        return false;
+    }
+    if (parseFloat(matrix[6].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[7].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[8].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[9].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[10].toFixed(precision)) !== 1) {
+        return false;
+    }
+    if (parseFloat(matrix[11].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[12].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[13].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[14].toFixed(precision)) !== 0) {
+        return false;
+    }
+    return parseFloat(matrix[15].toFixed(precision)) === 1; // if it got this far, it's the identity iff the last element is 1
+};
+
+/**
  * Updates the averageScale property of the object by averaging the scale properties of all its frames and nodes
  * @todo move to another file
  * @param object

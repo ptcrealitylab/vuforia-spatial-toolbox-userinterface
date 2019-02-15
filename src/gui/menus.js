@@ -241,8 +241,8 @@ createNameSpace("realityEditor.gui.menus");
      */
     function registerButtonCallbacks() {
 
-        realityEditor.gui.buttons.registerCallbackForButton('gui', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('gui', function(params) {
+            if (params.newButtonState === 'up') {
                 // updates the button visuals to highlight only the GUI button
                 buttonOff(["logic","logicPocket","logicSetting","setting","pocket"]);
                 buttonOn(["gui"]);
@@ -251,8 +251,8 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('logic', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('logic', function(params) {
+            if (params.newButtonState === 'up') {
                 buttonOff(["gui","logicPocket","logicSetting","setting","pocket"]);
                 buttonOn(["logic"]);
 
@@ -260,20 +260,20 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('reset', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
+            if (params.newButtonState === 'up') {
                 switchToMenu("editing", null, ["reset"]);
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('commit', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('commit', function(params) {
+            if (params.newButtonState === 'up') {
                 switchToMenu("editing", null, ["commit"]);
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('unconstrained', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('unconstrained', function(params) {
+            if (params.newButtonState === 'up') {
                 // TODO: decide whether to keep this here
                 if (globalStates.unconstrainedPositioning === true) {
                     switchToMenu("editing", null, ["unconstrained"]);
@@ -285,9 +285,9 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
         
-        realityEditor.gui.buttons.registerCallbackForButton('distance', function(buttonName, newButtonState) {
+        realityEditor.gui.buttons.registerCallbackForButton('distance', function(params) {
             console.log('registered in buttons module', newButtonState, globalStates.distanceEditingMode);
-            if (newButtonState === 'up') {
+            if (params.newButtonState === 'up') {
                 // TODO: decide whether to keep this here or move to orientation.js
                 if (globalStates.distanceEditingMode === true) {
                     switchToMenu("editing", null, ["distance"]);
@@ -299,8 +299,8 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('freeze', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('freeze', function(params) {
+            if (params.newButtonState === 'up') {
                 // TODO: decide whether to keep this here
                 if (globalStates.freezeButtonState === true) {
                     buttonOff(["freeze"]);
@@ -317,8 +317,8 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('record', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('record', function(params) {
+            if (params.newButtonState === 'up') {
                 // TODO: move to record module... but need to know whether on or off?
                 var didStartRecording = realityEditor.device.videoRecording.toggleRecording();
 
@@ -330,8 +330,8 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('back', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('back', function(params) {
+            if (params.newButtonState === 'up') {
                 console.log('back button pressed');
 
                 buttonOff(["back"]);
@@ -350,8 +350,8 @@ createNameSpace("realityEditor.gui.menus");
         var settingTimer = null;
         var wasTimed = false;
 
-        function settingButtonCallback(buttonName, newButtonState) {
-            if (newButtonState === 'down' && buttonName === 'setting') { // only works for setting, not logicSetting
+        function settingButtonCallback(params) {
+            if (params.newButtonState === 'down' && params.buttonName === 'setting') { // only works for setting, not logicSetting
 
                 // TODO: decide whether to keep this here
                 settingTimer = setTimeout(function(){
@@ -373,7 +373,7 @@ createNameSpace("realityEditor.gui.menus");
                 }, 200);
 
 
-            } else if (newButtonState === 'up') { // works for setting or logicSetting
+            } else if (params.newButtonState === 'up') { // works for setting or logicSetting
 
                 // TODO: decide whether to keep this here
                 if (settingTimer) {
@@ -423,29 +423,29 @@ createNameSpace("realityEditor.gui.menus");
         
         // Retail Button Callbacks
 
-        realityEditor.gui.buttons.registerCallbackForButton('realityGui', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('realityGui', function(params) {
+            if (params.newButtonState === 'up') {
                 buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
                 switchToMenu("realityInfo", ["realityGui"], null);
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('realityInfo', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('realityInfo', function(params) {
+            if (params.newButtonState === 'up') {
                 buttonOff(["realityTag", "realitySearch", "realityWork"]);
                 switchToMenu("realityInfo", ["realityInfo", "realityGui"], null);
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('realityTag', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('realityTag', function(params) {
+            if (params.newButtonState === 'up') {
                 buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
                 switchToMenu("reality", ["realityTag"], null);
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('realitySearch', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('realitySearch', function(params) {
+            if (params.newButtonState === 'up') {
                 buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
                 switchToMenu("reality", ["realitySearch"], null);
 
@@ -457,8 +457,8 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('realityWork', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('realityWork', function(params) {
+            if (params.newButtonState === 'up') {
                 buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
                 switchToMenu("reality", ["realityWork"], null);
             }

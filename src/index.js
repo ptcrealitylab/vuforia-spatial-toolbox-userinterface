@@ -64,6 +64,7 @@ var realityEditor = realityEditor || {
             speechProcessor: {},
             speechPerformer: {},
             touchInputs : {},
+            keyboardEvents: {},
             touchPropagation: {},
             desktopAdapter: {},
             hololensAdapter: {},
@@ -111,6 +112,7 @@ var realityEditor = realityEditor || {
             realtime: {},
             utilities: {}
         },
+        moduleCallbacks: {},
         worldObjects: {}
 	};
 

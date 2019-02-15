@@ -142,6 +142,10 @@ createNameSpace("realityEditor.gui.buttons");
         buttonStates[buttonName] = ButtonStates.ENTERED;
     };
 
+    /**
+     * @type {CallbackHandler}
+     */
+    var callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/buttons');
 
     /**
      * A set of arrays of callbacks that other modules can register to be notified when buttons are pressed.
@@ -151,33 +155,6 @@ createNameSpace("realityEditor.gui.buttons");
      * @type {Object.<string, Array.<function>>}
      */
     var callbacks = {};
-
-    /**
-     * Adds a callback function that will be invoked when the specified button is pressed
-     * @param {string} buttonName
-     * @param {function} callback
-     */
-    var registerCallbackForButton = function(buttonName, callback) {
-        if (typeof callbacks[buttonName] === 'undefined') {
-            callbacks[buttonName] = [];
-        }
-
-        callbacks[buttonName].push(callback);
-    };
-
-    /**
-     * Utility for iterating calling all callbacks that other modules have registered for the given button
-     * @param {string} buttonName
-     * @param {object|undefined} newButtonState
-     */
-    var triggerCallbacksForButton = function(buttonName, newButtonState) {
-        if (typeof callbacks[buttonName] === 'undefined') return;
-
-        // iterates over all registered callbacks to trigger events in various modules
-        callbacks[buttonName].forEach(function(callback) {
-            callback(buttonName, newButtonState);
-        });
-    };
 
     // create placeholders for these functions that get generated automatically at runtime
 
@@ -240,7 +217,7 @@ createNameSpace("realityEditor.gui.buttons");
             /** @param {ButtonEvent} event */
             exports[functionName] = function(event) {
                 if (event.button !== buttonName) return;
-                triggerCallbacksForButton(event.button, 'down');
+                callbackHandler.triggerCallbacks(event.button, {buttonName: event.button, newButtonState: 'down'});
                 setButtonStateDown(event.button);
             };
 
@@ -251,7 +228,7 @@ createNameSpace("realityEditor.gui.buttons");
                 if (event.button !== buttonName) return;
                 // only works if the tap down originated on the button
                 if (!event.ignoreIsDown && buttonStates[event.button] !== ButtonStates.DOWN) return;
-                triggerCallbacksForButton(event.button, 'up');
+                callbackHandler.triggerCallbacks(event.button, {buttonName: event.button, newButtonState: 'up'});
                 setButtonStateUp(event.button);
             };
 
@@ -260,7 +237,7 @@ createNameSpace("realityEditor.gui.buttons");
             /** @param {ButtonEvent} event */
             exports[functionName] = function(event) {
                 if (event.button !== buttonName) return;
-                triggerCallbacksForButton(event.button, 'enter');
+                callbackHandler.triggerCallbacks(event.button, {buttonName: event.button, newButtonState: 'enter'});
                 setButtonStateEntered(event.button);
             };
 
@@ -269,13 +246,25 @@ createNameSpace("realityEditor.gui.buttons");
             /** @param {ButtonEvent} event */
             exports[functionName] = function(event) {
                 if (event.button !== buttonName) return;
-                triggerCallbacksForButton(event.button, 'leave');
+                callbackHandler.triggerCallbacks(event.button, {buttonName: event.button, newButtonState: 'leave'});
                 setButtonStateEntered(event.button);
             };
 
         }.bind(this));
 
     };
+
+    /**
+     * Adds a callback function that will be invoked when the specified button is pressed
+     * @param {string} buttonName
+     * @param {function} callback
+     */
+    function registerCallbackForButton(buttonName, callback) {
+        if (!callbackHandler) {
+            callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/buttons');
+        }
+        callbackHandler.registerCallback(buttonName, callback);
+    }
     
     exports.initButtons = initButtons;
     exports.ButtonNames = ButtonNames;

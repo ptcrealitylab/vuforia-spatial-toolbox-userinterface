@@ -405,15 +405,15 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.BIG_POCKET, bigPocketButtonPressed);
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.HALF_POCKET, halfPocketButtonPressed);
 
-        function hidePocketOnButtonPressed(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        function hidePocketOnButtonPressed(params) {
+            if (params.newButtonState === 'up') {
                 // hide the pocket
                 pocketHide();
             }
         }
 
-        function pocketButtonPressed(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        function pocketButtonPressed(params) {
+            if (params.newButtonState === 'up') {
 
                 onPocketButtonUp();
 
@@ -423,7 +423,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
                 realityEditor.gui.pocket.pocketButtonAction();
 
-            } else if (newButtonState === 'enter') {
+            } else if (params.newButtonState === 'enter') {
 
                 realityEditor.gui.pocket.onPocketButtonEnter();
 
@@ -439,11 +439,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
                 }
 
-            } else if (newButtonState === 'leave') {
+            } else if (params.newButtonState === 'leave') {
 
                 // this is where the virtual point creates object
 
-                if (realityEditor.gui.buttons.getButtonState(buttonName) === 'down' && globalStates.guiState === "node") {
+                if (realityEditor.gui.buttons.getButtonState(params.buttonName) === 'down' && globalStates.guiState === "node") {
 
                     // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
                     var addedElement = realityEditor.gui.pocket.createLogicNode();
@@ -475,14 +475,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
         }
 
-        function bigPocketButtonPressed(buttonName, newButtonState) {
-            if (newButtonState === 'enter') {
+        function bigPocketButtonPressed(params) {
+            if (params.newButtonState === 'enter') {
                 onBigPocketButtonEnter();
             }
         }
 
-        function halfPocketButtonPressed(buttonName, newButtonState) {
-            if (newButtonState === 'enter') {
+        function halfPocketButtonPressed(params) {
+            if (params.newButtonState === 'enter') {
                 onHalfPocketButtonEnter();
             }
         }

@@ -25,8 +25,8 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
     function initFeature() {
 
         // register callbacks to various buttons to perform commits
-        realityEditor.gui.buttons.registerCallbackForButton('reset', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
+            if (params.newButtonState === 'up') {
                 for (var objectKey in objects) {
                     if (!objects.hasOwnProperty(objectKey)) continue;
                     // only reset currently visible objects to their last commit, not everything
@@ -38,8 +38,8 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         });
 
         // register callbacks to various buttons to perform commits
-        realityEditor.gui.buttons.registerCallbackForButton('commit', function(buttonName, newButtonState) {
-            if (newButtonState === 'up') {
+        realityEditor.gui.buttons.registerCallbackForButton('commit', function(params) {
+            if (params.newButtonState === 'up') {
                 
                 var objectKeysToDelete = [];
                 for (var objectKey in objects) {

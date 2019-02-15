@@ -107,17 +107,20 @@ realityEditor.device.editingState = {
 };
 
 /**
- * A set of arrays of callbacks that other modules can register to be notified of device/index actions.
- * Contains a property for each method name in device/index.js that can trigger events in other modules.
- * The value of each property is an array containing pointers to the callback functions that should be
- *  triggered when that function is called.
- * @type {Object.<string, Array.<function>>}
+ * @type {CallbackHandler}
  */
-realityEditor.device.callbacks = {
-    resetEditingState: [], // don't actually need to add each function manually here, they get created automatically
-    onDocumentMultiTouchStart: [], // but it helps with auto-correct / code completion
-    onDocumentMultiTouchMove: [],
-    onDocumentMultiTouchEnd: [] 
+realityEditor.device.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/index');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.device.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/index');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
 };
 
 /**
@@ -129,8 +132,8 @@ realityEditor.device.initFeature = function() {
     realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('setting', resetEditingOnButtonUp);
     
-    function resetEditingOnButtonUp(buttonName, newButtonState) {
-        if (newButtonState === 'up') {
+    function resetEditingOnButtonUp(params) {
+        if (params.newButtonState === 'up') {
             realityEditor.device.resetEditingState();
         }
     }
@@ -349,34 +352,7 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
     
-    this.triggerCallbacks('resetEditingState');
-};
-
-/**
- * Adds a callback function that will be invoked when the realityEditor.device.[functionName] is called
- * @param {string} functionName
- * @param {function} callback
- */
-realityEditor.device.registerCallback = function(functionName, callback) {
-    if (typeof this.callbacks[functionName] === 'undefined') {
-        this.callbacks[functionName] = [];
-    }
-    
-    this.callbacks[functionName].push(callback);
-};
-
-/**
- * Utility for iterating calling all callbacks that other modules have registered for the given function
- * @param {string} functionName
- * @param {object|undefined} params
- */
-realityEditor.device.triggerCallbacks = function(functionName, params) {
-    if (typeof this.callbacks[functionName] === 'undefined') return;
-    
-    // iterates over all registered callbacks to trigger events in various modules
-    this.callbacks[functionName].forEach(function(callback) {
-        callback(params);
-    });
+    this.callbackHandler.triggerCallbacks('resetEditingState');
 };
 
 /**
@@ -1028,7 +1004,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
         }
     }
 
-    this.triggerCallbacks('onDocumentMultiTouchStart', {event: event});
+    this.callbackHandler.triggerCallbacks('onDocumentMultiTouchStart', {event: event});
 };
 
 /**
@@ -1127,7 +1103,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
         }
     }
 
-    this.triggerCallbacks('onDocumentMultiTouchMove', {event: event});
+    this.callbackHandler.triggerCallbacks('onDocumentMultiTouchMove', {event: event});
 };
 
 realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY) {
@@ -1306,7 +1282,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     //     }
     // }
     
-    this.triggerCallbacks('onDocumentMultiTouchEnd', {event: event});
+    this.callbackHandler.triggerCallbacks('onDocumentMultiTouchEnd', {event: event});
 };
 
 /**

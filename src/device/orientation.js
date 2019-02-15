@@ -99,14 +99,13 @@ createNameSpace("realityEditor.device.orientation");
 
     /**
      * Triggered when the distance editing mode button is pressed
-     * @param {string} buttonName
-     * @param {string} newButtonState
+     * @param {{buttonName: string, newButtonState: string}} params
      */
-    function onDistanceEditingModeChanged(buttonName, newButtonState) {
-        console.log('registered in orientation module', newButtonState, globalStates.distanceEditingMode);
+    function onDistanceEditingModeChanged(params) {
+        console.log('registered in orientation module', params.newButtonState, globalStates.distanceEditingMode);
 
         // 'leave' happens after 'up' so the changes to distanceEditingMode in buttons.js will have taken place
-        if (newButtonState === 'leave') {
+        if (params.newButtonState === 'leave') {
             var frameKey;
             if (globalStates.distanceEditingMode) {
                 console.log('show all distance editing UIs');

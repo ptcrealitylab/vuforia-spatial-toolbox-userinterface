@@ -278,9 +278,9 @@ function correctCameraMatrix(originalCameraMatrix) {
 
         // add the translation component
         var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        translationMatrix[12] = realityEditor.gui.ar.draw.cameraMatrix[3];
-        translationMatrix[13] = -1 * realityEditor.gui.ar.draw.cameraMatrix[7]; // flips one axis of translation
-        translationMatrix[14] = -1 * realityEditor.gui.ar.draw.cameraMatrix[11]; // flips another axis of translation
+        translationMatrix[12] = originalCameraMatrix[3];
+        translationMatrix[13] = -1 * originalCameraMatrix[7]; // flips one axis of translation
+        translationMatrix[14] = -1 * originalCameraMatrix[11]; // flips another axis of translation
         
         var correctedTransformationMatrix = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translationMatrix, correctedTransformationMatrix);
@@ -290,6 +290,61 @@ function correctCameraMatrix(originalCameraMatrix) {
         console.warn('error correcting camera matrix', originalCameraMatrix);
     }
 }
+
+// function calculateModelViewMatrix(modelMatrix, cameraMatrix) {
+//
+//     var modelViewMatrix = [];
+//
+//     // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
+//     // var modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(correctCameraMatrix(this.visibleObjects[objectKey])));
+//     // modelViewMatrix = modelMatrix;
+//
+//     // modelViewMatrix = this.visibleObjects[objectKey];
+//
+//
+//     // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
+//
+//     // var worldOriginMatrix = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
+//
+//     this.ar.utilities.multiplyMatrix(cameraMatrix, modelMatrix, modelViewMatrix);
+//     // this.ar.utilities.multiplyMatrix(worldOriginMatrix, this.visibleObjects[objectKey], modelViewMatrix);
+//     // this.ar.utilities.multiplyMatrix(this.ar.utilities.invertMatrix(worldOriginMatrix), this.visibleObjects[objectKey], modelViewMatrix);
+//
+//     return modelViewMatrix;
+// }
+
+var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
+    var modelViewMatrix = [];
+    // modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix));
+    modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix)));
+    // modelMatrix = correctCameraMatrix(modelMatrix);
+    // modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix));
+    
+    // gives correct rotation
+    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(modelMatrix);
+    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
+    eulerAngles.theta *= -1; // flips one axis of rotation
+    eulerAngles.psi *= -1; // flips another axis of rotation
+    // eulerAngles.phi *= -1; // (don't flip the third!)
+    var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
+    var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
+
+    // add the translation component
+    var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    translationMatrix[12] = modelMatrix[3];
+    translationMatrix[13] = -1 * modelMatrix[7]; // flips one axis of translation
+    translationMatrix[14] = -1 * modelMatrix[11]; // flips another axis of translation
+
+    var correctedTransformationMatrix = [];
+    realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translationMatrix, correctedTransformationMatrix);
+    modelMatrix = correctedTransformationMatrix;
+    
+    realityEditor.gui.ar.utilities.multiplyMatrix(cameraMatrix, modelMatrix, modelViewMatrix);
+    
+    modelViewMatrix = cameraMatrix;
+    
+    return modelViewMatrix;
+};
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
@@ -363,30 +418,43 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
             
-            // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
-            // var modelViewMatrix = [];
-            // this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.cameraMatrix, modelViewMatrix);
-
             var modelViewMatrix = [];
             if (this.activeObject.isWorldObject) {
+                
+                // don't start rendering world frames until we've received a valid camera matrix
+                if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
+                    continue;
+                }
                 modelViewMatrix = this.visibleObjects[objectKey];
+                
             } else {
+                // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
 
                 // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
-                var modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(correctCameraMatrix(this.visibleObjects[objectKey])));
-                modelViewMatrix = modelMatrix;
-                
-                // modelViewMatrix = this.visibleObjects[objectKey];
-
-                /*
-                // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
-                
-                var worldOriginMatrix = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
-
-                this.ar.utilities.multiplyMatrix(worldOriginMatrix, modelMatrix, modelViewMatrix);
+                // // var modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(correctCameraMatrix(this.visibleObjects[objectKey])));
+                // // modelViewMatrix = modelMatrix;
+                //
+                // // modelViewMatrix = this.visibleObjects[objectKey];
+                //
+                //
+                // // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
+                //
+                // var worldOriginMatrix = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
+                //
+                // this.ar.utilities.multiplyMatrix(worldOriginMatrix, modelMatrix, modelViewMatrix);
                 // this.ar.utilities.multiplyMatrix(worldOriginMatrix, this.visibleObjects[objectKey], modelViewMatrix);
                 // this.ar.utilities.multiplyMatrix(this.ar.utilities.invertMatrix(worldOriginMatrix), this.visibleObjects[objectKey], modelViewMatrix);
-                */
+
+                // var tempMat = [];
+                // realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.draw.cameraMatrix, tempMat);
+                // modelViewMatrix = correctCameraMatrix(tempMat);
+                
+                // modelViewMatrix = calculateModelViewMatrix(this.visibleObjects[objectKey], correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix));
+                
+                // already includes camera matrix in objc calculations
+                modelViewMatrix = correctCameraMatrix(this.visibleObjects[objectKey]);
+                
+                
             }
 
             // compute its ModelViewProjection matrix
