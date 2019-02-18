@@ -153,8 +153,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        // realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix; // TODO: should it be invert-transposed here or later on?
-        realityEditor.gui.ar.draw.cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix));
+        realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix; // TODO: should it be invert-transposed here or later on?
+        // realityEditor.gui.ar.draw.cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix));
     }
 };
 

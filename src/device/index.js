@@ -998,7 +998,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
                 // realityEditor.gui.menus.switchToMenu("bigPocket");
-                realityEditor.gui.memory.createMemory();
+                // realityEditor.gui.memory.createMemory(); // TODO: implement memories and re-enable then
 
             }
         }

@@ -190,7 +190,7 @@ realityEditor.gui.ar.draw.updateLoop = function () {
 function correctCameraMatrix(originalCameraMatrix) {
     
     try {
-        var m1 = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix));
+        // var m1 = originalCameraMatrix; //realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix));
 
         // // calculate rotation component of the transformation matrix
         // var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
@@ -261,7 +261,7 @@ function correctCameraMatrix(originalCameraMatrix) {
         // // }
 
         // gives correct rotation
-        var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
+        var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(originalCameraMatrix);
         // var invQ = realityEditor.gui.ar.utilities.invertQuaternion(q);
         // realityEditor.gui.ar.utilities.normalizeQuaternion()
 
@@ -277,10 +277,11 @@ function correctCameraMatrix(originalCameraMatrix) {
         // visibleObjects[worldObjectKey][14] = -1 * realityEditor.gui.ar.draw.cameraMatrix[11];
 
         // add the translation component
+        var invM1 = realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix);
         var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        translationMatrix[12] = originalCameraMatrix[3];
-        translationMatrix[13] = -1 * originalCameraMatrix[7]; // flips one axis of translation
-        translationMatrix[14] = -1 * originalCameraMatrix[11]; // flips another axis of translation
+        translationMatrix[12] = invM1[12]; //originalCameraMatrix[3];
+        translationMatrix[13] = -1 * invM1[13]; //originalCameraMatrix[7]; // flips one axis of translation
+        translationMatrix[14] = -1 * invM1[14]; //originalCameraMatrix[11]; // flips another axis of translation
         
         var correctedTransformationMatrix = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translationMatrix, correctedTransformationMatrix);
@@ -452,8 +453,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // modelViewMatrix = calculateModelViewMatrix(this.visibleObjects[objectKey], correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix));
                 
                 // already includes camera matrix in objc calculations
-                modelViewMatrix = correctCameraMatrix(this.visibleObjects[objectKey]);
+                // modelViewMatrix = correctCameraMatrix(this.visibleObjects[objectKey]);
+
+                // don't start rendering object frames until we've received a valid camera matrix
+                if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
+                    continue;
+                }
                 
+                var temp = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.cameraMatrix, temp);
+                modelViewMatrix = correctCameraMatrix(temp);
                 
             }
 
