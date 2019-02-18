@@ -393,6 +393,8 @@ var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
     return modelViewMatrix;
 };
 
+var mmToMeterScale = 2000; // 1000; // changed from 1000 to 2000 to cut everything's size in half (draws them as if they were twice as far away)
+
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
@@ -420,14 +422,14 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (this.globalStates.matrixBroadcastEnabled) {
         realityEditor.device.desktopAdapter.broadcastMatrices(visibleObjects);
     }
-
+    
     // scale x, y, and z elements of matrix for mm to meter conversion ratio
     for (objectKey in this.visibleObjects) {
         if (!this.visibleObjects.hasOwnProperty(objectKey)) continue;
         // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
-        this.visibleObjects[objectKey][14] *= 1000;
-        this.visibleObjects[objectKey][13] *= 1000;
-        this.visibleObjects[objectKey][12] *= 1000;
+        this.visibleObjects[objectKey][14] *= mmToMeterScale;
+        this.visibleObjects[objectKey][13] *= mmToMeterScale;
+        this.visibleObjects[objectKey][12] *= mmToMeterScale;
     }
     
     // erases anything on the background canvas
@@ -543,9 +545,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 var camRot = extractRotation(this.cameraMatrix, true, true, false);
                 var camTx = extractTranslation(correctCameraMatrix(this.cameraMatrix), false, false, false);
                 
-                camTx[12] *= 1000;
-                camTx[13] *= 1000;
-                camTx[14] *= 1000;
+                camTx[12] *= mmToMeterScale;
+                camTx[13] *= mmToMeterScale;
+                camTx[14] *= mmToMeterScale;
                 
                 // todo: try using correct camera matrix first (use result of world object visibleObject, and then extract *that* one's rotation/translation and multiply in the rotation/translation of the object/image model matrix
 

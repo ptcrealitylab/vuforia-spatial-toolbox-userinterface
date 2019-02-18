@@ -1232,11 +1232,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             // get corners, add in correct order so they get drawn clockwise
 
             corners.forEach(function (corner) {
-                if (corner[2] < 0) {
+                if (corner[2] > 0) { // flipped sign from less than 0 to greater than because z axis flipped in vuforia 7.2
                     interceptPoints.push(corner);
                 }
 
-                if (corner[2] < -100) {
+                if (corner[2] > 100) {
                     numBehindMarkerPlane++;
                 }
             });
