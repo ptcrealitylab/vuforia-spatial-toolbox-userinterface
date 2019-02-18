@@ -555,7 +555,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 var modelMatrix = this.visibleObjects[objectKey]; //realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey]);
                 //
                 var modelRot = extractRotation(modelMatrix, true, true, true);
-                var modelTx = extractTranslation(modelMatrix, true, false, false);
+                var modelTx = extractTranslation(modelMatrix, false, false, false);
                 // var m = [];
                 // realityEditor.gui.ar.utilities.multiplyMatrix(modelRot, modelTx, m);
                 // modelViewMatrix = m;
@@ -1317,7 +1317,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var distance = realityEditor.gui.ar.utilities.getDistanceToWorldFrame(objectKey, activeKey);
                     // var distanceThreshold = (activeVehicle.visibleDistance * Math.max(1.0, scale / globalStates.defaultScale) );
                     // var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * (scale / globalStates.defaultScale) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
-                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * realityEditor.device.distanceScaling.defaultDistance);  // 2000 is default min distance
+                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * realityEditor.device.distanceScaling.defaultDistance);  // multiply the default min distance by the amount this frame distance has been scaled up
                     var isDistantFrame = distance > distanceThreshold;
                     var isAlmostDistantFrame = distance > (distanceThreshold * 0.8);
                     if (isDistantFrame) {
