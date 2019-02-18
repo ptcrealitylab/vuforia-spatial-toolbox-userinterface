@@ -98,8 +98,6 @@ realityEditor.network.addObjectDiscoveredCallback = function(callback) {
     this.objectDiscoveredCallbacks.push(callback);
 };
 
-
-
 /**
  * Converts an object with version < 1.7.0 to the new format:
  * Objects now have frames, which can have nodes, but in the old version there were no frames
@@ -2410,4 +2408,16 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
         console.log(err, response);
     });
     
+};
+
+/**
+ * Helper function to locate the iframe element associated with a certain frame, and post a message into it
+ * @param {string} frameKey
+ * @param {object} message - JSON data to send into the frame
+ */
+realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
+    var frame = document.getElementById('iframe' + frameKey);
+    if (frame) {
+        frame.contentWindow.postMessage(JSON.stringify(message), "*");
+    }
 };

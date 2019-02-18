@@ -155,7 +155,7 @@
 
         text.style.fontSize = (500/textLength)+"pt";
 
-        text.addEventListener("pointerdown", function (){
+        text.addEventListener("pointerup", function (){
             if(text.innerText === "edit label") {
                 text.innerText = "";
             }
@@ -164,7 +164,23 @@
 
         }, false);
 
-        window.addEventListener("keyup", function(e) {
+        // if outside the frame has focus, it will receive the keyboard event via a post message
+        window.addEventListener("message", function (e) {
+
+            var msg = JSON.parse(e.data);
+            
+            if (typeof msg.keyboardEvent !== "undefined") {
+                console.log('label frame received keyboard event', msg.keyboardEvent);
+                onKeyUp(msg.keyboardEvent);
+            }
+
+        });
+
+        // if inside the frame has focus, it will directly receive the keyboard event
+        window.addEventListener("keyup", onKeyUp);
+
+        function onKeyUp(e) {
+            e.preventDefault();
 
             if (document.activeElement !== text) {
                 return;
@@ -177,6 +193,12 @@
             } else {
                 if (e.key === "Backspace") {
                     text.innerText = text.innerText.slice(0, -1); // remove last character
+                } else if (e.key === " ") {
+                    text.innerText = text.innerText + "\u00a0"; // special space character doesn't get escaped
+                    resetScroll();
+                    setTimeout(function() {
+                        resetScroll(); // also do it after a slight delay
+                    }, 100);
                 }
             }
 
@@ -189,8 +211,16 @@
             text.style.lineHeight = boxHeight + "px"; // TODO: pt vs px
 
             realityInterface.writePublicData("storage", "data",  text.innerText);
+            
+        }
+        
+        function resetScroll() {
+            if (window.scrollX !== 0 || window.scrollY !== 0) {
+                window.scrollTo(0,0); // don't let keyboard events scroll the window
+            }
+            parent.postMessage(JSON.stringify({resetScroll: true}), '*');
+        }
 
-        }, false);
 
         // var outlineMinShadow = document.querySelector('#outlineMinShadow');
         //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
@@ -219,8 +249,7 @@
 
         realityInterface.setMoveDelay(500);
         //  {value: 0.4565680618804775, mode: "f", unit: "volt", unitMin: 300, unitMax: 0}
-    };
-
+    });
     
 </script>
 </body>

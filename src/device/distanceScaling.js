@@ -1,7 +1,7 @@
-createNameSpace("realityEditor.device.orientation");
+createNameSpace("realityEditor.device.distanceScaling");
 
 /**
- * @fileOverview realityEditor.device.orientation.js
+ * @fileOverview realityEditor.device.distanceScaling.js
  */
 
 (function(exports) {
@@ -102,7 +102,7 @@ createNameSpace("realityEditor.device.orientation");
      * @param {{buttonName: string, newButtonState: string}} params
      */
     function onDistanceEditingModeChanged(params) {
-        console.log('registered in orientation module', params.newButtonState, globalStates.distanceEditingMode);
+        console.log('registered in distanceScaling module', params.newButtonState, globalStates.distanceEditingMode);
 
         // 'leave' happens after 'up' so the changes to distanceEditingMode in buttons.js will have taken place
         if (params.newButtonState === 'leave') {
@@ -258,4 +258,4 @@ createNameSpace("realityEditor.device.orientation");
     exports.initFeature = initFeature;
     exports.defaultDistance = defaultDistance;
 
-})(realityEditor.device.orientation);
+})(realityEditor.device.distanceScaling);

@@ -68,7 +68,7 @@ var realityEditor = realityEditor || {
             touchPropagation: {},
             desktopAdapter: {},
             hololensAdapter: {},
-            orientation: {}
+            distanceScaling: {}
         },
 		gui: {
 			ar: {
@@ -110,7 +110,9 @@ var realityEditor = realityEditor || {
 		},
         network: {
             realtime: {},
-            utilities: {}
+            utilities: {},
+            realtime: {},
+            frameContentAPI: {}
         },
         moduleCallbacks: {},
         worldObjects: {}

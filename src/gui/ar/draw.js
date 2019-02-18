@@ -1190,7 +1190,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var distance = realityEditor.gui.ar.utilities.getDistanceToWorldFrame(objectKey, activeKey);
                     // var distanceThreshold = (activeVehicle.visibleDistance * Math.max(1.0, scale / globalStates.defaultScale) );
                     // var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * (scale / globalStates.defaultScale) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
-                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
+                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * realityEditor.device.distanceScaling.defaultDistance);  // 2000 is default min distance
                     var isDistantFrame = distance > distanceThreshold;
                     var isAlmostDistantFrame = distance > (distanceThreshold * 0.8);
                     if (isDistantFrame) {
