@@ -327,7 +327,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 }
                 modelViewMatrix = this.visibleObjects[objectKey];
                 
+            } else if (globalStates.freezeButtonState) {
+
+                // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
+                modelViewMatrix = this.visibleObjects[objectKey];
+                
             } else {
+                
                 // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
                 // we need to modify the object and camera matrices before we multiply them together to align their axes and scales
                 var modelViewMatrix = [];
@@ -1073,7 +1079,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         if (isAlmostDistantFrame) {
                             globalDOMCache["iframe" + activeKey].style.opacity = 1.0 - ((distance - 0.8 * distanceThreshold) / (0.2 * distanceThreshold));
                         } else {
-                            globalDOMCache["iframe" + activeKey].style.opacity = 1.0;
+                            globalDOMCache["iframe" + activeKey].style.opacity = '';
                         }
                     }
                 // }

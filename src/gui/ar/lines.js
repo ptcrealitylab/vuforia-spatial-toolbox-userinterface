@@ -235,8 +235,11 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 		} else {
 			logicB = link.logicB;
 		}
+
+        if(!nodeA.screenOpacity)  nodeA.screenOpacity = 1.0;
+        if(!nodeB.screenOpacity)  nodeB.screenOpacity = 1.0;
         
-		this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection,logicA,logicB);
+		this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection,logicA,logicB,nodeA.screenOpacity,nodeB.screenOpacity);
 	}
 	// context.fill();
     
@@ -278,8 +281,9 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 		if (globalProgram.logicA === false) {
 		    logicA = 4;
         }
-
-		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector);
+        
+        if(!nodeA.screenOpacity)  nodeA.screenOpacity = 1.0;
+		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector,nodeA.screenOpacity,1);
 	}
 
 	if (globalStates.drawDotLine) {
@@ -305,7 +309,9 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
  * @param {number} endColor - same mapping as startColor
  * @param {number|undefined} speed - optionally adjusts how quickly the animation moves
  */
-realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed) {
+realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed, lineAlphaStart, lineAlphaEnd) {
+    if(!lineAlphaStart) lineAlphaStart = 1.0;
+    if(!lineAlphaEnd) lineAlphaEnd = 1.0;
     if(!speed) speed = 1;
     var angle = Math.atan2((lineStartPoint[1] - lineEndPoint[1]), (lineStartPoint[0] - lineEndPoint[0]));
     var positionDelta = 0;
@@ -322,9 +328,9 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     
     if (!!linkObject.lockPassword) {
         if (linkObject.lockType === "full") {
-            newColor[3] = 0.25;
+            lineAlphaEnd = lineAlphaEnd/4;
         } else if (linkObject.lockType === "half") {
-            newColor[3] = 0.75;
+            lineAlphaEnd = lineAlphaEnd/4*3;
         }
     }
     
@@ -348,7 +354,8 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         for (var i = 0; i < 3; i++) {
             newColor[i] = (Math.floor(parseInt(colors[startColor][i], 10) + (colors[endColor][i] - colors[startColor][i]) * ratio));
         }
-
+        newColor[3] = (lineAlphaStart + (lineAlphaEnd - lineAlphaStart) * ratio);
+        
         var ballSize = this.ar.utilities.map(ballPosition, 0, lineVectorLength, lineStartWeight, lineEndWeight);
         
         var x__ = lineStartPoint[0] - Math.cos(angle) * ballPosition;
