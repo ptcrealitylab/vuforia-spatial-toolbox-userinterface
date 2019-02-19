@@ -182,6 +182,10 @@
         changetext(count);
     });
 
+    realityInterface.addReadListener('reset', function (e) {
+        reset();
+    });
+
     realityInterface.addReadPublicDataListener("count",'count', function (e) {
 
        count = e;
@@ -189,13 +193,14 @@
     });
     
     document.querySelector('#reset').addEventListener("pointerdown",
-        function (event) {
-         count = 0;
-            changetext(count);
-            realityInterface.write("count", 0.001);
-            realityInterface.writePublicData("count",'count', 0);
-        }, false);
-    
+        reset , false);
+
+   function reset(event) {
+        count = 0;
+        changetext(count);
+        realityInterface.write("count", 0.001);
+        realityInterface.writePublicData("count",'count', 0);
+    };
     
     realityInterface.setMoveDelay(500);
 

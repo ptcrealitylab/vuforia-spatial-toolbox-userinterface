@@ -1,12 +1,12 @@
 var realityElements = [
-
+/*
     {
         name: 'background',
         width: 660,
         height: 430,
         nodes: [
         ]
-    },
+    },*/
 
     /*{
         name: 'sensor-graph',
@@ -39,23 +39,6 @@ var realityElements = [
     //     nodes: [
     //     ]
     // },
-    {
-        name: 'machine-gltf',
-        width: 568,
-        height: 320,
-        nodes: [
-        ]
-    },
-    {
-        name: 'sphere',
-        width: 568,
-        height: 320,
-        nodes: [
-            // {name: 'hue', type: "node"},
-            // {name: 'saturation', type: "node"},
-            // {name: 'lightness', type: "node"}
-        ]
-    },
     // {
     //     name: 'turtle',
     //     width: 568,
@@ -63,6 +46,7 @@ var realityElements = [
     //     nodes: [
     //     ]
     // },
+    /*
     {
         name: 'videoCapture',
         width: 568,
@@ -79,111 +63,7 @@ var realityElements = [
 
             {name: 'storage', type: 'storeData'}
         ]
-    },
-    {
-        name: 'twoSidedLimiter',
-        width: 600,
-        height: 505,
-        nodes: [
-            {name: 'in_out', type: "twoSidedLimiter"}
-        ]
-    },
-    {
-        name: 'limiter',
-        width: 510,
-        height: 540,
-        nodes: [
-            {name: 'in_out', type: "limiter"}
-        ]
-    },
-    {
-        name: 'progress',
-        width: 275,
-        height: 415,
-        nodes: [
-            {name: 'value', type: "node"}
-        ]
-    },
-    {
-        name: 'draw',
-        width: 600,
-        height: 650,
-        nodes: [
-            {name: 'storage', type: "storeData"}
-        ]
-    },
-    {
-        name: 'switch',
-        width: 570,
-        height: 270,
-        nodes: [
-            {name: 'value', type: "node"}
-        ]
-    },
-    {
-        name: 'buttonOn',
-        width: 270,
-        height: 270,
-        nodes: [
-            {name: 'value', type: "node"}
-        ]
-    },
-    {
-        name: 'buttonOff',
-        width: 270,
-        height: 270,
-        nodes: [
-            {name: 'value', type: "node"}
-        ]
-    },
-    {
-        name: 'graphUI',
-        width: 690,
-        height: 410,
-        nodes: [
-            {name: 'value', type: "node"}
-        ]
-    },
-    // /*  
-    {
-        name: 'skyNews',
-        width: 660,
-        height: 430,
-        nodes: [
-            {name: 'play', type: "node"}
-        ]
-    },
-    {
-        name: 'ptcStockUI',
-        width: 600,
-        height: 500,
-        nodes: [
-        ]
-    },
-    {
-        name: 'ptcTwitter',
-        width: 400,
-        height: 400,
-        nodes: [
-        ]
-    },
-    // */
-    {
-        name: 'label',
-        width: 450,
-        height: 150,
-        nodes: [
-            {name: 'storage', type: "storeData"}
-        ]
-    },
-    {
-        name: 'count',
-        width: 515,
-        height: 400,
-        nodes: [
-            {name: 'count', type: "count"}
-        ]
-    },
+    },*/
     {
         name: 'slider',
         width: 206,
@@ -202,10 +82,188 @@ var realityElements = [
         ]
     },
     {
+        name: 'switch',
+        width: 570,
+        height: 270,
+        nodes: [
+            {name: 'value', type: "node"}
+        ]
+    },
+    {
+        name: 'draw',
+        width: 600,
+        height: 650,
+        nodes: [
+            {name: 'storage', type: "storeData"}
+        ]
+    },
+    {
+        name: 'graphUI',
+        width: 690,
+        height: 410,
+        nodes: [
+            {name: 'value', type: "node"}
+        ]
+    },
+    {
+        name: 'count',
+        width: 515,
+        height: 400,
+        nodes: [
+            {name: 'count', type: "count"},
+            {name: 'reset', type: "node"}
+        ]
+    },
+    
+    {
+        name: 'twoSidedLimiter',
+        width: 600,
+        height: 505,
+        nodes: [
+            {name: 'in_out', type: "twoSidedLimiter"}
+        ]
+    },/*
+    {
+        name: 'limiter',
+        width: 510,
+        height: 540,
+        nodes: [
+            {name: 'in_out', type: "limiter"}
+        ]
+    },*/
+    {
+        name: 'progress',
+        width: 275,
+        height: 415,
+        nodes: [
+            {name: 'value', type: "node"}
+        ]
+    },
+    {
+        name: 'label',
+        width: 450,
+        height: 150,
+        nodes: [
+            {name: 'storage', type: "storeData"}
+        ]
+    },    
+    {
+        name: 'value',
+        width: 440,
+        height: 145,
+        nodes: [
+            {name: 'value', type: "node"}
+        ]
+    },
+   
+    {
+        name: 'buttonOn',
+        width: 270,
+        height: 270,
+        nodes: [
+            {name: 'value', type: "node"}
+        ]
+    },
+    {
+        name: 'buttonOff',
+        width: 270,
+        height: 270,
+        nodes: [
+            {name: 'value', type: "node"}
+        ]
+    },
+
+  
+    {
+        name: 'complete',
+        width: 600,
+        height: 600,
+        nodes: [
+            {name: 'state', type: "node"}
+        ]
+    },
+    {
+        name: 'error',
+        width: 600,
+        height: 600,
+        nodes: [
+            {name: 'state', type: "node"}
+        ]
+    },
+    {
+        name: 'warning',
+        width: 600,
+        height: 600,
+        nodes: [
+            {name: 'state', type: "node"}
+        ]
+    },
+    {
+        name: 'inProgress',
+        width: 600,
+        height: 600,
+        nodes: [
+            {name: 'state', type: "node"}
+        ]
+    },
+
+    /*
+    // /*  
+    {
+        name: 'skyNews',
+        width: 660,
+        height: 430,
+        nodes: [
+            {name: 'play', type: "node"}
+        ]
+    },/*
+    {
+        name: 'ptcStockUI',
+        width: 600,
+        height: 500,
+        nodes: [
+        ]
+    },
+    {
+        name: 'ptcTwitter',
+        width: 400,
+        height: 400,
+        nodes: [
+        ]
+    },*/
+    // */
+    {
         name: 'pushMe',
         width: 600,
         height: 600,
         nodes: [
+        ]
+    },
+    {
+        name: 'machine-gltf',
+        width: 568,
+        height: 320,
+        nodes: [
+        ]
+    },
+    {
+        name: 'sphere',
+        width: 568,
+        height: 320,
+        nodes: [
+            // {name: 'hue', type: "node"},
+            // {name: 'saturation', type: "node"},
+            // {name: 'lightness', type: "node"}
+        ]
+    },
+    {
+        name: 'easterEgg',
+        width: 480,
+        height: 270,
+        nodes: [
+            {name: 'x', type: "node"},
+            {name: 'y', type: "node"},
+            {name: 'reset', type: "node"}
         ]
     }
 ];

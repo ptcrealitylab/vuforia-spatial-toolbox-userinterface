@@ -131,6 +131,22 @@
 
     <script src="src/gui/search.js"></script>
 
+    <script>
+        var worldObject = { id: '_WORLD_OBJECT_local',
+            ip: '127.0.0.1',
+            vn: 320,
+            pr: 'R2',
+            tcs: null,
+            zone: '' };
+
+        realityEditor.network.addHeartbeatObject(worldObject);
+        setTimeout(function(){  realityEditor.network.addHeartbeatObject(worldObject); }, 1000);
+        setTimeout(function(){  realityEditor.network.addHeartbeatObject(worldObject); }, 2000);
+        setTimeout(function(){  realityEditor.network.addHeartbeatObject(worldObject); }, 3000);
+        setInterval(function(){  realityEditor.network.addHeartbeatObject(worldObject); }, 5000);
+       
+
+    </script>
 </head>
 <body touch-action="none">
 
