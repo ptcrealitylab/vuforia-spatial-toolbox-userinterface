@@ -706,7 +706,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // elt.style.marginLeft = offsetX + 'px';
         }
     }
-    
+
+    /**
+     * Programmatically generates a scroll bar with a number of segments ("chapters") based on the total number of rows
+     * of frames and memories in the pocket, that lets you jump up and down by tapping or scrolling your finger between
+     * the different segments of the scroll bar
+     * @todo: add a vertical margin between each row where we can label the frames with their names
+     */
     function createPocketScrollbar() {
         var scrollbar = document.getElementById('pocketScrollBar');
         if (scrollbar.children.length > 0) {
@@ -714,16 +720,20 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             return;
         }
         var numMemoryContainers = 4;
+        if (TEMP_DISABLE_MEMORIES) {
+            numMemoryContainers = 0;
+        }
         var numFrames = realityElements.length + numMemoryContainers;
-        var pageHeight = 320;
+        var pageHeight = window.innerHeight; //320;
         var frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
         var paddingHeight = 6; //parseFloat(document.querySelector('#pocket-element').style.margin) * 2;
         var framesPerRow = 4;
         var numRows = Math.ceil(numFrames / framesPerRow);
+        // A "chapter" is a section/segment on the scroll bar that you can tap to jump to that section of frames
         var numChapters = Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight );
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
-        var scrollbarHeight = 305;
+        var scrollbarHeight = pageHeight - 15;  //305;
         
         var allSegmentButtons = [];
         
