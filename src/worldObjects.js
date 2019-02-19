@@ -7,6 +7,8 @@ createNameSpace("realityEditor.worldObjects");
     var discoveredServerIPs;
     
     var cameraMatrixOffset;
+    
+    var localWorldObjectKey = '_WORLD_OBJECT_local';
 
     /**
      * Init world object module
@@ -82,20 +84,41 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
-     * Arbitrarily chooses a world object to add this frame to.
-     * Right now it just chooses the first one.
-     * @todo: in the future, add to ~global world server if it exists, if not, add to the world server on this phone
-     * @param {Frame} frame
+     * Chooses a world object. Tries to find a global one, but defaults to local one if necessary.
      * @return {Object}
      */
-    function getWorldObjectForNewFrame(frame) {
+    function getBestWorldObject() {
         
-        var worldObjectIds = Object.keys(worldObjects);
-        if (worldObjectIds.length > 0) {
-            return worldObjects[worldObjectIds[0]];
+        // if there are any global world objects, add to those first
+        var globalWorldObjectKeys = getGlobalWorldObjectKeys();
+        if (globalWorldObjectKeys.length > 0) {
+            return objects[globalWorldObjectKeys[0]];
         }
         
-        return null;
+        // otherwise add to the local one. there should always be one of these so it should never return null
+        return getLocalWorldObject();
+    }
+
+    /**
+     * Returns the local world object hosted by this app
+     * @return {Object}
+     */
+    function getLocalWorldObject() {
+        return objects[localWorldObjectKey];
+    }
+
+    /**
+     * Returns a list of the world object keys, other than the local one hosted by this app
+     * @return {Array.<string>}
+     */
+    function getGlobalWorldObjectKeys() {
+        var worldObjectKeys = [];
+        getWorldObjectKeys().forEach(function(worldObjectKey) {
+            if (worldObjectKey !== localWorldObjectKey) {
+                worldObjectKeys.push(worldObjectKey);
+            }
+        });
+        return worldObjectKeys;
     }
 
     /**
@@ -106,7 +129,7 @@ createNameSpace("realityEditor.worldObjects");
         
         console.log('add frame to world object...');
         
-        var chosenWorldObject = getWorldObjectForNewFrame(frame);
+        var chosenWorldObject = getBestWorldObject();
         if (chosenWorldObject) {
 
             // add this frame to that object
@@ -126,14 +149,6 @@ createNameSpace("realityEditor.worldObjects");
      */
     function getWorldObjects() {
         return worldObjects;
-    }
-
-    /**
-     * Returns an arbitrary world object (or the only one, or null if none exist)
-     * @return {Object|null}
-     */
-    function getAnyWorldObject() {
-        return getWorldObjectForNewFrame(null);
     }
 
     /**
@@ -166,7 +181,7 @@ createNameSpace("realityEditor.worldObjects");
     exports.initFeature = initFeature;
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
-    exports.getAnyWorldObject = getAnyWorldObject;
+    exports.getBestWorldObject = getBestWorldObject;
     exports.addFrameToWorldObject = addFrameToWorldObject;
     exports.relocalize = relocalize;
     exports.getCameraMatrixOffset = getCameraMatrixOffset;
