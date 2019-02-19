@@ -733,7 +733,7 @@ body {
     margin: 0;
     padding: 0;
     z-index: 0;
-    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1);
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.1, 1);
     pointer-events: none;
 }
 
@@ -764,7 +764,7 @@ body {
 
 .hiddenFrame {
     visibility: visible;
-    opacity: 0.5;
+    opacity: 0.4;
     pointer-events: none;
 }
 

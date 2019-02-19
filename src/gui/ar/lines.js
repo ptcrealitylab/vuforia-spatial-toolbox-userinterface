@@ -328,7 +328,7 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     var spacer = 2.3;
     var ratio = 0;
     var mathPI = 2*Math.PI;
-    var newColor = [255,255,255,1.0];
+    var newColor = [255,255,255,0];
     
     // TODO: temporary solution to render lock information for this link
     
