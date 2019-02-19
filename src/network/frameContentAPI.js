@@ -29,7 +29,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
             if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
             
             realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
-                realityEditor.network.postMessageIntoFrame(frameKey, {keyboardEvent: acyclicEventObject});
+                realityEditor.network.postMessageIntoFrame(frameKey, {keyboardUpEvent: acyclicEventObject});
             });
         }
     }

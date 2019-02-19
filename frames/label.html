@@ -168,10 +168,10 @@
         window.addEventListener("message", function (e) {
 
             var msg = JSON.parse(e.data);
-            
-            if (typeof msg.keyboardEvent !== "undefined") {
-                console.log('label frame received keyboard event', msg.keyboardEvent);
-                onKeyUp(msg.keyboardEvent);
+
+            if (typeof msg.keyboardUpEvent !== "undefined") {
+                console.log('label frame received keyboard event', msg.keyboardUpEvent);
+                onKeyUp(msg.keyboardUpEvent);
             }
 
         });
@@ -202,6 +202,11 @@
                 }
             }
 
+            resizeText();
+            realityInterface.writePublicData("storage", "data",  text.innerText);
+        }
+
+        function resizeText() {
             var textLength = text.innerText.length;
             var fontSize = Math.min(45, (((textLength*7)+500)/(textLength))); // font size increases up to 45pt
             text.style.fontSize = fontSize + "pt";
@@ -209,11 +214,8 @@
             var boxHeight = Math.min(100, fontSize*3); // box height increases with font size up to 100px
             text.style.height = boxHeight + "px";
             text.style.lineHeight = boxHeight + "px"; // TODO: pt vs px
-
-            realityInterface.writePublicData("storage", "data",  text.innerText);
-            
         }
-        
+
         function resetScroll() {
             if (window.scrollX !== 0 || window.scrollY !== 0) {
                 window.scrollTo(0,0); // don't let keyboard events scroll the window
@@ -221,36 +223,16 @@
             parent.postMessage(JSON.stringify({resetScroll: true}), '*');
         }
 
-
-        // var outlineMinShadow = document.querySelector('#outlineMinShadow');
-        //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
-
-        /*  realityInterface.addReadPublicDataListener('storage', "data", function (e) {
-      
-              drawing = e;
-      
-              var text = document.querySelector('#text');
-              text.innerText = e;
-              var textLength = text.innerText.length;
-      
-              var fontSize = (((textLength*7)+500)/(textLength));
-              if(fontSize>45) fontSize = 45;
-              text.style.fontSize = (fontSize)+"pt";
-      
-              var boxHeight = fontSize*3;
-              if (boxHeight> 100) boxHeight = 100;
-              text.style.height = boxHeight+"px";
-              text.style.lineHeight = boxHeight+"px";
-              
-              
-              // document.querySelector('#show').style.visibility = "visible";
-          });*/
-
+        realityInterface.addReadPublicDataListener('storage', "data", function (e) {
+            if (typeof e === 'string') {
+                text.innerText = e;
+                resizeText();
+            }
+        });
 
         realityInterface.setMoveDelay(500);
-        //  {value: 0.4565680618804775, mode: "f", unit: "volt", unitMin: 300, unitMax: 0}
     });
-    
+
 </script>
 </body>
 </html>
