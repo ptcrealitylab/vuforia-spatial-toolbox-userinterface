@@ -520,7 +520,7 @@ realityEditor.device.onElementTouchDown = function(event) {
     }
     
     // after a certain amount of time, start editing this element
-    if (moveDelay > 0) {
+    if (moveDelay >= 0) {
         var timeoutFunction = setTimeout(function () {
             realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
         }, moveDelay);
