@@ -1055,11 +1055,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
             // fade out frames when they move beyond a certain distance
             if (activeType === "ui"){ // && !thisIsBeingEdited ) {
-                if (realityEditor.getObject(objectKey).isWorldObject) {
+                // if (realityEditor.getObject(objectKey).isWorldObject) {
                     if (typeof activeVehicle.visibleDistance === 'undefined') {
                         activeVehicle.visibleDistance = globalStates.defaultVisibleDistance;
                     }
-                    var scale = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).scale;
+                    // var scale = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).scale;
                     var distance = realityEditor.gui.ar.utilities.getDistanceToWorldFrame(objectKey, activeKey);
                     // var distanceThreshold = (activeVehicle.visibleDistance * Math.max(1.0, scale / globalStates.defaultScale) );
                     // var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * (scale / globalStates.defaultScale) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
@@ -1076,7 +1076,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             globalDOMCache["iframe" + activeKey].style.opacity = 1.0;
                         }
                     }
-                }
+                // }
             }
 
 

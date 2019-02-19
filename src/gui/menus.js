@@ -286,7 +286,7 @@ createNameSpace("realityEditor.gui.menus");
         }.bind(this));
         
         realityEditor.gui.buttons.registerCallbackForButton('distance', function(params) {
-            console.log('registered in buttons module', newButtonState, globalStates.distanceEditingMode);
+            console.log('registered in buttons module', params.newButtonState, globalStates.distanceEditingMode);
             if (params.newButtonState === 'up') {
                 // TODO: decide whether to keep this here or move to distanceScaling.js
                 if (globalStates.distanceEditingMode === true) {

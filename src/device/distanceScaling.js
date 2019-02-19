@@ -14,7 +14,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         ballAnimationCount: 0
     };
     
-    var defaultDistance = 10000;
+    var defaultDistance = 6000;
     
     var isScalingDistance = false;
     
@@ -34,7 +34,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         
         // render the UIs if in distance editing mode or actively scaling one of them
         if (isScalingDistance || globalStates.distanceEditingMode) {
-            realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
+            forEachDistanceUIFrame( function(objectKey, frameKey) {
                 transformDistanceUI(objectKey, frameKey);
             });
         }
@@ -97,6 +97,14 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.device.enableUnconstrained();
     }
 
+    function forEachDistanceUIFrame(callback) {
+        realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
+            if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
+                callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
+            }
+        });
+    }
+    
     /**
      * Triggered when the distance editing mode button is pressed
      * @param {{buttonName: string, newButtonState: string}} params
@@ -109,9 +117,8 @@ createNameSpace("realityEditor.device.distanceScaling");
             var frameKey;
             if (globalStates.distanceEditingMode) {
                 console.log('show all distance editing UIs');
-
-                // TODO: only do this for visible objects (and the world object, of course) ... or maybe only the world object, and others are always visible?
-                realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
+                
+                forEachDistanceUIFrame( function(objectKey, frameKey) {
                     getDistanceUI(frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
                 });
                 
@@ -134,17 +141,21 @@ createNameSpace("realityEditor.device.distanceScaling");
 
     // adds a semi-transparent circle/sphere that indicates the maximum distance you can be from the frame for it to be rendered
     function createDistanceUI(frameKey) {
-        var element = document.createElement('div');
-        element.id = 'distanceUI' + frameKey;
-        element.classList.add('main');
-        element.classList.add('distanceUI');
-        
-        var diameterString = globalDOMCache['object' + frameKey].style.width; // when scale is at 1.0, should be the width of the frame // TODO: this might not be right anymore
-        element.style.width = diameterString;
-        element.style.height = diameterString;
+        if (globalDOMCache['object' + frameKey]) {
+            var element = document.createElement('div');
+            element.id = 'distanceUI' + frameKey;
+            element.classList.add('main');
+            element.classList.add('distanceUI');
 
-        document.body.appendChild(element);
-        return element;
+            var diameterString = globalDOMCache['object' + frameKey].style.width; // when scale is at 1.0, should be the width of the frame // TODO: this might not be right anymore
+            element.style.width = diameterString;
+            element.style.height = diameterString;
+
+            document.body.appendChild(element);
+            return element;
+        }
+        
+        return null;
     }
 
     /**
@@ -167,7 +178,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             var frameScaleFactor = (framePositionData.scale / globalStates.defaultScale);
 
             var distanceScale = frame.distanceScale || 1.0; // 1 is the default if it hasn't been set yet
-            var circleScaleConstant = 3.0; //5.0;
+            var circleScaleConstant = 3.0 * (defaultDistance/2000); //5.0;
 
             var scaleMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             scaleMatrix[0] = m1[0] * circleScaleConstant * distanceScale / frameScaleFactor; // divide by frame scale so distanceUI doesn't get bigger when frame scales up
@@ -185,7 +196,9 @@ createNameSpace("realityEditor.device.distanceScaling");
             realityEditor.gui.ar.utilities.multiplyMatrix(scaleMatrix, translateMatrix, transformationMatrix);
             
             var thisDistanceUI = getDistanceUI(frameKey);
-            thisDistanceUI.style.webkitTransform = 'matrix3d(' + transformationMatrix.toString() + ')';
+            if (thisDistanceUI) {
+                thisDistanceUI.style.webkitTransform = 'matrix3d(' + transformationMatrix.toString() + ')';
+            }
         }
     }
 
@@ -196,9 +209,12 @@ createNameSpace("realityEditor.device.distanceScaling");
      */
     function getDistanceUI(frameKey) {
         if (typeof allDistanceUIs[frameKey] === 'undefined') {
-            allDistanceUIs[frameKey] = createDistanceUI(frameKey);
-            // the distance UI starts out invisible until you make a 3-finger-pinch gesture
-            hideDistanceUI(frameKey);
+            var newDistanceUI = createDistanceUI(frameKey);
+            if (newDistanceUI) {
+                allDistanceUIs[frameKey] = newDistanceUI;
+                // the distance UI starts out invisible until you make a 3-finger-pinch gesture
+                hideDistanceUI(frameKey);
+            }
         }
         return allDistanceUIs[frameKey];
     }
