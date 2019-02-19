@@ -1541,3 +1541,57 @@ realityEditor.gui.ar.utilities.normalizeMatrix = function(m) {
     var divisor = m[15];
     return this.scalarMultiplyMatrix(m, (1.0/divisor));
 };
+
+/**
+ * A helper function that extracts the rotation matrix from a 4x4 transformation matrix,
+ * and optionally inverts any combination of the axes of rotation
+ * @param {Array.<number>} matrix
+ * @param {boolean} flipX
+ * @param {boolean} flipY
+ * @param {boolean} flipZ
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.extractRotation = function(matrix, flipX, flipY, flipZ) {
+    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
+    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
+    if (flipX) {
+        eulerAngles.theta *= -1; // flips first axis of rotation (yaw)
+    }
+    if (flipY) {
+        eulerAngles.psi *= -1; // flips second axis of rotation (pitch)
+    }
+    if (flipZ) {
+        eulerAngles.phi *= -1; // flips third axis of rotation (roll)
+    }
+    var modifiedQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
+    
+    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(modifiedQ);
+};
+
+/**
+ * Helper function that extracts the x,y,z translation elements from a 4x4 transformation matrix,
+ * and optionally inverts any combination of the axes of translation
+ * @param {Array.<number>} matrix
+ * @param {boolean} flipX
+ * @param {boolean} flipY
+ * @param {boolean} flipZ
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.extractTranslation = function(matrix, flipX, flipY, flipZ) {
+    var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    translationMatrix[12] = matrix[12];
+    translationMatrix[13] = matrix[13];
+    translationMatrix[14] = matrix[14];
+
+    if (flipX) {
+        translationMatrix[12] *= -1; // flips first axis of translation
+    }
+    if (flipY) {
+        translationMatrix[13] *= -1; // flips second axis of translation
+    }
+    if (flipZ) {
+        translationMatrix[14] *= -1; // flips third axis of translation
+    }
+    
+    return translationMatrix;
+};

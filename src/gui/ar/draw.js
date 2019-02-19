@@ -177,53 +177,12 @@ realityEditor.gui.ar.draw.cameraMatrix = [
  * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
  * (A different update loop inside of desktopAdapter is used on desktop devices to include camera manipulations)
  */
+/*
 realityEditor.gui.ar.draw.updateLoop = function () {
-    realityEditor.gui.ar.draw.update(JSON.parse(JSON.stringify(realityEditor.gui.ar.draw.visibleObjectsCopy)));
+    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
     requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
 };
-
-function extractRotation(matrix, flipX, flipY, flipZ) {
-    // gives correct rotation
-    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
-    // var invQ = realityEditor.gui.ar.utilities.invertQuaternion(q);
-    // realityEditor.gui.ar.utilities.normalizeQuaternion()
-
-    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-    if (flipX) {
-        eulerAngles.theta *= -1; // flips one axis of rotation
-    }
-    if (flipY) {
-        eulerAngles.psi *= -1; // flips another axis of rotation
-    }
-    if (flipZ) {
-        eulerAngles.phi *= -1; // etc
-    }
-    var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-    var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
-    
-    return rotationMatrix;
-}
-
-function extractTranslation(matrix, flipX, flipY, flipZ) {
-    var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    translationMatrix[12] = matrix[12]; 
-    translationMatrix[13] = matrix[13]; 
-    translationMatrix[14] = matrix[14]; 
-
-    if (flipX) {
-        translationMatrix[12] *= -1; // flips one axis of translation
-    }
-    if (flipY) {
-        translationMatrix[13] *= -1; // flips another axis of translation
-    }
-    if (flipZ) {
-        translationMatrix[14] *= -1; // etc
-    }
-
-    return translationMatrix;
-}
-
-
+*/
 /**
  * Takes a (mostly) unmodified Vuforia PositionalDeviceTracker pose matrix and converts to correct format for Reality Editor ModelView Matrix
  * cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(unmodifiedCameraMatrix));
@@ -232,102 +191,8 @@ function extractTranslation(matrix, flipX, flipY, flipZ) {
 function correctCameraMatrix(originalCameraMatrix) {
     
     try {
-        // var m1 = originalCameraMatrix; //realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix));
-
-        // // calculate rotation component of the transformation matrix
-        // var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(m1);
-        // var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-        // // eulerAngles.theta *= -1;
-        // eulerAngles.psi *= -1;
-        // var q2 = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-        // var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q2);
-        //
-        // // add the translation component
-        // var translation = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        // translation[12] = m1[12];
-        // translation[13] = m1[13];
-        // translation[14] = m1[14];
-        // translation[15] = m1[15];
-        //
-        // // translation[3] = realityEditor.gui.ar.draw.cameraMatrix[3];
-        // // translation[7] = realityEditor.gui.ar.draw.cameraMatrix[7];
-        // // translation[11] = realityEditor.gui.ar.draw.cameraMatrix[11];
-        // // translation[15] = realityEditor.gui.ar.draw.cameraMatrix[15];
-        //
-        // // translation[12] = realityEditor.gui.ar.draw.cameraMatrix[3];
-        // // translation[13] = realityEditor.gui.ar.draw.cameraMatrix[7];
-        // // translation[14] = realityEditor.gui.ar.draw.cameraMatrix[11];
-        // // translation[15] = realityEditor.gui.ar.draw.cameraMatrix[15];
-        //
-        // // var transformationMatrix = rotationMatrix;
-        // var transformationMatrix = [];
-        // realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translation, transformationMatrix);
-        //
-        // // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(transformationMatrix));
-        //
-        // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.invertMatrix(transformationMatrix);
-        //
-        //
-        // // visibleObjects[worldObjectKey] = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.draw.cameraMatrix);
-        //
-        //
-        // // flips x-rotation but messes up y-rotation later
-        // // visibleObjects[worldObjectKey][2] *= -1;
-        // // visibleObjects[worldObjectKey][6] *= -1;
-        // // visibleObjects[worldObjectKey][8] *= -1;
-        // // visibleObjects[worldObjectKey][9] *= -1;
-        //
-        // var consoleElement = document.getElementById('speechConsole');
-        // if (consoleElement) {
-        //     consoleElement.innerHTML = '';
-        //     var numDecimals = 3;
-        //     consoleElement.innerHTML =
-        //         'X:' + (realityEditor.gui.ar.draw.cameraMatrix[3]).toFixed(numDecimals) + '<br>' +
-        //         'Y:' + (realityEditor.gui.ar.draw.cameraMatrix[7]).toFixed(numDecimals) + '<br>' +
-        //         'Z:' + (realityEditor.gui.ar.draw.cameraMatrix[11]).toFixed(numDecimals);
-        //
-        //     // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
-        // }
-        //
-        //
-        // // var consoleElement = document.getElementById('speechConsole');
-        // // if (consoleElement) {
-        // //     consoleElement.innerHTML = '';
-        // //     var numDecimals = 3;
-        // //     consoleElement.innerHTML =
-        // //         'X:' + realityEditor.gui.ar.utilities.getRotationAboutAxisX(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
-        // //         'Y:' + realityEditor.gui.ar.utilities.getRotationAboutAxisY(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals) + '<br>' +
-        // //         'Z:' + realityEditor.gui.ar.utilities.getRotationAboutAxisZ(realityEditor.gui.ar.draw.cameraMatrix).toFixed(numDecimals);
-        // //
-        // //     // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
-        // // }
-
-        // // gives correct rotation
-        // var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(originalCameraMatrix);
-        // // var invQ = realityEditor.gui.ar.utilities.invertQuaternion(q);
-        // // realityEditor.gui.ar.utilities.normalizeQuaternion()
-        //
-        // var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-        // eulerAngles.theta *= -1; // flips one axis of rotation
-        // eulerAngles.psi *= -1; // flips another axis of rotation
-        // // eulerAngles.phi *= -1; // (don't flip the third!)
-        // var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-        // var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
-        
-        var rotationMatrix = extractRotation(originalCameraMatrix, true, true, false);
-
-        // visibleObjects[worldObjectKey][12] = realityEditor.gui.ar.draw.cameraMatrix[3];
-        // visibleObjects[worldObjectKey][13] = realityEditor.gui.ar.draw.cameraMatrix[7];
-        // visibleObjects[worldObjectKey][14] = -1 * realityEditor.gui.ar.draw.cameraMatrix[11];
-
-        // add the translation component
-        // var invM1 = realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix);
-        // var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        // translationMatrix[12] = invM1[12]; //originalCameraMatrix[3];
-        // translationMatrix[13] = -1 * invM1[13]; //originalCameraMatrix[7]; // flips one axis of translation
-        // translationMatrix[14] = -1 * invM1[14]; //originalCameraMatrix[11]; // flips another axis of translation
-        
-        var translationMatrix = extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix), false, true, true);
+        var rotationMatrix = realityEditor.gui.ar.utilities.extractRotation(originalCameraMatrix, true, true, false);
+        var translationMatrix = realityEditor.gui.ar.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix), false, true, true);
         
         var correctedTransformationMatrix = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translationMatrix, correctedTransformationMatrix);
@@ -393,8 +258,6 @@ var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
     return modelViewMatrix;
 };
 
-var mmToMeterScale = 2000; // 1000; // changed from 1000 to 2000 to cut everything's size in half (draws them as if they were twice as far away)
-
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
@@ -412,24 +275,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animrealityEditor.gui.ar.draw.cameraMatrixation frame
     }
     
-    realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
-        visibleObjects[worldObjectKey] = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
-    });
-    
+  
     this.visibleObjects = visibleObjects;
 
     // TODO: push into an updateListener so that there isn't a circular dependency with desktopAdapter
     if (this.globalStates.matrixBroadcastEnabled) {
         realityEditor.device.desktopAdapter.broadcastMatrices(visibleObjects);
-    }
-    
-    // scale x, y, and z elements of matrix for mm to meter conversion ratio
-    for (objectKey in this.visibleObjects) {
-        if (!this.visibleObjects.hasOwnProperty(objectKey)) continue;
-        // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
-        this.visibleObjects[objectKey][14] *= mmToMeterScale;
-        this.visibleObjects[objectKey][13] *= mmToMeterScale;
-        this.visibleObjects[objectKey][12] *= mmToMeterScale;
     }
     
     // erases anything on the background canvas
@@ -450,7 +301,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // make the update loop extensible by additional features that wish to subscribe to matrix updates
     this.updateListeners.forEach(function(callback) {
         // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
-        callback( JSON.parse(JSON.stringify( realityEditor.gui.ar.draw.visibleObjects )) );
+        callback(realityEditor.gui.ar.draw.visibleObjects);
     });
     
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
@@ -478,107 +329,24 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 
             } else {
                 // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
+                // we need to modify the object and camera matrices before we multiply them together to align their axes and scales
+                var modelViewMatrix = [];
 
-                // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
-                // // var modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(correctCameraMatrix(this.visibleObjects[objectKey])));
-                // // modelViewMatrix = modelMatrix;
-                //
-                // // modelViewMatrix = this.visibleObjects[objectKey];
-                //
-                //
-                // // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
-                //
-                // var worldOriginMatrix = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
-                //
-                // this.ar.utilities.multiplyMatrix(worldOriginMatrix, modelMatrix, modelViewMatrix);
-                // this.ar.utilities.multiplyMatrix(worldOriginMatrix, this.visibleObjects[objectKey], modelViewMatrix);
-                // this.ar.utilities.multiplyMatrix(this.ar.utilities.invertMatrix(worldOriginMatrix), this.visibleObjects[objectKey], modelViewMatrix);
+                var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
+                var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
+                cameraTranslation[12] *= 1000; // scale to match the object matrix adjustment
+                cameraTranslation[13] *= 1000;
+                cameraTranslation[14] *= 1000;
 
-                // var tempMat = [];
-                // realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.draw.cameraMatrix, tempMat);
-                // modelViewMatrix = correctCameraMatrix(tempMat);
-                
-                // modelViewMatrix = calculateModelViewMatrix(this.visibleObjects[objectKey], correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix));
-                
-                // already includes camera matrix in objc calculations
-                // modelViewMatrix = correctCameraMatrix(this.visibleObjects[objectKey]);
+                var modelMatrix = this.visibleObjects[objectKey];
+                var modelRotation = this.utilities.extractRotation(modelMatrix, true, true, true);
+                var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
 
-                // don't start rendering object frames until we've received a valid camera matrix
-                if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
-                    continue;
-                }
-
-                // var consoleElement = document.getElementById('speechConsole');
-                // if (consoleElement) {
-                //     consoleElement.innerHTML = '';
-                //
-                //     function prettyPrint(matrix, numDecimals) {
-                //         return ("[ " + matrix[0].toFixed(numDecimals) + ", " + matrix[1].toFixed(numDecimals) + ", " + matrix[2].toFixed(numDecimals) + ", " + matrix[3].toFixed(numDecimals) + ", <br>" +
-                //             "  " + matrix[4].toFixed(numDecimals) + ", " + matrix[5].toFixed(numDecimals) + ", " + matrix[6].toFixed(numDecimals) + ", " + matrix[7].toFixed(numDecimals) + ", <br>" +
-                //             "  " + matrix[8].toFixed(numDecimals) + ", " + matrix[9].toFixed(numDecimals) + ", " + matrix[10].toFixed(numDecimals) + ", " + matrix[11].toFixed(numDecimals) + ", <br>" +
-                //             "  " + matrix[12].toFixed(numDecimals) + ", " + matrix[13].toFixed(numDecimals) + ", " + matrix[14].toFixed(numDecimals) + ", " + matrix[15].toFixed(numDecimals) + " ]" )
-                //     }
-                //
-                //     consoleElement.innerHTML = prettyPrint(this.visibleObjects[objectKey], 3) + '<br><br>' + prettyPrint(this.cameraMatrix, 3);
-                //     // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
-                // }
-                
-                // var temp = [];
-                // // realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.cameraMatrix, temp);
-                //
-                // this.visibleObjects[objectKey][13] *= -1;
-                //
-                
-                
-                // this.cameraMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                // realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], correctCameraMatrix(this.cameraMatrix),modelViewMatrix);
-                // // modelViewMatrix[13] *= -1;
-
-                // var camRot = extractRotation(this.cameraMatrix, true, true, false);
-                // // var camTx = extractTranslation(this.cameraMatrix, false, true, false);
-                // var camTx = extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
-
-                // var camRot = extractRotation(correctCameraMatrix(this.cameraMatrix), true, true, true);
-                // var camTx = extractTranslation(correctCameraMatrix(this.cameraMatrix), false, false, false);
-
-
-                var camRot = extractRotation(this.cameraMatrix, true, true, false);
-                var camTx = extractTranslation(correctCameraMatrix(this.cameraMatrix), false, false, false);
-                
-                camTx[12] *= mmToMeterScale;
-                camTx[13] *= mmToMeterScale;
-                camTx[14] *= mmToMeterScale;
-                
-                // todo: try using correct camera matrix first (use result of world object visibleObject, and then extract *that* one's rotation/translation and multiply in the rotation/translation of the object/image model matrix
-
-                //
-                var modelMatrix = this.visibleObjects[objectKey]; //realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey]);
-                //
-                var modelRot = extractRotation(modelMatrix, true, true, true);
-                var modelTx = extractTranslation(modelMatrix, false, false, false);
-                // var m = [];
-                // realityEditor.gui.ar.utilities.multiplyMatrix(modelRot, modelTx, m);
-                // modelViewMatrix = m;
-                
-                
-                // order 1
-                // var rot = [];
-                // var tx = [];
-                // realityEditor.gui.ar.utilities.multiplyMatrix(modelRot, camRot, rot);
-                // realityEditor.gui.ar.utilities.multiplyMatrix(modelTx, camTx, tx);
-                // realityEditor.gui.ar.utilities.multiplyMatrix(rot, tx, modelViewMatrix);
-                
-                
-                // order 2
                 var m1 = [];
                 var m2 = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(modelRot, modelTx, m1);
-                realityEditor.gui.ar.utilities.multiplyMatrix(camRot, camTx, m2);
+                realityEditor.gui.ar.utilities.multiplyMatrix(modelRotation, modelTranslation, m1);
+                realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, m2);
                 realityEditor.gui.ar.utilities.multiplyMatrix(m1, m2, modelViewMatrix);
-
-
-
-                // modelViewMatrix = correctCameraMatrix(this.visibleObjects[objectKey]);
                 
                 this.visibleObjects[objectKey] = modelViewMatrix;
 
@@ -586,30 +354,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
-            // this.ar.utilities.multiplyMatrix(/*this.visibleObjects[objectKey]*/ m2, this.globalStates.projectionMatrix, this.matrix.r);
-            
-            // this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.matrix.r);
             this.ar.utilities.multiplyMatrix(modelViewMatrix, this.globalStates.projectionMatrix, this.matrix.r);
-            
             this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
-            // this.activeObjectMatrix = this.ar.utilities.copyMatrix(this.matrix.r);
-
-            // this.activeObjectMatrix = this.ar.utilities.transposeMatrix(this.activeObjectMatrix);
-
-            // var consoleElement = document.getElementById('speechConsole');
-            // if (consoleElement) {
-            //     consoleElement.innerHTML = '';
-            //    
-            //     function prettyPrint(matrix, numDecimals) {
-            //         return ("[ " + matrix[0].toFixed(numDecimals) + ", " + matrix[1].toFixed(numDecimals) + ", " + matrix[2].toFixed(numDecimals) + ", " + matrix[3].toFixed(numDecimals) + ", <br>" +
-            //             "  " + matrix[4].toFixed(numDecimals) + ", " + matrix[5].toFixed(numDecimals) + ", " + matrix[6].toFixed(numDecimals) + ", " + matrix[7].toFixed(numDecimals) + ", <br>" +
-            //             "  " + matrix[8].toFixed(numDecimals) + ", " + matrix[9].toFixed(numDecimals) + ", " + matrix[10].toFixed(numDecimals) + ", " + matrix[11].toFixed(numDecimals) + ", <br>" +
-            //             "  " + matrix[12].toFixed(numDecimals) + ", " + matrix[13].toFixed(numDecimals) + ", " + matrix[14].toFixed(numDecimals) + ", " + matrix[15].toFixed(numDecimals) + " ]" )
-            //     }
-            //
-            //     consoleElement.innerHTML = prettyPrint(this.visibleObjects[objectKey], 3);
-            //     // consoleElement.innerHTML = prettyPrint(this.activeObjectMatrix, 3);
-            // }
             
             // extract its projected (x,y) screen coordinates from the matrix
             objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);

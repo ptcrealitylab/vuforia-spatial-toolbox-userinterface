@@ -139,10 +139,25 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+    //console.log("receiveMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
+        // scale x, y, and z elements of matrix for mm to meter conversion ratio
+        realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
+            visibleObjects[worldObjectKey] = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
+        });
+        
+        for (var objectKey in visibleObjects) {
+            if (!visibleObjects.hasOwnProperty(objectKey)) continue;
+            // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
+            visibleObjects[objectKey][14] *= 1000;
+            visibleObjects[objectKey][13] *= 1000;
+            visibleObjects[objectKey][12] *= 1000;
+        }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
+    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+   // realityEditor.gui.ar.draw.update(visibleObjects);
 };
 
 /**
@@ -151,10 +166,10 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
  * @param {Array.<number>} cameraMatrix
  */
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
+   // console.log("receiveCameraMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix; // TODO: should it be invert-transposed here or later on?
-        // realityEditor.gui.ar.draw.cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix));
+        realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
     }
 };
 

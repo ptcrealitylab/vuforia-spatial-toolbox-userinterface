@@ -90,9 +90,9 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initFeature();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
-    if (!realityEditor.device.utilities.isDesktop()) {
+    /*if (!realityEditor.device.utilities.isDesktop()) {
         realityEditor.gui.ar.draw.updateLoop();
-    }
+    }*/
 
     realityEditor.app.getExternalText(function(savedState) {
         if (savedState === '(null)') { savedState = 'null'; };
@@ -155,6 +155,10 @@ realityEditor.device.onload = function () {
     
     // start TWEEN library for animations
     (function animate(time) {
+        // TODO This is a hack to keep the crafting board running
+        if (globalStates.freezeButtonState) {
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
+        }
         requestAnimationFrame(animate);
         TWEEN.update(time);
     })();
