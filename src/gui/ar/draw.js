@@ -1059,32 +1059,29 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
             }
 
-            // fade out frames when they move beyond a certain distance
-            if (activeType === "ui"){ // && !thisIsBeingEdited ) {
-                // if (realityEditor.getObject(objectKey).isWorldObject) {
-                    if (typeof activeVehicle.visibleDistance === 'undefined') {
-                        activeVehicle.visibleDistance = globalStates.defaultVisibleDistance;
-                    }
-                    // var scale = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).scale;
-                    var distance = realityEditor.gui.ar.utilities.getDistanceToWorldFrame(objectKey, activeKey);
-                    // var distanceThreshold = (activeVehicle.visibleDistance * Math.max(1.0, scale / globalStates.defaultScale) );
-                    // var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * (scale / globalStates.defaultScale) * realityEditor.device.orientation.defaultDistance);  // 2000 is default min distance
-                    var distanceThreshold = ((activeVehicle.distanceScale || 1.0) * realityEditor.device.distanceScaling.defaultDistance);  // multiply the default min distance by the amount this frame distance has been scaled up
-                    var isDistantFrame = distance > distanceThreshold;
-                    var isAlmostDistantFrame = distance > (distanceThreshold * 0.8);
-                    if (isDistantFrame) {
-                        globalDOMCache["object" + activeKey].classList.add('distantFrame'); // hide visuals
-                    } else {
-                        globalDOMCache["object" + activeKey].classList.remove('distantFrame'); // 
-                        if (isAlmostDistantFrame) {
-                            globalDOMCache["iframe" + activeKey].style.opacity = 1.0 - ((distance - 0.8 * distanceThreshold) / (0.2 * distanceThreshold));
-                        } else {
-                            globalDOMCache["iframe" + activeKey].style.opacity = '';
-                        }
-                    }
-                // }
+            // fade out frames and nodes when they move beyond a certain distance
+            var distance = activeVehicle.screenZ;
+            var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
+            // multiply the default min distance by the amount this frame distance has been scaled up
+            var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.defaultDistance);  
+            var isDistantVehicle = distance > distanceThreshold;
+            var isAlmostDistantVehicle = distance > (distanceThreshold * 0.8);
+            if (isDistantVehicle) {
+                globalDOMCache["object" + activeKey].classList.add('distantFrame'); // hide visuals
+                activeVehicle.screenOpacity = 0;
+            } else {
+                globalDOMCache["object" + activeKey].classList.remove('distantFrame'); // show again, but fade out opacity if within a narrow threshold
+                if (isAlmostDistantVehicle) {
+                    // full opacity if within 80% of the threshold. fades out linearly to zero opacity at 100% of the threshold
+                    var opacity = 1.0 - ((distance - 0.8 * distanceThreshold) / (0.2 * distanceThreshold));
+                    globalDOMCache["object" + activeKey].style.opacity = opacity;
+                    activeVehicle.screenOpacity = opacity;
+                } else {
+                    // remove the CSS property so it doesn't override other classes added to this frame/node
+                    globalDOMCache["object" + activeKey].style.opacity = '';
+                    activeVehicle.screenOpacity = 1;
+                }
             }
-
 
             if (true) { // TODO: simplify
 
