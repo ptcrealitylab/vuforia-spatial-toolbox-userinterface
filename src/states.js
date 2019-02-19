@@ -58,6 +58,8 @@ var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording 
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 
+var TEMP_DISABLE_MEMORIES = true;
+
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
 /**********************************************************************************************************************
  ******************************************** global variables  *******************************************************

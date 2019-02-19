@@ -129,7 +129,12 @@ realityEditor.device.onload = function () {
 	realityEditor.gui.buttons.initButtons();
 	
 	// set up the pocket and memory bars
-	realityEditor.gui.memory.initMemoryBar();
+    if (!TEMP_DISABLE_MEMORIES) {
+        realityEditor.gui.memory.initMemoryBar();
+    } else {
+        var pocketMemoryBar = document.querySelector('.memoryBar');
+        pocketMemoryBar.parentElement.removeChild(pocketMemoryBar);
+    }
 	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
 
