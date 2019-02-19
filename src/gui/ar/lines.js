@@ -236,10 +236,13 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 			logicB = link.logicB;
 		}
 
-        if(!nodeA.screenOpacity)  nodeA.screenOpacity = 1.0;
-        if(!nodeB.screenOpacity)  nodeB.screenOpacity = 1.0;
-        
-		this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection,logicA,logicB,nodeA.screenOpacity,nodeB.screenOpacity);
+        if(typeof nodeA.screenOpacity === 'undefined') nodeA.screenOpacity = 1.0;
+        if(typeof nodeB.screenOpacity === 'undefined') nodeB.screenOpacity = 1.0;
+        var speed = 1;
+        // don't waste resources drawing it if both sides are invisible
+        if (nodeA.screenOpacity > 0 || nodeB.screenOpacity > 0) {
+            this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection, logicA, logicB, speed, nodeA.screenOpacity,nodeB.screenOpacity);
+        }
 	}
 	// context.fill();
     
@@ -282,8 +285,9 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 		    logicA = 4;
         }
         
-        if(!nodeA.screenOpacity)  nodeA.screenOpacity = 1.0;
-		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector,nodeA.screenOpacity,1);
+        if(typeof nodeA.screenOpacity === 'undefined') nodeA.screenOpacity = 1.0;
+		var speed = 1;
+		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
 	}
 
 	if (globalStates.drawDotLine) {
@@ -308,11 +312,13 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
  * @param {number} startColor - white for regular links, colored for logic links (0 = Blue, 1 = Green, 2 = Yellow, 3 = Red, 4 = White)
  * @param {number} endColor - same mapping as startColor
  * @param {number|undefined} speed - optionally adjusts how quickly the animation moves
+ * @param {number|undefined} lineAlphaStart - the opacity of the start of the line (range: 0-1)
+ * @param {number|undefined} lineAlphaEnd - the opacity of the end of the line (range: 0-1)
  */
 realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed, lineAlphaStart, lineAlphaEnd) {
-    if(!lineAlphaStart) lineAlphaStart = 1.0;
-    if(!lineAlphaEnd) lineAlphaEnd = 1.0;
-    if(!speed) speed = 1;
+    if (typeof lineAlphaStart === 'undefined') lineAlphaStart = 1.0;
+    if (typeof lineAlphaEnd === 'undefined') lineAlphaEnd = 1.0;
+    if (!speed) speed = 1;
     var angle = Math.atan2((lineStartPoint[1] - lineEndPoint[1]), (lineStartPoint[0] - lineEndPoint[0]));
     var positionDelta = 0;
     var length1 = lineEndPoint[0] - lineStartPoint[0];
