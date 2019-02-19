@@ -69,7 +69,7 @@ var realityElements = [
         width: 206,
         height: 526,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
     {
@@ -77,8 +77,8 @@ var realityElements = [
         width: 526,
         height: 526,
         nodes: [
-            {name: 'valueX', type: "node"},
-            {name: 'valueY', type: "node"}
+            {name: 'valueX', type: "node", x:-50, y:0},
+            {name: 'valueY', type: "node", x:50, y:0}
         ]
     },
     {
@@ -86,7 +86,7 @@ var realityElements = [
         width: 570,
         height: 270,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
     {
@@ -94,7 +94,7 @@ var realityElements = [
         width: 600,
         height: 650,
         nodes: [
-            {name: 'storage', type: "storeData"}
+            {name: 'storage', type: "storeData", x:0, y:0}
         ]
     },
     {
@@ -102,7 +102,7 @@ var realityElements = [
         width: 690,
         height: 410,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
     {
@@ -110,8 +110,8 @@ var realityElements = [
         width: 515,
         height: 400,
         nodes: [
-            {name: 'count', type: "count"},
-            {name: 'reset', type: "node"}
+            {name: 'count', type: "count", x:-50, y:0},
+            {name: 'reset', type: "node", x:50, y:0}
         ]
     },
     
@@ -120,7 +120,7 @@ var realityElements = [
         width: 600,
         height: 505,
         nodes: [
-            {name: 'in_out', type: "twoSidedLimiter"}
+            {name: 'in_out', type: "twoSidedLimiter", x:0, y:0}
         ]
     },/*
     {
@@ -136,7 +136,7 @@ var realityElements = [
         width: 275,
         height: 415,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
     {
@@ -144,7 +144,7 @@ var realityElements = [
         width: 450,
         height: 150,
         nodes: [
-            {name: 'storage', type: "storeData"}
+            {name: 'storage', type: "storeData", x:0, y:0}
         ]
     },    
     {
@@ -152,7 +152,7 @@ var realityElements = [
         width: 440,
         height: 145,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
    
@@ -161,7 +161,7 @@ var realityElements = [
         width: 270,
         height: 270,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
     {
@@ -169,7 +169,7 @@ var realityElements = [
         width: 270,
         height: 270,
         nodes: [
-            {name: 'value', type: "node"}
+            {name: 'value', type: "node", x:0, y:0}
         ]
     },
 
@@ -179,7 +179,7 @@ var realityElements = [
         width: 600,
         height: 600,
         nodes: [
-            {name: 'state', type: "node"}
+            {name: 'state', type: "node", x:0, y:0}
         ]
     },
     {
@@ -187,7 +187,7 @@ var realityElements = [
         width: 600,
         height: 600,
         nodes: [
-            {name: 'state', type: "node"}
+            {name: 'state', type: "node", x:0, y:0}
         ]
     },
     {
@@ -195,7 +195,7 @@ var realityElements = [
         width: 600,
         height: 600,
         nodes: [
-            {name: 'state', type: "node"}
+            {name: 'state', type: "node", x:0, y:0}
         ]
     },
     {
@@ -203,7 +203,7 @@ var realityElements = [
         width: 600,
         height: 600,
         nodes: [
-            {name: 'state', type: "node"}
+            {name: 'state', type: "node", x:0, y:0}
         ]
     },
 
@@ -261,9 +261,9 @@ var realityElements = [
         width: 480,
         height: 270,
         nodes: [
-            {name: 'x', type: "node"},
-            {name: 'y', type: "node"},
-            {name: 'reset', type: "node"}
+            {name: 'x', type: "node", x:-100, y:0},
+            {name: 'y', type: "node", x:0, y:0},
+            {name: 'reset', type: "node", x:100, y:0}
         ]
     }
 ];
