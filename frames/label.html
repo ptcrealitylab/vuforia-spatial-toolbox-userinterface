@@ -47,7 +47,7 @@
             color: rgb(45,255,255);
             border: 2px solid rgb(45,255,255);
             background-color: rgba(45,255,255,0.05);
-            
+
         }
 
         .purple {
@@ -144,66 +144,95 @@
 <div id="text" class=' button blue one clickAble' contenteditable  style="cursor: pointer">edit label
 </div>
 <script>
-    
-    var realityInterface = new RealityInterface();
-    var text = document.querySelector('#text');
-    
-    var textLength = text.innerText.length;
-    console.log(textLength);
-    
-    text.style.fontSize = (500/textLength)+"pt";
 
-    text.addEventListener("pointerdown", function (){
-        if(text.innerText === "edit label") {this.innerText="";}
-     
-    }, false);
-    
-    
-    
-    text.addEventListener("keyup", function(){
+    window.addEventListener('load', function() {
 
-        var textLength = text.innerText.length;
-        
-       var fontSize = (((textLength*7)+500)/(textLength));
-     if(fontSize>45) fontSize = 45; 
-        text.style.fontSize = (fontSize)+"pt";
-
-        var boxHeight = fontSize*3;
-        if (boxHeight> 100) boxHeight = 100;
-        text.style.height = boxHeight+"px";
-        text.style.lineHeight = boxHeight+"px";
-
-        realityInterface.writePublicData("storage", "data",  text.innerText);
-        
-    }, false);
-    
-   // var outlineMinShadow = document.querySelector('#outlineMinShadow');
-  //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
-
-  /*  realityInterface.addReadPublicDataListener('storage', "data", function (e) {
-
-        drawing = e;
-
+        var realityInterface = new RealityInterface();
         var text = document.querySelector('#text');
-        text.innerText = e;
+
         var textLength = text.innerText.length;
+        console.log(textLength);
 
-        var fontSize = (((textLength*7)+500)/(textLength));
-        if(fontSize>45) fontSize = 45;
-        text.style.fontSize = (fontSize)+"pt";
+        text.style.fontSize = (500/textLength)+"pt";
 
-        var boxHeight = fontSize*3;
-        if (boxHeight> 100) boxHeight = 100;
-        text.style.height = boxHeight+"px";
-        text.style.lineHeight = boxHeight+"px";
-        
-        
-        // document.querySelector('#show').style.visibility = "visible";
-    });*/
-    
-    
-    realityInterface.setMoveDelay(500);
-    //  {value: 0.4565680618804775, mode: "f", unit: "volt", unitMin: 300, unitMax: 0}
+        text.addEventListener("pointerup", function (){
+            if(text.innerText === "edit label") {
+                text.innerText = "";
+            }
+
+            text.focus();
+
+        }, false);
+
+        // if outside the frame has focus, it will receive the keyboard event via a post message
+        window.addEventListener("message", function (e) {
+
+            var msg = JSON.parse(e.data);
+
+            if (typeof msg.keyboardUpEvent !== "undefined") {
+                console.log('label frame received keyboard event', msg.keyboardUpEvent);
+                onKeyUp(msg.keyboardUpEvent);
+            }
+
+        });
+
+        // if inside the frame has focus, it will directly receive the keyboard event
+        window.addEventListener("keyup", onKeyUp);
+
+        function onKeyUp(e) {
+            e.preventDefault();
+
+            if (document.activeElement !== text) {
+                return;
+            }
+
+            var isCharacter = !!e.key.match(/^[a-zA-Z0-9]$/);
+
+            if (isCharacter) {
+                text.innerText = text.innerText + e.key;
+            } else {
+                if (e.key === "Backspace") {
+                    text.innerText = text.innerText.slice(0, -1); // remove last character
+                } else if (e.key === " ") {
+                    text.innerText = text.innerText + "\u00a0"; // special space character doesn't get escaped
+                    resetScroll();
+                    setTimeout(function() {
+                        resetScroll(); // also do it after a slight delay
+                    }, 100);
+                }
+            }
+
+            resizeText();
+            realityInterface.writePublicData("storage", "data",  text.innerText);
+        }
+
+        function resizeText() {
+            var textLength = text.innerText.length;
+            var fontSize = Math.min(45, (((textLength*7)+500)/(textLength))); // font size increases up to 45pt
+            text.style.fontSize = fontSize + "pt";
+
+            var boxHeight = Math.min(100, fontSize*3); // box height increases with font size up to 100px
+            text.style.height = boxHeight + "px";
+            text.style.lineHeight = boxHeight + "px"; // TODO: pt vs px
+        }
+
+        function resetScroll() {
+            if (window.scrollX !== 0 || window.scrollY !== 0) {
+                window.scrollTo(0,0); // don't let keyboard events scroll the window
+            }
+            parent.postMessage(JSON.stringify({resetScroll: true}), '*');
+        }
+
+        realityInterface.addReadPublicDataListener('storage', "data", function (e) {
+            if (typeof e === 'string') {
+                text.innerText = e;
+                resizeText();
+            }
+        });
+
+        realityInterface.setMoveDelay(500);
+    });
+
 </script>
 </body>
 </html>
