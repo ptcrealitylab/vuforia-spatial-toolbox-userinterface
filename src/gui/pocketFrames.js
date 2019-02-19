@@ -77,8 +77,8 @@ var realityElements = [
         width: 526,
         height: 526,
         nodes: [
-            {name: 'valueX', type: "node", x:-50, y:0},
-            {name: 'valueY', type: "node", x:50, y:0}
+            {name: 'valueX', type: "node", x:-50, y:-50},
+            {name: 'valueY', type: "node", x:50, y:50}
         ]
     },
     {
@@ -258,12 +258,12 @@ var realityElements = [
     },
     {
         name: 'easterEgg',
-        width: 480,
-        height: 270,
+        width: 604,
+        height: 324,
         nodes: [
-            {name: 'x', type: "node", x:-100, y:0},
+            {name: 'x', type: "node", x:-150, y:0},
             {name: 'y', type: "node", x:0, y:0},
-            {name: 'reset', type: "node", x:100, y:0}
+            {name: 'reset', type: "node", x:150, y:0}
         ]
     }
 ];
