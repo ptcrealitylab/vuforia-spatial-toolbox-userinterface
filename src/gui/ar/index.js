@@ -419,3 +419,22 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
     }
     return [object, frame, node];
 };
+
+/**
+ * If you pass in a frame, returns its distanceScale.
+ * If you pass in a node, returns the distanceScale of the frame it belongs to.
+ * If the frame doesn't have a value, defaults to 1.0
+ * @param {Frame|Node} activeVehicle
+ * @return {number}
+ */
+realityEditor.gui.ar.getDistanceScale = function(activeVehicle) {
+    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    if (keys.nodeKey) {
+        // it's a node, return its parent frame's value
+        var parentFrame = realityEditor.getFrame(keys.objectKey, keys.frameKey);
+        return parentFrame.distanceScale || 1.0;
+    } else {
+        // it's a frame, return its own value
+        return activeVehicle.distanceScale || 1.0;
+    }
+};

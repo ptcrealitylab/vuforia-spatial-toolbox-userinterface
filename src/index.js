@@ -377,8 +377,11 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
     if (typeof vehicle.frameId !== 'undefined') {
         frameKey = vehicle.frameId;
     }
-    if (typeof vehicle.uuid !== 'undefined') {
+    if (typeof vehicle.uuid !== 'undefined' || (typeof vehicle.type !== 'undefined' && vehicle.type !== 'ui')) {
         if (objectKey && frameKey) {
+            if (typeof vehicle.uuid === 'undefined') {
+                vehicle.uuid = frameKey + vehicle.name;
+            }
             nodeKey = vehicle.uuid;
         } else if (objectKey) {
             frameKey = vehicle.uuid;
