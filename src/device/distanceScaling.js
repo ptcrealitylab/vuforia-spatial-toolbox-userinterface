@@ -27,14 +27,19 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.gui.ar.draw.addUpdateListener(loop);
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.gui.buttons.registerCallbackForButton('distance', onDistanceEditingModeChanged);
     }
     
     function loop() {
         
+        var framesRendered = [];
+        
         // render the UIs if in distance editing mode or actively scaling one of them
         if (isScalingDistance || globalStates.distanceEditingMode) {
-            forEachDistanceUIFrame( function(objectKey, frameKey) {
+            forEachVisibleFrame( function(objectKey, frameKey) {
+                // if frame it is attached to no longer exists, remove it
+                // otherwise render it
                 transformDistanceUI(objectKey, frameKey);
             });
         }
@@ -55,6 +60,16 @@ createNameSpace("realityEditor.device.distanceScaling");
             var widthFactor = 0.25;
             linkObject.ballAnimationCount = 0; // prevent animation by resetting animation count each time
             realityEditor.gui.ar.lines.drawLine(globalCanvas.context, startPoint, [frame.screenX, frame.screenY], startWeight * widthFactor, frame.screenLinearZ * widthFactor, linkObject, timeCorrection, colorCode, colorCode);
+        }
+    }
+
+    /**
+     * Remove a distanceUI when its frame gets deleted, so it doesn't get stuck on the screen
+     * @param {{objectKey: string, frameKey: string, nodeKey: string|null}} params
+     */
+    function onVehicleDeleted(params) {
+        if (params.objectKey && params.frameKey && !params.nodeKey) {
+            hideDistanceUI(params.frameKey);
         }
     }
 
@@ -89,7 +104,10 @@ createNameSpace("realityEditor.device.distanceScaling");
         // }
 
         if (distanceScalingState.frameKey) {
-            hideDistanceUI(distanceScalingState.frameKey);
+            // don't hide it if we're in permanent distance editing mode
+            if (!globalStates.distanceEditingMode) {
+                hideDistanceUI(distanceScalingState.frameKey);
+            } 
             distanceScalingState.objectKey = null;
             distanceScalingState.frameKey = null;
         }
@@ -97,7 +115,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.device.enableUnconstrained();
     }
 
-    function forEachDistanceUIFrame(callback) {
+    function forEachVisibleFrame(callback) {
         realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
             if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
                 callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
@@ -118,7 +136,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             if (globalStates.distanceEditingMode) {
                 console.log('show all distance editing UIs');
                 
-                forEachDistanceUIFrame( function(objectKey, frameKey) {
+                forEachVisibleFrame( function(objectKey, frameKey) {
                     getDistanceUI(frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
                 });
                 
@@ -169,7 +187,7 @@ createNameSpace("realityEditor.device.distanceScaling");
     function transformDistanceUI(objectKey, frameKey) {
         var frame = realityEditor.getFrame(objectKey, frameKey);
         var editingVehicle = realityEditor.device.getEditingVehicle();
-        var shouldRenderDistance = (editingVehicle === frame) || globalStates.distanceEditingMode;
+        var shouldRenderDistance = ((editingVehicle === frame) || globalStates.distanceEditingMode) && globalDOMCache['object'+frameKey];
 
         if (shouldRenderDistance) {
             var m1 = realityEditor.gui.ar.utilities.getTransform(globalDOMCache['object'+frameKey]);
@@ -199,7 +217,11 @@ createNameSpace("realityEditor.device.distanceScaling");
             if (thisDistanceUI) {
                 thisDistanceUI.style.webkitTransform = 'matrix3d(' + transformationMatrix.toString() + ')';
             }
-        }
+        } /*else {
+            if (!globalDOMCache['object'+frameKey]) {
+                hideDistanceUI(frameKey);
+            }
+        }*/
     }
 
     /**
@@ -257,7 +279,6 @@ createNameSpace("realityEditor.device.distanceScaling");
     function hideDistanceUI(frameKey) {
         var thisDistanceUI = getDistanceUI(frameKey);
         if (!thisDistanceUI) return;
-        if (globalStates.distanceEditingMode) return; // don't hide it if we're in permanent distance editing mode
         
         thisDistanceUI.style.display = 'none';
 

@@ -699,6 +699,8 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
+            this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
+
             // delete frame
         } else if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
 
@@ -725,6 +727,8 @@ realityEditor.device.onElementTouchUp = function(event) {
             globalStates.inTransitionFrame = null;
             
             delete objects[this.editingState.object].frames[this.editingState.frame];
+
+            this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
         }
     }
 

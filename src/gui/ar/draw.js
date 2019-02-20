@@ -62,7 +62,10 @@ createNameSpace("realityEditor.gui.ar.draw");
 
 
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
+
 /**
+ * The most recently received set of matrices for the currently visible objects.
+ * A set of {objectId: matrix} pairs, one per recognized marker
  * @type {Object.<string, Array.<number>>}
  */
 realityEditor.gui.ar.draw.visibleObjects = {};
@@ -152,13 +155,6 @@ realityEditor.gui.ar.draw.updateListeners = [];
 realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
 };
-
-/**
- * The most recently received set of matrices for the currently visible objects.
- * A set of {objectId: matrix} pairs, one per recognized marker
- * @type {Object.<string, Array.<number>>}
- */
-realityEditor.gui.ar.draw.visibleObjectsCopy = {};
 
 /**
  * The most recently received camera matrix
@@ -274,8 +270,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (globalStates.guiState === "logic") {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animrealityEditor.gui.ar.draw.cameraMatrixation frame
     }
-    
-  
+
     this.visibleObjects = visibleObjects;
 
     // TODO: push into an updateListener so that there isn't a circular dependency with desktopAdapter
@@ -296,13 +291,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             isObjectWithNoFramesVisible = true;
         }
     }
-    
-    // TODO: push more edge-case functionality from this function into extensible callbacks
-    // make the update loop extensible by additional features that wish to subscribe to matrix updates
-    this.updateListeners.forEach(function(callback) {
-        // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
-        callback(realityEditor.gui.ar.draw.visibleObjects);
-    });
     
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
@@ -607,6 +595,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             visibleObjectTapInterval = null;
         }
     }
+
+    // TODO: push more edge-case functionality from this function into extensible callbacks
+    // make the update loop extensible by additional features that wish to subscribe to matrix updates
+    this.updateListeners.forEach(function(callback) {
+        // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
+        callback(realityEditor.gui.ar.draw.visibleObjects);
+    });
 };
 
 /**

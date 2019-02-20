@@ -154,10 +154,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
             visibleObjects[objectKey][13] *= 1000;
             visibleObjects[objectKey][12] *= 1000;
         }
-        realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
-    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
-   // realityEditor.gui.ar.draw.update(visibleObjects);
+    realityEditor.gui.ar.draw.update(visibleObjects);
 };
 
 /**

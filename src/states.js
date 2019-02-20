@@ -160,7 +160,7 @@ var globalStates = {
 		timeout: undefined
 	},
     // constants for screen extension
-    framePullThreshold: 50, //0.1,
+    framePullThreshold: 50,
     
     // default scale for new frames and nodes
     defaultScale: 0.5,
