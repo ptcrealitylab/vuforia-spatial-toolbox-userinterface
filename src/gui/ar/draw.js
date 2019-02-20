@@ -64,8 +64,6 @@ createNameSpace("realityEditor.gui.ar.draw");
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
 
 /**
- * The most recently received set of matrices for the currently visible objects.
- * A set of {objectId: matrix} pairs, one per recognized marker
  * @type {Object.<string, Array.<number>>}
  */
 realityEditor.gui.ar.draw.visibleObjects = {};
@@ -155,6 +153,13 @@ realityEditor.gui.ar.draw.updateListeners = [];
 realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
 };
+
+/**
+ * The most recently received set of matrices for the currently visible objects.
+ * A set of {objectId: matrix} pairs, one per recognized marker
+ * @type {Object.<string, Array.<number>>}
+ */
+realityEditor.gui.ar.draw.visibleObjectsCopy = {};
 
 /**
  * The most recently received camera matrix
