@@ -597,9 +597,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             realityEditor.app.tap();
             
             // then tap every 2 seconds
-            visibleObjectTapInterval = setInterval(function() {
-                realityEditor.app.tap();
-            }, 500);
+
+            if (this.activeObject.name.includes('_WORLD_OBJECT')) {
+                visibleObjectTapInterval = setInterval(function () {
+                    realityEditor.app.tap();
+                }, 1000);
+            } else {
+                visibleObjectTapInterval = setInterval(function () {
+                    realityEditor.app.tap();
+                }, 500);
+            }
         }
     } else {
         if (visibleObjectTapInterval) {
