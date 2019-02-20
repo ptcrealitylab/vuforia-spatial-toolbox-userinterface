@@ -62,6 +62,7 @@ createNameSpace("realityEditor.gui.ar.draw");
 
 
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
+
 /**
  * @type {Object.<string, Array.<number>>}
  */
@@ -274,8 +275,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (globalStates.guiState === "logic") {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animrealityEditor.gui.ar.draw.cameraMatrixation frame
     }
-    
-  
+
     this.visibleObjects = visibleObjects;
 
     // TODO: push into an updateListener so that there isn't a circular dependency with desktopAdapter
@@ -296,13 +296,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             isObjectWithNoFramesVisible = true;
         }
     }
-    
-    // TODO: push more edge-case functionality from this function into extensible callbacks
-    // make the update loop extensible by additional features that wish to subscribe to matrix updates
-    this.updateListeners.forEach(function(callback) {
-        // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
-        callback(realityEditor.gui.ar.draw.visibleObjects);
-    });
     
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
@@ -340,12 +333,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                 var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
                 var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
-                cameraTranslation[12] *= 1000; // scale to match the object matrix adjustment
-                cameraTranslation[13] *= 1000;
-                cameraTranslation[14] *= 1000;
+                cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
+                cameraTranslation[13] *= mmToMeterScale;
+                cameraTranslation[14] *= mmToMeterScale;
 
                 var modelMatrix = this.visibleObjects[objectKey];
-                var modelRotation = this.utilities.extractRotation(modelMatrix, true, true, true);
+                var modelRotation = this.utilities.extractRotation(this.utilities.transposeMatrix(modelMatrix), false, true, true);
                 var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
 
                 var m1 = [];
@@ -607,6 +600,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             visibleObjectTapInterval = null;
         }
     }
+
+    // TODO: push more edge-case functionality from this function into extensible callbacks
+    // make the update loop extensible by additional features that wish to subscribe to matrix updates
+    this.updateListeners.forEach(function(callback) {
+        // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
+        callback(realityEditor.gui.ar.draw.visibleObjects);
+    });
 };
 
 /**
@@ -852,7 +852,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
     var newObjectTargetWidth = realityEditor.getObject(newObjectKey).targetSize.width;
     
-    console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of size ' + newObjectTargetWidth);
+    console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of ' +
+        'size ' + newObjectTargetWidth);
     
     this.moveFrameToNewObject(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey);
     
@@ -2089,8 +2090,12 @@ realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
     realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode);
 
     delete objects[objectId].frames[frameId];
-    this.globalDOMCache["object" + frameId].parentNode.removeChild(this.globalDOMCache["object" + frameId]);
-    delete this.globalDOMCache["object" + frameId];
+    if (this.globalDOMCache["object" + frameId]) {
+        if (this.globalDOMCache["object" + frameId].parentNode) {
+            this.globalDOMCache["object" + frameId].parentNode.removeChild(this.globalDOMCache["object" + frameId]);
+        }
+        delete this.globalDOMCache["object" + frameId];
+    }
     delete this.globalDOMCache["iframe" + frameId];
     delete this.globalDOMCache[frameId];
     delete this.globalDOMCache["svg" + frameId];
