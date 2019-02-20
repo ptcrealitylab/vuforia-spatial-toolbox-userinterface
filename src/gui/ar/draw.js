@@ -852,7 +852,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
     var newObjectTargetWidth = realityEditor.getObject(newObjectKey).targetSize.width;
     
-    console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of size ' + newObjectTargetWidth);
+    console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of ' +
+        'size ' + newObjectTargetWidth);
     
     this.moveFrameToNewObject(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey);
     
@@ -2089,8 +2090,12 @@ realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
     realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode);
 
     delete objects[objectId].frames[frameId];
-    this.globalDOMCache["object" + frameId].parentNode.removeChild(this.globalDOMCache["object" + frameId]);
-    delete this.globalDOMCache["object" + frameId];
+    if (this.globalDOMCache["object" + frameId]) {
+        if (this.globalDOMCache["object" + frameId].parentNode) {
+            this.globalDOMCache["object" + frameId].parentNode.removeChild(this.globalDOMCache["object" + frameId]);
+        }
+        delete this.globalDOMCache["object" + frameId];
+    }
     delete this.globalDOMCache["iframe" + frameId];
     delete this.globalDOMCache[frameId];
     delete this.globalDOMCache["svg" + frameId];
