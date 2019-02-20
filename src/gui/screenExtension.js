@@ -318,6 +318,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     if (globalStates.freezeButtonState) return; // don't allow pushing and pulling if the background is frozen
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
+    if (!screenFrame) return;
 
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
     if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
@@ -341,19 +342,32 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
             // is frame within screen bounds... don't push it in if you aren't located on top of a screen
             var object = realityEditor.getObject(this.screenObject.object);
-            var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
-            var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
+
+            var resultMatrix = [];
+            if (screenFrame.ar.matrix.length === 16) {
+                realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
+            } else {
+                resultMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            }
+            var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
+
+            // var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
+            // var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
+
+            var isWithinWidth = Math.abs(projectedPoint[0]) < (object.targetSize.width * 1000)/2;
+            var isWithinHeight = Math.abs(projectedPoint[1]) < (object.targetSize.height * 1000)/2;
             
             var didPushIn = false;
-            
+
+            // TODO: ben - this is where we have trouble pushing things into screens sometimes... doesn't factor in the x,y entries from matrix when determining if within the screen bounds, only the ar.x, ar.y
             if (isWithinWidth && isWithinHeight) {
                 // when unconstrained editing, push in if the frame goes completely behind the z = 0 plane
                 if (realityEditor.device.isEditingUnconstrained(screenFrame)) {
                     // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-                    var resultMatrix = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
-                    var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
-                    didPushIn = projectedPoint[2] < 0; // if the z coordinate of center of frame is negative
+                    // var resultMatrix = [];
+                    // realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
+                    // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
+                    didPushIn = projectedPoint[2] > 10; // if the z coordinate of center of frame is negative // flipped to be positive since vuforia 7.2 coordinate flip
                     // when not in unconstrained editing mode, just push in if you move towards the screen more than a certain threshold
                 } else {
                     didPushIn = (distanceToObject < (globalStates.initialDistance - distanceThreshold));

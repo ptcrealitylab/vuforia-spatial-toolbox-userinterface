@@ -150,14 +150,13 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         for (var objectKey in visibleObjects) {
             if (!visibleObjects.hasOwnProperty(objectKey)) continue;
             // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
-            visibleObjects[objectKey][14] *= 1000;
-            visibleObjects[objectKey][13] *= 1000;
-            visibleObjects[objectKey][12] *= 1000;
+            visibleObjects[objectKey][14] *= mmToMeterScale;
+            visibleObjects[objectKey][13] *= mmToMeterScale;
+            visibleObjects[objectKey][12] *= mmToMeterScale;
         }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
     realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
-   // realityEditor.gui.ar.draw.update(visibleObjects);
 };
 
 /**

@@ -886,6 +886,9 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         //     st.getPropertyValue("transform");
         
         var tr = ele.style.webkitTransform;
+        if (!tr) {
+            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+        }
 
         var values = tr.split('(')[1].split(')')[0].split(',');
         
