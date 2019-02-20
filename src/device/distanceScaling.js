@@ -14,7 +14,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         ballAnimationCount: 0
     };
     
-    var defaultDistance = 6000;
+    var defaultDistance = 5000;
     
     var isScalingDistance = false;
     

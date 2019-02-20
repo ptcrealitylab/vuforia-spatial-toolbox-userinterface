@@ -333,12 +333,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                 var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
                 var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
-                cameraTranslation[12] *= 1000; // scale to match the object matrix adjustment
-                cameraTranslation[13] *= 1000;
-                cameraTranslation[14] *= 1000;
+                cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
+                cameraTranslation[13] *= mmToMeterScale;
+                cameraTranslation[14] *= mmToMeterScale;
 
                 var modelMatrix = this.visibleObjects[objectKey];
-                var modelRotation = this.utilities.extractRotation(modelMatrix, true, true, true);
+                var modelRotation = this.utilities.extractRotation(this.utilities.transposeMatrix(modelMatrix), false, true, true);
                 var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
 
                 var m1 = [];
