@@ -90,7 +90,8 @@ realityEditor.device.currentScreenTouches = [];
  * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
  * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
- * @property {boolean} pinchToScaleDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
+ * @property {boolean} preDisabledUnconstrained - the unconstrained state before we disabled, so that we can go back to that when we're done
+ * @property {boolean} pinchToScaleDisabled - iff pinch to scale is temporarily disabled (e.g. if changing distance threshold)
  */
 
 /**
@@ -479,13 +480,23 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
 };
 
 realityEditor.device.enableUnconstrained = function() {
+    
+    // only do this once, otherwise it will undo the effects of saving the previous value
+    if (this.editingState.unconstrainedDisabled) {
+        if (typeof this.editingState.preDisabledUnconstrained !== "undefined") {
+            this.editingState.unconstrained = this.editingState.preDisabledUnconstrained;
+            delete this.editingState.preDisabledUnconstrained; // get only works once per set
+        } else {
+            this.editingState.unconstrained = false;
+        }
+    }
     this.editingState.unconstrainedDisabled = false;
-    this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
 };
 
 realityEditor.device.disableUnconstrained = function() {
     this.editingState.unconstrainedDisabled = true;
+    this.editingState.preDisabledUnconstrained = this.editingState.unconstrained;
     this.editingState.unconstrained = false;
 };
 
@@ -1036,7 +1047,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     if (activeVehicle) {
 
         // scale the element if you make a pinch gesture
-        if (event.touches.length === 2) {
+        if (event.touches.length === 2 && !realityEditor.device.editingState.pinchToScaleDisabled) {
 
             // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
             var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});

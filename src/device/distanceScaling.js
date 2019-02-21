@@ -116,6 +116,8 @@ createNameSpace("realityEditor.device.distanceScaling");
         }
 
         realityEditor.device.enableUnconstrained();
+        realityEditor.device.enablePinchToScale(); // just in case we didn't touch up on the green button
+
     }
 
     function forEachVisibleFrame(callback) {
