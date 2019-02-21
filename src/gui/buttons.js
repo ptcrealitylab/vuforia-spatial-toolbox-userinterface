@@ -77,6 +77,7 @@ createNameSpace("realityEditor.gui.buttons");
             COMMIT: 'commit',
             UNCONSTRAINED: 'unconstrained',
             DISTANCE: 'distance',
+            DISTANCE_GREEN: 'distanceGreen',
             SETTING: 'setting',
             LOGIC_SETTING: 'logicSetting',
             FREEZE: 'freeze',
