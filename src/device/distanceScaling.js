@@ -199,10 +199,14 @@ createNameSpace("realityEditor.device.distanceScaling");
             var circleScaleConstant = 3.0 * (defaultDistance/2000); //5.0;
 
             var scaleMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            scaleMatrix[0] = m1[0] * circleScaleConstant * distanceScale / frameScaleFactor; // divide by frame scale so distanceUI doesn't get bigger when frame scales up
-            scaleMatrix[5] = m1[0] * circleScaleConstant * distanceScale / frameScaleFactor; // use same scale (m[0]) for x and y to preserve circle shape
-            scaleMatrix[10] = m1[10] * circleScaleConstant * distanceScale  / frameScaleFactor;
 
+            var scaleAvr = Math.sqrt(Math.pow(m1[0], 2) + Math.pow(m1[5], 2) + Math.pow(m1[10], 2));
+            
+            scaleMatrix[0] = scaleAvr* circleScaleConstant * distanceScale / frameScaleFactor; // divide by frame scale so distanceUI doesn't get bigger when frame scales up
+            scaleMatrix[5] = scaleAvr * circleScaleConstant * distanceScale / frameScaleFactor; // use same scale (m[0]) for x and y to preserve circle shape
+          //  scaleMatrix[10] = scaleAv * circleScaleConstant * distanceScale  / frameScaleFactor;
+
+            console.log( scaleMatrix[5],scaleMatrix[0] );
             var translateMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             translateMatrix[12] = m1[12];
             var yTranslate = -125; // TODO: we scale the circle's height by m1[0] not m1[5], which makes it not centered... 
@@ -249,6 +253,7 @@ createNameSpace("realityEditor.device.distanceScaling");
 
         // defaultDistance = 2000 is the default size in pixels of the radius
         // we divide by 0.9 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is just around the border
+        
         editingFrame.distanceScale = (editingFrame.screenZ / defaultDistance) / 0.85; 
     }
 
