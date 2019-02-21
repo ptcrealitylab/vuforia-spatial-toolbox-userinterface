@@ -28,12 +28,15 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+
+
+
         realityEditor.gui.buttons.registerCallbackForButton('distance', onDistanceEditingModeChanged);
+        realityEditor.gui.buttons.registerCallbackForButton('distanceGreen', onDistanceGreenPressed);
+
     }
     
     function loop() {
-        
-        var framesRendered = [];
         
         // render the UIs if in distance editing mode or actively scaling one of them
         if (isScalingDistance || globalStates.distanceEditingMode) {
@@ -156,6 +159,36 @@ createNameSpace("realityEditor.device.distanceScaling");
             
         }
     }
+    
+    function onDistanceGreenPressed(params) {
+        
+        if (params.newButtonState === 'down') {
+
+            isScalingDistance = true;
+            distanceScalingState.objectKey = realityEditor.device.editingState.object;
+            distanceScalingState.frameKey = realityEditor.device.editingState.frame;
+            showDistanceUI(distanceScalingState.frameKey);
+            scaleEditingFrameDistance();
+            realityEditor.device.disableUnconstrained();
+            realityEditor.device.disablePinchToScale();
+            
+        } else if (params.newButtonState === 'up') {
+
+            isScalingDistance = false;
+            if (distanceScalingState.frameKey) {
+                // don't hide it if we're in permanent distance editing mode
+                if (!globalStates.distanceEditingMode) {
+                    hideDistanceUI(distanceScalingState.frameKey);
+                }
+                distanceScalingState.objectKey = null;
+                distanceScalingState.frameKey = null;
+            }
+            realityEditor.device.enableUnconstrained();
+            realityEditor.device.enablePinchToScale();
+            
+        }
+        
+    }
 
     // adds a semi-transparent circle/sphere that indicates the maximum distance you can be from the frame for it to be rendered
     function createDistanceUI(frameKey) {
@@ -230,6 +263,7 @@ createNameSpace("realityEditor.device.distanceScaling");
      * @return {HTMLElement}
      */
     function getDistanceUI(frameKey) {
+        if (!frameKey) return;
         if (typeof allDistanceUIs[frameKey] === 'undefined') {
             var newDistanceUI = createDistanceUI(frameKey);
             if (newDistanceUI) {
@@ -246,6 +280,7 @@ createNameSpace("realityEditor.device.distanceScaling");
      */
     function scaleEditingFrameDistance() {
         var editingFrame = realityEditor.device.getEditingVehicle();
+        if (!editingFrame) return;
 
         // defaultDistance = 2000 is the default size in pixels of the radius
         // we divide by 0.9 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is just around the border

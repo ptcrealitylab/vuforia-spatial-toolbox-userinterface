@@ -90,6 +90,7 @@ realityEditor.device.currentScreenTouches = [];
  * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
  * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
+ * @property {boolean} pinchToScaleDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
  */
 
 /**
@@ -486,6 +487,14 @@ realityEditor.device.enableUnconstrained = function() {
 realityEditor.device.disableUnconstrained = function() {
     this.editingState.unconstrainedDisabled = true;
     this.editingState.unconstrained = false;
+};
+
+realityEditor.device.enablePinchToScale = function() {
+    this.editingState.pinchToScaleDisabled = false;
+};
+
+realityEditor.device.disablePinchToScale = function() {
+    this.editingState.pinchToScaleDisabled = true;
 };
 
 /**
