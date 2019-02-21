@@ -78,8 +78,11 @@ realityEditor.device.layout.adjustForScreenSize = function() {
         document.querySelector('#UIButtons').style.right = globalStates.rightEdgeOffset + 'px';
 
         // pocket
-        document.querySelector('.memoryBar').style.transformOrigin = 'left top';
-        document.querySelector('.memoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')'; // 0.99 factor makes sure it fits
+        if (!TEMP_DISABLE_MEMORIES) {
+            document.querySelector('.memoryBar').style.transformOrigin = 'left top';
+            document.querySelector('.memoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')'; // 0.99 factor makes sure it fits
+        }
+        document.querySelector('#pocketScrollBar').style.right = 75 + globalStates.rightEdgeOffset + 'px';
         document.querySelector('.palette').style.width = '100%';
         document.querySelector('.palette').style.transformOrigin = 'left top';
         document.querySelector('.palette').style.transform = 'scale(' + scaleFactor * 0.99 + ')';

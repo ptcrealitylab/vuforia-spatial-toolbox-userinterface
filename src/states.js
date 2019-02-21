@@ -180,7 +180,7 @@ var globalStates = {
      */
     mostRecentlyEditedNodes: [],
 
-    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : (0) // if iPhone X, offset the right edge by 74px
+    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : ((window.innerWidth >= 812 && window.innerHeight >= 375) ? (37) : (0)) // if iPhone X, offset the right edge by 74px
 };
 
 var globalCanvas = {};
