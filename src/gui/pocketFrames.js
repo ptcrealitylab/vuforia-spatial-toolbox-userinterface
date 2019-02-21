@@ -141,8 +141,8 @@ var realityElements = [
     },
     {
         name: 'label',
-        width: 450,
-        height: 150,
+        width: 508,
+        height: 128,
         nodes: [
             {name: 'storage', type: "storeData", x:0, y:0}
         ]
