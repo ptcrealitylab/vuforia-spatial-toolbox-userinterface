@@ -199,10 +199,23 @@ body {
 .markerPlaneElement {
     background-color: rgba(0,255,255,0.5);
     position: absolute;
+    opacity: 0.9;
 }
 
 .svgDefaultState {
     display: none;
+}
+
+#zoneConnectionSwitch {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    left: 30px;
+    top: 30px;
+    visibility: visible;
+    
+    border: 2px solid cyan;
+    background-color: rgba(0, 255, 255, 0.3);
 }
 
 /*

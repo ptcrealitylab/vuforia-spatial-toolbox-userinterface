@@ -162,7 +162,8 @@ realityEditor.device.onload = function () {
     (function animate(time) {
         // TODO This is a hack to keep the crafting board running
         if (globalStates.freezeButtonState) {
-            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
+            var areMatricesPrecomputed = true;
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, areMatricesPrecomputed); 
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);

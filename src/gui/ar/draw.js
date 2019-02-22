@@ -264,7 +264,7 @@ var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
-realityEditor.gui.ar.draw.update = function (visibleObjects) {
+realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecomputed) {
     var objectKey;
     var frameKey;
     var nodeKey;
@@ -277,11 +277,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
 
     this.visibleObjects = visibleObjects;
-
-    // TODO: push into an updateListener so that there isn't a circular dependency with desktopAdapter
-    if (this.globalStates.matrixBroadcastEnabled) {
-        realityEditor.device.desktopAdapter.broadcastMatrices(visibleObjects);
-    }
     
     // erases anything on the background canvas
     if (this.globalCanvas.hasContent === true) {
@@ -320,7 +315,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 }
                 modelViewMatrix = this.visibleObjects[objectKey];
                 
-            } else if (globalStates.freezeButtonState) {
+            } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
 
                 // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
                 modelViewMatrix = this.visibleObjects[objectKey];
@@ -584,21 +579,21 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // Adds a pulsing vibration that you can feel when you are looking at an object that has no frames.
     // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
     if (isObjectWithNoFramesVisible) {
-        if (!visibleObjectTapInterval) {
-            
-            // tap once, immediately
-            realityEditor.app.tap();
-            
-            // then tap every 2 seconds
+        var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
+        if (closestObject) {
+            var delay = closestObject.isWorldObject ? 1000 : 500;
+            if (!visibleObjectTapInterval || delay !== visibleObjectTapDelay) {
+                // tap once, immediately
+                realityEditor.app.tap();
 
-            if (this.activeObject.name.includes('_WORLD_OBJECT')) {
+                // then tap every 0.5 seconds if you're looking at an image/object target
+                // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {
                     realityEditor.app.tap();
-                }, 1000);
-            } else {
-                visibleObjectTapInterval = setInterval(function () {
-                    realityEditor.app.tap();
-                }, 500);
+                }, delay);
+                
+                // keep track of the the tap delay used, so that you can adjust the interval when switching between world and image targets
+                visibleObjectTapDelay = delay;
             }
         }
     } else {

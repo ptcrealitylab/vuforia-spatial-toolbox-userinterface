@@ -312,7 +312,9 @@ realityEditor.gui.ar.getClosestObject = function () {
     
     // default to world object if no visible objects
     if (!object || object.indexOf(worldObjectId) > -1) {
-        object = realityEditor.worldObjects.getBestWorldObject().objectId;
+        if (realityEditor.worldObjects.getBestWorldObject()) {
+            object = realityEditor.worldObjects.getBestWorldObject().objectId;
+        }
     }
     
     return [object, frame, node];

@@ -1440,29 +1440,29 @@ if (thisFrame) {
         
     }
 
-    if (typeof msgContent.sendToBackground !== "undefined") {
-
-        var iframe = globalDOMCache['iframe' + tempThisObject.uuid];
-        var src = iframe.src;
-        
-        var desktopBackgroundRenderer = document.getElementById('desktopBackgroundRenderer');
-        if (desktopBackgroundRenderer) {
-            if (desktopBackgroundRenderer.src !== src) {
-                desktopBackgroundRenderer.src = src;
-            }
-        }
-        
-        if (iframe) {
-            iframe.style.display = 'none';
-        }
-        
-        var div = globalDOMCache[tempThisObject.uuid]; //globalDOMCache['object' + tempThisObject.uuid];
-        if (div) {
-            // div.style.pointerEvents = 'none';
-            globalDOMCache[tempThisObject.uuid].style.display = 'none';
-        }
-        
-    }
+    // if (typeof msgContent.sendToBackground !== "undefined") {
+    //
+    //     var iframe = globalDOMCache['iframe' + tempThisObject.uuid];
+    //     var src = iframe.src;
+    //    
+    //     var desktopBackgroundRenderer = document.getElementById('desktopBackgroundRenderer');
+    //     if (desktopBackgroundRenderer) {
+    //         if (desktopBackgroundRenderer.src !== src) {
+    //             desktopBackgroundRenderer.src = src;
+    //         }
+    //     }
+    //    
+    //     if (iframe) {
+    //         iframe.style.display = 'none';
+    //     }
+    //    
+    //     var div = globalDOMCache[tempThisObject.uuid]; //globalDOMCache['object' + tempThisObject.uuid];
+    //     if (div) {
+    //         // div.style.pointerEvents = 'none';
+    //         globalDOMCache[tempThisObject.uuid].style.display = 'none';
+    //     }
+    //    
+    // }
     
 };
 
