@@ -586,6 +586,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
                 // tap once, immediately
                 realityEditor.app.tap();
 
+                clearInterval(visibleObjectTapInterval);
+                visibleObjectTapInterval = null;
+
                 // then tap every 0.5 seconds if you're looking at an image/object target
                 // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {

@@ -208,14 +208,32 @@ body {
 
 #zoneConnectionSwitch {
     position: fixed;
-    width: 60px;
-    height: 60px;
     left: 30px;
     top: 30px;
+    width: 300px;
+    height: 60px;
+    line-height: 60px;
+    text-align: center;
     visibility: visible;
-    
     border: 2px solid cyan;
     background-color: rgba(0, 255, 255, 0.3);
+}
+
+.connectionSwitchPulse {
+    background-color: rgba(0, 255, 255, 0.3);
+    animation-name: pulseBackgroundBlue;
+    animation-duration: 1000ms;
+    -webkit-animation-fill-mode: forwards; /* Chrome, Safari, Opera */
+    -webkit-animation-timing-function: ease-out;
+}
+
+@keyframes pulseBackgroundBlue {
+    0% {
+        background-color: rgba(0, 255, 255, 0.7);
+    }
+    100% {
+        background-color: rgba(0, 255, 255, 0.3);
+    }
 }
 
 /*
@@ -1285,8 +1303,10 @@ Logic Interface CSS
 #connectionPrompt {
     color: white;
     position: absolute;
-    left: 50px;
-    top: 50px;
+    left: 30px;
+    top: 100px;
+    width: 300px;
+    text-align: center;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     size: 50px;
 }
