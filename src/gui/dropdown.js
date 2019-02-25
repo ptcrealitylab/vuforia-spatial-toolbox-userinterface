@@ -2,10 +2,10 @@ createNameSpace("realityEditor.gui.dropdown");
 
 (function(exports) {
 
-    function Dropdown(id, text, css, isCollapsed, onSelectionChanged) {
+    function Dropdown(id, textStates, css, parent, isCollapsed, onSelectionChanged, onExpandedChanged) {
         this.id = id;
-        this.text = text;
-        this.originalText = text;
+        this.text = '';
+        // this.originalText = text;
         this.css = css;
 
         this.dom = null;
@@ -14,9 +14,52 @@ createNameSpace("realityEditor.gui.dropdown");
         this.isCollapsed = !!isCollapsed;
 
         this.selected = null;
+        
         this.onSelectionChanged = onSelectionChanged;
+        this.onExpandedChanged = onExpandedChanged;
+        
+        this.isAnimating = false;
+        
+        this.states = Object.freeze({
+            collapsedUnselected: 0,
+            expandedEmpty: 1,
+            expandedOptions: 2,
+            selected: 3
+        });
+        this.setTextStates(textStates.collapsedUnselected, textStates.expandedEmpty, textStates.expandedOptions, textStates.selected);
+        
+        this.addDomToParent(parent);
+
+        this.updateState(this.states.collapsedUnselected);
     }
 
+    /**
+     * @param {string} collapsedUnselected
+     * @param {string} expandedEmpty
+     * @param {string} expandedOptions
+     * @param {string} selected
+     */
+    Dropdown.prototype.setTextStates = function(collapsedUnselected, expandedEmpty, expandedOptions, selected) {
+        this.collapsedUnselectedText = collapsedUnselected;
+        this.expandedEmptyText = expandedEmpty;
+        this.expandedOptionsText = expandedOptions;
+        this.selectedText = selected;
+    };
+    
+    Dropdown.prototype.updateState = function(newState) {
+        this.state = newState;
+        
+        if (this.state === this.states.collapsedUnselected) {
+            this.setText(this.collapsedUnselectedText, true);
+        } else if (this.state === this.states.expandedEmpty) {
+            this.setText(this.expandedEmptyText);
+        } else if (this.state === this.states.expandedOptions) {
+            this.setText(this.expandedOptionsText);
+        } else if (this.state === this.states.selected) {
+            this.setText(this.selectedText + this.selected.element.innerHTML, true);
+        }
+    };
+    
     Dropdown.prototype.createDom = function() {
         if (this.dom) return;
 
@@ -75,11 +118,17 @@ createNameSpace("realityEditor.gui.dropdown");
         }
 
         this.selectables.push(selectableDom);
+        
+        if (this.state === this.states.expandedEmpty || this.state === this.states.expandedOptions) {
+            this.updateState(this.states.expandedOptions);
+        }
 
-        this.setText(this.text);
+        // this.setText(this.text);
 
         selectableDom.addEventListener('click', function(event) {
 
+            if (this.isAnimating) { return; }
+            
             if (this.selected && this.selected.element) {
                 // remove style from previously selected dom
                 this.selected.element.classList.remove('dropdownSelected');
@@ -87,7 +136,10 @@ createNameSpace("realityEditor.gui.dropdown");
                 // if clicked the currently selected element again, deselect it
                 if (this.selected.element === selectableDom) {
                     this.selected = null;
-                    this.setText(this.originalText);
+                    // this.setText(this.originalText);
+                    
+                    this.updateState(this.states.expandedOptions);
+                    
                     if (this.onSelectionChanged) {
                         this.onSelectionChanged(this.selected);
                     }
@@ -102,7 +154,7 @@ createNameSpace("realityEditor.gui.dropdown");
             };
             selectableDom.classList.add('dropdownSelected');
 
-            this.setText('Connected to ' + selectableDom.innerHTML, true);
+            // this.setText('Connected to ' + selectableDom.innerHTML, true);
             this.collapse();
 
             if (this.onSelectionChanged) {
@@ -114,6 +166,11 @@ createNameSpace("realityEditor.gui.dropdown");
         this.dom.appendChild(selectableDom);
     };
 
+    // Dropdown.prototype.setOriginalText = function(newOriginalText) {
+    //     this.originalText = newOriginalText;
+    //     this.setText(this.originalText);
+    // };
+
     Dropdown.prototype.setText = function(newText, hideSelectableCount) {
         this.text = newText;
         this.textDiv.innerHTML = newText;
@@ -123,6 +180,9 @@ createNameSpace("realityEditor.gui.dropdown");
     };
 
     Dropdown.prototype.collapse = function() {
+        if (this.isAnimating) { return; }
+
+        this.isAnimating = true;
         this.isCollapsed = true;
         this.selectables.forEach(function(element) {
             setTimeout(function() {
@@ -131,9 +191,30 @@ createNameSpace("realityEditor.gui.dropdown");
             }, (((this.selectables.length-1) - element.dataset.index) * 50));
         }.bind(this));
         this.dom.classList.add('containerCollapsed');
+
+        if (this.selected) {
+            this.updateState(this.states.selected);
+        } else {
+            this.updateState(this.states.collapsedUnselected);
+        }
+
+        if (this.onExpandedChanged) {
+            this.onExpandedChanged(!this.isCollapsed);
+        }
+
+        setTimeout(function() {
+            this.isAnimating = false;
+        }.bind(this), this.selectables.length * this.getExpansionSpeed());
+    };
+
+    Dropdown.prototype.getExpansionSpeed = function() {
+        return 200 / (this.selectables.length+1);
     };
 
     Dropdown.prototype.expand = function() {
+        if (this.isAnimating) { return; }
+
+        this.isAnimating = true;
         this.isCollapsed = false;
         this.selectables.forEach(function(element) {
             setTimeout(function() {
@@ -142,6 +223,22 @@ createNameSpace("realityEditor.gui.dropdown");
             }, (element.dataset.index * 50));
         });
         this.dom.classList.remove('containerCollapsed');
+
+        if (this.selected) {
+            this.updateState(this.states.selected);
+        } else if (this.selectables.length === 0) {
+            this.updateState(this.states.expandedEmpty);
+        } else {
+            this.updateState(this.states.expandedOptions);
+        }
+        
+        if (this.onExpandedChanged) {
+            this.onExpandedChanged(!this.isCollapsed);
+        }
+
+        setTimeout(function() {
+            this.isAnimating = false;
+        }.bind(this), this.selectables.length * this.getExpansionSpeed());
     };
 
     Dropdown.prototype.toggleExpansion = function() {

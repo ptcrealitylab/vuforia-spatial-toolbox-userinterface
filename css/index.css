@@ -1303,8 +1303,9 @@ Logic Interface CSS
 #connectionPrompt {
     color: white;
     position: absolute;
-    left: 30px;
-    top: 100px;
+    left: 360px;
+    top: 30px;
+    /*top: 100px;*/
     width: 300px;
     text-align: center;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
