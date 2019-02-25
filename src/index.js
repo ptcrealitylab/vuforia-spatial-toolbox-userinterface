@@ -106,7 +106,8 @@ var realityEditor = realityEditor || {
             canvasCache: {},
             domCache: {},
             setup: {},
-            modal: {}
+            modal: {},
+            dropdown: {}
 		},
         network: {
             realtime: {},
