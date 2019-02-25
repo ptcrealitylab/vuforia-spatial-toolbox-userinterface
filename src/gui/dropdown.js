@@ -30,7 +30,11 @@ createNameSpace("realityEditor.gui.dropdown");
         
         this.addDomToParent(parent);
 
-        this.updateState(this.states.collapsedUnselected);
+        if (this.isCollapsed) {
+            this.updateState(this.states.collapsedUnselected);
+        } else {
+            this.updateState(this.states.expandedEmpty);
+        }
     }
 
     /**
