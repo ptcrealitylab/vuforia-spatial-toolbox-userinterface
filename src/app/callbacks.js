@@ -190,7 +190,7 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
     var objectID = objectHeartbeat.id;
     var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
     
-    updateObjectNameToIDMap(objectName, objectID);
+    // updateObjectNameToIDMap(objectName, objectID);
     
     var needsXML = true;
     var needsDAT = true;
@@ -235,6 +235,7 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
 
 };
 
+/*
 var objectNameToIDMap = {};
 
 function updateObjectNameToIDMap(objectName, objectID) {
@@ -275,6 +276,27 @@ function getObjectIDFromName(objectName, inDownloadState, fileType) {
         console.warn('couldnt find ID for object named ' + objectName);
     }
 }
+*/
+
+/**
+ * Uses a combination of IP address and object name to locate the ID
+ * @param fileName
+ */
+function getObjectIDFromFilename(fileName) {
+    var ip = fileName.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/)[0];
+    var objectName = fileName.split('/')[4];
+    
+    for (var objectKey in objects) {
+        if (!objects.hasOwnProperty(objectKey)) continue;
+        var object = realityEditor.getObject(objectKey);
+        if (object.ip === ip && object.name === objectName) {
+            return objectKey;
+        }
+    }
+    
+    console.warn('tried to download a file that couldnt locate a matching object', fileName);
+    //"http://10.10.10.108:8080/obj/monitorScreen/target/target.xml"
+};
 
 /**
  * Callback for realityEditor.app.downloadFile for either target.xml or target.dat
@@ -290,7 +312,9 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
         
     var isXML = fileName.split('/')[fileName.split('/').length-1].indexOf('xml') > -1;
     var fileTypeString = isXML ? 'XML' : 'DAT';
-    var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, fileTypeString);
+    
+    // var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, fileTypeString);
+    var objectID = getObjectIDFromFilename(fileName);
 
     if (success) {
         console.log('successfully downloaded file: ' + fileName);
@@ -323,7 +347,8 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
 realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     console.log('marker added: ' + fileName + ', success? ' + success);
     var objectName = fileName.split('/')[4];
-    var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, 'MARKER_ADDED');
+    // var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, 'MARKER_ADDED');
+    var objectID = getObjectIDFromFilename(fileName);
 
     if (success) {
         console.log('successfully added marker: ' + fileName);
@@ -333,7 +358,6 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
     }
 };
-
 
 /**
  * @todo: not currently used

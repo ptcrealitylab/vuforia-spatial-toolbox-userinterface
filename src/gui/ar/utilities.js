@@ -1320,7 +1320,13 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
  * @return {number} distance
  */
 realityEditor.gui.ar.utilities.distance = function (matrix) {
-    return Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    var distance = 1000; // for now give a valid value as a fallback
+    try {
+        distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    } catch (e) {
+        console.warn('trying to calculate distance of ', matrix);
+    }
+    return distance;
 };
 
 /**
