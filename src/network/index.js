@@ -639,7 +639,7 @@ realityEditor.network.onUDPMessage = function(message) {
 };
 
 realityEditor.network.onAction = function (action) {
-    console.log('onAction');
+    // console.log('onAction');
     var _this = this;
     var thisAction;
     if (typeof action === "object") {

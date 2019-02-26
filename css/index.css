@@ -1300,18 +1300,6 @@ Logic Interface CSS
     opacity: 0.6;
 }
 
-#connectionPrompt {
-    color: white;
-    position: absolute;
-    left: 360px;
-    top: 30px;
-    /*top: 100px;*/
-    width: 300px;
-    text-align: center;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
-    size: 50px;
-}
-
 #desktopBackgroundRenderer {
     position: absolute;
     top: 0;
@@ -1319,4 +1307,5 @@ Logic Interface CSS
     width: 100vw;
     height: 100vh;
     pointer-events: none;
+    background-color: transparent;
 }
