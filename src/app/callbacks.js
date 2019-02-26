@@ -74,7 +74,7 @@ var DownloadState = Object.freeze(
  */
 realityEditor.app.callbacks.vuforiaIsReady = function() {
     console.log("Vuforia is ready");
-    
+
     // projection matrix only needs to be retrieved once
     realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
 
@@ -114,7 +114,11 @@ realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
  */
 realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     if (typeof message !== 'object') {
-        message = JSON.parse(message);
+        try {
+            message = JSON.parse(message);
+        } catch (e) {
+            // error parsing, string is not in correct format for json
+        }
     }
     
     // upon a new object discovery message, add the object and download its target files
@@ -183,23 +187,26 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
  */
 realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(objectHeartbeat) {
 
+    var objectID = objectHeartbeat.id;
     var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+    
+    updateObjectNameToIDMap(objectName, objectID);
     
     var needsXML = true;
     var needsDAT = true;
     
-    if (typeof targetDownloadStates[objectName] !== 'undefined') {
-        if (targetDownloadStates[objectName].XML === DownloadState.STARTED ||
-            targetDownloadStates[objectName].XML === DownloadState.SUCCEEDED) {
+    if (typeof targetDownloadStates[objectID] !== 'undefined') {
+        if (targetDownloadStates[objectID].XML === DownloadState.STARTED ||
+            targetDownloadStates[objectID].XML === DownloadState.SUCCEEDED) {
             needsXML = false;
         }
-        if (targetDownloadStates[objectName].DAT === DownloadState.STARTED ||
-            targetDownloadStates[objectName].DAT === DownloadState.SUCCEEDED) {
+        if (targetDownloadStates[objectID].DAT === DownloadState.STARTED ||
+            targetDownloadStates[objectID].DAT === DownloadState.SUCCEEDED) {
             needsDAT = false;
         }
 
     } else {
-        targetDownloadStates[objectName] = {
+        targetDownloadStates[objectID] = {
             XML: DownloadState.NOT_STARTED,
             DAT: DownloadState.NOT_STARTED,
             MARKER_ADDED: DownloadState.NOT_STARTED
@@ -216,17 +223,58 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
     if (needsXML) {
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
         realityEditor.app.downloadFile(xmlAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
-        targetDownloadStates[objectName].XML = DownloadState.STARTED;
+        targetDownloadStates[objectID].XML = DownloadState.STARTED;
     }
     
     // downloads the vuforia target.dat file it it doesn't have it yet
     if (needsDAT) {
         var datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
         realityEditor.app.downloadFile(datAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
-        targetDownloadStates[objectName].DAT = DownloadState.STARTED;
+        targetDownloadStates[objectID].DAT = DownloadState.STARTED;
     }
 
 };
+
+var objectNameToIDMap = {};
+
+function updateObjectNameToIDMap(objectName, objectID) {
+    if (typeof objectNameToIDMap[objectName] === 'undefined') {
+        objectNameToIDMap[objectName] = objectID;
+    } else {
+        if (typeof objectNameToIDMap[objectName] === 'string') {
+            if (objectNameToIDMap[objectName].indexOf(objectID) < 0) {
+                objectNameToIDMap[objectName] = [objectNameToIDMap[objectName]]; // turn it into an array
+                objectNameToIDMap[objectName].push(objectID);
+            }
+        }
+    }
+}
+
+function getObjectIDFromName(objectName, inDownloadState, fileType) {
+    if (typeof objectNameToIDMap[objectName] === 'string') {
+        return objectNameToIDMap[objectName];
+    } else if (typeof objectNameToIDMap[objectName] !== 'undefined') {
+        var possibleObjectIDs = objectNameToIDMap[objectName];
+        var match = possibleObjectIDs[0];
+        
+        if (inDownloadState && fileType) {
+            possibleObjectIDs.forEach(function(objectID) {
+                try {
+                    if (targetDownloadStates[objectID][fileType] === inDownloadState) {
+                        match = objectID;
+                    }
+                } catch (e) {
+                    console.warn('that file type doesnt exist for that objectID', objectID, fileType);
+                }
+
+            });
+        }
+
+        return match;
+    } else {
+        console.warn('couldnt find ID for object named ' + objectName);
+    }
+}
 
 /**
  * Callback for realityEditor.app.downloadFile for either target.xml or target.dat
@@ -239,26 +287,29 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
     
     // we don't have the objectID but luckily it can be extracted from the fileName
     var objectName = fileName.split('/')[4];
+        
     var isXML = fileName.split('/')[fileName.split('/').length-1].indexOf('xml') > -1;
-    
+    var fileTypeString = isXML ? 'XML' : 'DAT';
+    var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, fileTypeString);
+
     if (success) {
         console.log('successfully downloaded file: ' + fileName);
-        targetDownloadStates[objectName][isXML ? 'XML' : 'DAT'] = DownloadState.SUCCEEDED;
+        targetDownloadStates[objectID][fileTypeString] = DownloadState.SUCCEEDED;
     } else {
         console.log('failed to download file: ' + fileName);
-        targetDownloadStates[objectName][isXML ? 'XML' : 'DAT'] = DownloadState.FAILED;
+        targetDownloadStates[objectID][fileTypeString] = DownloadState.FAILED;
     }
     
-    var hasXML = targetDownloadStates[objectName].XML === DownloadState.SUCCEEDED;
-    var hasDAT = targetDownloadStates[objectName].DAT === DownloadState.SUCCEEDED;
-    var markerNotAdded = (targetDownloadStates[objectName].MARKER_ADDED === DownloadState.NOT_STARTED ||
-                          targetDownloadStates[objectName].MARKER_ADDED === DownloadState.FAILED);
+    var hasXML = targetDownloadStates[objectID].XML === DownloadState.SUCCEEDED;
+    var hasDAT = targetDownloadStates[objectID].DAT === DownloadState.SUCCEEDED;
+    var markerNotAdded = (targetDownloadStates[objectID].MARKER_ADDED === DownloadState.NOT_STARTED ||
+                          targetDownloadStates[objectID].MARKER_ADDED === DownloadState.FAILED);
     
     // synchronizes the two async download calls to add the marker when both tasks have completed
     var xmlFileName = isXML ? fileName : fileName.slice(0, -3) + 'xml';
     if (hasXML && hasDAT && markerNotAdded) {
         realityEditor.app.addNewMarker(xmlFileName, 'realityEditor.app.callbacks.onMarkerAdded');
-        targetDownloadStates[objectName].MARKER_ADDED = DownloadState.STARTED;
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
     }
 };
 
@@ -272,13 +323,14 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
 realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     console.log('marker added: ' + fileName + ', success? ' + success);
     var objectName = fileName.split('/')[4];
+    var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, 'MARKER_ADDED');
 
     if (success) {
         console.log('successfully added marker: ' + fileName);
-        targetDownloadStates[objectName].MARKER_ADDED = DownloadState.SUCCEEDED;
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.SUCCEEDED;
     } else {
         console.log('failed to add marker: ' + fileName);
-        targetDownloadStates[objectName].MARKER_ADDED = DownloadState.FAILED;
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
     }
 };
 

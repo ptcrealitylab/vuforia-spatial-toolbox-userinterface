@@ -170,6 +170,7 @@ realityEditor.device.onload = function () {
     })();
     
     // start the AR framework in native iOS
+    targetDownloadStates = {}; // reset downloads
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
     
     // window.addEventListener('resize', function(event) {
