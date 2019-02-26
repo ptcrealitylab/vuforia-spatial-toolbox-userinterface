@@ -157,6 +157,9 @@ createNameSpace("realityEditor.worldObjects");
      * @return {Array.<string>}
      */
     function getWorldObjectKeys() {
+        if (!worldObjects) {
+            return [];
+        }
         return Object.keys(worldObjects);
     }
 
