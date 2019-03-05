@@ -1403,6 +1403,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
+                    // TODO: check if this still works with new coordinate system
                     var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
                     thisMsg.frameScreenPosition = frameScreenPosition;
 

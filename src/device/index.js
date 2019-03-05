@@ -159,7 +159,7 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
     // var newDisplay = newEditingMode ? 'inline' : 'none';
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var svg = document.getElementById('svg' + frameKey);
-        if (svg) {
+        if (svg && globalStates.guiState === "ui") {  // don't show green outline for frames if in node view
             // svg.style.display = newDisplay;
             if (newEditingMode) {
                 svg.classList.add('visibleEditingSVG');
@@ -520,6 +520,10 @@ realityEditor.device.onElementTouchDown = function(event) {
     // how long it takes to move the element:
     // instant if editing mode on, 400ms if not (or touchMoveDelay if specially configured for that element)
     var moveDelay = this.defaultMoveDelay;
+    // take a lot longer to move nodes, otherwise it's hard to draw links
+    if (globalStates.guiState === "node") {
+        moveDelay = this.defaultMoveDelay * 3;
+    }
     if (globalStates.editingMode) {
         moveDelay = 0;
     } else if (activeVehicle.moveDelay) {

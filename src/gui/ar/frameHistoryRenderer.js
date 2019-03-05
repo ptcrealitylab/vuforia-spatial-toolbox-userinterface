@@ -214,12 +214,14 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                                 var startNode = realityEditor.getNode(ghostLink.objectA, ghostLink.frameA, ghostLink.nodeA);
                                 var endNode = realityEditor.getNode(ghostLink.objectB, ghostLink.frameB, ghostLink.nodeB);
                                 
-                                missingLinksToDraw.push({
-                                    startX: startNode.screenX,
-                                    startY: startNode.screenY,
-                                    endX: endNode.screenX,
-                                    endY: endNode.screenY
-                                });
+                                if (startNode && endNode) {
+                                    missingLinksToDraw.push({
+                                        startX: startNode.screenX,
+                                        startY: startNode.screenY,
+                                        endX: endNode.screenX,
+                                        endY: endNode.screenY
+                                    });
+                                }
                             }
                         }
                     }
