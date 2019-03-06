@@ -110,6 +110,7 @@ var globalStates = {
     // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
+    groupingEnabled: false,
 
 	pocketButtonState: false,
     

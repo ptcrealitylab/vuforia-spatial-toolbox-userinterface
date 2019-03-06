@@ -1527,6 +1527,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 videoRecordingEnabled: globalStates.videoRecordingEnabled,
                 matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
                 hololensModeEnabled: globalStates.hololensModeEnabled,
+                groupingEnabled: globalStates.groupingEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1696,6 +1697,24 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     // realityEditor.device.desktopAdapter.stopBroadcast();
                     console.log('hololens mode disabled...');
                     realityEditor.device.hololensAdapter.toggleHololensMode(false);
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.groupingEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.groupingEnabled) {
+                if (!globalStates.groupingEnabled) {
+                    globalStates.groupingEnabled = true;
+                    // add any one-time side-effects here
+                    console.log('TODO: grouping mode enabled...');
+                    // realityEditor.device.hololensAdapter.toggleHololensMode(true);
+                }
+            } else {
+                if (globalStates.groupingEnabled) {
+                    globalStates.groupingEnabled = false;
+                    // add any one-time side-effects here:
+                    console.log('TODO: grouping mode disabled...');
+                    // realityEditor.device.hololensAdapter.toggleHololensMode(false);
                 }
             }
         }
@@ -2428,7 +2447,7 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/group/";
     var content = {group: newGroupID};
     this.postData(urlEndpoint, content, function (err, response) {
-        console.log(`set group to ${newGroupID} on server`);
+        console.log('set group to ' + newGroupID + ' on server');
         console.log(err, response);
     })
 };
