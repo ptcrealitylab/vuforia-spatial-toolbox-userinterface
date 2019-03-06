@@ -60,7 +60,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
         realityEditor.gui.ar.draw.addUpdateListener(function() {
             if (globalStates.groupingEnabled) {
                 // draw hulls
-                realityEditor.gui.ar.selecting.drawGroupHulls();
+                drawGroupHulls();
             }
         });
 
@@ -113,6 +113,15 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 //     }
                 // }
 
+                var activeVehicle = realityEditor.device.getEditingVehicle();
+                var isSingleTouch = params.event.touches.length === 1;
+                
+                if (activeVehicle && isSingleTouch) {
+                    // also move group objects too
+                    moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
+                }
+
+
             }
             
         });
@@ -163,6 +172,19 @@ createNameSpace("realityEditor.gui.ar.selecting");
     }
 
     /**
+     * Gets triggered when the on/off switch is toggled to update globalStates.groupingEnabled
+     * When toggled off, erase any visuals that should only update when grouping mode is enabled
+     * @param {boolean} isEnabled
+     */
+    function toggleGroupingMode(isEnabled) {
+        if (!isEnabled) {
+            var svg = document.getElementById("groupSVG");
+            clearHulls(svg);
+            closeLasso();
+        }
+    }
+
+    /**
      * Sets start point of selection lasso
      * @param {number} x
      * @param {number} y
@@ -205,14 +227,19 @@ createNameSpace("realityEditor.gui.ar.selecting");
      * Auto-closes lasso to start point
      */
     function closeLasso() {
-        function clearLasso() { lasso.setAttribute("points", ""); }
+        function clearLasso() {
+            lasso.setAttribute("points", "");
+            lasso.classList.remove('groupLassoFadeOut');
+        }
 
         var lassoPoints = lasso.getAttribute("points");
         var start = points[0];
         lassoPoints += " " + start[0]+", "+start[1];
         lasso.setAttribute("points", lassoPoints);
+        
+        lasso.classList.add('groupLassoFadeOut');
 
-        setTimeout(clearLasso.bind(this), 500);
+        setTimeout(clearLasso.bind(this), 300);
     }
 
     /**
@@ -400,8 +427,18 @@ createNameSpace("realityEditor.gui.ar.selecting");
             members.push(member);
         }
         return members;
-    };
+    }
 
+    /**
+     * Completely erases the SVG containing the hulls
+     * @param {SVGElement} svg
+     */
+    function clearHulls(svg) {
+        while (svg.lastChild) {
+            svg.removeChild(svg.firstChild);
+        }
+    }
+    
     /**
      * iterates through all groups and creates the hulls
      */
@@ -415,12 +452,6 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 drawHull(svg, groupStruct[groupID], groupID);
             }
         });
-
-        function clearHulls(svg) {
-            while (svg.lastChild) {
-                svg.removeChild(svg.firstChild);
-            }
-        }
 
         function drawHull(svg, group, groupID) {
             var hullPoints = [];
@@ -496,8 +527,24 @@ createNameSpace("realityEditor.gui.ar.selecting");
             positionData.y = newPosition.y - activeVehicle.groupTouchOffset.y;
         }
     }
-    
+
+    /**
+     * Any time a frame or node is moved, check if it's part of a group and move all grouped frames/nodes with it
+     * @param {Frame|Node} activeVehicle
+     * @param {number} pageX
+     * @param {number} pageY
+     */
+    function moveGroupedVehiclesIfNeeded(activeVehicle, pageX, pageY) {
+        if (activeVehicle.groupID !== null) {
+            var groupMembers = getGroupMembers(activeVehicle.groupID);
+            groupMembers.forEach(function(member) {
+                var frame = realityEditor.getFrame(member.object, member.frame);
+                moveGroupVehicleToScreenCoordinate(frame, pageX, pageY);
+            });
+        }
+    }
+
     exports.initFeature = initFeature;
-    exports.drawGroupHulls = drawGroupHulls;
+    exports.toggleGroupingMode = toggleGroupingMode;
 
 })(realityEditor.gui.ar.selecting);

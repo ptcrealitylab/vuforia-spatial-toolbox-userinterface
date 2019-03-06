@@ -1212,6 +1212,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
                 // tell the renderer to freeze the current matrix as the unconstrained position on the screen
                 realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
                 realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
+
+                this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
             }
         }
     }

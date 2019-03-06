@@ -1309,3 +1309,12 @@ Logic Interface CSS
     pointer-events: none;
     background-color: transparent;
 }
+
+.groupLassoFadeOut {
+    opacity:1;
+
+    animation-name: fadeOut;
+    animation-duration: 300ms;
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-out;
+}

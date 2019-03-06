@@ -1659,14 +1659,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.groupingEnabled = true;
                     // add any one-time side-effects here
                     console.log('TODO: grouping mode enabled...');
-                    // realityEditor.device.hololensAdapter.toggleHololensMode(true);
+                    realityEditor.gui.ar.selecting.toggleGroupingMode(true);
                 }
             } else {
                 if (globalStates.groupingEnabled) {
                     globalStates.groupingEnabled = false;
                     // add any one-time side-effects here:
                     console.log('TODO: grouping mode disabled...');
-                    // realityEditor.device.hololensAdapter.toggleHololensMode(false);
+                    realityEditor.gui.ar.selecting.toggleGroupingMode(false);
                 }
             }
         }
