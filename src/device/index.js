@@ -466,6 +466,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
     
     this.sendEditingStateToFrameContents(frameKey, true);
+
+    this.callbackHandler.triggerCallbacks('beginTouchEditing');
 };
 
 // post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
@@ -865,7 +867,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     var activeVehicle = this.getEditingVehicle();
     
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if ((event.target.id === "canvas" || event.target.className === "memoryBackground") && !activeVehicle) {
+    if (realityEditor.device.utilities.isEventHittingBackground(event)) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
 
@@ -1020,7 +1022,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     var activeVehicle = this.getEditingVehicle();
 
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if (event.target.id === "canvas" && !activeVehicle) {
+    if (realityEditor.device.utilities.isEventHittingBackground(event)) {
         if (event.touches.length < 2) {
             var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
 

@@ -22,13 +22,144 @@ createNameSpace("realityEditor.gui.ar.selecting");
      * @type {SVGPolylineElement|null}
      */
     var lasso = null;
+
+    /**
+     * @type {Boolean} Whether a tap has already occurred and is set to be a double tap
+     */
+    var isDoubleTap = false;
+
+    /**
+     * @type: {Object|null} First tap target
+     */
+    var tapTarget = null;
     
+    /**
+     * @typedef {Object} DoubleTapTimer
+     * @type {DoubleTapTimer}
+     */
+    var doubleTapTimer = null;
+
+    /**
+     * @type {{active: Boolean, object: Array.<string>, frame: Array.<string>}}
+     * object and frame currently not in use
+     */
+    var selectingState = {
+        active: false,
+        object: [],
+        frame: []
+    };
+
+    /**
+     * Initialize the grouping feature regardless of whether it is enabled onLoad
+     * Subscribe to touches and rendering events, but only respond to them if the
+     * grouping feature is currently enabled at the time of the event
+     */
     function initFeature() {
+        
+        // render hulls on every update (iff grouping mode enabled)
+        realityEditor.gui.ar.draw.addUpdateListener(function() {
+            if (globalStates.groupingEnabled) {
+                // draw hulls
+                realityEditor.gui.ar.selecting.drawGroupHulls();
+            }
+        });
 
         // be notified when certain touch event functions get triggered in device/index.js
-        realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
-        realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
+        realityEditor.device.registerCallback('onDocumentMultiTouchStart', function(params) {
+            if (globalStates.groupingEnabled) {
+                console.log('selecting.js: onDocumentMultiTouchStart', params);
+                
+                // If the event is hitting the background and it isn't the multi-touch to scale an object
+                if (realityEditor.device.utilities.isEventHittingBackground(params.event)) {
+                    if (params.event.touches.length < 2) {
+                        console.log('did tap on background in selecting mode')
+
+                        // handling double taps
+                        if (!isDoubleTap) { // on first tap
+                            isDoubleTap = true;
+
+                            // if no follow up tap within time reset
+                            setTimeout(function() {
+                                isDoubleTap = false;
+                            }, 300);
+                        } else { // registered double tap and start drawing selection lasso
+                            selectingState.active = true;
+                            var svg = document.getElementById("groupSVG");
+                            //TODO: start drawing
+                            startLasso(params.event.pageX, params.event.pageY);
+                        }
+                    }
+                }
+
+            }
+            
+        });
         
+        realityEditor.device.registerCallback('onDocumentMultiTouchMove', function(params) {
+            if (globalStates.groupingEnabled) {
+                // console.log('selecting.js: onDocumentMultiTouchMove', params);
+                
+                if (selectingState.active) {
+                    continueLasso(params.event.pageX, params.event.pageY);
+                }
+                
+                // TODO: also move group objects too
+                // // also move group objects too
+                // if (activeVehicle.groupID !== null) {
+                //     let groupMembers = realityEditor.gui.ar.selecting.getGroupMembers(activeVehicle.groupID);
+                //     for (let member of groupMembers) {
+                //         let frame = realityEditor.getFrame(member.object, member.frame);
+                //         realityEditor.gui.ar.selecting.moveGroupVehicleToScreenCoordinate(frame, event.touches[0].pageX, event.touches[0].pageY);
+                //     }
+                // }
+
+            }
+            
+        });
+        
+        realityEditor.device.registerCallback('onDocumentMultiTouchEnd', function(params) {
+            if (globalStates.groupingEnabled) {
+                console.log('selecting.js: onDocumentMultiTouchEnd', params);
+                
+                if (selectingState.active) {
+                    selectingState.active = false;
+                    closeLasso();
+
+                    var selected = getLassoed();
+                    selectFrames(selected);
+                    // TODO: get selected => select
+                }
+                
+                /*
+                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.pointerEvents = 'none';
+
+                if (activeVehicle.groupID !== null) {
+                    for (let member of groupStruct[activeVehicle.groupID]) {
+                        document.getElementById('svg' + member).style.display = 'none';
+                        document.getElementById('svg' + member).style.pointerEvents = 'none';
+                    }
+                }
+                 */
+            }
+            
+        });
+        
+        realityEditor.device.registerCallback('beginTouchEditing', function(params) {
+            
+            console.log('TODO: set move overlays on for other nodes in group', params);
+            // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
+            // document.getElementById('svg' + (nodeKey || frameKey)).style.pointerEvents = 'all';
+            //
+            // // set move overlays on for other nodes in group
+            // if (activeVehicle.groupID !== null) {
+            //     console.log("BEGIN GROUP EDITING");
+            //     let groupMembers = realityEditor.gui.ar.selecting.getGroupMembers(activeVehicle.groupID);
+            //     for (let member of groupMembers) {
+            //         document.getElementById('svg' + member.frame).style.display = 'inline';
+            //         document.getElementById('svg' + member.frame).style.pointerEvents = 'all';
+            //     }
+            // }
+        });
     }
 
     /**
@@ -43,7 +174,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
             lasso = document.getElementById("lasso");
         }
 
-        lasso.setAttribute("points", "{"+x+"}, {"+y+"}");
+        lasso.setAttribute("points", x + ", "+y);
         lasso.setAttribute("stroke", "#0000ff");
         lasso.setAttribute("fill", "rgba(0,0,255,0.2)");
 
@@ -57,7 +188,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
      */
     function continueLasso(x, y) {
         var lassoPoints = lasso.getAttribute("points");
-        lassoPoints += " {"+x+"}, {"+y+"}";
+        lassoPoints += " "+x+", "+y;
         lasso.setAttribute("points", lassoPoints);
         points.push([x, y]);
         var lassoed = getLassoed().length;
@@ -78,7 +209,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
 
         var lassoPoints = lasso.getAttribute("points");
         var start = points[0];
-        lassoPoints += "{"+start[0]+"}, {"+start[1]+"}";
+        lassoPoints += " " + start[0]+", "+start[1];
         lasso.setAttribute("points", lassoPoints);
 
         setTimeout(clearLasso.bind(this), 500);
@@ -129,23 +260,25 @@ createNameSpace("realityEditor.gui.ar.selecting");
             // see which groups we've selected from
             var groups = {}; // {groupID.<string>: <set>.<string>}
             // let frameToObj = {}; // lookup for {frameKey: objectKey}
-            for (var member in selected) {
+            selected.forEach(function(member) {
                 var object = realityEditor.getObject(member.object);
                 var group = object.frames[member.frame].groupID;
                 frameToObj[member.frame] = member.object;
 
-                if (group == null) continue;
-                if (group in groups) groups[group].add(member.frame);
-                else groups[group] = new Set([member.frame]);
-            }
+                if (group) {
+                    if (group in groups) groups[group].add(member.frame);
+                    else groups[group] = new Set([member.frame]);
+                }
+
+            });
 
             var groupIDs = Object.keys(groups);
             // if you've selected all of one group and only that group ...
             if (groupIDs.length === 1 && groups[groupIDs[0]].size === groupStruct[groupIDs[0]].size) {
                 // then remove all from group 
-                for (var member in selected) {
+                selected.forEach(function(member) {
                     removeFromGroup(member.frame, member.object);
-                }
+                });
             }
             // otherwise we'll make a new group ...
             else {
@@ -154,7 +287,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
         }
 
         drawGroupHulls();
-    };
+    }
 
     /**
      * checks if frame is in group, and if so, removes from any group
@@ -223,12 +356,13 @@ createNameSpace("realityEditor.gui.ar.selecting");
         groupStruct[newGroup] = new Set();
 
         // add each selected to group
-        for (var member in selected) {
+        selected.forEach(function(member) {
             var frame = realityEditor.getFrame(member.object, member.frame);
             addToGroup(member.frame, member.object, newGroup);
             frame.groupID = newGroup;
             groupStruct[newGroup].add(member.frame);
-        }
+            console.log('frame ' + member.frame + ' was added to new group');
+        });
 
         console.log('grouped in ' + newGroup);
     }
@@ -276,11 +410,11 @@ createNameSpace("realityEditor.gui.ar.selecting");
 
         clearHulls(svg);
 
-        for (var groupID in Object.keys(groupStruct)) {
+        Object.keys(groupStruct).forEach(function(groupID) {
             if (groupStruct[groupID].size > 1) {
                 drawHull(svg, groupStruct[groupID], groupID);
             }
-        }
+        });
 
         function clearHulls(svg) {
             while (svg.lastChild) {
@@ -289,12 +423,11 @@ createNameSpace("realityEditor.gui.ar.selecting");
         }
 
         function drawHull(svg, group, groupID) {
-            var points = [];
+            var hullPoints = [];
 
             // get the corners of frames
-            for (var frameKey of group) {
+            for (var frameKey of group) { // iterate over the Set
                 var objectKey = frameToObj[frameKey];
-                var object = realityEditor.getObject(objectKey);
                 var frame = realityEditor.getFrame(objectKey, frameKey);
 
                 // make sure there is an object and frame
@@ -306,19 +439,19 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 // points.push([x, y]); // pushing center point
                 // pushing corner points
                 if (bb) {
-                    for (var corner in Object.keys(bb)) {
-                        points.push([bb[corner].x, bb[corner].y]);
-                    }
+                    Object.keys(bb).forEach(function(corner) {
+                        hullPoints.push([bb[corner].x, bb[corner].y]);
+                    });
                 }
             }
 
             // create hull points
-            var hullShape = hull(points, Infinity);
-            var hullString = "";
-            for (var pt in hullShape) {
-                hullString += '{'+pt[0]+'}, {'+pt[1]+'}';
-            }
-            hullString += '{'+hullShape[0][0]+'}, {'+hullShape[0][1]+'}';
+            var hullShape = hull(hullPoints, Infinity);
+            var hullString = '';
+            hullShape.forEach(function(pt) {
+                hullString += ' ' + pt[0] + ', ' + pt[1];
+            });
+            hullString += ' ' + hullShape[0][0] + ', ' + hullShape[0][1];
 
             // draw hull
             var hullSVG = document.createElementNS(svg.namespaceURI, 'polyline');
