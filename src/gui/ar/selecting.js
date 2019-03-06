@@ -9,8 +9,6 @@ createNameSpace("realityEditor.gui.ar.selecting");
 
 (function(exports) {
     
-    
-
     /**
      * Keeps track of where the line starts
      * @type {Array.<Array.<number>>}
@@ -49,6 +47,8 @@ createNameSpace("realityEditor.gui.ar.selecting");
         frame: []
     };
 
+    var isUnconstrainedEditingGroup = false;
+    
     /**
      * Initialize the grouping feature regardless of whether it is enabled onLoad
      * Subscribe to touches and rendering events, but only respond to them if the
@@ -61,6 +61,16 @@ createNameSpace("realityEditor.gui.ar.selecting");
             if (globalStates.groupingEnabled) {
                 // draw hulls
                 drawGroupHulls();
+                
+                if (isUnconstrainedEditingGroup) {
+                    var activeVehicle = realityEditor.device.getEditingVehicle();
+                    var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
+                    forEachGroupedFrame(activeVehicle, function(frame) {
+                        var newMatrix = [];
+                        realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicleMatrix, frame.startingMatrixOffset, newMatrix);
+                        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
+                    });
+                }
             }
         });
 
@@ -121,7 +131,6 @@ createNameSpace("realityEditor.gui.ar.selecting");
                     moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
                 }
 
-
             }
             
         });
@@ -150,7 +159,6 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 }
                  */
             }
-            
         });
         
         realityEditor.device.registerCallback('beginTouchEditing', function(params) {
@@ -169,6 +177,38 @@ createNameSpace("realityEditor.gui.ar.selecting");
             //     }
             // }
         });
+
+        realityEditor.device.registerCallback('resetEditingState', function(params) {
+            isUnconstrainedEditingGroup = false;
+        });
+        
+        // unconstrained move grouped vehicles if needed
+        // TODO: also store this info when starting unconstrained editing via another method, e.g. editing mode
+        realityEditor.device.registerCallback('onFramePulledIntoUnconstrained', function(params) {
+            var activeVehicle = params.activeVehicle;
+            forEachGroupedFrame(activeVehicle, function(frame) {
+                // store relative offset
+
+                var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
+                var groupedVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(frame).matrix;
+
+                var startingMatrixOffset = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.utilities.invertMatrix(activeVehicleMatrix), groupedVehicleMatrix, startingMatrixOffset);
+                frame.startingMatrixOffset = startingMatrixOffset;
+                
+                isUnconstrainedEditingGroup = true;
+            });
+        });
+    }
+    
+    function forEachGroupedFrame(activeVehicle, callback) {
+        if (activeVehicle && activeVehicle.groupID !== null) {
+            var groupMembers = getGroupMembers(activeVehicle.groupID);
+            groupMembers.forEach(function(member) {
+                var frame = realityEditor.getFrame(member.object, member.frame);
+                callback(frame);
+            });
+        }
     }
 
     /**
@@ -535,13 +575,9 @@ createNameSpace("realityEditor.gui.ar.selecting");
      * @param {number} pageY
      */
     function moveGroupedVehiclesIfNeeded(activeVehicle, pageX, pageY) {
-        if (activeVehicle.groupID !== null) {
-            var groupMembers = getGroupMembers(activeVehicle.groupID);
-            groupMembers.forEach(function(member) {
-                var frame = realityEditor.getFrame(member.object, member.frame);
-                moveGroupVehicleToScreenCoordinate(frame, pageX, pageY);
-            });
-        }
+        forEachGroupedFrame(activeVehicle, function(frame) {
+            moveGroupVehicleToScreenCoordinate(frame, pageX, pageY);
+        });
     }
 
     exports.initFeature = initFeature;

@@ -183,26 +183,11 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
 };
 
 /**
- * Returns the frame or node specified by the path, if one exists.
- * @param {string} objectKey
- * @param {string} frameKey
- * @param {string|undefined} nodeKey
- * @return {Frame|Node|null}
- */
-realityEditor.device.getActiveVehicle = function(objectKey, frameKey, nodeKey) {
-    if (nodeKey) {
-        return realityEditor.getNode(objectKey, frameKey, nodeKey);
-    } else {
-        return realityEditor.getFrame(objectKey, frameKey);
-    }
-};
-
-/**
  * Returns the frame or node that is currently being edited, if one exists.
  * @return {Frame|Node|null}
  */
 realityEditor.device.getEditingVehicle = function() {
-    return this.getActiveVehicle(this.editingState.object, this.editingState.frame, this.editingState.node);
+    return realityEditor.getVehicle(this.editingState.object, this.editingState.frame, this.editingState.node);
 };
 
 /**
@@ -416,7 +401,7 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
  */
 realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) {
     
-    var activeVehicle = this.getActiveVehicle(objectKey, frameKey, nodeKey);
+    var activeVehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
 
     // if you're already editing another object (or can't find this one) don't let you start editing this one
     if (this.editingState.object || !activeVehicle) { return; }
@@ -517,7 +502,7 @@ realityEditor.device.disablePinchToScale = function() {
  */
 realityEditor.device.onElementTouchDown = function(event) {
     var target = event.currentTarget;
-    var activeVehicle = this.getActiveVehicle(target.objectId, target.frameId, target.nodeId);
+    var activeVehicle = realityEditor.getVehicle(target.objectId, target.frameId, target.nodeId);
     
     // how long it takes to move the element:
     // instant if editing mode on, 400ms if not (or touchMoveDelay if specially configured for that element)

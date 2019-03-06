@@ -244,6 +244,21 @@ realityEditor.getNode = function (objectKey, frameKey, nodeKey){
     return this.objects[objectKey].frames[frameKey].nodes[nodeKey];
 };
 
+/**
+ * Returns the frame or node specified by the path, if one exists.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string|undefined} nodeKey
+ * @return {Frame|Node|null}
+ */
+realityEditor.getVehicle = function(objectKey, frameKey, nodeKey) {
+    if (nodeKey) {
+        return realityEditor.getNode(objectKey, frameKey, nodeKey);
+    } else {
+        return realityEditor.getFrame(objectKey, frameKey);
+    }
+};
+
 // return a link located in a frame
 realityEditor.getLink = function (objectKey, frameKey, linkKey){
     if(!objectKey) return null;
