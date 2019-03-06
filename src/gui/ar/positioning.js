@@ -462,3 +462,30 @@ realityEditor.gui.ar.positioning.getProjectedCoordinates = function(frameCoordin
         y: projectedCoordinateVector[1]
     };
 };
+
+/**
+ * Instantly moves the frame to the pocketBegin matrix, so it's floating right in front of the camera
+ * @param objectKey
+ * @param frameKey
+ */
+realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKey) {
+
+    frame = realityEditor.getFrame(objectKey, frameKey);
+    
+    // recompute frame.temp for the new object
+    var res1 = [];
+    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, res1);
+    console.log(rotateX, res1, frame.temp);
+    realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
+    console.log('temp', frame.temp);
+    frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
+    
+    // compute frame.matrix based on new object
+    var resultMatrix = [];
+    realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
+    realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+
+    // reset frame.begin
+    frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+}

@@ -233,20 +233,15 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
         
         addMenuButtonActions();
-        
-        // var isPocketTapped = false;
-
-        pocket.addEventListener('pointerdown', function(evt) {
-            isPocketTapped = true;
-        });
 
         pocket.addEventListener('pointerup', function(evt) {
             isPocketTapped = false;
         });
 
         // On touching an element-template, upload to currently visible object
-        pocket.addEventListener('pointermove', function(evt) {
-            
+        pocket.addEventListener('pointerdown', function(evt) {
+            isPocketTapped = true;
+
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }

@@ -196,27 +196,6 @@ createNameSpace("realityEditor.device.videoRecording");
     }
 
     // TODO: turn into a cleaner, more reusable function in a better location
-    function moveFrameToCamera(objectKey, frameKey) {
-        
-        frame = realityEditor.getFrame(objectKey, frameKey);
-// recompute frame.temp for the new object
-        var res1 = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, res1);
-        console.log(rotateX, res1, frame.temp);
-        realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
-        console.log('temp', frame.temp);
-        frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
-// compute frame.matrix based on new object
-        var resultMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
-        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
-
-        // reset frame.begin
-        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        
-    }
-
-    // TODO: turn into a cleaner, more reusable function in a better location
     /**
      * Calculates what the frame.ar.matrix needs to be in order to place the frame at the camera position on the provided object.
      * Usually objectMatrix is the current visibleObjects matrix for this object, but by saving the matrix from a previous
@@ -300,7 +279,6 @@ createNameSpace("realityEditor.device.videoRecording");
     exports.toggleRecording = toggleRecording;
     exports.startRecordingOnClosestObject = startRecordingOnClosestObject;
     exports.stopRecording = stopRecording;
-    exports.moveFrameToCamera = moveFrameToCamera;
 
     exports.startRecordingForFrame = startRecordingForFrame;
     exports.stopRecordingForFrame = stopRecordingForFrame;
