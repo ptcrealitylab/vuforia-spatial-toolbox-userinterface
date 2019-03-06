@@ -255,7 +255,27 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
                             }
                         }
+                        
+                        // reconstructing groups from frame
+                        var group = thisFrame.groupID;
+                        if (group === undefined) {
+                            thisFrame.groupID = null;
+                        }
+                        else if (group !== null) {
+                            if (group in groupStruct) {
+                                groupStruct[group].add(frameKey);
+                            } 
+                            else {
+                                groupStruct[group] = new Set([frameKey]);
+                            }
+                        }
+                        frameToObj[frameKey] = objectKey;
                     }
+                    
+                    // draw hulls for groups
+                    console.log(groupStruct);
+                    // TODO: NOT SURE WHEN TO DO THIS screenX and Y aren't set by this point
+                    // realityEditor.gui.ar.selecting.drawGroupHulls();
 
                     if (!thisObject.protocol) {
                         thisObject.protocol = "R0";
@@ -360,8 +380,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     }
     
     // update each frame in the object
-
-    
     for (var frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
@@ -1439,30 +1457,6 @@ if (thisFrame) {
         }
         
     }
-
-    // if (typeof msgContent.sendToBackground !== "undefined") {
-    //
-    //     var iframe = globalDOMCache['iframe' + tempThisObject.uuid];
-    //     var src = iframe.src;
-    //    
-    //     var desktopBackgroundRenderer = document.getElementById('desktopBackgroundRenderer');
-    //     if (desktopBackgroundRenderer) {
-    //         if (desktopBackgroundRenderer.src !== src) {
-    //             desktopBackgroundRenderer.src = src;
-    //         }
-    //     }
-    //    
-    //     if (iframe) {
-    //         iframe.style.display = 'none';
-    //     }
-    //    
-    //     var div = globalDOMCache[tempThisObject.uuid]; //globalDOMCache['object' + tempThisObject.uuid];
-    //     if (div) {
-    //         // div.style.pointerEvents = 'none';
-    //         globalDOMCache[tempThisObject.uuid].style.display = 'none';
-    //     }
-    //    
-    // }
     
 };
 
@@ -2420,4 +2414,21 @@ realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
     if (frame) {
         frame.contentWindow.postMessage(JSON.stringify(message), "*");
     }
+};
+
+/**
+ * update groupIds for changed frames
+ * @param ip
+ * @param objectKey
+ * @param frameKey
+ * @param newGroupID {string|null} either groupId or null for none
+ * TODO: work in progress
+ */
+realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGroupID) {
+    var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/group/";
+    var content = {group: newGroupID};
+    this.postData(urlEndpoint, content, function (err, response) {
+        console.log(`set group to ${newGroupID} on server`);
+        console.log(err, response);
+    })
 };

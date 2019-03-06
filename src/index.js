@@ -77,6 +77,7 @@ var realityEditor = realityEditor || {
                     globalCanvas : {}
 				},
                 positioning: {},
+                selecting: {},
                 lines: {},
                 frameHistoryRenderer: {},
                 desktopRenderer: {},

@@ -196,6 +196,16 @@ var globalLogic ={
 
 var publicDataCache = {};
 
+// reconstructs the grouping structure on the UI side
+/**
+ * @type {Object.<string, Set.<string>>}
+ */
+var groupStruct = {};
+/**
+ * @type {Object.<string, string>}
+ */
+var frameToObj = {};
+
 var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
