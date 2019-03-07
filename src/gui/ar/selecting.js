@@ -69,7 +69,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
                         var newMatrix = [];
                         realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicleMatrix, frame.startingMatrixOffset, newMatrix);
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
-                    });
+                    }, true);
                     
                     if (activeVehicle) {
                         var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
@@ -213,7 +213,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 var memberUrlEndpoint = 'http://' + objects[frame.objectId].ip + ':' + httpPort + '/object/' + frame.objectId + "/frame/" + frame.uuid + "/node/null/size";
                 // + "/node/" + this.editingState.node + routeSuffix;
                 realityEditor.network.postData(memberUrlEndpoint, memberContent);
-            });
+            }, false);
             
         });
         
@@ -232,7 +232,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 frame.startingMatrixOffset = startingMatrixOffset;
                 
                 isUnconstrainedEditingGroup = true;
-            });
+            }, true);
         });
 
         // TODO: this method is a hack, implement in a better way making use of screenExtension module
@@ -277,9 +277,15 @@ createNameSpace("realityEditor.gui.ar.selecting");
                                     isScreenVisible: true,
                                     scale: groupedFrame.ar.scale
                                 };
+
+                                // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
+                                var thisFrameFrameCenterScreenPosition = realityEditor.gui.ar.positioning.getScreenPosition(groupedFrame.objectId,groupedFrame.uuid,true,false,false,false,false).center;
+                                var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, thisFrameFrameCenterScreenPosition.x, thisFrameFrameCenterScreenPosition.y);
+                                // visibleScreenObject.x = point.x;
+                                // visibleScreenObject.y = point.y;
                                 
-                                screenObjectClone.x = visibleScreenObject.x;
-                                screenObjectClone.y = visibleScreenObject.y;
+                                screenObjectClone.x = point.x; //visibleScreenObject.x;
+                                screenObjectClone.y = point.y; //visibleScreenObject.y;
                                 screenObjectClone.targetScreen = {
                                     object: visibleScreenObject.object,
                                     frame: visibleScreenObject.frame
@@ -305,7 +311,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
 
                     }
                     
-                });
+                }, true);
                 
             }
             
@@ -327,13 +333,15 @@ createNameSpace("realityEditor.gui.ar.selecting");
      * NOTE: Currently performs the callback for the activeVehicle too //TODO: give the option to exclude it?
      * @param {Frame} activeVehicle
      * @param {function} callback
+     * @param {boolean} excludeActive - if true, doesn't trigger the callback for the activeVehicle, only for its co-members
      */
-    function forEachGroupedFrame(activeVehicle, callback) {
+    function forEachGroupedFrame(activeVehicle, callback, excludeActive) {
         if (activeVehicle && activeVehicle.groupID !== null) {
             var groupMembers = getGroupMembers(activeVehicle.groupID);
             groupMembers.forEach(function(member) {
                 var frame = realityEditor.getFrame(member.object, member.frame);
                 if (frame) {
+                    if (excludeActive && frame.uuid === activeVehicle.uuid) { return; }
                     callback(frame);
                 } else {
                     groupStruct[groupID].delete(member.frame); // group restruct
@@ -595,13 +603,22 @@ createNameSpace("realityEditor.gui.ar.selecting");
     function getFrameCornersScreenCoordinates(objectKey, frameKey, buffer) {
         if (typeof buffer === 'undefined') buffer = 0;
         var screenPosition = realityEditor.gui.ar.positioning.getScreenPosition(objectKey, frameKey, false, true, true, true, true, buffer);
+        
+        // if (typeof screenPosition.upperLeft.x === 'number' && !isNaN(screenPosition.upperLeft.x) &&
+        //     typeof screenPosition.upperRight.x === 'number' && !isNaN(screenPosition.upperRight.x) &&
+        //     typeof screenPosition.lowerLeft.x === 'number' && !isNaN(screenPosition.lowerLeft.x) &&
+        //     typeof screenPosition.lowerRight.x === 'number' && !isNaN(screenPosition.lowerRight.x)) {
 
-        return {
-            upperLeft: screenPosition.upperLeft,
-            upperRight: screenPosition.upperRight,
-            lowerLeft: screenPosition.lowerLeft,
-            lowerRight: screenPosition.lowerRight
-        };
+            return {
+                upperLeft: screenPosition.upperLeft,
+                upperRight: screenPosition.upperRight,
+                lowerLeft: screenPosition.lowerLeft,
+                lowerRight: screenPosition.lowerRight
+            };
+        //    
+        // } else {
+        //     return null;
+        // }
     }
 
     // /**
@@ -746,7 +763,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
     function moveGroupedVehiclesIfNeeded(activeVehicle, pageX, pageY) {
         forEachGroupedFrame(activeVehicle, function(frame) {
             moveGroupVehicleToScreenCoordinate(frame, pageX, pageY);
-        });
+        }, true);
     }
 
     exports.initFeature = initFeature;

@@ -521,8 +521,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
             iframe.style.width = thisFrame.frameSizeX + 'px';
             iframe.style.height = thisFrame.frameSizeY + 'px';
-            iframe.style.left = ((globalStates.height - thisFrame.frameSizeX) / 2) + "px";
-            iframe.style.top = ((globalStates.width - thisFrame.frameSizeY) / 2) + "px";
+            iframe.style.left = ((globalStates.height - parseFloat(thisFrame.frameSizeX)) / 2) + "px";
+            iframe.style.top = ((globalStates.width - parseFloat(thisFrame.frameSizeY)) / 2) + "px";
 
             overlay.style.width = iframe.style.width;
             overlay.style.height = iframe.style.height;
@@ -544,8 +544,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             var convertedTouchOffsetY = (this.screenObject.touchOffsetY) * parseFloat(thisFrame.height);
 
             // 3. manually apply the touchOffset to the results so that it gets rendered in the correct place on the first pass
-            thisFrame.ar.x -= (convertedTouchOffsetX - thisFrame.width/2 ) * thisFrame.ar.scale;
-            thisFrame.ar.y -= (convertedTouchOffsetY - thisFrame.height/2 ) * thisFrame.ar.scale;
+            thisFrame.ar.x -= (convertedTouchOffsetX - parseFloat(thisFrame.width)/2 ) * thisFrame.ar.scale;
+            thisFrame.ar.y -= (convertedTouchOffsetY - parseFloat(thisFrame.height)/2 ) * thisFrame.ar.scale;
             
             // TODO: this causes a bug now with the offset... figure out why it used to be necessary but doesn't help anymore
             // 4. set the actual touchOffset so that it stays in the correct offset as you drag around

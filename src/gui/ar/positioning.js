@@ -298,10 +298,10 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     }
 
     // TODO: uncomment to debug if we start to get matrices looking like [null, null, null, null, ... , null]
-    // if (newMatrixValue.some(function(elt) { return (typeof elt !== 'number' || isNaN(elt)); })) {
-    //     console.warn('trying to set matrix elements to null or NaN');
-    //     return;
-    // }
+    if (newMatrixValue.some(function(elt) { return (typeof elt !== 'number' || isNaN(elt)); })) {
+        console.warn('trying to set matrix elements to null or NaN');
+        return;
+    }
     
     // nodes on local frames set their own matrix
     
