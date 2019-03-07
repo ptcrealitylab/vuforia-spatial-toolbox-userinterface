@@ -70,6 +70,12 @@ createNameSpace("realityEditor.gui.ar.selecting");
                         realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicleMatrix, frame.startingMatrixOffset, newMatrix);
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
                     });
+                    
+                    if (activeVehicle) {
+                        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                        // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+                        moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x, touchPosition.y);
+                    }
                 }
             }
         });
@@ -148,6 +154,9 @@ createNameSpace("realityEditor.gui.ar.selecting");
                     // TODO: get selected => select
                 }
                 
+                var activeVehicle = realityEditor.device.getEditingVehicle();
+                console.log('onDocumentMultiTouchEnd', params, activeVehicle);
+                
                 /*
                 document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.pointerEvents = 'none';
 
@@ -180,6 +189,36 @@ createNameSpace("realityEditor.gui.ar.selecting");
 
         realityEditor.device.registerCallback('resetEditingState', function(params) {
             isUnconstrainedEditingGroup = false;
+
+            var activeVehicle = realityEditor.device.getEditingVehicle();
+            if (!activeVehicle) { return; }
+
+            console.log('resetEditingState', params, activeVehicle);
+
+            // clear the groupTouchOffset of each frame in the group
+            // and post the new positions of each frame in the group to the server
+            if (activeVehicle.groupID !== null) {
+                var groupMembers = getGroupMembers(activeVehicle.groupID);
+                groupMembers.forEach(function(member) {
+                    var frame = realityEditor.getFrame(member.object, member.frame);
+                    frame.groupTouchOffset = undefined; // recalculate groupTouchOffset each time
+
+                    var memberPositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+                    var memberContent = {};
+                    memberContent.x = memberPositionData.x;
+                    memberContent.y = memberPositionData.y;
+                    memberContent.scale = memberPositionData.scale;
+                    if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                        memberContent.matrix = memberPositionData.matrix;
+                    }
+                    memberContent.lastEditor = globalStates.tempUuid;
+
+                    var memberUrlEndpoint = 'http://' + objects[member.object].ip + ':' + httpPort + '/object/' + member.object + "/frame/" + member.frame + "/node/null/size";
+                    // + "/node/" + this.editingState.node + routeSuffix;
+                    realityEditor.network.postData(memberUrlEndpoint, memberContent);
+                });
+            }
+            
         });
         
         // unconstrained move grouped vehicles if needed
@@ -435,7 +474,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
     }
 
     /**
-     * gets bounding box corners of frame
+     * gets bounding box corners of frame - just the rectangle on the screen, doesn't rotate to fit tightly with CSS transformations
      * @param frameKey
      * @param buffer - extra padding to extend frame's bounding rect by
      * @returns {{upperLeft: {x: number, y: number}, upperRight: {x: number, y: number}, lowerLeft: {x: number, y: number}, lowerRight: {x: number, y: number}}}
@@ -452,12 +491,42 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 lowerRight: {x: boundingRect.right + buffer, y: boundingRect.bottom + buffer}
             }
         }
-    };
+    }
+
+    /**
+     * Accurately calculates the screen coordinates of the corners of a frame element
+     * @param {string} objectKey
+     * @param {string} frameKey
+     * @param {number|undefined} buffer
+     * @return {{upperLeft: upperLeft|{x, y}|*, upperRight: upperRight|{x, y}|*, lowerLeft: lowerLeft|{x, y}|*, lowerRight: lowerRight|{x, y}|*}}
+     */
+    function getFrameCornersScreenCoordinates(objectKey, frameKey, buffer) {
+        if (typeof buffer === 'undefined') buffer = 0;
+        var screenPosition = realityEditor.gui.ar.positioning.getScreenPosition(objectKey, frameKey, false, true, true, true, true, buffer);
+
+        return {
+            upperLeft: screenPosition.upperLeft,
+            upperRight: screenPosition.upperRight,
+            lowerLeft: screenPosition.lowerLeft,
+            lowerRight: screenPosition.lowerRight
+        };
+    }
+
+    // /**
+    //  * Provides the screen coordinates of the center, upperLeft and lowerRight coordinates of the provided frame
+    //  * (enough points to determine whether the frame overlaps with any rectangular region of the screen)
+    //  * @param {string} objectKey
+    //  * @param {string} frameKey
+    //  * @return {{ center: {x: number, y: number}, upperLeft: {x: number, y: number}, lowerRight: {x: number, y: number} }}
+    //  */
+    // realityEditor.gui.ar.positioning.getFrameScreenCoordinates = function(objectKey, frameKey) {
+    //     return this.getScreenPosition(objectKey, frameKey, true, true, false, false, true);
+    // };
 
     /**
      * gets all members in a group with object and frame keys
      * @param {string} groupID
-     * @returns {{object: <string>, frame: <string>}}
+     * @returns {Array.<{object: <string>, frame: <string>}>}
      */
     function getGroupMembers(groupID) {
         if (!(groupID in groupStruct)) return;
@@ -506,7 +575,10 @@ createNameSpace("realityEditor.gui.ar.selecting");
 
                 var x = frame.screenX;
                 var y = frame.screenY;
-                var bb = getFrameBoundingRectScreenCoordinates(frameKey, 10);
+                
+                // var bb = getFrameBoundingRectScreenCoordinates(frameKey, 10);
+                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 50);
+                
                 // points.push([x, y]); // pushing center point
                 // pushing corner points
                 if (bb) {

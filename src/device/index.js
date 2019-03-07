@@ -331,6 +331,9 @@ realityEditor.device.resetGlobalProgram = function() {
 realityEditor.device.resetEditingState = function() {
     this.sendEditingStateToFrameContents(this.editingState.frame, false); // TODO: move to a callback
 
+    // gets triggered before state gets reset, so that subscribed modules can respond based on what is about to be reset
+    this.callbackHandler.triggerCallbacks('resetEditingState');
+
     this.editingState.object = null;
     this.editingState.frame = null;
     this.editingState.node = null;
@@ -339,7 +342,6 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
     
-    this.callbackHandler.triggerCallbacks('resetEditingState');
 };
 
 /**
