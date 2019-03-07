@@ -690,6 +690,8 @@ realityEditor.device.onElementTouchUp = function(event) {
     // touch up over the trash
     if (event.pageX >= this.layout.getTrashThresholdX()) {
 
+        this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
+        
         // delete logic node
         if (target.type === "logic") {
 
@@ -712,11 +714,10 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
-            this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
 
             // delete frame
         } else if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
-
+            
             // delete links to and from the frame
             realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
                 var thisFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -741,7 +742,6 @@ realityEditor.device.onElementTouchUp = function(event) {
             
             delete objects[this.editingState.object].frames[this.editingState.frame];
 
-            this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
         }
     }
 

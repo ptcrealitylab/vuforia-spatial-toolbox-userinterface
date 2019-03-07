@@ -290,12 +290,18 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     
     if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         console.warn('trying to set position data matrix for something other than a frame or logic');
-        
-        if (!newMatrixValue || newMatrixValue.constructor !== Array) {
-            console.warn('trying to set matrix to a non-array value');
-            return;
-        }
     }
+
+    if (!newMatrixValue || newMatrixValue.constructor !== Array) {
+        console.warn('trying to set matrix to a non-array value');
+        return;
+    }
+
+    // TODO: uncomment to debug if we start to get matrices looking like [null, null, null, null, ... , null]
+    // if (newMatrixValue.some(function(elt) { return (typeof elt !== 'number' || isNaN(elt)); })) {
+    //     console.warn('trying to set matrix elements to null or NaN');
+    //     return;
+    // }
     
     // nodes on local frames set their own matrix
     

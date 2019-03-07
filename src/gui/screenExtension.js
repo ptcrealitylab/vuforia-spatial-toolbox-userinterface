@@ -26,6 +26,23 @@ realityEditor.gui.screenExtension.screenObject = {
 // distance to screen when first tap down
 realityEditor.gui.screenExtension.initialDistance = null;
 
+/**
+ * @type {CallbackHandler}
+ */
+realityEditor.gui.screenExtension.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/screenExtension');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.gui.screenExtension.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/screenExtension');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
 realityEditor.gui.screenExtension.shouldSendTouchesToScreen = function(eventObject) {
     
     // don't send touches 
@@ -548,6 +565,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         realityEditor.gui.screenExtension.sendScreenObject();
         
         realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization, oldVisualizationPositionData);
+
+        this.callbackHandler.triggerCallbacks('updateArFrameVisibility', {objectKey: this.screenObject.object, frameKey: this.screenObject.frame, newVisualization: thisFrame.visualization});
 
     }
 };

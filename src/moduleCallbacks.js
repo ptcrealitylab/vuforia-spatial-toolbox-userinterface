@@ -7,7 +7,11 @@ createNameSpace("realityEditor.moduleCallbacks");
 
 (function(exports) {
     
-    // class to handle callback registration and triggering, which can be instantiated for each module that needs it
+    /**
+     * class to handle callback registration and triggering, which can be instantiated for each module that needs it
+     * @param {string} moduleName - currently just used for debugging purposes
+     * @constructor
+     */
     function CallbackHandler(moduleName) {
         this.moduleName = moduleName; // only stored for debugging purposes
         console.log('created CallbackHandler for ' + this.moduleName);
