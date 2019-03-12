@@ -1,7 +1,7 @@
-createNameSpace("realityEditor.gui.ar.selecting");
+createNameSpace("realityEditor.gui.ar.grouping");
 
 /**
- * @fileOverview realityEditor.selecting.js
+ * @fileOverview realityEditor.grouping.js
  * Contains functions that render groups and selection GUI
  * as well as creating groups
  * functions in this file are called in device/index.js
@@ -83,12 +83,12 @@ createNameSpace("realityEditor.gui.ar.selecting");
         // be notified when certain touch event functions get triggered in device/index.js
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', function(params) {
             if (globalStates.groupingEnabled) {
-                console.log('selecting.js: onDocumentMultiTouchStart', params);
+                console.log('grouping.js: onDocumentMultiTouchStart', params);
                 
                 // If the event is hitting the background and it isn't the multi-touch to scale an object
                 if (realityEditor.device.utilities.isEventHittingBackground(params.event)) {
                     if (params.event.touches.length < 2) {
-                        console.log('did tap on background in selecting mode')
+                        console.log('did tap on background in grouping mode');
 
                         // handling double taps
                         if (!isDoubleTap) { // on first tap
@@ -113,7 +113,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
         
         realityEditor.device.registerCallback('onDocumentMultiTouchMove', function(params) {
             if (globalStates.groupingEnabled) {
-                // console.log('selecting.js: onDocumentMultiTouchMove', params);
+                // console.log('grouping.js: onDocumentMultiTouchMove', params);
                 
                 if (selectingState.active) {
                     continueLasso(params.event.pageX, params.event.pageY);
@@ -122,10 +122,10 @@ createNameSpace("realityEditor.gui.ar.selecting");
                 // TODO: also move group objects too
                 // // also move group objects too
                 // if (activeVehicle.groupID !== null) {
-                //     let groupMembers = realityEditor.gui.ar.selecting.getGroupMembers(activeVehicle.groupID);
+                //     let groupMembers = realityEditor.gui.ar.grouping.getGroupMembers(activeVehicle.groupID);
                 //     for (let member of groupMembers) {
                 //         let frame = realityEditor.getFrame(member.object, member.frame);
-                //         realityEditor.gui.ar.selecting.moveGroupVehicleToScreenCoordinate(frame, event.touches[0].pageX, event.touches[0].pageY);
+                //         realityEditor.gui.ar.grouping.moveGroupVehicleToScreenCoordinate(frame, event.touches[0].pageX, event.touches[0].pageY);
                 //     }
                 // }
 
@@ -143,7 +143,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
         
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', function(params) {
             if (globalStates.groupingEnabled) {
-                console.log('selecting.js: onDocumentMultiTouchEnd', params);
+                console.log('grouping.js: onDocumentMultiTouchEnd', params);
                 
                 if (selectingState.active) {
                     selectingState.active = false;
@@ -179,7 +179,7 @@ createNameSpace("realityEditor.gui.ar.selecting");
             // // set move overlays on for other nodes in group
             // if (activeVehicle.groupID !== null) {
             //     console.log("BEGIN GROUP EDITING");
-            //     let groupMembers = realityEditor.gui.ar.selecting.getGroupMembers(activeVehicle.groupID);
+            //     let groupMembers = realityEditor.gui.ar.grouping.getGroupMembers(activeVehicle.groupID);
             //     for (let member of groupMembers) {
             //         document.getElementById('svg' + member.frame).style.display = 'inline';
             //         document.getElementById('svg' + member.frame).style.pointerEvents = 'all';
@@ -769,4 +769,4 @@ createNameSpace("realityEditor.gui.ar.selecting");
     exports.initFeature = initFeature;
     exports.toggleGroupingMode = toggleGroupingMode;
 
-})(realityEditor.gui.ar.selecting);
+})(realityEditor.gui.ar.grouping);

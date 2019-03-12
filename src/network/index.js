@@ -1659,14 +1659,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.groupingEnabled = true;
                     // add any one-time side-effects here
                     console.log('TODO: grouping mode enabled...');
-                    realityEditor.gui.ar.selecting.toggleGroupingMode(true);
+                    realityEditor.gui.ar.grouping.toggleGroupingMode(true);
                 }
             } else {
                 if (globalStates.groupingEnabled) {
                     globalStates.groupingEnabled = false;
                     // add any one-time side-effects here:
                     console.log('TODO: grouping mode disabled...');
-                    realityEditor.gui.ar.selecting.toggleGroupingMode(false);
+                    realityEditor.gui.ar.grouping.toggleGroupingMode(false);
                 }
             }
         }
