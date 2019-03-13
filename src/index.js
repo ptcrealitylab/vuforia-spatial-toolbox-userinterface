@@ -81,6 +81,7 @@ var realityEditor = realityEditor || {
                 lines: {},
                 frameHistoryRenderer: {},
                 desktopRenderer: {},
+                groundPlane: {},
                 utilities: {}
             },
             crafting: {

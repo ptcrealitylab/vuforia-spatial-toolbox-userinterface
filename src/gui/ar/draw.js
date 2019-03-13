@@ -273,7 +273,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     this.ar.utilities.timeSynchronizer(timeCorrection);
     
     if (globalStates.guiState === "logic") {
-        this.gui.crafting.redrawDataCrafting();  // todo maybe animrealityEditor.gui.ar.draw.cameraMatrixation frame
+        this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
 
     this.visibleObjects = visibleObjects;
@@ -298,71 +298,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         
         this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
-
-        var hack = false;
-
-        // if (realityEditor.device.utilities.isDesktop()) {
-        //
-        //     if (objectKey === 'kepwareBox4Qimhnuea3n6') {
-        //         if (typeof this.visibleObjects[objectKey] === 'undefined') {
-        //             // var feederMatrix = [-0.919589,-0.085317,-0.383505,0,0.058074,0.935895,-0.347458,0,0.388565,-0.34179,-0.855685,0,-1.79,545.043,2760.847,1];
-        //             // var feederRotation = realityEditor.gui.ar.draw.utilities.extractRotation(feederMatrix, false, false, true);
-        //             // var feederTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(feederMatrix);
-        //             // var mFeeder = [];
-        //             //
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix(feederRotation, feederTranslation, mFeeder);
-        //             //
-        //             // var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
-        //             // var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
-        //             // cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
-        //             // cameraTranslation[13] *= mmToMeterScale;
-        //             // cameraTranslation[14] *= mmToMeterScale;
-        //             //
-        //             // var modelMatrix = this.visibleObjects[objectKey];
-        //             // var modelRotation = this.utilities.extractRotation(this.utilities.transposeMatrix(modelMatrix), false, true, true);
-        //             // var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
-        //             //
-        //             // var m1 = [];
-        //             // var m2 = [];
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix(modelRotation, modelTranslation, m1);
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, m2);
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix(m1, m2, modelViewMatrix);
-        //             //
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix()
-        //             //
-        //             // var mToggleYZ = [1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1];
-        //             // var res = [];
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix(feederMatrix, mToggleYZ, res);
-        //             this.visibleObjects[objectKey] = [-0.9141130008719327,-0.153588206861805,-0.37524403306366483,0,-0.019867592374020467,-0.9073995872242384,0.41979908036886104,0,-0.40497246870641623,0.39119899260894975,0.8264143317801149,0,-3.5872705618541545,612.8694119022457,2825.4393574918495,1];
-        //         }
-        //         hack = true;
-        //     } else if (objectKey === 'feederZoneTwoPf92nuquaaxs') {
-        //         if (typeof this.visibleObjects[objectKey] === 'undefined') {
-        //             // this.visibleObjects[objectKey] = [0.978259, 0.059812, 0.198574, 0, 0.205806, -0.397954, -0.894023, 0, 0.02555, 0.915454, -0.401612, 0, 93.081, -477.505, 2067.3979999999997, 1];
-        //            
-        //             this.visibleObjects[objectKey] = [0.9251520310702537,0.15426069220661526,0.34683909561426485,0,-0.3795268878506489,0.3934279731695167,0.8373611952593266,0,-0.007284284795805668,-0.906321173076996,0.42252676888849533,0,225.88394781744728,-454.6329656945138,2189.4325542748365,1];
-        //         }
-        //         hack = true;
-        //     } if (objectKey === 'kepwareBox7Cjeujc54h5y') {
-        //         if (typeof this.visibleObjects[objectKey] === 'undefined') {
-        //
-        //             // var supplyMatrix = [-0.919589,-0.085317,-0.383505,0,0.058074,0.935895,-0.347458,0,0.388565,-0.34179,-0.855685,0,-1.79,545.043,2760.847,1];
-        //             //
-        //             // var supplyRotation = realityEditor.gui.ar.draw.utilities.extractRotation(supplyMatrix, false, false, true);
-        //             // var supplyTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(supplyMatrix);
-        //             // var mSupply = [];
-        //             //
-        //             // realityEditor.gui.ar.utilities.multiplyMatrix(supplyRotation, supplyTranslation, mSupply);
-        //             //
-        //             // this.visibleObjects[objectKey] = mSupply; //[-0.984749,-0.003003,-0.173955,0,-0.156786,0.448731,0.879806,0,0.075417,0.893662,-0.442358,0,575.926,137.143,2536.8089999999997,1];
-        //            
-        //             this.visibleObjects[objectKey] = [-0.9673291924461068,-0.05303891323069931,-0.24791350734655282,0,0.238641204928283,-0.5205998877647815,-0.8197720001132475,0,-0.08558392811702537,-0.8521517649706553,0.5162487391805006,0,679.4577540861796,223.23913861073788,2401.665044320573,1];
-        //            
-        //         }
-        //         hack = true;
-        //     }
-        //    
-        // }
         
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
@@ -372,52 +307,43 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             this.setObjectVisible(this.activeObject, true);
 
             var modelViewMatrix = [];
+            
+            if (this.activeObject.isWorldObject) {
 
-            if (!hack) {
-
-                if (this.activeObject.isWorldObject) {
-
-                    // don't start rendering world frames until we've received a valid camera matrix
-                    if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
-                        continue;
-                    }
-                    modelViewMatrix = this.visibleObjects[objectKey];
-
-                } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
-
-                    // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
-                    modelViewMatrix = this.visibleObjects[objectKey];
-
-                } else {
-
-                    // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
-                    // we need to modify the object and camera matrices before we multiply them together to align their axes and scales
-                    var modelViewMatrix = [];
-
-                    var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
-                    var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
-                    cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
-                    cameraTranslation[13] *= mmToMeterScale;
-                    cameraTranslation[14] *= mmToMeterScale;
-
-                    var modelMatrix = this.visibleObjects[objectKey];
-                    var modelRotation = this.utilities.extractRotation(this.utilities.transposeMatrix(modelMatrix), false, true, true);
-                    var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
-
-                    var m1 = [];
-                    var m2 = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(modelRotation, modelTranslation, m1);
-                    realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, m2);
-                    realityEditor.gui.ar.utilities.multiplyMatrix(m1, m2, modelViewMatrix);
-
-                    this.visibleObjects[objectKey] = modelViewMatrix;
-
+                // don't start rendering world frames until we've received a valid camera matrix
+                if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
+                    continue;
                 }
-                
-            } else {
-                
                 modelViewMatrix = this.visibleObjects[objectKey];
-                
+
+            } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
+
+                // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
+                modelViewMatrix = this.visibleObjects[objectKey];
+
+            } else {
+
+                // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
+                // we need to modify the object and camera matrices before we multiply them together to align their axes and scales
+
+                var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
+                var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
+                cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
+                cameraTranslation[13] *= mmToMeterScale;
+                cameraTranslation[14] *= mmToMeterScale;
+
+                var modelMatrix = this.visibleObjects[objectKey];
+                var modelRotation = this.utilities.extractRotation(this.utilities.transposeMatrix(modelMatrix), false, true, true);
+                var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
+
+                var m1 = [];
+                var m2 = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(modelRotation, modelTranslation, m1);
+                realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, m2);
+                realityEditor.gui.ar.utilities.multiplyMatrix(m1, m2, modelViewMatrix);
+
+                this.visibleObjects[objectKey] = modelViewMatrix;
+
             }
 
             // compute its ModelViewProjection matrix

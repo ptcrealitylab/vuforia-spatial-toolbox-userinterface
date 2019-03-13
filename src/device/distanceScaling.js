@@ -28,12 +28,9 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
-
-
-
+        
         realityEditor.gui.buttons.registerCallbackForButton('distance', onDistanceEditingModeChanged);
         realityEditor.gui.buttons.registerCallbackForButton('distanceGreen', onDistanceGreenPressed);
-
     }
     
     function loop() {
