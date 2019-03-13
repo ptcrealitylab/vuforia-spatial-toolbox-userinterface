@@ -7,7 +7,7 @@ createNameSpace("realityEditor.gui.ar.groundPlane");
 
 (function(exports) {
     
-    const groundPlaneId = 'groundPlaneAnchor';
+    var groundPlaneId = 'groundPlaneAnchor';
     
     function initFeature() {
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {

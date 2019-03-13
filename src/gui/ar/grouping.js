@@ -336,7 +336,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
      * @param {boolean} excludeActive - if true, doesn't trigger the callback for the activeVehicle, only for its co-members
      */
     function forEachGroupedFrame(activeVehicle, callback, excludeActive) {
-        if (activeVehicle && activeVehicle.groupID !== null) {
+        if (activeVehicle && activeVehicle.groupID) {
             var groupMembers = getGroupMembers(activeVehicle.groupID);
             groupMembers.forEach(function(member) {
                 var frame = realityEditor.getFrame(member.object, member.frame);
@@ -507,7 +507,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         var groupID = frame.groupID;
 
         if (frame === undefined || groupID === undefined) return;
-        if (groupID !== null) {
+        if (!!groupID) {
             console.log('removing ' + frameKey + 'from any group');
             groupStruct[groupID].delete(frameKey); // group restruct
             frame.groupID = null;

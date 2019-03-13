@@ -251,8 +251,8 @@ createNameSpace("realityEditor.gui.menus");
                 globalStates.guiState = "ui";
                 
                 //TODO: remove
-                console.warn('adding debug anchor');
-                debugAddAnchor();
+                // console.warn('adding debug anchor');
+                // debugAddAnchor();
             }
         }.bind(this));
 

@@ -207,12 +207,12 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
 };
 
 /**
- * Callback for realityEditor.app.getCameraMatrixStream
+ * Callback for realityEditor.app.getGroundPlaneMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
- * @param {Array.<number>} cameraMatrix
+ * @param {Array.<number>} groundPlaneMatrix
  */
 realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
-    // console.log("receiveCameraMatricesFromAR");
+    // console.log("receiveGroundPlaneMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
         realityEditor.gui.ar.draw.groundPlaneMatrix = groundPlaneMatrix;

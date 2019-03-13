@@ -1171,7 +1171,7 @@ if (thisFrame) {
         }
     }
 
-    if (typeof msgContent.sendMatrices !== undefined) {
+    if (typeof msgContent.sendMatrices !== "undefined") {
         if (msgContent.sendMatrices.groundPlane === true) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
