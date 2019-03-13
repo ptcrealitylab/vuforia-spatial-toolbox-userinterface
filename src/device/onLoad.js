@@ -95,13 +95,7 @@ realityEditor.device.onload = function () {
         realityEditor.gui.ar.draw.updateLoop();
     }*/
 
-    realityEditor.app.getExternalText(function(savedState) {
-        if (savedState === '(null)') { savedState = 'null'; };
-        console.log('saved external text = ', JSON.parse(savedState));
-        if (savedState) {
-            this.appFunctionCall("loadNewUI", {reloadURL: savedState});
-        }
-    });
+    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
 
     realityEditor.app.getDiscoveryText(function(savedState) {
         if (savedState === '(null)') { savedState = 'null'; };

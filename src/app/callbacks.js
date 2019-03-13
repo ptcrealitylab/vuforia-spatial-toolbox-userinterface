@@ -93,6 +93,32 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
             realityEditor.app.sendUDPMessage({action: 'ping'});
         }, 500 * i); // space out each message by 500ms
     }
+    
+};
+
+/**
+ * 
+ * @param savedState
+ */
+realityEditor.app.callbacks.onExternalState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; };
+    savedState = JSON.parse(savedState);
+    console.log('saved external text = ', savedState);
+    if (savedState && savedState !== window.location.host) {
+        realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: savedState});
+        console.log('realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: savedState});');
+    }
+};
+
+/**
+ * TODO: implement
+ * @param success
+ */
+realityEditor.app.callbacks.didAddGroundAnchor = function(success) {
+    console.log('Tried to add ground anchor. Success? ' + success);
+    if (globalStates.debugSpeechConsole) {
+        document.getElementById('speechConsole').innerHTML = 'Tried to add ground anchor. Success? ' + success;
+    }
 };
 
 /**
@@ -124,10 +150,9 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     // upon a new object discovery message, add the object and download its target files
     if (typeof message.id !== 'undefined' &&
         typeof message.ip !== 'undefined') {
-        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(message);
         realityEditor.network.addHeartbeatObject(message);
-        
-    // forward the action message to the network module, to synchronize state across multiple clients
+
+        // forward the action message to the network module, to synchronize state across multiple clients
     } else if (typeof message.action !== 'undefined') {
         realityEditor.network.onAction(message.action);
     }
