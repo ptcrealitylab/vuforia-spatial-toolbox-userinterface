@@ -173,6 +173,17 @@ realityEditor.gui.ar.draw.cameraMatrix = [
 ];
 
 /**
+ * The most recently received camera matrix
+ * @type {Array.<number>}
+ */
+realityEditor.gui.ar.draw.groundPlaneMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
+/**
  * Main update loop.
  * A wrapper for the real realityEditor.gui.ar.draw.update update function.
  * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
@@ -1323,6 +1334,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                         thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
                     }
+                    
+                    if (activeVehicle.sendMatrices.devicePose === true) {
+                        thisMsg.devicePose = this.cameraMatrix;
+                    }
+
+                    if (activeVehicle.sendMatrices.groundPlane === true) {
+                        thisMsg.devicePose = this.groundPlaneMatrix;
+                    }
+
+                    if (activeVehicle.sendMatrices.allObjects === true) {
+                        thisMsg.allObjects = this.visibleObjects;
+                    }
 
                     if (activeVehicle.sendAcceleration === true) {
                         thisMsg.acceleration = globalStates.acceleration;
@@ -1586,28 +1609,30 @@ realityEditor.gui.ar.draw.showARFrame = function(activeKey) {
  * @param {Object.<string, Array.<number>>} matrix - reference to realityEditor.gui.ar.draw.matrix collection of matrices
  */
 realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
-    
+
     // drop frames in from pocket, floating in front of screen in unconstrained mode, aligned with the touch position
 
-    // align with touch (x,y)
-    var scaleRatio = 1.4; // TODO: this is an approximation that roughly places the pocket frame in the correct spot. find a complete solution.
-    var positionData = realityEditor.gui.ar.positioning.getPositionData(pocketContainer.vehicle);
-    positionData.x = (pocketContainer.positionOnLoad.pageX - globalStates.height/2) * scaleRatio;
-    positionData.y = (pocketContainer.positionOnLoad.pageY - globalStates.width/2) * scaleRatio;
-    
     // immediately start placing the pocket frame in unconstrained mode
     realityEditor.device.editingState.unconstrained = true;
+    
+    var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
 
-    // still need to set touchOffset...
-    realityEditor.device.editingState.touchOffset = {
-        x: parseFloat(pocketContainer.vehicle.frameSizeX)/2,
-        y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
-    };
-
-    // only start editing it if you didn't do a quick tap that already released by the time it loads
+    if (pocketContainer.type === 'ui') {
+        // for frames, regardless of whether the tap is still down, move the frame to the correct location under the tap in front of the camera
+        realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeFrameKey);
+        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, touchPosition.x, touchPosition.y, false);
+    } else {
+        // for nodes, which are dragged in from side button, just set touch offset to center of element and the rest takes care of itself
+        realityEditor.device.editingState.touchOffset = {
+            x: parseFloat(pocketContainer.vehicle.frameSizeX)/2,
+            y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
+        };
+    }
+    
+    // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
-        var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
         var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
         realityEditor.device.beginTouchEditing(pocketContainer.vehicle.objectId, activeFrameKey, activeNodeKey);
@@ -1617,8 +1642,10 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         // these lines assign the frame a preset matrix hovering slightly in front of editor
         matrix.copyStillFromMatrixSwitch = false;
         pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
+    
     }
 
+    // clear some flags so it gets rendered after this occurs
     pocketContainer.positionOnLoad = null;
     pocketContainer.waitingToRender = false;
 };

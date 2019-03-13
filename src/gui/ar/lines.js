@@ -287,7 +287,7 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
         
         if(typeof nodeA.screenOpacity === 'undefined') nodeA.screenOpacity = 1.0;
 		var speed = 1;
-		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, nodeA.screenZ, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
+		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, 8, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
 	}
 
 	if (globalStates.drawDotLine) {
@@ -314,21 +314,92 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
  * @param {number|undefined} speed - optionally adjusts how quickly the animation moves
  * @param {number|undefined} lineAlphaStart - the opacity of the start of the line (range: 0-1)
  * @param {number|undefined} lineAlphaEnd - the opacity of the end of the line (range: 0-1)
+ * 
+ * 
+ * 
  */
+realityEditor.gui.ar.lines.angle = 0;
+realityEditor.gui.ar.lines.positionDelta = 0;
+realityEditor.gui.ar.lines.length1 = 0;
+realityEditor.gui.ar.lines.length2 = 0;
+realityEditor.gui.ar.lines.lineVectorLength = 0;
+realityEditor.gui.ar.lines.keepColor = 0;
+realityEditor.gui.ar.lines.spacer = 0;
+realityEditor.gui.ar.lines.ratio = 0;
+realityEditor.gui.ar.lines.mathPI = 2*Math.PI;
+realityEditor.gui.ar.lines.newColor = 0;
+realityEditor.gui.ar.lines.ballPosition = 0;
+realityEditor.gui.ar.lines.colors = 0;
+realityEditor.gui.ar.lines.ballSize = 0;
+realityEditor.gui.ar.lines.x__ = 0;
+realityEditor.gui.ar.lines.y__ = 0;
+realityEditor.gui.ar.lines.ballPosition  = 0;
+realityEditor.gui.ar.lines.width  = globalStates.width;
+realityEditor.gui.ar.lines.height  = globalStates.height;
+realityEditor.gui.ar.lines.extendedBorder = 200;
+realityEditor.gui.ar.lines.nodeExistsA = true;
+realityEditor.gui.ar.lines.nodeExistsB = true;
+
+
 realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed, lineAlphaStart, lineAlphaEnd) {
+    this.nodeExistsA = true;
+   this.nodeExistsB = true;
+
+    if (lineStartPoint[0] < this.extendedBorderNegative) {
+        lineStartPoint[0] = this.extendedBorderNegative;
+        this.nodeExistsA = false;
+    };
+    if (lineStartPoint[1] < this.extendedBorderNegative) {
+        lineStartPoint[1] = this.extendedBorderNegative;
+        this.nodeExistsA = false;
+    };
+    if (lineEndPoint[0] < this.extendedBorderNegative) {
+        lineEndPoint[0] = this.extendedBorderNegative;
+        this.nodeExistsB = false;
+    };
+    if (lineEndPoint[1] < this.extendedBorderNegative) {
+        lineEndPoint[1] = this.extendedBorderNegative;
+        this.nodeExistsB = false;
+    };
+    if (lineStartPoint[0] > globalStates.height+this.extendedBorder) {
+        lineStartPoint[0] = globalStates.height+this.extendedBorder;
+        this.nodeExistsA = false;
+    };
+    if (lineStartPoint[1] > globalStates.width+this.extendedBorder) {
+        lineStartPoint[1] = globalStates.width+this.extendedBorder;
+        this.nodeExistsA = false;
+    };
+    if (lineEndPoint[0] > globalStates.height+this.extendedBorder) {
+        lineEndPoint[0] = globalStates.height+this.extendedBorder;
+        this.nodeExistsB = false;
+    };
+    if (lineEndPoint[1] > globalStates.width+this.extendedBorder) {
+        lineEndPoint[1] = globalStates.width+this.extendedBorder;
+        this.nodeExistsB = false;
+    };
+    
+    if( !this.nodeExistsB &&  !this.nodeExistsA){
+        return;
+    }
+    if(!this.nodeExistsB){
+        lineEndWeight = lineStartWeight;
+    }
+    if(!this.nodeExistsA){
+        lineStartWeight = lineEndWeight;
+    }
+    
     if (typeof lineAlphaStart === 'undefined') lineAlphaStart = 1.0;
     if (typeof lineAlphaEnd === 'undefined') lineAlphaEnd = 1.0;
     if (!speed) speed = 1;
-    var angle = Math.atan2((lineStartPoint[1] - lineEndPoint[1]), (lineStartPoint[0] - lineEndPoint[0]));
-    var positionDelta = 0;
-    var length1 = lineEndPoint[0] - lineStartPoint[0];
-    var length2 = lineEndPoint[1] - lineStartPoint[1];
-    var lineVectorLength = Math.sqrt(length1 * length1 + length2 * length2);
-    var keepColor = lineVectorLength / 6;
-    var spacer = 2.3;
-    var ratio = 0;
-    var mathPI = 2*Math.PI;
-    var newColor = [255,255,255,0];
+    this.angle = Math.atan2((lineStartPoint[1] - lineEndPoint[1]), (lineStartPoint[0] - lineEndPoint[0]));
+    this.positionDelta = 0;
+    this.length1 = lineEndPoint[0] - lineStartPoint[0];
+    this.length2 = lineEndPoint[1] - lineStartPoint[1];
+    this.lineVectorLength = Math.sqrt(this.length1 * this.length1 + this.length2 * this.length2);
+    //this.keepColor = this.lineVectorLength / 6;
+    this.spacer = 2.3;
+    this.ratio = 0;
+    this.newColor = [255,255,255,0];
     
     // TODO: temporary solution to render lock information for this link
     
@@ -339,42 +410,42 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
             lineAlphaEnd = lineAlphaEnd/4*3;
         }
     }
-    
-    var colors = [[0,255,255], // Blue
+
+    this.colors = [[0,255,255], // Blue
         [0,255,0],   // Green
         [255,255,0], // Yellow
         [255,0,124], // Red
         [255,255,255]]; // White
 
-    if (linkObject.ballAnimationCount >= lineStartWeight * spacer)  linkObject.ballAnimationCount = 0;
+    if (linkObject.ballAnimationCount >= lineStartWeight * this.spacer)  linkObject.ballAnimationCount = 0;
 
     context.beginPath();
-    context.fillStyle = "rgba("+newColor+")";
+    context.fillStyle = "rgba("+this.newColor+")";
     context.arc(lineStartPoint[0],lineStartPoint[1], lineStartWeight, 0, 2*Math.PI);
     context.fill();
     
-    while (positionDelta + linkObject.ballAnimationCount < lineVectorLength) {
-        var ballPosition = positionDelta + linkObject.ballAnimationCount;
+    while (this.positionDelta + linkObject.ballAnimationCount < this.lineVectorLength) {
+        this.ballPosition = this.positionDelta + linkObject.ballAnimationCount;
 
-        ratio = this.ar.utilities.map(ballPosition, 0, lineVectorLength, 0, 1);
+        this.ratio = this.ar.utilities.map(this.ballPosition, 0, this.lineVectorLength, 0, 1);
         for (var i = 0; i < 3; i++) {
-            newColor[i] = (Math.floor(parseInt(colors[startColor][i], 10) + (colors[endColor][i] - colors[startColor][i]) * ratio));
+            this.newColor[i] = (Math.floor(parseInt(this.colors[startColor][i], 10) + (this.colors[endColor][i] - this.colors[startColor][i]) * this.ratio));
         }
-        newColor[3] = (lineAlphaStart + (lineAlphaEnd - lineAlphaStart) * ratio);
-        
-        var ballSize = this.ar.utilities.map(ballPosition, 0, lineVectorLength, lineStartWeight, lineEndWeight);
-        
-        var x__ = lineStartPoint[0] - Math.cos(angle) * ballPosition;
-        var y__ = lineStartPoint[1] - Math.sin(angle) * ballPosition;
-        positionDelta += ballSize * spacer;
+        this.newColor[3] = (lineAlphaStart + (lineAlphaEnd - lineAlphaStart) * this.ratio);
+
+        this.ballSize = this.ar.utilities.map(this.ballPosition, 0, this.lineVectorLength, lineStartWeight, lineEndWeight);
+
+        this.x__ = lineStartPoint[0] - Math.cos(this.angle) * this.ballPosition;
+        this.y__ = lineStartPoint[1] - Math.sin(this.angle) * this.ballPosition;
+        this.positionDelta += this.ballSize * this.spacer;
         context.beginPath();
-        context.fillStyle = "rgba("+newColor+")";
-        context.arc(x__, y__, ballSize, 0, mathPI);
+        context.fillStyle = "rgba("+this.newColor+")";
+        context.arc(this.x__, this.y__, this.ballSize, 0, this.mathPI);
         context.fill();
     }
 
     context.beginPath();
-    context.fillStyle = "rgba("+newColor+")";
+    context.fillStyle = "rgba("+this.newColor+")";
     context.arc(lineEndPoint[0],lineEndPoint[1], lineEndWeight, 0, 2*Math.PI);
     context.fill();
     
