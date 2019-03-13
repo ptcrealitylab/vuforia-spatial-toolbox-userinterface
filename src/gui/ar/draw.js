@@ -173,6 +173,17 @@ realityEditor.gui.ar.draw.cameraMatrix = [
 ];
 
 /**
+ * The most recently received camera matrix
+ * @type {Array.<number>}
+ */
+realityEditor.gui.ar.draw.groundPlaneMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
+/**
  * Main update loop.
  * A wrapper for the real realityEditor.gui.ar.draw.update update function.
  * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
@@ -1322,6 +1333,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     if (activeVehicle.sendMatrix === true) {
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                         thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
+                    }
+                    
+                    if (activeVehicle.sendMatrices.devicePose === true) {
+                        thisMsg.devicePose = this.cameraMatrix;
+                    }
+
+                    if (activeVehicle.sendMatrices.groundPlane === true) {
+                        thisMsg.devicePose = this.groundPlaneMatrix;
+                    }
+
+                    if (activeVehicle.sendMatrices.allObjects === true) {
+                        thisMsg.allObjects = this.visibleObjects;
                     }
 
                     if (activeVehicle.sendAcceleration === true) {

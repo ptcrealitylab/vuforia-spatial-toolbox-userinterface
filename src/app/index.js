@@ -108,6 +108,14 @@ realityEditor.app.getCameraMatrixStream = function(callBack) {
 };
 
 /**
+ * Callback for all markers and matrices that are found
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getGroundPlaneMatrixStream = function(callBack) {
+    this.appFunctionCall('getGroundPlaneMatrixStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  * The callback will have a screenshot with base64. Size can be S,M,L
  * @param {string} size - 'S', 'M', or 'L'
  * @param {FunctionName} callBack

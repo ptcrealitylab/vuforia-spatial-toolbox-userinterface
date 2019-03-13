@@ -84,6 +84,8 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
     // subscribe to the camera matrix from the positional device tracker
     realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
+    realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
+
     // add heartbeat listener for UDP object discovery
     realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
     
@@ -138,6 +140,9 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
  * Stores those matrices in the draw module to be rendered in the next draw frame
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
+
+//this is speeding things up always! Because the scope for searching this variable becomes smaller.
+realityEditor.app.callbacks.visibleObjects = mmToMeterScale;
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     //console.log("receiveMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
@@ -150,9 +155,9 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         for (var objectKey in visibleObjects) {
             if (!visibleObjects.hasOwnProperty(objectKey)) continue;
             // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
-            visibleObjects[objectKey][14] *= mmToMeterScale;
-            visibleObjects[objectKey][13] *= mmToMeterScale;
-            visibleObjects[objectKey][12] *= mmToMeterScale;
+            visibleObjects[objectKey][14] *= this.mmToMeterScale;
+            visibleObjects[objectKey][13] *= this.mmToMeterScale;
+            visibleObjects[objectKey][12] *= this.mmToMeterScale;
         }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
@@ -169,6 +174,19 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
         realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
+    }
+};
+
+/**
+ * Callback for realityEditor.app.getCameraMatrixStream
+ * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
+ * @param {Array.<number>} cameraMatrix
+ */
+realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
+    // console.log("receiveCameraMatricesFromAR");
+    // easiest way to implement freeze button is just to not update the new matrices
+    if (!globalStates.freezeButtonState) {
+        realityEditor.gui.ar.draw.groundPlaneMatrix = groundPlaneMatrix;
     }
 };
 

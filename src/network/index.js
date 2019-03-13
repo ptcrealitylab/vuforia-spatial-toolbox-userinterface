@@ -200,6 +200,12 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     thisObject.screenZ = 1000;
                     thisObject.fullScreen = false;
                     thisObject.sendMatrix = false;
+                    thisObject.sendMatrices = {
+                        modelView : false,
+                        devicePose : false,
+                        groundPlane : false,
+                        allObjects : false
+                    };
                     thisObject.sendAcceleration = false;
                     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
@@ -214,6 +220,12 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         thisFrame.screenZ = 1000;
                         thisFrame.fullScreen = false;
                         thisFrame.sendMatrix = false;
+                        thisFrame.sendMatrices = {
+                            modelView : false,
+                            devicePose : false,
+                            groundPlane : false,
+                            allObjects : false
+                        };
                         thisFrame.sendAcceleration = false;
                         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
                         thisFrame.visible = false;
@@ -914,6 +926,12 @@ realityEditor.network.onAction = function (action) {
             // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
             frame.fullScreen = false;
             frame.sendMatrix = false;
+            frame.sendMatrices = {
+                modelView : false,
+                devicePose : false,
+                groundPlane : false,
+                allObjects : false
+            };
             frame.sendAcceleration = false;
             frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
@@ -1179,6 +1197,40 @@ if (thisFrame) {
                 '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
         }
     }
+
+    if (typeof msgContent.sendMatrices !== undefined) {
+        if (msgContent.sendMatrices.groundPlane === true) {
+            if (tempThisObject.integerVersion >= 32) {
+               if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.grounPlane = true;
+                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
+        }
+        if (msgContent.sendMatrices.devicePose === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.devicePose = true;
+                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
+        }
+        if (msgContent.sendMatrices.allObjects === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.allObjects = true;
+                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
+        }
+    }
+    
 
     if (msgContent.sendAcceleration === true) {
 
