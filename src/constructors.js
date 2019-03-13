@@ -220,6 +220,9 @@ function Node() {
 	// indicates how much calls per second is happening on this node
 	this.stress = 0;
 
+    this.privateData = {};
+    this.publicData = {};
+
     this.lockPassword = null;
     this.lockType = null;
 }
