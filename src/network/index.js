@@ -1175,7 +1175,7 @@ if (thisFrame) {
         if (msgContent.sendMatrices.groundPlane === true) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
-                tempThisObject.sendMatrices.grounPlane = true;
+                tempThisObject.sendMatrices.groundPlane = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
                 // send the projection matrix into the iframe (e.g. for three.js to use)
                 document.getElementById("iframe" + activeKey).contentWindow.postMessage(

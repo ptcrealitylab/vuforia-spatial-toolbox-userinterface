@@ -84,6 +84,7 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
     // subscribe to the camera matrix from the positional device tracker
     realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
+    // subscribe to the ground plane matrix stream that starts returning results when it has been detected and an anchor added
     realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
 
     // add heartbeat listener for UDP object discovery

@@ -246,8 +246,18 @@ var realityElements = [
         nodes: [
         ]
     },
+    // {
+    //     name: 'sphere',
+    //     width: 568,
+    //     height: 320,
+    //     nodes: [
+    //         // {name: 'hue', type: "node"},
+    //         // {name: 'saturation', type: "node"},
+    //         // {name: 'lightness', type: "node"}
+    //     ]
+    // },
     {
-        name: 'sphere',
+        name: 'sphere2',
         width: 568,
         height: 320,
         nodes: [

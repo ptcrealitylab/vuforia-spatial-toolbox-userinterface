@@ -91,7 +91,9 @@
                     containerWrapper.style.display = '';
                     isTransitioningFullscreen = false;
                     isArrowShown = false;
-                    visibilityListener(false);
+                    if (visibilityListener) {
+                        visibilityListener(false);
+                    }
                 }, 100);
             }
         }
@@ -117,7 +119,9 @@
                     arrow.style.display = 'inline';
                     isTransitioningFullscreen = false;
                     isArrowShown = true;
-                    visibilityListener(true);
+                    if (visibilityListener) {
+                        visibilityListener(true);
+                    }
                 }, 100);
 
             }

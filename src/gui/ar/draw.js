@@ -1340,7 +1340,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
-                        thisMsg.devicePose = this.groundPlaneMatrix;
+                        thisMsg.groundPlaneMatrix = this.groundPlaneMatrix;
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
