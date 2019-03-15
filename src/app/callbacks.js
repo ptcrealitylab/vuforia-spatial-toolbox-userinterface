@@ -191,7 +191,9 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
-    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+    if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
+        realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+    }
 };
 
 /**

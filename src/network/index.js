@@ -323,8 +323,9 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
                     // download XML, DAT, and initialize tracker
-                    realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
-
+                    if (!objects[objectKey].isWorldObject) {
+                        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
+                    }
                 }
             });
         }

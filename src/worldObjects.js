@@ -29,6 +29,20 @@ createNameSpace("realityEditor.worldObjects");
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             handleServerDiscovered(object.ip);
         });
+
+        // localWorldBeat(worldObject);
+        setTimeout(function() {
+            localWorldBeat(worldObject);
+        }, 1000);
+        setTimeout(function() {
+            localWorldBeat(worldObject);
+        }, 2000);
+        setTimeout(function() {
+            localWorldBeat(worldObject);
+        }, 3000);
+        setTimeout(function() {
+            localWorldBeat(worldObject);
+        }, 5000);
         
         // when an explicit worldObject message is detected, check if we still need to add that world object
         realityEditor.network.addUDPMessageHandler('worldObject', function(message) {
