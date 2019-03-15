@@ -77,6 +77,8 @@ createNameSpace("realityEditor.worldObjects");
                 
                 // add the world object to the global objects dictionary
                 objects[msg.objectId] = msg;
+
+                realityEditor.network.onNewObjectAdded(msg.objectId);
             }
             
         });
@@ -157,6 +159,9 @@ createNameSpace("realityEditor.worldObjects");
      * @return {Array.<string>}
      */
     function getWorldObjectKeys() {
+        if (!worldObjects) {
+            return [];
+        }
         return Object.keys(worldObjects);
     }
 

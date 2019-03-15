@@ -110,6 +110,7 @@ var globalStates = {
     // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
+    groupingEnabled: false,
 
 	pocketButtonState: false,
     
@@ -195,6 +196,16 @@ var globalLogic ={
 };
 
 var publicDataCache = {};
+
+// reconstructs the grouping structure on the UI side
+/**
+ * @type {Object.<string, Set.<string>>}
+ */
+var groupStruct = {};
+/**
+ * @type {Object.<string, string>}
+ */
+var frameToObj = {};
 
 var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
@@ -306,6 +317,7 @@ var pocketDropAnimation = null;
 var pocketBegin = [957.3665564299057, 1.7409374242911637, -0.04205859900475823, -0.04197456592377882, -2.061978731652602, 956.4420738063579, -0.0009198180263892395, -0.0009179802299690101, -31.779574955938326, -1.4650280344646907, -2.003986095420891, -1.9999821311942394, -61760.6504307418, 11001.215652648178, 790.4361984955037, 793.8519069777337];
 
 var visibleObjectTapInterval = null;
+var visibleObjectTapDelay = 1000;
 
 var testInterlink = {};
 

@@ -77,9 +77,11 @@ var realityEditor = realityEditor || {
                     globalCanvas : {}
 				},
                 positioning: {},
+                grouping: {},
                 lines: {},
                 frameHistoryRenderer: {},
                 desktopRenderer: {},
+                groundPlane: {},
                 utilities: {}
             },
             crafting: {
@@ -106,7 +108,8 @@ var realityEditor = realityEditor || {
             canvasCache: {},
             domCache: {},
             setup: {},
-            modal: {}
+            modal: {},
+            dropdown: {}
 		},
         network: {
             realtime: {},
@@ -240,6 +243,21 @@ realityEditor.getNode = function (objectKey, frameKey, nodeKey){
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodes)) return null;
     return this.objects[objectKey].frames[frameKey].nodes[nodeKey];
+};
+
+/**
+ * Returns the frame or node specified by the path, if one exists.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string|undefined} nodeKey
+ * @return {Frame|Node|null}
+ */
+realityEditor.getVehicle = function(objectKey, frameKey, nodeKey) {
+    if (nodeKey) {
+        return realityEditor.getNode(objectKey, frameKey, nodeKey);
+    } else {
+        return realityEditor.getFrame(objectKey, frameKey);
+    }
 };
 
 // return a link located in a frame

@@ -275,7 +275,7 @@ var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
-realityEditor.gui.ar.draw.update = function (visibleObjects) {
+realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecomputed) {
     var objectKey;
     var frameKey;
     var nodeKey;
@@ -284,15 +284,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     this.ar.utilities.timeSynchronizer(timeCorrection);
     
     if (globalStates.guiState === "logic") {
-        this.gui.crafting.redrawDataCrafting();  // todo maybe animrealityEditor.gui.ar.draw.cameraMatrixation frame
+        this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
 
     this.visibleObjects = visibleObjects;
-
-    // TODO: push into an updateListener so that there isn't a circular dependency with desktopAdapter
-    if (this.globalStates.matrixBroadcastEnabled) {
-        realityEditor.device.desktopAdapter.broadcastMatrices(visibleObjects);
-    }
     
     // erases anything on the background canvas
     if (this.globalCanvas.hasContent === true) {
@@ -321,26 +316,26 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
-            
+
             var modelViewMatrix = [];
+            
             if (this.activeObject.isWorldObject) {
-                
+
                 // don't start rendering world frames until we've received a valid camera matrix
                 if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
                     continue;
                 }
                 modelViewMatrix = this.visibleObjects[objectKey];
-                
-            } else if (globalStates.freezeButtonState) {
+
+            } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
 
                 // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
                 modelViewMatrix = this.visibleObjects[objectKey];
-                
+
             } else {
-                
+
                 // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
                 // we need to modify the object and camera matrices before we multiply them together to align their axes and scales
-                var modelViewMatrix = [];
 
                 var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
                 var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
@@ -357,7 +352,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 realityEditor.gui.ar.utilities.multiplyMatrix(modelRotation, modelTranslation, m1);
                 realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, m2);
                 realityEditor.gui.ar.utilities.multiplyMatrix(m1, m2, modelViewMatrix);
-                
+
                 this.visibleObjects[objectKey] = modelViewMatrix;
 
             }
@@ -595,21 +590,24 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // Adds a pulsing vibration that you can feel when you are looking at an object that has no frames.
     // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
     if (isObjectWithNoFramesVisible) {
-        if (!visibleObjectTapInterval) {
-            
-            // tap once, immediately
-            realityEditor.app.tap();
-            
-            // then tap every 2 seconds
+        var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
+        if (closestObject) {
+            var delay = closestObject.isWorldObject ? 1000 : 500;
+            if (!visibleObjectTapInterval || delay !== visibleObjectTapDelay) {
+                // tap once, immediately
+                realityEditor.app.tap();
 
-            if (this.activeObject.name.includes('_WORLD_OBJECT')) {
+                clearInterval(visibleObjectTapInterval);
+                visibleObjectTapInterval = null;
+
+                // then tap every 0.5 seconds if you're looking at an image/object target
+                // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {
                     realityEditor.app.tap();
-                }, 1000);
-            } else {
-                visibleObjectTapInterval = setInterval(function () {
-                    realityEditor.app.tap();
-                }, 500);
+                }, delay);
+                
+                // keep track of the the tap delay used, so that you can adjust the interval when switching between world and image targets
+                visibleObjectTapDelay = delay;
             }
         }
     } else {
@@ -1078,27 +1076,29 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
             }
 
-            // fade out frames and nodes when they move beyond a certain distance
-            var distance = activeVehicle.screenZ;
-            var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
-            // multiply the default min distance by the amount this frame distance has been scaled up
-            var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.defaultDistance);  
-            var isDistantVehicle = distance > distanceThreshold;
-            var isAlmostDistantVehicle = distance > (distanceThreshold * 0.8);
-            if (isDistantVehicle) {
-                globalDOMCache["object" + activeKey].classList.add('distantFrame'); // hide visuals
-                activeVehicle.screenOpacity = 0;
-            } else {
-                globalDOMCache["object" + activeKey].classList.remove('distantFrame'); // show again, but fade out opacity if within a narrow threshold
-                if (isAlmostDistantVehicle) {
-                    // full opacity if within 80% of the threshold. fades out linearly to zero opacity at 100% of the threshold
-                    var opacity = 1.0 - ((distance - 0.8 * distanceThreshold) / (0.2 * distanceThreshold));
-                    globalDOMCache["object" + activeKey].style.opacity = opacity;
-                    activeVehicle.screenOpacity = opacity;
+            if (!realityEditor.device.utilities.isDesktop()) {
+                // fade out frames and nodes when they m2ove beyond a certain distance
+                var distance = activeVehicle.screenZ;
+                var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
+                // multiply the default min distance by the amount this frame distance has been scaled up
+                var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.defaultDistance);
+                var isDistantVehicle = distance > distanceThreshold;
+                var isAlmostDistantVehicle = distance > (distanceThreshold * 0.8);
+                if (isDistantVehicle) {
+                    globalDOMCache["object" + activeKey].classList.add('distantFrame'); // hide visuals
+                    activeVehicle.screenOpacity = 0;
                 } else {
-                    // remove the CSS property so it doesn't override other classes added to this frame/node
-                    globalDOMCache["object" + activeKey].style.opacity = '';
-                    activeVehicle.screenOpacity = 1;
+                    globalDOMCache["object" + activeKey].classList.remove('distantFrame'); // show again, but fade out opacity if within a narrow threshold
+                    if (isAlmostDistantVehicle) {
+                        // full opacity if within 80% of the threshold. fades out linearly to zero opacity at 100% of the threshold
+                        var opacity = 1.0 - ((distance - 0.8 * distanceThreshold) / (0.2 * distanceThreshold));
+                        globalDOMCache["object" + activeKey].style.opacity = opacity;
+                        activeVehicle.screenOpacity = opacity;
+                    } else {
+                        // remove the CSS property so it doesn't override other classes added to this frame/node
+                        globalDOMCache["object" + activeKey].style.opacity = '';
+                        activeVehicle.screenOpacity = 1;
+                    }
                 }
             }
 
@@ -1340,7 +1340,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
-                        thisMsg.devicePose = this.groundPlaneMatrix;
+                        thisMsg.groundPlaneMatrix = this.groundPlaneMatrix;
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
@@ -1352,6 +1352,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
+                    // TODO: check if this still works with new coordinate system
                     var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
                     thisMsg.frameScreenPosition = frameScreenPosition;
 

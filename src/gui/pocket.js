@@ -319,6 +319,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
                 frame.fullScreen = false;
                 frame.sendMatrix = false;
+                frame.sendMatrices = {
+                    modelView : false,
+                    devicePose : false,
+                    groundPlane : false,
+                    allObjects : false
+                };
                 frame.sendAcceleration = false;
                 frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
                 // thisFrame.visible = false;

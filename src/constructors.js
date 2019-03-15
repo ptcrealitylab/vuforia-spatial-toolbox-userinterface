@@ -95,7 +95,7 @@ function Objects() {
 
     this.averageScale = 0.5;
     
-    // taken from target.xml. necessary to make the screens work correctly. Units = meters
+    // taken from target.xml. necessary to make the screens work correctly.
     this.targetSize = {
         width: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
         height: 0.3
@@ -153,6 +153,8 @@ function Frame() {
     this.staticCopy = false;
     // the maximum distance (in meters) to the camera within which it will be rendered
     this.distanceScale = 1.0;
+    // Indicates what group the frame belongs to; null if none
+    this.groupID = null;
 }
 
 /**

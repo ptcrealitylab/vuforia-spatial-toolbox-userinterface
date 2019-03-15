@@ -199,10 +199,41 @@ body {
 .markerPlaneElement {
     background-color: rgba(0,255,255,0.5);
     position: absolute;
+    opacity: 0.9;
 }
 
 .svgDefaultState {
     display: none;
+}
+
+#zoneConnectionSwitch {
+    position: fixed;
+    left: 30px;
+    top: 30px;
+    width: 300px;
+    height: 60px;
+    line-height: 60px;
+    text-align: center;
+    visibility: visible;
+    border: 2px solid cyan;
+    background-color: rgba(0, 255, 255, 0.3);
+}
+
+.connectionSwitchPulse {
+    background-color: rgba(0, 255, 255, 0);
+    animation-name: pulseBackgroundBlue;
+    animation-duration: 1000ms;
+    -webkit-animation-fill-mode: forwards; /* Chrome, Safari, Opera */
+    -webkit-animation-timing-function: ease-out;
+}
+
+@keyframes pulseBackgroundBlue {
+    0% {
+        background-color: rgba(0, 255, 255, 0.3);
+    }
+    100% {
+        background-color: rgba(0, 255, 255, 0.0);
+    }
 }
 
 /*
@@ -1269,15 +1300,6 @@ Logic Interface CSS
     opacity: 0.6;
 }
 
-#connectionPrompt {
-    color: white;
-    position: absolute;
-    left: 50px;
-    top: 50px;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
-    size: 50px;
-}
-
 #desktopBackgroundRenderer {
     position: absolute;
     top: 0;
@@ -1285,4 +1307,24 @@ Logic Interface CSS
     width: 100vw;
     height: 100vh;
     pointer-events: none;
+    background-color: transparent;
+}
+
+.groupLassoFadeOut {
+    opacity:1;
+
+    animation-name: fadeOut;
+    animation-duration: 300ms;
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-out;
+}
+
+.groundPlaneVisualizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 300px;
+    background-color: #00edff;
+    visibility: visible;
 }

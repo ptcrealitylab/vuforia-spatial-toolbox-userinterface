@@ -182,3 +182,20 @@ realityEditor.gui.utilities.preload = function(array) {
 
     cout("preload");
 };
+
+/**
+ * Very simply polyfill for webkitConvertPointFromPageToNode - but only works for divs with no 3D transformation
+ * @param {HTMLElement} elt - the div whose coordinate space you are converting into
+ * @param {number} pageX
+ * @param {number} pageY
+ * @return {{x: number, y: number}} matching coordinates within the elt's frame of reference
+ */
+realityEditor.gui.utilities.convertPointFromPageToNode = function(elt, pageX, pageY) {
+    var eltRect = elt.getClientRects()[0];
+    var nodeX = (pageX - eltRect.left) / eltRect.width * parseFloat(elt.style.width);
+    var nodeY = (pageY - eltRect.top) / eltRect.height * parseFloat(elt.style.height);
+    return {
+        x: nodeX,
+        y: nodeY
+    }
+};

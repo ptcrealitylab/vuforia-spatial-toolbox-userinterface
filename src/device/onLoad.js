@@ -76,6 +76,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.touchInputs.initFeature();
     realityEditor.device.videoRecording.initFeature();
     realityEditor.gui.ar.frameHistoryRenderer.initFeature();
+    realityEditor.gui.ar.grouping.initFeature();
     realityEditor.device.touchPropagation.initFeature();
     realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
     realityEditor.device.security.initFeature(); // TODO: feature is internally disabled
@@ -88,19 +89,14 @@ realityEditor.device.onload = function () {
     realityEditor.device.distanceScaling.initFeature();
     realityEditor.device.keyboardEvents.initFeature();
     realityEditor.network.frameContentAPI.initFeature();
+    // realityEditor.gui.ar.groundPlane.initFeature();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     /*if (!realityEditor.device.utilities.isDesktop()) {
         realityEditor.gui.ar.draw.updateLoop();
     }*/
 
-    realityEditor.app.getExternalText(function(savedState) {
-        if (savedState === '(null)') { savedState = 'null'; };
-        console.log('saved external text = ', JSON.parse(savedState));
-        if (savedState) {
-            this.appFunctionCall("loadNewUI", {reloadURL: savedState});
-        }
-    });
+    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
 
     realityEditor.app.getDiscoveryText(function(savedState) {
         if (savedState === '(null)') { savedState = 'null'; };
@@ -161,14 +157,16 @@ realityEditor.device.onload = function () {
     // start TWEEN library for animations
     (function animate(time) {
         // TODO This is a hack to keep the crafting board running
-        if (globalStates.freezeButtonState) {
-            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
+        if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
+            var areMatricesPrecomputed = true;
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, areMatricesPrecomputed); 
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
     })();
     
     // start the AR framework in native iOS
+    targetDownloadStates = {}; // reset downloads
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
     
     // window.addEventListener('resize', function(event) {

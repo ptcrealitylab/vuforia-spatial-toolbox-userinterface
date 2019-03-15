@@ -162,7 +162,19 @@ realityEditor.app.tap = function() {
 
 };
 
- /**
+/**
+ * Tries to add an anchor for the ground plane origin.
+ */
+realityEditor.app.tryPlacingGroundAnchor = function(normalizedScreenX, normalizedScreenY, callBack) {
+    this.appFunctionCall('tryPlacingGroundAnchor', {normalizedScreenX: normalizedScreenX, normalizedScreenY: normalizedScreenY}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+
+};
+
+function debugAddAnchor() {
+    realityEditor.app.tryPlacingGroundAnchor(0.5, 0.5, 'realityEditor.app.callbacks.didAddGroundAnchor');
+}
+
+/**
  **************UDP****************
   **/
  

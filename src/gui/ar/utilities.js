@@ -307,16 +307,22 @@ realityEditor.gui.ar.utilities.perspectiveDivide = function(matrix) {
 
 /**
  * Helper function for printing a matrix in human-readable format
+ * Note that this assumes, row-major order, while CSS 3D matrices actually use column-major
+ * Interpret column-major matrices as the transpose of what is printed
  * @param {Array.<number>} matrix
+ * @param {number} precision - the number of decimal points to include
+ * @param {boolean} htmlLineBreaks - use html line breaks instead of newline characters
+ * @return {string}
  */
-realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix) {
-    // Note that this assumes, row-major order, while CSS 3D matrices actually use column-major
-    // Interpret column-major matrices as the transpose of what is printed
+realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix, precision, htmlLineBreaks) {
+    if (typeof precision === 'undefined') precision = 3;
     
-    console.log("[ " + matrix[0] + ", " + matrix[1] + ", " + matrix[2] + ", " + matrix[3] + ", \n" +
-                "  " + matrix[4] + ", " + matrix[5] + ", " + matrix[6] + ", " + matrix[7] + ", \n" +
-                "  " + matrix[8] + ", " + matrix[9] + ", " + matrix[10] + ", " + matrix[11] + ", \n" +
-                "  " + matrix[12] + ", " + matrix[13] + ", " + matrix[14] + ", " + matrix[15] + " ]" );
+    var lineBreakSymbol = htmlLineBreaks ? '<br>' : '\n';
+    
+    return "[ " + matrix[0].toFixed(precision) + ", " + matrix[1].toFixed(precision) + ", " + matrix[2].toFixed(precision) + ", " + matrix[3].toFixed(precision) + ", " + lineBreakSymbol +
+                "  " + matrix[4].toFixed(precision) + ", " + matrix[5].toFixed(precision) + ", " + matrix[6].toFixed(precision) + ", " + matrix[7].toFixed(precision) + ", " + lineBreakSymbol +
+                "  " + matrix[8].toFixed(precision) + ", " + matrix[9].toFixed(precision) + ", " + matrix[10].toFixed(precision) + ", " + matrix[11].toFixed(precision) + ", " + lineBreakSymbol +
+                "  " + matrix[12].toFixed(precision) + ", " + matrix[13].toFixed(precision) + ", " + matrix[14].toFixed(precision) + ", " + matrix[15].toFixed(precision) + " ]";
 };
 
 /**
@@ -1320,7 +1326,13 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
  * @return {number} distance
  */
 realityEditor.gui.ar.utilities.distance = function (matrix) {
-    return Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    var distance = 1000; // for now give a valid value as a fallback
+    try {
+        distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    } catch (e) {
+        console.warn('trying to calculate distance of ', matrix);
+    }
+    return distance;
 };
 
 /**

@@ -60,12 +60,14 @@
     <link rel="stylesheet" type="text/css" href="css/index.css">
     <link rel="stylesheet" type="text/css" href="css/menu.css">
     <link rel="stylesheet" type="text/css" href="css/modal.css">
+    <link rel="stylesheet" type="text/css" href="css/dropdown.css">
 
     <!-- Javascript -->
     <script src="thirdPartyCode/pep.min.js"></script>
     <script src="thirdPartyCode/d3.min.js"></script>
     <script src="thirdPartyCode/Tween.min.js"></script>
     <script src="thirdPartyCode/socket.io.js"></script>
+    <script src="thirdPartyCode/hull.js"></script>
 
     <script src="src/constructors.js"></script>
     <script src="src/objects.js"></script>
@@ -108,15 +110,18 @@
     <script src="src/gui/settings.js"></script>
     <script src="src/gui/frame.js"></script>
     <script src="src/gui/modal.js"></script>
+    <script src="src/gui/dropdown.js"></script>
 
     <script src="src/gui/ar/index.js"></script>
     <script src="src/gui/ar/utilities.js"></script>
     <script src="src/gui/ar/draw.js"></script>
     <script src="src/gui/ar/lines.js"></script>
     <script src="src/gui/ar/positioning.js"></script>
+    <script src="src/gui/ar/grouping.js"></script>
     <script src="src/gui/ar/moveabilityOverlay.js"></script>
     <script src="src/gui/ar/frameHistoryRenderer.js"></script>
     <script src="src/gui/ar/desktopRenderer.js"></script>
+    <script src="src/gui/ar/groundPlane.js"></script>
 
     <script src="src/gui/crafting/index.js"></script>
     <script src="src/gui/crafting/utilities.js"></script>
@@ -133,7 +138,7 @@
 
     <script>
         var worldObject = { id: '_WORLD_OBJECT_local',
-            ip: '127.0.0.1',
+            ip: window.location.hostname, //'127.0.0.1',
             vn: 320,
             pr: 'R2',
             tcs: null,
@@ -429,7 +434,6 @@
 	 M30,17.8c-6.8,0-12.3,5.5-12.3,12.3c0,6.8,5.5,12.3,12.3,12.3c6.8,0,12.3-5.5,12.3-12.3C42.3,23.3,36.8,17.8,30,17.8z"/>
         <rect id="bg" class="blue inactive" width="60" height="60"/>
     </svg>
-    
     <!-- Reality UI - Start -->
     <div id="realityGuiButtonDiv"></div>
     <svg id="realityGuiButton">
@@ -520,7 +524,13 @@
 </div>
 
 <canvas class="Canvas" id="canvas"></canvas> <!--touch-action="none"-->
-
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" style="width: 100vw; height: 100vh; top: 0; left: 0; position:absolute; -webkit-user-select: none; -webkit-touch-callout: none;">
+    <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4"></polyline>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupSVG" style="width: 100vw; height: 100vh; top: 0; left: 0; position:absolute; -webkit-user-select: none; -webkit-touch-callout: none;">
+</svg>
 <div class='Interfaces' id="overlay"></div>
 
 <iframe src="src/gui/settings/index.html" id="settingsIframe" frameborder="0" style="background-color: #222222; position: absolute; left: 0px; top: 0px; bottom: 0px; right: 0px; height: 100%; width: 100%; -webkit-transform: translateZ(900px); display: none;" ></iframe>

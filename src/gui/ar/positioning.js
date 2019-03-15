@@ -290,11 +290,17 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     
     if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         console.warn('trying to set position data matrix for something other than a frame or logic');
-        
-        if (!newMatrixValue || newMatrixValue.constructor !== Array) {
-            console.warn('trying to set matrix to a non-array value');
-            return;
-        }
+    }
+
+    if (!newMatrixValue || newMatrixValue.constructor !== Array) {
+        console.warn('trying to set matrix to a non-array value');
+        return;
+    }
+
+    // TODO: uncomment to debug if we start to get matrices looking like [null, null, null, null, ... , null]
+    if (newMatrixValue.some(function(elt) { return (typeof elt !== 'number' || isNaN(elt)); })) {
+        console.warn('trying to set matrix elements to null or NaN');
+        return;
     }
     
     // nodes on local frames set their own matrix
@@ -373,15 +379,24 @@ realityEditor.gui.ar.positioning.getFrameScreenCoordinates = function(objectKey,
 /**
  * Calculates the exact screen coordinates corresponding to the center and corner points of the provided frame.
  * Passing in true or false for the last 5 arguments controls which points to calculate and include in the result.
+ * (if omitted, they default to true to include everything)
  * @param {string} objectKey
  * @param {string} frameKey
- * @param {boolean} includeCenter
- * @param {boolean} includeUpperLeft
- * @param {boolean} includeUpperRight
- * @param {boolean} includeLowerLeft
- * @param {boolean} includeLowerRight
+ * @param {boolean|undefined} includeCenter
+ * @param {boolean|undefined} includeUpperLeft
+ * @param {boolean|undefined} includeUpperRight
+ * @param {boolean|undefined} includeLowerLeft
+ * @param {boolean|undefined} includeLowerRight
+ * @param {number|undefined} buffer - extra padding to extend corner positions by, defaults to 0
  */
-realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKey, includeCenter, includeUpperLeft, includeUpperRight, includeLowerLeft, includeLowerRight) {
+realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKey, includeCenter, includeUpperLeft, includeUpperRight, includeLowerLeft, includeLowerRight, buffer) {
+    if (typeof includeCenter === 'undefined') { includeCenter = true; }
+    if (typeof includeUpperLeft === 'undefined') { includeUpperLeft = true; }
+    if (typeof includeUpperRight === 'undefined') { includeUpperRight = true; }
+    if (typeof includeLowerLeft === 'undefined') { includeLowerLeft = true; }
+    if (typeof includeLowerRight === 'undefined') { includeLowerRight = true; }
+    if (typeof buffer === 'undefined') { buffer = 0; }
+
     var utils = realityEditor.gui.ar.utilities;
     var draw = realityEditor.gui.ar.draw;
     
@@ -423,22 +438,22 @@ realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKe
     }
 
     if (includeUpperLeft) {
-        var upperLeft = [-1 * halfWidth, -1 * halfHeight, 0, 1];
+        var upperLeft = [-1 * halfWidth - buffer, -1 * halfHeight - buffer, 0, 1];
         screenCoordinates.upperLeft = this.getProjectedCoordinates(upperLeft, frameMatrix);
     }
 
     if (includeUpperRight) {
-        var upperRight = [halfWidth, -1 * halfHeight, 0, 1];
+        var upperRight = [halfWidth + buffer, -1 * halfHeight - buffer, 0, 1];
         screenCoordinates.upperRight = this.getProjectedCoordinates(upperRight, frameMatrix);
     }
 
     if (includeLowerLeft) {
-        var lowerLeft = [-1 * halfWidth, halfHeight, 0, 1];
+        var lowerLeft = [-1 * halfWidth - buffer, halfHeight + buffer, 0, 1];
         screenCoordinates.lowerLeft = this.getProjectedCoordinates(lowerLeft, frameMatrix);
     }
 
     if (includeLowerRight) {
-        var lowerRight = [halfWidth, halfHeight, 0, 1];
+        var lowerRight = [halfWidth + buffer, halfHeight + buffer, 0, 1];
         screenCoordinates.lowerRight = this.getProjectedCoordinates(lowerRight, frameMatrix);
     }
     

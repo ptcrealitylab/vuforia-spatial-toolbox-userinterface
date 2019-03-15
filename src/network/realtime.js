@@ -67,7 +67,9 @@ createNameSpace("realityEditor.network.realtime");
         
         // trigger secondary effects for certain properties
         if (msgContent.propertyPath === 'publicData') {
-            globalDOMCache["iframe" + msgContent.frameKey].contentWindow.postMessage(JSON.stringify({reloadPublicData: true}), "*");
+            if (globalDOMCache["iframe" + msgContent.frameKey]) {
+                globalDOMCache["iframe" + msgContent.frameKey].contentWindow.postMessage(JSON.stringify({reloadPublicData: true}), "*");
+            }
         }
     }
 
@@ -213,12 +215,18 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} setName
      * @param {string} socketIP
      */
-    function createSocketInSet(setName, socketIP) {
+    function createSocketInSet(setName, socketIP, onConnect) {
         var ioObject = io.connect(socketIP);
         console.log(ioObject);
         createSocketSet(setName);
         sockets[setName][socketIP] = ioObject;
         console.log('created [' + setName + '] socket to IP: ' + socketIP);
+        
+        if (onConnect) {
+            ioObject.on('connect', function() {
+                onConnect(ioObject);
+            });
+        }
     }
 
     /**

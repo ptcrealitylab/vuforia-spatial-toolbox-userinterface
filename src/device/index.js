@@ -159,7 +159,7 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
     // var newDisplay = newEditingMode ? 'inline' : 'none';
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var svg = document.getElementById('svg' + frameKey);
-        if (svg) {
+        if (svg && globalStates.guiState === "ui") {  // don't show green outline for frames if in node view
             // svg.style.display = newDisplay;
             if (newEditingMode) {
                 svg.classList.add('visibleEditingSVG');
@@ -183,26 +183,11 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
 };
 
 /**
- * Returns the frame or node specified by the path, if one exists.
- * @param {string} objectKey
- * @param {string} frameKey
- * @param {string|undefined} nodeKey
- * @return {Frame|Node|null}
- */
-realityEditor.device.getActiveVehicle = function(objectKey, frameKey, nodeKey) {
-    if (nodeKey) {
-        return realityEditor.getNode(objectKey, frameKey, nodeKey);
-    } else {
-        return realityEditor.getFrame(objectKey, frameKey);
-    }
-};
-
-/**
  * Returns the frame or node that is currently being edited, if one exists.
  * @return {Frame|Node|null}
  */
 realityEditor.device.getEditingVehicle = function() {
-    return this.getActiveVehicle(this.editingState.object, this.editingState.frame, this.editingState.node);
+    return realityEditor.getVehicle(this.editingState.object, this.editingState.frame, this.editingState.node);
 };
 
 /**
@@ -346,6 +331,9 @@ realityEditor.device.resetGlobalProgram = function() {
 realityEditor.device.resetEditingState = function() {
     this.sendEditingStateToFrameContents(this.editingState.frame, false); // TODO: move to a callback
 
+    // gets triggered before state gets reset, so that subscribed modules can respond based on what is about to be reset
+    this.callbackHandler.triggerCallbacks('resetEditingState');
+
     this.editingState.object = null;
     this.editingState.frame = null;
     this.editingState.node = null;
@@ -354,7 +342,6 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
     
-    this.callbackHandler.triggerCallbacks('resetEditingState');
 };
 
 /**
@@ -416,7 +403,7 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
  */
 realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) {
     
-    var activeVehicle = this.getActiveVehicle(objectKey, frameKey, nodeKey);
+    var activeVehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
 
     // if you're already editing another object (or can't find this one) don't let you start editing this one
     if (this.editingState.object || !activeVehicle) { return; }
@@ -466,6 +453,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
     
     this.sendEditingStateToFrameContents(frameKey, true);
+
+    this.callbackHandler.triggerCallbacks('beginTouchEditing');
 };
 
 // post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
@@ -515,11 +504,15 @@ realityEditor.device.disablePinchToScale = function() {
  */
 realityEditor.device.onElementTouchDown = function(event) {
     var target = event.currentTarget;
-    var activeVehicle = this.getActiveVehicle(target.objectId, target.frameId, target.nodeId);
+    var activeVehicle = realityEditor.getVehicle(target.objectId, target.frameId, target.nodeId);
     
     // how long it takes to move the element:
     // instant if editing mode on, 400ms if not (or touchMoveDelay if specially configured for that element)
     var moveDelay = this.defaultMoveDelay;
+    // take a lot longer to move nodes, otherwise it's hard to draw links
+    if (globalStates.guiState === "node") {
+        moveDelay = this.defaultMoveDelay * 3;
+    }
     if (globalStates.editingMode) {
         moveDelay = 0;
     } else if (activeVehicle.moveDelay) {
@@ -697,6 +690,8 @@ realityEditor.device.onElementTouchUp = function(event) {
     // touch up over the trash
     if (event.pageX >= this.layout.getTrashThresholdX()) {
 
+        this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
+        
         // delete logic node
         if (target.type === "logic") {
 
@@ -719,11 +714,10 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
-            this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
 
             // delete frame
         } else if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
-
+            
             // delete links to and from the frame
             realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
                 var thisFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -748,7 +742,6 @@ realityEditor.device.onElementTouchUp = function(event) {
             
             delete objects[this.editingState.object].frames[this.editingState.frame];
 
-            this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
         }
     }
 
@@ -861,7 +854,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     var activeVehicle = this.getEditingVehicle();
     
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if ((event.target.id === "canvas" || event.target.className === "memoryBackground") && !activeVehicle) {
+    if (realityEditor.device.utilities.isEventHittingBackground(event)) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
 
@@ -1016,7 +1009,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     var activeVehicle = this.getEditingVehicle();
 
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if (event.target.id === "canvas" && !activeVehicle) {
+    if (realityEditor.device.utilities.isEventHittingBackground(event)) {
         if (event.touches.length < 2) {
             var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
 
@@ -1206,6 +1199,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
                 // tell the renderer to freeze the current matrix as the unconstrained position on the screen
                 realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
                 realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
+
+                this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
             }
         }
     }
