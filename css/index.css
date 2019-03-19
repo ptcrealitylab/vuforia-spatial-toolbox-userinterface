@@ -1319,6 +1319,27 @@ Logic Interface CSS
     -webkit-animation-timing-function: ease-out;
 }
 
+@keyframes delayedFadeOut {
+    0% {
+        opacity:1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.groupOutlineFadeOut {
+    opacity:1;
+
+    animation-name: delayedFadeOut;
+    animation-duration: 1500ms;
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-out;
+}
+
 .groundPlaneVisualizer {
     position: absolute;
     top: 0;

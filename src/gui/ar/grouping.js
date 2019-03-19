@@ -59,9 +59,30 @@ createNameSpace("realityEditor.gui.ar.grouping");
         // render hulls on every update (iff grouping mode enabled)
         realityEditor.gui.ar.draw.addUpdateListener(function() {
             if (globalStates.groupingEnabled) {
-                // draw hulls
-                drawGroupHulls();
                 
+                // draw hulls if any of their elements are being moved, or if the lasso is active
+                var shouldDrawHulls = false;
+                if (selectingState.active) {
+                    shouldDrawHulls = true;
+                }
+                if (realityEditor.device.editingState.frame) {
+                    shouldDrawHulls = true;
+                }
+
+                var svg = document.getElementById("groupSVG");
+                if (shouldDrawHulls) {
+                    if (svg.classList.contains('groupOutlineFadeOut')) {
+                        svg.classList.remove('groupOutlineFadeOut');
+                    }
+                } else {
+                    if (!svg.classList.contains('groupOutlineFadeOut')) {
+                        svg.classList.add('groupOutlineFadeOut');
+                    }
+                    // clearHulls(svg);
+                }
+
+                drawGroupHulls();
+
                 if (isUnconstrainedEditingGroup) {
                     var activeVehicle = realityEditor.device.getEditingVehicle();
                     var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
@@ -548,7 +569,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 createNewGroup(selected);
             }
         }
-
+        
         drawGroupHulls();
     }
 
@@ -719,6 +740,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
      */
     function drawGroupHulls() {
         var svg = document.getElementById("groupSVG");
+        // svg.classList.remove('groupOutlineFadeOut');
 
         clearHulls(svg);
 
