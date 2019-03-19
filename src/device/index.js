@@ -1180,7 +1180,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
 
             // after that, if you pull out more than 100 in the z direction, turn on unconstrained
             // var zPullThreshold = 50;
-            var amountPulled = distanceToObject - this.editingState.unconstrainedOffset;
+            var amountPulled = Math.abs(distanceToObject - this.editingState.unconstrainedOffset);
             // console.log(amountPulled);
             if (amountPulled > globalStates.framePullThreshold) {
                 console.log('pop into unconstrained editing mode');
