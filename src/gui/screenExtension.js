@@ -20,6 +20,7 @@ realityEditor.gui.screenExtension.screenObject = {
     isScreenVisible: false,
     touchOffsetX: 0,
     touchOffsetY: 0,
+    
     touches: null
 };
 

@@ -261,21 +261,9 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
         }
-
-        // reconstructing groups from frame groupIDs
-        var group = thisFrame.groupID;
-        if (group === undefined) {
-            thisFrame.groupID = null;
-        }
-        else if (group !== null) {
-            if (group in groupStruct) {
-                groupStruct[group].add(frameKey);
-            }
-            else {
-                groupStruct[group] = new Set([frameKey]);
-            }
-        }
-        frameToObj[frameKey] = objectKey;
+        
+        // TODO: invert dependency
+        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
     }
 
     if (!thisObject.protocol) {
@@ -424,6 +412,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
         // for (var linkKey in remote.frames[frameKey].links) {
         //     origin.frames[frameKey].links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
         // }
+
+        // TODO: invert dependency
+        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
         
         if (globalDOMCache["iframe" + frameKey]) {
             if (globalDOMCache["iframe" + frameKey]._loaded) {
@@ -791,7 +782,10 @@ realityEditor.network.onAction = function (action) {
                     
                     thisFrame[thisKey] = res[thisKey];
                 }
-                
+
+                // TODO: invert dependency
+                realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+
             });
         }
     }
@@ -2453,7 +2447,10 @@ realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
  */
 realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGroupID) {
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/group/";
-    var content = {group: newGroupID};
+    var content = {
+        group: newGroupID,
+        lastEditor: globalStates.tempUuid
+    };
     this.postData(urlEndpoint, content, function (err, response) {
         console.log('set group to ' + newGroupID + ' on server');
         console.log(err, response);

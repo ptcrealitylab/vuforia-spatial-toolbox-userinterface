@@ -246,11 +246,11 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 forEachGroupedFrame(selectedFrame, function(groupedFrame) {
 
                     if (groupedFrame.visualization === newVisualization) { return; } // don't repeat for the originating frame or ones already transitioned
-                    
+
+                    groupedFrame.visualization = newVisualization;
+
                     if (newVisualization === 'screen') {
-
-                        groupedFrame.visualization = newVisualization;
-
+                        
                         console.log('pushed grouped frame ' + groupedFrame.uuid + ' into screen');
                         
                         realityEditor.gui.ar.draw.hideTransformed(groupedFrame.uuid, groupedFrame, globalDOMCache, cout);
@@ -260,56 +260,68 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         groupedFrame.begin = [];
                         groupedFrame.ar.matrix = [];
                         
-                        // realityEditor.gui.screenExtension.sendScreenObject();
-                        function sendScreenObject() {
-                            for (var frameKey in realityEditor.gui.screenExtension.visibleScreenObjects) {
-                                if (!realityEditor.gui.screenExtension.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
-                                var visibleScreenObject = realityEditor.gui.screenExtension.visibleScreenObjects[frameKey];
-                                
-                                // var screenObjectClone = JSON.parse(JSON.stringify(this.screenObject));
-                                
-                                var screenObjectClone = {
-                                    object: groupedFrame.objectId,
-                                    frame: groupedFrame.uuid,
-                                    node: null,
-                                    touchOffsetX: 0,
-                                    touchOffsetY: 0,
-                                    isScreenVisible: true,
-                                    scale: groupedFrame.ar.scale
-                                };
-
-                                // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
-                                var thisFrameFrameCenterScreenPosition = realityEditor.gui.ar.positioning.getScreenPosition(groupedFrame.objectId,groupedFrame.uuid,true,false,false,false,false).center;
-                                var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, thisFrameFrameCenterScreenPosition.x, thisFrameFrameCenterScreenPosition.y);
-                                // visibleScreenObject.x = point.x;
-                                // visibleScreenObject.y = point.y;
-                                
-                                screenObjectClone.x = point.x; //visibleScreenObject.x;
-                                screenObjectClone.y = point.y; //visibleScreenObject.y;
-                                screenObjectClone.targetScreen = {
-                                    object: visibleScreenObject.object,
-                                    frame: visibleScreenObject.frame
-                                };
-                                screenObjectClone.touches = visibleScreenObject.touches;
-
-                                var iframe = globalDOMCache["iframe" + frameKey];
-                                if (iframe) {
-                                    iframe.contentWindow.postMessage(JSON.stringify({
-                                        screenObject: screenObjectClone
-                                    }), '*');
-                                }
-                            }
-                        }
-                        sendScreenObject();
-
-                        realityEditor.network.updateFrameVisualization(objects[groupedFrame.objectId].ip, groupedFrame.objectId, groupedFrame.uuid, groupedFrame.visualization, groupedFrame.ar);
-                        
                     } else if (newVisualization === 'ar') {
 
-                        // TODO: support pulling out of screens in the future
                         console.log('pull grouped frame ' + groupedFrame.uuid + ' into AR');
 
+                        // set to false so it definitely gets re-added and re-rendered
+                        groupedFrame.visible = false;
+                        groupedFrame.ar.matrix = [];
+                        groupedFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+                        groupedFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+                        var activeKey = groupedFrame.uuid;
+                        // resize iframe to override incorrect size it starts with so that it matches the screen frame
+                        var iframe = globalDOMCache['iframe' + activeKey];
+                        var overlay = globalDOMCache[activeKey];
+                        var svg = globalDOMCache['svg' + activeKey];
+
+                        iframe.style.width = groupedFrame.frameSizeX + 'px';
+                        iframe.style.height = groupedFrame.frameSizeY + 'px';
+                        iframe.style.left = ((globalStates.height - parseFloat(groupedFrame.frameSizeX)) / 2) + "px";
+                        iframe.style.top = ((globalStates.width - parseFloat(groupedFrame.frameSizeY)) / 2) + "px";
+
+                        overlay.style.width = iframe.style.width;
+                        overlay.style.height = iframe.style.height;
+                        overlay.style.left = iframe.style.left;
+                        overlay.style.top = iframe.style.top;
+
+                        svg.style.width = iframe.style.width;
+                        svg.style.height = iframe.style.height;
+                        realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+
+                        // set the correct position for the frame that was just pulled to AR
+
+                        // 1. move it so it is centered on the pointer, ignoring touchOffset
+                        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(groupedFrame, touchPosition.x, touchPosition.y, false);
+
+                        /*
+                        // 2. convert touch offset from percent scale to actual scale of the frame
+                        var convertedTouchOffsetX = (this.screenObject.touchOffsetX) * parseFloat(groupedFrame.width);
+                        var convertedTouchOffsetY = (this.screenObject.touchOffsetY) * parseFloat(groupedFrame.height);
+
+                        // 3. manually apply the touchOffset to the results so that it gets rendered in the correct place on the first pass
+                        groupedFrame.ar.x -= (convertedTouchOffsetX - parseFloat(groupedFrame.width)/2 ) * groupedFrame.ar.scale;
+                        groupedFrame.ar.y -= (convertedTouchOffsetY - parseFloat(groupedFrame.height)/2 ) * groupedFrame.ar.scale;
+                        */
+                        
+                        // TODO: this causes a bug now with the offset... figure out why it used to be necessary but doesn't help anymore
+                        // 4. set the actual touchOffset so that it stays in the correct offset as you drag around
+                        // realityEditor.device.editingState.touchOffset = {
+                        //     x: convertedTouchOffsetX,
+                        //     y: convertedTouchOffsetY
+                        // };
+
+                        realityEditor.gui.ar.draw.showARFrame(activeKey);
+
+                        // realityEditor.device.beginTouchEditing(groupedFrame.objectId, activeKey);
+
                     }
+                    
+                    sendScreenObject(groupedFrame, groupedFrame.visualization);
+
+                    realityEditor.network.updateFrameVisualization(objects[groupedFrame.objectId].ip, groupedFrame.objectId, groupedFrame.uuid, groupedFrame.visualization, groupedFrame.ar);
                     
                 }, true);
                 
@@ -326,6 +338,51 @@ createNameSpace("realityEditor.gui.ar.grouping");
             }
         });
         
+    }
+    
+    /**
+     * Emulates realityEditor.gui.screenExtension.sendScreenObject() but for grouped frames with different offsets, etc
+     * @param {Frame} groupedFrame
+     * @param {string} newVisualization - "screen" or "ar"
+     */
+    function sendScreenObject(groupedFrame, newVisualization) {
+        for (var frameKey in realityEditor.gui.screenExtension.visibleScreenObjects) {
+            if (!realityEditor.gui.screenExtension.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
+            var visibleScreenObject = realityEditor.gui.screenExtension.visibleScreenObjects[frameKey];
+
+            // var screenObjectClone = JSON.parse(JSON.stringify(this.screenObject));
+
+            var screenObjectClone = {
+                object: groupedFrame.objectId,
+                frame: groupedFrame.uuid,
+                node: null,
+                touchOffsetX: 0,
+                touchOffsetY: 0,
+                isScreenVisible: (newVisualization === "screen"),
+                scale: groupedFrame.ar.scale
+            };
+
+            // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
+            var thisFrameFrameCenterScreenPosition = realityEditor.gui.ar.positioning.getScreenPosition(groupedFrame.objectId,groupedFrame.uuid,true,false,false,false,false).center;
+            var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, thisFrameFrameCenterScreenPosition.x, thisFrameFrameCenterScreenPosition.y);
+            // visibleScreenObject.x = point.x;
+            // visibleScreenObject.y = point.y;
+
+            screenObjectClone.x = point.x; //visibleScreenObject.x;
+            screenObjectClone.y = point.y; //visibleScreenObject.y;
+            screenObjectClone.targetScreen = {
+                object: visibleScreenObject.object,
+                frame: visibleScreenObject.frame
+            };
+            screenObjectClone.touches = visibleScreenObject.touches;
+
+            var iframe = globalDOMCache["iframe" + frameKey];
+            if (iframe) {
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    screenObject: screenObjectClone
+                }), '*');
+            }
+        }
     }
 
     /**
@@ -429,7 +486,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
             var frame = realityEditor.getFrame(objectKey, frameKey);
-            if (frame && frame.visualization === 'ar') {
+            if (frame && frame.visualization === 'ar' && frame.location === 'global') {
                 // check if frame in lasso
                 // FIXME: insidePoly doesn't work for crossed over shapes (such as an infinite symbol)
                 var inLasso = realityEditor.gui.ar.utilities.insidePoly([frame.screenX, frame.screenY], points);
@@ -723,6 +780,30 @@ createNameSpace("realityEditor.gui.ar.grouping");
             }
         }
     }
+
+    /**
+     * Should be called whenever a new frame is loaded into the system,
+     * to populate the global groupStruct with any groupID information it contains
+     * @param {string} frameKey
+     * @param {Frame} thisFrame
+     * @todo trigger via subscription, not as a dependency
+     */
+    function reconstructGroupStruct(frameKey, thisFrame) {
+        // reconstructing groups from frame groupIDs
+        var group = thisFrame.groupID;
+        if (group === undefined) {
+            thisFrame.groupID = null;
+        }
+        else if (group !== null) {
+            if (group in groupStruct) {
+                groupStruct[group].add(frameKey);
+            }
+            else {
+                groupStruct[group] = new Set([frameKey]);
+            }
+        }
+        frameToObj[frameKey] = thisFrame.objectId;
+    }
     
     /**
      * method to move transformed from to the (x,y) point on its plane
@@ -768,5 +849,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
     exports.initFeature = initFeature;
     exports.toggleGroupingMode = toggleGroupingMode;
+    exports.reconstructGroupStruct = reconstructGroupStruct;
 
 })(realityEditor.gui.ar.grouping);
