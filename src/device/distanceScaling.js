@@ -15,12 +15,30 @@ createNameSpace("realityEditor.device.distanceScaling");
     };
     
     var defaultDistance = 5000;
+    exports.defaultDistance = defaultDistance;
     
     var isScalingDistance = false;
     
     var distanceScalingState = {
         objectKey: null,
         frameKey: null
+    };
+
+    /**
+     * @type {CallbackHandler}
+     */
+    var callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/distanceScaling');
+
+    /**
+     * Adds a callback function that will be invoked when the specified function is called
+     * @param {string} functionName
+     * @param {function} callback
+     */
+    exports.registerCallback = function(functionName, callback) {
+        if (!callbackHandler) {
+            callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/distanceScaling');
+        }
+        callbackHandler.registerCallback(functionName, callback);
     };
     
     function initFeature() {
@@ -238,7 +256,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             scaleMatrix[5] = scaleAvr * circleScaleConstant * distanceScale / frameScaleFactor; // use same scale (m[0]) for x and y to preserve circle shape
           //  scaleMatrix[10] = scaleAv * circleScaleConstant * distanceScale  / frameScaleFactor;
 
-            console.log( scaleMatrix[5],scaleMatrix[0] );
+            // console.log( scaleMatrix[5],scaleMatrix[0] );
             var translateMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             translateMatrix[12] = m1[12];
             var yTranslate = -125; // TODO: we scale the circle's height by m1[0] not m1[5], which makes it not centered... 
@@ -289,6 +307,8 @@ createNameSpace("realityEditor.device.distanceScaling");
         // we divide by 0.9 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is just around the border
         
         editingFrame.distanceScale = (editingFrame.screenZ / defaultDistance) / 0.85; 
+        
+        callbackHandler.triggerCallbacks('scaleEditingFrameDistance', {frame: editingFrame});
     }
 
     /**

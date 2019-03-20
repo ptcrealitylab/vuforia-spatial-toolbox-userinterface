@@ -335,6 +335,8 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
 
 /**
  * Returns the last position that was touched, by extracting the CSS location of the touch overlay div.
+ * @todo: WARNING this doesn't always work as intended if there are more than one touches on the screen....
+ * @todo: it will jump back and forth between the two fingers depending on which one moved last
  * @return {{x: number, y: number}}
  */
 realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {

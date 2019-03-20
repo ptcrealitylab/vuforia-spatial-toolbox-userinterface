@@ -92,11 +92,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
                     }, true);
                     
-                    if (activeVehicle) {
-                        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                        // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
-                        moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x, touchPosition.y);
-                    }
                 }
             }
         });
@@ -358,6 +353,16 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 removeFromGroup(params.frameKey, params.objectKey);
             }
         });
+
+        /**
+         * adjust distanceScale of grouped frames together so they get set to same amount
+         */
+        realityEditor.device.distanceScaling.registerCallback('scaleEditingFrameDistance', function(params) {
+            forEachGroupedFrame(params.frame, function(groupedFrame) {
+                // groupedFrame.distanceScale = params.frame.distanceScale;
+                groupedFrame.distanceScale = (groupedFrame.screenZ / realityEditor.device.distanceScaling.defaultDistance) / 0.85;
+            }, true);
+        });
         
     }
     
@@ -454,8 +459,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
         }
 
         lasso.setAttribute("points", x + ", "+y);
-        lasso.setAttribute("stroke", "#0000ff");
-        lasso.setAttribute("fill", "rgba(0,0,255,0.2)");
+        lasso.setAttribute("stroke", "#00ffff");
+        lasso.setAttribute("fill", "rgba(0,255,255,0.2)");
 
         globalCanvas.hasContent = true;
     }
@@ -473,10 +478,10 @@ createNameSpace("realityEditor.gui.ar.grouping");
         var lassoed = getLassoed().length;
         if (lassoed > 0) {
             lasso.setAttribute("fill", "rgba(0,255,255,0.2)");
-            lasso.setAttribute("stroke", "#00ffff");
+            lasso.setAttribute("stroke", "#00ff00");
         } else {
-            lasso.setAttribute("fill", "rgba(0,0,255,0.2)");
-            lasso.setAttribute("stroke", "#0000ff");
+            lasso.setAttribute("fill", "rgba(0,255,255,0.2)");
+            lasso.setAttribute("stroke", "#00ffff");
         }
     };
 
