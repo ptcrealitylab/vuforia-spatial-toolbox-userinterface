@@ -27,17 +27,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
     var isDoubleTap = false;
 
     /**
-     * @type: {Object|null} First tap target
-     */
-    var tapTarget = null;
-    
-    /**
-     * @typedef {Object} DoubleTapTimer
-     * @type {DoubleTapTimer}
-     */
-    var doubleTapTimer = null;
-
-    /**
      * @type {{active: Boolean, object: Array.<string>, frame: Array.<string>}}
      * object and frame currently not in use
      */
@@ -141,16 +130,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 if (selectingState.active) {
                     continueLasso(params.event.pageX, params.event.pageY);
                 }
-                
-                // TODO: also move group objects too
-                // // also move group objects too
-                // if (activeVehicle.groupID !== null) {
-                //     let groupMembers = realityEditor.gui.ar.grouping.getGroupMembers(activeVehicle.groupID);
-                //     for (let member of groupMembers) {
-                //         let frame = realityEditor.getFrame(member.object, member.frame);
-                //         realityEditor.gui.ar.grouping.moveGroupVehicleToScreenCoordinate(frame, event.touches[0].pageX, event.touches[0].pageY);
-                //     }
-                // }
 
                 var activeVehicle = realityEditor.device.getEditingVehicle();
                 var isSingleTouch = params.event.touches.length === 1;
@@ -183,8 +162,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 console.log('onDocumentMultiTouchEnd', params, activeVehicle);
 
                 // check how many touches are still on the canvas / on the frame
-                // if there's still a touch on it (it was being scaled), reset touch offset so vehicle doesn't jump
-                // this.editingState.touchOffset = null;
+                // if there's still a touch on it (it was being scaled or distance scaled), reset touch offset so vehicle doesn't jump
                 if (realityEditor.device.currentScreenTouches.length > 0) {
                     forEachGroupedFrame(activeVehicle, function(frame) {
                         frame.groupTouchOffset = undefined; // recalculate groupTouchOffset each time
@@ -254,6 +232,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
         // unconstrained move grouped vehicles if needed
         // TODO: also store this info when starting unconstrained editing via another method, e.g. editing mode
         realityEditor.device.registerCallback('onFramePulledIntoUnconstrained', function(params) {
+            if (!globalStates.groupingEnabled) { return; }
+
             var activeVehicle = params.activeVehicle;
             forEachGroupedFrame(activeVehicle, function(frame) {
                 // store relative offset
@@ -368,8 +348,25 @@ createNameSpace("realityEditor.gui.ar.grouping");
          * Remove the frame from its group when it gets deleted
          */
         realityEditor.device.registerCallback('vehicleDeleted', function(params) {
+            if (!globalStates.groupingEnabled) { return; }
+            
+            var DELETE_ALL_FRAMES_IN_GROUP = true;
             if (params.objectKey && params.frameKey && !params.nodeKey) {
-                removeFromGroup(params.frameKey, params.objectKey);
+                if (DELETE_ALL_FRAMES_IN_GROUP) {
+                    // in this mode, delete all frames in this group
+                    var frameBeingDeleted = realityEditor.getFrame(params.objectKey, params.frameKey);
+                    forEachGroupedFrame(frameBeingDeleted, function(groupedFrame) {
+                        // in this mode, just remove the deleted frame from its group if it's in one
+                        removeFromGroup(groupedFrame.uuid, groupedFrame.objectId);
+                        // delete this frame too
+                        realityEditor.device.deleteFrame(groupedFrame, groupedFrame.objectId, groupedFrame.uuid);
+                    }, true);
+                    
+                } else {
+                    // in this mode, just remove the deleted frame from its group if it's in one
+                    removeFromGroup(params.frameKey, params.objectKey);
+                }
+                
             }
         });
 
@@ -377,6 +374,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
          * adjust distanceScale of grouped frames together so they get set to same amount
          */
         realityEditor.device.distanceScaling.registerCallback('scaleEditingFrameDistance', function(params) {
+            if (!globalStates.groupingEnabled) { return; }
+
             forEachGroupedFrame(params.frame, function(groupedFrame) {
                 // groupedFrame.distanceScale = params.frame.distanceScale;
                 groupedFrame.distanceScale = (groupedFrame.screenZ / realityEditor.device.distanceScaling.defaultDistance) / 0.85;

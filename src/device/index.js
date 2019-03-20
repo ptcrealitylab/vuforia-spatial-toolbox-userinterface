@@ -718,29 +718,7 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete frame
         } else if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
             
-            // delete links to and from the frame
-            realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
-                var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-                Object.keys(thisFrame.links).forEach(function(linkKey) {
-                    var thisLink = thisFrame.links[linkKey];
-                    if (((thisLink.objectA === target.objectId) && (thisLink.frameA === target.frameId)) ||
-                        ((thisLink.objectB === target.objectId) && (thisLink.frameB === target.frameId))) {
-                        delete thisFrame.links[linkKey];
-                        realityEditor.network.deleteLinkFromObject(objects[objectKey].ip, objectKey, frameKey, linkKey);
-                    }
-                });
-            });
-
-            // remove it from the DOM
-            realityEditor.gui.ar.draw.killElement(this.editingState.frame, activeVehicle, globalDOMCache);
-            realityEditor.gui.ar.draw.removeFromEditedFramesList(this.editingState.frame);
-            // delete it from the server
-            realityEditor.network.deleteFrameFromObject(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
-
-            globalStates.inTransitionObject = null;
-            globalStates.inTransitionFrame = null;
-            
-            delete objects[this.editingState.object].frames[this.editingState.frame];
+            realityEditor.device.deleteFrame(activeVehicle, this.editingState.object, this.editingState.frame);
 
         }
     }
@@ -755,6 +733,40 @@ realityEditor.device.onElementTouchUp = function(event) {
     // }
 
     cout("onElementTouchUp");
+};
+
+/**
+ * Once a frame has been decided to be deleted, this fully deletes it
+ * removing links to and from it, removing it from the DOM and objects data structure, and clearing related state 
+ * @param {Frame} frameToDelete
+ * @param {string} objectKeyToDelete
+ * @param {string} frameKeyToDelete
+ */
+realityEditor.device.deleteFrame = function(frameToDelete, objectKeyToDelete, frameKeyToDelete) {
+        
+    // delete links to and from the frame
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+        Object.keys(thisFrame.links).forEach(function(linkKey) {
+            var thisLink = thisFrame.links[linkKey];
+            if (((thisLink.objectA === objectKeyToDelete) && (thisLink.frameA === frameKeyToDelete)) ||
+                ((thisLink.objectB === objectKeyToDelete) && (thisLink.frameB === frameKeyToDelete))) {
+                delete thisFrame.links[linkKey];
+                realityEditor.network.deleteLinkFromObject(objects[objectKey].ip, objectKey, frameKey, linkKey);
+            }
+        });
+    });
+
+    // remove it from the DOM
+    realityEditor.gui.ar.draw.killElement(frameKeyToDelete, frameToDelete, globalDOMCache);
+    realityEditor.gui.ar.draw.removeFromEditedFramesList(frameKeyToDelete);
+    // delete it from the server
+    realityEditor.network.deleteFrameFromObject(objects[objectKeyToDelete].ip, objectKeyToDelete, frameKeyToDelete);
+
+    globalStates.inTransitionObject = null;
+    globalStates.inTransitionFrame = null;
+
+    delete objects[objectKeyToDelete].frames[frameKeyToDelete];
 };
 
 /**
