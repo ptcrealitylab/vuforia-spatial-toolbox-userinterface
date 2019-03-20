@@ -439,6 +439,8 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
  * @return {Array.<Frame>}
  */
 realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
+    // TODO currently this function requires to many resources. It can take up to 5ms to just calculate if frames are visible
+   // return true;
     
     var visibleFrames = [];
     

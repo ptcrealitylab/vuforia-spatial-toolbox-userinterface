@@ -249,8 +249,12 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
  * @todo: make more robust so that loading on a mobile safari browser is distinguisable from within the Reality Editor app
  * @return {boolean}
  */
+
+// speeding things up by only verifying once 
+realityEditor.device.utilities.isItADesktop = window.navigator.userAgent.indexOf('Mobile') <= -1 || window.navigator.userAgent.indexOf('Macintosh') > -1; 
+
 realityEditor.device.utilities.isDesktop = function() {
-    return window.navigator.userAgent.indexOf('Mobile') === -1 || window.navigator.userAgent.indexOf('Macintosh') > -1;
+    return realityEditor.device.utilities.isItADesktop;
 };
 
 /**

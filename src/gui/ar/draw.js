@@ -275,6 +275,9 @@ var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
+realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
+realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
+
 realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecomputed) {
     var objectKey;
     var frameKey;
@@ -296,16 +299,24 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     }
     
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
-    var isObjectWithNoFramesVisible = false;
     if (Object.keys(visibleObjects).length > 0) {
-        if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
-            isObjectWithNoFramesVisible = true;
+        if(this.checkFrameVisibilityCounter >= 20) {
+            this.checkFrameVisibilityCounter = 0;
+            if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
+                this.isObjectWithNoFramesVisible = true;
+            }else {
+                this.isObjectWithNoFramesVisible = false;
+            }
+        }  else {
+            this.checkFrameVisibilityCounter++;
         }
+    }  else {
+        this.isObjectWithNoFramesVisible = true;
     }
     
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
-        if (!objects.hasOwnProperty(objectKey)) { continue; }
+       // if (!objects.hasOwnProperty(objectKey)) { continue; }
         
         this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
@@ -363,12 +374,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
             
             // extract its projected (x,y) screen coordinates from the matrix
-            objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
-            objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
+            //TODO THIS GETS OVERWRITTEN FURTHER DOWN Is this used for anything?
+           // objects[objectKey].screenX = this.activeObjectMatrix[12] / this.activeObjectMatrix[15] + (globalStates.height / 2);
+           // objects[objectKey].screenY = this.activeObjectMatrix[13] / this.activeObjectMatrix[15] + (globalStates.width / 2);
             
             // iterate over every frame it contains, add iframes if necessary, and update the iframe CSS3D matrix to render in correct position
             for (frameKey in objects[objectKey].frames) {
-                if (!objects[objectKey].frames.hasOwnProperty(frameKey)) { continue; }
+             //   if (!objects[objectKey].frames.hasOwnProperty(frameKey)) { continue; }
                 
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 
@@ -401,7 +413,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
 
                 // iterate over every node in this frame, and perform the same rendering process as for the frames
                 for (nodeKey in this.activeFrame.nodes) {
-                    if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) { continue; }
+                   // if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) { continue; }
                     
                     // render the nodes if we're in node/logic viewing mode
                     if (globalStates.guiState === "node" || globalStates.guiState === "logic") {
@@ -449,7 +461,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             var wereAnyFramesMovedToGlobal = false;
             
             for (frameKey in objects[objectKey].frames) {
-                if (!objects[objectKey].frames.hasOwnProperty(frameKey)) { continue; }
+              //  if (!objects[objectKey].frames.hasOwnProperty(frameKey)) { continue; }
                 
                 this.activeFrame = realityEditor.getFrame(objectKey, frameKey);
                 if (!this.activeFrame) { continue; }
@@ -481,7 +493,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
 
                     // hide each node within this frame
                     for (nodeKey in this.activeFrame.nodes) {
-                        if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) { continue; }
+                      //  if (!this.activeFrame.nodes.hasOwnProperty(nodeKey)) { continue; }
 
                         this.activeNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
                         this.activeKey = nodeKey;
@@ -589,7 +601,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     
     // Adds a pulsing vibration that you can feel when you are looking at an object that has no frames.
     // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
-    if (isObjectWithNoFramesVisible) {
+    if (this.isObjectWithNoFramesVisible) {
         var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
         if (closestObject && !closestObject.isWorldObject) {
             var delay = closestObject.isWorldObject ? 1000 : 500;
@@ -656,7 +668,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     // rename nodes and give new keys
     var newNodes = {};
     for (var oldNodeKey in frame.nodes) {
-        if (!frame.nodes.hasOwnProperty(oldNodeKey)) continue;
+       // if (!frame.nodes.hasOwnProperty(oldNodeKey)) continue;
         var node = frame.nodes[oldNodeKey];
         var newNodeKey = newFrameKey + node.name;
         node.objectId = newObjectKey;
@@ -973,7 +985,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     var shouldRenderFramesInNodeView = (globalStates.guiState === 'node' && activeType === 'ui'); // && globalStates.renderFrameGhostsInNodeViewEnabled;
 
     if (notLoading !== activeKey && activeVehicle.loaded === true && activeVehicle.visualization !== "screen") {
-
+   
+        //todo this reference can be faster when taking the local scope
         var editingVehicle = realityEditor.device.getEditingVehicle();
         var thisIsBeingEdited = (editingVehicle === activeVehicle);
 
@@ -983,7 +996,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         // make visible a frame or node if it was previously hidden
         // waits to make visible until positionOnLoad has been applied, to avoid one frame rendered in wrong position
         if (!shouldRenderFramesInNodeView && !activeVehicle.visible && !(activePocketFrameWaiting || activePocketNodeWaiting)) {
-            
+         
             activeVehicle.visible = true;
             
             var container = globalDOMCache["object" + activeKey];
@@ -1066,6 +1079,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 return true;
             }
             
+            // TODO this seems to noe being used at all
             if (shouldRenderFramesInNodeView) {
                 globalDOMCache["object" + activeKey].classList.remove('displayNone');
             }
@@ -1541,45 +1555,37 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  * @return {Array}
  * @todo: still unsure if this is completely correct. order of rotation, scale, and translation matters.
  */
+
+// Valentin: Speeding up the calls by placing the variables outside of the scope into an object. As such Javascript does not need to handle memory for it.
+
+realityEditor.gui.ar.draw.getMatrixValues = {
+    utils: realityEditor.gui.ar.utilities,
+    r1: [],
+    r2: [],
+    r3: [],
+    finalMatrix: [],
+    rotateX : rotateX,
+    scale : []
+};
+
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
-    var utils = realityEditor.gui.ar.utilities;
-    var r1 = [];
-    var r2 = [];
-    var r3 = [];
-    var finalMatrix = [];
-
-    // 1. Rotate visibleObjects[objectKey] for screen orientation.
-    utils.multiplyMatrix(rotateX, visibleObjectMatrix, r1);
-
-    // // 2. Translate by the drag amount. Dividing by the scale seems to fix the magnitude.
-    // var translation = [
-    //     1, 0, 0, 0,
-    //     0, 1, 0, 0,
-    //     0, 0, 1, 0,
-    //     -frameX/frameScale, -frameY/frameScale, 0, 1
-    // ];
-    // utils.multiplyMatrix(r1, translation, r2);
-
-    r2 = utils.copyMatrix(r1);
-
-
-    // 3. include positionData if it exists, to match unconstrained position.
-    if (frameMatrix.length === 16) {
-        utils.multiplyMatrix(frameMatrix, r2, r3);
-    } else {
-        r3 = utils.copyMatrix(r2);
-    }
-
-    // 4. Scale the final result.
-    var scale = [
+    var getMatrixValues = this.getMatrixValues;
+    // 1. Construct matrix for scale and translation
+    getMatrixValues.scale = [
         frameScale, 0, 0, 0,
         0, frameScale, 0, 0,
         0, 0, frameScale, 0,
-        frameX/frameScale, frameY/frameScale, 0, 1
+        frameX, frameY, 0, 1
     ];
-    utils.multiplyMatrix(scale, r3, finalMatrix);
     
-    return finalMatrix;
+    // 2. multiply values
+    if (frameMatrix.length === 16) {
+        getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, getMatrixValues.r3);
+        getMatrixValues.utils.multiplyMatrix(getMatrixValues.scale, getMatrixValues.r3, getMatrixValues.finalMatrix);
+    } else {
+        getMatrixValues.utils.multiplyMatrix(getMatrixValues.scale, visibleObjectMatrix, getMatrixValues.finalMatrix);
+    }
+    return getMatrixValues.finalMatrix;
 };
 
 /**
@@ -2146,7 +2152,7 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
     if (!object) return;
     object.objectVisible = shouldBeVisible;
     for (var frameKey in object.frames) {
-        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        //if (!object.frames.hasOwnProperty(frameKey)) continue;
         object.frames[frameKey].objectVisible = shouldBeVisible;
     }
 };
