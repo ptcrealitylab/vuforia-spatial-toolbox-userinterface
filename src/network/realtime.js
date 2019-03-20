@@ -1,5 +1,7 @@
 createNameSpace("realityEditor.network.realtime");
 
+// TODO we have to check that this method only connects to the objects currently visible. Otherwise it will not scale.
+
 /**
  * @fileOverview realityEditor.device.realtime.js
  * Maintains the socket connections to other editors and provides APIs for sending and receiving data.
@@ -14,8 +16,10 @@ createNameSpace("realityEditor.network.realtime");
      * Public init function that sets up the sockets for realtime updates.
      */
     function initFeature() {
-        mySocket = io();
-        setupVehicleUpdateSockets();
+        // TODO Is this redundant code? It seems to generate the error that pops up
+        
+     //      mySocket = io.connect();
+      //  setupVehicleUpdateSockets();
         setupServerSockets();
         setInterval(setupServerSockets, 3000);
     }

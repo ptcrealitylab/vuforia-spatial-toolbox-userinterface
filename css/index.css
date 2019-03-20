@@ -1317,6 +1317,8 @@ Logic Interface CSS
     animation-duration: 300ms;
     -webkit-animation-fill-mode: forwards;
     -webkit-animation-timing-function: ease-out;
+    -webkit-user-select: none;
+    -webkit-touch-callout:none;
 }
 
 @keyframes delayedFadeOut {
@@ -1338,6 +1340,8 @@ Logic Interface CSS
     animation-duration: 1500ms;
     -webkit-animation-fill-mode: forwards;
     -webkit-animation-timing-function: ease-out;
+    -webkit-user-select: none;
+    -webkit-touch-callout:none;
 }
 
 .groundPlaneVisualizer {

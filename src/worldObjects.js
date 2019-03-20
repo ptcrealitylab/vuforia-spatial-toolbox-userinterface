@@ -30,6 +30,16 @@ createNameSpace("realityEditor.worldObjects");
             handleServerDiscovered(object.ip);
         });
 
+        var worldObject = { id: '_WORLD_OBJECT_local',
+            ip: "127.0.0.1", //'127.0.0.1',
+            vn: 320,
+            pr: 'R2',
+            tcs: null,
+            zone: '' };
+
+        var localWorldBeat =  function(worldObject){  realityEditor.network.addHeartbeatObject(worldObject); console.log(worldObject) };
+
+
         // localWorldBeat(worldObject);
         setTimeout(function() {
             localWorldBeat(worldObject);
