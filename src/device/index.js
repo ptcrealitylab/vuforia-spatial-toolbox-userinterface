@@ -1001,7 +1001,11 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
         if (realityEditor.device.currentScreenTouches.map(function(elt) { return elt.identifier; }).indexOf(touch.identifier) === -1) {
             realityEditor.device.currentScreenTouches.push({
                 targetId: touch.target.id.replace(/^(svg)/,""),
-                identifier: touch.identifier
+                identifier: touch.identifier,
+                position: {
+                    x: touch.pageX,
+                    y: touch.pageY
+                }
             });
         }
     });
@@ -1034,6 +1038,15 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
+    
+    [].slice.call(event.touches).forEach(function(touch) {
+        realityEditor.device.currentScreenTouches.filter(function(currentScreenTouch) {
+            return touch.identifier === currentScreenTouch.identifier;
+        }).forEach(function(currentScreenTouch) {
+            currentScreenTouch.position.x = touch.pageX;
+            currentScreenTouch.position.y = touch.pageY;
+        });
+    });
     
     var activeVehicle = this.getEditingVehicle();
     

@@ -83,7 +83,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
                 drawGroupHulls();
 
-                if (isUnconstrainedEditingGroup) {
+                if (isUnconstrainedEditingGroup && !realityEditor.device.editingState.unconstrainedDisabled) {
                     var activeVehicle = realityEditor.device.getEditingVehicle();
                     var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
                     forEachGroupedFrame(activeVehicle, function(frame) {
@@ -91,7 +91,14 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicleMatrix, frame.startingMatrixOffset, newMatrix);
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
                     }, true);
-                    
+
+                    var isSingleTouch = realityEditor.device.currentScreenTouches.length === 1;
+                    if (activeVehicle && isSingleTouch) {
+                        // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                        var touchPosition = realityEditor.device.currentScreenTouches[0].position; // need to retrieve this way instead of CSS of overlayDiv to support multitouch
+                        // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+                        moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x, touchPosition.y);
+                    }
                 }
             }
         });
@@ -150,7 +157,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 
                 if (activeVehicle && isSingleTouch) {
                     // also move group objects too
-                    moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
+                    var touchPosition = realityEditor.device.currentScreenTouches[0].position;
+                    moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x,touchPosition.y);
+                    // moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
                 }
 
             }
@@ -172,7 +181,16 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 
                 var activeVehicle = realityEditor.device.getEditingVehicle();
                 console.log('onDocumentMultiTouchEnd', params, activeVehicle);
-                
+
+                // check how many touches are still on the canvas / on the frame
+                // if there's still a touch on it (it was being scaled), reset touch offset so vehicle doesn't jump
+                // this.editingState.touchOffset = null;
+                if (realityEditor.device.currentScreenTouches.length > 0) {
+                    forEachGroupedFrame(activeVehicle, function(frame) {
+                        frame.groupTouchOffset = undefined; // recalculate groupTouchOffset each time
+                    });
+                }
+            
                 /*
                 document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.pointerEvents = 'none';
 
@@ -309,7 +327,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         // set the correct position for the frame that was just pulled to AR
 
                         // 1. move it so it is centered on the pointer, ignoring touchOffset
-                        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                        // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                        var touchPosition = realityEditor.device.currentScreenTouches[0].position;
                         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(groupedFrame, touchPosition.x, touchPosition.y, false);
 
                         /*
