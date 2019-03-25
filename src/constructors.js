@@ -151,6 +151,10 @@ function Frame() {
     this.src = "editor";
     // if true, cannot move the frame but copies are made from it when you pull into unconstrained
     this.staticCopy = false;
+    // the maximum distance (in meters) to the camera within which it will be rendered
+    this.distanceScale = 1.0;
+    // Indicates what group the frame belongs to; null if none
+    this.groupID = null;
 }
 
 /**
@@ -217,6 +221,9 @@ function Node() {
 	// defines the origin Hardware interface of the IO Point. For example if this is arduinoYun the Server associates
 	// indicates how much calls per second is happening on this node
 	this.stress = 0;
+
+    this.privateData = {};
+    this.publicData = {};
 
     this.lockPassword = null;
     this.lockType = null;

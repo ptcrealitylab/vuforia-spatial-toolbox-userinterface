@@ -58,7 +58,7 @@ createNameSpace("realityEditor.device.touchPropagation");
         overlappingDivs.filter(function(elt) {
             return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
         }).forEach(function(elt) {
-            elt.parentNode.style.display = 'none';
+            elt.parentNode.style.display = 'none'; // TODO: instead of changing display, maybe just change pointerevents css to none
         });
 
         // find the next overlapping div that hasn't been traversed (and therefore hidden) yet

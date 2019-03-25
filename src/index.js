@@ -64,8 +64,12 @@ var realityEditor = realityEditor || {
             speechProcessor: {},
             speechPerformer: {},
             touchInputs : {},
-            touchPropagation: {}
-		},
+            keyboardEvents: {},
+            touchPropagation: {},
+            desktopAdapter: {},
+            hololensAdapter: {},
+            distanceScaling: {}
+        },
 		gui: {
 			ar: {
 				draw: {
@@ -73,9 +77,11 @@ var realityEditor = realityEditor || {
                     globalCanvas : {}
 				},
                 positioning: {},
+                grouping: {},
                 lines: {},
                 frameHistoryRenderer: {},
                 desktopRenderer: {},
+                groundPlane: {},
                 utilities: {}
             },
             crafting: {
@@ -102,11 +108,17 @@ var realityEditor = realityEditor || {
             canvasCache: {},
             domCache: {},
             setup: {},
-            modal: {}
+            modal: {},
+            dropdown: {}
 		},
         network: {
-            utilities: {}
-        }
+            realtime: {},
+            utilities: {},
+            realtime: {},
+            frameContentAPI: {}
+        },
+        moduleCallbacks: {},
+        worldObjects: {}
 	};
 
 /**
@@ -195,6 +207,7 @@ realityEditor.getShadowNode = function (objectKey, frameKey, nodeKey){
  */
 realityEditor.getObject = function (objectKey){
     if(!objectKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject; }
     if(!(objectKey in this.objects)) return null;
     return this.objects[objectKey];
 };
@@ -208,6 +221,7 @@ realityEditor.getObject = function (objectKey){
 realityEditor.getFrame = function (objectKey, frameKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     return this.objects[objectKey].frames[frameKey];
@@ -224,10 +238,26 @@ realityEditor.getNode = function (objectKey, frameKey, nodeKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!nodeKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].nodes[nodeKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodes)) return null;
     return this.objects[objectKey].frames[frameKey].nodes[nodeKey];
+};
+
+/**
+ * Returns the frame or node specified by the path, if one exists.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string|undefined} nodeKey
+ * @return {Frame|Node|null}
+ */
+realityEditor.getVehicle = function(objectKey, frameKey, nodeKey) {
+    if (nodeKey) {
+        return realityEditor.getNode(objectKey, frameKey, nodeKey);
+    } else {
+        return realityEditor.getFrame(objectKey, frameKey);
+    }
 };
 
 // return a link located in a frame
@@ -235,6 +265,7 @@ realityEditor.getLink = function (objectKey, frameKey, linkKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!linkKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].links[linkKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(linkKey in this.objects[objectKey].frames[frameKey].links)) return null;
@@ -247,11 +278,12 @@ realityEditor.getBlock = function (objectKey, frameKey, nodeKey, block){
     if(!frameKey) return null;
     if(!nodeKey) return null;
     if(!block) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].nodes[nodeKey].blocks[block]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
     if(!(block in this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks)) return null;
-    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].block[block];
+    return this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks[block];
 };
 
 // return a block link in a logic node
@@ -260,6 +292,7 @@ realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
     if(!frameKey) return null;
     if(!nodeKey) return null;
     if(!linkKey) return null;
+    // if (objectKey === worldObjectId) { return worldObject.frames[frameKey].nodes[nodeKey].links[linkKey]; }
     if(!(objectKey in this.objects)) return null;
     if(!(frameKey in this.objects[objectKey].frames)) return null;
     if(!(nodeKey in this.objects[objectKey].frames[frameKey].nodeKey)) return null;
@@ -336,6 +369,7 @@ realityEditor.forEachFrameInAllObjects = function(callback) {
  * @param objectKey
  * @param callback
  */
+// TODO: simplify signature: doesnt need to include objectKey in callback since its an arg
 realityEditor.forEachFrameInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;
@@ -361,8 +395,11 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
     if (typeof vehicle.frameId !== 'undefined') {
         frameKey = vehicle.frameId;
     }
-    if (typeof vehicle.uuid !== 'undefined') {
+    if (typeof vehicle.uuid !== 'undefined' || (typeof vehicle.type !== 'undefined' && vehicle.type !== 'ui')) {
         if (objectKey && frameKey) {
+            if (typeof vehicle.uuid === 'undefined') {
+                vehicle.uuid = frameKey + vehicle.name;
+            }
             nodeKey = vehicle.uuid;
         } else if (objectKey) {
             frameKey = vehicle.uuid;
@@ -376,35 +413,4 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
         frameKey: frameKey,
         nodeKey: nodeKey
     };
-};
-
-/**
- * unknownKey is an objectKey, frameKey, or nodeKey
- * @param {string} unknownKey
- * @return {{objectKey: string|null, frameKey: string|null, nodeKey: string|null}}
- */
-realityEditor.getKeysFromKey = function(unknownKey) {
-    var keys = {
-        objectKey: null,
-        frameKey: null,
-        nodeKey: null
-    };
-    
-    Object.keys(objects).forEach(function(objectKey) {
-        if (unknownKey.indexOf(objectKey) > -1) {
-            keys.objectKey = objectKey;
-            realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
-                if (unknownKey.indexOf(frameKey) > -1) {
-                    keys.frameKey = frameKey;
-                    realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
-                        if (unknownKey.indexOf(nodeKey) > -1) {
-                            keys.nodeKey = nodeKey;
-                        }
-                    });
-                }
-            });
-        }
-    });
-    
-    return keys;
 };

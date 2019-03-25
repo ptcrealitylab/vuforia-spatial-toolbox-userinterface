@@ -70,7 +70,39 @@ realityEditor.device.onload = function () {
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
         globalStates.platform = false;
     }
-    
+
+    // initialize additional features
+    realityEditor.device.initFeature();
+    realityEditor.device.touchInputs.initFeature();
+    realityEditor.device.videoRecording.initFeature();
+    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
+    realityEditor.gui.ar.grouping.initFeature();
+    realityEditor.device.touchPropagation.initFeature();
+    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
+    realityEditor.device.security.initFeature(); // TODO: feature is internally disabled
+    realityEditor.network.realtime.initFeature();
+    realityEditor.device.hololensAdapter.initFeature();
+    realityEditor.device.desktopAdapter.initFeature();
+    realityEditor.gui.ar.desktopRenderer.initFeature();
+    realityEditor.gui.crafting.initFeature();
+    realityEditor.worldObjects.initFeature();
+    realityEditor.device.distanceScaling.initFeature();
+    realityEditor.device.keyboardEvents.initFeature();
+    realityEditor.network.frameContentAPI.initFeature();
+    // realityEditor.gui.ar.groundPlane.initFeature();
+
+    // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
+    /*if (!realityEditor.device.utilities.isDesktop()) {
+        realityEditor.gui.ar.draw.updateLoop();
+    }*/
+
+    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
+
+    realityEditor.app.getDiscoveryText(function(savedState) {
+        if (savedState === '(null)') { savedState = 'null'; };
+        console.log('saved discovery text = ', JSON.parse(savedState));
+    });
+
     globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
@@ -89,28 +121,25 @@ realityEditor.device.onload = function () {
     CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
 
     // set active buttons and preload some images
-    realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
-    realityEditor.gui.menus.on("main",["gui"]);
-	realityEditor.gui.buttons.draw();
+    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
+	realityEditor.gui.buttons.initButtons();
 	
 	// set up the pocket and memory bars
-	realityEditor.gui.memory.initMemoryBar();
+    if (!TEMP_DISABLE_MEMORIES) {
+        realityEditor.gui.memory.initMemoryBar();
+    } else {
+        var pocketMemoryBar = document.querySelector('.memoryBar');
+        pocketMemoryBar.parentElement.removeChild(pocketMemoryBar);
+    }
 	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
 
 	// set up the global canvas for drawing the links
 	globalCanvas.canvas = document.getElementById('canvas');
-	globalCanvas.canvas.width = globalStates.height;
-	globalCanvas.canvas.height = globalStates.width;
+    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
+    globalCanvas.canvas.height = globalStates.width;
 	globalCanvas.context = canvas.getContext('2d');
-    
-	// !! important call to the iOS native application to notify that the user interface has loaded successfully !!
-    // TODO: move this into app/index.js
-    realityEditor.app.appFunctionCall("kickoff", null, null);
-   
-    // reference implementation
-    setTimeout(realityEditor.app.getVuforiaReady(function(){console.log("pong")}), 5000);
-    
+
     // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
 		
@@ -127,18 +156,30 @@ realityEditor.device.onload = function () {
     
     // start TWEEN library for animations
     (function animate(time) {
+        // TODO This is a hack to keep the crafting board running
+        if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
+            var areMatricesPrecomputed = true;
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, areMatricesPrecomputed); 
+        }
         requestAnimationFrame(animate);
         TWEEN.update(time);
     })();
     
-    // initialize additional features
-    realityEditor.device.touchInputs.initFeature();
-    realityEditor.device.videoRecording.initFeature();
-    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
-    realityEditor.device.touchPropagation.initFeature();
-    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
+    // start the AR framework in native iOS
+    targetDownloadStates = {}; // reset downloads
+    realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
     
-	this.cout("onload");
+    // window.addEventListener('resize', function(event) {
+    //     console.log(window.innerWidth, window.innerHeight);
+    // });
+
+    if (globalStates.debugSpeechConsole) {
+        document.getElementById('speechConsole').style.display = 'inline';
+    }
+
+    // initWorldObject();
+
+    this.cout("onload");
 };
 
 window.onload = realityEditor.device.onload;

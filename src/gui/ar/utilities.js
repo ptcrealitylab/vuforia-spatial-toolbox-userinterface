@@ -159,6 +159,43 @@ realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
 };
 
 /**
+ * Returns a matrix that linearly interpolated each element of two matrices
+ * @param {Array.<number>} existingMatrix - source matrix
+ * @param {Array.<number>} newMatrix - new value
+ * @param {number} alpha - if 0, sets to existing matrix, if 1, sets to new matrix, if 0.5, averages the two
+ * @return {Array.<number>} resulting interpolated matrix
+ */
+realityEditor.gui.ar.utilities.lerpMatrices = function(existingMatrix, newMatrix, alpha) {
+    if (existingMatrix.length !== newMatrix.length) {
+        console.warn('trying to lerp incompatible matrices');
+        return;
+    }
+    if (typeof alpha === 'undefined' || alpha < 0 || alpha > 1) {
+        console.log('lerping with incompatible alpha value (' + alpha + ') -> using 0.5 instead');
+        alpha = 0.5;
+    }
+
+    var r = [];
+    r[0] = newMatrix[0] * alpha + existingMatrix[0] * (1 - alpha);
+    r[1] = newMatrix[1] * alpha + existingMatrix[1] * (1 - alpha);
+    r[2] = newMatrix[2] * alpha + existingMatrix[2] * (1 - alpha);
+    r[3] = newMatrix[3] * alpha + existingMatrix[3] * (1 - alpha);
+    r[4] = newMatrix[4] * alpha + existingMatrix[4] * (1 - alpha);
+    r[5] = newMatrix[5] * alpha + existingMatrix[5] * (1 - alpha);
+    r[6] = newMatrix[6] * alpha + existingMatrix[6] * (1 - alpha);
+    r[7] = newMatrix[7] * alpha + existingMatrix[7] * (1 - alpha);
+    r[8] = newMatrix[8] * alpha + existingMatrix[8] * (1 - alpha);
+    r[9] = newMatrix[9] * alpha + existingMatrix[9] * (1 - alpha);
+    r[10] = newMatrix[10] * alpha + existingMatrix[10] * (1 - alpha);
+    r[11] = newMatrix[11] * alpha + existingMatrix[11] * (1 - alpha);
+    r[12] = newMatrix[12] * alpha + existingMatrix[12] * (1 - alpha);
+    r[13] = newMatrix[13] * alpha + existingMatrix[13] * (1 - alpha);
+    r[14] = newMatrix[14] * alpha + existingMatrix[14] * (1 - alpha);
+    r[15] = newMatrix[15] * alpha + existingMatrix[15] * (1 - alpha);
+    return r;
+};
+
+/**
  * @desc inverting a matrix
  * @param {Array.<number>} a origin matrix
  * @return {Array.<number>} a inverted copy of the origin matrix
@@ -183,6 +220,32 @@ realityEditor.gui.ar.utilities.invertMatrix = function (a) {
 	b[14] = ( -n * u + p * B - r * A) * q;
 	b[15] = (k * u - l * B + o * A) * q;
 	return b;
+};
+
+/**
+ * Returns the transpose of a 4x4 matrix
+ * @param {Array.<number>} matrix
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.transposeMatrix = function(matrix) {
+    var r = [];
+    r[0] = matrix[0];
+    r[1] = matrix[4];
+    r[2] = matrix[8];
+    r[3] = matrix[12];
+    r[4] = matrix[1];
+    r[5] = matrix[5];
+    r[6] = matrix[9];
+    r[7] = matrix[13];
+    r[8] = matrix[2];
+    r[9] = matrix[6];
+    r[10] = matrix[10];
+    r[11] = matrix[14];
+    r[12] = matrix[3];
+    r[13] = matrix[7];
+    r[14] = matrix[11];
+    r[15] = matrix[15];
+    return r;
 };
 
 /**
@@ -244,16 +307,37 @@ realityEditor.gui.ar.utilities.perspectiveDivide = function(matrix) {
 
 /**
  * Helper function for printing a matrix in human-readable format
+ * Note that this assumes, row-major order, while CSS 3D matrices actually use column-major
+ * Interpret column-major matrices as the transpose of what is printed
  * @param {Array.<number>} matrix
+ * @param {number} precision - the number of decimal points to include
+ * @param {boolean} htmlLineBreaks - use html line breaks instead of newline characters
+ * @return {string}
  */
-realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix) {
-    // Note that this assumes, row-major order, while CSS 3D matrices actually use column-major
-    // Interpret column-major matrices as the transpose of what is printed
+realityEditor.gui.ar.utilities.prettyPrintMatrix = function(matrix, precision, htmlLineBreaks) {
+    if (typeof precision === 'undefined') precision = 3;
     
-    console.log("[ " + matrix[0] + ", " + matrix[1] + ", " + matrix[2] + ", " + matrix[3] + ", \n" +
-                "  " + matrix[4] + ", " + matrix[5] + ", " + matrix[6] + ", " + matrix[7] + ", \n" +
-                "  " + matrix[8] + ", " + matrix[9] + ", " + matrix[10] + ", " + matrix[11] + ", \n" +
-                "  " + matrix[12] + ", " + matrix[13] + ", " + matrix[14] + ", " + matrix[15] + " ]" );
+    var lineBreakSymbol = htmlLineBreaks ? '<br>' : '\n';
+    
+    return "[ " + matrix[0].toFixed(precision) + ", " + matrix[1].toFixed(precision) + ", " + matrix[2].toFixed(precision) + ", " + matrix[3].toFixed(precision) + ", " + lineBreakSymbol +
+                "  " + matrix[4].toFixed(precision) + ", " + matrix[5].toFixed(precision) + ", " + matrix[6].toFixed(precision) + ", " + matrix[7].toFixed(precision) + ", " + lineBreakSymbol +
+                "  " + matrix[8].toFixed(precision) + ", " + matrix[9].toFixed(precision) + ", " + matrix[10].toFixed(precision) + ", " + matrix[11].toFixed(precision) + ", " + lineBreakSymbol +
+                "  " + matrix[12].toFixed(precision) + ", " + matrix[13].toFixed(precision) + ", " + matrix[14].toFixed(precision) + ", " + matrix[15].toFixed(precision) + " ]";
+};
+
+/**
+ * Returns the dot product of the two vectors
+ */
+realityEditor.gui.ar.utilities.dotProduct = function(v1, v2) {
+    if (v1.length !== v2.length) {
+        console.warn('trying to dot two vectors of different lengths');
+        return 0;
+    }
+    var sum = 0;
+    for (var i = 0; i < v1.length; i++) {
+        sum += v1[i] * v2[i];
+    }
+    return sum;
 };
 
 /**
@@ -355,6 +439,8 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
  * @return {Array.<Frame>}
  */
 realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
+    // TODO currently this function requires to many resources. It can take up to 5ms to just calculate if frames are visible
+   // return true;
     
     var visibleFrames = [];
     
@@ -418,6 +504,64 @@ realityEditor.gui.ar.utilities.newIdentityMatrix = function() {
         0, 0, 1, 0,
         0, 0, 0, 1
     ];
+};
+
+/**
+ * Checks if a 4x4 matrix is the identity matrix.
+ * optimized for the cases when it is not, as that is more common in this application.
+ * @param {Array.<number>} matrix
+ * @param {number|undefined} precision - how many digits  to when checking (to prevent small rounding errors)
+ * @return {boolean}
+ */
+realityEditor.gui.ar.utilities.isIdentityMatrix = function(matrix, precision) {
+    precision = precision || 3; // defaults to 3 digits of precision
+    // unrolled loop to be faster at expense of longer function body
+    if (parseFloat(matrix[0].toFixed(precision)) !== 1) {
+        return false;
+    }
+    if (parseFloat(matrix[1].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[2].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[3].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[4].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[5].toFixed(precision)) !== 1) {
+        return false;
+    }
+    if (parseFloat(matrix[6].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[7].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[8].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[9].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[10].toFixed(precision)) !== 1) {
+        return false;
+    }
+    if (parseFloat(matrix[11].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[12].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[13].toFixed(precision)) !== 0) {
+        return false;
+    }
+    if (parseFloat(matrix[14].toFixed(precision)) !== 0) {
+        return false;
+    }
+    return parseFloat(matrix[15].toFixed(precision)) === 1; // if it got this far, it's the identity iff the last element is 1
 };
 
 /**
@@ -544,7 +688,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         
         // translation matrix if the element has a different transform origin
         // var originTranslationVector = getTransformOrigin(transformedDiv);
-        var originTranslationVector = [284, 160, 0, 1];
+        var originTranslationVector = [284, 160, 0, 1]; // TODO: this depends on screen size?
 
         // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
         // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
@@ -736,6 +880,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         return out;
     }
 
+    /**
+     * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
+     * @param {HTMLElement} ele
+     * @return {Array.<number>}
+     */
     function getTransform(ele) {
         // var st = window.getComputedStyle(ele, null);
         // tr = st.getPropertyValue("-webkit-transform") ||
@@ -745,6 +894,9 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         //     st.getPropertyValue("transform");
         
         var tr = ele.style.webkitTransform;
+        if (!tr) {
+            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+        }
 
         var values = tr.split('(')[1].split(')')[0].split(',');
         
@@ -792,7 +944,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
     exports.screenCoordinatesToMatrixXY_finalMatrix = screenCoordinatesToMatrixXY_finalMatrix;
     exports.computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
-    
+    exports.getTransform = getTransform;
+
 }(realityEditor.gui.ar.utilities));
 
 /**********************************************************************************************************************
@@ -1005,6 +1158,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         if (!hasBeenUnconstrainedPositioned(matrixSVG)) {
             return;
         }
+
+        // don't draw red lines on frames in a world object (doesn't make sense to have a "plane" intersection in world)
+        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        var object = realityEditor.getObject(keys.objectKey);
+        if (object.isWorldObject) {
+            return;
+        }
         
         // if (globalStates.inTransitionFrame) return false;
         var thisSVG = globalDOMCache["svg" + activeKey];
@@ -1083,11 +1243,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             // get corners, add in correct order so they get drawn clockwise
 
             corners.forEach(function (corner) {
-                if (corner[2] < 0) {
+                if (corner[2] > 0) { // flipped sign from less than 0 to greater than because z axis flipped in vuforia 7.2
                     interceptPoints.push(corner);
                 }
 
-                if (corner[2] < -100) {
+                if (corner[2] > 100) {
                     numBehindMarkerPlane++;
                 }
             });
@@ -1168,7 +1328,42 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
  * @return {number} distance
  */
 realityEditor.gui.ar.utilities.distance = function (matrix) {
-    return   Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    var distance = 1000; // for now give a valid value as a fallback
+    try {
+        distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
+    } catch (e) {
+        console.warn('trying to calculate distance of ', matrix);
+    }
+    return distance;
+};
+
+/**
+ * Returns a matrix containing the inverse rotation of the 4x4 matrix passed in
+ * @param {Array.<number>} m
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.invertRotationMatrix = function(m) {
+    var mInv = [];
+    
+    // transpose the first 3x3, identity for the rest
+    mInv[0] = m[0];
+    mInv[1] = m[4];
+    mInv[2] = m[8];
+    mInv[3] = 0;
+    mInv[4] = m[1];
+    mInv[5] = m[5];
+    mInv[6] = m[9];
+    mInv[7] = 0;
+    mInv[8] = m[2];
+    mInv[9] = m[6];
+    mInv[10] = m[10];
+    mInv[11] = 0;
+    mInv[12] = 0;
+    mInv[13] = 0;
+    mInv[14] = 0;
+    mInv[15] = 1;
+    
+    return mInv;
 };
 
 /**
@@ -1204,7 +1399,7 @@ realityEditor.gui.ar.utilities.getQuaternionFromMatrix = function(m) {
 //     // return Math.sqrt( Math.max(0, Math.min(1, (mappedMagnitude - 1.0) * 4)) );
 // };
 
-realityEditor.gui.ar.utilities.quaternionToEulerAngles = function(q) {
+realityEditor.gui.ar.utilities.quaternionToEulerAngles = function(q) { // TODO: rename to getEulerAnglesFromQuaternion to be consistent
     var phi = Math.atan2(q.z * q.w + q.x * q.y, 0.5 - (q.y * q.y + q.z * q.z));
     var theta = Math.asin(-2 * (q.y * q.w - q.x * q.z));
     var psi = Math.atan2(q.y * q.z + q.x * q.w, 0.5 - (q.z * q.z + q.w * q.w));
@@ -1294,9 +1489,9 @@ realityEditor.gui.ar.utilities.invertQuaternion = function(q) {
     var d = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
     return {
         x: q.x/d,
-        y: q.y/d,
-        z: q.z/d,
-        w: q.w/d
+        y: -q.y/d,
+        z: -q.z/d,
+        w: -q.w/d
     }
 };
 
@@ -1325,4 +1520,68 @@ realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw = function(pitch, r
     q.y = cy * cr * sp + sy * sr * cp;
     q.z = sy * cr * cp - cy * sr * sp;
     return q;
+};
+
+/**
+ * Normalizes a 4x4 transformation matrix by dividing by the last element
+ * @param m
+ * @return {Array<number>}
+ */
+realityEditor.gui.ar.utilities.normalizeMatrix = function(m) {
+    var divisor = m[15];
+    return this.scalarMultiplyMatrix(m, (1.0/divisor));
+};
+
+/**
+ * A helper function that extracts the rotation matrix from a 4x4 transformation matrix,
+ * and optionally inverts any combination of the axes of rotation
+ * @param {Array.<number>} matrix
+ * @param {boolean} flipX
+ * @param {boolean} flipY
+ * @param {boolean} flipZ
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.extractRotation = function(matrix, flipX, flipY, flipZ) {
+    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
+    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
+    if (flipX) {
+        eulerAngles.theta *= -1; // flips first axis of rotation (yaw)
+    }
+    if (flipY) {
+        eulerAngles.psi *= -1; // flips second axis of rotation (pitch)
+    }
+    if (flipZ) {
+        eulerAngles.phi *= -1; // flips third axis of rotation (roll)
+    }
+    var modifiedQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
+    
+    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(modifiedQ);
+};
+
+/**
+ * Helper function that extracts the x,y,z translation elements from a 4x4 transformation matrix,
+ * and optionally inverts any combination of the axes of translation
+ * @param {Array.<number>} matrix
+ * @param {boolean} flipX
+ * @param {boolean} flipY
+ * @param {boolean} flipZ
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.extractTranslation = function(matrix, flipX, flipY, flipZ) {
+    var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    translationMatrix[12] = matrix[12];
+    translationMatrix[13] = matrix[13];
+    translationMatrix[14] = matrix[14];
+
+    if (flipX) {
+        translationMatrix[12] *= -1; // flips first axis of translation
+    }
+    if (flipY) {
+        translationMatrix[13] *= -1; // flips second axis of translation
+    }
+    if (flipZ) {
+        translationMatrix[14] *= -1; // flips third axis of translation
+    }
+    
+    return translationMatrix;
 };

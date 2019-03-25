@@ -63,6 +63,9 @@ realityEditor.gui.settings.hideSettings = function() {
         instantState: globalStates.instantState,
         speechState: globalStates.speechState,
         videoRecordingEnabled: globalStates.videoRecordingEnabled,
+        matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
+        hololensModeEnabled: globalStates.hololensModeEnabled,
+        groupingEnabled: globalStates.groupingEnabled,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,
@@ -101,7 +104,7 @@ document.body.classList.add('clearSky');
 } else {
 
 
-    // realityEditor.gui.menus.on("main",[]);
+    // realityEditor.gui.menus.switchToMenu("main",[]);
 
 
     globalStates.UIOffMode = false;
@@ -112,10 +115,10 @@ document.body.classList.add('clearSky');
 realityEditor.gui.settings.showSettings = function() {
 
     if(!globalStates.realityState) {
-        realityEditor.gui.menus.on("setting", ["setting"]);
+        realityEditor.gui.menus.switchToMenu("setting", ["setting"], null);
     }
     else {
-        realityEditor.gui.menus.on("settingReality", ["setting"]);
+        realityEditor.gui.menus.switchToMenu("settingReality", ["setting"], null);
     }
 
 
@@ -134,6 +137,9 @@ realityEditor.gui.settings.showSettings = function() {
         instantState: globalStates.instantState,
         speechState: globalStates.speechState,
         videoRecordingEnabled: globalStates.videoRecordingEnabled,
+        matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
+        hololensModeEnabled: globalStates.hololensModeEnabled,
+        groupingEnabled: globalStates.groupingEnabled,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,

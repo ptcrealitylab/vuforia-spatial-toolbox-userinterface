@@ -49,6 +49,17 @@
 
 createNameSpace("realityEditor.gui.crafting");
 
+realityEditor.gui.crafting.initFeature = function() {
+    realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
+    realityEditor.gui.buttons.registerCallbackForButton('logic', hideCraftingOnButtonUp);
+
+    function hideCraftingOnButtonUp(params) {
+        if (params.newButtonState === 'up') {
+            realityEditor.gui.crafting.craftingBoardHide();
+        }
+    }
+};
+
 realityEditor.gui.crafting.updateGrid = function(grid) {
     console.log("update grid!");
 
@@ -424,7 +435,7 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
     document.getElementById("craftingBoard").style.visibility = "visible";
     document.getElementById("craftingBoard").style.display = "inline";
     
-    realityEditor.gui.menus.on("crafting", ["freeze"]);
+    realityEditor.gui.menus.switchToMenu("crafting", ["freeze"], null);
     
     if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
         
@@ -449,7 +460,7 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
 realityEditor.gui.crafting.craftingBoardHide = function() {
 
     if(globalStates.currentLogic) {
-        //realityEditor.gui.menus.off("logic",["freeze"]);
+        //realityEditor.gui.menus.switchToMenu("logic", null, ["freeze"]);
 
         //globalStates.freezeButtonState = false;
         var memoryBackground = document.querySelector('.memoryBackground');
@@ -457,13 +468,13 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
         
         if (globalStates.freezeButtonState && !globalStates.freezeStateBeforeCrafting) {
             
-            realityEditor.gui.menus.buttonOff("default", ["freeze"]);
+            realityEditor.gui.menus.buttonOff(["freeze"]);
             globalStates.freezeButtonState = false;
             realityEditor.app.setResume();
 
         } else if (!globalStates.freezeButtonState && globalStates.freezeStateBeforeCrafting) {
             
-            realityEditor.gui.menus.buttonOn("default", ["freeze"]);
+            realityEditor.gui.menus.buttonOn(["freeze"]);
             globalStates.freezeButtonState = true;
             realityEditor.app.setPause();
         }
@@ -475,7 +486,7 @@ realityEditor.gui.crafting.craftingBoardHide = function() {
     // remove the block menu if it's showing
     this.blockMenu.resetBlockMenu();
     // reset side menu buttons
-    realityEditor.gui.menus.off("logic",["setting","pocket"]);
+    realityEditor.gui.menus.switchToMenu("logic", null, ["setting","pocket"]);
 
     // hide the crafting board div
     document.getElementById("craftingBoard").style.visibility = "hidden";
@@ -492,30 +503,27 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
     if (document.getElementById('nodeSettingsContainer') && document.getElementById('nodeSettingsContainer').style.display !== "none") {
         return;
     }
-
-    realityEditor.gui.menus.on("crafting",["logicPocket"]);
+    
+    realityEditor.gui.menus.switchToMenu("crafting", ["logicPocket"], null);
     
     // hide block settings if necessary
     blockSettingsContainer = document.getElementById('blockSettingsContainer');
     if (blockSettingsContainer) {
-        realityEditor.gui.buttons.settingButtonUp({button: "setting"});
+        realityEditor.gui.buttons.settingButtonUp({button: "setting", ignoreIsDown: true});
     }
     
-    var _this = this;
-    
     this.eventHelper.changeDatacraftingDisplayForMenu('none');
-
+    
     // create the menu if it doesn't already exist, otherwise just show it
     var existingMenu = document.getElementById('menuContainer');
     if (existingMenu) {
         existingMenu.style.display = 'inline';
         this.blockMenu.redisplayTabSelection();
-        // this.blockMenu.redisplayBlockSelection();
     } else {
         this.blockMenu.initializeBlockMenu(function() {
-            _this.blockMenu.redisplayTabSelection(); // wait for callback to ensure menu fully loaded
-            _this.blockMenu.redisplayBlockSelection();
-        });
+            this.blockMenu.redisplayTabSelection(); // wait for callback to ensure menu fully loaded
+            this.blockMenu.redisplayBlockSelection();
+        }.bind(this));
     }
 };
 
@@ -534,7 +542,7 @@ realityEditor.gui.crafting.blockMenuHide = function() {
         if (!globalStates.pocketButtonState) {
             globalStates.pocketButtonState = true;
             //document.getElementById('pocketButton').src = pocketButtonImage[4].src;
-            realityEditor.gui.menus.off("crafting",["logicPocket"]);
+            realityEditor.gui.menus.switchToMenu("crafting", null, ["logicPocket"]);
         }
     }
     
@@ -710,7 +718,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
     craftingMenusContainer.id = 'craftingMenusContainer';
     craftingMenusContainer.style.width = containerWidth + 'px';
     craftingMenusContainer.style.height = containerHeight + 'px';
-    craftingMenusContainer.style.position = 'absolute';
+    craftingMenusContainer.style.position = 'relative';
     craftingMenusContainer.style.left = '0';
     craftingMenusContainer.style.top = '0';
     // craftingMenusContainer.style.pointerEvents = 'none';

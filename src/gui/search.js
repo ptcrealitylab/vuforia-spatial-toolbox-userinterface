@@ -116,7 +116,7 @@ realityEditor.gui.search.add = function () {
                 that.list[this.search].state = null;
                 that.switch(this.search, null);
             }
-            realityEditor.gui.buttons.sendInterfaces("realitySearch");
+            realityEditor.gui.menus.sendInterfaces("realitySearch");
             localStorage["searchList"] = JSON.stringify(that.list);
         };
 

@@ -60,16 +60,20 @@
     <link rel="stylesheet" type="text/css" href="css/index.css">
     <link rel="stylesheet" type="text/css" href="css/menu.css">
     <link rel="stylesheet" type="text/css" href="css/modal.css">
+    <link rel="stylesheet" type="text/css" href="css/dropdown.css">
 
     <!-- Javascript -->
     <script src="thirdPartyCode/pep.min.js"></script>
     <script src="thirdPartyCode/d3.min.js"></script>
     <script src="thirdPartyCode/Tween.min.js"></script>
-
+    <script src="thirdPartyCode/socket.io.js"></script>
+    <script src="thirdPartyCode/hull.js"></script>
     <script src="src/constructors.js"></script>
     <script src="src/objects.js"></script>
     <script src="src/index.js"></script>
     <script src="src/states.js"></script>
+    <script src="src/moduleCallbacks.js"></script>
+    <script src="src/worldObjects.js"></script>
 
     <script src="src/app/index.js"></script>
     <script src="src/app/callbacks.js"></script>
@@ -85,27 +89,38 @@
     <script src="src/device/speechProcessor.js"></script>
     <script src="src/device/layout.js"></script>
     <script src="src/device/videoRecording.js"></script>
+    <script src="src/device/desktopAdapter.js"></script>
+    <script src="src/device/hololensAdapter.js"></script>
+    <script src="src/device/distanceScaling.js"></script>
+    <script src="src/device/keyboardEvents.js"></script>
 
     <script src="src/network/index.js"></script>
+    <script src="src/network/realtime.js"></script>
     <script src="src/network/utilities.js"></script>
+    <script src="src/network/frameContentAPI.js"></script>
 
     <script src="src/gui/index.js"></script>
     <script src="src/gui/utilities.js"></script>
     <script src="src/gui/buttons.js"></script>
     <script src="src/gui/menus.js"></script>
     <script src="src/gui/instantConnection.js"></script>
+    <script src="src/gui/pocketFrames.js"></script>
     <script src="src/gui/pocket.js"></script>
     <script src="src/gui/settings.js"></script>
     <script src="src/gui/frame.js"></script>
     <script src="src/gui/modal.js"></script>
+    <script src="src/gui/dropdown.js"></script>
 
     <script src="src/gui/ar/index.js"></script>
     <script src="src/gui/ar/utilities.js"></script>
     <script src="src/gui/ar/draw.js"></script>
     <script src="src/gui/ar/lines.js"></script>
     <script src="src/gui/ar/positioning.js"></script>
+    <script src="src/gui/ar/grouping.js"></script>
     <script src="src/gui/ar/moveabilityOverlay.js"></script>
     <script src="src/gui/ar/frameHistoryRenderer.js"></script>
+    <script src="src/gui/ar/desktopRenderer.js"></script>
+    <script src="src/gui/ar/groundPlane.js"></script>
 
     <script src="src/gui/crafting/index.js"></script>
     <script src="src/gui/crafting/utilities.js"></script>
@@ -120,6 +135,9 @@
 
     <script src="src/gui/search.js"></script>
 
+    <script>
+    
+    </script>
 </head>
 <body touch-action="none">
 
@@ -334,6 +352,7 @@
                       c0.1,4.9,3.9,8.6,8.7,8.6l0,0c4.9,0,8.8-3.8,8.8-8.8C39.4,25.1,35.5,21.2,30.6,21.2L30.6,21.2z"/>
           <rect id="bg" class="blue inactive" width="60" height="60"/>
       </svg>
+    
       <div id="unconstrainedButtonDiv"></div>
       <svg id="unconstrainedButton">
           <path class="blue" d="M38.7,34.8L38.7,34.8l-8.3,5.1l0,0l0,0l0,0L38.7,34.8L38.7,34.8L38.7,34.8z M29.4,52L29.4,52l0.1-10.4h-0.1V52z
@@ -351,7 +370,26 @@
         <!--  <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9H58.1z"/>-->
           <rect id="bg" class="blue inactive" width="60" height="60"/>
       </svg>
-      <div id="unlockButtonDiv"></div>
+
+    <div id="distanceButtonDiv"></div>
+    <svg id="distanceButton">
+        <path class="blue" d="M12.45,7.55v5.03h1.8V9.45h31.4v3.13h1.8V7.55H12.45z"/>
+        <path class="blue" d="M47.45,52.45v-5.03h-1.8v3.13h-31.4v-3.13h-1.8v5.03H47.45z"/>
+        <polygon class="blue" points="36.71,37.89 38.18,39.25 30,48.05 21.82,39.25 23.29,37.89 29,44.03 29,15.52 23.29,21.66 21.82,20.3 
+	30,11.5 38.18,20.3 36.71,21.66 31,15.52 31,44.03 "/>
+        <rect id="bg" class="blue inactive" width="60" height="60"/>
+    </svg>
+
+    <div id="distanceGreenButtonDiv"></div>
+    <svg id="distanceGreenButton">
+        <path class="green" d="M12.45,7.55v5.03h1.8V9.45h31.4v3.13h1.8V7.55H12.45z"/>
+        <path class="green" d="M47.45,52.45v-5.03h-1.8v3.13h-31.4v-3.13h-1.8v5.03H47.45z"/>
+        <polygon class="green" points="36.71,37.89 38.18,39.25 30,48.05 21.82,39.25 23.29,37.89 29,44.03 29,15.52 23.29,21.66 21.82,20.3 
+	30,11.5 38.18,20.3 36.71,21.66 31,15.52 31,44.03 "/>
+        <rect id="bg" class="green inactive" width="60" height="60"/>
+    </svg>
+
+    <div id="unlockButtonDiv"></div>
       <svg id="unlockButton">
           <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
           <path class="blue" d="M40.3,31.2V19.4c0-2.8-1.1-5.4-3-7.3c-2-2-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3V24h1.9v-4.6
@@ -382,7 +420,6 @@
 	 M30,17.8c-6.8,0-12.3,5.5-12.3,12.3c0,6.8,5.5,12.3,12.3,12.3c6.8,0,12.3-5.5,12.3-12.3C42.3,23.3,36.8,17.8,30,17.8z"/>
         <rect id="bg" class="blue inactive" width="60" height="60"/>
     </svg>
-    
     <!-- Reality UI - Start -->
     <div id="realityGuiButtonDiv"></div>
     <svg id="realityGuiButton">
@@ -473,7 +510,13 @@
 </div>
 
 <canvas class="Canvas" id="canvas"></canvas> <!--touch-action="none"-->
-
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" style="width: 100vw; height: 100vh; top: 0; left: 0; position:absolute; -webkit-user-select: none; -webkit-touch-callout: none;">
+    <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupSVG" style="width: 100vw; height: 100vh; top: 0; left: 0; position:absolute; -webkit-user-select: none; -webkit-touch-callout: none;">
+</svg>
 <div class='Interfaces' id="overlay"></div>
 
 <iframe src="src/gui/settings/index.html" id="settingsIframe" frameborder="0" style="background-color: #222222; position: absolute; left: 0px; top: 0px; bottom: 0px; right: 0px; height: 100%; width: 100%; -webkit-transform: translateZ(900px); display: none;" ></iframe>

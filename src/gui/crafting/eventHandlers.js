@@ -91,7 +91,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
             activeHoldTimer = setTimeout(function () {
                 _this.crafting.eventHelper.styleBlockForHolding(thisTappedContents, true);
 
-                realityEditor.gui.menus.on("bigTrash",[]);
+                realityEditor.gui.menus.switchToMenu("bigTrash");
                 //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
             }, globalStates.craftingMoveDelay);
             
@@ -133,13 +133,13 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
                 if (this.crafting.eventHelper.canDrawLineFrom(tappedContents)) {
                     touchState = TS_CONNECT;
                     clearTimeout(activeHoldTimer);
-                    realityEditor.gui.menus.on("crafting",[]);
+                    realityEditor.gui.menus.switchToMenu("crafting");
                    // realityEditor.gui.pocket.pocketOnMemoryDeletionStop();
 
                 } else {
                     touchState = TS_NONE;
                     clearTimeout(activeHoldTimer);
-                    realityEditor.gui.menus.on("crafting",[]);
+                    realityEditor.gui.menus.switchToMenu("crafting");
                    // realityEditor.gui.pocket.pocketOnMemoryDeletionStop();
 
                 }
@@ -178,7 +178,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
             }
             
         } else if (touchState === TS_MOVE) {
-            realityEditor.gui.menus.on("bigTrash",[]);
+            realityEditor.gui.menus.switchToMenu("bigTrash");
            // realityEditor.gui.pocket.pocketOnMemoryDeletionStart(); //displays the big trash can icon
 
             // snap if to grid position if necessary, otherwise just move block to pointer position
@@ -220,7 +220,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
         this.crafting.eventHelper.updateCraftingBackgroundVisibility("up", cell, globalStates.currentLogic.guiState.tappedContents);
 
 
-        realityEditor.gui.menus.on("crafting",[]);
+        realityEditor.gui.menus.switchToMenu("crafting");
        // realityEditor.gui.pocket.pocketOnMemoryDeletionStop(); //hides the big trash can icon
 
         if (touchState === TS_TAP_BLOCK) {

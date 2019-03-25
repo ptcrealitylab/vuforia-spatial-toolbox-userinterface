@@ -26,6 +26,23 @@ realityEditor.gui.screenExtension.screenObject = {
 // distance to screen when first tap down
 realityEditor.gui.screenExtension.initialDistance = null;
 
+/**
+ * @type {CallbackHandler}
+ */
+realityEditor.gui.screenExtension.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/screenExtension');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.gui.screenExtension.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/screenExtension');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
 realityEditor.gui.screenExtension.shouldSendTouchesToScreen = function(eventObject) {
     
     // don't send touches 
@@ -318,10 +335,10 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     if (globalStates.freezeButtonState) return; // don't allow pushing and pulling if the background is frozen
     
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
-    
+    if (!screenFrame) return;
+
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
-    var isFullscreenFrame = screenFrame.fullScreen !== false; // can only push in frames that aren't fullscreen (e.g. three.js)
-    if (screenFrame && isScreenObjectVisible && !isFullscreenFrame && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
+    if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
         
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
@@ -342,19 +359,32 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
             // is frame within screen bounds... don't push it in if you aren't located on top of a screen
             var object = realityEditor.getObject(this.screenObject.object);
-            var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
-            var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
+
+            var resultMatrix = [];
+            if (screenFrame.ar.matrix.length === 16) {
+                realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
+            } else {
+                resultMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            }
+            var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
+
+            // var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
+            // var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
+
+            var isWithinWidth = Math.abs(projectedPoint[0]) < (object.targetSize.width * 1000)/2;
+            var isWithinHeight = Math.abs(projectedPoint[1]) < (object.targetSize.height * 1000)/2;
             
             var didPushIn = false;
-            
+
+            // TODO: ben - this is where we have trouble pushing things into screens sometimes... doesn't factor in the x,y entries from matrix when determining if within the screen bounds, only the ar.x, ar.y
             if (isWithinWidth && isWithinHeight) {
                 // when unconstrained editing, push in if the frame goes completely behind the z = 0 plane
                 if (realityEditor.device.isEditingUnconstrained(screenFrame)) {
                     // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-                    var resultMatrix = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
-                    var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
-                    didPushIn = projectedPoint[2] < 0; // if the z coordinate of center of frame is negative
+                    // var resultMatrix = [];
+                    // realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
+                    // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
+                    didPushIn = projectedPoint[2] > 10; // if the z coordinate of center of frame is negative // flipped to be positive since vuforia 7.2 coordinate flip
                     // when not in unconstrained editing mode, just push in if you move towards the screen more than a certain threshold
                 } else {
                     didPushIn = (distanceToObject < (globalStates.initialDistance - distanceThreshold));
@@ -491,8 +521,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
             iframe.style.width = thisFrame.frameSizeX + 'px';
             iframe.style.height = thisFrame.frameSizeY + 'px';
-            iframe.style.left = ((globalStates.height - thisFrame.frameSizeX) / 2) + "px";
-            iframe.style.top = ((globalStates.width - thisFrame.frameSizeY) / 2) + "px";
+            iframe.style.left = ((globalStates.height - parseFloat(thisFrame.frameSizeX)) / 2) + "px";
+            iframe.style.top = ((globalStates.width - parseFloat(thisFrame.frameSizeY)) / 2) + "px";
 
             overlay.style.width = iframe.style.width;
             overlay.style.height = iframe.style.height;
@@ -514,9 +544,9 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             var convertedTouchOffsetY = (this.screenObject.touchOffsetY) * parseFloat(thisFrame.height);
 
             // 3. manually apply the touchOffset to the results so that it gets rendered in the correct place on the first pass
-            thisFrame.ar.x -= (convertedTouchOffsetX - thisFrame.width/2 ) * thisFrame.ar.scale;
-            thisFrame.ar.y -= (convertedTouchOffsetY - thisFrame.height/2 ) * thisFrame.ar.scale;
-
+            thisFrame.ar.x -= (convertedTouchOffsetX - parseFloat(thisFrame.width)/2 ) * thisFrame.ar.scale;
+            thisFrame.ar.y -= (convertedTouchOffsetY - parseFloat(thisFrame.height)/2 ) * thisFrame.ar.scale;
+            
             // TODO: this causes a bug now with the offset... figure out why it used to be necessary but doesn't help anymore
             // 4. set the actual touchOffset so that it stays in the correct offset as you drag around
             // realityEditor.device.editingState.touchOffset = {
@@ -535,6 +565,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
         realityEditor.gui.screenExtension.sendScreenObject();
         
         realityEditor.network.updateFrameVisualization(objects[thisFrame.objectId].ip, thisFrame.objectId, thisFrame.uuid, thisFrame.visualization, oldVisualizationPositionData);
+
+        this.callbackHandler.triggerCallbacks('updateArFrameVisibility', {objectKey: this.screenObject.object, frameKey: this.screenObject.frame, newVisualization: thisFrame.visualization});
 
     }
 };

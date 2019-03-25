@@ -10,7 +10,7 @@
     <title>Reality Editor</title>
 
     <!-- Sets initial viewport load and disables zooming  -->
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1,  minimal-ui">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <script src="../../index.js"></script>
 
     <!-- Include the compiled Ratchet CSS -->
@@ -75,11 +75,29 @@
                 </a>
             </li>
             <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/instantLink.svg"
+                <img class="media-object pull-left" src="../../../svg/video.svg"
                      style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
                 Video Recording
                 <small style="color: #b1b1b1;">create frames from camera</small>
                 <div class="toggle" id="videoRecordingEnabled">
+                    <div class="toggle-handle"></div>
+                </div>
+            </li>
+            <li class="table-view-cell">
+                <img class="media-object pull-left" src="../../../svg/desktopConnect.svg"
+                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
+                Connect to Desktop
+                <small style="color: #b1b1b1;">sends matrices to Desktop Editor</small>
+                <div class="toggle" id="matrixBroadcastEnabled">
+                    <div class="toggle-handle"></div>
+                </div>
+            </li>
+            <li class="table-view-cell">
+                <img class="media-object pull-left" src="../../../svg/holo.svg"
+                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
+                Holo-Mode
+                <small style="color: #b1b1b1;">adjusts UI for HMD viewer (desktop only)</small>
+                <div class="toggle" id="hololensModeEnabled">
                     <div class="toggle-handle"></div>
                 </div>
             </li>
@@ -93,11 +111,20 @@
                 </div>
             </li>
             <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/instantLink.svg"
+                <img class="media-object pull-left" src="../../../svg/speech.svg"
                      style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
                 Speech Controls
                 <small style="color: #b1b1b1;">must enable microphone</small>
                 <div class="toggle" id="speechState">
+                    <div class="toggle-handle"></div>
+                </div>
+            </li>
+            <li class="table-view-cell">
+                <img class="media-object pull-left" src="../../../svg/speech.svg"
+                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
+                Grouping
+                <small style="color: #b1b1b1;">background tap creates group, not memory</small>
+                <div class="toggle" id="groupingEnabled">
                     <div class="toggle-handle"></div>
                 </div>
             </li>

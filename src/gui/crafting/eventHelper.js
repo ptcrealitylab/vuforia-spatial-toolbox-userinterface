@@ -691,14 +691,15 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     // center on iPad
     blockSettingsContainer.classList.add('centerVerticallyAndHorizontally');
     var scaleMultiplier = Math.max(globalStates.currentLogic.grid.containerHeight / globalStates.currentLogic.grid.gridHeight, globalStates.currentLogic.grid.containerWidth / globalStates.currentLogic.grid.gridWidth);
-    blockSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+    // blockSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+    blockSettingsContainer.style.left = 0;
     
     blockSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
     blockSettingsContainer.src = settingsUrl;
     
     craftingMenusContainer.appendChild(blockSettingsContainer);
     
-    realityEditor.gui.menus.buttonOn("crafting", "logicSetting");
+    realityEditor.gui.menus.buttonOn(["logicSetting"]);
 };
 
 realityEditor.gui.crafting.eventHelper.hideBlockSettings = function() {
@@ -741,7 +742,9 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     // nodeSettingsContainer.style.height = globalStates.currentLogic.grid.gridHeight + 'px';
 
     var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
-    nodeSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+    // nodeSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
+    
+    nodeSettingsContainer.style.left = 0;
 
     // nodeSettingsContainer.setAttribute("onload", "realityEditor.gui.crafting.eventHandlers.onLoadBlock('" + keys.objectKey + "','" + keys.frameKey + "','" + keys.logicKey + "','" + keys.blockKey + "','" + JSON.stringify(block.publicData) + "')");
     nodeSettingsContainer.src = 'src/gui/crafting/nodeSettings.html';
@@ -774,7 +777,7 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     craftingMenusContainer.appendChild(nodeSettingsContainer);
 
-    realityEditor.gui.menus.on("crafting",["logicSetting"]);
+    realityEditor.gui.menus.switchToMenu("crafting", ["logicSetting"], null);
 };
 
 realityEditor.gui.crafting.eventHelper.hideNodeSettings = function() {

@@ -166,3 +166,36 @@ realityEditor.gui.utilities.checkBetween = function (e1, e2, p) {
 
 	return false;
 };
+
+/**
+ * Utility that pre-loads a number of image resources so that they can be more quickly added when they are needed
+ * First parameter is the array to hold the pre-loaded references
+ * Any number of additional string parameters can be passed in as file paths that should be loaded
+ * @param {Array.<string>} array
+ */
+realityEditor.gui.utilities.preload = function(array) {
+    var arguments = realityEditor.gui.utilities.preload.arguments;
+    for (var i = 0; i < arguments.length - 1; i++) {
+        array[i] = new Image();
+        array[i].src = arguments[i + 1];
+    }
+
+    cout("preload");
+};
+
+/**
+ * Very simply polyfill for webkitConvertPointFromPageToNode - but only works for divs with no 3D transformation
+ * @param {HTMLElement} elt - the div whose coordinate space you are converting into
+ * @param {number} pageX
+ * @param {number} pageY
+ * @return {{x: number, y: number}} matching coordinates within the elt's frame of reference
+ */
+realityEditor.gui.utilities.convertPointFromPageToNode = function(elt, pageX, pageY) {
+    var eltRect = elt.getClientRects()[0];
+    var nodeX = (pageX - eltRect.left) / eltRect.width * parseFloat(elt.style.width);
+    var nodeY = (pageY - eltRect.top) / eltRect.height * parseFloat(elt.style.height);
+    return {
+        x: nodeX,
+        y: nodeY
+    }
+};

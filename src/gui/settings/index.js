@@ -113,7 +113,10 @@ realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody)
 realityEditor.gui.settings.reloadUI = function () {
     if (this.states.externalState !== "" && this.states.externalState !== "http") {
         console.log("loadNewUI: " + this.states.externalState);
-        this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
+        this.appFunctionCall('setStorage', {storageID: 'SETUP:EXTERNAL', message: JSON.stringify(this.states.externalState)}, null);
+        setTimeout(function() {
+            this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
+        }.bind(this), 100);
     }
 };
 
@@ -202,6 +205,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.instantState = msg.getSettings.instantState;
             this.states.speechState = msg.getSettings.speechState;
             this.states.videoRecordingEnabled = msg.getSettings.videoRecordingEnabled;
+            this.states.matrixBroadcastEnabled = msg.getSettings.matrixBroadcastEnabled;
+            this.states.hololensModeEnabled = msg.getSettings.hololensModeEnabled;
+            this.states.groupingEnabled = msg.getSettings.groupingEnabled;
             this.states.externalState = msg.getSettings.externalState;
             this.states.discoveryState = msg.getSettings.discoveryState;
             this.states.settingsButton = msg.getSettings.settingsButton;
@@ -216,6 +222,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.setSettings("instantState", this.states.instantState);
             this.setSettings("speechState", this.states.speechState);
             this.setSettings("videoRecordingEnabled", this.states.videoRecordingEnabled);
+            this.setSettings("matrixBroadcastEnabled", this.states.matrixBroadcastEnabled)
+            this.setSettings("hololensModeEnabled", this.states.hololensModeEnabled);
+            this.setSettings("groupingEnabled", this.states.groupingEnabled);
             this.setSettings("editingMode", this.states.editingMode);
             this.setSettings("clearSkyState", this.states.clearSkyState);
             this.setSettings("externalText", this.states.externalState);

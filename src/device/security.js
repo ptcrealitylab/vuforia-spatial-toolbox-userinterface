@@ -61,6 +61,33 @@ createNameSpace("realityEditor.device.security");
  * @todo the security features are not currently fully supported anymore
  */
 
+realityEditor.device.security.initFeature = function() {
+
+    realityEditor.gui.buttons.registerCallbackForButton('lock', function(params) {
+        if (params.newButtonState === 'up') {
+            console.log("activate lock button");
+            var LOCK_TYPE_FULL = "full";
+            this.lockVisibleNodesAndLinks(LOCK_TYPE_FULL);
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('halflock', function(params) {
+        if (params.newButtonState === 'up') {
+            console.log("activate halflock button");
+            var LOCK_TYPE_HALF = "half";
+            this.lockVisibleNodesAndLinks(LOCK_TYPE_HALF);
+        }
+    }.bind(this));
+
+    realityEditor.gui.buttons.registerCallbackForButton('unlock', function(params) {
+        if (params.newButtonState === 'up') {
+            console.log("activate unlock button");
+            this.unlockVisibleNodesAndLinks();
+        }
+    }.bind(this));
+    
+};
+
 /**
  * Triggered by native iOS code when a fingerprint is presented, starting a locking session if successful. 
  * @param encryptedId
@@ -81,6 +108,7 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
         globalStates.lockingMode = false;
         globalStates.lockPassword = null;
         
+        // updates the settings iframe graphics to match the new lockingMode and lockPassword
         document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({getSettings: {
             extendedTracking: globalStates.extendedTracking,
             editingMode: globalStates.editingMode,
@@ -88,6 +116,9 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
             instantState: globalStates.instantState,
             speechState: globalStates.speechState,
             videoRecordingEnabled: globalStates.videoRecordingEnabled,
+            matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
+            hololensModeEnabled: globalStates.hololensModeEnabled,
+            groupingEnabled: globalStates.groupingEnabled,
             externalState: globalStates.externalState,
             discoveryState: globalStates.discoveryState,
             settingsButton : globalStates.settingsButtonState,

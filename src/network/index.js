@@ -67,6 +67,45 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
     });
 };
 
+/**
+ * @type {Array.<{messageName: string, callback: function}>}
+ */
+realityEditor.network.udpMessageHandlers = [];
+
+/**
+ * Creates an extendable method for other modules to register callbacks that will be triggered
+ * when the interface receives any UDP message, without creating circular dependencies
+ * @param {string} messageName
+ * @param {function} callback
+ */
+realityEditor.network.addUDPMessageHandler = function(messageName, callback) {
+    this.udpMessageHandlers.push({
+        messageName: messageName,
+        callback: callback
+    });
+};
+
+/**
+ * @type {Array.<function>}
+ */
+realityEditor.network.objectDiscoveredCallbacks = [];
+
+/**
+ * Allow other modules to be notified when a new object is discovered and added to the system.
+ * @param {function} callback
+ */
+realityEditor.network.addObjectDiscoveredCallback = function(callback) {
+    this.objectDiscoveredCallbacks.push(callback);
+};
+
+/**
+ * Converts an object with version < 1.7.0 to the new format:
+ * Objects now have frames, which can have nodes, but in the old version there were no frames
+ *  and the nodes just existed on the object itself
+ * @param {Object} thisObject
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey) {
     if (typeof frameKey === "undefined") {
         frameKey = objectKey;
@@ -142,163 +181,143 @@ realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey
 
 };
 
+/**
+ * Properly initialize all the temporary, editor-only state for an object when it first gets added
+ * @param {string} objectKey
+ */
+realityEditor.network.onNewObjectAdded = function(objectKey) {
+    realityEditor.app.tap();
 
+    var thisObject = realityEditor.getObject(objectKey);
+    // this is a work around to set the state of an objects to not being visible.
+    realityEditor.gui.ar.draw.setObjectVisible(thisObject, false);
+    thisObject.screenZ = 1000;
+    thisObject.fullScreen = false;
+    thisObject.sendMatrix = false;
+    thisObject.sendMatrices = {
+        modelView : false,
+        devicePose : false,
+        groundPlane : false,
+        allObjects : false
+    };
+    thisObject.sendAcceleration = false;
+    thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
+
+    // if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
+    //     thisObject.matrix = [];
+    // }
+
+    for (var frameKey in objects[objectKey].frames) {
+        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+
+        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+        thisFrame.screenZ = 1000;
+        thisFrame.fullScreen = false;
+        thisFrame.sendMatrix = false;
+        thisFrame.sendMatrices = {
+            modelView : false,
+            devicePose : false,
+            groundPlane : false,
+            allObjects : false
+        };
+        thisFrame.sendAcceleration = false;
+        thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
+        thisFrame.visible = false;
+        thisFrame.objectId = objectKey;
+
+        if (typeof thisFrame.developer === 'undefined') {
+            thisFrame.developer = true;
+        }
+
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
+
+        if (positionData.matrix === null || typeof positionData.matrix !== "object") {
+            positionData.matrix = [];
+        }
+
+        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
+            var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
+            if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
+                thisNode.matrix = [];
+            }
+
+            thisNode.objectId = objectKey;
+            thisNode.frameId = frameKey;
+            thisNode.loaded = false;
+            thisNode.visible = false;
+
+            if (typeof thisNode.publicData !== 'undefined') {
+                if (!publicDataCache.hasOwnProperty(frameKey)) {
+                    publicDataCache[frameKey] = {};
+                }
+                publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
+                console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + thisNode.publicData);
+            }
+
+            if (thisNode.type === "logic") {
+                thisNode.guiState = new LogicGUIState();
+                var container = document.getElementById('craftingBoard');
+                thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
+                //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
+            }
+        }
+        
+        // TODO: invert dependency
+        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+    }
+
+    if (!thisObject.protocol) {
+        thisObject.protocol = "R0";
+    }
+
+    objects[objectKey].uuid = objectKey;
+
+    for (var frameKey in objects[objectKey].frames) {
+        objects[objectKey].frames[frameKey].uuid = frameKey;
+        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
+            objects[objectKey].frames[frameKey].nodes[nodeKey].uuid = nodeKey;
+        }
+
+        for (var linkKey in objects[objectKey].frames[frameKey].links) {
+            objects[objectKey].frames[frameKey].links[linkKey].uuid = linkKey;
+        }
+    }
+
+    realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
+
+    this.cout(JSON.stringify(objects[objectKey]));
+
+    // todo this needs to be looked at
+    realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
+
+    // notify subscribed modules that a new object was added
+    realityEditor.network.objectDiscoveredCallbacks.forEach(function(callback) {
+        callback(objects[objectKey], objectKey);
+    });
+};
+
+/**
+ * Looks at an object heartbeat, and if the object hasn't been added yet, downloads it and initializes all appropriate state
+ * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
+ */
 realityEditor.network.addHeartbeatObject = function (beat) {
-
-    var _this = this;
     if (beat.id) {
         if (!objects[beat.id]) {
+            // download the object data from its server
             this.getData(beat.id, null, null, 'http://' + beat.ip + ':' + httpPort + '/object/' + beat.id, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey) {
-
-                    realityEditor.app.tap();
-
+                    // add the object
                     objects[objectKey] = msg;
-                    
-                    var thisObject = realityEditor.getObject(objectKey);
-                    // this is a work around to set the state of an objects to not being visible.
-                    realityEditor.gui.ar.draw.setObjectVisible(thisObject, false);
-                    thisObject.screenZ = 1000;
-                    thisObject.fullScreen = false;
-                    thisObject.sendMatrix = false;
-                    thisObject.sendAcceleration = false;
-                    thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
-
-                    // if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
-                    //     thisObject.matrix = [];
-                    // }
-
-                    for (var frameKey in objects[objectKey].frames) {
-                       var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-
-                        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
-                        thisFrame.screenZ = 1000;
-                        thisFrame.fullScreen = false;
-                        thisFrame.sendMatrix = false;
-                        thisFrame.sendAcceleration = false;
-                        thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
-                        thisFrame.visible = false;
-                        thisFrame.objectId = objectKey;
-                        
-                        if (typeof thisFrame.developer === 'undefined') {
-                            thisFrame.developer = true;
-                        }
-                        
-                        var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
-
-                        if (positionData.matrix === null || typeof positionData.matrix !== "object") {
-                            positionData.matrix = [];
-                        }
-                        
-                        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
-                            var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
-                            if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
-                                thisNode.matrix = [];
-                            }
-                            
-                            thisNode.objectId = objectKey;
-                            thisNode.frameId = frameKey;
-                            thisNode.loaded = false;
-                            thisNode.visible = false;
-                            
-                            if (typeof thisNode.publicData !== 'undefined') {
-                                if (!publicDataCache.hasOwnProperty(frameKey)) {
-                                    publicDataCache[frameKey] = {};
-                                }
-                                publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
-                                console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + thisNode.publicData);
-                            }
-
-                            if (thisNode.type === "logic") {
-                                thisNode.guiState = new LogicGUIState();
-                                var container = document.getElementById('craftingBoard');
-                                thisNode.grid = new _this.realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
-                                //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
-                            }
-                        }
+                    // initialize temporary state and notify other modules
+                    realityEditor.network.onNewObjectAdded(objectKey);
+                    // download XML, DAT, and initialize tracker
+                    if (!objects[objectKey].isWorldObject) {
+                        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
                     }
-
-                    if (!thisObject.protocol) {
-                        thisObject.protocol = "R0";
-                    }
-/*
-                    if (thisObject.integerVersion < 170) {
-
-                        _this.utilities.rename(thisObject, "folder", "name");
-                        _this.utilities.rename(thisObject, "objectValues", "nodes");
-                        _this.utilities.rename(thisObject, "objectLinks", "links");
-                        delete thisObject["matrix3dMemory"];
-
-                        for (var linkKey in objects[objectKey].links) {
-                            thisObject = objects[objectKey].links[linkKey];
-
-                            _this.utilities.rename(thisObject, "ObjectA", "objectA");
-                            _this.utilities.rename(thisObject, "locationInA", "nodeA");
-                            _this.utilities.rename(thisObject, "ObjectNameA", "nameA");
-
-                            _this.utilities.rename(thisObject, "ObjectB", "objectB");
-                            _this.utilities.rename(thisObject, "locationInB", "nodeB");
-                            _this.utilities.rename(thisObject, "ObjectNameB", "nameB");
-                            _this.utilities.rename(thisObject, "endlessLoop", "loop");
-                            _this.utilities.rename(thisObject, "countLinkExistance", "health");
-                            if (!objects[objectKey].frames[objectKey]) objects[objectKey].frames[objectKey] = {};
-                            objects[objectKey].frames[objectKey].links[linkKey] = thisObject;
-                        }
-
-
-                        //for (var nodeKey in objects[thisKey].nodes) {
-                        //  _this.utilities.rename(objects[thisKey].nodes, nodeKey, thisKey + nodeKey);
-                        // }
-                        for (var nodeKey in objects[objectKey].nodes) {
-                            thisObject = objects[objectKey].nodes[nodeKey];
-                            _this.utilities.rename(thisObject, "plugin", "type");
-                            _this.utilities.rename(thisObject, "appearance", "type");
-
-                            if (thisObject.type === "default") {
-                                thisObject.type = "node";
-                            }
-
-
-                            thisObject.data = {
-                                value: thisObject.value,
-                                mode: thisObject.mode,
-                                unit: "",
-                                unitMin: 0,
-                                unitMax: 1
-                            };
-                            delete thisObject.value;
-                            delete thisObject.mode;
-
-                        }
-                        objects[objectKey].frames[objectKey].nodes = objects[objectKey].nodes;
-                    }
-                    */
-
-                    objects[objectKey].uuid = objectKey;
-
-                    for (var frameKey in objects[objectKey].frames) {
-                        objects[objectKey].frames[frameKey].uuid = frameKey;
-                        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
-                            objects[objectKey].frames[frameKey].nodes[nodeKey].uuid = nodeKey;
-                        }
-
-                        for (var linkKey in objects[objectKey].frames[frameKey].links) {
-                            objects[objectKey].frames[frameKey].links[linkKey].uuid = linkKey;
-                        }
-                    }
-
-                    realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
-
-                        _this.cout(JSON.stringify(objects[objectKey]));
-
-                    // todo this needs to be looked at
-                    _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
-                 
                 }
             });
         }
     }
-
 };
 
 // TODO: why is frameKey passed in here? if we just iterate through all the frames anyways?
@@ -317,8 +336,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
     }
     
     // update each frame in the object
-
-    
     for (var frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
@@ -395,6 +412,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
         // for (var linkKey in remote.frames[frameKey].links) {
         //     origin.frames[frameKey].links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
         // }
+
+        // TODO: invert dependency
+        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
         
         if (globalDOMCache["iframe" + frameKey]) {
             if (globalDOMCache["iframe" + frameKey]._loaded) {
@@ -579,8 +599,24 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
 };
 
+/**
+ * When we receive any UDP message, this function triggers so that subscribed modules can react to specific messages
+ * @param {string|object} message
+ */
+realityEditor.network.onUDPMessage = function(message) {
+    if (typeof message === "string") {
+        message = JSON.parse(message);
+    }
+    
+    this.udpMessageHandlers.forEach(function(messageHandler) {
+        if (typeof message[messageHandler.messageName] !== "undefined") {
+            messageHandler.callback(message);
+        }
+    });
+};
+
 realityEditor.network.onAction = function (action) {
-    console.log('onAction');
+    // console.log('onAction');
     var _this = this;
     var thisAction;
     if (typeof action === "object") {
@@ -590,7 +626,9 @@ realityEditor.network.onAction = function (action) {
         while (action.charAt(action.length - 1) === ' ') action = action.substring(0, action.length - 1);
         while (action.charAt(action.length - 1) === '"') action = action.substring(0, action.length - 1);
 
-        thisAction = JSON.parse(action);
+        thisAction = {
+            action: action
+        };
     }
 
     if (thisAction.lastEditor === globalStates.tempUuid) {
@@ -745,7 +783,10 @@ realityEditor.network.onAction = function (action) {
                     
                     thisFrame[thisKey] = res[thisKey];
                 }
-                
+
+                // TODO: invert dependency
+                realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+
             });
         }
     }
@@ -854,6 +895,12 @@ realityEditor.network.onAction = function (action) {
             // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
             frame.fullScreen = false;
             frame.sendMatrix = false;
+            frame.sendMatrices = {
+                modelView : false,
+                devicePose : false,
+                groundPlane : false,
+                allObjects : false
+            };
             frame.sendAcceleration = false;
             frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
@@ -1059,9 +1106,11 @@ if (thisFrame) {
         realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
         
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
-            svg.style.display = 'inline';
+            // svg.style.display = 'inline';
+            svg.classList.add('visibleEditingSVG');
         } else {
-            svg.style.display = 'none';
+            // svg.style.display = 'none';
+            svg.classList.remove('visibleEditingSVG');
         }
 
         // if (tempThisObject.frameTouchSynthesizer) {
@@ -1117,6 +1166,40 @@ if (thisFrame) {
                 '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
         }
     }
+
+    if (typeof msgContent.sendMatrices !== "undefined") {
+        if (msgContent.sendMatrices.groundPlane === true) {
+            if (tempThisObject.integerVersion >= 32) {
+               if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.groundPlane = true;
+                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
+        }
+        if (msgContent.sendMatrices.devicePose === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.devicePose = true;
+                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
+        }
+        if (msgContent.sendMatrices.allObjects === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.allObjects = true;
+                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
+        }
+    }
+    
 
     if (msgContent.sendAcceleration === true) {
 
@@ -1189,7 +1272,7 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
             document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1230,7 +1313,7 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = 200 + (tempThisObject.fullscreenZPosition || 0);
+            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
             document.getElementById("object" + msgContent.frame).style.webkitTransform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1361,6 +1444,9 @@ if (thisFrame) {
             }
             publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
             console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
+            frame.publicData = msgContent.publicData;
+            var keys = realityEditor.getKeysFromVehicle(frame);
+            realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
         }
         
     }
@@ -1442,6 +1528,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 instantState: globalStates.instantState,
                 speechState: globalStates.speechState,
                 videoRecordingEnabled: globalStates.videoRecordingEnabled,
+                matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
+                hololensModeEnabled: globalStates.hololensModeEnabled,
+                groupingEnabled: globalStates.groupingEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1547,10 +1636,11 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             if (msgContent.settings.setSettings.speechState) {
                 if (!globalStates.speechState) { 
                     globalStates.speechState = true;
-                    if (globalStates.instantState) { //(globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
+                    if (globalStates.instantState || globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
                         document.getElementById('speechConsole').style.display = 'inline';
                     }
                     realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");
+                    
                     realityEditor.app.startSpeechRecording();
                 }
             } else {
@@ -1574,6 +1664,60 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     // add any one-time side-effects here:
                     // stop the recording if needed, otherwise there's no UI to stop it
                     realityEditor.device.videoRecording.stopRecording();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.matrixBroadcastEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.matrixBroadcastEnabled) {
+                if (!globalStates.matrixBroadcastEnabled) {
+                    globalStates.matrixBroadcastEnabled = true;
+                    // add any one-time side-effects here
+                    realityEditor.device.desktopAdapter.startBroadcast();
+                }
+            } else {
+                if (globalStates.matrixBroadcastEnabled) {
+                    globalStates.matrixBroadcastEnabled = false;
+                    // add any one-time side-effects here:
+                    realityEditor.device.desktopAdapter.stopBroadcast();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.hololensModeEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.hololensModeEnabled) {
+                if (!globalStates.hololensModeEnabled) {
+                    globalStates.hololensModeEnabled = true;
+                    // add any one-time side-effects here
+                    // realityEditor.device.desktopAdapter.startBroadcast();
+                    console.log('hololens mode enabled...');
+                    realityEditor.device.hololensAdapter.toggleHololensMode(true);
+                }
+            } else {
+                if (globalStates.hololensModeEnabled) {
+                    globalStates.hololensModeEnabled = false;
+                    // add any one-time side-effects here:
+                    // realityEditor.device.desktopAdapter.stopBroadcast();
+                    console.log('hololens mode disabled...');
+                    realityEditor.device.hololensAdapter.toggleHololensMode(false);
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.groupingEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.groupingEnabled) {
+                if (!globalStates.groupingEnabled) {
+                    globalStates.groupingEnabled = true;
+                    // add any one-time side-effects here
+                    console.log('TODO: grouping mode enabled...');
+                    realityEditor.gui.ar.grouping.toggleGroupingMode(true);
+                }
+            } else {
+                if (globalStates.groupingEnabled) {
+                    globalStates.groupingEnabled = false;
+                    // add any one-time side-effects here:
+                    console.log('TODO: grouping mode disabled...');
+                    realityEditor.gui.ar.grouping.toggleGroupingMode(false);
                 }
             }
         }
@@ -1614,13 +1758,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         if (typeof msgContent.settings.setSettings.realityState !== "undefined") {
 
             if (msgContent.settings.setSettings.realityState) {
-                realityEditor.gui.menus.on("reality", ["realityGui"]);
+                realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
                 globalStates.realityState = true;
                 realityEditor.app.saveRealityState(true);
 
             } else {
-                realityEditor.gui.menus.off("main", ["gui", "reset", "unconstrained"]);
-                realityEditor.gui.menus.on("main", ["gui"]);
+                realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
                 globalStates.realityState = false;
                 realityEditor.app.saveRealityState(false);
             }
@@ -1719,18 +1862,6 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
         }
     });
 };
-
-// TODO: this isn't used anywhere anymore?
-realityEditor.network.sendFrameToScreen = function(ip, objectKey, frameKey, contents) {
-    //(objects[globalStates.editingModeObject].ip, globalStates.editingModeObject, globalStates.editingModeFrame);
-    this.cout("I am sending a frame to the screen: " + ip);
-    // var contents = {lastEditor: globalStates.tempUuid};
-    contents.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + httpPort + '/screen/' + objectKey + "/frames/" + frameKey, contents, function (err, response) {
-        console.log(err, response);
-    });
-};
-
 
 realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, linkKey) {
     // generate action for all links to be reloaded after upload
@@ -2291,4 +2422,36 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
         console.log(err, response);
     });
     
+};
+
+/**
+ * Helper function to locate the iframe element associated with a certain frame, and post a message into it
+ * @param {string} frameKey
+ * @param {object} message - JSON data to send into the frame
+ */
+realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
+    var frame = document.getElementById('iframe' + frameKey);
+    if (frame) {
+        frame.contentWindow.postMessage(JSON.stringify(message), "*");
+    }
+};
+
+/**
+ * update groupIds for changed frames
+ * @param ip
+ * @param objectKey
+ * @param frameKey
+ * @param newGroupID {string|null} either groupId or null for none
+ * TODO: work in progress
+ */
+realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGroupID) {
+    var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/group/";
+    var content = {
+        group: newGroupID,
+        lastEditor: globalStates.tempUuid
+    };
+    this.postData(urlEndpoint, content, function (err, response) {
+        console.log('set group to ' + newGroupID + ' on server');
+        console.log(err, response);
+    })
 };

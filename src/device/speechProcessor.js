@@ -364,7 +364,7 @@ realityEditor.device.speechProcessor.getNodeNamesAndKeys = function(objectKey, f
 //     this.states.pendingWordData = [];
 // };
 
-// TODO: use one of these that uses frames too
+
 /**
  * Gets the object, frame, and node that the user is looking at right now.
  * @todo use realityEditor.gui.ar.getClosestNode instead, or realityEditor.gui.ar.getClosestFrameToScreenCoordinates(width/2,height/2)
@@ -374,26 +374,12 @@ realityEditor.device.speechProcessor.getClosestObjectFrameNode = function() {
     var visibleObjectKeys = this.getVisibleObjectKeys();
     if (visibleObjectKeys.length === 0) return null;
 
-    var that = this;
-    // find best node on each visible object
-    var objectFrameNodeOptions = visibleObjectKeys.map( function(objectKey) {
-        return that.getClosestNodeOnObject(objectKey);
-    });
-
-    // choose the closest one
-    var closestDistance = objectFrameNodeOptions[0].distanceSquared;
-    var closestIndex = 0;
-    objectFrameNodeOptions.forEach(function(elt, i) {
-        if (elt.distanceSquared < closestDistance) {
-            closestDistance = elt.distanceSquared;
-            closestIndex = i;
-        }
-    });
+    var closest = realityEditor.gui.ar.getClosestNode();
 
     return {
-        objectKey: objectFrameNodeOptions[closestIndex].objectKey,
-        frameKey: objectFrameNodeOptions[closestIndex].frameKey,
-        nodeKey: objectFrameNodeOptions[closestIndex].nodeKey
+        objectKey: closest[0],
+        frameKey: closest[1],
+        nodeKey: closest[2]
     }
 };
 
@@ -446,57 +432,4 @@ realityEditor.device.speechProcessor.getVisibleObjectKeys = function() {
         }
     });
     return visibleObjectKeys;
-};
-
-/**
- * Given an object, finds the node on it whose screen coordinate is closest to the center of the screen.
- * @param {string} objectKey
- * @return {{objectKey: string, frameKey: string, nodeKey: string, distanceSquared: number}}
- */
-realityEditor.device.speechProcessor.getClosestNodeOnObject = function(objectKey) {
-    
-    var screenCenter = [284, 160]; // TODO: calculate each time based on screen size
-    var closestDistanceSquared = Math.POSITIVE_INFINITY;
-    var closestFrameKey = null;
-    var closestNodeKey = null;
-    
-    realityEditor.forEachNodeInObject(objectKey, function (objectKey, frameKey, nodeKey) {
-        var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
-        var element = document.getElementById('object' + nodeKey);
-        if (!element) return;
-
-        var matrixString = window.getComputedStyle(element).webkitTransform;
-        if (matrixString.startsWith('matrix3d')) { // get the matrix from the transform3d string
-            var matrix = matrixString
-                .split('(')[1]
-                .split(')')[0]
-                .split(',')
-                .map(parseFloat);
-            node.temp = matrix;
-        }
-
-        var screenCenterMatrixXY = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(node, screenCenter); // TODO: change to markerXY
-        var nodeOffsetToCenter = {x: screenCenterMatrixXY[0] - node.x, y: screenCenterMatrixXY[1] - node.y};
-        var totalDistanceSquared =  nodeOffsetToCenter.x * nodeOffsetToCenter.x + nodeOffsetToCenter.y * nodeOffsetToCenter.y;
-
-        if (closestNodeKey) {
-            if (totalDistanceSquared < closestDistanceSquared) {
-                closestNodeKey = nodeKey;
-                closestFrameKey = frameKey;
-                closestDistanceSquared = totalDistanceSquared;
-            }
-        } else {
-            closestNodeKey = nodeKey;
-            closestFrameKey = frameKey;
-            closestDistanceSquared = totalDistanceSquared;
-        }
-        
-    });
-    
-    return {
-        objectKey: objectKey,
-        frameKey: closestFrameKey,
-        nodeKey: closestNodeKey,
-        distanceSquared: closestDistanceSquared
-    };
 };

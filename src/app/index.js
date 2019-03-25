@@ -56,7 +56,6 @@ createNameSpace("realityEditor.app");
 /**
  * Response with a callback that indicates the device name.
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getDeviceReady = function(callBack) {
     this.appFunctionCall('getDeviceReady', null, 'realityEditor.app.callBack('+callBack+')');
@@ -67,28 +66,26 @@ realityEditor.app.getDeviceReady = function(callBack) {
  **/
 
 /**
- * Check if vuforia is ready and fires a callback once that’s the case.
+ * Starts the AR engine. Fires a callback once it is ready.
  * @param {FunctionName} callBack
  */
 realityEditor.app.getVuforiaReady = function(callBack){
-    console.log("ping");
     this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
 };
 
 /**
- * Adds a new marker and fires a callback with error or success.
+ * Adds a new marker and fires a callback with error or success
+ * and the markerName for reference
  * @param {string} markerName
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.addNewMarker = function(markerName, callBack) {
-    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**
  * Gets the projection matrix.
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getProjectionMatrix = function(callBack) {
     this.appFunctionCall('getProjectionMatrix', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -97,17 +94,31 @@ realityEditor.app.getProjectionMatrix = function(callBack) {
 /**
  * Callback for all markers and matrices that are found
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getMatrixStream = function(callBack) {
     this.appFunctionCall('getMatrixStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**
+ * Callback for all markers and matrices that are found
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getCameraMatrixStream = function(callBack) {
+    this.appFunctionCall('getCameraMatrixStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
+ * Callback for all markers and matrices that are found
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getGroundPlaneMatrixStream = function(callBack) {
+    this.appFunctionCall('getGroundPlaneMatrixStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  * The callback will have a screenshot with base64. Size can be S,M,L
  * @param {string} size - 'S', 'M', or 'L'
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getScreenshot = function(size, callBack) {
     this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -121,14 +132,16 @@ realityEditor.app.getScreenshotAsJpg = function() {
 };
 
 function debugShowScreenshot(blobUrl) {
-    document.querySelector('#pocket-element > img').src = blobUrl;
     document.querySelector('#screenshotHolder').src = blobUrl;
-    document.querySelector('#screenshotHolder').style.display = 'inline';
+    document.querySelector('#screenshotHolder').style.display ='inline';
+}
+
+function debugHideScreenshot() {
+    document.querySelector('#screenshotHolder').style.display ='none';
 }
 
 /**
  * Pauses the tracker.
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.setPause = function() {
     this.appFunctionCall('setPause', null, null);
@@ -136,11 +149,9 @@ realityEditor.app.setPause = function() {
 
 /**
  * Resumes the tracker.
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.setResume = function() {
     this.appFunctionCall('setResume', null, null);
-
 };
 
 /**
@@ -151,14 +162,25 @@ realityEditor.app.tap = function() {
 
 };
 
- /**
+/**
+ * Tries to add an anchor for the ground plane origin.
+ */
+realityEditor.app.tryPlacingGroundAnchor = function(normalizedScreenX, normalizedScreenY, callBack) {
+    this.appFunctionCall('tryPlacingGroundAnchor', {normalizedScreenX: normalizedScreenX, normalizedScreenY: normalizedScreenY}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+
+};
+
+function debugAddAnchor() {
+    realityEditor.app.tryPlacingGroundAnchor(0.5, 0.5, 'realityEditor.app.callbacks.didAddGroundAnchor');
+}
+
+/**
  **************UDP****************
   **/
  
 /**
  * Every time there is a new message the callback is called.
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getUDPMessages = function(callBack) {
     this.appFunctionCall('getUDPMessages', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -166,8 +188,7 @@ realityEditor.app.getUDPMessages = function(callBack) {
 
 /**
  * Sends out a message over UDP broadcast.
- * @param {string} message
- * @todo implement within XCode - currently does nothing
+ * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
     this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
@@ -181,27 +202,25 @@ realityEditor.app.sendUDPMessage = function(message) {
  * Boolean response if a file exists.
  * @param {string} fileName
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getFileExists = function(fileName, callBack) {
     this.appFunctionCall('getFileExists', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**
- * Downloads a file. The callback is an error or success message.
+ * Downloads a file. The callback is an error or success message
+ * and the fileName for reference.
  * @param {string} fileName
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.downloadFile = function(fileName, callBack) {
-    this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('downloadFile', {fileName: fileName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**
  * Boolean response if all files exists. fileNameArray should contain at least one filename.
  * @param {Array.<string>} fileNameArray
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getFilesExist = function (fileNameArray, callBack) {
     this.appFunctionCall('getFilesExist', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -225,7 +244,6 @@ realityEditor.app.getChecksum = function (fileNameArray, callBack) {
  * Store a message on the app level for persistence.
  * @param {string} storageID
  * @param {string} message
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.setStorage = function (storageID, message) {
     this.appFunctionCall('setStorage', {storageID: storageID, message: JSON.stringify(message)}, null);
@@ -235,7 +253,6 @@ realityEditor.app.setStorage = function (storageID, message) {
  * Recall the message.
  * @param {string} storageID
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
  */
 realityEditor.app.getStorage = function (storageID, callBack) {
     this.appFunctionCall('getStorage', {storageID: storageID}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -453,6 +470,87 @@ realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
 realityEditor.app.saveExternalText = function(newExternalText) {
     this.setStorage('SETUP:EXTERNAL', newExternalText);
 };
+
+/**
+ * Getters for each property saved to disk
+ */
+
+
+/**
+ * Get the persistent setting for developer (editing) mode.
+ * @param {function} callback
+ */
+realityEditor.app.getDeveloperState = function(callback) {
+    this.getStorage('SETUP:DEVELOPER', callback);
+};
+
+/**
+ * Get the persistent setting for clear sky mode.
+ * @param {function} callback
+ */
+realityEditor.app.getClearSkyState = function(callback) {
+    this.getStorage('SETUP:CLEARSKY', callback);
+};
+
+/**
+ * Get the persistent setting for reality (retail) mode.
+ * @param {function} callback
+ */
+realityEditor.app.getRealityState = function(callback) {
+    this.getStorage('SETUP:REALITY', callback);
+};
+
+/**
+ * Get the persistent setting for instant (capacitive touch) mode.
+ * @param {function} callback
+ */
+realityEditor.app.getInstantState = function(callback) {
+    this.getStorage('SETUP:INSTANT', callback);
+};
+
+/**
+ * Get the persistent setting for whether to use zone.
+ * @param {function} callback
+ */
+realityEditor.app.getZoneState = function(callback) {
+    this.getStorage('SETUP:ZONE', callback);
+};
+
+/**
+ * Get the persistent setting for extended tracking mode.
+ * @param {function} callback
+ */
+realityEditor.app.getExtendedTrackingState = function(callback) {
+    this.getStorage('SETUP:TRACKING', callback);
+};
+
+/**
+ * Get the persistent setting for the zone string.
+ * @param {function} callback
+ */
+realityEditor.app.getZoneText = function(callback) {
+    this.getStorage('SETUP:ZONETEXT', callback);
+};
+
+/**
+ * Get the persistent setting for the object discovery server string.
+ * @param {function} callback
+ */
+realityEditor.app.getDiscoveryText = function(callback) {
+    this.getStorage('SETUP:DISCOVERY', callback);
+};
+
+/**
+ * Get the persistent setting for the IP address to load the external userinterface from.
+ * @param {function} callback
+ */
+realityEditor.app.getExternalText = function(callback) {
+    this.getStorage('SETUP:EXTERNAL', callback);
+};
+
+/**
+ ************** ADDITIONAL ROUTES ****************
+ */
 
 /**
  * Save the background image for a memory.

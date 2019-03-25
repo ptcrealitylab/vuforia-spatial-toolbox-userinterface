@@ -65,7 +65,22 @@ createNameSpace("realityEditor.gui.ar");
  * @param {Array.<number>} matrix - a 4x4 projection matrix
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
-    // globalStates.projectionMatrix = matrix;
+    
+    if (realityEditor.device.utilities.isDesktop()) {
+        globalStates.realProjectionMatrix = matrix;
+        globalStates.projectionMatrix = matrix;
+        return;
+    }
+
+    if (realityEditor.device.utilities.isDesktop()) {
+        var scaleFactor = window.innerWidth/568;
+        matrix[0] *= scaleFactor;
+        matrix[5] *= scaleFactor;
+        matrix[10] *= scaleFactor;
+        globalStates.realProjectionMatrix = matrix;
+        globalStates.projectionMatrix = matrix;
+        return;
+    }
 
     //  generate all transformations for the object that needs to be done ASAP
     var scaleZ = [
@@ -279,16 +294,29 @@ realityEditor.gui.ar.getClosestObject = function () {
     var object = null;
     var frame = null;
     var node = null;
-    var closest = 10000000000;
-    var distance = 10000000000;
+    var MAX_DISTANCE = 10000000000;
+    var closest = MAX_DISTANCE;
+    var distance = MAX_DISTANCE;
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+        if (objectKey.indexOf(worldObjectId) > -1) {
+            continue;
+        }
+        
         if (distance < closest) {
             object = objectKey;
             closest = distance;
         }
     }
+    
+    // default to world object if no visible objects
+    if (!object || object.indexOf(worldObjectId) > -1) {
+        if (realityEditor.worldObjects.getBestWorldObject()) {
+            object = realityEditor.worldObjects.getBestWorldObject().objectId;
+        }
+    }
+    
     return [object, frame, node];
 };
 
@@ -322,6 +350,9 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
 
         }
     }
+    
+    // TODO: include frames from world object
+    
     return [object, frame, node];
 };
 
@@ -339,6 +370,12 @@ realityEditor.gui.ar.getClosestNode = function () {
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
             for(var nodeKey in this.objects[objectKey].frames[frameKey].nodes) {
+
+                // don't include hidden node types (e.g. dataStore) when finding closest
+                if (realityEditor.gui.ar.draw.hiddenNodeTypes.indexOf(realityEditor.getNode(objectKey, frameKey, nodeKey).type) > -1) {
+                    break;
+                }
+                
                 distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey].nodes[nodeKey]));
                 if (distance < closest) {
                     object = objectKey;
@@ -383,4 +420,23 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
         }
     }
     return [object, frame, node];
+};
+
+/**
+ * If you pass in a frame, returns its distanceScale.
+ * If you pass in a node, returns the distanceScale of the frame it belongs to.
+ * If the frame doesn't have a value, defaults to 1.0
+ * @param {Frame|Node} activeVehicle
+ * @return {number}
+ */
+realityEditor.gui.ar.getDistanceScale = function(activeVehicle) {
+    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    if (keys.nodeKey) {
+        // it's a node, return its parent frame's value
+        var parentFrame = realityEditor.getFrame(keys.objectKey, keys.frameKey);
+        return parentFrame.distanceScale || 1.0;
+    } else {
+        // it's a frame, return its own value
+        return activeVehicle.distanceScale || 1.0;
+    }
 };

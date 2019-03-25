@@ -67,6 +67,15 @@ try {
     console.warn('Defaulting knownObjects due to data corruption');
 }
 
+var currentMemory = {
+    id: null,
+    matrix: null,
+    image: null,
+    thumbnailImage: null,
+    imageUrl: null,
+    thumbnailImageUrl: null
+};
+
 function MemoryContainer(element) {
     this.element = element;
     this.image = null;
@@ -190,10 +199,10 @@ MemoryContainer.prototype.startDragging = function() {
     var isBar = barContainers.indexOf(this) >= 0;
 
     if (isBar) {
-        realityEditor.gui.menus.on("bigTrash",[]);
+        realityEditor.gui.menus.switchToMenu("bigTrash");
         //realityEditor.gui.pocket.pocketOnMemoryDeletionStart();
     } else {
-        realityEditor.gui.menus.on("bigPocket",[]);
+        realityEditor.gui.menus.switchToMenu("bigPocket");
        // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
     }
 };
@@ -220,10 +229,10 @@ MemoryContainer.prototype.stopDragging = function() {
     var isBar = barContainers.indexOf(this) >= 0;
 
     if (isBar) {
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
         //realityEditor.gui.pocket.pocketOnMemoryDeletionStop();
     } else {
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
        //realityEditor.gui.pocket.pocketOnMemoryCreationStop();
     }
 
@@ -298,10 +307,14 @@ MemoryContainer.prototype.onPointerUp = function() {
             });
 
             pendingMemorizations[objId || ''] = this;
-            realityEditor.app.memorize();
+            
+            // realityEditor.app.memorize();
+            // TODO: upload to server
+            
+            
             event.stopPropagation();
         }
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
       //  realityEditor.gui.pocket.pocketOnMemoryCreationStop();
     } else if (this.dragging) {
         return;
@@ -384,7 +397,7 @@ MemoryContainer.prototype.remember = function() {
     
     realityEditor.app.remember(this.memory.id, this.memory.matrix);
 
-    realityEditor.gui.menus.on('main', ['freeze']);
+    realityEditor.gui.menus.switchToMenu('main', ['freeze'], null);
     globalStates.freezeButtonState = true;
 };
 
@@ -458,9 +471,37 @@ function removeMemoryBar() {
 
 function createMemory() {
     overlayDiv.classList.add('overlayMemory');
-    realityEditor.app.createMemory();
-    realityEditor.gui.menus.on("bigPocket",[]);
+    // realityEditor.app.createMemory();
+
+    console.log('create memory');
+    
+    // TODO: don't put the entire upload process here... just populate image and thumbnailImage 
+    // realityEditor.app.getScreenshot("L", "realityEditor.app.callbacks.uploadMemory");
+
+    realityEditor.app.getScreenshot("L", "realityEditor.gui.memory.receiveScreenshot");
+    realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotMemory");
+    
+    currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
+    currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
+
+    realityEditor.gui.menus.switchToMenu("bigPocket");
    // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
+}
+
+function receiveScreenshot(base64String) {
+    var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
+    var blobUrl = URL.createObjectURL(blob);
+    
+    currentMemory.image = blob;
+    currentMemory.imageUrl = blobUrl;
+}
+
+function receiveScreenshotThumbnail(base64String) {
+    var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
+    var blobUrl = URL.createObjectURL(blob);
+
+    currentMemory.thumbnailImage = blob;
+    currentMemory.thumbnailImageUrl = blobUrl;
 }
 
 function receiveThumbnail(thumbnailUrl) {
@@ -558,5 +599,9 @@ exports.MemoryContainer = MemoryContainer;
 exports.getMemoryWithId = getMemoryWithId;
 exports.memoryCanCreate = memoryCanCreate;
 exports.createMemory = createMemory;
+
+exports.receiveScreenshot = receiveScreenshot;
+exports.receiveScreenshotThumbnail = receiveScreenshotThumbnail;
+
 
 }(realityEditor.gui.memory));

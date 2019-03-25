@@ -89,6 +89,9 @@ realityEditor.device.currentScreenTouches = [];
  * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
  * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
+ * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
+ * @property {boolean} preDisabledUnconstrained - the unconstrained state before we disabled, so that we can go back to that when we're done
+ * @property {boolean} pinchToScaleDisabled - iff pinch to scale is temporarily disabled (e.g. if changing distance threshold)
  */
 
 /**
@@ -101,18 +104,42 @@ realityEditor.device.editingState = {
     touchOffset: null,
     unconstrained: false,
     unconstrainedOffset: null,
-    startingMatrix: null
+    startingMatrix: null,
+    unconstrainedDisabled: false
 };
 
 /**
- * A set of arrays of callbacks that other modules can register to be notified of device/index actions.
- * Contains a property for each method name in device/index.js that can trigger events in other modules.
- * The value of each property is an array containing pointers to the callback functions that should be
- *  triggered when that function is called.
- * @type {{resetEditingState: Array.<function>}}
+ * @type {CallbackHandler}
  */
-realityEditor.device.callbacks = {
-    resetEditingState: []
+realityEditor.device.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/index');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.device.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/index');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
+/**
+ * Initialize the device module by registering callbacks to other modules
+ */
+realityEditor.device.initFeature = function() {
+
+    realityEditor.gui.buttons.registerCallbackForButton('gui', resetEditingOnButtonUp);
+    realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);
+    realityEditor.gui.buttons.registerCallbackForButton('setting', resetEditingOnButtonUp);
+    
+    function resetEditingOnButtonUp(params) {
+        if (params.newButtonState === 'up') {
+            realityEditor.device.resetEditingState();
+        }
+    }
+    
 };
 
 /**
@@ -129,16 +156,26 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
     
     // TODO: how will svg overlays update when toggle between frames and nodes?
     
-    var newDisplay = newEditingMode ? 'inline' : 'none';
+    // var newDisplay = newEditingMode ? 'inline' : 'none';
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var svg = document.getElementById('svg' + frameKey);
-        if (svg && globalStates.guiState === "ui") { // don't show green outline for frames if in node view
-            svg.style.display = newDisplay;
+        if (svg && globalStates.guiState === "ui") {  // don't show green outline for frames if in node view
+            // svg.style.display = newDisplay;
+            if (newEditingMode) {
+                svg.classList.add('visibleEditingSVG');
+            } else {
+                svg.classList.remove('visibleEditingSVG');
+            }
         }
         realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
             svg = document.getElementById('svg' + nodeKey);
             if (svg) {
-                svg.style.display = newDisplay;
+                // svg.style.display = newDisplay;
+                if (newEditingMode) {
+                    svg.classList.add('visibleEditingSVG');
+                } else {
+                    svg.classList.remove('visibleEditingSVG');
+                }
             }
         });
     });
@@ -146,26 +183,11 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
 };
 
 /**
- * Returns the frame or node specified by the path, if one exists.
- * @param {string} objectKey
- * @param {string} frameKey
- * @param {string|undefined} nodeKey
- * @return {Frame|Node|null}
- */
-realityEditor.device.getActiveVehicle = function(objectKey, frameKey, nodeKey) {
-    if (nodeKey) {
-        return realityEditor.getNode(objectKey, frameKey, nodeKey);
-    } else {
-        return realityEditor.getFrame(objectKey, frameKey);
-    }
-};
-
-/**
  * Returns the frame or node that is currently being edited, if one exists.
  * @return {Frame|Node|null}
  */
 realityEditor.device.getEditingVehicle = function() {
-    return this.getActiveVehicle(this.editingState.object, this.editingState.frame, this.editingState.node);
+    return realityEditor.getVehicle(this.editingState.object, this.editingState.frame, this.editingState.node);
 };
 
 /**
@@ -174,7 +196,7 @@ realityEditor.device.getEditingVehicle = function() {
  * @return {boolean}
  */
 realityEditor.device.isEditingUnconstrained = function(vehicle) {
-    if (vehicle === this.getEditingVehicle() && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+    if (vehicle === this.getEditingVehicle() && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning) && !realityEditor.device.editingState.unconstrainedDisabled) {
         // staticCopy frames cannot be unconstrained edited
         if (typeof vehicle.staticCopy !== 'undefined') {
             if (vehicle.staticCopy) {
@@ -309,6 +331,9 @@ realityEditor.device.resetGlobalProgram = function() {
 realityEditor.device.resetEditingState = function() {
     this.sendEditingStateToFrameContents(this.editingState.frame, false); // TODO: move to a callback
 
+    // gets triggered before state gets reset, so that subscribed modules can respond based on what is about to be reset
+    this.callbackHandler.triggerCallbacks('resetEditingState');
+
     this.editingState.object = null;
     this.editingState.frame = null;
     this.editingState.node = null;
@@ -317,34 +342,6 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
     
-    this.triggerCallbacks('resetEditingState');
-};
-
-/**
- * Adds a callback function that will be invoked when the realityEditor.device.[functionName] is called
- * @param {string} functionName
- * @param {function} callback
- */
-realityEditor.device.registerCallback = function(functionName, callback) {
-    if (typeof this.callbacks[functionName] === 'undefined') {
-        this.callbacks[functionName] = [];
-    }
-    
-    this.callbacks[functionName].push(callback);
-};
-
-/**
- * Utility for iterating calling all callbacks that other modules have registered for the given function
- * @param {string} functionName
- * @param {object|undefined} params
- */
-realityEditor.device.triggerCallbacks = function(functionName, params) {
-    if (typeof this.callbacks[functionName] === 'undefined') return;
-    
-    // iterates over all registered callbacks to trigger events in various modules
-    this.callbacks[functionName].forEach(function(callback) {
-        callback(params);
-    });
 };
 
 /**
@@ -355,11 +352,18 @@ realityEditor.device.addDocumentTouchListeners = function() {
     document.addEventListener('pointerdown', this.onDocumentPointerDown.bind(this));
     document.addEventListener('pointermove', this.onDocumentPointerMove.bind(this));
     document.addEventListener('pointerup', this.onDocumentPointerUp.bind(this));
-
-    document.addEventListener('touchstart', this.onDocumentMultiTouchStart.bind(this));
-    document.addEventListener('touchmove', this.onDocumentMultiTouchMove.bind(this));
-    document.addEventListener('touchend', this.onDocumentMultiTouchEnd.bind(this));
-    document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+    
+    if (realityEditor.device.utilities.isDesktop()) {
+        document.addEventListener('mousedown', this.onDocumentMultiTouchStart.bind(this));
+        document.addEventListener('mousemove', this.onDocumentMultiTouchMove.bind(this));
+        document.addEventListener('mouseup', this.onDocumentMultiTouchEnd.bind(this));
+        // document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+    } else {
+        document.addEventListener('touchstart', this.onDocumentMultiTouchStart.bind(this));
+        document.addEventListener('touchmove', this.onDocumentMultiTouchMove.bind(this));
+        document.addEventListener('touchend', this.onDocumentMultiTouchEnd.bind(this));
+        document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+    }
 };
 
 /**
@@ -374,9 +378,15 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
     overlayDomElement.addEventListener('pointermove', this.onElementTouchMove.bind(this));
     overlayDomElement.addEventListener('pointerup', this.onElementTouchUp.bind(this));
 
-    // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
-    overlayDomElement.addEventListener('touchend', this.onElementMultiTouchEnd.bind(this));
-    overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
+    if (realityEditor.device.utilities.isDesktop()) {
+        // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
+        overlayDomElement.addEventListener('mouseup', this.onElementMultiTouchEnd.bind(this));
+        // overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
+    } else {
+        // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
+        overlayDomElement.addEventListener('touchend', this.onElementMultiTouchEnd.bind(this));
+        overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
+    }
     
     // give enter and leave events to nodes for when you draw links between them
     if (activeVehicle.type !== 'ui') {
@@ -393,7 +403,7 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
  */
 realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) {
     
-    var activeVehicle = this.getActiveVehicle(objectKey, frameKey, nodeKey);
+    var activeVehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
 
     // if you're already editing another object (or can't find this one) don't let you start editing this one
     if (this.editingState.object || !activeVehicle) { return; }
@@ -411,8 +421,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
         // show the trash and pocket
         if (activeVehicle.type === "logic") {
-            realityEditor.gui.menus.on("trashOrSave", []); // TODO: use this to enable logic node pocket again
-            // realityEditor.gui.menus.on("bigTrash", []);
+            realityEditor.gui.menus.switchToMenu("trashOrSave"); // TODO: use this to enable logic node pocket again
+            // realityEditor.gui.menus.switchToMenu("bigTrash");
 
         }
 
@@ -422,7 +432,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
         if (activeVehicle.location === "global") {
             // show the trash if this is a reusable frame
-            realityEditor.gui.menus.on("bigTrash", []);            
+            realityEditor.gui.menus.switchToMenu("bigTrash");            
         }
 
     }
@@ -439,9 +449,12 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
 
-    document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
+    // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
+    document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
     
     this.sendEditingStateToFrameContents(frameKey, true);
+
+    this.callbackHandler.triggerCallbacks('beginTouchEditing');
 };
 
 // post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
@@ -455,6 +468,35 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
     }), '*');
 };
 
+realityEditor.device.enableUnconstrained = function() {
+    
+    // only do this once, otherwise it will undo the effects of saving the previous value
+    if (this.editingState.unconstrainedDisabled) {
+        if (typeof this.editingState.preDisabledUnconstrained !== "undefined") {
+            this.editingState.unconstrained = this.editingState.preDisabledUnconstrained;
+            delete this.editingState.preDisabledUnconstrained; // get only works once per set
+        } else {
+            this.editingState.unconstrained = false;
+        }
+    }
+    this.editingState.unconstrainedDisabled = false;
+    this.editingState.unconstrainedOffset = null;
+};
+
+realityEditor.device.disableUnconstrained = function() {
+    this.editingState.unconstrainedDisabled = true;
+    this.editingState.preDisabledUnconstrained = this.editingState.unconstrained;
+    this.editingState.unconstrained = false;
+};
+
+realityEditor.device.enablePinchToScale = function() {
+    this.editingState.pinchToScaleDisabled = false;
+};
+
+realityEditor.device.disablePinchToScale = function() {
+    this.editingState.pinchToScaleDisabled = true;
+};
+
 /**
  * Begin the touchTimer to enable editing mode if the user doesn't move too much before it finishes.
  * Also set point A of the globalProgram so we can start creating a link if this is a node.
@@ -462,7 +504,7 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
  */
 realityEditor.device.onElementTouchDown = function(event) {
     var target = event.currentTarget;
-    var activeVehicle = this.getActiveVehicle(target.objectId, target.frameId, target.nodeId);
+    var activeVehicle = realityEditor.getVehicle(target.objectId, target.frameId, target.nodeId);
     
     // how long it takes to move the element:
     // instant if editing mode on, 400ms if not (or touchMoveDelay if specially configured for that element)
@@ -581,9 +623,9 @@ realityEditor.device.onElementTouchOut = function(event) {
         // stop node hold timer // TODO: handle node move same as frame by calculating dist^2 > threshold
         this.clearTouchTimer();
 
-        if (this.editingState.node) { //TODO: do i need to add editingModeKind back in to handle node vs logic? or can it be calculated by another method?
-            realityEditor.gui.menus.buttonOn("main",[]); // endTrash 
-        }
+        // if (this.editingState.node) {
+        //     realityEditor.gui.menus.buttonOn([]); // endTrash // TODO: need a new method to end trash programmatically ??? 
+        // }
 
         globalProgram.logicSelector = 4; // 4 means default link (not one of the colored ports)
 
@@ -648,6 +690,8 @@ realityEditor.device.onElementTouchUp = function(event) {
     // touch up over the trash
     if (event.pageX >= this.layout.getTrashThresholdX()) {
 
+        this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
+        
         // delete logic node
         if (target.type === "logic") {
 
@@ -670,32 +714,12 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
+
             // delete frame
         } else if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
-
-            // delete links to and from the frame
-            realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
-                var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-                Object.keys(thisFrame.links).forEach(function(linkKey) {
-                    var thisLink = thisFrame.links[linkKey];
-                    if (((thisLink.objectA === target.objectId) && (thisLink.frameA === target.frameId)) ||
-                        ((thisLink.objectB === target.objectId) && (thisLink.frameB === target.frameId))) {
-                        delete thisFrame.links[linkKey];
-                        realityEditor.network.deleteLinkFromObject(objects[objectKey].ip, objectKey, frameKey, linkKey);
-                    }
-                });
-            });
-
-            // remove it from the DOM
-            realityEditor.gui.ar.draw.killElement(this.editingState.frame, activeVehicle, globalDOMCache);
-            realityEditor.gui.ar.draw.removeFromEditedFramesList(this.editingState.frame);
-            // delete it from the server
-            realityEditor.network.deleteFrameFromObject(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
-
-            globalStates.inTransitionObject = null;
-            globalStates.inTransitionFrame = null;
             
-            delete objects[this.editingState.object].frames[this.editingState.frame];
+            realityEditor.device.deleteFrame(activeVehicle, this.editingState.object, this.editingState.frame);
+
         }
     }
 
@@ -703,12 +727,46 @@ realityEditor.device.onElementTouchUp = function(event) {
     globalCanvas.hasContent = true;
     
     // hide the trash menu
-    // realityEditor.gui.menus.buttonOn("main",[]);
+    // realityEditor.gui.menus.buttonOn("main");
     // if (!didDisplayCrafting) {
-    //     realityEditor.gui.menus.on("main",[]);
+    //     realityEditor.gui.menus.switchToMenu("main");
     // }
 
     cout("onElementTouchUp");
+};
+
+/**
+ * Once a frame has been decided to be deleted, this fully deletes it
+ * removing links to and from it, removing it from the DOM and objects data structure, and clearing related state 
+ * @param {Frame} frameToDelete
+ * @param {string} objectKeyToDelete
+ * @param {string} frameKeyToDelete
+ */
+realityEditor.device.deleteFrame = function(frameToDelete, objectKeyToDelete, frameKeyToDelete) {
+        
+    // delete links to and from the frame
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+        Object.keys(thisFrame.links).forEach(function(linkKey) {
+            var thisLink = thisFrame.links[linkKey];
+            if (((thisLink.objectA === objectKeyToDelete) && (thisLink.frameA === frameKeyToDelete)) ||
+                ((thisLink.objectB === objectKeyToDelete) && (thisLink.frameB === frameKeyToDelete))) {
+                delete thisFrame.links[linkKey];
+                realityEditor.network.deleteLinkFromObject(objects[objectKey].ip, objectKey, frameKey, linkKey);
+            }
+        });
+    });
+
+    // remove it from the DOM
+    realityEditor.gui.ar.draw.killElement(frameKeyToDelete, frameToDelete, globalDOMCache);
+    realityEditor.gui.ar.draw.removeFromEditedFramesList(frameKeyToDelete);
+    // delete it from the server
+    realityEditor.network.deleteFrameFromObject(objects[objectKeyToDelete].ip, objectKeyToDelete, frameKeyToDelete);
+
+    globalStates.inTransitionObject = null;
+    globalStates.inTransitionFrame = null;
+
+    delete objects[objectKeyToDelete].frames[frameKeyToDelete];
 };
 
 /**
@@ -808,7 +866,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     var activeVehicle = this.getEditingVehicle();
     
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if (event.target.id === "canvas" && !activeVehicle) {
+    if (realityEditor.device.utilities.isEventHittingBackground(event)) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
 
@@ -857,7 +915,7 @@ realityEditor.device.onDocumentPointerMove = function(event) {
 realityEditor.device.onDocumentPointerUp = function(event) {
     
     // add the pocket node to the closest frame
-    if (globalStates.pocketButtonDown) {
+    if (realityEditor.gui.buttons.getButtonState('pocket') === 'down') {
 
         // hide the pocket node
         realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
@@ -899,7 +957,7 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     
     // if not in crafting board, reset menu back to main
     if (globalStates.guiState !== "logic" && this.currentScreenTouches.length === 1) {
-        realityEditor.gui.menus.on("main",[]);
+        realityEditor.gui.menus.switchToMenu("main");
     }
 
     // clear the memory being saved in the touch overlay
@@ -907,13 +965,37 @@ realityEditor.device.onDocumentPointerUp = function(event) {
         overlayDiv.style.backgroundImage = 'none';
         realityEditor.app.appFunctionCall("clearMemory");
     }
-
-    // this is relevant for the pocket button to be interacted with
-    globalStates.pocketButtonDown = false;
-    globalStates.pocketButtonUp = false; // TODO: pocketButtonUp doesn't seem to be used for anything anymore
     
     cout("onDocumentPointerUp");
 };
+
+/**
+ * Converts MouseEvents from a desktop screen to one touch in a multi-touch data structure (TouchEvents),
+ * so that they can be handled by the same functions that expect multi-touch
+ * @param {MouseEvent} event
+ */
+function modifyTouchEventIfDesktop(event) {
+    if (realityEditor.device.utilities.isDesktop()) {
+        event.touches = [];
+        event.touches[0] = {
+            altitudeAngle: 0,
+            azimuthAngle: 0,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            force: 0,
+            identifier: event.timeStamp,
+            pageX: event.pageX,
+            pageY: event.pageY,
+            radiusX: 20,
+            radiusY: 20,
+            rotationAngle: 0,
+            screenX: event.screenX,
+            screenY: event.screenY,
+            target: event.target,
+            touchType: 'direct'
+        };
+    }
+}
 
 /**
  * Exposes all touchstart events to the touchInputs module for additional functionality (e.g. screens).
@@ -922,6 +1004,8 @@ realityEditor.device.onDocumentPointerUp = function(event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
+    modifyTouchEventIfDesktop(event);
+
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
     cout("onDocumentMultiTouchStart");
     
@@ -929,7 +1013,11 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
         if (realityEditor.device.currentScreenTouches.map(function(elt) { return elt.identifier; }).indexOf(touch.identifier) === -1) {
             realityEditor.device.currentScreenTouches.push({
                 targetId: touch.target.id.replace(/^(svg)/,""),
-                identifier: touch.identifier
+                identifier: touch.identifier,
+                position: {
+                    x: touch.pageX,
+                    y: touch.pageY
+                }
             });
         }
     });
@@ -937,17 +1025,19 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     var activeVehicle = this.getEditingVehicle();
 
     // If the event is hitting the background and it isn't the multi-touch to scale an object
-    if (event.target.id === "canvas" && !activeVehicle) {
+    if (realityEditor.device.utilities.isEventHittingBackground(event)) {
         if (event.touches.length < 2) {
             var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
-                // realityEditor.gui.menus.on("bigPocket", []);
-                realityEditor.gui.memory.createMemory();
+                // realityEditor.gui.menus.switchToMenu("bigPocket");
+                // realityEditor.gui.memory.createMemory(); // TODO: implement memories and re-enable then
 
             }
         }
     }
+
+    this.callbackHandler.triggerCallbacks('onDocumentMultiTouchStart', {event: event});
 };
 
 /**
@@ -956,15 +1046,26 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchMove = function (event) {
+    modifyTouchEventIfDesktop(event);
+
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
+    
+    [].slice.call(event.touches).forEach(function(touch) {
+        realityEditor.device.currentScreenTouches.filter(function(currentScreenTouch) {
+            return touch.identifier === currentScreenTouch.identifier;
+        }).forEach(function(currentScreenTouch) {
+            currentScreenTouch.position.x = touch.pageX;
+            currentScreenTouch.position.y = touch.pageY;
+        });
+    });
     
     var activeVehicle = this.getEditingVehicle();
     
     if (activeVehicle) {
 
         // scale the element if you make a pinch gesture
-        if (event.touches.length === 2) {
+        if (event.touches.length === 2 && !realityEditor.device.editingState.pinchToScaleDisabled) {
 
             // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
             var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
@@ -1029,7 +1130,9 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
                     return;
                 }
             }
-            
+
+            realityEditor.gui.ar.positioning.y =event.touches[0].pageY;
+                realityEditor.gui.ar.positioning.x =   event.touches[0].pageX;
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
             var isDeletableVehicle = activeVehicle.type === 'logic' || (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global");
@@ -1043,6 +1146,8 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             
         }
     }
+
+    this.callbackHandler.triggerCallbacks('onDocumentMultiTouchMove', {event: event});
 };
 
 realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY) {
@@ -1074,17 +1179,25 @@ realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY)
 
 };
 
+/**
+ * pop into unconstrained mode if pull out z > threshold
+ * @param {Frame|Node} activeVehicle
+ */
 realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicle) {
-    // pop into unconstrained mode if pull out z > threshold
+
+    // many conditions to check to see if it has this feature enabled
     var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
-                            !globalStates.freezeButtonState &&
+                            (!globalStates.freezeButtonState || realityEditor.device.utilities.isDesktop()) &&
                             realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle);
     
     if (ableToBePulled) {
 
         // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId], activeVehicle);
         // var distanceToFrame = screenFrameMatrix[14];
-        var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId]);
+        
+        // TODO: this doesn't work for 
+        //var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId]);
+        var distanceToObject = activeVehicle.screenZ; // TODO: needs to factor in dot product of x,y translation // TODO: or directly look at camera matrix vs this frame matrix
 
         // the first time, detect how far you are from the element and use that as a baseline
         if (!this.editingState.unconstrainedOffset) {
@@ -1094,7 +1207,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
 
             // after that, if you pull out more than 100 in the z direction, turn on unconstrained
             // var zPullThreshold = 50;
-            var amountPulled = distanceToObject - this.editingState.unconstrainedOffset;
+            var amountPulled = Math.abs(distanceToObject - this.editingState.unconstrainedOffset);
             // console.log(amountPulled);
             if (amountPulled > globalStates.framePullThreshold) {
                 console.log('pop into unconstrained editing mode');
@@ -1113,6 +1226,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
                 // tell the renderer to freeze the current matrix as the unconstrained position on the screen
                 realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
                 realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
+
+                this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
             }
         }
     }
@@ -1125,6 +1240,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchEnd = function (event) {
+    modifyTouchEventIfDesktop(event);
+
     realityEditor.device.touchEventObject(event, "touchend", realityEditor.device.touchInputs.screenTouchEnd);
     cout("onDocumentMultiTouchEnd");
     
@@ -1156,10 +1273,10 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     } else {
         this.currentScreenTouches = [];
 
-        realityEditor.gui.menus.buttonOn("main",[]);
+        // realityEditor.gui.menus.buttonOn([]);
         var didDisplayCrafting = globalStates.currentLogic; // proxy to determine if crafting board is open / we shouldn't reset the menu
         if (!didDisplayCrafting) {
-            realityEditor.gui.menus.on("main",[]);
+            realityEditor.gui.menus.switchToMenu("main");
         }
     }
     
@@ -1190,7 +1307,8 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
             // }
 
             if (activeVehicle && !globalStates.editingMode) {
-                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
+                // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
+                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).classList.remove('visibleEditingSVG');
             }
 
             this.resetEditingState();
@@ -1203,14 +1321,14 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         }
     }
     
-    // // if tap on background when no visible objects, auto-focus camera
+    // if tap on background when no visible objects, auto-focus camera
     // if (event.target.id === 'canvas') {
     //     if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length === 0) {
     //         realityEditor.app.focusCamera();
     //     }
     // }
     
-    this.triggerCallbacks('onDocumentMultiTouchEnd');
+    this.callbackHandler.triggerCallbacks('onDocumentMultiTouchEnd', {event: event});
 };
 
 /**
@@ -1330,13 +1448,14 @@ realityEditor.device.setDeviceName = function(deviceName) {
  * @param {boolean} instantState - enables instant connection mode when connected to enabled capacitive touch hardware
  * @param {boolean} speechState - enables Siri speech API to connect this to that
  // TODO: add native app storage for this setting * @param {boolean} videoRecordingEnabled - enables video recording API to create frames from camera video stream
+ // TODO: add native app storage for this setting * @param {boolean} matrixBroadcastEnabled
  * @param {string} externalState - the IP address of a userinterface directory that should be loaded in instead of default
  * @param {string} discoveryState - the IP address of a discovery server to be used instead of UDP
  * @param {boolean} realityState - sets retail mode on, showing a different menu for those use cases
  * @param {string} zoneText - the current zone that object discovery is limited to
  * @param {boolean} zoneState - whether to use zones or not
  */
-realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, /*videoRecordingEnabled,*/ externalState, discoveryState, realityState, zoneText, zoneState) {
+realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, /*videoRecordingEnabled, matrixBroadcastEnabled,*/ externalState, discoveryState, realityState, zoneText, zoneState) {
 
     globalStates.extendedTrackingState = extendedTrackingState;
     globalStates.developerState = developerState;
@@ -1344,6 +1463,7 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
     globalStates.instantState = instantState;
     globalStates.speechState = speechState;
     // globalStates.videoRecordingEnabled = videoRecordingEnabled;
+    // globalStates.matrixBroadcastEnabled = matrixBroadcastEnabled;
     globalStates.externalState = externalState;
     globalStates.discoveryState = discoveryState;
     globalStates.realityState = realityState;
@@ -1357,11 +1477,10 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
     }
 
     if (globalStates.realityState) {
-        realityEditor.gui.menus.on("realityInfo",["realityGui"]);
+        realityEditor.gui.menus.switchToMenu("realityInfo", ["realityGui"], null);
         globalStates.realityState = true;
     } else {
-        realityEditor.gui.menus.off("main",["gui","reset","unconstrained"]);
-        realityEditor.gui.menus.on("main",["gui"]);
+        realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
         globalStates.realityState = false;
     }
 
@@ -1374,7 +1493,7 @@ realityEditor.device.setStates = function (developerState, extendedTrackingState
     }
 
     if (globalStates.editingMode) {
-        realityEditor.gui.menus.on("editing", []);
+        realityEditor.gui.menus.switchToMenu("editing");
     }
     
     cout("setStates");

@@ -67,7 +67,7 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
 
 		if (globalStates.guiState === 'logic') {
 			realityEditor.gui.crafting.blockMenuHide();
-            realityEditor.gui.menus.off("crafting",["logicPocket"]);
+            realityEditor.gui.menus.switchToMenu("crafting", null, ["logicPocket"]);
         }
 	}
 
@@ -227,184 +227,21 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     
     var isPocketTapped = false;
 
-    var realityElements = [
-
-        {
-            name: 'graphUI',
-            width: 690,
-            height: 410,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'slider',
-            width: 206,
-            height: 526,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'slider-2d',
-            width: 526,
-            height: 526,
-            nodes: [
-                {name: 'valueX', type: "node"},
-                {name: 'valueY', type: "node"}
-            ]
-        },
- 
-        // {
-        //     name: 'machine-gltf',
-        //     width: 568,
-        //     height: 320,
-        //     nodes: [
-        //     ]
-        // },
-        {
-            name: 'sphere',
-            width: 568,
-            height: 320,
-            nodes: [
-                // {name: 'hue', type: "node"},
-                // {name: 'saturation', type: "node"},
-                // {name: 'lightness', type: "node"}
-            ]
-        },
-        {
-            name: 'videoCapture',
-            width: 568,
-            height: 320,
-            nodes: [
-                {name: 'play', type: 'node', x: 0, y: -27, scaleFactor: 0.75},
-                {name: 'next', type: 'node', x: 50, y: 100, scaleFactor: 0.6},
-                {name: 'prev', type: 'node', x: -50, y: 100, scaleFactor: 0.6},
-                {name: 'storage', type: 'storeData'}
-            ]
-        },
-        {
-            name: 'twoSidedLimiter',
-            width: 600,
-            height: 505,
-            nodes: [
-                {name: 'in_out', type: "twoSidedLimiter"}
-            ]
-        },
-        {
-            name: 'limiter',
-            width: 510,
-            height: 540,
-            nodes: [
-                {name: 'in_out', type: "limiter"}
-            ]
-        },
-        {
-            name: 'progress',
-            width: 275,
-            height: 415,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'draw',
-            width: 600,
-            height: 650,
-            nodes: [
-                {name: 'storage', type: "storeData"}
-            ]
-        },
-        {
-            name: 'switch',
-            width: 570,
-            height: 270,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'buttonOn',
-            width: 270,
-            height: 270,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-        {
-            name: 'buttonOff',
-            width: 270,
-            height: 270,
-            nodes: [
-                {name: 'value', type: "node"}
-            ]
-        },
-
-        // {
-        //     name: 'skyNews',
-        //     width: 660,
-        //     height: 430,
-        //     nodes: [
-        //         {name: 'play', type: "node"}
-        //     ]
-        // },
-        // {
-        //      name: 'ptcStockUI',
-        //      width: 600,
-        //      height: 500,
-        //      nodes: [
-        //      ]
-        //  },
-        // {
-        //      name: 'ptcTwitter',
-        //      width: 400,
-        //      height: 400,
-        //      nodes: [
-        //      ]
-        //  },
-        // {
-        //     name: 'label',
-        //     width: 450,
-        //     height: 150,
-        //     nodes: [
-        //         {name: 'storage', type: "storeData"}
-        //     ]
-        // },
-        {
-            name: 'count',
-            width: 515,
-            height: 400,
-            nodes: [
-                {name: 'count', type: "count"}
-            ]
-        },
-        {
-            name: 'pushMe',
-            width: 600,
-            height: 600,
-            nodes: [
-            ]
-        }
-    ];
-
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
         
-        // var isPocketTapped = false;
-
-        pocket.addEventListener('pointerdown', function(evt) {
-            isPocketTapped = true;
-        });
+        addMenuButtonActions();
 
         pocket.addEventListener('pointerup', function(evt) {
             isPocketTapped = false;
         });
 
         // On touching an element-template, upload to currently visible object
-        pocket.addEventListener('pointermove', function(evt) {
-            
+        pocket.addEventListener('pointerdown', function(evt) {
+            isPocketTapped = true;
+
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
@@ -418,6 +255,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // TODO: this would make it easier to drop exactly on the the object you want
             var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0]; 
             var closestObject = realityEditor.getObject(closestObjectKey);
+            
+            if (closestObject.isWorldObject) {
+                console.log('adding new frame to a world object...');
+                // realityEditor.worldObjects.addFrameToWorldObject({test: 1234});
+            }
             
             // make sure that the frames only sticks to 2.0 server version
             if (closestObject && closestObject.integerVersion > 165) {
@@ -477,6 +319,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
                 frame.fullScreen = false;
                 frame.sendMatrix = false;
+                frame.sendMatrices = {
+                    modelView : false,
+                    devicePose : false,
+                    groundPlane : false,
+                    allObjects : false
+                };
                 frame.sendAcceleration = false;
                 frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
                 // thisFrame.visible = false;
@@ -539,6 +387,107 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         createPocketUIPalette();
 		// pocketHide();
+    }
+
+    function addMenuButtonActions() {
+        
+        var ButtonNames = realityEditor.gui.buttons.ButtonNames;
+
+        // add callbacks for menu buttons -> hide pocket
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.GUI, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.SETTING, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC_SETTING, hidePocketOnButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.FREEZE, hidePocketOnButtonPressed);
+
+        // add callbacks for pocket button actions
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.POCKET, pocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC_POCKET, pocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.BIG_POCKET, bigPocketButtonPressed);
+        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.HALF_POCKET, halfPocketButtonPressed);
+
+        function hidePocketOnButtonPressed(params) {
+            if (params.newButtonState === 'up') {
+                // hide the pocket
+                pocketHide();
+            }
+        }
+
+        function pocketButtonPressed(params) {
+            if (params.newButtonState === 'up') {
+
+                onPocketButtonUp();
+
+                if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
+                    return;
+                }
+
+                realityEditor.gui.pocket.pocketButtonAction();
+
+            } else if (params.newButtonState === 'enter') {
+
+                realityEditor.gui.pocket.onPocketButtonEnter();
+
+                if (globalStates.guiState !== "node" && globalStates.guiState !== "logic") {
+                    return;
+                }
+
+                if (pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]) {
+                    // pocketItem["pocket"].objectVisible = false;
+                    realityEditor.gui.ar.draw.setObjectVisible(pocketItem["pocket"], false);
+
+                    this.gui.ar.draw.hideTransformed("pocket", pocketItemId, pocketItem["pocket"].frames["pocket"].nodes[pocketItemId], "logic"); // TODO: change arguments
+                    delete pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+                }
+
+            } else if (params.newButtonState === 'leave') {
+
+                // this is where the virtual point creates object
+
+                if (realityEditor.gui.buttons.getButtonState(params.buttonName) === 'down' && globalStates.guiState === "node") {
+
+                    // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
+                    var addedElement = realityEditor.gui.pocket.createLogicNode();
+
+                    // set the name of the node by counting how many logic nodes the frame already has
+                    var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
+                    var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
+                        return node.type === 'logic'
+                    }).length;
+                    addedElement.logicNode.name = "LOGIC" + logicCount;
+
+                    // upload new name to server when you change it
+                    var object = realityEditor.getObject(addedElement.objectKey);
+                    realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
+
+                    var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
+
+                    realityEditor.device.editingState.touchOffset = {
+                        x: logicNodeSize/2,
+                        y: logicNodeSize/2
+                    };
+
+                    realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
+
+                    realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
+
+                }
+
+            }
+        }
+
+        function bigPocketButtonPressed(params) {
+            if (params.newButtonState === 'enter') {
+                onBigPocketButtonEnter();
+            }
+        }
+
+        function halfPocketButtonPressed(params) {
+            if (params.newButtonState === 'enter') {
+                onHalfPocketButtonEnter();
+            }
+        }
+
     }
 
     function isPocketWanted() {
@@ -670,7 +619,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         // }
         
         pocket.classList.add('pocketShown');
-        realityEditor.gui.menus.buttonOn('main', ['pocket']);
+        realityEditor.gui.menus.buttonOn(['pocket']);
         if (globalStates.guiState === "node") {
             palette.style.display = 'none';
             nodeMemoryBar.style.display = 'block';
@@ -678,22 +627,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             palette.style.display = 'block';
             nodeMemoryBar.style.display = 'none';
         }
-        setPaletteElementDemo(true);
         isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
 
         createPocketScrollbar();
-    }
-
-    function setPaletteElementDemo(value) {
-        // var paletteElements = document.querySelectorAll('.palette-element');
-        // for (var i = 0; i < paletteElements.length; i++) {
-        //     var elt = paletteElements[i];
-        //     // TODO(hobinjk): stringify is not required except for legacy reasons
-        //     elt.contentWindow.postMessage(JSON.stringify({demo: value}), '*');
-        //     // elt.contentWindow.postMessage({demo: value}, '*');
-        //
-        // }
     }
 
     function pocketHide() {
@@ -707,8 +644,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         //     }
         // }, 5000);
         pocket.classList.remove('pocketShown');
-        realityEditor.gui.menus.buttonOff('main', ['pocket']);
-        setPaletteElementDemo(false);
+        realityEditor.gui.menus.buttonOff(['pocket']);
         isPocketTapped = false;
     }
 
@@ -771,7 +707,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // elt.style.marginLeft = offsetX + 'px';
         }
     }
-    
+
+    /**
+     * Programmatically generates a scroll bar with a number of segments ("chapters") based on the total number of rows
+     * of frames and memories in the pocket, that lets you jump up and down by tapping or scrolling your finger between
+     * the different segments of the scroll bar
+     * @todo: add a vertical margin between each row where we can label the frames with their names
+     */
     function createPocketScrollbar() {
         var scrollbar = document.getElementById('pocketScrollBar');
         if (scrollbar.children.length > 0) {
@@ -779,16 +721,20 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             return;
         }
         var numMemoryContainers = 4;
+        if (TEMP_DISABLE_MEMORIES) {
+            numMemoryContainers = 0;
+        }
         var numFrames = realityElements.length + numMemoryContainers;
-        var pageHeight = 320;
+        var pageHeight = window.innerHeight; //320;
         var frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
         var paddingHeight = 6; //parseFloat(document.querySelector('#pocket-element').style.margin) * 2;
         var framesPerRow = 4;
         var numRows = Math.ceil(numFrames / framesPerRow);
+        // A "chapter" is a section/segment on the scroll bar that you can tap to jump to that section of frames
         var numChapters = Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight );
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
-        var scrollbarHeight = 305;
+        var scrollbarHeight = pageHeight - 15;  //305;
         
         var allSegmentButtons = [];
         

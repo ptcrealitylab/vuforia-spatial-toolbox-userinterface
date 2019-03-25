@@ -24,12 +24,64 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
      */
     function initFeature() {
 
+        // register callbacks to various buttons to perform commits
+        realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
+            if (params.newButtonState === 'up') {
+                for (var objectKey in objects) {
+                    if (!objects.hasOwnProperty(objectKey)) continue;
+                    // only reset currently visible objects to their last commit, not everything
+                    if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
+                    
+                    realityEditor.network.sendResetToLastCommit(objectKey);
+                }
+            }
+        });
+
+        // register callbacks to various buttons to perform commits
+        realityEditor.gui.buttons.registerCallbackForButton('commit', function(params) {
+            if (params.newButtonState === 'up') {
+                
+                var objectKeysToDelete = [];
+                for (var objectKey in objects) {
+                    if (!objects.hasOwnProperty(objectKey)) continue;
+                    // only commit currently visible objects, not everything
+                    if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
+                    objectKeysToDelete.push(objectKey);
+                }
+                
+                var objectNames = objectKeysToDelete.map(function(objectKey) {
+                    return realityEditor.getObject(objectKey).name;
+                });
+                
+                var description = 'The following objects will be saved: ' + objectNames.join(', ');
+                console.log(description);
+                
+                realityEditor.gui.modal.openRealityModal('Cancel', 'Overwrite Saved State', function() {
+                    console.log('commit cancelled');
+                }, function() {
+                    console.log('commit confirmed!');
+                    
+                    objectKeysToDelete.forEach(function(objectKey) {
+                        realityEditor.network.sendSaveCommit(objectKey);
+                        // update local history instantly so that client and server are synchronized
+                        var thisObject = realityEditor.getObject(objectKey);
+                        thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
+                        refreshGhosts();
+                    });
+                    
+                });
+                
+            }
+        });
+
+        // registers a callback to the gui.ar.draw.update loop so that this module can manage its own rendering
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
             
+            // renders ghosts only in editing mode, which is when the commit and revert buttons are visible
             if (globalStates.editingMode) {
-
                 missingLinksToDraw = [];
 
+                // depending on guiState, either render frame or node/link ghosts
                 if (globalStates.guiState === 'ui') {
                     hideNodeGhosts(visibleObjects);
                     renderFrameGhostsForVisibleObjects(visibleObjects);
@@ -41,21 +93,17 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 }
 
                 // remove all ghosts when an object loses visibility
-
                 removeGhostsOfInvisibleObjects(visibleObjects);
-                // removeGhostsOfOldCommits();
 
                 // draw linesToDraw on canvas
-
                 drawLinesFromGhosts();
                 drawMissingLinks();
                 
+                // cache the most recent visible objects so we can detect when one disappears
                 privateState.visibleObjects = visibleObjects;
                 
             } else {
                 hideAllGhosts();
-                // hideFrameGhosts(visibleObjects);
-                // hideNodeGhosts(visibleObjects);
             }
             
         });
@@ -229,7 +277,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                         //   1) we deleted the frame that contains it
                         //   2) we deleted the node itself
                         //   3) the node was repositioned (x, y, scale, or matrix)
-                        if (ghostFrame.visualization !== 'screen' && (wasFrameDeleted || wasNodeDeleted || didPositionChange(ghostPosition, realPosition))) {
+                        if (wasFrameDeleted || wasNodeDeleted || didPositionChange(ghostPosition, realPosition)) {
 
                             // actually draw the outline as a DOM element
                             renderGhost(objectKey, ghostFrameKey, ghostNodeKey, ghostFrame, ghostNode, visibleObjects[objectKey], wasFrameDeleted || wasNodeDeleted);
@@ -290,7 +338,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                     // we need to render a ghost outline at the old node position if:
                     //   1) we deleted the frame
                     //   3) the frame was repositioned (x, y, scale, or matrix)
-                    if (ghostFrame.visualization !== 'screen' && (wasFrameDeleted || didPositionChange(ghostPosition, realPosition))) {
+                    if (wasFrameDeleted || didPositionChange(ghostPosition, realPosition)) {
                         
                         // actually render the outline as a DOM element
                         renderGhost(objectKey, ghostFrameKey, null, ghostFrame, null, visibleObjects[objectKey], wasFrameDeleted);
@@ -608,52 +656,6 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         ctx.fill();
     }
     
-    function onResetButtonPressed() {
-        for (var objectKey in objects) {
-            if (!objects.hasOwnProperty(objectKey)) continue;
-            // only reset currently visible objects to their last commit, not everything
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
-
-            realityEditor.network.sendResetToLastCommit(objectKey);
-        }
-
-        refreshGhosts();
-    }
-    
-    function onCommitButtonPressed() {
-        var objectKeysToDelete = [];
-        for (var objectKey in objects) {
-            if (!objects.hasOwnProperty(objectKey)) continue;
-            // only commit currently visible objects, not everything
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
-            objectKeysToDelete.push(objectKey);
-        }
-
-        var objectNames = objectKeysToDelete.map(function(objectKey) {
-            return realityEditor.getObject(objectKey).name;
-        });
-
-        var description = 'The following objects will be saved: ' + objectNames.join(', ');
-        console.log(description);
-
-        realityEditor.gui.modal.openRealityModal('Cancel', 'Overwrite Saved State', function() {
-            console.log('commit cancelled');
-        }, function() {
-            console.log('commit confirmed!');
-
-            objectKeysToDelete.forEach(function(objectKey) {
-                realityEditor.network.sendSaveCommit(objectKey);
-                // update local history instantly so that client and server are synchronized
-                var thisObject = realityEditor.getObject(objectKey);
-                thisObject.framesHistory = JSON.parse(JSON.stringify(thisObject.frames));
-                refreshGhosts();
-            });
-
-        });
-    }
-    
     exports.initFeature = initFeature;
-    exports.onResetButtonPressed = onResetButtonPressed;
-    exports.onCommitButtonPressed = onCommitButtonPressed;
 
 }(realityEditor.gui.ar.frameHistoryRenderer));

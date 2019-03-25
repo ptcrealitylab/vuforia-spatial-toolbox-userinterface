@@ -132,6 +132,8 @@ body {
     z-index: 2;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
     pointer-events:none; /*stops canvas from capturing touches so they propogate to elements behind it*/
+    
+    display: none;
 
     /* Trick to enable anti-aliasing of iframes (see: https://stackoverflow.com/questions/6492027/css-transform-jagged-edges-in-chrome) */
     /*padding: 1px;*/
@@ -192,6 +194,46 @@ body {
     /*background-color: rgba(0, 0, 0, 0.1);*/
     /*background-color: rgba(0, 0, 0, 0.05);*/
     border: 5px dashed rgba(255, 0, 124, 0.3);
+}
+
+.markerPlaneElement {
+    background-color: rgba(0,255,255,0.5);
+    position: absolute;
+    opacity: 0.9;
+}
+
+.svgDefaultState {
+    display: none;
+}
+
+#zoneConnectionSwitch {
+    position: fixed;
+    left: 30px;
+    top: 30px;
+    width: 300px;
+    height: 60px;
+    line-height: 60px;
+    text-align: center;
+    visibility: visible;
+    border: 2px solid cyan;
+    background-color: rgba(0, 255, 255, 0.3);
+}
+
+.connectionSwitchPulse {
+    background-color: rgba(0, 255, 255, 0);
+    animation-name: pulseBackgroundBlue;
+    animation-duration: 1000ms;
+    -webkit-animation-fill-mode: forwards; /* Chrome, Safari, Opera */
+    -webkit-animation-timing-function: ease-out;
+}
+
+@keyframes pulseBackgroundBlue {
+    0% {
+        background-color: rgba(0, 255, 255, 0.3);
+    }
+    100% {
+        background-color: rgba(0, 255, 255, 0.0);
+    }
 }
 
 /*
@@ -722,7 +764,8 @@ body {
     margin: 0;
     padding: 0;
     z-index: 0;
-    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.1, 1);
+    pointer-events: none;
 }
 
 .ignorePointerEvents {
@@ -752,7 +795,7 @@ body {
 
 .hiddenFrame {
     visibility: visible;
-    opacity: 0.3;
+    opacity: 0.4;
     pointer-events: none;
 }
 
@@ -770,6 +813,48 @@ body {
 
 .inTransitionFrame {
     opacity: 0.7;
+}
+
+.distantFrame {
+    display: none;
+}
+
+.distanceUI {
+    width: 200px;
+    height: 200px;
+    /*width: 100%;*/
+    /*height: 100%;*/
+    transform-origin: center;
+    border-radius: 50%;
+    border: 2px solid white;
+    background-color: rgba(0,255,255,0.1);
+    visibility: visible;
+    /*transform: rotateX(90deg);*/
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+}
+
+#distanceUI2 {
+    border: 20px solid goldenrod;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin-left: -20px;
+    margin-top: -20px;
+    transform: translateZ(1000px);
+}
+
+.visibleEditingSVG {
+    visibility: visible;
+    display: inline;
+}
+
+.hiddenForDistance {
+    display: none;
 }
 
 /*
@@ -965,9 +1050,9 @@ Logic Interface CSS
   /*background-color: #B7B7B7; !*#969696;*!*/
   background-color: transparent;
   position: absolute;
-  left: 0;
+  left: 100px;
   top: 0;
-  width: 506px;
+  width: calc(100vw - 62px);
   height: 320px;
   border: none;
 }
@@ -977,10 +1062,13 @@ Logic Interface CSS
 #menuContainer {
   /*background-color: #B7B7B7; !*#969696;*!*/
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 506px;
-  height: 320px;
+  /*left: 0;*/
+  /*top: 0;*/
+  /*width: calc(100vw - 62px);*/
+  /*height: 320px;*/
+  /*top: 50%;*/
+  /*left: 50%;*/
+  /*transform: translate(-50%, -50%);*/
 }
 
 #menuBlockContainer {
@@ -1176,15 +1264,15 @@ Logic Interface CSS
     position: absolute;
     left: 0;
     top: 0;
-    width: 506px;
-    height: 320px;
+    width: calc(100vw - 62px);
+    height: calc(100vh);
 }
 
 #pocketScrollBar {
     position: absolute;
     right: 75px;
     top: 5px;
-    height: 305px;
+    height: calc(100vh - 15px);
     width: 70px;
     border: 3px solid cyan;
     border-radius: 10px;
@@ -1195,7 +1283,7 @@ Logic Interface CSS
     /*border: 3px solid cyan;*/
     /*border-radius: 10px;*/
     width: 70px;
-    height: 305px;
+    height: calc(100vh - 15px);
     left: 0;
     top: 0;
 }
@@ -1210,4 +1298,58 @@ Logic Interface CSS
 
 .snappableFrame {
     opacity: 0.6;
+}
+
+#desktopBackgroundRenderer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    background-color: transparent;
+}
+
+.groupLassoFadeOut {
+    opacity:1;
+
+    animation-name: fadeOut;
+    animation-duration: 300ms;
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-out;
+    -webkit-user-select: none;
+    -webkit-touch-callout:none;
+}
+
+@keyframes delayedFadeOut {
+    0% {
+        opacity:1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.groupOutlineFadeOut {
+    opacity:1;
+
+    animation-name: delayedFadeOut;
+    animation-duration: 1500ms;
+    -webkit-animation-fill-mode: forwards;
+    -webkit-animation-timing-function: ease-out;
+    -webkit-user-select: none;
+    -webkit-touch-callout:none;
+}
+
+.groundPlaneVisualizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 300px;
+    background-color: #00edff;
+    visibility: visible;
 }

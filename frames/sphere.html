@@ -78,30 +78,33 @@
         // make the frame fullscreen within the reality editor,
         // and subscribe to the modelview and projection matrices
         realityInterface = new RealityInterface();
-        realityInterface.subscribeToMatrix();
-        realityInterface.setFullScreenOn();
 
-        // whenever we receive new matrices from the editor, update the 3d scene
-        realityInterface.addMatrixListener(renderScene);
+        realityInterface.onRealityInterfaceLoaded(function() {
+            realityInterface.subscribeToMatrix();
+            realityInterface.setFullScreenOn();
 
-        realityInterface.setMoveDelay(400);
+            // whenever we receive new matrices from the editor, update the 3d scene
+            realityInterface.addMatrixListener(renderScene);
 
-        initNavigationArrow(document.querySelector('canvas'), realityInterface, true, touchDecider);
+            realityInterface.setMoveDelay(400);
 
-        realityInterface.registerTouchDecider(touchDecider);
+            initNavigationArrow(document.querySelector('canvas'), realityInterface, true, touchDecider);
 
-        realityInterface.addIsMovingListener(function(e) {
-            if (e) {
-                console.log('red ball is moving');
-                hue = 0.3;
-                saturation = 1;
-                // lightness = 0.75;
-            } else {
-                console.log('red ball is NOT moving');
-                hue = 0;
-                saturation = 0.75;
-                lightness = 0.6;
-            }
+            realityInterface.registerTouchDecider(touchDecider);
+
+            realityInterface.addIsMovingListener(function(e) {
+                if (e) {
+                    console.log('red ball is moving');
+                    hue = 0.3;
+                    saturation = 1;
+                    // lightness = 0.75;
+                } else {
+                    console.log('red ball is NOT moving');
+                    hue = 0;
+                    saturation = 0.75;
+                    lightness = 0.6;
+                }
+            });
         });
 
     });

@@ -242,4 +242,27 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
     }
 
     return new Blob(byteArrays, {type: contentType});
-}
+};
+
+/**
+ * Utility function to determine if the editor is loaded on a desktop browser or within the full mobile app.
+ * @todo: make more robust so that loading on a mobile safari browser is distinguisable from within the Reality Editor app
+ * @return {boolean}
+ */
+
+// speeding things up by only verifying once 
+realityEditor.device.utilities.isItADesktop = window.navigator.userAgent.indexOf('Mobile') <= -1 || window.navigator.userAgent.indexOf('Macintosh') > -1; 
+
+realityEditor.device.utilities.isDesktop = function() {
+    return realityEditor.device.utilities.isItADesktop;
+};
+
+/**
+ * Helper function tells if tapped the background (and excludes edge-case: multi-touch gesture while selecting a vehicle)
+ * @param {PointerEvent} event
+ * @return {boolean}
+ */
+realityEditor.device.utilities.isEventHittingBackground = function(event) {
+    var activeVehicle = realityEditor.device.getEditingVehicle();
+    return (event.target.id === "canvas" || event.target.id === 'groupSVG' || event.target.className === "memoryBackground") && !activeVehicle;
+};
