@@ -10,6 +10,7 @@
         object: '',
         publicData: {},
         modelViewMatrix: [],
+        serverIp:"127.0.0,1",
         matrices:{
             modelView : [],
             projection : [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1], // in case it doesn't get set, use identity as placeholder
@@ -658,20 +659,24 @@
                 var thisMsg = JSON.parse(msg);
                 
                 if (typeof thisMsg.publicData === "undefined")  return;
-                if (typeof thisMsg.publicData[node] === "undefined") return;
-                if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
+                if (thisMsg.node !== realityObject.frame+node) return;
+                if (typeof thisMsg.publicData[valueName] === "undefined") return;
                 
-                var isUnset =   (typeof realityObject.publicData[node] === "undefined") ||
-                                (typeof realityObject.publicData[node][valueName] === "undefined");
-
-                // only trigger the callback if there is new public data, otherwise infinite loop possible
-                if (isUnset || JSON.stringify(thisMsg.publicData[node][valueName]) !== JSON.stringify(realityObject.publicData[node][valueName])) {
-
                     if(typeof realityObject.publicData[node] === "undefined") {
                         realityObject.publicData[node] = {};
                     }
-                    realityObject.publicData[node][valueName] = thisMsg.publicData[node][valueName];
+
+                if(typeof realityObject.publicData[node][valueName] === "undefined") {
+                    realityObject.publicData[node][valueName]  = {};
+                }
+
+
+                // only trigger the callback if there is new public data, otherwise infinite loop possible
+                // todo this is a very time consuming calculation
+                if (JSON.stringify(thisMsg.publicData[valueName]) !== JSON.stringify(realityObject.publicData[node][valueName])) {
                     
+                    realityObject.publicData[node][valueName] = thisMsg.publicData[valueName];
+
                     parent.postMessage(JSON.stringify(
                         {
                             version: realityObject.version,
@@ -682,7 +687,7 @@
                         }
                     ), "*");
                     
-                    callback(thisMsg.publicData[node][valueName]);
+                    callback(thisMsg.publicData[valueName]);
                 }
                 
             });

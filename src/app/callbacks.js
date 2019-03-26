@@ -174,6 +174,7 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
 //this is speeding things up always! Because the scope for searching this variable becomes smaller.
 realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+   // console.log(visibleObjects);
     //console.log("receiveMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {

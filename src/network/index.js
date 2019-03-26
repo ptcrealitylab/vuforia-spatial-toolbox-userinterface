@@ -1443,7 +1443,7 @@ if (thisFrame) {
                 publicDataCache[msgContent.frame] = {};
             }
             publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
-            console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
+            //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
             var keys = realityEditor.getKeysFromVehicle(frame);
             realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
