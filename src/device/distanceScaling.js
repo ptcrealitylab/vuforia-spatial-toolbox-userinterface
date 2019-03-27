@@ -269,7 +269,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             
             var thisDistanceUI = getDistanceUI(frameKey);
             if (thisDistanceUI) {
-                thisDistanceUI.style.webkitTransform = 'matrix3d(' + transformationMatrix.toString() + ')';
+                thisDistanceUI.style.transform = 'matrix3d(' + transformationMatrix.toString() + ')';
             }
         } /*else {
             if (!globalDOMCache['object'+frameKey]) {

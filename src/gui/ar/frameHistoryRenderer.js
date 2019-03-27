@@ -523,7 +523,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         finalMatrix[14] = 1000000 / Math.max(10, projectedPoint[2]); // (don't add extra 200) so it goes behind real
 
         // actually adjust the CSS to draw it with the correct transformation
-        globalDOMCache['ghost' + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+        globalDOMCache['ghost' + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
 
         // store the screenX and screenY within the ghost to help us later draw lines to the ghosts
         var ghostCenterPosition = getDomElementCenterPosition(globalDOMCache['ghost' + activeKey]);

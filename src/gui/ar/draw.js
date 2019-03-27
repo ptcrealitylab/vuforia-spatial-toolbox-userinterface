@@ -310,7 +310,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);
         this.globalCanvas.hasContent = false;
     }
-    
+    // this is a quick hack but maybe needs to move somewhere else. 
+    // I dont know if this is the right spot.
+    for (objectKey in objects) {
+        if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
+            visibleObjects[objectKey] = [];
+        }
+    }
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     if (Object.keys(visibleObjects).length > 0) {
         if(this.checkFrameVisibilityCounter >= 30) {
@@ -340,26 +346,18 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
-
-           // var modelViewMatrix = [];
             
             if (this.activeObject.isWorldObject) {
-
                 // don't start rendering world frames until we've received a valid camera matrix
                 if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
                     continue;
                 }
-            //    modelViewMatrix = this.visibleObjects[objectKey];
-
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
-
-                // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
-              //  modelViewMatrix = this.visibleObjects[objectKey];
-
+                
             } else {
                 
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.m1);
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.m1, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
               //  = modelViewMatrix;
             };
 
@@ -387,6 +385,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
                 this.activeKey = frameKey;
                 this.activeVehicle = this.activeFrame;
                 this.activeType = "ui";
+
+                // I think this might be a hack and it could be done in a much better way.
+                if(!this.visibleObjects[objectKey][0] && this.activeFrame.fullScreen !== 'sticky' ){
+                    this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
+                    continue;
+                }
                 
                 // perform all the 3D calculations and CSS updates to actually show the frame and render in the correct position
                 continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
@@ -1316,7 +1320,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 // draw transformed
                 if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
-                    globalDOMCache["object" + activeKey].style.webkitTransform = 'matrix3d(' + finalMatrix.toString() + ')';
+                    globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
                 }
 
                 // this is for later
@@ -1338,7 +1342,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             if (activeType === "ui") {
 
-                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true) {
+                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true || activeVehicle.sendMatrices.devicePose === true
+                || activeVehicle.sendMatrices.groundPlane === true || activeVehicle.sendMatrices.allObjects === true) {
 
                     var thisMsg = {};
 
@@ -1348,11 +1353,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
-                        thisMsg.devicePose = this.cameraMatrix;
+                        thisMsg.devicePose = this.correctedCameraMatrix;
                     }
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
-                        thisMsg.groundPlaneMatrix = this.groundPlaneMatrix;
+                        thisMsg.groundPlaneMatrix = [];
+                        realityEditor.gui.ar.utilities.multiplyMatrix(this.groundPlaneMatrix, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
@@ -1699,6 +1705,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     
     var doesDOMElementExist = !!globalDOMCache['object' + activeKey];
     if (!doesDOMElementExist && activeVehicle.visible === true) {
+        activeVehicle.visible = false;
         console.warn('trying to hide a frame that doesn\'t exist');
         return;
     }
@@ -1729,7 +1736,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
             globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
             globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
             
-            var shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen';
+            var shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen' || !this.visibleObjects[activeVehicle.objectId][0];
             if (shouldReallyHide) {
                 globalDOMCache['object' + activeKey].classList.add('displayNone');
             }

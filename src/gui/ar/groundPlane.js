@@ -31,17 +31,18 @@ createNameSpace("realityEditor.gui.ar.groundPlane");
      * @param {Array.<number>} modelMatrix
      */
     function renderGroundPlane(modelMatrix) {
-        
+        /*
+              
         var modelViewMatrix = [];
 
         var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(realityEditor.gui.ar.draw.cameraMatrix, true, true, false);
         var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix), false, true, true);
        
         // this has been moved into the application
-        /* cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
-        cameraTranslation[13] *= mmToMeterScale;
-        cameraTranslation[14] *= mmToMeterScale;*/
-        
+        // cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
+        //cameraTranslation[13] *= mmToMeterScale;
+        //cameraTranslation[14] *= mmToMeterScale;
+
         var modelRotation = realityEditor.gui.ar.draw.utilities.extractRotation(realityEditor.gui.ar.draw.utilities.transposeMatrix(modelMatrix), false, true, true);
         var modelTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(modelMatrix, false, false, false);
 
@@ -54,7 +55,7 @@ createNameSpace("realityEditor.gui.ar.groundPlane");
         if (globalStates.debugSpeechConsole) {
             document.getElementById('speechConsole').innerHTML = realityEditor.gui.ar.utilities.prettyPrintMatrix(modelMatrix, 2, true) + '<br><br>' + realityEditor.gui.ar.utilities.prettyPrintMatrix(modelViewMatrix, 2, true);
         }
-        
+
         // modelViewMatrix = modelMatrix;
 
         // realityEditor.gui.ar.draw.visibleObjects[objectKey] = modelViewMatrix;
@@ -65,6 +66,21 @@ createNameSpace("realityEditor.gui.ar.groundPlane");
 
         var visualizer = getGroundPlaneVisualizer();
         visualizer.style.webkitTransform = 'matrix3d(' + activeObjectMatrix.toString() + ')';
+
+
+    */
+        
+        var matrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.rotateX, modelMatrix, matrix);
+        realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, modelMatrix);
+        
+        if (globalStates.debugSpeechConsole) {
+            document.getElementById('speechConsole').innerHTML = realityEditor.gui.ar.utilities.prettyPrintMatrix(modelMatrix, 2, true);
+        }
+        realityEditor.gui.ar.draw.ar.utilities.multiplyMatrix(modelMatrix, globalStates.projectionMatrix, matrix);
+
+        var visualizer = getGroundPlaneVisualizer();
+        visualizer.style.transform = 'matrix3d(' + matrix.toString() + ')';
 
     }
     
