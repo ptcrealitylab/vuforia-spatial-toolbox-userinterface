@@ -172,6 +172,19 @@ realityEditor.gui.ar.draw.cameraMatrix = [
     0, 0, 0, 1
 ];
 
+realityEditor.gui.ar.draw.correctedCameraMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+realityEditor.gui.ar.draw.m1 = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
 /**
  * The most recently received camera matrix
  * @type {Array.<number>}
@@ -300,7 +313,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     if (Object.keys(visibleObjects).length > 0) {
-        if(this.checkFrameVisibilityCounter >= 20) {
+        if(this.checkFrameVisibilityCounter >= 30) {
             this.checkFrameVisibilityCounter = 0;
             if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
                 this.isObjectWithNoFramesVisible = true;
@@ -328,7 +341,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
 
-            var modelViewMatrix = [];
+           // var modelViewMatrix = [];
             
             if (this.activeObject.isWorldObject) {
 
@@ -336,42 +349,24 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
                 if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
                     continue;
                 }
-                modelViewMatrix = this.visibleObjects[objectKey];
+            //    modelViewMatrix = this.visibleObjects[objectKey];
 
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
 
                 // don't recompute with the camera matrix if frozen, this has already been done and redoing it will cause a bug
-                modelViewMatrix = this.visibleObjects[objectKey];
+              //  modelViewMatrix = this.visibleObjects[objectKey];
 
             } else {
-
-                // compute the ModelView matrix by multiplying the object matrix (model) with the camera matrix (view)
-                // we need to modify the object and camera matrices before we multiply them together to align their axes and scales
-
-                var cameraRotation = this.utilities.extractRotation(this.cameraMatrix, true, true, false);
-                var cameraTranslation = this.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(this.cameraMatrix), false, true, true);
-                cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
-                cameraTranslation[13] *= mmToMeterScale;
-                cameraTranslation[14] *= mmToMeterScale;
-
-                var modelMatrix = this.visibleObjects[objectKey];
-                var modelRotation = this.utilities.extractRotation(this.utilities.transposeMatrix(modelMatrix), false, true, true);
-                var modelTranslation = this.utilities.extractTranslation(modelMatrix, false, false, false);
-
-                var m1 = [];
-                var m2 = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(modelRotation, modelTranslation, m1);
-                realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, m2);
-                realityEditor.gui.ar.utilities.multiplyMatrix(m1, m2, modelViewMatrix);
-
-                this.visibleObjects[objectKey] = modelViewMatrix;
-
-            }
+                
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.m1);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.m1, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
+              //  = modelViewMatrix;
+            };
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
-            this.ar.utilities.multiplyMatrix(modelViewMatrix, this.globalStates.projectionMatrix, this.matrix.r);
-            this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey] , this.globalStates.projectionMatrix, this.activeObjectMatrix);
+          //  this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
             
             // extract its projected (x,y) screen coordinates from the matrix
             //TODO THIS GETS OVERWRITTEN FURTHER DOWN Is this used for anything?
@@ -603,7 +598,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
     if (this.isObjectWithNoFramesVisible) {
         var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
-        if (closestObject && !closestObject.isWorldObject) {
+        if (closestObject) {
             var delay = closestObject.isWorldObject ? 1000 : 500;
             if (!visibleObjectTapInterval || delay !== visibleObjectTapDelay) {
                 // tap once, immediately
@@ -931,8 +926,7 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         // realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
 
         // recompute frame.temp for the new object
-        this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, this.matrix.r);
-        this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, frame.temp);
+        this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
 
         // frame.begin[0] /= scaleFactor;
         // frame.begin[5] /= scaleFactor;
@@ -986,7 +980,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
     if (notLoading !== activeKey && activeVehicle.loaded === true && activeVehicle.visualization !== "screen") {
    
-        //todo this reference can be faster when taking the local scope
+        //todo this reference can be faster when taking the local 
         var editingVehicle = realityEditor.device.getEditingVehicle();
         var thisIsBeingEdited = (editingVehicle === activeVehicle);
 
@@ -1025,7 +1019,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             overlay.style.visibility = 'visible';
             
-            if (globalStates.editingMode || thisIsBeingEdited) {
+            if (globalStates.editingMode) {
                 canvas.classList.add('visibleEditingSVG');
                 // canvas.style.visibility = 'visible';
                 // canvas.style.display = 'inline';
@@ -1079,16 +1073,19 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 return true;
             }
             
-            // TODO this seems to noe being used at all
+            /*
             if (shouldRenderFramesInNodeView) {
                 globalDOMCache["object" + activeKey].classList.remove('displayNone');
-            }
+            }*/
             
+            // permanently changing classes in the doom kills performance. This has to be implemented in a better way only writing the dom once when it actually occures.
+            /*
             if (activeKey === globalStates.inTransitionFrame) {
                 globalDOMCache["iframe" + activeKey].classList.add('inTransitionFrame');
             } else {
                 globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
             }
+            */
 
             if (!realityEditor.device.utilities.isDesktop()) {
                 // fade out frames and nodes when they m2ove beyond a certain distance
@@ -1163,7 +1160,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 ];
 
                 if (globalStates.editingMode || thisIsBeingEdited) {
-
+                    console.log("test");
                     // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
                     var svg = globalDOMCache["svg" + activeKey];
                     if (svg.children.length === 0) {
@@ -1293,6 +1290,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 var editedOrderZIncrease = 0;
                 if (activeType !== "ui") {
+                    // TODO What is this for?
                     var editedOrderData = this.getNodeRenderPriority(activeKey);
                     editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
                 }
@@ -1569,9 +1567,9 @@ realityEditor.gui.ar.draw.getMatrixValues = {
 };
 
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
-    var getMatrixValues = this.getMatrixValues;
+ 
     // 1. Construct matrix for scale and translation
-    getMatrixValues.scale = [
+    this.getMatrixValues.scale = [
         frameScale, 0, 0, 0,
         0, frameScale, 0, 0,
         0, 0, frameScale, 0,
@@ -1580,12 +1578,12 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     
     // 2. multiply values
     if (frameMatrix.length === 16) {
-        getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, getMatrixValues.r3);
-        getMatrixValues.utils.multiplyMatrix(getMatrixValues.scale, getMatrixValues.r3, getMatrixValues.finalMatrix);
+        this.getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, this.getMatrixValues.r3);
+        this.getMatrixValues.utils.multiplyMatrix(this.getMatrixValues.scale, this.getMatrixValues.r3, this.getMatrixValues.finalMatrix);
     } else {
-        getMatrixValues.utils.multiplyMatrix(getMatrixValues.scale, visibleObjectMatrix, getMatrixValues.finalMatrix);
+        this.getMatrixValues.utils.multiplyMatrix(this.getMatrixValues.scale, visibleObjectMatrix, this.getMatrixValues.finalMatrix);
     }
-    return getMatrixValues.finalMatrix;
+    return this.getMatrixValues.finalMatrix;
 };
 
 /**
@@ -2263,8 +2261,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
         if (visibleObjects[objectKey]) {
-            this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, matrix.r);
-            this.ar.utilities.multiplyMatrix(rotateX, matrix.r, activeObjectMatrixCopy);
+            this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
         } else {
             activeObjectMatrixCopy = utilities.copyMatrix(activeObjectMatrix);
         }

@@ -36,9 +36,11 @@ createNameSpace("realityEditor.gui.ar.groundPlane");
 
         var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(realityEditor.gui.ar.draw.cameraMatrix, true, true, false);
         var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.cameraMatrix), false, true, true);
-        cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
+       
+        // this has been moved into the application
+        /* cameraTranslation[12] *= mmToMeterScale; // scale to match the object matrix adjustment
         cameraTranslation[13] *= mmToMeterScale;
-        cameraTranslation[14] *= mmToMeterScale;
+        cameraTranslation[14] *= mmToMeterScale;*/
         
         var modelRotation = realityEditor.gui.ar.draw.utilities.extractRotation(realityEditor.gui.ar.draw.utilities.transposeMatrix(modelMatrix), false, true, true);
         var modelTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(modelMatrix, false, false, false);
@@ -59,8 +61,7 @@ createNameSpace("realityEditor.gui.ar.groundPlane");
 
         // compute its ModelViewProjection matrix
         var activeObjectMatrix = [];
-        realityEditor.gui.ar.draw.ar.utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, realityEditor.gui.ar.draw.matrix.r);
-        realityEditor.gui.ar.draw.ar.utilities.multiplyMatrix(rotateX, realityEditor.gui.ar.draw.matrix.r, activeObjectMatrix);
+        realityEditor.gui.ar.draw.ar.utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, activeObjectMatrix);
 
         var visualizer = getGroundPlaneVisualizer();
         visualizer.style.webkitTransform = 'matrix3d(' + activeObjectMatrix.toString() + ')';

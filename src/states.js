@@ -297,10 +297,10 @@ var globalMatrix = {
 var consoleText = "";
 
 var rotateX = [
-	1, 0, 0, 0,
-	0, 1, 0, 0,
-	0, 0, 1, 0,
-	0, 0, 0, 1
+    1, 0, 0, 0,
+    0, -1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
 ];
 
 var editingAnimationsMatrix = [

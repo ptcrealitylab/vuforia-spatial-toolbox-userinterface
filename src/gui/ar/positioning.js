@@ -404,8 +404,7 @@ realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKe
     
     // 1. recompute the ModelViewProjection matrix for the marker
     var activeObjectMatrix = [];
-    utils.multiplyMatrix(draw.visibleObjects[objectKey], globalStates.projectionMatrix, draw.matrix.r);
-    utils.multiplyMatrix(rotateX, draw.matrix.r, activeObjectMatrix);
+    utils.multiplyMatrix(draw.visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrix);
     
     // 2. Get the matrix of the frame and compute the composed matrix of the frame relative to the object.
     //   *the order of multiplications is important*
@@ -491,9 +490,7 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
     
     // recompute frame.temp for the new object
     var res1 = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, res1);
-    console.log(rotateX, res1, frame.temp);
-    realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
+    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix,frame.temp);
     console.log('temp', frame.temp);
     frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
     

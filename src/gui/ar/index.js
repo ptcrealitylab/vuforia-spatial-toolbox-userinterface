@@ -89,7 +89,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         0, 0, 2, 0,
         0, 0, 0, 1
     ];
-
+    
     var corX = 0;
     var corY = 0;
 

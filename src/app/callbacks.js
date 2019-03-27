@@ -185,10 +185,6 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         
         for (var objectKey in visibleObjects) {
             if (!visibleObjects.hasOwnProperty(objectKey)) continue;
-            // TODO: infer if it is in mm or meter scale and only multiply by 1000 if needs it
-            visibleObjects[objectKey][14] *= this.mmToMeterScale;
-            visibleObjects[objectKey][13] *= this.mmToMeterScale;
-            visibleObjects[objectKey][12] *= this.mmToMeterScale;
         }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
@@ -207,6 +203,10 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
         realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
+        var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
+        var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
+
+        realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
     }
 };
 

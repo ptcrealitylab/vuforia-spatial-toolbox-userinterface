@@ -507,8 +507,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
 
         // multiply (marker modelview) * (projection) * (screen rotation) * (vehicle.matrix) * (transformation)
 
-        utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, tempResMatrix);
-        utilities.multiplyMatrix(rotateX, tempResMatrix, activeObjectMatrix);
+        utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, activeObjectMatrix);
         
         var finalMatrix = [];
         if (typeof ghostPosition.matrix !== 'undefined' && ghostPosition.matrix.length === 16) {

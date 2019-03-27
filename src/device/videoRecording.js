@@ -209,8 +209,7 @@ createNameSpace("realityEditor.device.videoRecording");
         
         // recompute frame.temp for the new object
         var res1 = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(objectMatrix, globalStates.projectionMatrix, res1);
-        realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, res1, frame.temp);
+        realityEditor.gui.ar.utilities.multiplyMatrix(objectMatrix, globalStates.projectionMatrix, frame.temp);
         frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
         
         // compute frame.matrix based on new object

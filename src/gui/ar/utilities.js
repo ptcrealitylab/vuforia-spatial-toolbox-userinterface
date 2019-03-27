@@ -643,8 +643,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
         var draw = realityEditor.gui.ar.draw;
         var activeObjectMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, draw.matrix.r);
-        realityEditor.gui.ar.utilities.multiplyMatrix(draw.rotateX, draw.matrix.r, activeObjectMatrix);
+        realityEditor.gui.ar.utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, activeObjectMatrix);
 
         // console.log(activeObjectMatrix);
         
@@ -1309,11 +1308,9 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
         0, 0, 1, 0,
         obj.x, obj.y, 0, 1
     ];
-
-    this.multiplyMatrix(realityEditor.gui.ar.draw.rotateX, matrix, intermediateMatrix2);
-
+    
     if (obj.matrix.length < 13) {
-        this.multiplyMatrix(possitionMatrix, intermediateMatrix2, correctedMatrix);
+        this.multiplyMatrix(possitionMatrix, matrix, correctedMatrix);
 
     } else {
         this.multiplyMatrix(obj.matrix, matrix, intermediateMatrix);
