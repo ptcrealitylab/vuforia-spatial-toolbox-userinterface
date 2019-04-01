@@ -41,6 +41,7 @@
         interface : "gui",
         version: 170,
         moveDelay: 400,
+        visibilityDistance: 2.0,
         eventObject : {
             version : null,
             object: null,
@@ -490,6 +491,24 @@
                     frame: realityObject.frame,
                     object: realityObject.object,
                     moveDelay : delayInMilliseconds
+                }), '*');
+            }
+        };
+
+        /**
+         * set the distance a frame is visible in space.
+         * @param {number} distance in meter
+         */
+        this.setVisibilityDistance = function(distance) {
+            realityObject.visibilityDistance = distance;
+
+            if (realityObject.object && realityObject.frame) {
+                parent.postMessage(JSON.stringify({
+                    version: realityObject.version,
+                    node: realityObject.node,
+                    frame: realityObject.frame,
+                    object: realityObject.object,
+                    visibilityDistance : distance
                 }), '*');
             }
         };

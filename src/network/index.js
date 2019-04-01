@@ -1416,6 +1416,15 @@ if (thisFrame) {
         }
     }
 
+    if (typeof msgContent.visibilityDistance !== "undefined") {
+
+        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+
+        activeVehicle.visibilityDistance = msgContent.visibilityDistance;
+        console.log('visibility distance for ' + activeVehicle.name + ' is set to ' + activeVehicle.visibilityDistance);
+
+    }
+
     if (typeof msgContent.moveDelay !== "undefined") {
         
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
