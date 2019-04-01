@@ -86,6 +86,7 @@ realityEditor.gui.ar.draw.nodeCalculations = {
  * @type {{temp: number[], begin: number[], end: number[], r: number[], r2: number[], r3: number[]}}
  */
 realityEditor.gui.ar.draw.matrix = {
+    worldReference: null,
     temp: [
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -117,6 +118,20 @@ realityEditor.gui.ar.draw.matrix = {
         0, 0, 0, 1
     ],
     r3 :[
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]
+};
+realityEditor.gui.ar.draw.tempMatrix = {
+    worldOffset :[
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    objectOffset :[
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
@@ -214,7 +229,8 @@ realityEditor.gui.ar.draw.updateLoop = function () {
  * @param {Array.<number>} originalCameraMatrix
  */
 function correctCameraMatrix(originalCameraMatrix) {
-    
+    return realityEditor.gui.ar.draw.correctedCameraMatrix;
+    /*
     try {
         var rotationMatrix = realityEditor.gui.ar.utilities.extractRotation(originalCameraMatrix, true, true, false);
         var translationMatrix = realityEditor.gui.ar.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix), false, true, true);
@@ -225,7 +241,7 @@ function correctCameraMatrix(originalCameraMatrix) {
         
     } catch (e) {
         console.warn('error correcting camera matrix', originalCameraMatrix);
-    }
+    }*/
 }
 
 // function calculateModelViewMatrix(modelMatrix, cameraMatrix) {
@@ -249,7 +265,7 @@ function correctCameraMatrix(originalCameraMatrix) {
 //
 //     return modelViewMatrix;
 // }
-
+/*
 var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
     var modelViewMatrix = [];
     // modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix));
@@ -281,7 +297,7 @@ var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
     modelViewMatrix = cameraMatrix;
     
     return modelViewMatrix;
-};
+};*/
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
@@ -349,7 +365,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             
             if (this.activeObject.isWorldObject) {
                 // don't start rendering world frames until we've received a valid camera matrix
-                if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.cameraMatrix)) {
+                if (realityEditor.gui.ar.utilities.isIdentityMatrix(this.correctedCameraMatrix)) {
                     continue;
                 }
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
@@ -1358,7 +1374,16 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
                         thisMsg.groundPlaneMatrix = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(this.groundPlaneMatrix, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
+                        
+                      /*  if(this.visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
+                            this.matrix.worldReference = this.visibleObjects["WorldReferenceXXXXXXXXXXXX"];
+                            this.tempMatrix.grndpln =[];
+                            realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.worldReference, this.tempMatrix.grndpln);
+                            realityEditor.gui.ar.utilities.multiplyMatrix( this.tempMatrix.grndpln, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
+
+                        } else {*/
+                            realityEditor.gui.ar.utilities.multiplyMatrix(this.groundPlaneMatrix, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
+                        //}
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {

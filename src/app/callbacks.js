@@ -180,7 +180,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     if (!globalStates.freezeButtonState) {
         // scale x, y, and z elements of matrix for mm to meter conversion ratio
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
-            visibleObjects[worldObjectKey] = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
+            visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
         });
         
         for (var objectKey in visibleObjects) {
@@ -202,7 +202,7 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
    // console.log("receiveCameraMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
+      //  realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
         var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
         var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
 
