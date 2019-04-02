@@ -1420,7 +1420,7 @@ if (thisFrame) {
 
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
-        activeVehicle.visibilityDistance = msgContent.visibilityDistance;
+        activeVehicle.distanceScale = msgContent.visibilityDistance;
         console.log('visibility distance for ' + activeVehicle.name + ' is set to ' + activeVehicle.visibilityDistance);
 
     }
