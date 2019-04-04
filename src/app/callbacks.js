@@ -106,10 +106,10 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 realityEditor.app.callbacks.onExternalState = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; };
     savedState = JSON.parse(savedState);
-    console.log('saved external text = ', savedState);
-    if (savedState && savedState !== window.location.host) {
-        realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: savedState});
-        console.log('realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: savedState});');
+    console.log('loaded external interface URL = ', savedState);
+
+    if (savedState) {
+        globalStates.externalState = savedState;
     }
 };
 
