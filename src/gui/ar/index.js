@@ -66,6 +66,19 @@ createNameSpace("realityEditor.gui.ar");
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     
+  /*  if (matrix[8] < 0) {
+        matrix[8] *= -1;
+    }
+    if (matrix[9] < 0) {
+        matrix[9] *= -1;
+    }
+    if (matrix[10] < 0) {
+        matrix[10] *= -1;
+    }
+    if (matrix[11] < 0) {
+        matrix[11] *= -1;
+    }*/
+
     if (realityEditor.device.utilities.isDesktop()) {
         globalStates.realProjectionMatrix = matrix;
         globalStates.projectionMatrix = matrix;
@@ -81,18 +94,11 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         globalStates.projectionMatrix = matrix;
         return;
     }
-
-    //  generate all transformations for the object that needs to be done ASAP
-    var scaleZ = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 2, 0,
-        0, 0, 0, 1
-    ];
     
     var corX = 0;
     var corY = 0;
-
+    var scaleAdjusting = 1;
+    
     // iPhone 5(GSM), iPhone 5 (GSM+CDMA)
     if (globalStates.device === "iPhone5,1" || globalStates.device === "iPhone5,2") {
         corX = 0;
@@ -138,7 +144,14 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         corX = -0.3;
         corY = -1.5;
     }
-
+    // iPhone 8
+    if (globalStates.device === "iPhone10,1") {
+        corX = 1;
+        corY = -5;
+        console.log("------------------------------------");
+        scaleAdjusting = 0.84;
+    }
+    
     // iPad
     if (globalStates.device === "iPad1,1") {
         // not yet tested todo add values
@@ -187,12 +200,20 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     if (globalStates.device === "iPad6,7") {
         // TODO: make any small corrections if needed
     }
+
+    //  generate all transformations for the object that needs to be done ASAP
+    var scaleZ = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0,  2, 0,
+        0, 0, 0, 1
+    ];
     
     var viewportScaling = [
         globalStates.height, 0, 0, 0,
         0, -1 * globalStates.width, 0, 0,
         0, 0, 1, 0,
-        corX, corY, 0, 1
+        0, 0, 0, 1
     ];
  
     // changes for iPhoneX
@@ -209,6 +230,10 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
+
+  /*  globalStates.projectionMatrix[12] *=  1000;
+    globalStates.projectionMatrix[13] *=  1000;
+    globalStates.projectionMatrix[14] *=  1000;*/
 
 };
 

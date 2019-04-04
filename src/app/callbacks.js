@@ -171,9 +171,22 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
 
+realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
+    console.log(deviceName);
+    globalStates.device = deviceName;
+    console.log("The Reality Editor is loaded on a " + globalStates.device);
+    cout("setDeviceName");
+};
+
 //this is speeding things up always! Because the scope for searching this variable becomes smaller.
 realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+
+
+    if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
+        realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
+    }
+    
    // console.log(visibleObjects);
     //console.log("receiveMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
@@ -203,10 +216,21 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
       //  realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
-        var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
+     //   var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
+      //  var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
+ 
+      //  realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
 
-        realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
+      //  cameraMatrix
+
+        var rotatezz = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ];
+       realityEditor.gui.ar.utilities.multiplyMatrix(rotatezz, cameraMatrix,  realityEditor.gui.ar.draw.correctedCameraMatrix);
+       
     }
 };
 
@@ -219,7 +243,13 @@ realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPl
     // console.log("receiveGroundPlaneMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        realityEditor.gui.ar.draw.groundPlaneMatrix = groundPlaneMatrix;
+        if(realityEditor.gui.ar.draw.worldCorrection === null) {
+            realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+        } else {
+            var matrix = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix( realityEditor.gui.ar.draw.rotateX, realityEditor.gui.ar.draw.worldCorrection, matrix);
+            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+        }
     }
 };
 

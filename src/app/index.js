@@ -58,7 +58,7 @@ createNameSpace("realityEditor.app");
  * @param {FunctionName} callBack
  */
 realityEditor.app.getDeviceReady = function(callBack) {
-    this.appFunctionCall('getDeviceReady', null, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getDeviceReady', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**

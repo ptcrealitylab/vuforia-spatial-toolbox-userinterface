@@ -211,6 +211,8 @@ realityEditor.gui.ar.draw.groundPlaneMatrix = [
     0, 0, 0, 1
 ];
 
+realityEditor.gui.ar.draw.worldCorrection = null;
+
 /**
  * Main update loop.
  * A wrapper for the real realityEditor.gui.ar.draw.update update function.
@@ -1373,7 +1375,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
-                        thisMsg.groundPlaneMatrix = [];
+                        thisMsg.groundPlaneMatrix = this.groundPlaneMatrix;
                         
                       /*  if(this.visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
                             this.matrix.worldReference = this.visibleObjects["WorldReferenceXXXXXXXXXXXX"];
@@ -1382,7 +1384,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             realityEditor.gui.ar.utilities.multiplyMatrix( this.tempMatrix.grndpln, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
 
                         } else {*/
-                            realityEditor.gui.ar.utilities.multiplyMatrix(this.groundPlaneMatrix, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
+                           // realityEditor.gui.ar.utilities.multiplyMatrix(this.groundPlaneMatrix, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
                         //}
                     }
 

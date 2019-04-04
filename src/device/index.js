@@ -1434,11 +1434,6 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
  * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
  * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
  */
-realityEditor.device.setDeviceName = function(deviceName) {
-    globalStates.device = deviceName;
-    console.log("The Reality Editor is loaded on a " + globalStates.device);
-    cout("setDeviceName");
-};
 
 /**
  * Sets the persistent global settings of the Reality Editor based on the state saved in iOS storage.
