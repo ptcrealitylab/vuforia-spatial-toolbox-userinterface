@@ -172,7 +172,7 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
  */
 
 realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
-    console.log(deviceName);
+    console.log(deviceName)
     globalStates.device = deviceName;
     console.log("The Reality Editor is loaded on a " + globalStates.device);
     cout("setDeviceName");
@@ -185,6 +185,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
+        delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
     
    // console.log(visibleObjects);
@@ -216,21 +217,10 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
       //  realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
-     //   var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-      //  var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
- 
-      //  realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
+        var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
+        var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
 
-      //  cameraMatrix
-
-        var rotatezz = [
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ];
-       realityEditor.gui.ar.utilities.multiplyMatrix(rotatezz, cameraMatrix,  realityEditor.gui.ar.draw.correctedCameraMatrix);
-       
+        realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
     }
 };
 

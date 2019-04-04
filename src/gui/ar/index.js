@@ -66,7 +66,10 @@ createNameSpace("realityEditor.gui.ar");
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     
-  /*  if (matrix[8] < 0) {
+    if (matrix[5] < 0) {
+        matrix[5] *= -1;
+    }
+    if (matrix[8] < 0) {
         matrix[8] *= -1;
     }
     if (matrix[9] < 0) {
@@ -77,7 +80,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     }
     if (matrix[11] < 0) {
         matrix[11] *= -1;
-    }*/
+    }
 
     if (realityEditor.device.utilities.isDesktop()) {
         globalStates.realProjectionMatrix = matrix;
@@ -213,7 +216,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         globalStates.height, 0, 0, 0,
         0, -1 * globalStates.width, 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1
+        corX, corY, 0, 1
     ];
  
     // changes for iPhoneX
@@ -230,10 +233,6 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
-
-  /*  globalStates.projectionMatrix[12] *=  1000;
-    globalStates.projectionMatrix[13] *=  1000;
-    globalStates.projectionMatrix[14] *=  1000;*/
 
 };
 
