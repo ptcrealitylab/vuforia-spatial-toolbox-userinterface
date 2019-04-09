@@ -841,7 +841,7 @@ realityEditor.network.onAction = function (action) {
             // this.getData(url, id, function (req, thisKey) {
             _this.cout('received memory', res.memory);
             objects[objectKey].memory = res.memory;
-            _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
+            // _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
     }
     

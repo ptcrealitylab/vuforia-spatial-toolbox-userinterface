@@ -284,8 +284,28 @@ MemoryContainer.prototype.onPointerUp = function() {
         clearTimeout(this.dragTimer);
         this.dragTimer = null;
     }
-
+    
     if (activeThumbnail) {
+
+        // var objId = potentialObjects[0];
+        barContainers.forEach(function(container) {
+            if (container.memory && container.memory.id === currentMemory.id) {
+                container.clear();
+            }
+        });
+
+        // pendingMemorizations[objId || ''] = this;
+
+        // realityEditor.app.memorize();
+        // TODO: upload to server
+        
+        event.stopPropagation();
+
+        // addObjectMemory(realityEditor.getObject(currentMemory.id));
+        // this.set(realityEditor.getObject(currentMemory.id));
+
+        realityEditor.gui.menus.switchToMenu("main");
+
         if (!this.image) {
             this.createImage();
         }
@@ -295,32 +315,52 @@ MemoryContainer.prototype.onPointerUp = function() {
         overlayDiv.classList.remove('overlayMemory');
         overlayDiv.style.display = 'none';
         activeThumbnail = '';
-        var potentialObjects = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
-        if (potentialObjects.length !== 1) {
-            console.warn('Memorization attempted with multiple objects');
-        } else {
-            var objId = potentialObjects[0];
-            barContainers.forEach(function(container) {
-                if (container.memory && container.memory.id === objId) {
-                    container.clear();
-                }
-            });
 
-            pendingMemorizations[objId || ''] = this;
-            
-            // realityEditor.app.memorize();
-            // TODO: upload to server
-            
-            
-            event.stopPropagation();
-        }
-        realityEditor.gui.menus.switchToMenu("main");
-      //  realityEditor.gui.pocket.pocketOnMemoryCreationStop();
+        this.set(realityEditor.getObject(currentMemory.id));
+        
     } else if (this.dragging) {
         return;
     } else {
         this.remember();
     }
+    
+    //
+    // if (activeThumbnail) {
+    //     if (!this.image) {
+    //         this.createImage();
+    //     }
+    //     this.image.src = activeThumbnail;
+    //
+    //     overlayDiv.style.backgroundImage = 'none';
+    //     overlayDiv.classList.remove('overlayMemory');
+    //     overlayDiv.style.display = 'none';
+    //     activeThumbnail = '';
+    //     var potentialObjects = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
+    //     if (potentialObjects.length !== 1) {
+    //         console.warn('Memorization attempted with multiple objects');
+    //     } else {
+    //         var objId = potentialObjects[0];
+    //         barContainers.forEach(function(container) {
+    //             if (container.memory && container.memory.id === objId) {
+    //                 container.clear();
+    //             }
+    //         });
+    //
+    //         pendingMemorizations[objId || ''] = this;
+    //
+    //         // realityEditor.app.memorize();
+    //         // TODO: upload to server
+    //
+    //
+    //         event.stopPropagation();
+    //     }
+    //     realityEditor.gui.menus.switchToMenu("main");
+    //   //  realityEditor.gui.pocket.pocketOnMemoryCreationStop();
+    // } else if (this.dragging) {
+    //     return;
+    // } else {
+    //     this.remember();
+    // }
 };
 
 MemoryContainer.prototype.onPointerEnter = function() {
@@ -479,10 +519,12 @@ function createMemory() {
     // realityEditor.app.getScreenshot("L", "realityEditor.app.callbacks.uploadMemory");
 
     realityEditor.app.getScreenshot("L", "realityEditor.gui.memory.receiveScreenshot");
-    realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotMemory");
+    realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
     
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
     currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
+    
+    addKnownObject(currentMemory.id);
 
     realityEditor.gui.menus.switchToMenu("bigPocket");
    // realityEditor.gui.pocket.pocketOnMemoryCreationStart();
@@ -502,6 +544,10 @@ function receiveScreenshotThumbnail(base64String) {
 
     currentMemory.thumbnailImage = blob;
     currentMemory.thumbnailImageUrl = blobUrl;
+    
+    receiveThumbnail(currentMemory.thumbnailImageUrl);
+
+    uploadImageToServer(currentMemory.thumbnailImage);
 }
 
 function receiveThumbnail(thumbnailUrl) {
@@ -509,6 +555,8 @@ function receiveThumbnail(thumbnailUrl) {
         overlayDiv.style.backgroundImage = url(thumbnailUrl);
         activeThumbnail = thumbnailUrl;
     }
+    
+    
 }
 
 function addObjectMemory(obj) {
@@ -564,7 +612,11 @@ function getMemoryWithId(id) {
 
 function memoryCanCreate() {
     // Exactly one visible object
-    if (Object.keys(realityEditor.gui.ar.draw.visibleObjects).length !== 1) {
+    
+    var visibleObjectKeys = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
+    visibleObjectKeys.splice(visibleObjectKeys.indexOf('_WORLD_OBJECT_local'), 1); // remove the local world object, its server cant support memories
+    
+    if (visibleObjectKeys.length !== 1) {
         return false;
     }
     if (globalStates.freezeButtonState) {
@@ -589,6 +641,38 @@ function memoryCanCreate() {
     //     return true;
     // }
     return false;
+}
+
+function uploadImageToServer() {
+    // Create a new FormData object.
+    var formData = new FormData();
+    formData.append('memoryThumbnailImage', currentMemory.thumbnailImage);
+    formData.append('memoryImage', currentMemory.image);
+    formData.append('memoryInfo', JSON.stringify(currentMemory.matrix));
+
+    // Set up the request.
+    var xhr = new XMLHttpRequest();
+
+    var postUrl = 'http://' + objects[currentMemory.id].ip + ':' + httpPort + '/object/' + currentMemory.id + "/memory";
+
+    // Open the connection.
+    xhr.open('POST', postUrl, true);
+
+    // Set up a handler for when the request finishes.
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            // File(s) uploaded.
+            console.log('successful upload');
+            setTimeout(function() {
+                console.log('successfully uploaded thumbnail image to server');
+            }, 1000);
+        } else {
+            console.log('error uploading');
+        }
+    };
+
+    // Send the Data.
+    xhr.send(formData);
 }
 
 exports.initMemoryBar = initMemoryBar;

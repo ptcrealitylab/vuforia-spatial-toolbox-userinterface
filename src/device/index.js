@@ -1030,9 +1030,23 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
-                // realityEditor.gui.menus.switchToMenu("bigPocket");
-                // realityEditor.gui.memory.createMemory(); // TODO: implement memories and re-enable then
 
+                if (!globalStates.groupingEnabled) {
+                    
+                    // try only doing it for double taps now....
+                    if (!this.isDoubleTap) { // on first tap
+                        this.isDoubleTap = true;
+                        // if no follow up tap within time reset
+                        setTimeout(function() {
+                            this.isDoubleTap = false;
+                        }.bind(this), 300);
+                    } else { // registered double tap and create memory
+                        realityEditor.gui.menus.switchToMenu("bigPocket");
+                        realityEditor.gui.memory.createMemory();
+                    }
+
+                }
+                
             }
         }
     }

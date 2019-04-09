@@ -620,7 +620,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
     if (this.isObjectWithNoFramesVisible) {
         var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
-        if (closestObject) {
+        if (closestObject && !closestObject.isWorldObject) {
             var delay = closestObject.isWorldObject ? 1000 : 500;
             if (!visibleObjectTapInterval || delay !== visibleObjectTapDelay) {
                 // tap once, immediately
