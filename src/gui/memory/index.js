@@ -70,6 +70,7 @@ try {
 var currentMemory = {
     id: null,
     matrix: null,
+    cameraMatrix: null,
     image: null,
     thumbnailImage: null,
     imageUrl: null,
@@ -116,17 +117,18 @@ MemoryContainer.prototype.set = function(obj) {
     
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
     
-    var objectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    var objectMatrix = obj.memory || realityEditor.gui.ar.utilities.newIdentityMatrix();
     
-    if (obj.memory && obj.memory.matrix) {
-        objectMatrix = obj.memory.matrix;
-    }
+    // if (obj.memory && obj.memory.matrix) {
+    //     objectMatrix = obj.memory.matrix;
+    // }
 
     this.memory = {
         id: obj.objectId,
         image: image,
         thumbnail: thumbnail,
-        matrix: objectMatrix //obj.memory.matrix
+        matrix: objectMatrix, //obj.memory.matrix
+        cameraMatrix: realityEditor.gui.ar.draw.correctedCameraMatrix
     };
     this.element.dataset.objectId = this.memory.id;
 
@@ -439,6 +441,10 @@ MemoryContainer.prototype.remember = function() {
 
     realityEditor.gui.menus.switchToMenu('main', ['freeze'], null);
     globalStates.freezeButtonState = true;
+
+    realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
+    realityEditor.gui.ar.draw.visibleObjectsCopy[this.memory.id] = this.memory.matrix;
+    realityEditor.gui.ar.draw.visibleObjects[this.memory.id] = this.memory.matrix;
 };
 
 MemoryContainer.prototype.remove = function() {
@@ -523,6 +529,7 @@ function createMemory() {
     
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
     currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
+    currentMemory.cameraMatrix = realityEditor.gui.ar.draw.correctedCameraMatrix;
     
     addKnownObject(currentMemory.id);
 
@@ -649,6 +656,7 @@ function uploadImageToServer() {
     formData.append('memoryThumbnailImage', currentMemory.thumbnailImage);
     formData.append('memoryImage', currentMemory.image);
     formData.append('memoryInfo', JSON.stringify(currentMemory.matrix));
+    formData.append('memoryCameraInfo', JSON.stringify(currentMemory.cameraMatrix));
 
     // Set up the request.
     var xhr = new XMLHttpRequest();

@@ -1182,7 +1182,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 ];
 
                 if (globalStates.editingMode || thisIsBeingEdited) {
-                    console.log("test");
                     // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
                     var svg = globalDOMCache["svg" + activeKey];
                     if (svg.children.length === 0) {
