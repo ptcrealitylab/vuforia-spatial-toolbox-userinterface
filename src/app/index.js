@@ -552,37 +552,6 @@ realityEditor.app.getExternalText = function(callback) {
  ************** ADDITIONAL ROUTES ****************
  */
 
-/**
- * Save the background image for a memory.
- * @todo: fully understand the how this and "remember" and "createMemory" interact
- */
-realityEditor.app.memorize = function() {
-    this.appFunctionCall("memorize", null, null);
-};
-
-/**
- * Create a new memory in the native app.
- * @todo: fully understand the how this and "remember" and "memorize" interact
- */
-realityEditor.app.createMemory = function() {
-    this.appFunctionCall("createMemory", null, null);
-};
-
-/**
- * Save an object's matrix in a memory.
- * @param {string} memoryId
- * @param {Array.<number>} memoryMatrix
- * @todo: fully understand the how this and "memorize" and "createMemory" interact
- */
-realityEditor.app.remember = function(memoryId, memoryMatrix) {
-
-    var memoryData = JSON.stringify(
-        {id: memoryId, matrix: memoryMatrix}
-    );
-    
-    this.appFunctionCall("remember", {dataStr: memoryData}, null);
-};
-
 realityEditor.app.authenticateTouch = function() {
     realityEditor.app.appFunctionCall("authenticateTouch", null, null);
 };

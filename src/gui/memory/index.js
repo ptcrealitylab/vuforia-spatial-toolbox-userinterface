@@ -297,9 +297,6 @@ MemoryContainer.prototype.onPointerUp = function() {
         });
 
         // pendingMemorizations[objId || ''] = this;
-
-        // realityEditor.app.memorize();
-        // TODO: upload to server
         
         event.stopPropagation();
 
@@ -325,44 +322,6 @@ MemoryContainer.prototype.onPointerUp = function() {
     } else {
         this.remember();
     }
-    
-    //
-    // if (activeThumbnail) {
-    //     if (!this.image) {
-    //         this.createImage();
-    //     }
-    //     this.image.src = activeThumbnail;
-    //
-    //     overlayDiv.style.backgroundImage = 'none';
-    //     overlayDiv.classList.remove('overlayMemory');
-    //     overlayDiv.style.display = 'none';
-    //     activeThumbnail = '';
-    //     var potentialObjects = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
-    //     if (potentialObjects.length !== 1) {
-    //         console.warn('Memorization attempted with multiple objects');
-    //     } else {
-    //         var objId = potentialObjects[0];
-    //         barContainers.forEach(function(container) {
-    //             if (container.memory && container.memory.id === objId) {
-    //                 container.clear();
-    //             }
-    //         });
-    //
-    //         pendingMemorizations[objId || ''] = this;
-    //
-    //         // realityEditor.app.memorize();
-    //         // TODO: upload to server
-    //
-    //
-    //         event.stopPropagation();
-    //     }
-    //     realityEditor.gui.menus.switchToMenu("main");
-    //   //  realityEditor.gui.pocket.pocketOnMemoryCreationStop();
-    // } else if (this.dragging) {
-    //     return;
-    // } else {
-    //     this.remember();
-    // }
 };
 
 MemoryContainer.prototype.onPointerEnter = function() {
@@ -437,8 +396,6 @@ MemoryContainer.prototype.remember = function() {
         memoryBackground.appendChild(this.backgroundImage);
     }
     
-    realityEditor.app.remember(this.memory.id, this.memory.matrix);
-
     realityEditor.gui.menus.switchToMenu('main', ['freeze'], null);
     globalStates.freezeButtonState = true;
 
@@ -517,13 +474,9 @@ function removeMemoryBar() {
 
 function createMemory() {
     overlayDiv.classList.add('overlayMemory');
-    // realityEditor.app.createMemory();
 
     console.log('create memory');
     
-    // TODO: don't put the entire upload process here... just populate image and thumbnailImage 
-    // realityEditor.app.getScreenshot("L", "realityEditor.app.callbacks.uploadMemory");
-
     realityEditor.app.getScreenshot("L", "realityEditor.gui.memory.receiveScreenshot");
     realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
     
