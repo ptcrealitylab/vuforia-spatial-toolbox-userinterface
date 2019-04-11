@@ -223,7 +223,7 @@ realityEditor.app.downloadFile = function(fileName, callBack) {
  * @param {FunctionName} callBack
  */
 realityEditor.app.getFilesExist = function (fileNameArray, callBack) {
-    this.appFunctionCall('getFilesExist', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('getFilesExist', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**

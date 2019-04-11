@@ -51,6 +51,9 @@ createNameSpace("realityEditor.app.callbacks");
  */
 var targetDownloadStates = {};
 
+var temporaryChecksumMap = {};
+var temporaryHeartbeatMap = {};
+
 /**
  * @typedef {Readonly<{NOT_STARTED: number, STARTED: number, FAILED: number, SUCCEEDED: number}>} DownloadState
  */
@@ -165,24 +168,26 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
 };
 
 /**
- * Callback for realityEditor.app.getMatrixStream
- * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
- * Stores those matrices in the draw module to be rendered in the next draw frame
- * @param {Object.<string, Array.<number>>} visibleObjects
+ * Callback returning the native device name, which can be used to adjust the UI based on the phone/device type
+ * @param {string} deviceName
  */
-
 realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
-    console.log(deviceName)
+    console.log(deviceName);
     globalStates.device = deviceName;
     console.log("The Reality Editor is loaded on a " + globalStates.device);
     cout("setDeviceName");
 };
 
+/**
+ * Callback for realityEditor.app.getMatrixStream
+ * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
+ * Stores those matrices in the draw module to be rendered in the next draw frame
+ * @param {Object.<string, Array.<number>>} visibleObjects
+ */
 //this is speeding things up always! Because the scope for searching this variable becomes smaller.
 realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
-
-
+    
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
@@ -257,8 +262,12 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
     var objectID = objectHeartbeat.id;
     var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
     
-    // updateObjectNameToIDMap(objectName, objectID);
-    
+    temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
+
+    var newChecksum = objectHeartbeat.tcs;
+    if (newChecksum === 'null') { newChecksum = null; }
+    temporaryChecksumMap[objectHeartbeat.id] = newChecksum;
+
     var needsXML = true;
     var needsDAT = true;
     
@@ -279,12 +288,35 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
             MARKER_ADDED: DownloadState.NOT_STARTED
         };
     }
+
+    // don't download again if already stored the same checksum version
+    var storedChecksum = window.localStorage.getItem('realityEditor.objectChecksums.'+objectID);
+    if (storedChecksum) {
+        console.log('previously downloaded files for ' + objectID + ' with checksum ' + storedChecksum);
+        console.log('new checksum is ' + newChecksum);
+        if (newChecksum === storedChecksum) {
+            // check that the files still exist in the app's temporary storage
+            var xmlFileName = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
+            var datFileName = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
+
+            realityEditor.app.getFilesExist([xmlFileName, datFileName], 'realityEditor.app.callbacks.doTargetFilesExist');
+            return;
+        }
+    }
+
+    console.log('no matching checksum. download fresh target files (needs XML? ' + needsXML + ') (needs DAT? ' + needsDAT + ')');
+    continueDownload(objectID, objectHeartbeat, needsXML, needsDAT);
+
+};
+
+function continueDownload(objectID, objectHeartbeat, needsXML, needsDAT) {
     
     if (!needsXML && !needsDAT) {
         return;
     }
-    
-    console.log(objectHeartbeat);
+
+    console.log('continue download for ' + objectHeartbeat);
+    var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
 
     // downloads the vuforia target.xml file if it doesn't have it yet
     if (needsXML) {
@@ -292,58 +324,54 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
         realityEditor.app.downloadFile(xmlAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
         targetDownloadStates[objectID].XML = DownloadState.STARTED;
     }
-    
+
     // downloads the vuforia target.dat file it it doesn't have it yet
     if (needsDAT) {
         var datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
         realityEditor.app.downloadFile(datAddress, 'realityEditor.app.callbacks.onTargetFileDownloaded');
         targetDownloadStates[objectID].DAT = DownloadState.STARTED;
     }
-
-};
-
-/*
-var objectNameToIDMap = {};
-
-function updateObjectNameToIDMap(objectName, objectID) {
-    if (typeof objectNameToIDMap[objectName] === 'undefined') {
-        objectNameToIDMap[objectName] = objectID;
-    } else {
-        if (typeof objectNameToIDMap[objectName] === 'string') {
-            if (objectNameToIDMap[objectName].indexOf(objectID) < 0) {
-                objectNameToIDMap[objectName] = [objectNameToIDMap[objectName]]; // turn it into an array
-                objectNameToIDMap[objectName].push(objectID);
-            }
-        }
-    }
 }
 
-function getObjectIDFromName(objectName, inDownloadState, fileType) {
-    if (typeof objectNameToIDMap[objectName] === 'string') {
-        return objectNameToIDMap[objectName];
-    } else if (typeof objectNameToIDMap[objectName] !== 'undefined') {
-        var possibleObjectIDs = objectNameToIDMap[objectName];
-        var match = possibleObjectIDs[0];
+/**
+ * 
+ * @param {boolean} success
+ * @param {Array.<string>} fileNameArray
+ */
+realityEditor.app.callbacks.doTargetFilesExist = function(success, fileNameArray) {
+    console.log('doTargetFilesExist', success, fileNameArray);
+    
+    if (fileNameArray.length > 0) {
+        var objectID = getObjectIDFromFilename(fileNameArray[0]);
+        var heartbeat = temporaryHeartbeatMap[objectID];
         
-        if (inDownloadState && fileType) {
-            possibleObjectIDs.forEach(function(objectID) {
-                try {
-                    if (targetDownloadStates[objectID][fileType] === inDownloadState) {
-                        match = objectID;
-                    }
-                } catch (e) {
-                    console.warn('that file type doesnt exist for that objectID', objectID, fileType);
-                }
+        if (success) {
+            
+            // if the checksums match and we verified that the files exist, proceed without downloading
+            targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
+            targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
 
-            });
+            var xmlFileName = fileNameArray.filter(function(fileName) {
+                return fileName.indexOf('xml') > -1;
+            })[0];
+
+            realityEditor.app.addNewMarker(xmlFileName, 'realityEditor.app.callbacks.onMarkerAdded');
+            targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            
+        } else {
+
+            var needsXML = !(targetDownloadStates[objectID].XML === DownloadState.STARTED ||
+                targetDownloadStates[objectID].XML === DownloadState.SUCCEEDED);
+            
+            var needsDAT = !(targetDownloadStates[objectID].DAT === DownloadState.STARTED ||
+                targetDownloadStates[objectID].DAT === DownloadState.SUCCEEDED);
+            
+            continueDownload(objectID, heartbeat, needsXML, needsDAT);
         }
 
-        return match;
-    } else {
-        console.warn('couldnt find ID for object named ' + objectName);
     }
-}
-*/
+    
+};
 
 /**
  * Uses a combination of IP address and object name to locate the ID
@@ -401,6 +429,10 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
     if (hasXML && hasDAT && markerNotAdded) {
         realityEditor.app.addNewMarker(xmlFileName, 'realityEditor.app.callbacks.onMarkerAdded');
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+
+        if (temporaryChecksumMap[objectID]) {
+            window.localStorage.setItem('realityEditor.objectChecksums.'+objectID, temporaryChecksumMap[objectID]);
+        }
     }
 };
 
