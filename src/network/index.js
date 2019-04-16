@@ -1341,23 +1341,49 @@ if (thisFrame) {
     if (typeof msgContent.createNode !== "undefined") {
         var node = new Node();
         node.name = msgContent.createNode.name;
-        node.frame = msgContent.node;
-        var nodeKey = node.frame + msgContent.createNode.name;
-        var nodesIndex = 0;
-        var object = objects[msgContent.object];
-        for (var otherNodeKey in object.nodes) {
-            var otherNode = object.nodes[otherNodeKey];
-            if (otherNodeKey === nodeKey) {
-                break;
-            }
-            if (otherNode.frame === msgContent.node) {
-                nodesIndex += 1;
-            }
+        node.frameId = msgContent.frame;
+        node.objectId = msgContent.object;
+        var nodeKey = node.frameId + msgContent.createNode.name + realityEditor.device.utilities.uuidTime();
+        node.uuid = nodeKey;
+        var thisObject = realityEditor.getObject(msgContent.object);
+        var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        node.x = (msgContent.createNode.x) || (-200 + Math.random() * 400);
+        node.y = (msgContent.createNode.y) || (-200 + Math.random() * 400);
+        
+        if (msgContent.createNode.attachToGroundPlane) {
+            node.attachToGroundPlane = true;
         }
-        node.x = (tempThisObject.x || 0) + 200 * nodesIndex;
-        node.y = (tempThisObject.y || 0) + 200 * nodesIndex;
-        object.nodes[nodeKey] = node;
-        realityEditor.network.postNewNode(object.ip, msgContent.object, nodeKey, node);
+        
+        thisFrame.nodes[nodeKey] = node;
+        //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
+        realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
+    }
+    
+    if (typeof msgContent.resetNodes !== "undefined") {
+        
+        realityEditor.forEachNodeInFrame(msgContent.object, msgContent.frame, function(thisObjectKey, thisFrameKey, thisNodeKey) {
+            
+            // delete links to and from the node
+            realityEditor.forEachFrameInAllObjects(function(thatObjectKey, thatFrameKey) {
+                var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
+                Object.keys(thatFrame.links).forEach(function(linkKey) {
+                    var thisLink = thatFrame.links[linkKey];
+                    if (((thisLink.objectA === thisObjectKey) && (thisLink.frameA === thisFrameKey) && (thisLink.nodeA === thisNodeKey)) ||
+                        ((thisLink.objectB === thisObjectKey) && (thisLink.frameB === thisFrameKey) && (thisLink.nodeB === thisNodeKey))) {
+                        delete thatFrame.links[linkKey];
+                        realityEditor.network.deleteLinkFromObject(objects[thatObjectKey].ip, thatObjectKey, thatFrameKey, linkKey);
+                    }
+                });
+            });
+
+            // remove it from the DOM
+            realityEditor.gui.ar.draw.deleteNode(thisObjectKey, thisFrameKey, thisNodeKey);
+            realityEditor.gui.ar.draw.removeFromEditedNodesList(thisNodeKey);
+            // delete it from the server
+            realityEditor.network.deleteNodeFromObject(objects[thisObjectKey].ip, thisObjectKey, thisFrameKey, thisNodeKey);
+            
+        });
+
     }
 
     if (typeof msgContent.beginTouchEditing !== "undefined") {
