@@ -18,8 +18,8 @@ createNameSpace("realityEditor.network.realtime");
     function initFeature() {
         // TODO Is this redundant code? It seems to generate the error that pops up
         
-     //      mySocket = io.connect();
-      //  setupVehicleUpdateSockets();
+          mySocket = io.connect();
+       setupVehicleUpdateSockets();
         setupServerSockets();
         setInterval(setupServerSockets, 3000);
     }
