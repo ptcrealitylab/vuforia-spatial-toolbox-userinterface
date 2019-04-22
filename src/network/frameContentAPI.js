@@ -39,7 +39,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
      */
     function getMutablePointerEventCopy(event) {
         // we need to strip out the referenced DOM elements in order to JSON.stringify it
-        var keysToExclude = ['currentTarget', 'srcElement', 'target', 'view'];
+        var keysToExclude = ['currentTarget', 'srcElement', 'target', 'view', 'path'];
         var acyclicEventObject = copyObject(event, keysToExclude);
         return acyclicEventObject;
     }

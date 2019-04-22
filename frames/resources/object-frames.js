@@ -1048,8 +1048,8 @@
         }
         this.pendingSends = [];
     };
-    
-    window.onload = function() {
+
+    window.addEventListener('load', function() {
 
         window.addEventListener('message', function (msg) {
             
@@ -1110,7 +1110,7 @@
                 }), '*');
             }
         });
-    };
+    });
 
     function isDesktop() {
         return window.navigator.userAgent.indexOf('Mobile') === -1 || window.navigator.userAgent.indexOf('Macintosh') > -1;

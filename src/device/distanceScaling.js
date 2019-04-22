@@ -96,7 +96,7 @@ createNameSpace("realityEditor.device.distanceScaling");
      * @param {{event: object}} params
      */
     function onDocumentMultiTouchStart(params) {
-        console.log(params.event);
+        // console.log(params.event);
 
         if (params.event.touches.length === 3) {
             var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
@@ -116,7 +116,7 @@ createNameSpace("realityEditor.device.distanceScaling");
      * @param {{event: object}} params
      */
     function onDocumentMultiTouchEnd(params) {
-        console.log(params.event);
+        // console.log(params.event);
         // if (params.event.touches.length < 3) {
         isScalingDistance = false;
         // }
