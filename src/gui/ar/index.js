@@ -65,22 +65,6 @@ createNameSpace("realityEditor.gui.ar");
  * @param {Array.<number>} matrix - a 4x4 projection matrix
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
-    
-    if (matrix[5] < 0) {
-        matrix[5] *= -1;
-    }
-    if (matrix[8] < 0) {
-        matrix[8] *= -1;
-    }
-    if (matrix[9] < 0) {
-        matrix[9] *= -1;
-    }
-    if (matrix[10] < 0) {
-        matrix[10] *= -1;
-    }
-    if (matrix[11] < 0) {
-        matrix[11] *= -1;
-    }
 
     if (realityEditor.device.utilities.isDesktop()) {
         globalStates.realProjectionMatrix = matrix;
@@ -96,6 +80,22 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         globalStates.realProjectionMatrix = matrix;
         globalStates.projectionMatrix = matrix;
         return;
+    }
+    
+    if (matrix[5] < 0) {
+        matrix[5] *= -1;
+    }
+    if (matrix[8] < 0) {
+        matrix[8] *= -1;
+    }
+    if (matrix[9] < 0) {
+        matrix[9] *= -1;
+    }
+    if (matrix[10] < 0) {
+        matrix[10] *= -1;
+    }
+    if (matrix[11] < 0) {
+        matrix[11] *= -1;
     }
     
     var corX = 0;

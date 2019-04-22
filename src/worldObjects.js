@@ -87,7 +87,7 @@ createNameSpace("realityEditor.worldObjects");
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, msg) {
             console.log("did get world object for server: " + serverIP);
 
-            if (msg) {
+            if (msg && Object.keys(msg).length > 0) {
                 console.log('found valid object', msg);
                 
                 if (typeof msg.integerVersion === 'undefined') {

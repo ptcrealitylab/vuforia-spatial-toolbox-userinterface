@@ -289,15 +289,17 @@ realityEditor.device.shouldPostEventsIntoIframe = function() {
 realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     var iframe = document.getElementById('iframe' + (nodeKey || frameKey));
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
-    iframe.contentWindow.postMessage(JSON.stringify({
-        event: {
-            type: event.type,
-            pointerId: event.pointerId,
-            pointerType: event.pointerType,
-            x: newCoords.x,
-            y: newCoords.y
-        }
-    }), '*');
+    if (newCoords) {
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: {
+                type: event.type,
+                pointerId: event.pointerId,
+                pointerType: event.pointerType,
+                x: newCoords.x,
+                y: newCoords.y
+            }
+        }), '*');
+    }
 };
 
 /**

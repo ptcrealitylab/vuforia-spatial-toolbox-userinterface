@@ -21,9 +21,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
      */
     function keyUpHandler(params) {
         
-        // we need to strip out the referenced DOM elements in order to JSON.stringify it
-        var keysToExclude = ['currentTarget', 'srcElement', 'target', 'view'];
-        var acyclicEventObject = copyObject(params.event, keysToExclude);
+        var acyclicEventObject = getMutablePointerEventCopy(params.event);
         
         for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
             if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
@@ -32,6 +30,18 @@ createNameSpace("realityEditor.network.frameContentAPI");
                 realityEditor.network.postMessageIntoFrame(frameKey, {keyboardUpEvent: acyclicEventObject});
             });
         }
+    }
+
+    /**
+     * Reusable function to strip out the cyclic properties of a PointerEvent and clone it so the result can be modified
+     * @param {PointerEvent} event
+     * @return {Object}
+     */
+    function getMutablePointerEventCopy(event) {
+        // we need to strip out the referenced DOM elements in order to JSON.stringify it
+        var keysToExclude = ['currentTarget', 'srcElement', 'target', 'view'];
+        var acyclicEventObject = copyObject(event, keysToExclude);
+        return acyclicEventObject;
     }
 
     /**
@@ -53,5 +63,6 @@ createNameSpace("realityEditor.network.frameContentAPI");
     }
 
     exports.initFeature = initFeature;
+    exports.getMutablePointerEventCopy = getMutablePointerEventCopy;
 
 })(realityEditor.network.frameContentAPI);
