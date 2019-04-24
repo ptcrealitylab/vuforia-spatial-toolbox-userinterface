@@ -29,6 +29,24 @@
     var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2();
 
+    window.addEventListener('resize', function(event) {
+        console.log('resize window', event);
+        console.log('innerWidth: ', window.innerWidth);
+        console.log('innerHeight: ', window.innerHeight);
+        rendererWidth = window.innerWidth;
+        rendererHeight = window.innerHeight;
+        aspectRatio = rendererWidth / rendererHeight;
+
+        if (camera) {
+            camera.aspect = aspectRatio;
+            camera.updateProjectionMatrix();
+        }
+
+        if (renderer) {
+            renderer.setSize( rendererWidth, rendererHeight );
+        }
+    });
+
     window.addEventListener('load', function() {
         
         // create a fullscreen webgl renderer for the threejs content and add to the dom
