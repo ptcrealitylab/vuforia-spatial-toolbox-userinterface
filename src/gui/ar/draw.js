@@ -620,7 +620,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     // Provides haptic feedback to give you the confidence that you can add frames to what you are looking at.
     if (this.isObjectWithNoFramesVisible) {
         var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
-        if (closestObject) {
+        if (closestObject && !closestObject.isWorldObject) {
             var delay = closestObject.isWorldObject ? 1000 : 500;
             if (!visibleObjectTapInterval || delay !== visibleObjectTapDelay) {
                 // tap once, immediately
@@ -1087,6 +1087,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
         }
 
+        // render visible frame/node
         if ((activeVehicle.visible || shouldRenderFramesInNodeView) || activePocketFrameWaiting || activePocketNodeWaiting) {
             
             // safety mechanism to prevent bugs where tries to manipulate a DOM element that doesn't exist
@@ -1109,8 +1110,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             }
             */
 
+            // frames don't fade out with distance on desktop remote renderer, but they do on the phone
             if (!realityEditor.device.utilities.isDesktop()) {
-                // fade out frames and nodes when they m2ove beyond a certain distance
+                // fade out frames and nodes when they move beyond a certain distance
                 var distance = activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
                 // multiply the default min distance by the amount this frame distance has been scaled up
@@ -1278,7 +1280,23 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                     }
                 }
-                
+
+                if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
+                    
+                    var rotatedGroundPlaneMatrix = [];
+                    var rotation3d = [
+                        1, 0, 0, 0,
+                        0, 0, -1, 0,
+                        0, 1, 0, 0,
+                        0, 0, 0, 1
+                    ];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(rotation3d, realityEditor.gui.ar.draw.groundPlaneMatrix, rotatedGroundPlaneMatrix);
+
+                    var translatedGroundPlaneMatrix = [];
+                    // utilities.multiplyMatrix(matrix.r3, realityEditor.gui.ar.draw.groundPlaneMatrix, translatedGroundPlaneMatrix);
+                    utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
+                    utilities.multiplyMatrix(translatedGroundPlaneMatrix, this.globalStates.projectionMatrix, finalMatrix);
+                }
                 
                 // multiply in the animation matrix if you are editing this frame in unconstrained mode.
                 // in the future this can be expanded but currently this is the only time it gets animated.
@@ -1360,8 +1378,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             if (activeType === "ui") {
 
-                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true || activeVehicle.sendMatrices.devicePose === true
-                || activeVehicle.sendMatrices.groundPlane === true || activeVehicle.sendMatrices.allObjects === true) {
+                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true || 
+                    activeVehicle.sendMatrices && (activeVehicle.sendMatrices.devicePose === true || activeVehicle.sendMatrices.groundPlane === true || activeVehicle.sendMatrices.allObjects === true)) {
 
                     var thisMsg = {};
 
