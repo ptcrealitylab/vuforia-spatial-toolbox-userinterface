@@ -1320,6 +1320,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 //     y: projectedPoint[1],
                 //     z: projectedPoint[2]
                 // };
+                
+                if ( isNaN(projectedPoint[0]) ) {
+                    projectedPoint = [0,0,0,0];
+                }
 
                 activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
