@@ -1357,6 +1357,30 @@ if (thisFrame) {
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
     }
     
+    if (typeof msgContent.moveNode !== "undefined") {
+        var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        
+        // move each node within this frame with a matching name to the provided x,y coordinates
+        Object.keys(thisFrame.nodes).map(function(nodeKey) {
+            return thisFrame.nodes[nodeKey];
+        }).filter(function(node) {
+            return node.name === msgContent.moveNode.name;
+        }).forEach(function(node) {
+            node.x = (msgContent.moveNode.x) || 0;
+            node.y = (msgContent.moveNode.y) || 0;
+            
+            var positionData = realityEditor.gui.ar.positioning.getPositionData(node);
+            var content = {};
+            content.x = positionData.x;
+            content.y = positionData.y;
+            content.scale = positionData.scale;
+
+            content.lastEditor = globalStates.tempUuid;
+            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
+            realityEditor.network.postData(urlEndpoint, content);
+        });
+    }
+    
     if (typeof msgContent.resetNodes !== "undefined") {
         
         realityEditor.forEachNodeInFrame(msgContent.object, msgContent.frame, function(thisObjectKey, thisFrameKey, thisNodeKey) {
