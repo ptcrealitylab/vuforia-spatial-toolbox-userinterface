@@ -7,6 +7,9 @@
     <script src="resources/pep.min.js"></script>
     <script src="resources/threejs-src/2016/three.min.js"></script>
     <script src="resources/navigation-arrow.js"></script>
+    <script src="resources/STLExport.js"></script>
+
+
     <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
 </head>
 <body>
@@ -22,6 +25,12 @@
     var rendererHeight = screen.width;
     var aspectRatio = rendererWidth / rendererHeight;
 
+    var initialModelRotation;
+    var initialDirection;
+    var initialTotalRotation = new THREE.Quaternion();
+
+    var projectionMatrixC = new THREE.Matrix4();
+
     var hue = 0;
     var saturation = 0.75;
     var lightness = 0.6;
@@ -29,25 +38,28 @@
     var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2();
 
+
     window.addEventListener('resize', function(event) {
-        console.log('resize window', event);
-        console.log('innerWidth: ', window.innerWidth);
-        console.log('innerHeight: ', window.innerHeight);
+
         rendererWidth = window.innerWidth;
         rendererHeight = window.innerHeight;
         aspectRatio = rendererWidth / rendererHeight;
 
         if (camera) {
-            camera.aspect = aspectRatio;
+            camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
         }
 
         if (renderer) {
             renderer.setSize( rendererWidth, rendererHeight );
         }
+
+        realityInterface.addMatrixListener(renderScene);
+
     });
 
     window.addEventListener('load', function() {
+
         
         // create a fullscreen webgl renderer for the threejs content and add to the dom
         renderer = new THREE.WebGLRenderer( { alpha: true } );
@@ -56,7 +68,7 @@
         document.body.appendChild( renderer.domElement );
 
         // create a threejs camera and scene
-        camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
+        camera = new THREE.PerspectiveCamera( 25, aspectRatio, 0.1, 300000 );
         scene = new THREE.Scene();
 
         // create a parent 3D object to contain all the three js objects
@@ -86,6 +98,8 @@
         mesh = THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
         threejsContainerObj.add( mesh );
         mesh.position.setZ(150);
+        mesh.updateMatrixWorld();
+
 
         // add spotlight for the shadows
         var spotLight = new THREE.SpotLight(0xffffff);
@@ -97,26 +111,105 @@
         // and subscribe to the modelview and projection matrices
         realityInterface = new RealityInterface();
 
+        realityInterface.setIOCallback(function() {
+            realityInterface.iosObject.on('connect', function(socket){
+                // Register role with IOS Server.
+                realityInterface.iosObject.emit("clientName", "controller");
+
+                // Send the 3D model to the IOS Server.
+                realityInterface.iosObject.emit('model', THREE.STLExport(scene));
+
+                // Update the model position on screen when the user is no longer moving the model.
+                setInterval(function(){
+                    sendModelPosition(mesh, camera, realityInterface.iosObject);
+                }, 300);
+            });
+
+            // update the position of the sphere on the canvas when user drags it.
+            realityInterface.iosObject.on('modelUpdate', function(data) {
+
+                var containerMatrix = new THREE.Matrix4();
+                var containerMatrixCopy = new THREE.Matrix4();
+                
+                var mPosition = new THREE.Vector3();
+                var mRotation = new THREE.Quaternion();
+                var mScale = new THREE.Vector3();
+
+                containerMatrix.copy(threejsContainerObj.matrix);
+                containerMatrix.multiply(mesh.matrix);
+                containerMatrixCopy.copy(threejsContainerObj.matrix);
+
+                var modelRealPosition = new THREE.Vector3();
+                var modelRealRotation = new THREE.Quaternion();
+                var modelRealScale = new THREE.Vector3();
+
+                containerMatrixCopy.decompose(modelRealPosition, modelRealRotation, modelRealScale);
+                containerMatrix.decompose(mPosition, mRotation, mScale);
+
+                data = JSON.parse(data);
+                var vFOV = camera.fov * Math.PI / 180; 
+                var z = (data.z / (2 * Math.tan( vFOV / 2 ))) ;
+
+                var modelRotation = new THREE.Matrix4();
+                modelRotation.set( data.r00, data.r10, data.r20, 0,
+                                   data.r01, data.r11, data.r21, 0,
+                                   data.r02, data.r12, data.r22, 0,
+                                   0,               0,        0, 1 );
+
+             
+                var modelQuaternion = new THREE.Quaternion();
+                var modelPosition = new THREE.Vector3();
+                var modelScale = new THREE.Vector3();
+
+                modelRotation.decompose(modelPosition, modelQuaternion, modelScale);
+
+                if(initialModelRotation === undefined) {
+                  initialModelRotation = new THREE.Quaternion();
+                  initialModelRotation.copy(mRotation);
+                }
+
+                // This is the model's center position on the 2D screen (ignore Z).
+                var XY = new THREE.Vector3(data.x,data.y, 1);
+
+                // Unproject the model's position.
+                XY.unproject(camera);
+
+                // Turn that into a unit direction vector from the camera's position.
+                XY.sub(camera.position);
+                XY.normalize();
+
+                // Distance along the direction vector is dependent on parameters sent from the phone.
+                XY.multiplyScalar(-z * modelRealScale.y);
+
+                // Change near plane of Camera to create 'exit' illusion.
+                var newNear = XY.length() + (data.cut * (1/data.im));
+                setNewProjectionMatrix(projectionMatrixFrom(25, window.innerWidth/window.innerHeight, newNear, 300000));
+
+                XY.add(camera.position);
+
+                containerMatrixCopy.getInverse(containerMatrixCopy);
+
+                // From global to local rotation.
+                containerMatrix.copy(containerMatrixCopy);
+                containerMatrix.multiply(modelRotation);
+                modelRotation.decompose(modelPosition, modelQuaternion, modelScale);
+
+                // Change position of the model from global to local coordinates.
+                XY.applyMatrix4(containerMatrixCopy);
+                
+                // Place the model at the right position.
+                mesh.position.copy(XY);
+              
+                // Set the model's rotation.
+                var initialRotationCopy = new THREE.Quaternion();
+                initialRotationCopy.copy(initialModelRotation);
+                initialRotationCopy.multiply(modelQuaternion);
+                mesh.quaternion.copy(initialRotationCopy);
+          });
+        });
+
         realityInterface.onRealityInterfaceLoaded(function() {
             realityInterface.setFullScreenOn();
-            
-            /*
-            realityInterface.addDevicePoseMatrixListener(function(devicePoseMatrix, projectionMatrix) {
-                console.log('devicePoseMatrix: ', devicePoseMatrix);
-            });
-            
-            realityInterface.addGroundPlaneMatrixListener(function(groundPlaneMatrix, projectionMatrix) {
-                console.log('groundPlaneMatrix: ', groundPlaneMatrix);
-            });
-            
-            realityInterface.addAllObjectMatricesListener(function(allObjects, projectionMatrix) {
-                console.log('allObjects: ', allObjects);
-            });
-            */
-
-            // whenever we receive new matrices from the editor, update the 3d scene
-            realityInterface.addMatrixListener(renderScene);
-
             realityInterface.setMoveDelay(400);
 
             initNavigationArrow(document.querySelector('canvas'), realityInterface, true, touchDecider);
@@ -137,8 +230,141 @@
                 }
             });
         });
-
     });
+
+    function setNewProjectionMatrix(matrix) {
+        // flip the matrix that has been flipped already.
+        matrix[0] *= -1;
+        setMatrixFromArray(camera.projectionMatrix, matrix);
+    }
+
+    function sendModelPosition(model, camera, socket) {
+        var containerMatrixCopy = new THREE.Matrix4();
+        var cameraMatrixCopy = new THREE.Matrix4();
+
+
+        cameraMatrixCopy.copy(camera.matrix);
+        containerMatrixCopy.copy(threejsContainerObj.matrix);
+        containerMatrixCopy.multiply(model.matrix)
+
+        var modelRealPosition = new THREE.Vector3();
+        var modelRealRotation = new THREE.Quaternion();
+        var modelRealScale = new THREE.Vector3();
+
+
+        var cameraRealPosition = new THREE.Vector3();
+        var cameraRealRotation = new THREE.Quaternion();
+        var cameraRealScale = new THREE.Vector3();
+        
+        containerMatrixCopy.decompose(modelRealPosition, modelRealRotation, modelRealScale);
+        cameraMatrixCopy.decompose(cameraRealPosition, cameraRealRotation, cameraRealScale);
+
+        // Update world matrices.
+        camera.updateMatrixWorld();
+        model.updateMatrixWorld();
+
+        // Get the orientation of the camera.
+        var cameraDirection = new THREE.Vector3();
+        camera.getWorldDirection( cameraDirection );
+
+        // Get distance of model to camera along the camera's forward vector.
+        var modelToCamera = new THREE.Vector3(cameraRealPosition.x - modelRealPosition.x, cameraRealPosition.y - modelRealPosition.y, cameraRealPosition.z - modelRealPosition.z);
+        var modelToCameraDot =  cameraDirection.x * modelToCamera.x + cameraDirection.y * modelToCamera.y + cameraDirection.z * modelToCamera.z;
+        var distanceToCameraVector = new THREE.Vector3(cameraDirection.x * modelToCameraDot, cameraDirection.y * modelToCameraDot, cameraDirection.z * modelToCameraDot);
+        var distanceToCameraMagnitude = Math.sqrt(distanceToCameraVector.x * distanceToCameraVector.x + distanceToCameraVector.y * distanceToCameraVector.y + distanceToCameraVector.z * distanceToCameraVector.z);
+
+
+        // Send the initial scale factor of the model.
+        socket.emit("init", visibleHeightAtZDepth(distanceToCameraMagnitude, camera) / modelRealScale.x);
+
+        // Send the position of the bunny on the 2d screen.
+        socket.emit("dist",  toScreenPosition(model,camera) );
+
+        // Obtain camera position, quaternion and scale.
+        var cameraPositionCopy = new THREE.Vector3();
+        var cameraQuaternionCopy = new THREE.Quaternion();
+        var cameraScaleCopy = new THREE.Vector3();
+        var cameraMatrix = new THREE.Matrix4();
+        cameraMatrix.getInverse(camera.matrixWorldInverse);
+        cameraMatrix.decompose(cameraPositionCopy, cameraQuaternionCopy, cameraScaleCopy);
+
+        // Create a transform of with the camera's rotation and zero translation.
+        var cameraAtZeroTransform = new THREE.Matrix4();
+        cameraAtZeroTransform.compose(new THREE.Vector3(), cameraQuaternionCopy,cameraScaleCopy);
+
+        // Create a transfrom of the model's rotation and zero translation.
+        var modelRotationMatrix = new THREE.Matrix4();
+        modelRotationMatrix.compose(new THREE.Vector3(), modelRealRotation ,cameraScaleCopy);
+
+        // Calculate the rotation difference between the scene's camera and the model.
+        cameraAtZeroTransform.getInverse(cameraAtZeroTransform);
+        modelRotationMatrix.premultiply(cameraAtZeroTransform);
+
+        // Compose a rotation matrix for the model and send it.
+        var matrixJSON = {};
+
+        matrixJSON["r00"] = Number(modelRotationMatrix.elements[0]);
+        matrixJSON["r01"] = Number(modelRotationMatrix.elements[1]);
+        matrixJSON["r02"] = Number(modelRotationMatrix.elements[2]);
+        matrixJSON["r03"] = Number(modelRotationMatrix.elements[3]);
+
+
+        matrixJSON["r10"] = Number(modelRotationMatrix.elements[4]);
+        matrixJSON["r11"] = Number(modelRotationMatrix.elements[5]);
+        matrixJSON["r12"] = Number(modelRotationMatrix.elements[6]);
+        matrixJSON["r13"] = Number(modelRotationMatrix.elements[7]);
+
+        matrixJSON["r20"] = Number(modelRotationMatrix.elements[8]);
+        matrixJSON["r21"] = Number(modelRotationMatrix.elements[9]);
+        matrixJSON["r22"] = Number(modelRotationMatrix.elements[10]);
+        matrixJSON["r23"] = Number(modelRotationMatrix.elements[11]);
+
+        matrixJSON["r30"] = Number(modelRotationMatrix.elements[12]);
+        matrixJSON["r31"] = Number(modelRotationMatrix.elements[13]);
+        matrixJSON["r32"] = Number(modelRotationMatrix.elements[14]);
+        matrixJSON["r33"] = Number(modelRotationMatrix.elements[15]);
+
+        socket.emit("matrix", matrixJSON);
+    }
+
+    function visibleHeightRatio( camera ){
+      const vFOV = camera.fov * Math.PI / 180; 
+      return 2 * Math.tan( vFOV / 2 );
+    }
+
+     function visibleHeightAtZDepthFov( depth, fov ){
+      const vFOV = camera.fov * Math.PI / 180; 
+      return 2 * Math.tan( vFOV / 2 ) * Math.abs( depth );
+    }
+
+        
+    function visibleHeightAtZDepth( depth, camera ){
+        console.log('the fov', camera.fov);
+      const vFOV = camera.fov * Math.PI / 180; 
+      return 2 * Math.tan( vFOV / 2 ) * Math.abs( depth );
+    }
+
+    function visibleWidthAtZDepth( depth, camera ) {
+      const height = visibleHeightAtZDepth( depth, camera );
+      return height * camera.aspect;
+    }
+
+    function toScreenPosition(obj, camera)
+    {
+        var vector = new THREE.Vector3();
+
+        var widthHalf = 0.5*renderer.context.canvas.width;
+        var heightHalf = 0.5*renderer.context.canvas.height;
+
+        obj.updateMatrixWorld();
+        vector.setFromMatrixPosition(obj.matrixWorld);
+        vector.project(camera);
+
+        return { 
+            x: vector.x,
+            y: vector.y
+        };
+    };
     
     function touchDecider(eventData) {
         //1. sets the mouse position with a coordinate system where the center
@@ -163,19 +389,46 @@
         );
     }
 
+    function projectionMatrixFrom(vFOV, aspect, near, far) {
+        var top = near * Math.tan((Math.PI / 180) * 0.5 * vFOV );
+        var height = 2 * top;
+        var width = aspect * height;
+        var left = -0.5 * width;
+        return makePerspective( left, left + width, top, top - height, near, far );
+    }
+
+    function makePerspective ( left, right, top, bottom, near, far ) {
+
+        var te = [];
+        var x = 2 * near / ( right - left );
+        var y = 2 * near / ( top - bottom );
+
+        var a = ( right + left ) / ( right - left );
+        var b = ( top + bottom ) / ( top - bottom );
+        var c = - ( far + near ) / ( far - near );
+        var d = - 2 * far * near / ( far - near );
+
+        console.log(x, y, a, b ,c);
+
+        te[ 0 ] = x;    te[ 4 ] = 0;    te[ 8 ] = a;    te[ 12 ] = 0;
+        te[ 1 ] = 0;    te[ 5 ] = y;    te[ 9 ] = b;    te[ 13 ] = 0;
+        te[ 2 ] = 0;    te[ 6 ] = 0;    te[ 10 ] = c;   te[ 14 ] = d;
+        te[ 3 ] = 0;    te[ 7 ] = 0;    te[ 11 ] = - 1; te[ 15 ] = 0;
+
+        return te;
+
+    }
+
     function renderScene(modelViewMatrix, projectionMatrix) {
         // only set the projection matrix for the camera 1 time, since it stays the same
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
-            setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
+            setNewProjectionMatrix(projectionMatrix);
             isProjectionMatrixSet = true;
         }
 
         if (isProjectionMatrixSet) { // don't turn into else statement, both can happen
             // update models with newest values from the reality editor
             mesh.children[0].material.color.setHSL( hue, saturation, lightness );
-            mesh.rotation.x += 0.005; // slow rotation, for aesthetic effect
-            mesh.rotation.y += 0.01;
-            // update model view matrix
             setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
             // render the scene
             threejsContainerObj.visible = true;

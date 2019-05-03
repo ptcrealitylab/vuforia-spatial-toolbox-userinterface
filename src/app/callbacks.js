@@ -222,10 +222,18 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
       //  realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
-        var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
+
+        // Editor
+        var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, false, true, true); //false, true, true (RE)
+        var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, false, false); //false, false, false (RE)
+
+        // WebGL
+        var cameraRotationWebGL = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false); //false, true, true (RE)
+        var cameraTranslationWebGL = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, false); 
 
         realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
+        realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.webGLCameraMatrix);
+
     }
 };
 

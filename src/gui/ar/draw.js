@@ -193,6 +193,14 @@ realityEditor.gui.ar.draw.correctedCameraMatrix = [
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
+
+realityEditor.gui.ar.draw.webGLCameraMatrix  = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
 realityEditor.gui.ar.draw.m1 = [
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -1181,7 +1189,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             matrix.r3 = [
                 finalScale, 0, 0, 0,
                 0, finalScale, 0, 0,
-                0, 0, 1, 0,
+                0, 0, finalScale, 0,
                 // positionData.x, positionData.y, 0, 1
                 finalOffsetX, finalOffsetY, 0, 1
             ];
@@ -1656,7 +1664,7 @@ realityEditor.gui.ar.draw.getMatrixValues = {
 };
 
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
- 
+    
     // 1. Construct matrix for scale and translation
     this.getMatrixValues.scale = [
         frameScale, 0, 0, 0,
@@ -2389,7 +2397,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         matrix.r3 = [
             finalScale, 0, 0, 0,
             0, finalScale, 0, 0,
-            0, 0, 1, 0,
+            0, 0, finalScale, 0,
             // positionData.x, positionData.y, 0, 1
             finalOffsetX, finalOffsetY, 0, 1
         ];
