@@ -57,6 +57,7 @@
 
         // create a threejs camera and scene
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
+        // camera.up.set(0, 0, 1);
         scene = new THREE.Scene();
 
         // create a parent 3D object to contain all the three js objects
@@ -119,7 +120,7 @@
 
             realityInterface.setMoveDelay(400);
 
-            initNavigationArrow(document.querySelector('canvas'), realityInterface, true, touchDecider);
+            // initNavigationArrow(document.querySelector('canvas'), realityInterface, true, touchDecider);
 
             realityInterface.registerTouchDecider(touchDecider);
 
@@ -141,6 +142,7 @@
     });
     
     function touchDecider(eventData) {
+        
         //1. sets the mouse position with a coordinate system where the center
         //   of the screen is the origin
         mouse.x = ( eventData.x / window.innerWidth ) * 2 - 1;
@@ -155,6 +157,7 @@
         return intersects.length > 0;
     }
 
+    // sets them in row-major using a matrix in column-major
     function setMatrixFromArray(matrix, array) {
         matrix.set( array[0], array[4], array[8], array[12],
             array[1], array[5], array[9], array[13],
@@ -163,9 +166,61 @@
         );
     }
 
+    // var rotateX = [
+    //     1, 0, 0, 0,
+    //     0, -1, 0, 0,
+    //     0, 0, 1, 0,
+    //     0, 0, 0, 1
+    // ];
+
+    /**
+     * @desc This function multiplies one m16 matrix with a second m16 matrix
+     * @param {Array.<number>} m2 - origin matrix to be multiplied with
+     * @param {Array.<number>} m1 - second matrix that multiplies.
+     * @return {Array.<number>} m16 matrix result of the multiplication
+     */
+    function multiplyMatrix(m2, m1, r) {
+        // var r = [];
+        // Cm1che only the current line of the second mm1trix
+        r[0] = m2[0] * m1[0] + m2[1] * m1[4] + m2[2] * m1[8] + m2[3] * m1[12];
+        r[1] = m2[0] * m1[1] + m2[1] * m1[5] + m2[2] * m1[9] + m2[3] * m1[13];
+        r[2] = m2[0] * m1[2] + m2[1] * m1[6] + m2[2] * m1[10] + m2[3] * m1[14];
+        r[3] = m2[0] * m1[3] + m2[1] * m1[7] + m2[2] * m1[11] + m2[3] * m1[15];
+
+        r[4] = m2[4] * m1[0] + m2[5] * m1[4] + m2[6] * m1[8] + m2[7] * m1[12];
+        r[5] = m2[4] * m1[1] + m2[5] * m1[5] + m2[6] * m1[9] + m2[7] * m1[13];
+        r[6] = m2[4] * m1[2] + m2[5] * m1[6] + m2[6] * m1[10] + m2[7] * m1[14];
+        r[7] = m2[4] * m1[3] + m2[5] * m1[7] + m2[6] * m1[11] + m2[7] * m1[15];
+
+        r[8] = m2[8] * m1[0] + m2[9] * m1[4] + m2[10] * m1[8] + m2[11] * m1[12];
+        r[9] = m2[8] * m1[1] + m2[9] * m1[5] + m2[10] * m1[9] + m2[11] * m1[13];
+        r[10] = m2[8] * m1[2] + m2[9] * m1[6] + m2[10] * m1[10] + m2[11] * m1[14];
+        r[11] = m2[8] * m1[3] + m2[9] * m1[7] + m2[10] * m1[11] + m2[11] * m1[15];
+
+        r[12] = m2[12] * m1[0] + m2[13] * m1[4] + m2[14] * m1[8] + m2[15] * m1[12];
+        r[13] = m2[12] * m1[1] + m2[13] * m1[5] + m2[14] * m1[9] + m2[15] * m1[13];
+        r[14] = m2[12] * m1[2] + m2[13] * m1[6] + m2[14] * m1[10] + m2[15] * m1[14];
+        r[15] = m2[12] * m1[3] + m2[13] * m1[7] + m2[14] * m1[11] + m2[15] * m1[15];
+        // return r;
+    };
+
     function renderScene(modelViewMatrix, projectionMatrix) {
+        
+        var scaleMatrix = [
+            -1, 0, 0, 0,
+            0, -1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ];
+
+        var r = [];
+        multiplyMatrix(scaleMatrix, modelViewMatrix, r);
+        modelViewMatrix = r;
+        // console.log(modelView);
+        
         // only set the projection matrix for the camera 1 time, since it stays the same
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
+            // projectionMatrix[0] *= -1;
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
             isProjectionMatrixSet = true;
         }
@@ -173,8 +228,8 @@
         if (isProjectionMatrixSet) { // don't turn into else statement, both can happen
             // update models with newest values from the reality editor
             mesh.children[0].material.color.setHSL( hue, saturation, lightness );
-            mesh.rotation.x += 0.005; // slow rotation, for aesthetic effect
-            mesh.rotation.y += 0.01;
+            // mesh.rotation.x += 0.005; // slow rotation, for aesthetic effect
+            // mesh.rotation.y += 0.01;
             // update model view matrix
             setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
             // render the scene

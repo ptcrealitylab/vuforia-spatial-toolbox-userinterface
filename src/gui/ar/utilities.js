@@ -1386,6 +1386,13 @@ realityEditor.gui.ar.utilities.getQuaternionFromMatrix = function(m) {
     return q;
 };
 
+realityEditor.gui.ar.utilities.convertQuaternionHandedness = function(q) {
+    q.x *= -1;
+    q.y *= -1;
+    q.z *= -1;
+    return q;
+};
+
 // realityEditor.gui.ar.utilities.quaternionMagnitude = function(q) {
 //     // var identity = { x: 0, y: 0, z: 0, w: 1 };
 //     // qRot = q * inverse(identity); // identity inversed is still identity. identity multiplied by q gives q.
@@ -1556,6 +1563,17 @@ realityEditor.gui.ar.utilities.extractRotation = function(matrix, flipX, flipY, 
 };
 
 /**
+ * A helper function that extracts the rotation matrix from a 4x4 transformation matrix,
+ * and optionally inverts any combination of the axes of rotation
+ * @param {Array.<number>} matrix
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.extractRotationTemp = function(matrix) {
+    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
+    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(this.convertQuaternionHandedness(q));
+};
+
+/**
  * Helper function that extracts the x,y,z translation elements from a 4x4 transformation matrix,
  * and optionally inverts any combination of the axes of translation
  * @param {Array.<number>} matrix
@@ -1582,3 +1600,48 @@ realityEditor.gui.ar.utilities.extractTranslation = function(matrix, flipX, flip
     
     return translationMatrix;
 };
+
+realityEditor.gui.ar.utilities.mToggle_YZ = [
+    1, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 1
+];
+
+/**
+ * @param matrix
+ * @return {*}
+ */
+realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
+    var m2 = [];
+    this.multiplyMatrix(this.mToggle_YZ, matrix, m2);
+    return m2;
+};
+
+// /**
+//  * @param matrix
+//  * @return {*}
+//  */
+// realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
+//    
+//     var m2 = this.newIdentityMatrix();
+//    
+//    
+//     var a = matrix[1];
+//     var b = matrix[5];
+//     var c = matrix[9];
+//     var d = matrix[13];
+//
+//     matrix[1] = matrix[2];
+//     matrix[5] = matrix[6];
+//     matrix[9] = matrix[10];
+//     matrix[13] = matrix[14];
+//
+//     matrix[2] = a;
+//     matrix[6] = b;
+//     matrix[10] = c;
+//     matrix[14] = d;
+//    
+//     return matrix;
+// };
+

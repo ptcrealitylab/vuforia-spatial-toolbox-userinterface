@@ -221,11 +221,40 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
    // console.log("receiveCameraMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-      //  realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
-        var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, true, true);
 
-        realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation,  realityEditor.gui.ar.draw.correctedCameraMatrix);
+        realityEditor.gui.ar.draw.viewMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
+        // realityEditor.gui.ar.draw.viewMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraMatrix);
+        
+        // this fixes it for world coordinates
+        // var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, false, true, true);
+        // var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, false, false);
+        // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, realityEditor.gui.ar.draw.correctedCameraMatrix);
+
+        realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.draw.viewMatrix);
+
+
+        // var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
+        // var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, true);
+        // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, realityEditor.gui.ar.draw.correctedCameraMatrix);
+        //
+        // // this fixes it for three.js coordinates
+        // var webGlCameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
+        // var webGlCameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, false);
+        // realityEditor.gui.ar.utilities.multiplyMatrix(webGlCameraRotation, webGlCameraTranslation, realityEditor.gui.ar.draw.webGlCameraMatrix);
+
+        // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraMatrix);
+
+        // var negativeScale = [
+        //     -1, 0, 0, 0,
+        //     0, 1, 0, 0,
+        //     0, 0, 1, 0,
+        //     0, 0, 0, 1
+        // ];
+        //
+        // realityEditor.gui.ar.utilities.multiplyMatrix(negativeScale, cameraMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix);
+
+        // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.convertMatrixHandedness(cameraMatrix);
+
     }
 };
 

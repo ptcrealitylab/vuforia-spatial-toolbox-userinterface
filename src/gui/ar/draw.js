@@ -193,6 +193,24 @@ realityEditor.gui.ar.draw.correctedCameraMatrix = [
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
+realityEditor.gui.ar.draw.webGlCameraMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+var threejsObjectMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+realityEditor.gui.ar.draw.viewMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
 realityEditor.gui.ar.draw.m1 = [
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -361,9 +379,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
+            this.webGlVisibleObjectMatrix = [];
+
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
+            
+            // threejsObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
             
             if (this.activeObject.isWorldObject) {
                 // don't start rendering world frames until we've received a valid camera matrix
@@ -374,18 +396,31 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
                 
             } else {
                 
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
-              //  = modelViewMatrix;
-            };
+                // var objectViewMatrix = realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey])
+                
+                var rotatedVisibleObjectMatrix = [];
+                
+                // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], rotatedVisibleObjectMatrix);
+                // rotatedVisibleObjectMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+
+                rotatedVisibleObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
+                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
+                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.webGlCameraMatrix, this.webGlVisibleObjectMatrix);
+            }
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey] , this.globalStates.projectionMatrix, this.activeObjectMatrix);
-          //  this.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.r, this.activeObjectMatrix);
-            
+
+            this.webGlActiveObjectMatrix = [];
+            this.ar.utilities.multiplyMatrix(this.webGlVisibleObjectMatrix, this.globalStates.projectionMatrix, this.webGlActiveObjectMatrix);
+
             if (isNaN(this.activeObjectMatrix[0])) {
                 this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            }
+            
+            if (isNaN(this.webGlActiveObjectMatrix[0])) {
+                this.webGlActiveObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             }
             
             // extract its projected (x,y) screen coordinates from the matrix
@@ -1181,7 +1216,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             matrix.r3 = [
                 finalScale, 0, 0, 0,
                 0, finalScale, 0, 0,
-                0, 0, 1, 0,
+                0, 0, finalScale, 0,
                 // positionData.x, positionData.y, 0, 1
                 finalOffsetX, finalOffsetY, 0, 1
             ];
@@ -1264,6 +1299,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
                 
             }
+            
+            // realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, []);
+            // positionData.matrix = [];
 
             if (typeof positionData.matrix !== "undefined") {
                 if (positionData.matrix.length < 13) {
@@ -1282,7 +1320,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                 }
             }
-
+            
             if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
                 // activeVehicle.matrix = realityEditor.gui.ar.draw.groundPlaneMatrix;
                 // matrix.r3 = [
@@ -1307,6 +1345,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
                 utilities.multiplyMatrix(translatedGroundPlaneMatrix, this.globalStates.projectionMatrix, finalMatrix);
             }
+            
             
             // multiply in the animation matrix if you are editing this frame in unconstrained mode.
             // in the future this can be expanded but currently this is the only time it gets animated.
@@ -1358,6 +1397,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             // flip horizontally here?
             // var renderedMatrix = [];
             // this.ar.utilities.multiplyMatrix(this.rotateX, finalMatrix, renderedMatrix);
+            // var negativeScale = [
+            //     -1, 0, 0, 0,
+            //     0, 1, 0, 0,
+            //     0, 0, 1, 0,
+            //     0, 0, 0, 1
+            // ];
+            //
+            // var r = [];
+            //
+            // realityEditor.gui.ar.utilities.multiplyMatrix(negativeScale, finalMatrix, r);
+            // finalMatrix = realityEditor.gui.ar.utilities.copyMatrix(r);
+            // finalMatrix = realityEditor.gui.ar.utilities.convertMatrixHandedness(finalMatrix);
             
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
@@ -1393,6 +1444,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     if (activeVehicle.sendMatrix === true) {
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                         thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
+                        // thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(threejsObjectMatrix, positionData.matrix, positionData.x, positionData.y, positionData.scale);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
@@ -1656,15 +1708,19 @@ realityEditor.gui.ar.draw.getMatrixValues = {
 };
 
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
+
+    // console.log(visibleObjectMatrix); //, frameMatrix, frameX, frameY, frameScale);
  
     // 1. Construct matrix for scale and translation
     this.getMatrixValues.scale = [
-        frameScale, 0, 0, 0,
+        -frameScale, 0, 0, 0,
         0, frameScale, 0, 0,
         0, 0, frameScale, 0,
         frameX, frameY, 0, 1
     ];
     
+    // frameMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+
     // 2. multiply values
     if (frameMatrix.length === 16) {
         this.getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, this.getMatrixValues.r3);
@@ -1672,7 +1728,10 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     } else {
         this.getMatrixValues.utils.multiplyMatrix(this.getMatrixValues.scale, visibleObjectMatrix, this.getMatrixValues.finalMatrix);
     }
+    // console.log(this.getMatrixValues.finalMatrix);
     return this.getMatrixValues.finalMatrix;
+    
+    // return visibleObjectMatrix;
 };
 
 /**
@@ -1722,7 +1781,9 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
             y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
         };
     }
-    
+
+    console.log('finished first block');
+
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
@@ -1736,6 +1797,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         matrix.copyStillFromMatrixSwitch = false;
         pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
     
+        console.log('went into second block');
     }
 
     // clear some flags so it gets rendered after this occurs
@@ -2389,7 +2451,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         matrix.r3 = [
             finalScale, 0, 0, 0,
             0, finalScale, 0, 0,
-            0, 0, 1, 0,
+            0, 0, finalScale, 0,
             // positionData.x, positionData.y, 0, 1
             finalOffsetX, finalOffsetY, 0, 1
         ];

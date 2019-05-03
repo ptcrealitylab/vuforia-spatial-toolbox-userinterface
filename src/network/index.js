@@ -327,13 +327,13 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
 
     console.warn('updateObject: ' + frameKey);
 
-    origin.x = remote.x;
-    origin.y = remote.y;
-    origin.scale = remote.scale;
+    // origin.x = remote.x;
+    // origin.y = remote.y;
+    // origin.scale = remote.scale;
 
-    if (remote.matrix) {
-        origin.matrix = remote.matrix;
-    }
+    // if (remote.matrix) {
+    //     origin.matrix = remote.matrix;
+    // }
     
     // update each frame in the object
     for (var frameKey in remote.frames) {
