@@ -1361,6 +1361,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // draw transformed
                 if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
                     globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                } else {
+                    this.updateStickyFrameCss(activeKey);
                 }
 
                 // this is for later
@@ -1528,6 +1530,39 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     
     return true;
 
+};
+
+/**
+ * Updates the visibility / touch events of a sticky fullscreen frame differently than other frames,
+ * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
+ * @param {string} activeKey
+ */
+realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
+    // sticky frames need a special process to show and hide depending on guiState....
+
+    // if visible but switched to node view, make "hidden" (lower opacity) and ignore touch events
+    if (globalStates.guiState === 'node' && globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer')) {
+
+        globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
+        globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
+        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+
+        globalDOMCache[activeKey].classList.remove('usePointerEvents');
+        globalDOMCache[activeKey].classList.add('ignorePointerEvents');
+
+    // if low opacity but switched to UI view, make fully visible (full opacity) and accept touch events again
+    } else if (globalStates.guiState === 'ui' && globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer')) {
+
+        globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
+        globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
+
+        globalDOMCache['iframe' + activeKey].classList.add('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.remove('hiddenFrame');
+
+        globalDOMCache[activeKey].classList.add('usePointerEvents');
+        globalDOMCache[activeKey].classList.remove('ignorePointerEvents');
+    }
 };
 
 /**
@@ -1761,7 +1796,6 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     
     if (activeVehicle.hasOwnProperty('fullScreen')) {
         if (activeVehicle.fullScreen === 'sticky') {
-            console.log('dont hide sticky frame');
             return;
         }
     }
