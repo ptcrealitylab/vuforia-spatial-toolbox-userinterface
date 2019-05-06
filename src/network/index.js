@@ -1273,7 +1273,7 @@ if (thisFrame) {
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
             
-            var zIndex = tempThisObject.fullscreenZPosition || -1; //200 + (tempThisObject.fullscreenZPosition || 0);
+            var zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
@@ -1315,7 +1315,9 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
+            
+            var zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
