@@ -1305,7 +1305,7 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
     var possitionMatrix = [
         obj.scale, 0, 0, 0,
         0, obj.scale, 0, 0,
-        0, 0, 1, 0,
+        0, 0, obj.scale, 0,
         obj.x, obj.y, 0, 1
     ];
     

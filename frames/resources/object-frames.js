@@ -4,6 +4,9 @@
         return;
     }
 
+    // Hardcoded for now, host of the internet of screens.
+    var iOSHost = 'https://10.10.10.107:5000';
+
     var realityObject = {
         node: '',
         frame: '',
@@ -74,6 +77,12 @@
             for (var i = 0; i < realityInterfaces.length; i++) {
                 var ho = realityInterfaces[i];
                 ho.injectIo();
+
+                // Connect this frame to the internet of screens.
+                ho.iosObject = io.connect(iOSHost);
+                if(ho.ioCallback !== undefined) {
+                    ho.ioCallback();
+                }
             }
         });
 
@@ -242,8 +251,11 @@
         this.publicData = realityObject.publicData;
         this.pendingSends = [];
         this.pendingIos = [];
+        this.iosObject;
+        this.ioCallback;
 
         var self = this;
+
         function makeSendStub(name) {
             return function() {
                 self.pendingSends.push({name: name, args: arguments});
@@ -265,6 +277,14 @@
             this.subscribeToAcceleration = makeSendStub('subscribeToAcceleration');
             this.setFullScreenOn = makeSendStub('setFullScreenOn');
             this.setFullScreenOff = makeSendStub('setFullScreenOff');
+        }
+
+        this.setIOCallback = function(callback) {
+            this.ioCallback = callback;
+        }
+
+        this.setIOSInterface = function(o) {
+            this.iosObject = o;
         }
 
         this.addGlobalMessageListener = function(callback) {
@@ -559,6 +579,7 @@
             this.writePublicData = makeIoStub('writePublicData');
             this.writePrivateData = makeIoStub('writePrivateData');
             this.reloadPublicData = makeIoStub('reloadPublicData');
+
         }
 
         realityInterfaces.push(this);

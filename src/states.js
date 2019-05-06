@@ -141,6 +141,12 @@ var globalStates = {
 		0, 0, 1, 0,
 		0, 0, 0, 1
 	],
+	webglProjectionMatrix: [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	],
 	acceleration:{
 		x : 0,
 		y : 0,

@@ -99,6 +99,10 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     // if (matrix[11] < 0) {
     //     matrix[11] *= -1;
     // }
+
+    if (realityEditor.device.utilities.isDesktop()) {
+        matrix[0] *= -1;
+    }
     
     var corX = 0;
     var corY = 0;
@@ -214,9 +218,15 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         0, 0, 0, 1
     ];
     
+    var multiplier = -1;
+
+    if (realityEditor.device.utilities.isDesktop()) {
+        multiplier = 1;
+    }
+
     var viewportScaling = [
         globalStates.height, 0, 0, 0,
-        0, -1 * globalStates.width, 0, 0,
+        0,  multiplier * globalStates.width, 0, 0,
         0, 0, 1, 0,
         corX, corY, 0, 1
     ];
@@ -235,6 +245,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
+
 
 };
 

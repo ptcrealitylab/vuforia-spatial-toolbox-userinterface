@@ -211,6 +211,7 @@ realityEditor.gui.ar.draw.viewMatrix = [
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
+
 realityEditor.gui.ar.draw.m1 = [
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -1709,17 +1710,27 @@ realityEditor.gui.ar.draw.getMatrixValues = {
 
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
 
-    // console.log(visibleObjectMatrix); //, frameMatrix, frameX, frameY, frameScale);
- 
+
+    //frameMatrix = [1,0,0,0,0,-1,0,0,0,0,1,0,0,0,0,1];
+
+
     // 1. Construct matrix for scale and translation
     this.getMatrixValues.scale = [
-        -frameScale, 0, 0, 0,
-        0, frameScale, 0, 0,
+        frameScale, 0, 0, 0,
+        0, -frameScale, 0, 0,
         0, 0, frameScale, 0,
         frameX, frameY, 0, 1
     ];
     
-    // frameMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+    // if (realityEditor.device.utilities.isDesktop()) {
+    //     this.getMatrixValues.scale = [
+    //         frameScale, 0, 0, 0,
+    //         0, -frameScale, 0, 0,
+    //         0, 0, frameScale, 0,
+    //         frameX, frameY, 0, 1
+    //     ];
+    // }
+
 
     // 2. multiply values
     if (frameMatrix.length === 16) {
