@@ -29,23 +29,23 @@
     var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2();
 
-    window.addEventListener('resize', function(event) {
-        console.log('resize window', event);
-        console.log('innerWidth: ', window.innerWidth);
-        console.log('innerHeight: ', window.innerHeight);
-        rendererWidth = window.innerWidth;
-        rendererHeight = window.innerHeight;
-        aspectRatio = rendererWidth / rendererHeight;
+    // window.addEventListener('resize', function(event) {
+    //     console.log('resize window', event);
+    //     console.log('innerWidth: ', window.innerWidth);
+    //     console.log('innerHeight: ', window.innerHeight);
+    //     rendererWidth = window.innerWidth;
+    //     rendererHeight = window.innerHeight;
+    //     aspectRatio = rendererWidth / rendererHeight;
 
-        if (camera) {
-            camera.aspect = aspectRatio;
-            camera.updateProjectionMatrix();
-        }
+    //     if (camera) {
+    //         camera.aspect = aspectRatio;
+    //         camera.updateProjectionMatrix();
+    //     }
 
-        if (renderer) {
-            renderer.setSize( rendererWidth, rendererHeight );
-        }
-    });
+    //     if (renderer) {
+    //         renderer.setSize( rendererWidth, rendererHeight );
+    //     }
+    // });
 
     window.addEventListener('load', function() {
         
@@ -207,8 +207,8 @@
     function renderScene(modelViewMatrix, projectionMatrix) {
         
         var scaleMatrix = [
-            -1, 0, 0, 0,
-            0, -1, 0, 0,
+            1, 0, 0, 0,
+            0, 1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1
         ];
@@ -220,7 +220,7 @@
         
         // only set the projection matrix for the camera 1 time, since it stays the same
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
-            // projectionMatrix[0] *= -1;
+            //projectionMatrix[5] *= -1;
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
             isProjectionMatrixSet = true;
         }
