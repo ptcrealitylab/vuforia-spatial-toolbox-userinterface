@@ -1717,7 +1717,7 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     // 1. Construct matrix for scale and translation
     this.getMatrixValues.scale = [
         frameScale, 0, 0, 0,
-        0, -frameScale, 0, 0,
+        0, frameScale, 0, 0,
         0, 0, frameScale, 0,
         frameX, frameY, 0, 1
     ];
