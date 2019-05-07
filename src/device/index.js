@@ -289,15 +289,17 @@ realityEditor.device.shouldPostEventsIntoIframe = function() {
 realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     var iframe = document.getElementById('iframe' + (nodeKey || frameKey));
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
-    iframe.contentWindow.postMessage(JSON.stringify({
-        event: {
-            type: event.type,
-            pointerId: event.pointerId,
-            pointerType: event.pointerType,
-            x: newCoords.x,
-            y: newCoords.y
-        }
-    }), '*');
+    if (newCoords) {
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: {
+                type: event.type,
+                pointerId: event.pointerId,
+                pointerType: event.pointerType,
+                x: newCoords.x,
+                y: newCoords.y
+            }
+        }), '*');
+    }
 };
 
 /**
@@ -791,19 +793,8 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
     if (isOverTrash) return;
     
     if (activeVehicle && !isOverTrash) {
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        var content = {};
-        content.x = positionData.x;
-        content.y = positionData.y;
-        content.scale = positionData.scale;
-        if (this.editingState.unconstrained || globalStates.unconstrainedPositioning) {
-            content.matrix = positionData.matrix;
-        }
-        content.lastEditor = globalStates.tempUuid;
-        
-        var routeSuffix = (this.editingState.node) ? "/nodeSize/" : "/size/";
-        var urlEndpoint = 'http://' + objects[this.editingState.object].ip + ':' + httpPort + '/object/' + this.editingState.object + "/frame/" + this.editingState.frame + "/node/" + this.editingState.node + routeSuffix;
-        realityEditor.network.postData(urlEndpoint, content);
+        var ignoreMatrix = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning);
+        realityEditor.network.postVehiclePosition(activeVehicle, ignoreMatrix);
     }
     
     // drop frame onto closest object if we have pulled one away from a previous object
@@ -832,14 +823,8 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 
             realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
 
-            // var newObject = realityEditor.getObject(closestObjectKey);
             var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-
-            // update position on server
-            urlEndpoint = 'http://' + objects[closestObjectKey].ip + ':' + httpPort + '/object/' + closestObjectKey + "/frame/" + newFrameKey + "/node/" + null + "/size/";
-            var content = newFrame.ar;
-            content.lastEditor = globalStates.tempUuid;
-            realityEditor.network.postData(urlEndpoint, content);
+            realityEditor.network.postVehiclePosition(newFrame);
 
         } else {
 
@@ -1030,9 +1015,23 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             var didTouchScreen = this.checkIfTouchWithinScreenBounds(event.pageX, event.pageY);
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
-                // realityEditor.gui.menus.switchToMenu("bigPocket");
-                // realityEditor.gui.memory.createMemory(); // TODO: implement memories and re-enable then
 
+                if (!globalStates.groupingEnabled) {
+                    
+                    // try only doing it for double taps now....
+                    if (!this.isDoubleTap) { // on first tap
+                        this.isDoubleTap = true;
+                        // if no follow up tap within time reset
+                        setTimeout(function() {
+                            this.isDoubleTap = false;
+                        }.bind(this), 300);
+                    } else { // registered double tap and create memory
+                        realityEditor.gui.menus.switchToMenu("bigPocket");
+                        realityEditor.gui.memory.createMemory();
+                    }
+
+                }
+                
             }
         }
     }

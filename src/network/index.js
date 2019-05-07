@@ -327,13 +327,13 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
 
     console.warn('updateObject: ' + frameKey);
 
-    origin.x = remote.x;
-    origin.y = remote.y;
-    origin.scale = remote.scale;
+    // origin.x = remote.x;
+    // origin.y = remote.y;
+    // origin.scale = remote.scale;
 
-    if (remote.matrix) {
-        origin.matrix = remote.matrix;
-    }
+    // if (remote.matrix) {
+    //     origin.matrix = remote.matrix;
+    // }
     
     // update each frame in the object
     for (var frameKey in remote.frames) {
@@ -841,7 +841,9 @@ realityEditor.network.onAction = function (action) {
             // this.getData(url, id, function (req, thisKey) {
             _this.cout('received memory', res.memory);
             objects[objectKey].memory = res.memory;
-            _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
+            objects[objectKey].memoryCameraMatrix = res.memoryCameraMatrix;
+            
+            // _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
     }
     
@@ -1339,23 +1341,49 @@ if (thisFrame) {
     if (typeof msgContent.createNode !== "undefined") {
         var node = new Node();
         node.name = msgContent.createNode.name;
-        node.frame = msgContent.node;
-        var nodeKey = node.frame + msgContent.createNode.name;
-        var nodesIndex = 0;
-        var object = objects[msgContent.object];
-        for (var otherNodeKey in object.nodes) {
-            var otherNode = object.nodes[otherNodeKey];
-            if (otherNodeKey === nodeKey) {
-                break;
-            }
-            if (otherNode.frame === msgContent.node) {
-                nodesIndex += 1;
-            }
+        node.frameId = msgContent.frame;
+        node.objectId = msgContent.object;
+        var nodeKey = node.frameId + msgContent.createNode.name + realityEditor.device.utilities.uuidTime();
+        node.uuid = nodeKey;
+        var thisObject = realityEditor.getObject(msgContent.object);
+        var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        node.x = (msgContent.createNode.x) || (-200 + Math.random() * 400);
+        node.y = (msgContent.createNode.y) || (-200 + Math.random() * 400);
+        
+        if (msgContent.createNode.attachToGroundPlane) {
+            node.attachToGroundPlane = true;
         }
-        node.x = (tempThisObject.x || 0) + 200 * nodesIndex;
-        node.y = (tempThisObject.y || 0) + 200 * nodesIndex;
-        object.nodes[nodeKey] = node;
-        realityEditor.network.postNewNode(object.ip, msgContent.object, nodeKey, node);
+        
+        thisFrame.nodes[nodeKey] = node;
+        //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
+        realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
+    }
+    
+    if (typeof msgContent.resetNodes !== "undefined") {
+        
+        realityEditor.forEachNodeInFrame(msgContent.object, msgContent.frame, function(thisObjectKey, thisFrameKey, thisNodeKey) {
+            
+            // delete links to and from the node
+            realityEditor.forEachFrameInAllObjects(function(thatObjectKey, thatFrameKey) {
+                var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
+                Object.keys(thatFrame.links).forEach(function(linkKey) {
+                    var thisLink = thatFrame.links[linkKey];
+                    if (((thisLink.objectA === thisObjectKey) && (thisLink.frameA === thisFrameKey) && (thisLink.nodeA === thisNodeKey)) ||
+                        ((thisLink.objectB === thisObjectKey) && (thisLink.frameB === thisFrameKey) && (thisLink.nodeB === thisNodeKey))) {
+                        delete thatFrame.links[linkKey];
+                        realityEditor.network.deleteLinkFromObject(objects[thatObjectKey].ip, thatObjectKey, thatFrameKey, linkKey);
+                    }
+                });
+            });
+
+            // remove it from the DOM
+            realityEditor.gui.ar.draw.deleteNode(thisObjectKey, thisFrameKey, thisNodeKey);
+            realityEditor.gui.ar.draw.removeFromEditedNodesList(thisNodeKey);
+            // delete it from the server
+            realityEditor.network.deleteNodeFromObject(objects[thisObjectKey].ip, thisObjectKey, thisFrameKey, thisNodeKey);
+            
+        });
+
     }
 
     if (typeof msgContent.beginTouchEditing !== "undefined") {
@@ -2463,4 +2491,23 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
         console.log('set group to ' + newGroupID + ' on server');
         console.log(err, response);
     })
+};
+
+realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix) {
+    if (activeVehicle) {
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        var content = {};
+        content.x = positionData.x;
+        content.y = positionData.y;
+        content.scale = positionData.scale;
+        if (!ignoreMatrix) {
+            content.matrix = positionData.matrix;
+        }
+        content.lastEditor = globalStates.tempUuid;
+
+        var endpointSuffix = realityEditor.isVehicleAFrame(activeVehicle) ? "/size/" : "/nodeSize/";
+        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        var urlEndpoint = 'http://' + realityEditor.getObject(keys.objectKey).ip + ':' + httpPort + '/object/' + keys.objectKey + "/frame/" + keys.frameKey + "/node/" + keys.nodeKey + endpointSuffix;
+        realityEditor.network.postData(urlEndpoint, content);
+    }
 };

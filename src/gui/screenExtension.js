@@ -384,7 +384,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
                     // var resultMatrix = [];
                     // realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
                     // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
-                    didPushIn = projectedPoint[2] > 10; // if the z coordinate of center of frame is negative // flipped to be positive since vuforia 7.2 coordinate flip
+                    didPushIn = projectedPoint[2] < -10; // if the z coordinate of center of frame is negative
                     // when not in unconstrained editing mode, just push in if you move towards the screen more than a certain threshold
                 } else {
                     didPushIn = (distanceToObject < (globalStates.initialDistance - distanceThreshold));

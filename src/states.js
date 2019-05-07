@@ -58,7 +58,7 @@ var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording 
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 
-var TEMP_DISABLE_MEMORIES = true;
+var TEMP_DISABLE_MEMORIES = false;
 var mmToMeterScale = 1000; // used to be 1000, but this improves overall scale / initial position of frames
 
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
@@ -110,7 +110,7 @@ var globalStates = {
     // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
-    groupingEnabled: true,
+    groupingEnabled: false,
 
 	pocketButtonState: false,
     
@@ -136,6 +136,12 @@ var globalStates = {
 		0, 0, 0, 1
 	],
 	realProjectionMatrix: [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	],
+	webglProjectionMatrix: [
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
@@ -325,9 +331,7 @@ var editingAnimationsMatrix = [
 
 var pocketDropAnimation = null;
 
-// var pocketBegin = [957.8799965328,14.08087319936,-0.010595169148000001,-0.010574,-14.111489845951999,956.3419195071999,-0.0006352692680000001,-0.000634,-10.408501976832,-1.08562603904, -2.0039759439440004, -1.999972, -2403.635924829311, 4583.42312003328, 2500, 2500];
-
-var pocketBegin = [957.3665564299057, 1.7409374242911637, -0.04205859900475823, -0.04197456592377882, -2.061978731652602, 956.4420738063579, -0.0009198180263892395, -0.0009179802299690101, -31.779574955938326, -1.4650280344646907, -2.003986095420891, -1.9999821311942394, -61760.6504307418, 11001.215652648178, 790.4361984955037, 793.8519069777337];
+var pocketBegin = [1137.549909421903,12.017532798048029,-0.03482891256371417,-0.03475932439627283,-11.812648290367441,1137.738228161505,0.005875104883220343,0.005863366423640215,-22.38728737682625,11.161969977619812, -2.003692935114902, -1.9996895566225437, -9437.22693164777, 6368.974843939889, 793.5453413849068, 795.955841789644];
 
 var visibleObjectTapInterval = null;
 var visibleObjectTapDelay = 1000;

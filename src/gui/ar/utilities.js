@@ -656,7 +656,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         draw.matrix.r3 = [
             positionData.scale, 0, 0, 0,
             0, positionData.scale, 0, 0,
-            0, 0, 1, 0,
+            0, 0, positionData.scale, 0,
             positionData.x, positionData.y, 0, 1
         ];
         realityEditor.gui.ar.utilities.multiplyMatrix(draw.matrix.r3, activeObjectMatrix, finalMatrix);
@@ -1242,11 +1242,11 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             // get corners, add in correct order so they get drawn clockwise
 
             corners.forEach(function (corner) {
-                if (corner[2] > 0) { // flipped sign from less than 0 to greater than because z axis flipped in vuforia 7.2
+                if (corner[2] < 0) { // flipped sign from less than 0 to greater than because z axis flipped in vuforia 7.2
                     interceptPoints.push(corner);
                 }
 
-                if (corner[2] > 100) {
+                if (corner[2] < -100) {
                     numBehindMarkerPlane++;
                 }
             });
@@ -1305,7 +1305,7 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
     var possitionMatrix = [
         obj.scale, 0, 0, 0,
         0, obj.scale, 0, 0,
-        0, 0, 1, 0,
+        0, 0, obj.scale, 0,
         obj.x, obj.y, 0, 1
     ];
     
@@ -1383,6 +1383,13 @@ realityEditor.gui.ar.utilities.getQuaternionFromMatrix = function(m) {
     q.y *= Math.sign( q.y * ( m[8] - m[2] ) );
     q.z *= Math.sign( q.z * ( m[1] - m[4] ) );
     
+    return q;
+};
+
+realityEditor.gui.ar.utilities.convertQuaternionHandedness = function(q) {
+    q.x *= -1;
+    q.y *= -1;
+    q.z *= -1;
     return q;
 };
 
@@ -1556,6 +1563,17 @@ realityEditor.gui.ar.utilities.extractRotation = function(matrix, flipX, flipY, 
 };
 
 /**
+ * A helper function that extracts the rotation matrix from a 4x4 transformation matrix,
+ * and optionally inverts any combination of the axes of rotation
+ * @param {Array.<number>} matrix
+ * @return {Array.<number>}
+ */
+realityEditor.gui.ar.utilities.extractRotationTemp = function(matrix) {
+    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
+    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(this.convertQuaternionHandedness(q));
+};
+
+/**
  * Helper function that extracts the x,y,z translation elements from a 4x4 transformation matrix,
  * and optionally inverts any combination of the axes of translation
  * @param {Array.<number>} matrix
@@ -1582,3 +1600,48 @@ realityEditor.gui.ar.utilities.extractTranslation = function(matrix, flipX, flip
     
     return translationMatrix;
 };
+
+realityEditor.gui.ar.utilities.mToggle_YZ = [
+    1, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 1
+];
+
+/**
+ * @param matrix
+ * @return {*}
+ */
+realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
+    var m2 = [];
+    this.multiplyMatrix(this.mToggle_YZ, matrix, m2);
+    return m2;
+};
+
+// /**
+//  * @param matrix
+//  * @return {*}
+//  */
+// realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
+//    
+//     var m2 = this.newIdentityMatrix();
+//    
+//    
+//     var a = matrix[1];
+//     var b = matrix[5];
+//     var c = matrix[9];
+//     var d = matrix[13];
+//
+//     matrix[1] = matrix[2];
+//     matrix[5] = matrix[6];
+//     matrix[9] = matrix[10];
+//     matrix[13] = matrix[14];
+//
+//     matrix[2] = a;
+//     matrix[6] = b;
+//     matrix[10] = c;
+//     matrix[14] = d;
+//    
+//     return matrix;
+// };
+

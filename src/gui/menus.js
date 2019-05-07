@@ -194,8 +194,10 @@ createNameSpace("realityEditor.gui.menus");
             buttons[buttonName].overlay.addEventListener("pointerdown", function (event) {
                 console.log(buttonName + ' down');
                 
-                event.button = this.button; // points to the buttonObject.overlay.button property, which = buttonName
-                realityEditor.gui.buttons[buttonName + 'ButtonDown'](event);
+                var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
+                
+                mutableEvent.button = this.button; // points to the buttonObject.overlay.button property, which = buttonName
+                realityEditor.gui.buttons[buttonName + 'ButtonDown'](mutableEvent);
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerup", function (event) {
@@ -204,32 +206,38 @@ createNameSpace("realityEditor.gui.menus");
                 // Note: if you don't trigger the _x_ButtonDown for button named _x_, you will need to trigger _x_ButtonUp with
                 // event.ignoreIsDown=true because otherwise it won't register that you intended to press it
 
-                event.button = this.button;
+                var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
+
+                mutableEvent.button = this.button;
                 // pointerUp(event);
 
                 // these functions get generated automatically at runtime
-                realityEditor.gui.buttons[buttonName + 'ButtonUp'](event);
+                realityEditor.gui.buttons[buttonName + 'ButtonUp'](mutableEvent);
 
-                sendInterfaces(event.button);
-                if(realityEditor.gui.search.getVisibility() && event.button !== "realitySearch"){
+                sendInterfaces(mutableEvent.button);
+                if(realityEditor.gui.search.getVisibility() && mutableEvent.button !== "realitySearch"){
                     realityEditor.gui.search.remove();
                 }
 
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerenter", function (event) {
-                event.button = this.button;
+                var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
+
+                mutableEvent.button = this.button;
                 // pointerEnter(event);
-                realityEditor.gui.buttons[buttonName + 'ButtonEnter'](event);
-                buttonActionEnter(event);
+                realityEditor.gui.buttons[buttonName + 'ButtonEnter'](mutableEvent);
+                buttonActionEnter(mutableEvent);
 
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerleave", function (event) {
-                event.button = this.button;
+                var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
+
+                mutableEvent.button = this.button;
                 // pointerLeave(event);
-                realityEditor.gui.buttons[buttonName + 'ButtonLeave'](event);
-                buttonActionLeave(event);
+                realityEditor.gui.buttons[buttonName + 'ButtonLeave'](mutableEvent);
+                buttonActionLeave(mutableEvent);
 
             }, false);
 
