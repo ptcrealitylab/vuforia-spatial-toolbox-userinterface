@@ -45,6 +45,8 @@
         rendererWidth = window.innerWidth;
         rendererHeight = window.innerHeight;
         aspectRatio = rendererWidth / rendererHeight;
+        
+        // console.log(renderer.getSize(), rendererWidth, rendererHeight);
 
         if (camera) {
             //camera.aspect = window.innerWidth/window.innerHeight;
@@ -394,13 +396,6 @@
         );
     }
 
-    // var rotateX = [
-    //     1, 0, 0, 0,
-    //     0, -1, 0, 0,
-    //     0, 0, 1, 0,
-    //     0, 0, 0, 1
-    // ];
-
     /**
      * @desc This function multiplies one m16 matrix with a second m16 matrix
      * @param {Array.<number>} m2 - origin matrix to be multiplied with
@@ -466,7 +461,7 @@
         
         var scaleMatrix = [
             1, 0, 0, 0,
-            0, -1, 0, 0,
+            0, 1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1
         ];
@@ -479,7 +474,6 @@
         // only set the projection matrix for the camera 1 time, since it stays the same
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
-
             isProjectionMatrixSet = true;
         }
 
