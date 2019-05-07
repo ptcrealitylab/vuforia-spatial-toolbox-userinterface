@@ -193,6 +193,25 @@ realityEditor.gui.ar.draw.correctedCameraMatrix = [
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
+realityEditor.gui.ar.draw.webGlCameraMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+var threejsObjectMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+realityEditor.gui.ar.draw.viewMatrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
 realityEditor.gui.ar.draw.m1 = [
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -286,6 +305,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
+            this.webGlVisibleObjectMatrix = [];
+
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
@@ -298,13 +319,27 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
                 
             } else {
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
+                // var objectViewMatrix = realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey])
+                var rotatedVisibleObjectMatrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], rotatedVisibleObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
+                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.webGlCameraMatrix, this.webGlVisibleObjectMatrix);
             }
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey] , this.globalStates.projectionMatrix, this.activeObjectMatrix);
+
+            this.webGlActiveObjectMatrix = [];
+            this.ar.utilities.multiplyMatrix(this.webGlVisibleObjectMatrix, this.globalStates.projectionMatrix, this.webGlActiveObjectMatrix);
+
+            if (isNaN(this.activeObjectMatrix[0])) {
+                this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            }
+            
+            if (isNaN(this.webGlActiveObjectMatrix[0])) {
+                this.webGlActiveObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            }
             
             // extract its projected (x,y) screen coordinates from the matrix
             //TODO THIS GETS OVERWRITTEN FURTHER DOWN Is this used for anything?
@@ -1269,6 +1304,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // draw transformed
                 if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
                     globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                } else {
+                    this.updateStickyFrameCss(activeKey);
                 }
 
                 // this is for later
@@ -1279,8 +1316,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 if (thisIsBeingEdited) {
                     realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
-                } else {
-                    this.updateStickyFrameCss(activeKey);
                 }
 
             }
@@ -1441,39 +1476,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 };
 
 /**
- * Updates the visibility / touch events of a sticky fullscreen frame differently than other frames,
- * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
- * @param {string} activeKey
- */
-realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
-    // sticky frames need a special process to show and hide depending on guiState....
-
-    // if visible but switched to node view, make "hidden" (lower opacity) and ignore touch events
-    if (globalStates.guiState === 'node' && globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer')) {
-
-        globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
-        globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
-        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
-        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
-
-        globalDOMCache[activeKey].classList.remove('usePointerEvents');
-        globalDOMCache[activeKey].classList.add('ignorePointerEvents');
-
-    // if low opacity but switched to UI view, make fully visible (full opacity) and accept touch events again
-    } else if (globalStates.guiState === 'ui' && globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer')) {
-
-        globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
-        globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
-
-        globalDOMCache['iframe' + activeKey].classList.add('visibleFrame');
-        globalDOMCache['iframe' + activeKey].classList.remove('hiddenFrame');
-
-        globalDOMCache[activeKey].classList.add('usePointerEvents');
-        globalDOMCache[activeKey].classList.remove('ignorePointerEvents');
-    }
-};
-
-/**
  * Temporarily disabled function that will snap the frame to the marker plane
  * (by removing its rotation components) if the amount of rotation is very small
  * @todo: only do this if it is also close to the marker plane in the Z direction
@@ -1538,6 +1540,37 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
         
         // otherwise if it is close but you are still moving it, show some visual feedback to warn you it will snap
         globalDOMCache["iframe" + activeKey].classList.add('snappableFrame');
+    }
+};
+
+/**
+ * Updates the visibility / touch events of a sticky fullscreen frame differently than other frames,
+ * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
+ * @param {string} activeKey
+ */
+realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
+    // sticky frames need a special process to show and hide depending on guiState....
+    if (globalStates.guiState === 'node' && globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer')) {
+
+        globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
+        globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
+        globalDOMCache['iframe' + activeKey].classList.remove('usePointerEvents');
+        globalDOMCache['iframe' + activeKey].classList.add('ignorePointerEvents');
+
+        globalDOMCache[activeKey].classList.remove('usePointerEvents');
+        globalDOMCache[activeKey].classList.add('ignorePointerEvents');
+
+    } else if (globalStates.guiState === 'ui' && globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer')) {
+
+        globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
+        globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
+
+        globalDOMCache['iframe' + activeKey].classList.add('usePointerEvents');
+        globalDOMCache['iframe' + activeKey].classList.remove('ignorePointerEvents');
+
+        globalDOMCache[activeKey].classList.add('usePointerEvents');
+        globalDOMCache[activeKey].classList.remove('ignorePointerEvents');
+
     }
 };
 
@@ -1650,6 +1683,8 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     // clear some flags so it gets rendered after this occurs
     pocketContainer.positionOnLoad = null;
     pocketContainer.waitingToRender = false;
+    
+    realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
 };
 
 /**
