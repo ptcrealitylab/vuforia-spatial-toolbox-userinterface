@@ -45,6 +45,8 @@
         rendererWidth = window.innerWidth;
         rendererHeight = window.innerHeight;
         aspectRatio = rendererWidth / rendererHeight;
+        
+        // console.log(renderer.getSize(), rendererWidth, rendererHeight);
 
         if (camera) {
             //camera.aspect = window.innerWidth/window.innerHeight;
@@ -481,6 +483,8 @@
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
 
             isProjectionMatrixSet = true;
+            
+            // console.log('sphere set projection matrix in renderScene');
         }
 
         if (isProjectionMatrixSet) { // don't turn into else statement, both can happen

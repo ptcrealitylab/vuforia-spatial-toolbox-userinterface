@@ -2492,3 +2492,22 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
         console.log(err, response);
     })
 };
+
+realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix) {
+    if (activeVehicle) {
+        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        var content = {};
+        content.x = positionData.x;
+        content.y = positionData.y;
+        content.scale = positionData.scale;
+        if (!ignoreMatrix) {
+            content.matrix = positionData.matrix;
+        }
+        content.lastEditor = globalStates.tempUuid;
+
+        var endpointSuffix = realityEditor.isVehicleAFrame(activeVehicle) ? "/size/" : "/nodeSize/";
+        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        var urlEndpoint = 'http://' + realityEditor.getObject(keys.objectKey).ip + ':' + httpPort + '/object/' + keys.objectKey + "/frame/" + keys.frameKey + "/node/" + keys.nodeKey + endpointSuffix;
+        realityEditor.network.postData(urlEndpoint, content);
+    }
+};

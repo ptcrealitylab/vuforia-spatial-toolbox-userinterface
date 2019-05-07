@@ -414,3 +414,7 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
         nodeKey: nodeKey
     };
 };
+
+realityEditor.isVehicleAFrame = function(vehicle) {
+    return (vehicle.type === 'ui' || typeof vehicle.type === 'undefined');
+};
