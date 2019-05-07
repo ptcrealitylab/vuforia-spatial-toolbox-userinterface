@@ -1735,8 +1735,6 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     // clear some flags so it gets rendered after this occurs
     pocketContainer.positionOnLoad = null;
     pocketContainer.waitingToRender = false;
-
-    realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
 };
 
 /**

@@ -656,7 +656,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         draw.matrix.r3 = [
             positionData.scale, 0, 0, 0,
             0, positionData.scale, 0, 0,
-            0, 0, 1, 0,
+            0, 0, positionData.scale, 0,
             positionData.x, positionData.y, 0, 1
         ];
         realityEditor.gui.ar.utilities.multiplyMatrix(draw.matrix.r3, activeObjectMatrix, finalMatrix);
