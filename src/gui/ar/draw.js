@@ -193,24 +193,6 @@ realityEditor.gui.ar.draw.correctedCameraMatrix = [
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
-realityEditor.gui.ar.draw.webGlCameraMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-var threejsObjectMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-realityEditor.gui.ar.draw.viewMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
 
 realityEditor.gui.ar.draw.m1 = [
     1, 0, 0, 0,
@@ -304,9 +286,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
-
-            this.webGlVisibleObjectMatrix = [];
-
+            
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
@@ -319,26 +299,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
                 
             } else {
-                // var objectViewMatrix = realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey])
-                var rotatedVisibleObjectMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], rotatedVisibleObjectMatrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.webGlCameraMatrix, this.webGlVisibleObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
             }
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey] , this.globalStates.projectionMatrix, this.activeObjectMatrix);
-
-            this.webGlActiveObjectMatrix = [];
-            this.ar.utilities.multiplyMatrix(this.webGlVisibleObjectMatrix, this.globalStates.projectionMatrix, this.webGlActiveObjectMatrix);
-
+            
             if (isNaN(this.activeObjectMatrix[0])) {
                 this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            }
-            
-            if (isNaN(this.webGlActiveObjectMatrix[0])) {
-                this.webGlActiveObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             }
             
             // extract its projected (x,y) screen coordinates from the matrix
@@ -1550,23 +1520,30 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  */
 realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
     // sticky frames need a special process to show and hide depending on guiState....
-    if (globalStates.guiState === 'node' && globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer')) {
+    if (globalStates.guiState === 'node' && 
+        (globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer') ||
+            globalDOMCache['iframe' + activeKey].classList.contains('visibleFrame') ||
+            globalDOMCache[activeKey].classList.contains('usePointerEvents'))) {
 
         globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
         globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
-        globalDOMCache['iframe' + activeKey].classList.remove('usePointerEvents');
-        globalDOMCache['iframe' + activeKey].classList.add('ignorePointerEvents');
+        
+        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
 
         globalDOMCache[activeKey].classList.remove('usePointerEvents');
         globalDOMCache[activeKey].classList.add('ignorePointerEvents');
 
-    } else if (globalStates.guiState === 'ui' && globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer')) {
+    } else if (globalStates.guiState === 'ui' &&
+        (globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer') ||
+            globalDOMCache['iframe' + activeKey].classList.contains('hiddenFrame') ||
+            globalDOMCache[activeKey].classList.contains('ignorePointerEvents'))) {
 
         globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
         globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
 
-        globalDOMCache['iframe' + activeKey].classList.add('usePointerEvents');
-        globalDOMCache['iframe' + activeKey].classList.remove('ignorePointerEvents');
+        globalDOMCache['iframe' + activeKey].classList.add('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.remove('hiddenFrame');
 
         globalDOMCache[activeKey].classList.add('usePointerEvents');
         globalDOMCache[activeKey].classList.remove('ignorePointerEvents');
