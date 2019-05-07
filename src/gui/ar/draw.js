@@ -1208,7 +1208,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var rotatedGroundPlaneMatrix = [];
                     var rotation3d = [
                         1, 0, 0, 0,
-                        0, 0, -1, 0,
+                        0, 0, 1, 0,
                         0, 1, 0, 0,
                         0, 0, 0, 1
                     ];
