@@ -228,13 +228,10 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     var r = [];
 
     globalStates.realProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
-
-
-
+    
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
-
-
+    
 };
 
 /**
