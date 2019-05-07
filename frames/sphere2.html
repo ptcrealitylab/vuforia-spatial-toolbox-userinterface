@@ -395,13 +395,6 @@
         );
     }
 
-    // var rotateX = [
-    //     1, 0, 0, 0,
-    //     0, -1, 0, 0,
-    //     0, 0, 1, 0,
-    //     0, 0, 0, 1
-    // ];
-
     /**
      * @desc This function multiplies one m16 matrix with a second m16 matrix
      * @param {Array.<number>} m2 - origin matrix to be multiplied with
@@ -465,26 +458,10 @@
 
     function renderScene(modelViewMatrix, projectionMatrix) {
         
-        var scaleMatrix = [
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ];
-
-        var r = [];
-        multiplyMatrix(scaleMatrix, modelViewMatrix, r);
-        modelViewMatrix = r;
-        // console.log(modelView);
-        
         // only set the projection matrix for the camera 1 time, since it stays the same
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
-            //projectionMatrix[5] *= -1;
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
-
             isProjectionMatrixSet = true;
-            
-            // console.log('sphere set projection matrix in renderScene');
         }
 
         if (isProjectionMatrixSet) { // don't turn into else statement, both can happen
