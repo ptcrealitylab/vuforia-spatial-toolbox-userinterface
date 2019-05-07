@@ -327,13 +327,13 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, frameK
 
     console.warn('updateObject: ' + frameKey);
 
-    // origin.x = remote.x;
-    // origin.y = remote.y;
-    // origin.scale = remote.scale;
+    origin.x = remote.x;
+    origin.y = remote.y;
+    origin.scale = remote.scale;
 
-    // if (remote.matrix) {
-    //     origin.matrix = remote.matrix;
-    // }
+    if (remote.matrix) {
+        origin.matrix = remote.matrix;
+    }
     
     // update each frame in the object
     for (var frameKey in remote.frames) {
@@ -1274,7 +1274,9 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
+            
+            var zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1315,7 +1317,9 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
-            var zIndex = tempThisObject.fullscreenZPosition || 200; //200 + (tempThisObject.fullscreenZPosition || 0);
+            
+            var zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1357,6 +1361,30 @@ if (thisFrame) {
         thisFrame.nodes[nodeKey] = node;
         //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
+    }
+    
+    if (typeof msgContent.moveNode !== "undefined") {
+        var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        
+        // move each node within this frame with a matching name to the provided x,y coordinates
+        Object.keys(thisFrame.nodes).map(function(nodeKey) {
+            return thisFrame.nodes[nodeKey];
+        }).filter(function(node) {
+            return node.name === msgContent.moveNode.name;
+        }).forEach(function(node) {
+            node.x = (msgContent.moveNode.x) || 0;
+            node.y = (msgContent.moveNode.y) || 0;
+            
+            var positionData = realityEditor.gui.ar.positioning.getPositionData(node);
+            var content = {};
+            content.x = positionData.x;
+            content.y = positionData.y;
+            content.scale = positionData.scale;
+
+            content.lastEditor = globalStates.tempUuid;
+            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
+            realityEditor.network.postData(urlEndpoint, content);
+        });
     }
     
     if (typeof msgContent.resetNodes !== "undefined") {
