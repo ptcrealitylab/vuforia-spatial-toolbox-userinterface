@@ -179,13 +179,14 @@
                 // Turn that into a unit direction vector from the camera's position.
                 XY.sub(camera.position);
                 XY.normalize();
+                console.log('real scale', modelRealScale);
 
                 // Distance along the direction vector is dependent on parameters sent from the phone.
-                XY.multiplyScalar(-z * modelRealScale.y);
+                XY.multiplyScalar(z * modelRealScale.y);
 
                 // Change near plane of Camera to create 'exit' illusion.
-                var newNear = XY.length() + (data.cut * (1/data.im));
-                setNewProjectionMatrix(projectionMatrixFrom(25, window.innerWidth/window.innerHeight, newNear, 300000));
+                var newNear = XY.length() - (data.cut * (1/data.im));
+                //setNewProjectionMatrix(projectionMatrixFrom(25, window.innerWidth/window.innerHeight, newNear, 300000));
 
                 XY.add(camera.position);
 
@@ -465,7 +466,7 @@
         
         var scaleMatrix = [
             1, 0, 0, 0,
-            0, 1, 0, 0,
+            0, -1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1
         ];
@@ -477,7 +478,6 @@
         
         // only set the projection matrix for the camera 1 time, since it stays the same
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
-            //projectionMatrix[5] *= -1;
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
 
             isProjectionMatrixSet = true;

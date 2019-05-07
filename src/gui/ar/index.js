@@ -65,7 +65,6 @@ createNameSpace("realityEditor.gui.ar");
  * @param {Array.<number>} matrix - a 4x4 projection matrix
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
-        globalStates.realProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
     
     // matrix[0] *= -1;
 
@@ -85,24 +84,9 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     //     return;
     // }
     //
-    // if (matrix[5] < 0) {
-    //     matrix[5] *= -1;
-    // }
-    // if (matrix[8] < 0) {
-    //     matrix[8] *= -1;
-    // }
-    // if (matrix[9] < 0) {
-    //     matrix[9] *= -1;
-    // }
-    // if (matrix[10] < 0) {
-    //     matrix[10] *= -1;
-    // }
-    // if (matrix[11] < 0) {
-    //     matrix[11] *= -1;
-    // }
 
     if (realityEditor.device.utilities.isDesktop()) {
-      //  matrix[0] *= -1;
+        matrix[5] *= -1;
     }
     
     var corX = 0;
@@ -221,13 +205,13 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     
     var multiplier = -1;
 
-    if (realityEditor.device.utilities.isDesktop()) {
-        multiplier = 1;
-    }
+    // if (realityEditor.device.utilities.isDesktop()) {
+    //     multiplier = 1;
+    // }
 
     var viewportScaling = [
         globalStates.height, 0, 0, 0,
-        0,  -globalStates.width, 0, 0,
+        0,  multiplier * globalStates.width, 0, 0,
         0, 0, 1, 0,
         corX, corY, 0, 1
     ];
@@ -242,6 +226,9 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     }
     
     var r = [];
+
+    globalStates.realProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
+
 
 
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
