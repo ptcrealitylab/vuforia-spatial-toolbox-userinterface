@@ -193,25 +193,6 @@ realityEditor.gui.ar.draw.correctedCameraMatrix = [
     0, 0, 1, 0,
     0, 0, 0, 1
 ];
-realityEditor.gui.ar.draw.webGlCameraMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-var threejsObjectMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-realityEditor.gui.ar.draw.viewMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-
 realityEditor.gui.ar.draw.m1 = [
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -305,13 +286,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
 
-            this.webGlVisibleObjectMatrix = [];
-
             // make the object visible
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
-            
-            // threejsObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
             
             if (this.activeObject.isWorldObject) {
                 // don't start rendering world frames until we've received a valid camera matrix
@@ -321,29 +298,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
                 
             } else {
-                
-                // var objectViewMatrix = realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey])
-                
-                var rotatedVisibleObjectMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], rotatedVisibleObjectMatrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.webGlCameraMatrix, this.webGlVisibleObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
             }
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey] , this.globalStates.projectionMatrix, this.activeObjectMatrix);
-
-            this.webGlActiveObjectMatrix = [];
-            this.ar.utilities.multiplyMatrix(this.webGlVisibleObjectMatrix, this.globalStates.projectionMatrix, this.webGlActiveObjectMatrix);
-
-            if (isNaN(this.activeObjectMatrix[0])) {
-                this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            }
-            
-            if (isNaN(this.webGlActiveObjectMatrix[0])) {
-                this.webGlActiveObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            }
             
             // extract its projected (x,y) screen coordinates from the matrix
             //TODO THIS GETS OVERWRITTEN FURTHER DOWN Is this used for anything?
@@ -1098,258 +1059,231 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
             }
 
-            var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+            if (true) { // TODO: simplify
 
-            // set initial position of frames and nodes placed in from pocket
-            // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
-            // 2. otherwise float in unconstrained slightly in front of the editor camera
-            // 3. animate so it looks like it is being pushed from pocket
-            if (activePocketNodeWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                console.log('just added pocket node');
-                this.addPocketVehicle(pocketNode, matrix);
-            }
-            if (activePocketFrameWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                console.log('just added pocket frame');
-                this.addPocketVehicle(pocketFrame, matrix);
-            }
-            
-            var finalOffsetX = positionData.x;
-            var finalOffsetY = positionData.y;
-            var finalScale = positionData.scale;
+                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
-            // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
-            
-            // add node's position to its frame's position to gets its actual offset
-            if (activeType !== "ui" && activeType !== "logic") {
-                var frameKey = activeVehicle.frameId;
-                var frame = realityEditor.getFrame(objectKey, frameKey);
-                if (frame) {
-                    var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-                    if (frame.location !== 'local') {
-                        finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
-                        finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                // set initial position of frames and nodes placed in from pocket
+                // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
+                // 2. otherwise float in unconstrained slightly in front of the editor camera
+                // 3. animate so it looks like it is being pushed from pocket
+                if (activePocketNodeWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
+                    console.log('just added pocket node');
+                    this.addPocketVehicle(pocketNode, matrix);
+                }
+                if (activePocketFrameWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
+                    console.log('just added pocket frame');
+                    this.addPocketVehicle(pocketFrame, matrix);
+                }
+                
+                var finalOffsetX = positionData.x;
+                var finalOffsetY = positionData.y;
+                var finalScale = positionData.scale;
+
+                // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
+                
+                // add node's position to its frame's position to gets its actual offset
+                if (activeType !== "ui" && activeType !== "logic") {
+                    var frameKey = activeVehicle.frameId;
+                    var frame = realityEditor.getFrame(objectKey, frameKey);
+                    if (frame) {
+                        var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
+                        if (frame.location !== 'local') {
+                            finalOffsetX = finalOffsetX /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.x;
+                            finalOffsetY = finalOffsetY /* * (parentFramePositionData.scale/globalStates.defaultScale) */ + parentFramePositionData.y;
+                        }
+                        finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
                     }
-                    finalScale *= (parentFramePositionData.scale/globalStates.defaultScale);
                 }
-            }
-            
-            // TODO: also multiply node's unconstrained matrix by frame's unconstrained matrix if necessary
-            
-            matrix.r3 = [
-                finalScale, 0, 0, 0,
-                0, finalScale, 0, 0,
-                0, 0, finalScale, 0,
-                // positionData.x, positionData.y, 0, 1
-                finalOffsetX, finalOffsetY, 0, 1
-            ];
+                
+                // TODO: also multiply node's unconstrained matrix by frame's unconstrained matrix if necessary
+                
+                matrix.r3 = [
+                    finalScale, 0, 0, 0,
+                    0, finalScale, 0, 0,
+                    0, 0, finalScale, 0,
+                    // positionData.x, positionData.y, 0, 1
+                    finalOffsetX, finalOffsetY, 0, 1
+                ];
 
-            if (globalStates.editingMode || thisIsBeingEdited) {
-                // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
-                var svg = globalDOMCache["svg" + activeKey];
-                if (svg.children.length === 0) {
-                    console.log('retroactively creating the svg overlay');
-                    var iFrame = globalDOMCache["iframe" + activeKey];
-                    svg.style.width = iFrame.style.width;
-                    svg.style.height = iFrame.style.height;
-                    realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
-                }
+                if (globalStates.editingMode || thisIsBeingEdited) {
+                    // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
+                    var svg = globalDOMCache["svg" + activeKey];
+                    if (svg.children.length === 0) {
+                        console.log('retroactively creating the svg overlay');
+                        var iFrame = globalDOMCache["iframe" + activeKey];
+                        svg.style.width = iFrame.style.width;
+                        svg.style.height = iFrame.style.height;
+                        realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+                    }
 
-                // todo test if this can be made touch related
-                if (activeType === "logic") {
-                    activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
-                }
+                    // todo test if this can be made touch related
+                    if (activeType === "logic") {
+                        activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                    }
 
-                if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                    if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
 
-                    activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                        activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
 
-                    // do this one time when you first tap down on something unconstrained, to preserve its current matrix
-                    if (matrix.copyStillFromMatrixSwitch) {
-                        matrix.visual = utilities.copyMatrix(activeObjectMatrix);
-                        
-                        var matrixToUse = positionData.matrix;
-                        
-                        if (typeof matrixToUse === "object") {
-                            if (matrixToUse.length > 0) {
-                                utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
+                        // do this one time when you first tap down on something unconstrained, to preserve its current matrix
+                        if (matrix.copyStillFromMatrixSwitch) {
+                            matrix.visual = utilities.copyMatrix(activeObjectMatrix);
+                            
+                            var matrixToUse = positionData.matrix;
+                            
+                            if (typeof matrixToUse === "object") {
+                                if (matrixToUse.length > 0) {
+                                    utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
+                                } else {
+                                    activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                                }
                             } else {
                                 activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
                             }
+                            
+                            var resultMatrix = [];
+                            utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
+                            realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
+                            
+                            matrix.copyStillFromMatrixSwitch = false;
+                            
+                        // if this isn't the first frame of unconstrained editing, just use the previously stored begin and temp
                         } else {
-                            activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                            var resultMatrix = [];
+                            realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
+                            realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
+                        }
+
+                    }
+                    
+                    if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0) {
+                        if (realityEditor.device.isEditingUnconstrained(activeVehicle) && !(activeVehicle === pocketFrame.vehicle || activeVehicle === pocketNode.vehicle)) {
+                            utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
                         }
                         
-                        var resultMatrix = [];
-                        utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
+                        utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
+                        utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
+                        utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
                         
-                        matrix.copyStillFromMatrixSwitch = false;
+                        // // calculate center Z of frame to know if it is mostly in front or behind the marker plane
+                        // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([activeVehicle.ar.x, activeVehicle.ar.y, 0, 1], matrix.r);
+                        // activeVehicle.originCoordinates = {
+                        //     x: projectedPoint[0],
+                        //     y: projectedPoint[1],
+                        //     z: projectedPoint[2]
+                        // }
                         
-                    // if this isn't the first frame of unconstrained editing, just use the previously stored begin and temp
                     } else {
-                        var resultMatrix = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
-                    }
-
-                    // TODO: this never seems to be triggered, can it be removed?
-                    // if (globalStates.unconstrainedPositioning && matrix.copyStillFromMatrixSwitch) {
-                    //     activeObjectMatrix = matrix.visual;
-                    // }
-
-                }
-                
-                if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0) {
-                    if (realityEditor.device.isEditingUnconstrained(activeVehicle) && !(activeVehicle === pocketFrame.vehicle || activeVehicle === pocketNode.vehicle)) {
-                        utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
+                        utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
                     }
                     
-                    utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
-                    utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
-                    utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
+                }
+
+                if (typeof positionData.matrix !== "undefined") {
+                    if (positionData.matrix.length < 13) {
+                        // utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+
+                        // if (parentFramePositionData && parentFramePositionData.matrix.length === 16) {
+                        //     // This is a node - position relative to parent frame unconstrained editing
+                        //     utilities.multiplyMatrix(parentFramePositionData.matrix, activeObjectMatrix, matrix.r);
+                        //     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                        // } else {
+                            utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
+                        // }
+
+                    } else {
+                        utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
+                        utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                    }
+                }
+
+                if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
                     
-                    // // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-                    // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([activeVehicle.ar.x, activeVehicle.ar.y, 0, 1], matrix.r);
-                    // activeVehicle.originCoordinates = {
-                    //     x: projectedPoint[0],
-                    //     y: projectedPoint[1],
-                    //     z: projectedPoint[2]
-                    // }
-                    
-                } else {
-                    utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
+                    var rotatedGroundPlaneMatrix = [];
+                    var rotation3d = [
+                        1, 0, 0, 0,
+                        0, 0, -1, 0,
+                        0, 1, 0, 0,
+                        0, 0, 0, 1
+                    ];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(rotation3d, realityEditor.gui.ar.draw.groundPlaneMatrix, rotatedGroundPlaneMatrix);
+
+                    var translatedGroundPlaneMatrix = [];
+                    // utilities.multiplyMatrix(matrix.r3, realityEditor.gui.ar.draw.groundPlaneMatrix, translatedGroundPlaneMatrix);
+                    utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
+                    utilities.multiplyMatrix(translatedGroundPlaneMatrix, this.globalStates.projectionMatrix, finalMatrix);
                 }
                 
-            }
-            
-            // realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, []);
-            // positionData.matrix = [];
-
-            if (typeof positionData.matrix !== "undefined") {
-                if (positionData.matrix.length < 13) {
-                    // utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-
-                    // if (parentFramePositionData && parentFramePositionData.matrix.length === 16) {
-                    //     // This is a node - position relative to parent frame unconstrained editing
-                    //     utilities.multiplyMatrix(parentFramePositionData.matrix, activeObjectMatrix, matrix.r);
-                    //     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-                    // } else {
-                        utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-                    // }
-
-                } else {
-                    utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
-                    utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
+                // multiply in the animation matrix if you are editing this frame in unconstrained mode.
+                // in the future this can be expanded but currently this is the only time it gets animated.
+                if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                    var animatedFinalMatrix = [];
+                    utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
+                    finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
                 }
-            }
-            
-            if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
-                // activeVehicle.matrix = realityEditor.gui.ar.draw.groundPlaneMatrix;
-                // matrix.r3 = [
-                //     finalScale, 0, 0, 0,
-                //     0, finalScale, 0, 0,
-                //     0, 0, 1, 0,
-                //     // positionData.x, positionData.y, 0, 1
-                //     finalOffsetX, finalOffsetY, 0, 1
-                // ];
                 
-                var rotatedGroundPlaneMatrix = [];
-                var rotation3d = [
-                    1, 0, 0, 0,
-                    0, 0, -1, 0,
-                    0, 1, 0, 0,
-                    0, 0, 0, 1
-                ];
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotation3d, realityEditor.gui.ar.draw.groundPlaneMatrix, rotatedGroundPlaneMatrix);
+                // TODO: do this on frame touch up (snap position when editing ends), or if unconstrained editing (visual feedback when ready to snap)
+                // this.snapFrameMatrixIfNecessary(activeVehicle, activeKey);
                 
-                var translatedGroundPlaneMatrix = [];
-                // utilities.multiplyMatrix(matrix.r3, realityEditor.gui.ar.draw.groundPlaneMatrix, translatedGroundPlaneMatrix);
-                utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
-                utilities.multiplyMatrix(translatedGroundPlaneMatrix, this.globalStates.projectionMatrix, finalMatrix);
-            }
-            
-            
-            // multiply in the animation matrix if you are editing this frame in unconstrained mode.
-            // in the future this can be expanded but currently this is the only time it gets animated.
-            if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
-                var animatedFinalMatrix = [];
-                utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
-                finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
-            }
-            
-            // TODO: do this on frame touch up (snap position when editing ends), or if unconstrained editing (visual feedback when ready to snap)
-            // this.snapFrameMatrixIfNecessary(activeVehicle, activeKey);
-            
-            // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
-            // but we want all of them to have a positive value so they are rendered in front of background canvas
-            // and frames with developer=false should have the lowest positive value
+                // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
+                // but we want all of them to have a positive value so they are rendered in front of background canvas
+                // and frames with developer=false should have the lowest positive value
 
-            // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-            var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix);
-            // activeVehicle.originCoordinates = {
-            //     x: projectedPoint[0],
-            //     y: projectedPoint[1],
-            //     z: projectedPoint[2]
-            // };
+                // calculate center Z of frame to know if it is mostly in front or behind the marker plane
+                var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix);
+                // activeVehicle.originCoordinates = {
+                //     x: projectedPoint[0],
+                //     y: projectedPoint[1],
+                //     z: projectedPoint[2]
+                // };
+                
+                if ( isNaN(projectedPoint[0]) ) {
+                    projectedPoint = [0,0,0,0];
+                }
 
-            activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
+                activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
-            var activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
-            
-            // var editedOrderData = (activeType === "ui") ? this.getFrameRenderPriority(activeKey) : this.getNodeRenderPriority(activeKey);
-            // var editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
-            
-            var editedOrderZIncrease = 0;
-            if (activeType !== "ui") {
-                // TODO What is this for?
-                var editedOrderData = this.getNodeRenderPriority(activeKey);
-                editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
-            }
-            
-            finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / Math.max(10, projectedPoint[2]);
-            
-            // put frames all the way in the back if you are in node view
-            if (shouldRenderFramesInNodeView) {
-                finalMatrix[14] = 100;
-            }
-            
-            activeVehicle.mostRecentFinalMatrix = finalMatrix;
-            activeVehicle.originMatrix = activeObjectMatrix;
-            
-            // flip horizontally here?
-            // var renderedMatrix = [];
-            // this.ar.utilities.multiplyMatrix(this.rotateX, finalMatrix, renderedMatrix);
-            // var negativeScale = [
-            //     -1, 0, 0, 0,
-            //     0, 1, 0, 0,
-            //     0, 0, 1, 0,
-            //     0, 0, 0, 1
-            // ];
-            //
-            // var r = [];
-            //
-            // realityEditor.gui.ar.utilities.multiplyMatrix(negativeScale, finalMatrix, r);
-            // finalMatrix = realityEditor.gui.ar.utilities.copyMatrix(r);
-            // finalMatrix = realityEditor.gui.ar.utilities.convertMatrixHandedness(finalMatrix);
-            
-            // draw transformed
-            if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
-                globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
-            
-            } else {
-                this.updateStickyFrameCss(activeKey);
-            }
+                var activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
+                
+                // var editedOrderData = (activeType === "ui") ? this.getFrameRenderPriority(activeKey) : this.getNodeRenderPriority(activeKey);
+                // var editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
+                
+                var editedOrderZIncrease = 0;
+                if (activeType !== "ui") {
+                    // TODO What is this for?
+                    var editedOrderData = this.getNodeRenderPriority(activeKey);
+                    editedOrderZIncrease = (editedOrderData.length > 0) ? 50 * (editedOrderData.index / editedOrderData.length) : 0;
+                }
+                
+                finalMatrix[14] = 200 + activeElementZIncrease + editedOrderZIncrease + 1000000 / Math.max(10, projectedPoint[2]);
+                
+                // put frames all the way in the back if you are in node view
+                if (shouldRenderFramesInNodeView) {
+                    finalMatrix[14] = 100;
+                }
+                
+                activeVehicle.mostRecentFinalMatrix = finalMatrix;
+                activeVehicle.originMatrix = activeObjectMatrix;
+                
+                // draw transformed
+                if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
+                    globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                }
 
-            // this is for later
-            // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
-            activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
-            activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
-            // activeVehicle.screenZ = finalMatrix[14];
-            
-            if (thisIsBeingEdited) {
-                realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
-            }
+                // this is for later
+                // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
+                activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
+                activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
+                // activeVehicle.screenZ = finalMatrix[14];
+                
+                if (thisIsBeingEdited) {
+                    realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
+                } else {
+                    this.updateStickyFrameCss(activeKey);
+                }
 
+            }
             // if (activeVehicle.fullScreen === true) {
             //     if (thisIsBeingEdited) {
             //         realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
@@ -1366,7 +1300,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     if (activeVehicle.sendMatrix === true) {
                         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                         thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
-                        // thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(threejsObjectMatrix, positionData.matrix, positionData.x, positionData.y, positionData.scale);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
@@ -1508,6 +1441,39 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 };
 
 /**
+ * Updates the visibility / touch events of a sticky fullscreen frame differently than other frames,
+ * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
+ * @param {string} activeKey
+ */
+realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
+    // sticky frames need a special process to show and hide depending on guiState....
+
+    // if visible but switched to node view, make "hidden" (lower opacity) and ignore touch events
+    if (globalStates.guiState === 'node' && globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer')) {
+
+        globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
+        globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
+        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+
+        globalDOMCache[activeKey].classList.remove('usePointerEvents');
+        globalDOMCache[activeKey].classList.add('ignorePointerEvents');
+
+    // if low opacity but switched to UI view, make fully visible (full opacity) and accept touch events again
+    } else if (globalStates.guiState === 'ui' && globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer')) {
+
+        globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
+        globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
+
+        globalDOMCache['iframe' + activeKey].classList.add('visibleFrame');
+        globalDOMCache['iframe' + activeKey].classList.remove('hiddenFrame');
+
+        globalDOMCache[activeKey].classList.add('usePointerEvents');
+        globalDOMCache[activeKey].classList.remove('ignorePointerEvents');
+    }
+};
+
+/**
  * Temporarily disabled function that will snap the frame to the marker plane
  * (by removing its rotation components) if the amount of rotation is very small
  * @todo: only do this if it is also close to the marker plane in the Z direction
@@ -1576,37 +1542,6 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
 };
 
 /**
- * Updates the visibility / touch events of a sticky fullscreen frame differently than other frames,
- * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
- * @param {string} activeKey
- */
-realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
-    // sticky frames need a special process to show and hide depending on guiState....
-    if (globalStates.guiState === 'node' && globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer')) {
-
-        globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
-        globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
-        globalDOMCache['iframe' + activeKey].classList.remove('usePointerEvents');
-        globalDOMCache['iframe' + activeKey].classList.add('ignorePointerEvents');
-
-        globalDOMCache[activeKey].classList.remove('usePointerEvents');
-        globalDOMCache[activeKey].classList.add('ignorePointerEvents');
-
-    } else if (globalStates.guiState === 'ui' && globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer')) {
-
-        globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
-        globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
-
-        globalDOMCache['iframe' + activeKey].classList.add('usePointerEvents');
-        globalDOMCache['iframe' + activeKey].classList.remove('ignorePointerEvents');
-
-        globalDOMCache[activeKey].classList.add('usePointerEvents');
-        globalDOMCache[activeKey].classList.remove('ignorePointerEvents');
-
-    }
-};
-
-/**
  * Given the vuforia matrix for the marker, and the transformation of the frame relative to that, gives a final composite matrix
  * @param {Array.<number>} visibleObjectMatrix
  * @param {Array.<number>} frameMatrix
@@ -1630,11 +1565,7 @@ realityEditor.gui.ar.draw.getMatrixValues = {
 };
 
 realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
-
-
-    //frameMatrix = [1,0,0,0,0,-1,0,0,0,0,1,0,0,0,0,1];
-
-
+ 
     // 1. Construct matrix for scale and translation
     this.getMatrixValues.scale = [
         frameScale, 0, 0, 0,
@@ -1643,16 +1574,6 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
         frameX, frameY, 0, 1
     ];
     
-    // if (realityEditor.device.utilities.isDesktop()) {
-    //     this.getMatrixValues.scale = [
-    //         frameScale, 0, 0, 0,
-    //         0, -frameScale, 0, 0,
-    //         0, 0, frameScale, 0,
-    //         frameX, frameY, 0, 1
-    //     ];
-    // }
-
-
     // 2. multiply values
     if (frameMatrix.length === 16) {
         this.getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, this.getMatrixValues.r3);
@@ -1660,10 +1581,7 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
     } else {
         this.getMatrixValues.utils.multiplyMatrix(this.getMatrixValues.scale, visibleObjectMatrix, this.getMatrixValues.finalMatrix);
     }
-    // console.log(this.getMatrixValues.finalMatrix);
     return this.getMatrixValues.finalMatrix;
-    
-    // return visibleObjectMatrix;
 };
 
 /**
@@ -1713,9 +1631,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
             y: parseFloat(pocketContainer.vehicle.frameSizeY)/2
         };
     }
-
-    console.log('finished first block');
-
+    
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
@@ -1729,7 +1645,6 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         matrix.copyStillFromMatrixSwitch = false;
         pocketContainer.vehicle.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
     
-        console.log('went into second block');
     }
 
     // clear some flags so it gets rendered after this occurs
@@ -1789,16 +1704,6 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
     
     if (activeVehicle.hasOwnProperty('fullScreen')) {
         if (activeVehicle.fullScreen === 'sticky') {
-            // console.log('dont hide sticky frame');
-            
-            // if (globalStates.guiState === 'node') {
-            //     globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
-            //     globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
-            //
-            //     globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
-            //     globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
-            // }
-            
             return;
         }
     }
