@@ -116,8 +116,8 @@
             function ( gltf ) {
                 
                 // fix upside-down model
-                var rotation = new THREE.Matrix4().makeRotationZ(Math.PI);
-                gltf.scene.applyMatrix(rotation);
+                // var rotation = new THREE.Matrix4().makeRotationZ(Math.PI);
+                // gltf.scene.applyMatrix(rotation);
                 var bbox = new THREE.Box3().setFromObject(gltf.scene);
                 var translation = new THREE.Matrix4().makeTranslation(0, (bbox.max.y - bbox.min.y)/200, 0);
                 gltf.scene.applyMatrix(translation);

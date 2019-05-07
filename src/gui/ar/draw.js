@@ -244,90 +244,15 @@ realityEditor.gui.ar.draw.updateLoop = function () {
     requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
 };
 */
-/**
- * Takes a (mostly) unmodified Vuforia PositionalDeviceTracker pose matrix and converts to correct format for Reality Editor ModelView Matrix
- * cameraMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(unmodifiedCameraMatrix));
- * @param {Array.<number>} originalCameraMatrix
- */
-function correctCameraMatrix(originalCameraMatrix) {
-    return realityEditor.gui.ar.draw.correctedCameraMatrix;
-    /*
-    try {
-        var rotationMatrix = realityEditor.gui.ar.utilities.extractRotation(originalCameraMatrix, true, true, false);
-        var translationMatrix = realityEditor.gui.ar.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(originalCameraMatrix), false, true, true);
-        
-        var correctedTransformationMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translationMatrix, correctedTransformationMatrix);
-        return correctedTransformationMatrix;
-        
-    } catch (e) {
-        console.warn('error correcting camera matrix', originalCameraMatrix);
-    }*/
-}
 
-// function calculateModelViewMatrix(modelMatrix, cameraMatrix) {
-//
-//     var modelViewMatrix = [];
-//
-//     // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
-//     // var modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(correctCameraMatrix(this.visibleObjects[objectKey])));
-//     // modelViewMatrix = modelMatrix;
-//
-//     // modelViewMatrix = this.visibleObjects[objectKey];
-//
-//
-//     // var modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(this.visibleObjects[objectKey])));
-//
-//     // var worldOriginMatrix = correctCameraMatrix(realityEditor.gui.ar.draw.cameraMatrix);
-//
-//     this.ar.utilities.multiplyMatrix(cameraMatrix, modelMatrix, modelViewMatrix);
-//     // this.ar.utilities.multiplyMatrix(worldOriginMatrix, this.visibleObjects[objectKey], modelViewMatrix);
-//     // this.ar.utilities.multiplyMatrix(this.ar.utilities.invertMatrix(worldOriginMatrix), this.visibleObjects[objectKey], modelViewMatrix);
-//
-//     return modelViewMatrix;
-// }
-/*
-var calculateModelViewMatrix = function(modelMatrix, cameraMatrix) {
-    var modelViewMatrix = [];
-    // modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix));
-    modelMatrix = correctCameraMatrix(realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix)));
-    // modelMatrix = correctCameraMatrix(modelMatrix);
-    // modelMatrix = realityEditor.gui.ar.utilities.transposeMatrix(realityEditor.gui.ar.utilities.invertMatrix(modelMatrix));
-    
-    // gives correct rotation
-    var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(modelMatrix);
-    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-    eulerAngles.theta *= -1; // flips one axis of rotation
-    eulerAngles.psi *= -1; // flips another axis of rotation
-    // eulerAngles.phi *= -1; // (don't flip the third!)
-    var invQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-    var rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invQ);
-
-    // add the translation component
-    var translationMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    translationMatrix[12] = modelMatrix[3];
-    translationMatrix[13] = -1 * modelMatrix[7]; // flips one axis of translation
-    translationMatrix[14] = -1 * modelMatrix[11]; // flips another axis of translation
-
-    var correctedTransformationMatrix = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, translationMatrix, correctedTransformationMatrix);
-    modelMatrix = correctedTransformationMatrix;
-    
-    realityEditor.gui.ar.utilities.multiplyMatrix(cameraMatrix, modelMatrix, modelViewMatrix);
-    
-    modelViewMatrix = cameraMatrix;
-    
-    return modelViewMatrix;
-};*/
+realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
+realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
-realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
-realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
-
 realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecomputed) {
     var objectKey;
     var frameKey;
@@ -400,11 +325,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
                 // var objectViewMatrix = realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey])
                 
                 var rotatedVisibleObjectMatrix = [];
-                
-                // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], rotatedVisibleObjectMatrix);
-                // rotatedVisibleObjectMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-
-                rotatedVisibleObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], rotatedVisibleObjectMatrix);
                 realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
                 realityEditor.gui.ar.utilities.multiplyMatrix(rotatedVisibleObjectMatrix, this.webGlCameraMatrix, this.webGlVisibleObjectMatrix);
             }
