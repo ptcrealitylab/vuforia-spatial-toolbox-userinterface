@@ -65,6 +65,16 @@ var realityElements = [
         ]
     },*/
     {
+        name: 'memoryFrame',
+        width: 568,
+        height: 320,
+        nodes: [
+            // {name: 'hue', type: "node"},
+            // {name: 'saturation', type: "node"},
+            // {name: 'lightness', type: "node"}
+        ]
+    },
+    {
         name: 'slider',
         width: 206,
         height: 526,

@@ -842,6 +842,7 @@ realityEditor.network.onAction = function (action) {
             _this.cout('received memory', res.memory);
             objects[objectKey].memory = res.memory;
             objects[objectKey].memoryCameraMatrix = res.memoryCameraMatrix;
+            objects[objectKey].memoryProjectionMatrix = res.memoryProjectionMatrix;
             
             // _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
