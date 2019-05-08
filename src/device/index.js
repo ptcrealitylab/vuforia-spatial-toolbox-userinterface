@@ -795,19 +795,6 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
     if (activeVehicle && !isOverTrash) {
         var ignoreMatrix = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning);
         realityEditor.network.postVehiclePosition(activeVehicle, ignoreMatrix);
-        // var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        // var content = {};
-        // content.x = positionData.x;
-        // content.y = positionData.y;
-        // content.scale = positionData.scale;
-        // if (this.editingState.unconstrained || globalStates.unconstrainedPositioning) {
-        //     content.matrix = positionData.matrix;
-        // }
-        // content.lastEditor = globalStates.tempUuid;
-        //
-        // var routeSuffix = (this.editingState.node) ? "/nodeSize/" : "/size/";
-        // var urlEndpoint = 'http://' + objects[this.editingState.object].ip + ':' + httpPort + '/object/' + this.editingState.object + "/frame/" + this.editingState.frame + "/node/" + this.editingState.node + routeSuffix;
-        // realityEditor.network.postData(urlEndpoint, content);
     }
     
     // drop frame onto closest object if we have pulled one away from a previous object
@@ -836,15 +823,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 
             realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
 
-            // var newObject = realityEditor.getObject(closestObjectKey);
             var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-
-            // // update position on server
-            // urlEndpoint = 'http://' + objects[closestObjectKey].ip + ':' + httpPort + '/object/' + closestObjectKey + "/frame/" + newFrameKey + "/node/" + null + "/size/";
-            // var content = newFrame.ar;
-            // content.lastEditor = globalStates.tempUuid;
-            // realityEditor.network.postData(urlEndpoint, content);
-            
             realityEditor.network.postVehiclePosition(newFrame);
 
         } else {
