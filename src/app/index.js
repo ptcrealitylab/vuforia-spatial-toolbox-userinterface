@@ -294,9 +294,9 @@ realityEditor.app.addSpeechListener = function (callBack) {
  **/
 
 // starts the screen recording of the camera background
-realityEditor.app.startVideoRecording = function (objectKey, objectMatrix) {
+realityEditor.app.startVideoRecording = function (objectKey, objectIP) {
     console.log("startVideoRecording");
-    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectMatrix: JSON.stringify(objectMatrix)}, null);
+    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectIP: objectIP}, null);
 };
 
 // stops the screen recording of the camera background

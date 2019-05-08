@@ -46,11 +46,11 @@ var realityElements = [
     //     nodes: [
     //     ]
     // },
-    /*
+    
     {
         name: 'videoCapture',
-        width: 568,
-        height: 320,
+        width: Math.max(screen.width, screen.height),
+        height: Math.min(screen.width, screen.height),
         nodes: [
             {name: 'play', type: 'node', x: 0, y: -27, scaleFactor: 0.75},
             // {name: 'progress', type: 'node'},
@@ -63,17 +63,17 @@ var realityElements = [
 
             {name: 'storage', type: 'storeData'}
         ]
-    },*/
-    {
-        name: 'memoryFrame',
-        width: 568,
-        height: 320,
-        nodes: [
-            // {name: 'hue', type: "node"},
-            // {name: 'saturation', type: "node"},
-            // {name: 'lightness', type: "node"}
-        ]
     },
+    // {
+    //     name: 'memoryFrame',
+    //     width: 568,
+    //     height: 320,
+    //     nodes: [
+    //         // {name: 'hue', type: "node"},
+    //         // {name: 'saturation', type: "node"},
+    //         // {name: 'lightness', type: "node"}
+    //     ]
+    // },
     {
         name: 'slider',
         width: 206,

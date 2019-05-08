@@ -66,7 +66,8 @@ createNameSpace("realityEditor.device.videoRecording");
         if (closestObjectKey) {
             // var startingMatrix = realityEditor.getObject(closestObjectKey)
             var startingMatrix = privateState.visibleObjects[closestObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
-            realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+            // realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+            realityEditor.app.startVideoRecording(closestObjectKey, realityEditor.getObject(closestObjectKey).ip);
             privateState.isRecording = true;
             privateState.recordingObjectKey = closestObjectKey;
             privateState.startMatrix = realityEditor.gui.ar.utilities.copyMatrix(privateState.visibleObjects[closestObjectKey]);
@@ -254,7 +255,10 @@ createNameSpace("realityEditor.device.videoRecording");
      */
     function startRecordingForFrame(objectKey, frameKey) {
         var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
-        realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+
+        // realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+        realityEditor.app.startVideoRecording(objectKey, realityEditor.getObject(objectKey).ip);
+
     }
 
     /**

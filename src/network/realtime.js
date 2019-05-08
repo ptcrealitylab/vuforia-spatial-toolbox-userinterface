@@ -54,7 +54,7 @@ createNameSpace("realityEditor.network.realtime");
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(object, msgContent.propertyPath, msgContent.newValue);
-        console.log('set object (' + msgContent.objectKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set object (' + msgContent.objectKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
     }
 
     /**
@@ -67,7 +67,7 @@ createNameSpace("realityEditor.network.realtime");
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(frame, msgContent.propertyPath, msgContent.newValue);
-        console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
         
         // trigger secondary effects for certain properties
         if (msgContent.propertyPath === 'publicData') {
@@ -87,7 +87,7 @@ createNameSpace("realityEditor.network.realtime");
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(node, msgContent.propertyPath, msgContent.newValue);
-        console.log('set node (' + msgContent.nodeKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set node (' + msgContent.nodeKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
     }
 
     /**

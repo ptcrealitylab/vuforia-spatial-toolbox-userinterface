@@ -9,13 +9,13 @@
     <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
     <style>
         body {
-            width: 568px;
-            height: 430px;
+            width: 100vw;
+            height: 100vh;
             overflow: visible;
         }
         #container {
-            width: 568px;
-            height: 430px;
+            width: 100vw;
+            height: 100vh;
             /*border: 5px solid cyan;*/
             /*border-radius: 10px;*/
             /*padding: 10px;*/
@@ -35,8 +35,8 @@
 
         #container.recording {
             left: 0;
-            width: 568px;
-            height: 320px;
+            width: 100vw;
+            height: 100vh;
         }
         
         #recordedVideo {
@@ -44,14 +44,16 @@
             top: 15px;
             left: 10px;
             z-index: -1;
+            width: 100vw;
+            height: 100vh;
         }
 
         #videoOutline {
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 538px;
-            height: 300px;
+            width: 105vw;
+            height: 95vh;
             z-index: -2;
             background-color:rgba(255,255,255,0.15);
         }
@@ -195,25 +197,25 @@
         
         #playButton {
             position: absolute;
-            width: 120px;
-            height: 120px;
-            left: 224px;
-            top: 100px;
+            width: 22vw;
+            height: 22vw;
+            left: 39vw;
+            top: 31vh;
         }
         
         #nextButton {
             position: absolute;
-            width: 120px;
-            height: 120px;
-            left: 334px;
+            width: 22vw;
+            height: 22vw;
+            left: 59vw;
             top: 310px;
         }
         
         #prevButton {
             position: absolute;
-            width: 120px;
-            height: 120px;
-            left: 134px;
+            width: 22vw;
+            height: 22vw;
+            left: 23vw;
             top: 310px;
         }
         
@@ -543,6 +545,11 @@
         window.addEventListener('load', function() {
             updateUIForNewState();
             updateSideEffectsForNewState();
+        });
+        
+        window.addEventListener('resize', function() {
+            document.getElementById('container').style.width = window.innerWidth + 'px';
+            document.getElementById('container').style.height = window.innerHeight + 'px';
         });
         
         function jumpToBeginningOfVideo() {
