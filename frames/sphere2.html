@@ -94,6 +94,37 @@
 
         // add an icosahedron 3d model to the container object 
         var radius = 75;
+
+
+        // function CustomSinCurve( scale ) {
+
+        //     THREE.Curve.call( this );
+
+        //     this.scale = ( scale === undefined ) ? 1 : scale;
+
+        // }
+
+        // CustomSinCurve.prototype = Object.create( THREE.Curve.prototype );
+        // CustomSinCurve.prototype.constructor = CustomSinCurve;
+
+        // CustomSinCurve.prototype.getPoint = function ( t ) {
+
+        //     var tx = t * 3 - 1.5;
+        //     var ty = Math.sin( 2 * Math.PI * t );
+        //     var tz = 0;
+
+        //     return new THREE.Vector3( tx, ty, tz ).multiplyScalar( this.scale );
+
+        // };
+
+        // var path = new CustomSinCurve( 10 );
+        // var geometry = new THREE.TubeGeometry( path, 20, 2, 8, false );
+
+
+
+
+
+
         var geometry = new THREE.IcosahedronGeometry( radius, 1 );
         var materials = [
             new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0 } ),
@@ -132,16 +163,34 @@
 
             // update the position of the sphere on the canvas when user drags it.
             realityInterface.iosObject.on('modelUpdate', function(data) {
-                return;
+
+                mesh.updateMatrixWorld();
+
                 var containerMatrix = new THREE.Matrix4();
                 var containerMatrixCopy = new THREE.Matrix4();
+
+                var currentCameraMatrix = new THREE.Matrix4();
+                var modelForCameraMatrix = new THREE.Matrix4();
+
+                // modelForCameraMatrix.copy(mesh.matrixWorld);
+                // currentCameraMatrix.copy(camera.matrixWorld);
+
+                // modelForCameraMatrix.extractRotation(modelForCameraMatrix);
+                // currentCameraMatrix.extractRotation(modelForCameraMatrix);
+                // currentCameraMatrix.getInverse(currentCameraMatrix);
+                // modelForCameraMatrix.premultiply(currentCameraMatrix);
+
+
+
+
+
                 
                 var mPosition = new THREE.Vector3();
                 var mRotation = new THREE.Quaternion();
                 var mScale = new THREE.Vector3();
 
-                containerMatrix.copy(threejsContainerObj.matrix);
-                containerMatrix.multiply(mesh.matrix);
+                containerMatrix.copy(mesh.matrix);
+                //containerMatrix.multiply(mesh.matrix);
                 containerMatrixCopy.copy(threejsContainerObj.matrix);
 
                 var modelRealPosition = new THREE.Vector3();
@@ -161,16 +210,19 @@
                                    data.r02, data.r12, data.r22, 0,
                                    0,               0,        0, 1 );
 
+                var rotation = new THREE.Matrix4().makeRotationZ(Math.PI);
+
              
                 var modelQuaternion = new THREE.Quaternion();
                 var modelPosition = new THREE.Vector3();
                 var modelScale = new THREE.Vector3();
 
-                modelRotation.decompose(modelPosition, modelQuaternion, modelScale);
+                modelRotation.decompose(modelPosition, mRotation, modelScale);
 
                 if(initialModelRotation === undefined) {
                   initialModelRotation = new THREE.Quaternion();
-                  initialModelRotation.copy(mRotation);
+                  initialModelRotation.copy(mesh.quaternion);
+                  //initialModelRotation.premultiply(rotation);
                 }
 
                 // This is the model's center position on the 2D screen (ignore Z).
@@ -188,7 +240,7 @@
                 XY.multiplyScalar(z * modelRealScale.y);
 
                 // Change near plane of Camera to create 'exit' illusion.
-                var newNear = XY.length() - (data.cut * (1/data.im));
+                var newNear = XY.length() - (data.cut * (modelRealScale.y/data.im));
                 setNewProjectionMatrix(projectionMatrixFrom(25, -window.innerWidth/window.innerHeight, newNear, 300000));
 
                 XY.add(camera.position);
@@ -197,7 +249,10 @@
 
                 // From global to local rotation.
                 containerMatrix.copy(containerMatrixCopy);
+                //\\containerMatrix.premultiply(rotation);
                 containerMatrix.multiply(modelRotation);
+                //containerMatrix.premultiply(rotation);
+                //modelRotation.premultiply(rotation);
                 modelRotation.decompose(modelPosition, modelQuaternion, modelScale);
 
                 // Change position of the model from global to local coordinates.
@@ -210,6 +265,7 @@
                 var initialRotationCopy = new THREE.Quaternion();
                 initialRotationCopy.copy(initialModelRotation);
                 initialRotationCopy.multiply(modelQuaternion);
+                console.log('initial model rotation', initialModelRotation);
                 mesh.quaternion.copy(initialRotationCopy);
           });
         });
@@ -255,11 +311,12 @@
         var cameraMatrixCopy = new THREE.Matrix4();
 
         // Update world matrices.
-        camera.updateMatrixWorld();
-        model.updateMatrixWorld();
+        //camera.updateMatrixWorld();
+        //model.updateMatrixWorld();
 
         cameraMatrixCopy.copy(camera.matrix);
-        containerMatrixCopy.copy(model.matrixWorld);
+        containerMatrixCopy.copy(threejsContainerObj.matrix);
+        containerMatrixCopy.multiply(model.matrix);
 
 
 
@@ -318,7 +375,10 @@
 
         // Calculate the rotation difference between the scene's camera and the model.
         cameraAtZeroTransform.getInverse(cameraAtZeroTransform);
-        modelRotationMatrix.multiply(cameraAtZeroTransform);
+        modelRotationMatrix.premultiply(cameraAtZeroTransform);
+
+        var rotation = new THREE.Matrix4().makeRotationZ(Math.PI);
+        modelRotationMatrix.premultiply(rotation);
 
         // Compose a rotation matrix for the model and send it.
         var matrixJSON = {};
@@ -460,7 +520,7 @@
             var scale = new THREE.Vector3();
             var rotation = new THREE.Quaternion();
             testMatrix.decompose(position,rotation,scale);
-            testMatrix.compose(position,rotation, new THREE.Vector3(scale.z,scale.z,scale.z));
+            testMatrix.compose(position,rotation, new THREE.Vector3(Math.sign(scale.x) * Math.abs(scale.z),scale.z,scale.z));
             setMatrixFromArray(threejsContainerObj.matrix, testMatrix.elements);
 
             console.log(testMatrix);
