@@ -83,7 +83,31 @@
     var animationDuration;
     var animationAction;
     
+
+
     var isPaused = true;
+
+
+    window.addEventListener('resize', function(event) {
+
+        rendererWidth = window.innerWidth;
+        rendererHeight = window.innerHeight;
+        aspectRatio = rendererWidth / rendererHeight;
+        
+        // console.log(renderer.getSize(), rendererWidth, rendererHeight);
+
+        if (camera) {
+            //camera.aspect = window.innerWidth/window.innerHeight;
+            //camera.updateProjectionMatrix();
+        }
+
+        if (renderer) {
+            renderer.setSize( rendererWidth, rendererHeight );
+        }
+
+        realityInterface.addMatrixListener(renderScene);
+
+    });
 
     window.addEventListener('load', function() {
 
@@ -262,7 +286,7 @@
 
     function startAnimation() {
         // whenever we receive new matrices from the editor, update the 3d scene
-        realityInterface.addMatrixListener(renderScene);
+        //realityInterface.addMatrixListener(renderScene);
     }
 
     function setMatrixFromArray(matrix, array) {
