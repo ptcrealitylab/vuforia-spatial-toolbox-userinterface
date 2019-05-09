@@ -178,16 +178,16 @@ realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
     cout("setDeviceName");
 };
 
+//this is speeding things up always! Because the scope for searching this variable becomes smaller.
+realityEditor.app.callbacks.matrixFormatCalculated = false;
+realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
+
 /**
  * Callback for realityEditor.app.getMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
  * Stores those matrices in the draw module to be rendered in the next draw frame
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
-//this is speeding things up always! Because the scope for searching this variable becomes smaller.
-realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
-realityEditor.app.callbacks.matrixFormatCalculated = false;
-realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
     if (!realityEditor.app.callbacks.matrixFormatCalculated) {
@@ -209,15 +209,12 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        // scale x, y, and z elements of matrix for mm to meter conversion ratio
+
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
             // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
             visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
         });
         
-        for (var objectKey in visibleObjects) {
-            if (!visibleObjects.hasOwnProperty(objectKey)) continue;
-        }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
     if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
@@ -263,7 +260,7 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
     realityEditor.gui.ar.draw.visibleObjectsStatus = {};
     for (var key in visibleObjects) {
         realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-        if (globalStates.extendedTracking) {
+        if (globalStates.extendedTracking || visibleObjects[key].status === 'TRACKED') {
             visibleObjects[key] = visibleObjects[key].matrix;
         } else {
             if (visibleObjects[key].status === 'EXTENDED_TRACKED') {

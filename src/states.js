@@ -59,7 +59,6 @@ var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 
 var TEMP_DISABLE_MEMORIES = false;
-var mmToMeterScale = 1000; // used to be 1000, but this improves overall scale / initial position of frames
 
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
 /**********************************************************************************************************************
