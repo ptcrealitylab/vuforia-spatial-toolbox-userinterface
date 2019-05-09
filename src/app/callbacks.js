@@ -186,23 +186,20 @@ realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
  */
 //this is speeding things up always! Because the scope for searching this variable becomes smaller.
 realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
-realityEditor.app.callbacks.matrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
+realityEditor.app.callbacks.matrixFormatCalculated = false;
+realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
-    
-    if (typeof realityEditor.app.callbacks.matrixFormatNew === 'undefined') {
-        for (var key in visibleObjects) {
-            realityEditor.app.callbacks.matrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
-            break; // just looks at the first object to determine format that this vuforia app uses
-        }
+
+    if (!realityEditor.app.callbacks.matrixFormatCalculated) {
+        // for speed, only calculates this one time
+        realityEditor.app.callbacks.calculateMatrixFormat(visibleObjects);
     }
     
-    // extract status into separate data structure and and format matrices into a backwards-compatible object
-    if (realityEditor.app.callbacks.matrixFormatNew) {
-        realityEditor.gui.ar.draw.visibleObjectsStatus = {};
-        for (var key in visibleObjects) {
-            realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-            visibleObjects[key] = visibleObjects[key].matrix;
-        }
+    // ignore this step if using old app version that ignores EXTENDED_TRACKED objects entirely
+    if (realityEditor.app.callbacks.isMatrixFormatNew) {
+        // extract status into separate data structure and and format matrices into a backwards-compatible object
+        // if extended tracking is turned off, discard EXTENDED_TRACKED objects
+       realityEditor.app.callbacks.convertNewMatrixFormatToOld(visibleObjects);
     }
     
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
@@ -210,12 +207,11 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
     
-   // console.log(visibleObjects);
-    //console.log("receiveMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
         // scale x, y, and z elements of matrix for mm to meter conversion ratio
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
+            // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
             visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
         });
         
@@ -235,43 +231,45 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
  * @param {Array.<number>} cameraMatrix
  */
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
-   // console.log("receiveCameraMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-
-      //  realityEditor.gui.ar.draw.viewMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
-        // realityEditor.gui.ar.draw.viewMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraMatrix);
-        
-        // this fixes it for world coordinates
-        // var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, false, true, true);
-        // var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, false, false);
-        // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, realityEditor.gui.ar.draw.correctedCameraMatrix);
-
         realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
+    }
+};
 
+/**
+ * Looks at the visibleObjects and sees if it uses the old format or the new, so that we can convert to backwards-compatible
+ * New format of visibleObject  = {objectKey: {matrix:[], status:""}} 
+ * Old format of visibleObjects = {objectKey: []}
+ * @param visibleObjects
+ */
+realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
+    if (typeof realityEditor.app.callbacks.isMatrixFormatNew === 'undefined') {
+        for (var key in visibleObjects) {
+            realityEditor.app.callbacks.isMatrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
+            realityEditor.app.callbacks.matrixFormatCalculated = true;
+            break; // only needs to look at one object to determine format that this vuforia app uses
+        }
+    }
+};
 
-        // var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        // var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, true);
-        // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, realityEditor.gui.ar.draw.correctedCameraMatrix);
-        //
-        // // this fixes it for three.js coordinates
-        // var webGlCameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        // var webGlCameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, false);
-        // realityEditor.gui.ar.utilities.multiplyMatrix(webGlCameraRotation, webGlCameraTranslation, realityEditor.gui.ar.draw.webGlCameraMatrix);
-
-        // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraMatrix);
-
-        // var negativeScale = [
-        //     -1, 0, 0, 0,
-        //     0, 1, 0, 0,
-        //     0, 0, 1, 0,
-        //     0, 0, 0, 1
-        // ];
-        //
-        // realityEditor.gui.ar.utilities.multiplyMatrix(negativeScale, cameraMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix);
-
-        // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.convertMatrixHandedness(cameraMatrix);
-
+/**
+ * Takes new matrix format and extracts each object's tracking status into visibleObjectsStatus
+ * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
+ * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
+ * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}>} visibleObjects
+ */
+realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObjects) {
+    realityEditor.gui.ar.draw.visibleObjectsStatus = {};
+    for (var key in visibleObjects) {
+        realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
+        if (globalStates.extendedTracking) {
+            visibleObjects[key] = visibleObjects[key].matrix;
+        } else {
+            if (visibleObjects[key].status === 'EXTENDED_TRACKED') {
+                delete visibleObjects[key];
+            }
+        }
     }
 };
 

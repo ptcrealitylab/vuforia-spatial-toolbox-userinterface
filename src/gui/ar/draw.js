@@ -270,7 +270,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
     
-    this.updateExtendedTrackingVisibility(visibleObjects);
+    if (globalStates.extendedTracking) {
+        this.updateExtendedTrackingVisibility(visibleObjects);
+    }
 
     this.visibleObjects = visibleObjects;
     
