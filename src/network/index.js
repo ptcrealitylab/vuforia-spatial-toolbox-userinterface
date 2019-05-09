@@ -321,12 +321,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 };
 
 // TODO: why is frameKey passed in here? if we just iterate through all the frames anyways?
-realityEditor.network.updateObject = function (origin, remote, objectKey, frameKey) {
+realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
-    console.log(origin, remote, objectKey, frameKey);
-
-    console.warn('updateObject: ' + frameKey);
-
+    console.log(origin, remote, objectKey);
+    
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -704,9 +702,6 @@ realityEditor.network.onAction = function (action) {
 
             var urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
-                
-            // }
-            // this.getData('http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
 
                 if (objects[objectKey].integerVersion < 170) {
                     if (typeof res.objectValues !== "undefined") {
@@ -714,9 +709,9 @@ realityEditor.network.onAction = function (action) {
                     }
                 }
                 
-                console.log("updateObject", objects[objectKey], res, objectKey, frameKey);
+                console.log("updateObject", objects[objectKey], res, objectKey);
 
-                realityEditor.network.updateObject(objects[objectKey], res, objectKey, frameKey);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey);
 
                 _this.cout("got object");
 

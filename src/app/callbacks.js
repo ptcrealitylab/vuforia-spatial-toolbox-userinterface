@@ -186,7 +186,24 @@ realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
  */
 //this is speeding things up always! Because the scope for searching this variable becomes smaller.
 realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
+realityEditor.app.callbacks.matrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+    
+    if (typeof realityEditor.app.callbacks.matrixFormatNew === 'undefined') {
+        for (var key in visibleObjects) {
+            realityEditor.app.callbacks.matrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
+            break; // just looks at the first object to determine format that this vuforia app uses
+        }
+    }
+    
+    // extract status into separate data structure and and format matrices into a backwards-compatible object
+    if (realityEditor.app.callbacks.matrixFormatNew) {
+        realityEditor.gui.ar.draw.visibleObjectsStatus = {};
+        for (var key in visibleObjects) {
+            realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
+            visibleObjects[key] = visibleObjects[key].matrix;
+        }
+    }
     
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);

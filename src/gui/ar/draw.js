@@ -67,6 +67,7 @@ realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
  * @type {Object.<string, Array.<number>>}
  */
 realityEditor.gui.ar.draw.visibleObjects = {};
+realityEditor.gui.ar.draw.visibleObjectsStatus = {};
 realityEditor.gui.ar.draw.globalStates = globalStates;
 realityEditor.gui.ar.draw.globalDOMCache = globalDOMCache;
 realityEditor.gui.ar.draw.activeObject = {};
@@ -230,6 +231,28 @@ realityEditor.gui.ar.draw.updateLoop = function () {
 realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
 realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
 
+realityEditor.gui.ar.draw.visibleObjectsStatusTimes = {};
+
+realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObjects) {
+    
+    for (var objectKey in visibleObjects) {
+        if (this.visibleObjectsStatus[objectKey] === 'EXTENDED_TRACKED') {
+            if (!globalStates.freezeButtonState) {
+                if (this.visibleObjectsStatusTimes[objectKey] > 60) {
+                    console.log('too long extended tracked');
+                    delete visibleObjects[objectKey];
+                } else {
+                    this.visibleObjectsStatusTimes[objectKey] += 1;
+                    console.log(this.visibleObjectsStatusTimes[objectKey]);
+                }
+            }
+        } else { // status === 'TRACKED'
+            this.visibleObjectsStatusTimes[objectKey] = 0;
+        }
+    }
+    
+};
+
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
@@ -246,6 +269,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     if (globalStates.guiState === "logic") {
         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
+    
+    this.updateExtendedTrackingVisibility(visibleObjects);
 
     this.visibleObjects = visibleObjects;
     
