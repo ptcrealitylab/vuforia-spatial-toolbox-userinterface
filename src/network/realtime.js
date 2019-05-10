@@ -179,16 +179,45 @@ createNameSpace("realityEditor.network.realtime");
      */
     function broadcastUpdate(objectKey, frameKey, nodeKey, propertyPath, newValue) {
         
-        var messageBody = {
-            objectKey: objectKey,
-            frameKey: frameKey,
-            nodeKey: nodeKey,
-            propertyPath: propertyPath,
-            newValue: newValue,
-            editorId: globalStates.tempUuid
-        };
-        
-        sendMessageToSocketSet('realityServers', '/update', messageBody);
+        // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
+        var serverSocket = getServerSocketForObject(objectKey);
+        if (serverSocket) {
+            
+            var messageBody = {
+                objectKey: objectKey,
+                frameKey: frameKey,
+                nodeKey: nodeKey,
+                propertyPath: propertyPath,
+                newValue: newValue,
+                editorId: globalStates.tempUuid
+            };
+
+            serverSocket.emit('/update', JSON.stringify(messageBody));
+
+        }
+
+        // sendMessageToSocketSet('realityServers', '/update', messageBody);
+    }
+
+    /**
+     * Gets the ioObject connected to the server hosting a given object
+     * @param {string} objectKey
+     * @return {null}
+     */
+    function getServerSocketForObject(objectKey) {
+        var object = realityEditor.getObject(objectKey);
+        var serverIP = object.ip;
+        if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
+            return null;
+        }
+        var possibleSocketIPs = getSocketIPsForSet('realityServers');
+        var foundSocket = null;
+        possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
+            if (socketIP.indexOf(serverIP) > -1) {
+                foundSocket = socketIP;
+            }
+        });
+        return (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
     }
 
     /**
