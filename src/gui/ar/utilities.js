@@ -159,6 +159,31 @@ realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
 };
 
 /**
+ * @desc copies one m16 matrix in to another m16 matrix
+ * Use instead of copyMatrix function when speed is very important - this is faster
+ * @param {Array.<number>} m1 - source matrix
+ * @param {Array.<number>} m2 - resulting copy of the matrix
+ */
+realityEditor.gui.ar.utilities.copyMatrixInPlace = function(m1, m2) {
+    m2[0] = m1[0];
+    m2[1] = m1[1];
+    m2[2] = m1[2];
+    m2[3] = m1[3];
+    m2[4] = m1[4];
+    m2[5] = m1[5];
+    m2[6] = m1[6];
+    m2[7] = m1[7];
+    m2[8] = m1[8];
+    m2[9] = m1[9];
+    m2[10] = m1[10];
+    m2[11] = m1[11];
+    m2[12] = m1[12];
+    m2[13] = m1[13];
+    m2[14] = m1[14];
+    m2[15] = m1[15];
+};
+
+/**
  * Returns a matrix that linearly interpolated each element of two matrices
  * @param {Array.<number>} existingMatrix - source matrix
  * @param {Array.<number>} newMatrix - new value

@@ -379,7 +379,7 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
     }
 };
 
-var vehicleKeyCache = {};
+realityEditor.vehicleKeyCache = {};
 
 /**
  * Extracts the object and/or frame and/or node keys depending on the type of vehicle
@@ -390,8 +390,8 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
 
     // load from cache if possible
     if (typeof vehicle.uuid !== 'undefined') {
-        if (typeof vehicleKeyCache[vehicle.uuid] !== 'undefined') {
-            return vehicleKeyCache[vehicle.uuid];
+        if (typeof this.vehicleKeyCache[vehicle.uuid] !== 'undefined') {
+            return this.vehicleKeyCache[vehicle.uuid];
         }
     }
     
@@ -418,13 +418,13 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
         }
     }
 
-    vehicleKeyCache[vehicle.uuid] = {
+    this.vehicleKeyCache[vehicle.uuid] = {
         objectKey: objectKey,
         frameKey: frameKey,
         nodeKey: nodeKey
     };
     
-    return vehicleKeyCache[vehicle.uuid];
+    return this.vehicleKeyCache[vehicle.uuid];
 };
 
 realityEditor.isVehicleAFrame = function(vehicle) {

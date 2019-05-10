@@ -272,7 +272,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
         if (frame) {
             var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
             // only parent frame has matrix -> just use that
-            activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
+            realityEditor.gui.ar.utilities.copyMatrixInPlace(parentFramePositionData.matrix, activeVehicle.matrix);
         }
     }
 
@@ -311,7 +311,7 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     if (activeVehicle.type === 'node') { // TODO: work for other node types, e.g. delay
         var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (parentFrame.location === 'local') {
-            activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+            realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
             shouldBroadcastUpdate = true;
         }
     }
@@ -319,13 +319,13 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     // logic nodes set their own matrix
     
     if (activeVehicle.type === 'logic') {
-        activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
         shouldBroadcastUpdate = true;
         
     // frames set their AR matrix
         
     } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
-        activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.ar.matrix);
         shouldBroadcastUpdate = true;
     }
 

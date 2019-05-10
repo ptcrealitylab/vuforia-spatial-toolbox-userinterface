@@ -1013,7 +1013,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }), '*');
             
             if (activeType !== "ui") {
-                activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                utilities.copyMatrixInPlace(activeObjectMatrix, activeVehicle.temp);
             }
 
             if (activeType === "logic" && objectKey !== "pocket") {
@@ -1158,16 +1158,16 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 // todo test if this can be made touch related
                 if (activeType === "logic") {
-                    activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                     utilities.copyMatrixInPlace(activeObjectMatrix, activeVehicle.temp);
                 }
 
                 if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
 
-                    activeVehicle.temp = utilities.copyMatrix(activeObjectMatrix);
+                    utilities.copyMatrixInPlace(activeObjectMatrix, activeVehicle.temp);
 
                     // do this one time when you first tap down on something unconstrained, to preserve its current matrix
                     if (matrix.copyStillFromMatrixSwitch) {
-                        matrix.visual = utilities.copyMatrix(activeObjectMatrix);
+                        utilities.copyMatrixInPlace(activeObjectMatrix, matrix.visual);
                         
                         var matrixToUse = positionData.matrix;
                         
@@ -1175,10 +1175,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             if (matrixToUse.length > 0) {
                                 utilities.multiplyMatrix(matrixToUse, activeVehicle.temp, activeVehicle.begin);
                             } else {
-                                activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                                utilities.copyMatrixInPlace(activeVehicle.temp, activeVehicle.begin);
                             }
                         } else {
-                            activeVehicle.begin = utilities.copyMatrix(activeVehicle.temp);
+                            utilities.copyMatrixInPlace(activeVehicle.temp, activeVehicle.begin);
                         }
                         
                         var resultMatrix = [];
@@ -1259,7 +1259,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
                 var animatedFinalMatrix = [];
                 utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
-                finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
+                utilities.copyMatrixInPlace(animatedFinalMatrix, finalMatrix);
             }
             
             // TODO: do this on frame touch up (snap position when editing ends), or if unconstrained editing (visual feedback when ready to snap)
@@ -2269,7 +2269,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         if (visibleObjects[objectKey]) {
             this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
         } else {
-            activeObjectMatrixCopy = utilities.copyMatrix(activeObjectMatrix);
+            utilities.copyMatrixInPlace(activeObjectMatrix, activeObjectMatrixCopy);
         }
         
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);

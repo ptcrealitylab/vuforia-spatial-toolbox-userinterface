@@ -206,7 +206,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     */
     
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
-        realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
+        realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
     
