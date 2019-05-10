@@ -137,25 +137,25 @@ realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
  */
 realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
     if (matrix.length === 0) return [];
-    
-	var r = []; //new Array(16);
-	r[0] = matrix[0];
-	r[1] = matrix[1];
-	r[2] = matrix[2];
-	r[3] = matrix[3];
-	r[4] = matrix[4];
-	r[5] = matrix[5];
-	r[6] = matrix[6];
-	r[7] = matrix[7];
-	r[8] = matrix[8];
-	r[9] = matrix[9];
-	r[10] = matrix[10];
-	r[11] = matrix[11];
-	r[12] = matrix[12];
-	r[13] = matrix[13];
-	r[14] = matrix[14];
-	r[15] = matrix[15];
-	return r;
+
+    var r = []; //new Array(16);
+    r[0] = matrix[0];
+    r[1] = matrix[1];
+    r[2] = matrix[2];
+    r[3] = matrix[3];
+    r[4] = matrix[4];
+    r[5] = matrix[5];
+    r[6] = matrix[6];
+    r[7] = matrix[7];
+    r[8] = matrix[8];
+    r[9] = matrix[9];
+    r[10] = matrix[10];
+    r[11] = matrix[11];
+    r[12] = matrix[12];
+    r[13] = matrix[13];
+    r[14] = matrix[14];
+    r[15] = matrix[15];
+    return r;
 };
 
 /**
@@ -743,8 +743,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     /**
-     * 
-     * @param {Frame|Node} thisVehicle - 
+     *
+     * @param {Frame|Node} thisVehicle -
      * @param {Number} screenX - x coordinate on the screen plane
      * @param {Number} screenY - y coordinate on the screen plane
      * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
@@ -755,7 +755,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         var positionData;
         var previousPosition;
         var updatedCssMatrix;
-        
+
         // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
         if (relativeToMarker) {
             positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
@@ -772,21 +772,77 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                 var draw = realityEditor.gui.ar.draw;
                 var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
                 updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
+                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
             }
         }
-        
+
         var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
-        
+
         // restore the frame's relative position that nothing visually changes due to this computation
         if (previousPosition) {
             positionData.x = previousPosition.x;
             positionData.y = previousPosition.y;
             positionData.scale = previousPosition.scale;
         }
-        
+
         return results;
     }
-    
+    /**
+     *
+     * @param {Frame|Node} thisVehicle -
+     * @param {Number} screenX - x coordinate on the screen plane
+     * @param {Number} screenY - y coordinate on the screen plane
+     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
+     * @return {{point (x,y,z), offsetLeft, offsetTop}}
+     */
+    function screenCoordinatesToMatrixXY_Efficient(thisVehicle, screenX, screenY, relativeToMarker) {
+        console.warn('This gives close, but incorrect values right now... Use screenCoordinatesToMatrixXY instead');
+        var positionData;
+        // var previousPosition;
+        var updatedCssMatrix;
+
+        // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
+        if (relativeToMarker) {
+            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
+
+            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
+                // previousPosition = {
+                //     x: positionData.x,
+                //     y: positionData.y,
+                //     scale: positionData.scale
+                // };
+                // positionData.x = 0;
+                // positionData.y = 0;
+                // positionData.scale = 1;
+                var draw = realityEditor.gui.ar.draw;
+                // var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+                // updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
+                updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
+
+                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
+            }
+        }
+
+        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
+
+        // restore the frame's relative position that nothing visually changes due to this computation
+        // if (previousPosition) {
+        //     positionData.x = previousPosition.x;
+        //     positionData.y = previousPosition.y;
+        //     positionData.scale = previousPosition.scale;
+        // }
+
+        return results;
+    }
+
+
+
+
+
+
     function solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, cssMatrixToUse) {
 
         var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
@@ -908,18 +964,26 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     function getTransformOrigin(element) {
-        var st = window.getComputedStyle(element, null);
-        var tr = st.getPropertyValue("-webkit-transform-origin") ||
-            st.getPropertyValue("-moz-transform-origin") ||
-            st.getPropertyValue("-ms-transform-origin") ||
-            st.getPropertyValue("-o-transform-origin") ||
-            st.getPropertyValue("transform-origin");
-
-        var values = tr.split(' ');
 
         var out = [ 0, 0, 0, 1 ];
-        for (var i = 0; i < values.length; ++i) {
-            out[i] = parseInt(values[i]);
+
+        // this is a speedup that works for the frames we currently use. might need to remove in the future if it messes anything up
+        if (element.style.transformOrigin) {
+            var st = window.getComputedStyle(element, null);
+            var tr = st.getPropertyValue("-webkit-transform-origin") ||
+                st.getPropertyValue("-moz-transform-origin") ||
+                st.getPropertyValue("-ms-transform-origin") ||
+                st.getPropertyValue("-o-transform-origin") ||
+                st.getPropertyValue("transform-origin");
+
+            var values = tr.split(' ');
+
+            for (var i = 0; i < values.length; ++i) {
+                out[i] = parseInt(values[i]);
+            }
+        } else {
+            out[0] = parseInt(element.style.width)/2;
+            out[1] = parseInt(element.style.height)/2;
         }
 
         return out;
@@ -940,8 +1004,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
+    exports.screenCoordinatesToMatrixXY_Efficient = screenCoordinatesToMatrixXY_Efficient;
     exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
-    exports.screenCoordinatesToMatrixXY_finalMatrix = screenCoordinatesToMatrixXY_finalMatrix;
     exports.computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
     exports.getTransform = getTransform;
 

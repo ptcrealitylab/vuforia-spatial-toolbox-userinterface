@@ -141,6 +141,9 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
     var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+    // var efficientResults = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_Efficient(activeVehicle, screenX, screenY, true);
+    // console.log(results.point.x - efficientResults.point.x, results.point.y - efficientResults.point.y);
+    
     // this.applyParentScaleToDragPosition(activeVehicle, results.point);
 
     var positionData = this.getPositionData(activeVehicle);

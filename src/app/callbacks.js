@@ -190,6 +190,8 @@ realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible ob
  */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
+    // These should be uncommented if we switch to the EXTENDED_TRACKING version
+    /*
     if (!realityEditor.app.callbacks.matrixFormatCalculated) {
         // for speed, only calculates this one time
         realityEditor.app.callbacks.calculateMatrixFormat(visibleObjects);
@@ -201,6 +203,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         // if extended tracking is turned off, discard EXTENDED_TRACKED objects
        realityEditor.app.callbacks.convertNewMatrixFormatToOld(visibleObjects);
     }
+    */
     
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
@@ -217,9 +220,9 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
-    if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
-        realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
-    }
+    // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
+    //     realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+    // }
 };
 
 /**
@@ -239,6 +242,7 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
  * New format of visibleObject  = {objectKey: {matrix:[], status:""}} 
  * Old format of visibleObjects = {objectKey: []}
  * @param visibleObjects
+ * @todo currently not used
  */
 realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
     if (typeof realityEditor.app.callbacks.isMatrixFormatNew === 'undefined') {
@@ -255,6 +259,7 @@ realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
  * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
  * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
  * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}>} visibleObjects
+ * @todo currently not used
  */
 realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObjects) {
     realityEditor.gui.ar.draw.visibleObjectsStatus = {};
@@ -280,14 +285,20 @@ realityEditor.app.callbacks.matrix = [];
 realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
     // console.log("receiveGroundPlaneMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
-    if (!globalStates.freezeButtonState) {
-        if(realityEditor.gui.ar.draw.worldCorrection === null) {
-            realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
-        } else {
-            this.matrix = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMartrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
-            realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+    
+    // completely ignore this if nothing is using ground plane right now
+    if (globalStates.useGroundPlane) {
+
+        if (!globalStates.freezeButtonState) {
+            if(realityEditor.gui.ar.draw.worldCorrection === null) {
+                realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+            } else {
+                this.matrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMartrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+            }
         }
+        
     }
 };
 

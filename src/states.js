@@ -176,17 +176,9 @@ var globalStates = {
 	reality: false,
 	interface: "gui",
 
-    /**
-     * @type {Array.<string>} list of frameKeys that have been edited at any point. later in array = more recently edited.
-     */
-    mostRecentlyEditedFrames: [],
+    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : ((window.innerWidth >= 812 && window.innerHeight >= 375) ? (37) : (0)), // if iPhone X, offset the right edge by 74px
 
-    /**
-     * @type {Array.<string>} list of nodeKeys that have been edited at any point. later in array = more recently edited.
-     */
-    mostRecentlyEditedNodes: [],
-
-    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : ((window.innerWidth >= 812 && window.innerHeight >= 375) ? (37) : (0)) // if iPhone X, offset the right edge by 74px
+    useGroundPlane: false
 };
 
 var globalCanvas = {};

@@ -179,6 +179,8 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
             }
         });
     });
+
+    this.callbackHandler.triggerCallbacks('setEditingMode', {newEditingMode: newEditingMode});
     
 };
 
@@ -416,8 +418,6 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     if (globalStates.guiState === "node") {
         this.editingState.node = nodeKey;
         
-        realityEditor.gui.ar.draw.pushEditedNodeToFront(nodeKey);
-        
         // reset link creation state
         this.resetGlobalProgram();
 
@@ -429,9 +429,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
         }
 
     } else if (globalStates.guiState === "ui") {
-
-        realityEditor.gui.ar.draw.pushEditedFrameToFront(frameKey);
-
+        
         if (activeVehicle.location === "global") {
             // show the trash if this is a reusable frame
             realityEditor.gui.menus.switchToMenu("bigTrash");            
@@ -761,7 +759,6 @@ realityEditor.device.deleteFrame = function(frameToDelete, objectKeyToDelete, fr
 
     // remove it from the DOM
     realityEditor.gui.ar.draw.killElement(frameKeyToDelete, frameToDelete, globalDOMCache);
-    realityEditor.gui.ar.draw.removeFromEditedFramesList(frameKeyToDelete);
     // delete it from the server
     realityEditor.network.deleteFrameFromObject(objects[objectKeyToDelete].ip, objectKeyToDelete, frameKeyToDelete);
 

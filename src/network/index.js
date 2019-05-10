@@ -1196,9 +1196,10 @@ if (thisFrame) {
                     '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
             }
         }
+
+        globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane();
     }
     
-
     if (msgContent.sendAcceleration === true) {
 
         if (tempThisObject.integerVersion >= 32) {
@@ -1307,6 +1308,12 @@ if (thisFrame) {
                 containingObject.objectVisible = true;
             }
         }
+        
+        // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
+        var object = realityEditor.getObject(msgContent.object);
+        if (object) {
+            object.containsStickyFrame = realityEditor.gui.ar.draw.doesObjectContainStickyFrame(msgContent.object);
+        }
 
     } else if(typeof msgContent.fullScreen === "string") {
         if (msgContent.fullScreen === "sticky") {
@@ -1330,6 +1337,11 @@ if (thisFrame) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
 
+            // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
+            var object = realityEditor.getObject(msgContent.object);
+            if (object) {
+                object.containsStickyFrame = true;
+            }
         }
     }
 

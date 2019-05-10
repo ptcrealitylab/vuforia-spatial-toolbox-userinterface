@@ -4,6 +4,7 @@ createNameSpace("realityEditor.worldObjects");
 (function(exports) {
     
     var worldObjects;
+    var worldObjectKeys;
     var discoveredServerIPs;
     
     var cameraMatrixOffset;
@@ -20,6 +21,7 @@ createNameSpace("realityEditor.worldObjects");
         // trigger the onNewServerDiscovered if it belongs to an undiscovered server
         
         worldObjects = {};
+        worldObjectKeys = [];
         
         discoveredServerIPs = [];
         
@@ -98,6 +100,9 @@ createNameSpace("realityEditor.worldObjects");
                 
                 // add to the internal world objects
                 worldObjects[msg.objectId] = msg;
+                if (worldObjectKeys.indexOf(msg.objectId) === -1) {
+                    worldObjectKeys.push(msg.objectId);
+                }
                 
                 // add the world object to the global objects dictionary
                 objects[msg.objectId] = msg;
@@ -138,13 +143,13 @@ createNameSpace("realityEditor.worldObjects");
      * @return {Array.<string>}
      */
     function getGlobalWorldObjectKeys() {
-        var worldObjectKeys = [];
+        var globalWorldObjectKeys = [];
         getWorldObjectKeys().forEach(function(worldObjectKey) {
             if (worldObjectKey !== localWorldObjectKey) {
-                worldObjectKeys.push(worldObjectKey);
+                globalWorldObjectKeys.push(worldObjectKey);
             }
         });
-        return worldObjectKeys;
+        return globalWorldObjectKeys;
     }
 
     /**
@@ -183,10 +188,11 @@ createNameSpace("realityEditor.worldObjects");
      * @return {Array.<string>}
      */
     function getWorldObjectKeys() {
-        if (!worldObjects) {
-            return [];
-        }
-        return Object.keys(worldObjects);
+        return worldObjectKeys;
+        // if (!worldObjects) {
+        //     return [];
+        // }
+        // return Object.keys(worldObjects);
     }
 
     /**

@@ -21,7 +21,26 @@ createNameSpace("realityEditor.network.realtime");
         mySocket = io.connect();
         setupVehicleUpdateSockets();
         setupServerSockets();
-        setInterval(setupServerSockets, 3000);
+
+        // when an object is detected, check if we need to add a world object for its server
+        realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
+            // handleServerDiscovered(object.ip);
+            // setupServerSockets();
+            if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+            
+            var serverPort = 8080;
+            var serverAddress = 'http://' + object.ip + ':' + serverPort;
+            var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
+            if (socketsIps.indexOf(serverAddress) < 0) {
+                // if we haven't already created a socket connection to that IP, create a new one,
+                //   and register update listeners, and emit a /subscribe message so it can connect back to us
+                realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
+                sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+                addServerUpdateListener(serverAddress);
+            }
+        });
+        
+        // setInterval(setupServerSockets, 3000);
     }
 
     /**
@@ -198,6 +217,8 @@ createNameSpace("realityEditor.network.realtime");
 
         // sendMessageToSocketSet('realityServers', '/update', messageBody);
     }
+    
+    var objectSocketCache = {};
 
     /**
      * Gets the ioObject connected to the server hosting a given object
@@ -205,19 +226,39 @@ createNameSpace("realityEditor.network.realtime");
      * @return {null}
      */
     function getServerSocketForObject(objectKey) {
-        var object = realityEditor.getObject(objectKey);
-        var serverIP = object.ip;
-        if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
-            return null;
-        }
-        var possibleSocketIPs = getSocketIPsForSet('realityServers');
-        var foundSocket = null;
-        possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
-            if (socketIP.indexOf(serverIP) > -1) {
-                foundSocket = socketIP;
+        
+        if (typeof objectSocketCache[objectKey] === 'undefined') {
+            var object = realityEditor.getObject(objectKey);
+            var serverIP = object.ip;
+            if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
+                return null;
             }
-        });
-        return (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
+            var possibleSocketIPs = getSocketIPsForSet('realityServers');
+            var foundSocket = null;
+            possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
+                if (socketIP.indexOf(serverIP) > -1) {
+                    foundSocket = socketIP;
+                }
+            });
+            
+            objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
+        }
+        
+        return objectSocketCache[objectKey]; // don't need to recalculate each time
+        
+        // var object = realityEditor.getObject(objectKey);
+        // var serverIP = object.ip;
+        // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
+        //     return null;
+        // }
+        // var possibleSocketIPs = getSocketIPsForSet('realityServers');
+        // var foundSocket = null;
+        // possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
+        //     if (socketIP.indexOf(serverIP) > -1) {
+        //         foundSocket = socketIP;
+        //     }
+        // });
+        // return (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
     }
 
     /**

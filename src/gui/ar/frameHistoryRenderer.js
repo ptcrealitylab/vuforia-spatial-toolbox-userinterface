@@ -18,6 +18,8 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         visibleObjects: {},
         ghostsAdded: []
     };
+    
+    var isUpdateListenerRegistered = false;
 
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -74,39 +76,49 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             }
         });
 
-        // registers a callback to the gui.ar.draw.update loop so that this module can manage its own rendering
-        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
-            
-            // renders ghosts only in editing mode, which is when the commit and revert buttons are visible
-            if (globalStates.editingMode) {
-                missingLinksToDraw = [];
+        // only adds the render update listener for frame history ghosts after you enter editing mode for the first time
+        // saves resources when we don't use the feature
+        realityEditor.device.registerCallback('setEditingMode', function(params) {
+            if (!isUpdateListenerRegistered && params.newEditingMode) {
 
-                // depending on guiState, either render frame or node/link ghosts
-                if (globalStates.guiState === 'ui') {
-                    hideNodeGhosts(visibleObjects);
-                    renderFrameGhostsForVisibleObjects(visibleObjects);
-                    
-                } else if (globalStates.guiState === 'node') {
-                    hideFrameGhosts(visibleObjects);
-                    renderNodeGhostsForVisibleObjects(visibleObjects);
-                    renderLinkGhostsForVisibleObjects(visibleObjects);
-                }
+                // registers a callback to the gui.ar.draw.update loop so that this module can manage its own rendering
+                realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
 
-                // remove all ghosts when an object loses visibility
-                removeGhostsOfInvisibleObjects(visibleObjects);
+                    // renders ghosts only in editing mode, which is when the commit and revert buttons are visible
+                    if (globalStates.editingMode) {
+                        missingLinksToDraw = [];
 
-                // draw linesToDraw on canvas
-                drawLinesFromGhosts();
-                drawMissingLinks();
+                        // depending on guiState, either render frame or node/link ghosts
+                        if (globalStates.guiState === 'ui') {
+                            hideNodeGhosts(visibleObjects);
+                            renderFrameGhostsForVisibleObjects(visibleObjects);
+
+                        } else if (globalStates.guiState === 'node') {
+                            hideFrameGhosts(visibleObjects);
+                            renderNodeGhostsForVisibleObjects(visibleObjects);
+                            renderLinkGhostsForVisibleObjects(visibleObjects);
+                        }
+
+                        // remove all ghosts when an object loses visibility
+                        removeGhostsOfInvisibleObjects(visibleObjects);
+
+                        // draw linesToDraw on canvas
+                        drawLinesFromGhosts();
+                        drawMissingLinks();
+
+                        // cache the most recent visible objects so we can detect when one disappears
+                        privateState.visibleObjects = visibleObjects;
+
+                    } else {
+                        hideAllGhosts();
+                    }
+
+                });
                 
-                // cache the most recent visible objects so we can detect when one disappears
-                privateState.visibleObjects = visibleObjects;
-                
-            } else {
-                hideAllGhosts();
             }
-            
         });
+        
+
     }
 
     /**
