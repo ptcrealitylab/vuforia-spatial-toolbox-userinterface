@@ -206,7 +206,10 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     */
     
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
-        realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
+        // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
+        // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
+
+        realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
     
@@ -215,7 +218,16 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
             // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
-            visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
+
+            if(realityEditor.gui.ar.draw.worldCorrection === null) {
+                visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
+            } else {
+                // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+                this.matrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.worldCorrection, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
+                visibleObjects[worldObjectKey] = this.matrix;
+            }
+
         });
         
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
