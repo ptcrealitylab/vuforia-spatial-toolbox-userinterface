@@ -1167,7 +1167,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     // do this one time when you first tap down on something unconstrained, to preserve its current matrix
                     if (matrix.copyStillFromMatrixSwitch) {
-                        utilities.copyMatrixInPlace(activeObjectMatrix, matrix.visual);
                         
                         var matrixToUse = positionData.matrix;
                         
