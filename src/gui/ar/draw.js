@@ -215,26 +215,24 @@ realityEditor.gui.ar.draw.groundPlaneMatrix = [
 
 realityEditor.gui.ar.draw.worldCorrection = null;
 
+realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
+
 /**
  * Main update loop.
  * A wrapper for the real realityEditor.gui.ar.draw.update update function.
  * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
  * (A different update loop inside of desktopAdapter is used on desktop devices to include camera manipulations)
  */
-
 realityEditor.gui.ar.draw.updateLoop = function () {
-    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, realityEditor.gui.ar.draw.areMatricesPrecomputed);
     requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
 };
 
-
 realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
 realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
-
 realityEditor.gui.ar.draw.visibleObjectsStatusTimes = {};
 
 realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObjects) {
-    
     for (var objectKey in visibleObjects) {
         if (this.visibleObjectsStatus[objectKey] === 'EXTENDED_TRACKED') {
             if (!globalStates.freezeButtonState) {
@@ -250,13 +248,13 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
             this.visibleObjectsStatusTimes[objectKey] = 0;
         }
     }
-    
 };
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
+ * @param {boolean} areMatricesPrecomputed - true iff already rendered once for this vuforia state so that we don't re-multiply
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecomputed) {
     var objectKey;
@@ -285,8 +283,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     // this is a quick hack but maybe needs to move somewhere else. 
     // I dont know if this is the right spot. //TODO: what is this actually doing?
     for (objectKey in objects) {
-        // if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
-        if (realityEditor.getObject(objectKey).containsStickyFrame && !(objectKey in visibleObjects)) {
+        if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
+        // if (realityEditor.getObject(objectKey).containsStickyFrame && !(objectKey in visibleObjects)) {
             visibleObjects[objectKey] = [];
         }
     }
@@ -610,6 +608,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
         callback(realityEditor.gui.ar.draw.visibleObjects);
     });
+
+    // toggles true after one execution of the update loop with the same visibleObjects,
+    // so that we don't recompute them if another fps gets rendered before the new matrices from vuforia come in
+    this.areMatricesPrecomputed = true;
 };
 
 /**
