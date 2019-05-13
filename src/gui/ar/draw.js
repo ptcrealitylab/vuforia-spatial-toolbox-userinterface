@@ -281,14 +281,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);
         this.globalCanvas.hasContent = false;
     }
+    
     // this is a quick hack but maybe needs to move somewhere else. 
     // I dont know if this is the right spot. //TODO: what is this actually doing?
     for (objectKey in objects) {
         // if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
-        if (realityEditor.getObject(objectKey).containsStickyFrame) {
+        if (realityEditor.getObject(objectKey).containsStickyFrame && !(objectKey in visibleObjects)) {
             visibleObjects[objectKey] = [];
         }
     }
+    
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     if (Object.keys(visibleObjects).length > 0) {
         if(this.checkFrameVisibilityCounter >= 30) {
