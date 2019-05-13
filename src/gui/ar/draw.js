@@ -223,10 +223,10 @@ realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
  * Calling it this way, using requestAnimationFrame, makes it render more smoothly.
  * (A different update loop inside of desktopAdapter is used on desktop devices to include camera manipulations)
  */
-realityEditor.gui.ar.draw.updateLoop = function () {
-    realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, realityEditor.gui.ar.draw.areMatricesPrecomputed);
-    requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
-};
+// realityEditor.gui.ar.draw.updateLoop = function () {
+//     realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, realityEditor.gui.ar.draw.areMatricesPrecomputed);
+//     requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
+// };
 
 realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
 realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
