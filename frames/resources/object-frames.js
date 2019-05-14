@@ -700,6 +700,7 @@
             }
         };
 
+        // TODO: this function implementation is different in the server and the userinterface... standardize it
         this.addReadPublicDataListener = function (node, valueName, callback) {
             self.ioObject.on("object/publicData", function (msg) {
                 var thisMsg = JSON.parse(msg);
@@ -1139,7 +1140,7 @@
             
             if (msgContent.event && msgContent.event.pointerId) {
                 var eventData = msgContent.event; // looks like {type: "pointerdown", pointerId: 29887780, pointerType: "touch", x: 334, y: 213}
-                
+
                 var event;
                 if (!realityInterface.doesUseSimplifiedPointerEvents) {
                     event = new PointerEvent(eventData.type, {
