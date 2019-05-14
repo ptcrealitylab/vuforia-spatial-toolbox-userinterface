@@ -268,9 +268,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
     }
     
-    if (globalStates.extendedTracking) {
-        this.updateExtendedTrackingVisibility(visibleObjects);
-    }
+    // TODO: not currently used, needs to be adjusted to be useful
+    // if (globalStates.extendedTracking) {
+    //     this.updateExtendedTrackingVisibility(visibleObjects);
+    // }
 
     this.visibleObjects = visibleObjects;
     

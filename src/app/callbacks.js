@@ -182,6 +182,7 @@ realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
 realityEditor.app.callbacks.matrixFormatCalculated = false;
 realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
 
+var DISABLE_ALL_EXTENDED_TRACKING = false;
 /**
  * Callback for realityEditor.app.getMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
@@ -191,19 +192,19 @@ realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible ob
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
     // These should be uncommented if we switch to the EXTENDED_TRACKING version
-    /*
-    if (!realityEditor.app.callbacks.matrixFormatCalculated) {
-        // for speed, only calculates this one time
-        realityEditor.app.callbacks.calculateMatrixFormat(visibleObjects);
-    }
-    
-    // ignore this step if using old app version that ignores EXTENDED_TRACKED objects entirely
-    if (realityEditor.app.callbacks.isMatrixFormatNew) {
-        // extract status into separate data structure and and format matrices into a backwards-compatible object
-        // if extended tracking is turned off, discard EXTENDED_TRACKED objects
-       realityEditor.app.callbacks.convertNewMatrixFormatToOld(visibleObjects);
-    }
-    */
+    // if (TEMP_ENABLE_EXTENDED_TRACKING) {
+        if (!realityEditor.app.callbacks.matrixFormatCalculated) {
+            // for speed, only calculates this one time
+            realityEditor.app.callbacks.calculateMatrixFormat(visibleObjects);
+        }
+
+        // ignore this step if using old app version that ignores EXTENDED_TRACKED objects entirely
+        if (realityEditor.app.callbacks.isMatrixFormatNew) {
+            // extract status into separate data structure and and format matrices into a backwards-compatible object
+            // if extended tracking is turned off, discard EXTENDED_TRACKED objects
+            realityEditor.app.callbacks.convertNewMatrixFormatToOld(visibleObjects);
+        }
+    // }
     
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
         // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
@@ -280,7 +281,7 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
     realityEditor.gui.ar.draw.visibleObjectsStatus = {};
     for (var key in visibleObjects) {
         realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-        if (globalStates.extendedTracking || visibleObjects[key].status === 'TRACKED') {
+        if ( (!DISABLE_ALL_EXTENDED_TRACKING && globalStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
             visibleObjects[key] = visibleObjects[key].matrix;
         } else {
             if (visibleObjects[key].status === 'EXTENDED_TRACKED') {
