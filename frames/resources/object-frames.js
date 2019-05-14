@@ -30,6 +30,7 @@
             groundPlane : false,
             allObjects : false
         },
+        sendScreenPosition: false,
         sendAcceleration: false,
         sendFullScreen: false,
         fullscreenZPosition: 0,
@@ -138,6 +139,7 @@
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendMatrices: realityObject.sendMatrices,
+                    sendScreenPosition: realityObject.sendScreenPosition,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
                     stickiness: realityObject.sendSticky,
@@ -229,6 +231,7 @@
                                 width: realityObject.width,
                                 sendMatrix: realityObject.sendMatrix,
                                 sendAcceleration: realityObject.sendAcceleration,
+                                sendScreenPosition: realityObject.sendScreenPosition,
                                 fullScreen: realityObject.sendFullScreen,
                                 stickiness: realityObject.sendSticky
                             }), "*");
@@ -352,6 +355,9 @@
 
         var numScreenPositionCallbacks = 0;
         this.addScreenPositionListener = function(callback) {
+            if (!realityObject.sendScreenPosition) {
+                this.subscribeToScreenPosition();
+            }
             numScreenPositionCallbacks++;
             realityObject.messageCallBacks['screenPositionCall'+numScreenPositionCallbacks] = function (msgContent) {
                 if (typeof msgContent.frameScreenPosition !== 'undefined') {
@@ -831,6 +837,28 @@
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendMatrices : realityObject.sendMatrices,
+                    sendScreenPosition: realityObject.sendScreenPosition,
+                    sendAcceleration: realityObject.sendAcceleration,
+                    fullScreen: realityObject.sendFullScreen,
+                    stickiness: realityObject.sendSticky
+                }), '*');
+            }
+        };
+        
+        this.subscribeToScreenPosition = function() {
+            realityObject.sendScreenPosition = true;
+            if (typeof realityObject.node !== 'undefined' || typeof realityObject.frame !== 'undefined') {
+
+                parent.postMessage(JSON.stringify({
+                    version: realityObject.version,
+                    node: realityObject.node,
+                    frame: realityObject.frame,
+                    object: realityObject.object,
+                    height: realityObject.height,
+                    width: realityObject.width,
+                    sendMatrix: realityObject.sendMatrix,
+                    sendMatrices : realityObject.sendMatrices,
+                    sendScreenPosition: realityObject.sendScreenPosition,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
                     stickiness: realityObject.sendSticky
@@ -853,6 +881,7 @@
                         width: realityObject.width,
                         sendMatrix: realityObject.sendMatrix,
                         sendMatrices : realityObject.sendMatrices,
+                        sendScreenPosition: realityObject.sendScreenPosition,
                         sendAcceleration: realityObject.sendAcceleration,
                         fullScreen: realityObject.sendFullScreen,
                         stickiness: realityObject.sendSticky
@@ -875,6 +904,7 @@
                         width: realityObject.width,
                         sendMatrix: realityObject.sendMatrix,
                         sendMatrices : realityObject.sendMatrices,
+                        sendScreenPosition: realityObject.sendScreenPosition,
                         sendAcceleration: realityObject.sendAcceleration,
                         fullScreen: realityObject.sendFullScreen,
                         stickiness: realityObject.sendSticky
@@ -896,6 +926,7 @@
                         width: realityObject.width,
                         sendMatrix: realityObject.sendMatrix,
                         sendMatrices : realityObject.sendMatrices,
+                        sendScreenPosition: realityObject.sendScreenPosition,
                         sendAcceleration: realityObject.sendAcceleration,
                         fullScreen: realityObject.sendFullScreen,
                         stickiness: realityObject.sendSticky
@@ -915,6 +946,7 @@
                 width: realityObject.width,
                 sendMatrix: realityObject.sendMatrix,
                 sendMatrices : realityObject.sendMatrices,
+                sendScreenPosition: realityObject.sendScreenPosition,
                 sendAcceleration: realityObject.sendAcceleration,
                 stickiness: realityObject.sendSticky,
                 fullScreen: realityObject.sendFullScreen
@@ -941,6 +973,7 @@
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendMatrices : realityObject.sendMatrices,
+                    sendScreenPosition: realityObject.sendScreenPosition,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
                     fullscreenZPosition: realityObject.fullscreenZPosition,
@@ -969,6 +1002,7 @@
                     width: realityObject.width,
                     sendMatrix: realityObject.sendMatrix,
                     sendMatrices : realityObject.sendMatrices,
+                    sendScreenPosition: realityObject.sendScreenPosition,
                     sendAcceleration: realityObject.sendAcceleration,
                     fullScreen: realityObject.sendFullScreen,
                     stickiness: realityObject.sendSticky
@@ -998,6 +1032,7 @@
                         width: realityObject.width,
                         sendMatrix: realityObject.sendMatrix,
                         sendMatrices : realityObject.sendMatrices,
+                        sendScreenPosition: realityObject.sendScreenPosition,
                         sendAcceleration: realityObject.sendAcceleration,
                         fullScreen: realityObject.sendFullScreen,
                         stickiness: realityObject.sendSticky
@@ -1023,6 +1058,7 @@
                         width: realityObject.width,
                         sendMatrix: realityObject.sendMatrix,
                         sendMatrices : realityObject.sendMatrices,
+                        sendScreenPosition: realityObject.sendScreenPosition,
                         sendAcceleration: realityObject.sendAcceleration,
                         fullScreen: realityObject.sendFullScreen,
                         stickiness: false
@@ -1068,6 +1104,26 @@
             this[pendingSend.name].apply(this, pendingSend.args);
         }
         this.pendingSends = [];
+        
+        // set this to true if you don't use native addEventListener('pointerdown', callback) API,
+        // and instead only use realityInterface.addPointerEventListener('pointerdown', callback) API
+        // It will be faster and doesn't require importing PEP.js, but doesn't work with unmodified webpages
+        this.doesUseSimplifiedPointerEvents = false;
+        this.useSimplifiedPointerEvents = function() {
+            this.doesUseSimplifiedPointerEvents = true;
+        };
+
+        this.pointerEventListeners = {
+            'pointerdown': [],
+            'pointermove': [],
+            'pointerup': []
+        };
+
+        this.addPointerEventListener = function(type, callback) {
+            if (typeof this.pointerEventListeners[type] !== 'undefined') {
+                this.pointerEventListeners[type].push(callback);
+            }
+        }
     };
 
     window.addEventListener('load', function() {
@@ -1082,25 +1138,29 @@
             }
             
             if (msgContent.event && msgContent.event.pointerId) {
-                var eventData = msgContent.event;
-                var event = new PointerEvent(eventData.type, {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true,
-                    pointerId: eventData.pointerId,
-                    pointerType: eventData.pointerType,
-                    x: eventData.x,
-                    y: eventData.y,
-                    clientX: eventData.x,
-                    clientY: eventData.y,
-                    pageX: eventData.x,
-                    pageY: eventData.y,
-                    screenX: eventData.x,
-                    screenY: eventData.y
-                });
-
+                var eventData = msgContent.event; // looks like {type: "pointerdown", pointerId: 29887780, pointerType: "touch", x: 334, y: 213}
+                
+                var event;
+                if (!realityInterface.doesUseSimplifiedPointerEvents) {
+                    event = new PointerEvent(eventData.type, {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true,
+                        pointerId: eventData.pointerId,
+                        pointerType: eventData.pointerType,
+                        x: eventData.x,
+                        y: eventData.y,
+                        clientX: eventData.x,
+                        clientY: eventData.y,
+                        pageX: eventData.x,
+                        pageY: eventData.y,
+                        screenX: eventData.x,
+                        screenY: eventData.y
+                    });
+                }
+                
                 // send unacceptedTouch message if this interface wants touches to pass through it
-                if (realityObject.touchDeciderRegistered) {
+                if (realityObject.touchDeciderRegistered && eventData.type === 'pointerdown') {
                     var touchAccepted = realityObject.touchDecider(eventData);
                     if (!touchAccepted) {
                         // console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
@@ -1118,17 +1178,28 @@
                     }
                 }
 
-                var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
-                elt.dispatchEvent(event);
+                // the method of sending the pointerevent into the frame depends on whether useSimplifiedPointerEvents was called
+                if (realityInterface.doesUseSimplifiedPointerEvents) {
+                    if (typeof realityInterface.pointerEventListeners[eventData.type] !== 'undefined') {
+                        realityInterface.pointerEventListeners[eventData.type].forEach(function(callback) {
+                            callback(eventData);
+                        });
+                    }
+                } else {
+                    var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+                    elt.dispatchEvent(event);
+                }
 
                 // otherwise send acceptedTouch message to stop the touch propagation
-                parent.postMessage(JSON.stringify({
-                    version: realityObject.version,
-                    node: realityObject.node,
-                    frame: realityObject.frame,
-                    object: realityObject.object,
-                    acceptedTouch : eventData
-                }), '*');
+                if (eventData.type === 'pointerdown') {
+                    parent.postMessage(JSON.stringify({
+                        version: realityObject.version,
+                        node: realityObject.node,
+                        frame: realityObject.frame,
+                        object: realityObject.object,
+                        acceptedTouch : eventData
+                    }), '*');
+                }
             }
         });
     });

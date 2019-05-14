@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <title>THREE.js Sphere</title>
     <script src="resources/object-frames.js"></script>
-    <script src="resources/pep.min.js"></script>
+    <!--<script src="resources/pep.min.js"></script>-->
     <script src="resources/threejs-src/2016/three.min.js"></script>
-    <script src="resources/navigation-arrow.js"></script>
+    <!--<script src="resources/navigation-arrow.js"></script>-->
     <script src="resources/STLExport.js"></script>
 
 
-    <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
+    <!--<link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">-->
 </head>
 <body>
 <script>
@@ -217,6 +217,12 @@
         realityInterface.onRealityInterfaceLoaded(function() {
             realityInterface.setFullScreenOn();
             realityInterface.setMoveDelay(400);
+            
+            realityInterface.useSimplifiedPointerEvents();
+
+            realityInterface.addPointerEventListener('pointerdown', function(eventData) {
+                console.log('pointerdown', eventData);
+            });
 
             // initNavigationArrow(document.querySelector('canvas'), realityInterface, true, touchDecider);
 

@@ -200,6 +200,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         groundPlane : false,
         allObjects : false
     };
+    thisObject.sendScreenPosition = false;
     thisObject.sendAcceleration = false;
     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
@@ -220,6 +221,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             groundPlane : false,
             allObjects : false
         };
+        thisFrame.sendScreenPosition = false;
         thisFrame.sendAcceleration = false;
         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
         thisFrame.visible = false;
@@ -899,6 +901,7 @@ realityEditor.network.onAction = function (action) {
                 groundPlane : false,
                 allObjects : false
             };
+            frame.sendScreenPosition = false;
             frame.sendAcceleration = false;
             frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
@@ -1198,6 +1201,12 @@ if (thisFrame) {
         }
 
         globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane();
+    }
+
+    if (msgContent.sendScreenPosition === true) {
+        if (tempThisObject.integerVersion >= 32) {
+            tempThisObject.sendScreenPosition = true;
+        }
     }
     
     if (msgContent.sendAcceleration === true) {
@@ -1518,8 +1527,13 @@ if (thisFrame) {
             publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
-            var keys = realityEditor.getKeysFromVehicle(frame);
-            realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
+            
+            var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
+            
+            if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
+                var keys = realityEditor.getKeysFromVehicle(frame);
+                realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
+            }
         }
         
     }

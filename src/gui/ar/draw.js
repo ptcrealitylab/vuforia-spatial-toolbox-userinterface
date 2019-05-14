@@ -1348,7 +1348,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             if (activeType === "ui") {
 
-                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true || 
+                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true || activeVehicle.sendScreenPosition === true ||
                     activeVehicle.sendMatrices && (activeVehicle.sendMatrices.devicePose === true || activeVehicle.sendMatrices.groundPlane === true || activeVehicle.sendMatrices.allObjects === true)) {
 
                     var thisMsg = {};
@@ -1383,15 +1383,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     if (activeVehicle.sendAcceleration === true) {
                         thisMsg.acceleration = globalStates.acceleration;
                     }
-
-                    // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
-                    // TODO: check if this still works with new coordinate system
-                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
                     
-                    // computes {center: {x: number, y: number}} of the frame to be sent into a fullscreen frame
-                    // TODO: add sendMatrices.screenPosition and only compute/send this in if subscribed
-                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2, true);
-                    thisMsg.frameScreenPosition = frameScreenPosition;
+                    if (activeVehicle.sendScreenPosition === true) {
+                        // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
+                        // TODO: check if this still works with new coordinate system
+                        // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
+
+                        // computes {center: {x: number, y: number}} of the frame to be sent into a fullscreen frame
+                        // TODO: add sendMatrices.screenPosition and only compute/send this in if subscribed
+                        var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2, true);
+                        thisMsg.frameScreenPosition = frameScreenPosition;
+                    }
+
                     
                     // cout(thisMsg);
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');

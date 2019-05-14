@@ -825,19 +825,21 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 
         if (closestObjectKey) {
 
-            console.log('there is an object to drop this frame onto');
+            if (closestObjectKey !== globalStates.inTransitionObject) {
+                console.log('there is an object to drop this frame onto');
 
-            var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
-            var newFrameKey = closestObjectKey + frameBeingMoved.name;
+                var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
+                var newFrameKey = closestObjectKey + frameBeingMoved.name;
 
-            var screenX = event.pageX;
-            var screenY = event.pageY;
-            var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                var screenX = event.pageX;
+                var screenY = event.pageY;
+                var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
 
-            realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
+                realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
 
-            var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-            realityEditor.network.postVehiclePosition(newFrame);
+                var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                realityEditor.network.postVehiclePosition(newFrame);
+            }
 
         } else {
 
