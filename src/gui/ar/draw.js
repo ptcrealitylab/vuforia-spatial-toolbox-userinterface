@@ -283,8 +283,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     // this is a quick hack but maybe needs to move somewhere else. 
     // I dont know if this is the right spot. //TODO: what is this actually doing?
     for (objectKey in objects) {
-        if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
-        // if (realityEditor.getObject(objectKey).containsStickyFrame && !(objectKey in visibleObjects)) {
+        // if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
+        if (realityEditor.getObject(objectKey).containsStickyFrame && !(objectKey in visibleObjects)) {
             visibleObjects[objectKey] = [];
         }
     }
@@ -328,7 +328,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
                 
             } else {
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix); // TODO: to really optimize, could inline/simplify the rotateX multiplication
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
             }
 
@@ -895,22 +895,18 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         
         // try to calculate the matrix that preserves the frame's visual location relative to the camera,
         // but placed on the new object rather than its old object
-        frame.ar.x = 0;
-        frame.ar.y = 0;
+        // frame.ar.x = 0; // commenting this out fixed position when dropping to new object
+        // frame.ar.y = 0;
         
         // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
-        // var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
-        // var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
-        // var scaleFactor = oldTargetSize.width / newTargetSize.width;
-        //
-        // realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
+        var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
+        var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
+        var scaleFactor = oldTargetSize.width / newTargetSize.width;
+
+        realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
 
         // recompute frame.temp for the new object
         this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
-
-        // frame.begin[0] /= scaleFactor;
-        // frame.begin[5] /= scaleFactor;
-        // frame.begin[10] /= scaleFactor;
 
         // compute frame.matrix based on new object
         var resultMatrix = [];
@@ -1301,6 +1297,35 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
                 globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                
+                // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
+                // var screenRect = globalDOMCache["iframe" + activeKey].getClientRects()[0];
+                // if (screenRect) {
+                //     if (screenRect.bottom < 0 || screenRect.top > globalStates.width || screenRect.right < 0 || screenRect.left > globalStates.height) {
+                //         globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
+                //     } else {
+                //         globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
+                //     }
+                // }
+                
+                // if (activeType === 'ui') {
+                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
+
+                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getScreenPosition(objectKey, frameKey, false, true, false, false, true);
+                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+                    
+                    var left = frameScreenPosition.upperLeft.x;
+                    var right = frameScreenPosition.lowerRight.x;
+                    var top = frameScreenPosition.upperLeft.y;
+                    var bottom = frameScreenPosition.lowerRight.y;
+
+                    if (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height) {
+                        globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
+                    } else {
+                        globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
+                    }
+                // }
+                
             } else {
                 this.updateStickyFrameCss(activeKey);
             }
@@ -1361,10 +1386,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
                     // TODO: check if this still works with new coordinate system
-                    var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
+                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
+                    
+                    // computes {center: {x: number, y: number}} of the frame to be sent into a fullscreen frame
+                    // TODO: add sendMatrices.screenPosition and only compute/send this in if subscribed
+                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2, true);
                     thisMsg.frameScreenPosition = frameScreenPosition;
-                    // TODO: add sendMatrices.screenPosition
-
+                    
                     // cout(thisMsg);
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
 

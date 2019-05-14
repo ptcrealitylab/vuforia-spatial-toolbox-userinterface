@@ -815,6 +815,10 @@ body {
     opacity: 0.7;
 }
 
+.outsideOfViewport {
+    display: none;
+}
+
 .distantFrame {
     display: none;
 }

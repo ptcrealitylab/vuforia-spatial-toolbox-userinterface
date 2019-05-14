@@ -444,6 +444,22 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     //         element.parentNode.insertBefore(element.nextElementSibling, element); // TODO: this doesn't actually work with 3d transforms involved
     //     }
     // }
+
+    // if you grab a world frame when only worldObjects are visible, set inTransitionFrame/Object to true
+    // then if you drop it when there is a non-world object visible, move it to that object
+    // var editingVehicle = realityEditor.device.getEditingVehicle();
+    // if (editingVehicle) {
+        var activeObject = realityEditor.getObject(this.editingState.object);
+        if (activeObject.isWorldObject) {
+            // check if only world objects are visible
+            // one way to do this is to get the closest object and see it it's a world object
+            var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
+            if (closestObject.isWorldObject) {
+                globalStates.inTransitionObject = objectKey;
+                globalStates.inTransitionFrame = frameKey;
+            }
+        }
+    // }
     
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 
