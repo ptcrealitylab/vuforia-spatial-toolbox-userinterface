@@ -9,6 +9,10 @@
     <script src="resources/navigation-arrow.js"></script>
     <script src="resources/STLExport.js"></script>
     <script src="resources/ColladaExporter.js"></script>
+    <script src='resources/stl.js'></script>
+
+    <script src="resources/threejs-src/2018/three.min.js"></script>
+    <script src="resources/threejs-src/2018/loaders/GLTFLoader.js"></script>
 
 
     <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
@@ -19,6 +23,7 @@
     var threejsContainerObj;
     var realityInterface;
     var mesh;
+    var loader = new THREE.STLLoader();
 
     var box;
 
@@ -530,7 +535,7 @@
             //setNewProjectionMatrix(projectionMatrixFrom(25, -window.innerWidth/window.innerHeight, 400, 300000));
             var tempM = new THREE.Matrix4();
             tempM.getInverse(camera.projectionMatrix);
-            box.material.uniforms.projectionInverse.value = tempM;
+            //box.material.uniforms.projectionInverse.value = tempM;
 
         }
 
