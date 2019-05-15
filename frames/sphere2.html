@@ -8,6 +8,7 @@
     <script src="resources/threejs-src/2016/three.min.js"></script>
     <script src="resources/navigation-arrow.js"></script>
     <script src="resources/STLExport.js"></script>
+    <script src="resources/ColladaExporter.js"></script>
 
 
     <link rel="stylesheet" type="text/css" href="resources/navigation-arrow.css">
@@ -18,6 +19,8 @@
     var threejsContainerObj;
     var realityInterface;
     var mesh;
+
+    var box;
 
     var isProjectionMatrixSet = false;
 
@@ -46,7 +49,6 @@
         rendererHeight = window.innerHeight;
         aspectRatio = rendererWidth / rendererHeight;
         
-        // console.log(renderer.getSize(), rendererWidth, rendererHeight);
 
         if (camera) {
             //camera.aspect = window.innerWidth/window.innerHeight;
@@ -92,6 +94,9 @@
         dirLight2.position.set(-100, -100, -100);
         scene.add(dirLight2);
 
+        var exporter = new THREE.ColladaExporter();
+
+
         // add an icosahedron 3d model to the container object 
         var radius = 75;
 
@@ -121,26 +126,29 @@
         // var geometry = new THREE.TubeGeometry( path, 20, 2, 8, false );
 
 
-
-
-
-
         var geometry = new THREE.IcosahedronGeometry( radius, 1 );
         var materials = [
-            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0 } ),
+            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0, transparent:true } ),
             new THREE.MeshBasicMaterial( { color: 0x000000, shading: THREE.FlatShading, wireframe: true, transparent: true } )
         ];
         mesh = THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
         threejsContainerObj.add( mesh );
         mesh.position.setZ(150);
         mesh.updateMatrixWorld();
+        console.log('modelito',THREE.STLExportObject(mesh));
 
+        
+        box = addExperimentalCube(threejsContainerObj);
+        addExperimentalCubeOuter(threejsContainerObj);
 
         // add spotlight for the shadows
         var spotLight = new THREE.SpotLight(0xffffff);
         spotLight.position.set(-30, -30, 150);
         spotLight.castShadow = true;
         mesh.add(spotLight);
+
+        var data = exporter.parse(mesh);
+        console.log(data.data);
 
         // make the frame fullscreen within the reality editor,
         // and subscribe to the modelview and projection matrices
@@ -152,12 +160,23 @@
                 realityInterface.iosObject.emit("clientName", "controller");
 
                 // Send the 3D model to the IOS Server.
-                realityInterface.iosObject.emit('model', THREE.STLExport(scene));
+                realityInterface.iosObject.emit('model', THREE.STLExportObject(mesh));
 
                 // Update the model position on screen when the user is no longer moving the model.
                 setInterval(function(){
                     sendModelPosition(mesh, camera, realityInterface.iosObject);
                 }, 300);
+            });
+
+             realityInterface.iosObject.on('requestModel', function(data) {
+                realityInterface.iosObject.emit('model', THREE.STLExportObject(mesh));
+                //initialModelRotation = undefined;
+             });
+
+
+            realityInterface.iosObject.on('endedTouch', function(data){
+                console.log('Ended touch');
+                initialModelRotation = undefined;
             });
 
             // update the position of the sphere on the canvas when user drags it.
@@ -219,9 +238,21 @@
                 modelRotation.decompose(modelPosition, mRotation, modelScale);
 
                 if(initialModelRotation === undefined) {
-                  initialModelRotation = new THREE.Quaternion();
+                    console.log('initializing rotation again');
+
+                    var initialMatrix = new THREE.Matrix4();
+                    var cM = new THREE.Matrix4();
+                    cM.getInverse(threejsContainerObj.matrix);
+                    initialMatrix.copy(mesh.matrixWorld);
+                    initialMatrix.premultiply(rotation);
+                    initialMatrix.premultiply(cM);
+                    console.log('initial matrix is', initialMatrix);
+                    initialModelRotation = new THREE.Quaternion();
+
+                  var quat = new THREE.Quaternion();
                   initialModelRotation.copy(mesh.quaternion);
-                  //initialModelRotation.premultiply(rotation);
+                  // quat.setFromRotationMatrix(rotation);
+                  // initialModelRotation.multiply(quat);
                 }
 
                 // This is the model's center position on the 2D screen (ignore Z).
@@ -233,13 +264,12 @@
                 // Turn that into a unit direction vector from the camera's position.
                 XY.sub(camera.position);
                 XY.normalize();
-                console.log('real scale', modelRealScale);
 
                 // Distance along the direction vector is dependent on parameters sent from the phone.
                 XY.multiplyScalar(z * modelRealScale.y);
 
                 // Change near plane of Camera to create 'exit' illusion.
-                var newNear = XY.length() - (data.cut * (modelRealScale.y/data.im));
+                var newNear = XY.length() - (data.cut * (modelRealScale.z/data.im));
                 setNewProjectionMatrix(projectionMatrixFrom(25, -window.innerWidth/window.innerHeight, newNear, 300000));
 
                 XY.add(camera.position);
@@ -264,8 +294,8 @@
                 var initialRotationCopy = new THREE.Quaternion();
                 initialRotationCopy.copy(initialModelRotation);
                 initialRotationCopy.multiply(modelQuaternion);
-                console.log('initial model rotation', initialModelRotation);
                 mesh.quaternion.copy(initialRotationCopy);
+                mesh.updateMatrixWorld();
           });
         });
 
@@ -352,7 +382,6 @@
         var cameraScaleCopy = new THREE.Vector3();
         var cameraMatrix = new THREE.Matrix4();
         cameraMatrix.copy(camera.matrixWorld);
-        console.log('camera matrix is:', cameraMatrix);
         cameraMatrix.decompose(cameraPositionCopy, cameraQuaternionCopy, cameraScaleCopy);
 
         // Create a transform of with the camera's rotation and zero translation.
@@ -412,7 +441,6 @@
 
         
     function visibleHeightAtZDepth( depth, camera ){
-        console.log('the fov', camera.fov);
       const vFOV = camera.fov * Math.PI / 180; 
       return 2 * Math.tan( vFOV / 2 ) * Math.abs( depth );
     }
@@ -483,7 +511,6 @@
         var c = - ( far + near ) / ( far - near );
         var d = - 2 * far * near / ( far - near );
 
-        console.log(x, y, a, b ,c);
 
         te[ 0 ] = x;    te[ 4 ] = 0;    te[ 8 ] = a;    te[ 12 ] = 0;
         te[ 1 ] = 0;    te[ 5 ] = y;    te[ 9 ] = b;    te[ 13 ] = 0;
@@ -500,6 +527,11 @@
         if (!isProjectionMatrixSet && projectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, projectionMatrix);
             isProjectionMatrixSet = true;
+            //setNewProjectionMatrix(projectionMatrixFrom(25, -window.innerWidth/window.innerHeight, 400, 300000));
+            var tempM = new THREE.Matrix4();
+            tempM.getInverse(camera.projectionMatrix);
+            box.material.uniforms.projectionInverse.value = tempM;
+
         }
 
         if (isProjectionMatrixSet) { // don't turn into else statement, both can happen
@@ -516,15 +548,174 @@
             testMatrix.compose(position,rotation, new THREE.Vector3(Math.sign(scale.x) * Math.abs(scale.z),scale.z,scale.z));
             setMatrixFromArray(threejsContainerObj.matrix, testMatrix.elements);
 
-            console.log(testMatrix);
-            console.log('The Scale is:', scale);
-
 
 
             // render the scene
             threejsContainerObj.visible = true;
             renderer.render( scene, camera );
         }
+    }
+
+    function addExperimentalCube(parent) {
+        var uniforms = {
+        colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
+        colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)},
+        radius: {type: 'vec3', value: new THREE.Vector3(800,10,10)},
+        center: {type: 'vec3', value: new THREE.Vector3(0,0,0)},
+        projectionInverse: {type: 'mat4', value: new THREE.Matrix4()}
+        }
+
+        var geometry = new THREE.BoxGeometry(500, 700, 600);
+
+        for ( var i = 0; i < geometry.faces.length; i ++ ) {
+
+            var face = geometry.faces[ i ];
+            var temp = face.a;
+            face.a = face.c;
+            face.c = temp;
+
+        }
+
+        geometry.computeFaceNormals();
+        geometry.computeVertexNormals();
+
+        var faceVertexUvs = geometry.faceVertexUvs[ 0 ];
+        for ( var i = 0; i < faceVertexUvs.length; i ++ ) {
+
+            var temp = faceVertexUvs[ i ][ 0 ];
+            faceVertexUvs[ i ][ 0 ] = faceVertexUvs[ i ][ 2 ];
+            faceVertexUvs[ i ][ 2 ] = temp;
+
+        }
+
+
+
+        var materials = [
+            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0, transparent:true } )
+        ];
+        //aterial.blending = THREE.MultiplyBlending;
+
+        //material.side = THREE.DoubleSide;
+
+        var mesh = THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
+
+        var spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.position.set(-30, -30, 150);
+        spotLight.castShadow = true;
+        mesh.add(spotLight);
+        //mesh.doubleSided = true;
+        parent.add(mesh);
+        mesh.position.setZ(150);
+        mesh.updateMatrixWorld();
+        return mesh;
+    }
+
+    function addExperimentalCubeOuter(parent) {
+        var uniforms = {
+        colorB: {type: 'vec3', value: new THREE.Color(0x000000)},
+        colorA: {type: 'vec3', value: new THREE.Color(0x0097e6)},
+        radius: {type: 'vec3', value: new THREE.Vector3(1300,10,10)},
+        center: {type: 'vec3', value: new THREE.Vector3(0,0,0)},
+        projectionInverse: {type: 'mat4', value: new THREE.Matrix4()}
+        }
+
+       
+        var geometry = new THREE.BoxGeometry(550 * 1.5, 750 * 1.5, 650 * 1.5);
+
+
+
+
+        var material =  new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            fragmentShader: fragmentShader2(),
+            vertexShader: vertexShader(),
+        });
+        material.transparent = true;
+        material.blending = THREE.MultiplyBlending;
+
+        //material.side = THREE.DoubleSide;
+
+        var mesh = new THREE.Mesh(geometry, material);
+        //mesh.doubleSided = true;
+        parent.add(mesh);
+        mesh.position.setZ(150);
+        mesh.updateMatrixWorld();
+        return mesh;
+    }
+
+    function vertexShader() {
+        return `
+        varying vec3 vUv; 
+        uniform  vec3 center;
+        uniform vec3 radius;
+        varying vec3 r;
+        void main() {
+          vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * modelViewPosition; 
+          vUv = (modelMatrix * vec4(position, 1.0)).xyz;
+
+
+        }`;
+    }
+
+
+    function fragmentShader2() {
+            return `
+      uniform vec3 colorA; 
+      uniform vec3 colorB;
+      uniform  vec3 center;
+      uniform vec3 radius;
+      varying vec3 vUv;
+      varying vec3 r;
+
+
+      void main() {
+
+        float formula = (vUv.x - center.x) * (vUv.x - center.x) + (vUv.y - center.y) * (vUv.y - center.y)  + (vUv.z - center.z) * (vUv.z - center.z)  - radius.x * radius.x;
+        float alpha = 0.0;
+          if(formula < 0.0) {
+            alpha = 1.0;
+            gl_FragColor = vec4(vec3(1.0,1.0,1.0), alpha);
+
+          } else {
+            alpha = 1.0;
+            gl_FragColor = vec4(vec3(0.0,0.0,0.0), 0.0);
+
+          }
+
+
+      }
+
+            `;
+
+    }
+
+    function fragmentShader() {
+            return `
+      uniform vec3 colorA; 
+      uniform vec3 colorB;
+      uniform  vec3 center;
+      uniform vec3 radius;
+      varying vec3 vUv;
+      varying vec3 r;
+
+
+      void main() {
+
+        float formula = (vUv.x - center.x) * (vUv.x - center.x) + (vUv.y - center.y) * (vUv.y - center.y)  + (vUv.z - center.z) * (vUv.z - center.z)  - radius.x * radius.x;
+        float alpha = 0.0;
+          if(formula < 0.0) {
+            alpha = 1.0;
+          } else {
+            alpha = 1.0;
+          }
+
+
+        gl_FragColor = vec4(vec3(0.0,0.0,1.0), alpha);
+      }
+
+            `;
+
     }
 
 </script>
