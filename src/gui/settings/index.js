@@ -111,13 +111,13 @@ realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody)
 };
 
 realityEditor.gui.settings.reloadUI = function () {
-    if (this.states.externalState !== "" && this.states.externalState !== "http") {
+    // if (this.states.externalState !== "" && this.states.externalState !== "http") {
         console.log("loadNewUI: " + this.states.externalState);
         this.appFunctionCall('setStorage', {storageID: 'SETUP:EXTERNAL', message: JSON.stringify(this.states.externalState)}, null);
         setTimeout(function() {
             this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
         }.bind(this), 100);
-    }
+    // }
 };
 
 realityEditor.gui.settings.discovery = function () {
