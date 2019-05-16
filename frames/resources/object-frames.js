@@ -80,10 +80,10 @@
                 ho.injectIo();
 
                 // Connect this frame to the internet of screens.
-                ho.iosObject = io.connect(iOSHost);
-                if(ho.ioCallback !== undefined) {
-                    ho.ioCallback();
-                }
+                // ho.iosObject = io.connect(iOSHost);
+                // if(ho.ioCallback !== undefined) {
+                //     ho.ioCallback();
+                // }
             }
         });
 

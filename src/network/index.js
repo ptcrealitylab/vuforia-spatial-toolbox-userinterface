@@ -1423,7 +1423,6 @@ if (thisFrame) {
 
             // remove it from the DOM
             realityEditor.gui.ar.draw.deleteNode(thisObjectKey, thisFrameKey, thisNodeKey);
-            realityEditor.gui.ar.draw.removeFromEditedNodesList(thisNodeKey);
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[thisObjectKey].ip, thisObjectKey, thisFrameKey, thisNodeKey);
             

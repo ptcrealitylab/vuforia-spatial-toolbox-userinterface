@@ -726,7 +726,6 @@ realityEditor.device.onElementTouchUp = function(event) {
 
             // remove it from the DOM
             realityEditor.gui.ar.draw.deleteNode(target.objectId, target.frameId, target.nodeId);
-            realityEditor.gui.ar.draw.removeFromEditedNodesList(target.nodeId);
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
