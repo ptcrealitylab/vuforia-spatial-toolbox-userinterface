@@ -228,7 +228,9 @@ realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
 //     requestAnimationFrame(realityEditor.gui.ar.draw.updateLoop);
 // };
 
-realityEditor.gui.ar.draw.checkFrameVisibilityCounter = 0;
+realityEditor.gui.ar.draw.lowFrequencyUpdateCounter = 0;
+realityEditor.gui.ar.draw.lowFrequencyUpdateCounterMax = 30; // how many frames pass per lowFrequencyUpdate
+realityEditor.gui.ar.draw.isLowFrequencyUpdateFrame = false;
 realityEditor.gui.ar.draw.isObjectWithNoFramesVisible = false;
 realityEditor.gui.ar.draw.visibleObjectsStatusTimes = {};
 
@@ -290,19 +292,27 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         }
     }
     
+    if (this.lowFrequencyUpdateCounter >= this.lowFrequencyUpdateCounterMax) {
+        this.isLowFrequencyUpdateFrame = true;
+        this.lowFrequencyUpdateCounter = 0;
+    } else {
+        this.isLowFrequencyUpdateFrame = false;
+        this.lowFrequencyUpdateCounter++;
+    }
+    
+    // this.isLowFrequencyUpdateFrame = true;
+    
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     if (Object.keys(visibleObjects).length > 0) {
-        if(this.checkFrameVisibilityCounter >= 30) {
-            this.checkFrameVisibilityCounter = 0;
-            if (realityEditor.gui.ar.utilities.getAllVisibleFrames().length === 0) {
+        if(this.isLowFrequencyUpdateFrame) {
+            
+            if (realityEditor.gui.ar.utilities.getAllVisibleFramesFast().length === 0) {
                 this.isObjectWithNoFramesVisible = true;
             } else {
                 this.isObjectWithNoFramesVisible = false;
             }
-        } else {
-            this.checkFrameVisibilityCounter++;
         }
-    }  else {
+    } else {
         this.isObjectWithNoFramesVisible = true;
     }
     
@@ -1297,35 +1307,32 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
-                globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
                 
-                // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
-                // var screenRect = globalDOMCache["iframe" + activeKey].getClientRects()[0];
-                // if (screenRect) {
-                //     if (screenRect.bottom < 0 || screenRect.top > globalStates.width || screenRect.right < 0 || screenRect.left > globalStates.height) {
-                //         globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
-                //     } else {
-                //         globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
-                //     }
+                // if (!activeVehicle.isOutsideViewport) {
+                    globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
                 // }
                 
-                // if (activeType === 'ui') {
-                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
+                // if (this.isLowFrequencyUpdateFrame) {
 
-                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getScreenPosition(objectKey, frameKey, false, true, false, false, true);
+                    // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
                     var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
-                    
+
                     var left = frameScreenPosition.upperLeft.x;
                     var right = frameScreenPosition.lowerRight.x;
                     var top = frameScreenPosition.upperLeft.y;
                     var bottom = frameScreenPosition.lowerRight.y;
 
-                    if (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height) {
-                        globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
-                    } else {
-                        globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
+                    if (!activeVehicle.isOutsideViewport && (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height)) {
+                        // globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
+                        activeVehicle.isOutsideViewport = true;
+                    } else if (activeVehicle.isOutsideViewport) {
+                        // globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
+                        activeVehicle.isOutsideViewport = false;
                     }
+                    // }
+
                 // }
+
                 
             } else {
                 this.updateStickyFrameCss(activeKey);

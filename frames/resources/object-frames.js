@@ -67,6 +67,9 @@
     var realityInterfaces = [];
     
     function loadObjectSocketIo(object) {
+        
+        console.log('loadObjectSocketIo', object);
+        
         var script = document.createElement('script');
         script.type = 'text/javascript';
 
@@ -78,6 +81,7 @@
             for (var i = 0; i < realityInterfaces.length; i++) {
                 var ho = realityInterfaces[i];
                 ho.injectIo();
+                console.log('ho.injectIo', i);
 
                 // Connect this frame to the internet of screens.
                 // ho.iosObject = io.connect(iOSHost);
@@ -210,15 +214,17 @@
 
         if (typeof msgContent.visibility !== 'undefined') {
             realityObject.visibility = msgContent.visibility;
-
-            // reload public data when it becomes visible
-            for (var i = 0; i < realityInterfaces.length; i++) {
-                if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditorPublicData', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
-                }
-            }
             
             if(realityObject.visibility === "visible"){
+
+                // reload public data when it becomes visible
+                for (var i = 0; i < realityInterfaces.length; i++) {
+                    if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
+                        console.log('emit /subscribe/realityEditorPublicData because it became visible');
+                        realityInterfaces[i].ioObject.emit('/subscribe/realityEditorPublicData', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
+                    }
+                }
+                
                 if (typeof realityObject.node !== "undefined") {
                     if(realityObject.sendSticky) {
                         parent.postMessage(JSON.stringify(
@@ -569,6 +575,7 @@
         };
 
         if (typeof io !== 'undefined') {
+            console.log('io is not undefined... injectIo');
             this.injectIo();
         } else {
             this.ioObject = {
@@ -592,13 +599,14 @@
     }
 
     RealityInterface.prototype.injectIo = function() {
+        console.log('injectIo');
         var self = this;
 
         this.ioObject = io.connect(realityObject.socketIoUrl);
         this.oldNumberList = {};
 
         this.ioObject.on('reconnect', function() {
-            console.log('reconnect');
+            console.log('reconnect', realityObject.frame, realityObject.node);
             window.location.reload();
 
             // notify the containing application that a frame socket reconnected, for additional optional behavior (e.g. make the screen reload)
@@ -615,6 +623,7 @@
 
         this.sendRealityEditorSubscribe = setInterval(function () {
             if (realityObject.object) {
+                console.log('emit /subscribe/realityEditor');
                 self.ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                 clearInterval(self.sendRealityEditorSubscribe);
             }
@@ -637,6 +646,7 @@
             }
 
             if (self.oldNumberList[node] !== value || forceWrite) {
+                console.log('emit object (write data)');
                 this.ioObject.emit('object', JSON.stringify({
                     object: realityObject.object,
                     frame: realityObject.frame,
@@ -652,6 +662,7 @@
          */
 
         this.readRequest = function (node) {
+            console.log('emit /object/readRequest');
             this.ioObject.emit('/object/readRequest', JSON.stringify({object: realityObject.object, frame: realityObject.frame, node: realityObject.frame + node}));
         };
 
@@ -673,6 +684,7 @@
 
         this.addReadListener = function (node, callback) {
             self.ioObject.on('object', function (msg) {
+                console.log('read listener triggered');
                 var thisMsg = JSON.parse(msg);
                 if (typeof thisMsg.node !== 'undefined') {
                     if (thisMsg.node === realityObject.frame + node) {
@@ -703,6 +715,7 @@
         // TODO: this function implementation is different in the server and the userinterface... standardize it
         this.addReadPublicDataListener = function (node, valueName, callback) {
             self.ioObject.on("object/publicData", function (msg) {
+                console.log('on object/publicData triggered');
                 var thisMsg = JSON.parse(msg);
                 
                 if (typeof thisMsg.publicData === "undefined")  return;
@@ -747,6 +760,8 @@
             }
             
             realityObject.publicData[node][valueName] = value;
+            
+            console.log('writePublicData triggered');
 
             this.ioObject.emit('object/publicData', JSON.stringify({
                 object: realityObject.object,
@@ -770,6 +785,8 @@
             
             var thisItem = {};
             thisItem[valueName] = value;
+            
+            console.log('writePrivateData triggered');
 
             this.ioObject.emit('object/privateData', JSON.stringify({
                 object: realityObject.object,
@@ -783,6 +800,7 @@
             // reload public data when it becomes visible
             for (var i = 0; i < realityInterfaces.length; i++) {
                 if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
+                    console.log('reloadPublicData ... emit /subscribe/realityEditor');
                     realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame})); //TODO: change to subscribe/realityEditorPublicData ??
                 }
             }
@@ -790,11 +808,14 @@
         
         console.log('socket.io is loaded and injected');
 
+        console.log('pendingIos', this.pendingIos);
+
         for (var i = 0; i < this.pendingIos.length; i++) {
             var pendingIo = this.pendingIos[i];
             this[pendingIo.name].apply(this, pendingIo.args);
         }
         this.pendingIos = [];
+        
     };
 
     RealityInterface.prototype.injectPostMessage = function() {

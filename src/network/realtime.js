@@ -9,7 +9,7 @@ createNameSpace("realityEditor.network.realtime");
 
 (function(exports) {
 
-    var mySocket;
+    var desktopSocket;
     var sockets = {};
 
     /**
@@ -17,8 +17,10 @@ createNameSpace("realityEditor.network.realtime");
      */
     function initFeature() {
         // TODO Is this redundant code? It seems to generate the error that pops up
-        
-        mySocket = io.connect();
+
+        if (realityEditor.device.utilities.isDesktop()) {
+            desktopSocket = io.connect();
+        }
         setupVehicleUpdateSockets();
         setupServerSockets();
 
@@ -47,9 +49,9 @@ createNameSpace("realityEditor.network.realtime");
      * Add socket listeners for events that update objects, frames, and nodes.
      */
     function setupVehicleUpdateSockets() {
-        addSocketMessageListener('/update/object', updateObject);
-        addSocketMessageListener('/update/frame', updateFrame);
-        addSocketMessageListener('/update/node', updateNode);
+        addDesktopSocketMessageListener('/update/object', updateObject);
+        addDesktopSocketMessageListener('/update/frame', updateFrame);
+        addDesktopSocketMessageListener('/update/node', updateNode);
     }
 
     /**
@@ -173,8 +175,10 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} messageName
      * @param {function} callback
      */
-    function addSocketMessageListener(messageName, callback) {
-        mySocket.on(messageName, callback);
+    function addDesktopSocketMessageListener(messageName, callback) {
+        if (desktopSocket) {
+            desktopSocket.on(messageName, callback);
+        }
     }
 
     /**
@@ -341,7 +345,7 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     exports.initFeature = initFeature;
-    exports.addSocketMessageListener = addSocketMessageListener;
+    exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.broadcastUpdate = broadcastUpdate;
     
     exports.getSocketIPsForSet = getSocketIPsForSet;

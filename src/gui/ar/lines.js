@@ -337,6 +337,7 @@ realityEditor.gui.ar.lines.ballPosition  = 0;
 realityEditor.gui.ar.lines.width  = globalStates.width;
 realityEditor.gui.ar.lines.height  = globalStates.height;
 realityEditor.gui.ar.lines.extendedBorder = 200;
+realityEditor.gui.ar.lines.extendedBorderNegative = -200;
 realityEditor.gui.ar.lines.nodeExistsA = true;
 realityEditor.gui.ar.lines.nodeExistsB = true;
 

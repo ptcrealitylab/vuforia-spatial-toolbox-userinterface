@@ -458,6 +458,30 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
 };
 
 /**
+ * Uses isOutsideViewport to determine which frames are currently visible across all visible objects
+ * @return {Array.<string>} - returns frameKeys of all visible frames
+ */
+realityEditor.gui.ar.utilities.getAllVisibleFramesFast = function() {
+    
+    var visibleFrameKeys = [];
+
+    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
+    for (var objectKey in visibleObjects) {
+        for (var frameKey in objects[objectKey].frames) {
+            var frame = realityEditor.getFrame(objectKey, frameKey);
+            if (frame) {
+                if (frame.visualization !== 'ar') { continue; }
+                if (!frame.isOutsideViewport) {
+                    visibleFrameKeys.push(frameKey);
+                }
+            }
+        }
+    }
+    
+    return visibleFrameKeys;
+};
+
+/**
  * Efficient calculation to determine which frames are visible within the screen bounds.
  * Only AR frames are counted. Considered visible if the rectangular bounding-box of the
  * 3d-transformed div overlaps with the screen bounds at all.

@@ -264,6 +264,7 @@
         // console.log(e);
     });
     realityInterface.setMoveDelay(10);
+    // realityInterface.useSimplifiedPointerEvents();
     //  {value: 0.4565680618804775, mode: "f", unit: "volt", unitMin: 300, unitMax: 0}
     
     function allEqual(arr) {
@@ -279,13 +280,13 @@
     }, 1000); // at a low latency, check if all values are equal so we can stop wasting resources re-rendering if the values never change
     
 </script>
-<script src="resources/demonstration.js"></script>
+<!--<script src="resources/demonstration.js"></script>-->
 <script>
-    setupDemonstrationScripts(function() {
-        data.push(properties.value);
-        data.shift();
-        renderProperties();
-    });
+    // setupDemonstrationScripts(function() {
+    //     data.push(properties.value);
+    //     data.shift();
+    //     renderProperties();
+    // });
 </script>
 </body>
 </html>
