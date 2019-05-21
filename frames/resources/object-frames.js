@@ -220,7 +220,6 @@
                 // reload public data when it becomes visible
                 for (var i = 0; i < realityInterfaces.length; i++) {
                     if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                        console.log('emit /subscribe/realityEditorPublicData because it became visible');
                         realityInterfaces[i].ioObject.emit('/subscribe/realityEditorPublicData', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                     }
                 }
@@ -248,6 +247,75 @@
 
         if (typeof msgContent.interface !== "undefined") {
             realityObject.interface = msgContent.interface
+        }
+
+        if (msgContent.reloadPublicData) {
+            realityInterface.reloadPublicData();
+        }
+
+        if (msgContent.event && msgContent.event.pointerId) {
+            var eventData = msgContent.event; // looks like {type: "pointerdown", pointerId: 29887780, pointerType: "touch", x: 334, y: 213}
+
+            var event;
+            if (!realityInterface.doesUseSimplifiedPointerEvents) {
+                event = new PointerEvent(eventData.type, {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    pointerId: eventData.pointerId,
+                    pointerType: eventData.pointerType,
+                    x: eventData.x,
+                    y: eventData.y,
+                    clientX: eventData.x,
+                    clientY: eventData.y,
+                    pageX: eventData.x,
+                    pageY: eventData.y,
+                    screenX: eventData.x,
+                    screenY: eventData.y
+                });
+            }
+
+            // send unacceptedTouch message if this interface wants touches to pass through it
+            if (realityObject.touchDeciderRegistered && eventData.type === 'pointerdown') {
+                var touchAccepted = realityObject.touchDecider(eventData);
+                if (!touchAccepted) {
+                    // console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
+                    if (realityObject.object && realityObject.frame) {
+
+                        parent.postMessage(JSON.stringify({
+                            version: realityObject.version,
+                            node: realityObject.node,
+                            frame: realityObject.frame,
+                            object: realityObject.object,
+                            unacceptedTouch : eventData
+                        }), '*');
+                        return;
+                    }
+                }
+            }
+
+            // the method of sending the pointerevent into the frame depends on whether useSimplifiedPointerEvents was called
+            if (realityInterface.doesUseSimplifiedPointerEvents) {
+                if (typeof realityInterface.pointerEventListeners[eventData.type] !== 'undefined') {
+                    realityInterface.pointerEventListeners[eventData.type].forEach(function(callback) {
+                        callback(eventData);
+                    });
+                }
+            } else {
+                var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+                elt.dispatchEvent(event);
+            }
+
+            // otherwise send acceptedTouch message to stop the touch propagation
+            if (eventData.type === 'pointerdown') {
+                parent.postMessage(JSON.stringify({
+                    version: realityObject.version,
+                    node: realityObject.node,
+                    frame: realityObject.frame,
+                    object: realityObject.object,
+                    acceptedTouch : eventData
+                }), '*');
+            }
         }
 
     };
@@ -623,7 +691,6 @@
 
         this.sendRealityEditorSubscribe = setInterval(function () {
             if (realityObject.object) {
-                console.log('emit /subscribe/realityEditor');
                 self.ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                 clearInterval(self.sendRealityEditorSubscribe);
             }
@@ -646,7 +713,6 @@
             }
 
             if (self.oldNumberList[node] !== value || forceWrite) {
-                console.log('emit object (write data)');
                 this.ioObject.emit('object', JSON.stringify({
                     object: realityObject.object,
                     frame: realityObject.frame,
@@ -662,7 +728,6 @@
          */
 
         this.readRequest = function (node) {
-            console.log('emit /object/readRequest');
             this.ioObject.emit('/object/readRequest', JSON.stringify({object: realityObject.object, frame: realityObject.frame, node: realityObject.frame + node}));
         };
 
@@ -684,7 +749,6 @@
 
         this.addReadListener = function (node, callback) {
             self.ioObject.on('object', function (msg) {
-                console.log('read listener triggered');
                 var thisMsg = JSON.parse(msg);
                 if (typeof thisMsg.node !== 'undefined') {
                     if (thisMsg.node === realityObject.frame + node) {
@@ -697,7 +761,6 @@
         };
 
         this.readPublicData = function (node, valueName, value) {
-            console.log(realityObject.publicData);
             if (!value)  value = 0;
      
             if(typeof realityObject.publicData[node] === "undefined") {
@@ -715,7 +778,6 @@
         // TODO: this function implementation is different in the server and the userinterface... standardize it
         this.addReadPublicDataListener = function (node, valueName, callback) {
             self.ioObject.on("object/publicData", function (msg) {
-                console.log('on object/publicData triggered');
                 var thisMsg = JSON.parse(msg);
                 
                 if (typeof thisMsg.publicData === "undefined")  return;
@@ -761,8 +823,6 @@
             
             realityObject.publicData[node][valueName] = value;
             
-            console.log('writePublicData triggered');
-
             this.ioObject.emit('object/publicData', JSON.stringify({
                 object: realityObject.object,
                 frame: realityObject.frame,
@@ -786,8 +846,6 @@
             var thisItem = {};
             thisItem[valueName] = value;
             
-            console.log('writePrivateData triggered');
-
             this.ioObject.emit('object/privateData', JSON.stringify({
                 object: realityObject.object,
                 frame: realityObject.frame,
@@ -800,14 +858,12 @@
             // reload public data when it becomes visible
             for (var i = 0; i < realityInterfaces.length; i++) {
                 if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                    console.log('reloadPublicData ... emit /subscribe/realityEditor');
                     realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame})); //TODO: change to subscribe/realityEditorPublicData ??
                 }
             }
         };
         
         console.log('socket.io is loaded and injected');
-
         console.log('pendingIos', this.pendingIos);
 
         for (var i = 0; i < this.pendingIos.length; i++) {
@@ -1147,84 +1203,6 @@
             }
         }
     };
-
-    window.addEventListener('load', function() {
-
-        window.addEventListener('message', function (msg) {
-            
-            var msgContent = JSON.parse(msg.data);
-            
-            if (msgContent.reloadPublicData) {
-                console.log('frame reload public data from post message');
-                realityInterface.reloadPublicData();
-            }
-            
-            if (msgContent.event && msgContent.event.pointerId) {
-                var eventData = msgContent.event; // looks like {type: "pointerdown", pointerId: 29887780, pointerType: "touch", x: 334, y: 213}
-
-                var event;
-                if (!realityInterface.doesUseSimplifiedPointerEvents) {
-                    event = new PointerEvent(eventData.type, {
-                        view: window,
-                        bubbles: true,
-                        cancelable: true,
-                        pointerId: eventData.pointerId,
-                        pointerType: eventData.pointerType,
-                        x: eventData.x,
-                        y: eventData.y,
-                        clientX: eventData.x,
-                        clientY: eventData.y,
-                        pageX: eventData.x,
-                        pageY: eventData.y,
-                        screenX: eventData.x,
-                        screenY: eventData.y
-                    });
-                }
-                
-                // send unacceptedTouch message if this interface wants touches to pass through it
-                if (realityObject.touchDeciderRegistered && eventData.type === 'pointerdown') {
-                    var touchAccepted = realityObject.touchDecider(eventData);
-                    if (!touchAccepted) {
-                        // console.log('didn\'t touch anything acceptable... propagate to next frame (if any)');
-                        if (realityObject.object && realityObject.frame) {
-
-                            parent.postMessage(JSON.stringify({
-                                version: realityObject.version,
-                                node: realityObject.node,
-                                frame: realityObject.frame,
-                                object: realityObject.object,
-                                unacceptedTouch : eventData
-                            }), '*');
-                            return;
-                        }
-                    }
-                }
-
-                // the method of sending the pointerevent into the frame depends on whether useSimplifiedPointerEvents was called
-                if (realityInterface.doesUseSimplifiedPointerEvents) {
-                    if (typeof realityInterface.pointerEventListeners[eventData.type] !== 'undefined') {
-                        realityInterface.pointerEventListeners[eventData.type].forEach(function(callback) {
-                            callback(eventData);
-                        });
-                    }
-                } else {
-                    var elt = document.elementFromPoint(eventData.x, eventData.y) || document.body;
-                    elt.dispatchEvent(event);
-                }
-
-                // otherwise send acceptedTouch message to stop the touch propagation
-                if (eventData.type === 'pointerdown') {
-                    parent.postMessage(JSON.stringify({
-                        version: realityObject.version,
-                        node: realityObject.node,
-                        frame: realityObject.frame,
-                        object: realityObject.object,
-                        acceptedTouch : eventData
-                    }), '*');
-                }
-            }
-        });
-    });
 
     function isDesktop() {
         return window.navigator.userAgent.indexOf('Mobile') === -1 || window.navigator.userAgent.indexOf('Macintosh') > -1;

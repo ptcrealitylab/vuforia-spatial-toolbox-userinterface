@@ -157,12 +157,13 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
         }
 
 		// Don't draw off-screen lines
-		if (!frameB.objectVisible && !frameA.objectVisible) {
+		if ( (!frameB.objectVisible && !frameA.objectVisible) || (nodeA.screenZ < -200 && nodeB.screenZ < -200) ) {
 			continue;
 		}
 
-		if (!frameB.objectVisible) {
-            if (objectB.memory && Object.keys(objectB.memory).length > 0) {
+		if (!frameB.objectVisible || nodeB.screenZ < -200) {
+		    
+            if (nodeB.screenZ > -200 && (objectB.memory && Object.keys(objectB.memory).length > 0)) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
@@ -189,8 +190,8 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
 			nodeBSize = objectA.averageScale;
 		}
 
-		if (!frameA.objectVisible) {
-            if (objectA.memory && Object.keys(objectA.memory).length > 0) {
+		if (!frameA.objectVisible || nodeA.screenZ < 0) {
+            if (nodeA.screenZ > -200 && (objectA.memory && Object.keys(objectA.memory).length > 0)) {
 				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
 				if (!memoryPointer) {
 					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
@@ -241,6 +242,7 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
         var speed = 1;
         // don't waste resources drawing it if both sides are invisible
         if (nodeA.screenOpacity > 0 || nodeB.screenOpacity > 0) {
+            // only draw lines in front of camera, otherwise we can get really slow/long lines
             this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection, logicA, logicB, speed, nodeA.screenOpacity,nodeB.screenOpacity);
         }
 	}

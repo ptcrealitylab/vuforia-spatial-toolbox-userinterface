@@ -1085,6 +1085,7 @@ if (thisFrame) {
     
     if (msgContent.width && msgContent.height) {
         var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+        
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
         var svg = document.getElementById('svg' + activeKey);
@@ -1126,7 +1127,7 @@ if (thisFrame) {
     // Forward the touch events from the nodes to the overall touch event collector
     
     if (typeof msgContent.eventObject !== "undefined") {
-      
+        
         if(msgContent.eventObject.type === "touchstart"){
             realityEditor.device.touchInputs.screenTouchStart(msgContent.eventObject);
         } else if(msgContent.eventObject.type === "touchend"){
@@ -1162,9 +1163,11 @@ if (thisFrame) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
             var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-            // send the projection matrix into the iframe (e.g. for three.js to use)
-            document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            if (activeKey === msgContent.frame) { // only send these into frames, not nodes
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
         }
     }
 
@@ -1174,9 +1177,10 @@ if (thisFrame) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.groundPlane = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-                // send the projection matrix into the iframe (e.g. for three.js to use)
-                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
             }
         }
         if (msgContent.sendMatrices.devicePose === true) {
@@ -1184,9 +1188,11 @@ if (thisFrame) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.devicePose = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-                // send the projection matrix into the iframe (e.g. for three.js to use)
-                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                if (activeKey === msgContent.frame) {
+                    // send the projection matrix into the iframe (e.g. for three.js to use)
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
             }
         }
         if (msgContent.sendMatrices.allObjects === true) {
@@ -1194,9 +1200,11 @@ if (thisFrame) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.allObjects = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-                // send the projection matrix into the iframe (e.g. for three.js to use)
-                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                if (activeKey === msgContent.frame) {
+                    // send the projection matrix into the iframe (e.g. for three.js to use)
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
             }
         }
 
@@ -1210,7 +1218,7 @@ if (thisFrame) {
     }
     
     if (msgContent.sendAcceleration === true) {
-
+        
         if (tempThisObject.integerVersion >= 32) {
 
             tempThisObject.sendAcceleration = true;
@@ -1452,35 +1460,15 @@ if (thisFrame) {
             preventDefault: function () {
             }
         };
-        if (event.type === 'touchmove') {
-            if (overlayDiv.style.display !== 'inline') {
-                // overlayDiv.style.display = "inline";
-                realityEditor.device.onDocumentPointerDown(fakeEvent);
-            //     realityEditor.device.onMultiTouchStart(fakeEvent);
-            }
-            
-            // var frameCanvasElement = document.getElementById('canvas' + msgContent.frame);
-            // if (frameCanvasElement.style.display !== 'inline') {
-            //     frameCanvasElement.style.display = "inline";
-            // }
-
-            globalStates.pointerPosition = [event.x, event.y];
-            // Translate up 1200px to be above pocket layer, crafting board, settings menu, and menu buttons
-            overlayDiv.style.transform = 'translate3d(' + event.x + 'px, ' + event.y + 'px, 1200px)';
-            
-            // realityEditor.device.onDocumentPointerMove(fakeEvent);
-            // realityEditor.device.onTouchMove(fakeEvent);
-            realityEditor.device.onMultiTouchMove(fakeEvent);
-            
-        } else if (event.type === 'touchend') {
+        if (event.type === 'touchend') {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
             globalStates.tempEditingMode = false;
             console.log('stop editing mode!!!');
             globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.deactivateFrameMove(msgContent.frame);
-            var frame = document.getElementById('iframe' + msgContent.frame);
-            if (frame) {
+            var frame = globalDOMCache['iframe' + msgContent.frame];
+            if (frame && !msgContent.node) {
                 frame.contentWindow.postMessage(JSON.stringify({
                     stopTouchEditing: true
                 }), "*");
@@ -1489,7 +1477,6 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.visibilityDistance !== "undefined") {
-
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
         activeVehicle.distanceScale = msgContent.visibilityDistance;
@@ -1498,7 +1485,6 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.moveDelay !== "undefined") {
-        
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
         activeVehicle.moveDelay = msgContent.moveDelay;

@@ -171,6 +171,9 @@ realityEditor.device.onload = function () {
         requestAnimationFrame(animate);
         TWEEN.update(time);
         // stats.update();
+        
+        // TODO: implement separated render and recalculate functions for the rendering engine
+        // realityEditor.gui.ar.draw.render();
     })();
     
     // start the AR framework in native iOS
