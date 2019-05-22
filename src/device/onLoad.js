@@ -162,7 +162,7 @@ realityEditor.device.onload = function () {
     
     // start TWEEN library for animations
     (function animate(time) {
-        // realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
+        realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
         if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
             var areMatricesPrecomputed = true;

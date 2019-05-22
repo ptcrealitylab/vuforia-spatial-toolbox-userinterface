@@ -252,154 +252,7 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
     }
 };
 
-// TODO: implement this and .recalculate
-// // takes the state calculated in the most recent update function, and uses it to adjust the HTML / CSS of the document
-// realityEditor.gui.ar.draw.render = function() {
-//    
-//     if (globalStates.guiState === "logic") {
-//         this.gui.crafting.redrawDataCrafting();  // todo maybe animation frame
-//     }
-//
-//     // erases anything on the background canvas
-//     if (this.globalCanvas.hasContent === true) {
-//         this.globalCanvas.context.clearRect(0, 0, this.globalCanvas.canvas.width, this.globalCanvas.canvas.height);
-//         this.globalCanvas.hasContent = false;
-//     }
-//    
-//     for (var objectKey in objects) {
-//         var object = realityEditor.getObject(objectKey);
-//        
-//         for (var frameKey in object.frames) {
-//            
-//             var frame = realityEditor.getFrame(objectKey, frameKey);
-//             var frameContainer = globalDOMCache['object' + frame.uuid];
-//             var iframe = globalDOMCache['iframe' + frame.uuid];
-//            
-//             // show or hide the frame from the DOM depending if its state has changed since last time
-//             if (!frame.isRendered && frame.shouldBeRendered) {
-//
-//                 // addElement if doesn't exist yet
-//                 if (!frame.domElementExists) {
-//                     realityEditor.gui.ar.draw.createElementForVehicle(frame);
-//                     frame.domElementExists = true;
-//                 }
-//                
-//                 // adjust its style or CSS to add it to the scene
-//                 frameContainer.style.display = 'inline';
-//                
-//                 frame.isRendered = true;
-//            
-//             } else if (frame.isRendered && !frame.shouldBeRendered) {
-//
-//                 // adjust its style or CSS to add it to the scene
-//                 globalDOMCache[frame.uuid].style.display = 'none';
-//                
-//                 frame.isRendered = false;
-//             }
-//            
-//             // update the frame's class list depending on various state
-//             if (globalStates.guiState !== 'ui') {
-//                 if (!frame.isRenderedAsGhost && frame.shouldBeRenderedAsGhost) {
-//                     frameContainer.classList.add('ghostFrame');
-//                     frame.isRenderedAsGhost = true;
-//                 }
-//             } else {
-//                 if (frame.isRenderedAsGhost && !frame.shouldBeRenderedAsGhost) {
-//                     frameContainer.classList.remove('ghostFrame');
-//                     frame.isRenderedAsGhost = false;
-//                 }
-//             }
-//            
-//             // set the transform3d matrix of the frame to the one calculated in recalculate
-//             if (frame.isRendered) {
-//                 frameContainer.style.transform = 'matrix3d(' + frame.finalMatrix.toString() + ')';
-//             }
-//            
-//            
-//         }
-//     }
-//    
-// };
-
-// TODO: implement this and .render
-// realityEditor.gui.ar.draw.recalculate = function(visibleObjects, areMatricesPrecomputed) {
-//     var objectKey;
-//     var frameKey;
-//     var nodeKey;
-//     var continueUpdate = true;
-//
-//     this.ar.utilities.timeSynchronizer(timeCorrection);
-//
-//     this.visibleObjects = visibleObjects;
-//    
-//     // this is a quick hack but maybe needs to move somewhere else. 
-//     // I dont know if this is the right spot. //TODO: what is this actually doing?
-//     for (objectKey in objects) {
-//         // if (this.doesObjectContainStickyFrame(objectKey) && !(objectKey in visibleObjects)) {
-//         if (realityEditor.getObject(objectKey).containsStickyFrame && !(objectKey in visibleObjects)) {
-//             visibleObjects[objectKey] = [];
-//         }
-//     }
-//
-//     if (this.lowFrequencyUpdateCounter >= this.lowFrequencyUpdateCounterMax) {
-//         this.isLowFrequencyUpdateFrame = true;
-//         this.lowFrequencyUpdateCounter = 0;
-//     } else {
-//         this.isLowFrequencyUpdateFrame = false;
-//         this.lowFrequencyUpdateCounter++;
-//     }
-//
-//     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
-//     if (Object.keys(visibleObjects).length > 0) {
-//         if(this.isLowFrequencyUpdateFrame) {
-//
-//             if (realityEditor.gui.ar.utilities.getAllVisibleFramesFast().length === 0) {
-//                 this.isObjectWithNoFramesVisible = true;
-//             } else {
-//                 this.isObjectWithNoFramesVisible = false;
-//             }
-//         }
-//     } else {
-//         this.isObjectWithNoFramesVisible = true;
-//     }
-//
-//     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
-//     for (objectKey in objects) {
-//         // if (!objects.hasOwnProperty(objectKey)) { continue; }
-//
-//         this.activeObject = realityEditor.getObject(objectKey);
-//         if (!this.activeObject) {
-//             continue;
-//         }
-//
-//         // if this object was detected by the AR engine this frame, render its nodes and/or frames
-//         if (this.visibleObjects.hasOwnProperty(objectKey)) {
-//
-//             // make the object visible
-//             this.activeObject.visibleCounter = timeForContentLoaded;
-//             this.setObjectVisible(this.activeObject, true);
-//
-//             if (this.activeObject.isWorldObject) {
-//                 // don't start rendering world frames until we've received a valid camera matrix
-//                 if (this.correctedCameraMatrix.length === 0) { continue; }
-//             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
-//
-//             } else {
-//                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix); // TODO: to really optimize, could inline/simplify the rotateX multiplication
-//                 realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
-//             }
-//
-//             // compute its ModelViewProjection matrix
-//             this.activeObjectMatrix = [];
-//             this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey] , this.globalStates.projectionMatrix, this.activeObjectMatrix);
-//
-//             if (isNaN(this.activeObjectMatrix[0])) {
-//                 this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-//             }
-//         }
-//     }
-//
-// };
+realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
@@ -408,6 +261,9 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
  * @param {boolean} areMatricesPrecomputed - true iff already rendered once for this vuforia state so that we don't re-multiply
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecomputed) {
+    if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) { return; } // don't recompute multiple times between a single animation frames
+    realityEditor.gui.ar.draw.frameNeedsToBeRendered = false; // gets set back to true by requestAnimationFrame code
+    
     var objectKey;
     var frameKey;
     var nodeKey;
@@ -1485,7 +1341,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 
             } else {
-                this.updateStickyFrameCss(activeKey);
+                this.updateStickyFrameCss(activeKey, activeVehicle.fullScreen);
             }
 
             // this is for later
@@ -1736,7 +1592,7 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
  * @param {string} activeKey
  */
-realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
+realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, isFullScreen) {
     // sticky frames need a special process to show and hide depending on guiState....
     if (globalStates.guiState === 'node' && 
         (globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer') ||
@@ -1745,9 +1601,11 @@ realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey) {
 
         globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
         globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
-        
-        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
-        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+
+        if (!isFullScreen) {
+            globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
+            globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+        }
 
         globalDOMCache[activeKey].classList.remove('usePointerEvents');
         globalDOMCache[activeKey].classList.add('ignorePointerEvents');
@@ -1974,8 +1832,10 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 
         }
 
-        globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
-        globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+        if (!activeVehicle.fullScreen) {
+            globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
+            globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
+        }
 
         // TODO: does this need to happen here?
         // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
