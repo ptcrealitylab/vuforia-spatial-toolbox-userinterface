@@ -1602,10 +1602,10 @@ realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, isFullScree
         globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
         globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
 
-        if (!isFullScreen) {
+        // if (!isFullScreen) {
             globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
             globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
-        }
+        // }
 
         globalDOMCache[activeKey].classList.remove('usePointerEvents');
         globalDOMCache[activeKey].classList.add('ignorePointerEvents');
@@ -1832,10 +1832,10 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 
         }
 
-        if (!activeVehicle.fullScreen) {
+        // if (!activeVehicle.fullScreen) {
             globalDOMCache['iframe' + activeKey].classList.remove('visibleFrame');
             globalDOMCache['iframe' + activeKey].classList.add('hiddenFrame');
-        }
+        // }
 
         // TODO: does this need to happen here?
         // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(

@@ -605,7 +605,11 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
  */
 realityEditor.network.onUDPMessage = function(message) {
     if (typeof message === "string") {
-        message = JSON.parse(message);
+        try {
+            message = JSON.parse(message);
+        } catch (error) {
+            // error parsing JSON
+        }
     }
     
     this.udpMessageHandlers.forEach(function(messageHandler) {
@@ -1305,6 +1309,8 @@ if (thisFrame) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
             
+            globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
+            
             if (realityEditor.device.editingState.frame === msgContent.frame) {
                 realityEditor.device.resetEditingState();
                 realityEditor.device.clearTouchTimer();
@@ -1319,7 +1325,9 @@ if (thisFrame) {
             }
             
             // TODO: reset left/top offset when returns to non-fullscreen?
-            
+
+            globalDOMCache['iframe' + tempThisObject.uuid].classList.remove('webGlFrame');
+
             var containingObject = realityEditor.getObject(msgContent.object);
             if (!containingObject.objectVisible) {
                 containingObject.objectVisible = true;
@@ -1353,6 +1361,8 @@ if (thisFrame) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
+
+            globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
 
             // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
             var object = realityEditor.getObject(msgContent.object);
