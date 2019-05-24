@@ -1358,13 +1358,3 @@ Logic Interface CSS
     -webkit-user-select: none;
     -webkit-touch-callout:none;
 }
-
-.groundPlaneVisualizer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 300px;
-    height: 300px;
-    background-color: #00edff;
-    visibility: visible;
-}

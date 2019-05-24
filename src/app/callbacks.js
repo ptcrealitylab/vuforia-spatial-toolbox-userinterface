@@ -46,17 +46,28 @@ createNameSpace("realityEditor.app.callbacks");
  */
 
 /**
+ * @typedef {Readonly<{NOT_STARTED: number, STARTED: number, FAILED: number, SUCCEEDED: number}>} DownloadState
+ * @description used to keep track of the download status of a certain resource (e.g. DAT and XML files of each object)
+ */
+
+/**
  * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, MARKER_ADDED: DownloadState}>}
  * Maps object names to the download states of their XML and DAT files, and whether the tracking engine has added the resulting marker
  */
 var targetDownloadStates = {};
 
+/**
+ * Temporarily caches objectIDs with their heartbeat checksum, which later on gets stored
+ * to localStorage so that next time the app opens we don't re-download unmodified target data
+ * @type {Object.<string, string>}
+ */
 var temporaryChecksumMap = {};
-var temporaryHeartbeatMap = {};
 
 /**
- * @typedef {Readonly<{NOT_STARTED: number, STARTED: number, FAILED: number, SUCCEEDED: number}>} DownloadState
+ * Temporarily caches objectIDs with their full heartbeat entry so that it can be accessed in multiple download functions
+ * @type {Object.<string, {id: string, ip: string, vn: number, tcs: string, zone: string}>}
  */
+var temporaryHeartbeatMap = {};
 
 /**
  * @type DownloadState
@@ -72,7 +83,7 @@ var DownloadState = Object.freeze(
 
 /**
  * Callback for realityEditor.app.getVuforiaReady
- * Retrieves the projection matrix and starts streaming the model matrices and camera matrix
+ * Retrieves the projection matrix and starts streaming the model matrices, camera matrix, and groundplane matrix
  * Also starts the object discovery and download process
  */
 realityEditor.app.callbacks.vuforiaIsReady = function() {
@@ -103,27 +114,16 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 };
 
 /**
- * 
- * @param savedState
+ * Loads the external userinterface URL (if any) from permanent storage, which later is used to populate the settings text field
+ * @param {string} savedState - needs to be JSON parsed
  */
 realityEditor.app.callbacks.onExternalState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; };
+    if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
     console.log('loaded external interface URL = ', savedState);
 
     if (savedState) {
         globalStates.externalState = savedState;
-    }
-};
-
-/**
- * TODO: implement
- * @param success
- */
-realityEditor.app.callbacks.didAddGroundAnchor = function(success) {
-    console.log('Tried to add ground anchor. Success? ' + success);
-    if (globalStates.debugSpeechConsole) {
-        document.getElementById('speechConsole').innerHTML = 'Tried to add ground anchor. Success? ' + success;
     }
 };
 
@@ -140,8 +140,8 @@ realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
 /**
  * Callback for realityEditor.app.getUDPMessages
  * Handles any UDP messages received by the app.
- * A case can be added for any additional messages to listen to.
  * Currently supports object discovery messages ("ip"/"id" pairs) and state synchronization ("action") messages
+ * Additional UDP messages can be listened for by using realityEditor.network.addUDPMessageHandler
  * @param {string|Object} message
  */
 realityEditor.app.callbacks.receivedUDPMessage = function(message) {
@@ -149,7 +149,7 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
         try {
             message = JSON.parse(message);
         } catch (e) {
-            // error parsing, string is not in correct format for json
+            // string doesn't need to be parsed... continue executing the function
         }
     }
     
@@ -169,7 +169,7 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
 
 /**
  * Callback returning the native device name, which can be used to adjust the UI based on the phone/device type
- * @param {string} deviceName
+ * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
  */
 realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
     console.log(deviceName);
