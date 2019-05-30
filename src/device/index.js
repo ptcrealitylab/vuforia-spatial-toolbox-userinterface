@@ -60,7 +60,7 @@ createNameSpace("realityEditor.device");
  * @desc All the necessary state to track a tap-and-hold gesture that triggers a timeout callback.
  * @property {number} startX
  * @property {number} startY
- * @property {number} moveTolerance
+ * @property {number} moveToleranceSquared
  * @property {Function} timeoutFunction 
  */
 
@@ -558,9 +558,14 @@ realityEditor.device.onElementTouchDown = function(event) {
     this.touchEditingTimer = {
         startX: event.pageX,
         startY: event.pageY,
-        moveTolerance: 100,
+        moveToleranceSquared: 100,
         timeoutFunction: timeoutFunction
     };
+    
+    // you need to wait 3x as long to move a node, so also make it 2x easier to keep touch in close location
+    if (globalStates.guiState === "node") {
+        this.touchEditingTimer.moveToleranceSquared = 400;
+    }
     
     cout("onElementTouchDown");
 };
@@ -579,7 +584,7 @@ realityEditor.device.onElementTouchMove = function(event) {
         
         var dx = event.pageX - this.touchEditingTimer.startX;
         var dy = event.pageY - this.touchEditingTimer.startY;
-        if (dx * dx + dy * dy > this.touchEditingTimer.moveTolerance) {
+        if (dx * dx + dy * dy > this.touchEditingTimer.moveToleranceSquared) {
             this.clearTouchTimer();
         }
     
@@ -637,7 +642,7 @@ realityEditor.device.onElementTouchOut = function(event) {
     if (target.type !== "ui") {
 
         // stop node hold timer // TODO: handle node move same as frame by calculating dist^2 > threshold
-        this.clearTouchTimer();
+        // this.clearTouchTimer();
 
         // if (this.editingState.node) {
         //     realityEditor.gui.menus.buttonOn([]); // endTrash // TODO: need a new method to end trash programmatically ??? 

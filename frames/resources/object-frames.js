@@ -779,25 +779,34 @@
         this.addReadPublicDataListener = function (node, valueName, callback) {
             self.ioObject.on("object/publicData", function (msg) {
                 var thisMsg = JSON.parse(msg);
-                
+
                 if (typeof thisMsg.publicData === "undefined")  return;
                 if (thisMsg.node !== realityObject.frame+node) return;
-                if (typeof thisMsg.publicData[valueName] === "undefined") return;
-                
+                if (typeof thisMsg.publicData[node] === "undefined") {
+                    // convert format if possible, otherwise return
+                    if (typeof thisMsg.publicData[valueName] !== "undefined") {
+                        var publicDataKeys = Object.keys(thisMsg.publicData);
+                        thisMsg.publicData[node] = {};
+                        publicDataKeys.forEach(function(existingKey) {
+                            thisMsg.publicData[node][existingKey] = thisMsg.publicData[existingKey];
+                        });
+                        console.warn('converted incorrect publicData format in object/publicData listener');
+                    } else {
+                        return;
+                    }
+                }
+                if (typeof thisMsg.publicData[node][valueName] === "undefined") return;
+
+                var isUnset =   (typeof realityObject.publicData[node] === "undefined") ||
+                    (typeof realityObject.publicData[node][valueName] === "undefined");
+
+                // only trigger the callback if there is new public data, otherwise infinite loop possible
+                if (isUnset || JSON.stringify(thisMsg.publicData[node][valueName]) !== JSON.stringify(realityObject.publicData[node][valueName])) {
+
                     if(typeof realityObject.publicData[node] === "undefined") {
                         realityObject.publicData[node] = {};
                     }
-
-                if(typeof realityObject.publicData[node][valueName] === "undefined") {
-                    realityObject.publicData[node][valueName]  = {};
-                }
-
-
-                // only trigger the callback if there is new public data, otherwise infinite loop possible
-                // todo this is a very time consuming calculation
-                if (JSON.stringify(thisMsg.publicData[valueName]) !== JSON.stringify(realityObject.publicData[node][valueName])) {
-                    
-                    realityObject.publicData[node][valueName] = thisMsg.publicData[valueName];
+                    realityObject.publicData[node][valueName] = thisMsg.publicData[node][valueName];
 
                     parent.postMessage(JSON.stringify(
                         {
@@ -808,8 +817,8 @@
                             publicData: thisMsg.publicData[node]
                         }
                     ), "*");
-                    
-                    callback(thisMsg.publicData[valueName]);
+
+                    callback(thisMsg.publicData[node][valueName]);
                 }
                 
             });
@@ -858,7 +867,7 @@
             // reload public data when it becomes visible
             for (var i = 0; i < realityInterfaces.length; i++) {
                 if (typeof realityInterfaces[i].ioObject.emit !== 'undefined') {
-                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditor', JSON.stringify({object: realityObject.object, frame: realityObject.frame})); //TODO: change to subscribe/realityEditorPublicData ??
+                    realityInterfaces[i].ioObject.emit('/subscribe/realityEditorPublicData', JSON.stringify({object: realityObject.object, frame: realityObject.frame}));
                 }
             }
         };
