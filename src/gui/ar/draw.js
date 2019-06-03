@@ -1666,6 +1666,15 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
         frameX, frameY, 0, 1
     ];
     
+    if (realityEditor.device.utilities.isDesktop()) {
+        this.getMatrixValues.scale = [
+            frameScale, 0, 0, 0,
+            0, -frameScale, 0, 0,
+            0, 0, frameScale, 0,
+            frameX, frameY, 0, 1
+        ];
+    }
+    
     // 2. multiply values
     if (frameMatrix.length === 16) {
         this.getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, this.getMatrixValues.r3);
