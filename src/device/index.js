@@ -1226,6 +1226,19 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
             // after that, if you pull out more than 100 in the z direction, turn on unconstrained
             // var zPullThreshold = 50;
             var amountPulled = Math.abs(distanceToObject - this.editingState.unconstrainedOffset);
+            
+            // if frame is on a registered screen object, only pulling towards you can pop into unconstrained (pushing sends into screen)
+            var isOnScreenObject = false;
+            for (var screenObjectKey in realityEditor.gui.screenExtension.registeredScreenObjects) {
+                var screenObjectData = realityEditor.gui.screenExtension.registeredScreenObjects[screenObjectKey];
+                if (screenObjectData.object === this.editingState.object) {
+                    isOnScreenObject = true;
+                }
+            }
+            if (isOnScreenObject) {
+                amountPulled = distanceToObject - this.editingState.unconstrainedOffset;
+            }
+            
             // console.log(amountPulled);
             if (amountPulled > globalStates.framePullThreshold) {
                 console.log('pop into unconstrained editing mode');

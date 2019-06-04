@@ -400,7 +400,15 @@ MemoryContainer.prototype.remember = function() {
     
     realityEditor.gui.menus.switchToMenu('main', ['freeze'], null);
     globalStates.freezeButtonState = true;
-
+    
+    // TODO: unload visible objects (besides WORLD_OBJECTs) first?
+    Object.keys(realityEditor.gui.ar.draw.visibleObjectsCopy).filter(function(objectKey) {
+        return objectKey.indexOf('WORLD_OBJECT') === -1;
+    }).forEach(function(nonWorldObjectKey) {
+        delete realityEditor.gui.ar.draw.visibleObjectsCopy[nonWorldObjectKey];
+        delete realityEditor.gui.ar.draw.visibleObjects[nonWorldObjectKey];
+    });
+    
     realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
     realityEditor.gui.ar.draw.visibleObjectsCopy[this.memory.id] = this.memory.matrix;
     realityEditor.gui.ar.draw.visibleObjects[this.memory.id] = this.memory.matrix;
@@ -579,6 +587,11 @@ function memoryCanCreate() {
     
     var visibleObjectKeys = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
     visibleObjectKeys.splice(visibleObjectKeys.indexOf('_WORLD_OBJECT_local'), 1); // remove the local world object, its server cant support memories
+    
+    // For now, also remove all world objects, regardless of which server they come from
+    visibleObjectKeys = visibleObjectKeys.filter(function(objectKey) {
+        return objectKey.indexOf('WORLD_OBJECT') === -1;
+    });
     
     if (visibleObjectKeys.length !== 1) {
         return false;

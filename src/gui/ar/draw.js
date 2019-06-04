@@ -1067,6 +1067,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 return true;
             }
             
+            if (globalDOMCache['object' + activeKey].classList.contains('displayNone')) { // TODO: speedup with flag
+                globalDOMCache['object' + activeKey].classList.remove('displayNone');
+                console.warn('removing displayNone in drawTransformed, should happen before this');
+            }
+            
             /*
             if (shouldRenderFramesInNodeView) {
                 globalDOMCache["object" + activeKey].classList.remove('displayNone');
@@ -1873,6 +1878,25 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         }
 
         cout("hideTransformed");
+    
+    } else {
+        // for frames in node view that are technically "hidden" but still show opacity ghost...
+        // hide completely when their object stops being recognized
+        
+        if (!globalDOMCache['object' + activeKey]) {
+            return;
+        }
+        if (!(activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined')) {
+            return;
+        }
+        
+        if (!globalDOMCache['object' + activeKey].classList.contains('displayNone')) {
+            var shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen' || !this.visibleObjects[activeVehicle.objectId][0];
+            if (shouldReallyHide) {
+                globalDOMCache['object' + activeKey].classList.add('displayNone');
+            }
+        }
+        
     }
 };
 

@@ -86,13 +86,6 @@
             if (realityInterface) {
                 // adds the API methods related to sending/receiving socket messages
                 realityInterface.injectSocketIoAPI();
-
-                // TODO: this should only happen if an API call was made to turn it on
-                // Connect this frame to the internet of screens.
-                realityInterface.iosObject = io.connect(iOSHost);
-                if(realityInterface.ioCallback !== undefined) {
-                    realityInterface.ioCallback();
-                }
             }
         });
 
@@ -1221,6 +1214,7 @@
          * @param callback
          */
         this.setIOCallback = function(callback) {
+            this.initializeIOSSocket();
             this.ioCallback = callback;
         };
 
@@ -1231,6 +1225,17 @@
         this.setIOSInterface = function(o) {
             this.iosObject = o;
         };
+        
+        this.initializeIOSSocket = function() {
+            // TODO: this should only happen if an API call was made to turn it on
+            // Connect this frame to the internet of screens.
+            if (!this.iosObject) {
+                this.iosObject = io.connect(iOSHost);
+                if(this.ioCallback !== undefined) {
+                    this.ioCallback();
+                }
+            }
+        }
     };
 
     function isDesktop() {
