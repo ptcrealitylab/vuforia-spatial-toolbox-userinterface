@@ -6,7 +6,7 @@
     }
 
     // Hardcoded for now, host of the internet of screens.
-    var iOSHost = 'https://10.10.10.107:5000';
+    var iOSHost = 'https://localhost:5000';
 
     // Keeps track of all state related to this frame and its API interactions
     var realityObject = {

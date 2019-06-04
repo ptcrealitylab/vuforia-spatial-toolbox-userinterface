@@ -1674,7 +1674,8 @@ realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix,
             frameX, frameY, 0, 1
         ];
     }
-    
+
+
     // 2. multiply values
     if (frameMatrix.length === 16) {
         this.getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, this.getMatrixValues.r3);
