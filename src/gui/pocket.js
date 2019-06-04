@@ -415,6 +415,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         function pocketButtonPressed(params) {
             if (params.newButtonState === 'up') {
+                
+                // show UI pocket by switching out of node view when the pocket button is tapped
+                var HACK_AUTO_SWITCH_TO_GUI = true;
+                if (HACK_AUTO_SWITCH_TO_GUI) {
+                    if (globalStates.guiState === 'node') {
+                        realityEditor.gui.buttons.guiButtonUp({button: "gui", ignoreIsDown: true});
+                    }
+                }
 
                 onPocketButtonUp();
 
