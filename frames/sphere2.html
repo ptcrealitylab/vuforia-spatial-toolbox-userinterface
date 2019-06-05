@@ -171,6 +171,7 @@
                 });
 
                 realityInterface.iosObject.on('requestModel', function (data) {
+                    console.log('model requested');
                     if(mesh !== undefined)
                         realityInterface.iosObject.emit('model', THREE.STLExportObject(mesh));
                     //initialModelRotation = undefined;

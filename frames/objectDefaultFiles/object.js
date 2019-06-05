@@ -400,6 +400,14 @@
             this.read = makeIoStub('read');
             this.readRequest = makeIoStub('readRequest');
             this.writePrivateData = makeIoStub('writePrivateData');
+
+            /**
+             * Internet of Screens APIs
+             */
+            {
+                this.setIOCallback = makeIoStub('setIOCallback');
+                this.setIOSInterface = makeIoStub('setIOSInterface');
+            }
         }
 
         if (realityObject.object) {
@@ -485,14 +493,6 @@
                 this.unregisterTouchDecider = makeSendStub('unregisterTouchDecider');
             }
 
-            /**
-             * Internet of Screens APIs
-             */
-            {
-                this.setIOCallback = makeSendStub('setIOCallback');
-                this.setIOSInterface = makeSendStub('setIOSInterface');
-            }
-
         }
 
         realityInterface = this;
@@ -508,9 +508,6 @@
         // Adds the API functions that only change or retrieve values from realityObject (e.g. getVisibility and registerTouchDecider)
         this.injectSetterGetterAPI();
 
-        // Adds the custom API functions that allow a frame to connect to the Internet of Screens application
-        this.injectInternetOfScreensAPI();
-
         for (var i = 0; i < this.pendingSends.length; i++) {
             var pendingSend = this.pendingSends[i];
             this[pendingSend.name].apply(this, pendingSend.args);
@@ -524,6 +521,9 @@
         var self = this;
 
         this.ioObject = io.connect(realityObject.socketIoUrl);
+
+        // Adds the custom API functions that allow a frame to connect to the Internet of Screens application
+        this.injectInternetOfScreensAPI();
 
         // keeps track of previous values of nodes so we don't re-send unnecessarily
         this.oldNumberList = {};
@@ -1214,8 +1214,8 @@
          * @param callback
          */
         this.setIOCallback = function(callback) {
-            this.initializeIOSSocket();
             this.ioCallback = callback;
+            this.initializeIOSSocket();
         };
 
         /**
@@ -1230,6 +1230,7 @@
             // TODO: this should only happen if an API call was made to turn it on
             // Connect this frame to the internet of screens.
             if (!this.iosObject) {
+                console.log('ios socket connected.');
                 this.iosObject = io.connect(iOSHost);
                 if(this.ioCallback !== undefined) {
                     this.ioCallback();

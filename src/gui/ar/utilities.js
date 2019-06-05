@@ -467,15 +467,18 @@ realityEditor.gui.ar.utilities.getAllVisibleFramesFast = function() {
 
     var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
     for (var objectKey in visibleObjects) {
-        for (var frameKey in objects[objectKey].frames) {
-            var frame = realityEditor.getFrame(objectKey, frameKey);
-            if (frame) {
-                if (frame.visualization !== 'ar') { continue; }
-                if (!frame.isOutsideViewport) {
-                    visibleFrameKeys.push(frameKey);
+        if (objects[objectKey]) {
+            for (var frameKey in objects[objectKey].frames) {
+                var frame = realityEditor.getFrame(objectKey, frameKey);
+                if (frame) {
+                    if (frame.visualization !== 'ar') { continue; }
+                    if (!frame.isOutsideViewport) {
+                        visibleFrameKeys.push(frameKey);
+                    }
                 }
             }
         }
+
     }
     
     return visibleFrameKeys;
