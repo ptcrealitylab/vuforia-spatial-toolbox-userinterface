@@ -68,7 +68,7 @@
 
     window.addEventListener('load', function() {
         console.log('LOG CALL');
-        loader.load('resources/models/gh.stl', function (geometry) {
+        loader.load('resources/models/gh3.stl', function (geometry) {
             // create a fullscreen webgl renderer for the threejs content and add to the dom
             renderer = new THREE.WebGLRenderer({alpha: true});
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -126,8 +126,8 @@
             mesh = new THREE.Mesh( geometry, material );
             threejsContainerObj.add(mesh);
             mesh.position.setZ(150);
-            mesh.position.setX(200);
-            mesh.position.setY(-135);
+            // mesh.position.setX(200);
+            // mesh.position.setY(-135);
 
 
             mesh.updateMatrixWorld();
