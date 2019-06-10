@@ -562,11 +562,6 @@ realityEditor.device.onElementTouchDown = function(event) {
         timeoutFunction: timeoutFunction
     };
     
-    // you need to wait 3x as long to move a node, so also make it 2x easier to keep touch in close location
-    if (globalStates.guiState === "node") {
-        this.touchEditingTimer.moveToleranceSquared = 400;
-    }
-    
     cout("onElementTouchDown");
 };
 
@@ -642,7 +637,7 @@ realityEditor.device.onElementTouchOut = function(event) {
     if (target.type !== "ui") {
 
         // stop node hold timer // TODO: handle node move same as frame by calculating dist^2 > threshold
-        // this.clearTouchTimer();
+        this.clearTouchTimer();
 
         // if (this.editingState.node) {
         //     realityEditor.gui.menus.buttonOn([]); // endTrash // TODO: need a new method to end trash programmatically ??? 
