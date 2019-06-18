@@ -278,17 +278,23 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 
     limiterMin.addEventListener("pointermove",
         function (event) {
+            if (screenIsTouched) {
+                setMin(event.clientY);
+                // realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
+            }
             // screenIsTouched = true;
-            setMin(event.clientY);
-            // realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
+
         }, false);
 
 
     limiterMax.addEventListener("pointermove",
         function (event) {
+            if (screenIsTouched) {
+                setMax(event.clientY);
+                // realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
+            }
             // screenIsTouched = true;
-            setMax(event.clientY);
-            // realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
+
         }, false);
 
     limiterMin.addEventListener("pointerdown",

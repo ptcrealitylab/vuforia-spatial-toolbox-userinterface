@@ -391,6 +391,11 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         lineStartWeight = lineEndWeight;
     }
     
+    if (realityEditor.device.utilities.isDesktop()) {
+        lineStartWeight *= 3;
+        lineEndWeight *= 3;
+    }
+    
     if (typeof lineAlphaStart === 'undefined') lineAlphaStart = 1.0;
     if (typeof lineAlphaEnd === 'undefined') lineAlphaEnd = 1.0;
     if (!speed) speed = 1;
