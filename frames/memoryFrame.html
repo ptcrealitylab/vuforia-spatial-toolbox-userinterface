@@ -87,6 +87,16 @@
             //     postNodesAndLinksToParent();
             // }
 
+            // if this object has loaded a memory, allow it to update from reloadFrame action messages
+            if (thisObject) {
+                if (typeof msgData.reloadFrame !== 'undefined') {
+                    if (thisObject.objectId && msgData.reloadFrame.object === thisObject.objectId) {
+                        console.log(thisObject.name + ' memoryFrame received reloadFrame message', msgData.reloadFrame)
+                        reloadObject();
+                    }
+                }
+            }
+
         }
     });
 
@@ -100,6 +110,46 @@
                 links: links
             }
         }), '*');
+    }
+
+    function reloadObject() {
+
+        getData('http://' + memoryInformation.objectIP + ':' + httpPort + '/object/' + memoryInformation.objectID, function (object) {
+
+            // renderOnce(objects.stoneTestrmix4u3rq5ve);
+            console.log('downloaded object', object);
+
+            var isBackwardCompatibleMemory = typeof object.memory.matrix !== 'undefined';
+
+            if ((isBackwardCompatibleMemory && Object.keys(object.memory.matrix).length === 16) ||
+                !isBackwardCompatibleMemory && Object.keys(object.memory).length === 16) {
+
+                console.log('successfully loaded memory for object ' + memoryInformation.objectID);
+
+                thisObject = object;
+                objects[memoryInformation.objectID] = object; // TODO: not actually necessary right now to use objects dictionary in this iframe
+
+                var memoryUrl = 'http://' + memoryInformation.objectIP + ':' + httpPort + '/obj/' + object.name + '/memory/memoryThumbnail.jpg';
+                document.getElementById('memoryBackground').src = memoryUrl;
+
+                renderOnce(object, guiState);
+
+            } else {
+                // failed if can't find a 4x4 matrix in object.memory or object.memory.matrix
+
+                console.log('failed loading memory for object ' + memoryInformation.objectID);
+
+                memoryInformation = null; // reset so it can try to download again later
+
+                errorMessage = document.createElement('div');
+                errorMessage.id = 'memoryErrorMessage';
+                errorMessage.innerHTML = 'Memory for object<br>' + object.name + '<br>doesn\'t exist.<br><br>Please create one and try again.';
+                document.body.appendChild(errorMessage);
+
+            }
+
+        });
+
     }
 
     realityInterface.onRealityInterfaceLoaded(function() {
@@ -124,45 +174,12 @@
                 }
 
                 // if (typeof memoryInformation !== 'undefined') {
-                    console.log('---- memory frame received memoryInformation ----', memoryInformation);
+                console.log('---- memory frame received memoryInformation ----', memoryInformation);
 
                     // waitingForMemory = false;
 
-                    getData('http://' + memoryInformation.objectIP + ':' + httpPort + '/object/' + memoryInformation.objectID, function (object) {
+                reloadObject();
 
-                        // renderOnce(objects.stoneTestrmix4u3rq5ve);
-                        console.log('downloaded object', object);
-
-                        var isBackwardCompatibleMemory = typeof object.memory.matrix !== 'undefined';
-
-                        if ((isBackwardCompatibleMemory && Object.keys(object.memory.matrix).length === 16) ||
-                            !isBackwardCompatibleMemory && Object.keys(object.memory).length === 16) {
-
-                            console.log('successfully loaded memory for object ' + memoryInformation.objectID);
-
-                            thisObject = object;
-                            objects[memoryInformation.objectID] = object; // TODO: not actually necessary right now to use objects dictionary in this iframe
-
-                            var memoryUrl = 'http://' + memoryInformation.objectIP + ':' + httpPort + '/obj/' + object.name + '/memory/memoryThumbnail.jpg';
-                            document.getElementById('memoryBackground').src = memoryUrl;
-
-                            renderOnce(object, guiState);
-
-                        } else {
-                            // failed if can't find a 4x4 matrix in object.memory or object.memory.matrix
-
-                            console.log('failed loading memory for object ' + memoryInformation.objectID);
-
-                            memoryInformation = null; // reset so it can try to download again later
-
-                            errorMessage = document.createElement('div');
-                            errorMessage.id = 'memoryErrorMessage';
-                            errorMessage.innerHTML = 'Memory for object<br>' + object.name + '<br>doesn\'t exist.<br><br>Please create one and try again.';
-                            document.body.appendChild(errorMessage);
-
-                        }
-
-                    });
                 // }
 
             }
@@ -228,6 +245,8 @@
 
             // for now, don't recursively render memoryFrames
             if (activeFrame.src === 'memoryFrame') { continue; }
+
+            if (activeFrame.visualization === 'screen') { continue; }
 
             if (guiState === 'ui') {
 
@@ -437,6 +456,7 @@
             var addIframe = domElements.addIframe;
             var addOverlay = domElements.addOverlay;
             var addSVG = domElements.addSVG;
+            // var addDistanceUI = domElements.addDistanceUI;
 
             addOverlay.objectId = objectKey;
             addOverlay.frameId = frameKey;
@@ -459,6 +479,8 @@
             addContainer.appendChild(addIframe);
             addContainer.appendChild(addOverlay);
             addOverlay.appendChild(addSVG);
+            // document.getElementById("GUI").appendChild(addDistanceUI);
+            // addOverlay.appendChild(addDistanceUI);
 
             // cache references to these elements to more efficiently retrieve them in the future
             globalDOMCache[addContainer.id] = addContainer;
@@ -482,7 +504,7 @@
      * @param {string} frameKey
      * @param {string} nodeKey
      * @param {Frame|Node} activeVehicle
-     * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement}}
+     * @return {{addContainer: HTMLDivElement, addIframe: HTMLIFrameElement, addOverlay: HTMLDivElement, addSVG: HTMLElement, addDistanceUI: HTMLElement}}
      */
     var createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
 
@@ -544,11 +566,17 @@
         addSVG.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
         addSVG.setAttribute('shape-rendering','geometricPrecision'); //'optimizeSpeed'
 
+        // var addDistanceUI = document.createElement('div');
+        // addDistanceUI.id = 'distance' + activeKey;
+        // addDistanceUI.classList.add('main');
+        // addDistanceUI.classList.add('distanceUI');
+
         return {
             addContainer: addContainer,
             addIframe: addIframe,
             addOverlay: addOverlay,
             addSVG: addSVG
+            // addDistanceUI: addDistanceUI
         };
     };
 
@@ -620,61 +648,81 @@
             globalDOMCache['object' + frameKey].classList.add('hiddenFrame');
         }
 
+
         // realityEditor.gui.ar.draw.notLoading = false;
         //
         // if (nodeKey === "null") nodeKey = null;
-        //
-        // // cout("posting Msg");
-        // var version = 170;
-        // var object = realityEditor.getObject(objectKey);
-        // if (object) {
-        //     version = object.integerVersion;
-        // }
-        // var frame = realityEditor.getFrame(objectKey, frameKey);
-        // var nodes = (!!frame) ? frame.nodes : {};
-        //
-        // var oldStyle = {
-        //     obj: objectKey,
-        //     pos: nodeKey,
-        //     objectValues: (!!object) ? object.nodes : {},
-        //     interface: globalStates.interface
-        // };
-        //
-        // var simpleNodes = this.utilities.getNodesJsonForIframes(nodes);
-        //
-        // var newStyle = {
-        //     object: objectKey,
-        //     frame: frameKey,
-        //     objectData: {},
-        //     node: nodeKey,
-        //     nodes: simpleNodes,
-        //     interface: globalStates.interface
-        // };
-        //
-        // if (version < 170 && objectKey === nodeKey) {
-        //     newStyle = oldStyle;
-        // }
-        //
-        // if (object && object.ip) {
-        //     newStyle.objectData = {
-        //         ip: object.ip
-        //     };
-        // }
-        // var activeKey = nodeKey || frameKey;
-        //
+
+        // cout("posting Msg");
+        var version = 170;
+        var object = objects[objectKey];
+        var frame = null;
+        if (object) {
+            version = object.integerVersion;
+            frame = object.frames[frameKey];
+        }
+        var nodes = (!!frame) ? frame.nodes : {};
+
+        var oldStyle = {
+            obj: objectKey,
+            pos: nodeKey,
+            objectValues: (!!object) ? object.nodes : {},
+            interface: globalStates.interface
+        };
+
+        var simpleNodes = getNodesJsonForIframes(nodes);
+
+        var newStyle = {
+            object: objectKey,
+            frame: frameKey,
+            objectData: {},
+            node: nodeKey,
+            nodes: simpleNodes,
+            interface: null
+        };
+
+        if (version < 170 && objectKey === nodeKey) {
+            newStyle = oldStyle;
+        }
+
+        if (object && object.ip) {
+            newStyle.objectData = {
+                ip: object.ip
+            };
+        }
+        var activeKey = nodeKey || frameKey;
+
         // // if (globalDOMCache['svg' + activeKey]) {
         // //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
         // // }
         //
-        // globalDOMCache["iframe" + activeKey]._loaded = true;
-        // globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
-        //
+        globalDOMCache["iframe" + activeKey]._loaded = true;
+        globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
+
         // if (nodeKey) {
         //     var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
         //     if (node.type === 'logic') {
         //         realityEditor.gui.ar.draw.updateLogicNodeIcon(node);
         //     }
         // }
+    }
+
+    // avoids serializing cyclic data structures by only including minimal information needed for node iframe
+    // (keys such as grid and links sometimes contain cyclic references)
+     function getNodesJsonForIframes(nodes) {
+        var simpleNodes = {};
+        var keysToExclude = ["links", "blocks", "grid", "guiState"];
+        for (var node in nodes) {
+            if (!nodes.hasOwnProperty(node)) continue;
+            simpleNodes[node] = {};
+            for (var key in nodes[node]) {
+                if (!nodes[node].hasOwnProperty(key)) continue;
+                if (keysToExclude.indexOf(key) === -1) {
+                    simpleNodes[node][key] = nodes[node][key];
+                }
+            }
+        }
+        return simpleNodes;
     }
 
     function getProjectionMatrix() {
