@@ -387,10 +387,9 @@ realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cel
             this.realityEditor.network.postNewBlockPosition(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, contents.block.globalId, {x: contents.block.x, y: contents.block.y});
         }
 
-        // TODO: analyze consequences of commenting this out!
-        if (realityEditor.gui.crafting.eventHelper.areCellsEqual(cell, prevCell)) {
+        // if (realityEditor.gui.crafting.eventHelper.areCellsEqual(cell, prevCell)) {
             this.crafting.removeBlockDom(contents.block); // remove do so it can be re-rendered in the correct place
-        }
+        // }
         
         var _this = this;
         portLinkData.forEach( function(linkData) {

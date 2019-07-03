@@ -323,9 +323,12 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     grid.forEachLink( function(link) {
-        var startCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeA, globalStates.currentLogic), link.logicA);
-        var endCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeB, globalStates.currentLogic), link.logicB);
-        _this.drawDataCraftingLine(ctx, link, 5, startCell.getColorHSL(), endCell.getColorHSL(), timeCorrection);
+        // var startCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeA, globalStates.currentLogic), link.logicA);
+        // var endCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeB, globalStates.currentLogic), link.logicB);
+        // _this.drawDataCraftingLine(ctx, link, 5, startCell.getColorHSL(), endCell.getColorHSL(), timeCorrection);
+
+        var blueColor = {h: 180, s:100, l:60};
+        _this.drawDataCraftingLine(ctx, link, 3, blueColor, blueColor, timeCorrection);
     });
 
     var cutLine = globalStates.currentLogic.guiState.cutLine;
@@ -335,7 +338,10 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
 
     var tempLine = globalStates.currentLogic.guiState.tempLine;
     if (tempLine.start && tempLine.end) {
-        this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, tempLine.color, 3);
+        var blueColor = {h: 180, s:100, l:60};
+        var lineColor = 'hsl('+blueColor.h+','+blueColor.s+'%,'+blueColor.l+'%)';
+        // this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, tempLine.color, 3);
+        this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, lineColor, 3);
     }
 
     var tappedContents = globalStates.currentLogic.guiState.tappedContents;
@@ -355,8 +361,10 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
             var xOffset =  0.5 * grid.blockColWidth + (grid.blockColWidth + grid.marginColWidth) * linkData.logicB;
             var endX = parseInt(domElement.style.left) + xOffset;
             var endY = parseInt(domElement.style.top) + domElement.clientHeight/2;
-            var startColor = startCell.getColorHSL();
-            var lineColor = 'hsl('+startColor.h+','+startColor.s+'%,'+startColor.l+'%)';
+            // var startColor = startCell.getColorHSL();
+            // var lineColor = 'hsl('+startColor.h+','+startColor.s+'%,'+startColor.l+'%)';
+            var blueColor = {h: 180, s:100, l:60};
+            var lineColor = 'hsl('+blueColor.h+','+blueColor.s+'%,'+blueColor.l+'%)';
 
             _this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, startX, startY, endX, endY, lineColor, 2);
         });
@@ -373,8 +381,10 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
             }
             var endX = grid.getCellCenterX(endCell);
             var endY = grid.getCellCenterY(endCell);
-            var endColor = endCell.getColorHSL();
-            var lineColor = 'hsl('+endColor.h+','+endColor.s+'%,'+endColor.l+'%)';
+            // var endColor = endCell.getColorHSL();
+            // var lineColor = 'hsl('+endColor.h+','+endColor.s+'%,'+endColor.l+'%)';
+            var blueColor = {h: 180, s:100, l:60};
+            var lineColor = 'hsl('+blueColor.h+','+blueColor.s+'%,'+blueColor.l+'%)';
 
             _this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, startX, startY, endX, endY, lineColor, 2);
         });
@@ -383,7 +393,13 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
 
 realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, lineStartWeight, startColor, endColor, timeCorrector ) {
     var mathPI = 2*Math.PI;
-    var spacer = 2.3;
+    var spacer = 8;
+
+    var DEBUG_BLUE = true;
+    if (DEBUG_BLUE) {
+        startColor.h = 180;
+        endColor.h = 180;
+    }
 
     var pointData = linkObject.route.pointData;
 
@@ -670,7 +686,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                         var labelContainer = document.createElement("div");
                         labelContainer.setAttribute("class", "blockPlaceholderLabel");
                         var label = document.createElement("div");
-                        label.style.color = blockColorMap[colNum / 2];
+                        label.style.color = 'cyan'; //blockColorMap[colNum / 2];
                         label.innerHTML = (rowNum === 0) ? "IN" : "OUT";
                         labelContainer.appendChild(label);
                         blockPlaceholder.appendChild(labelContainer);
