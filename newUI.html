@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        
+        body {
+            background-color: #4E4E4F;
+        }
+        
+        .block {
+            background-color: rgba(0,0,0,0.5);
+            width: 98px;
+            height: 51px;
+            position: absolute;
+            left: 6px;
+            top: 6px;
+            border: 2px solid cyan;
+            opacity: 0.5;
+        }
+        
+        .corners {
+            position: relative;
+            width: 100px; /* for demo purposes */
+            padding: 10px;
+        }
+
+        .top, .bottom {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+        }
+
+        .top {
+            top: 0;
+            border-top: 2px solid cyan;
+        }
+
+        .bottom {
+            bottom: 0;
+            border-bottom: 2px solid cyan;
+        }
+
+        .left {
+            left: 0;
+            border-left: 2px solid cyan;
+        }
+
+        .right {
+            right: 0;
+            border-right: 2px solid cyan;
+        }
+    </style>
+</head>
+<body>
+
+<div class="block"></div>
+
+<!--<div class="corners" style="width: 94px; height: 47px">-->
+    <!--<div class="top left"></div>-->
+    <!--<div class="top right"></div>-->
+    <!--<div class="bottom right"></div>-->
+    <!--<div class="bottom left"></div>-->
+    <!--<div class="block">-->
+        <!---->
+    <!--</div>-->
+<!--</div>-->
+
+<script>
+    
+    wrapDivWithCorners(document.querySelector('.block'));
+    
+    document.addEventListener('mousemove', function(event) {
+        document.querySelector('.block').style.left = event.pageX + 'px';
+        document.querySelector('.block').style.top = event.pageY + 'px';
+    });
+    
+    function wrapDivWithCorners(div) {
+        var rect = div.getClientRects()[0];
+        var corners = createMoveabilityCorners(div.id+'corners', rect.width, rect.height);
+        corners.style.left = '-11px';
+        corners.style.top = '-11px';
+        div.appendChild(corners);
+    }
+    
+    function createMoveabilityCorners(id, width, height, borderWidth) {
+        var corners = createDiv(id, 'corners', null, null);
+        var topLeft = createDiv(id+'topleft', 'top left', null, corners);
+        var topRight = createDiv(id+'topleft', 'top right', null, corners);
+        var bottomRight = createDiv(id+'topleft', 'bottom right', null, corners);
+        var bottomLeft = createDiv(id+'topleft', 'bottom left', null, corners);
+        if (borderWidth) {
+            topLeft.style.borderTop = borderWidth + 'px solid cyan';
+            topLeft.style.borderLeft = borderWidth + 'px solid cyan';
+
+            topRight.style.borderTop = borderWidth + 'px solid cyan';
+            topRight.style.borderRight = borderWidth + 'px solid cyan';
+
+            bottomRight.style.borderBottom = borderWidth + 'px solid cyan';
+            bottomRight.style.borderRight = borderWidth + 'px solid cyan';
+
+            bottomLeft.style.borderBottom = borderWidth + 'px solid cyan';
+            bottomLeft.style.borderLeft = borderWidth + 'px solid cyan';
+        }
+        corners.style.width = width + 'px';
+        corners.style.height = height + 'px';
+        return corners;
+    }
+
+    // var corners1 = createMoveabilityCorners('test1', 100, 50, 5);
+    // document.body.appendChild(corners1);
+    //
+    // var corners2 = createMoveabilityCorners('test2', 120, 200);
+    // corners2.style.left = '50px';
+    // corners2.style.top = '200px';
+    // document.body.appendChild(corners2);
+
+
+
+    /**
+     * Shortcut for creating a div with certain style and contents, and possibly adding to a parent element
+     * Any parameter can be omitted (pass in null) to ignore those effects
+     * @param {string|null} id
+     * @param {string|Array.<string>|null} classList
+     * @param {string|null} innerHTML
+     * @param {HTMLElement|null} parentToAddTo
+     * @return {HTMLDivElement}
+     */
+    function createDiv(id, classList, innerHTML, parentToAddTo) {
+        var div = document.createElement('div');
+        if (id) {
+            div.id = id;
+        }
+        if (classList) {
+            if (typeof classList === 'string') {
+                div.className = classList;
+            } else if (typeof classList === 'object') {
+                classList.forEach(function(className) {
+                    div.classList.add(className);
+                });
+            }
+        }
+        if (innerHTML) {
+            div.innerHTML = innerHTML;
+        }
+        if (parentToAddTo) {
+            parentToAddTo.appendChild(div);
+        }
+        return div;
+    };
+
+    
+</script>
+
+</body>
+</html>

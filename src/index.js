@@ -109,7 +109,8 @@ var realityEditor = realityEditor || {
             domCache: {},
             setup: {},
             modal: {},
-            dropdown: {}
+            dropdown: {},
+            moveabilityCorners: {}
 		},
         network: {
             realtime: {},

@@ -257,6 +257,12 @@ createNameSpace("realityEditor.gui.menus");
                 buttonOn(["gui"]);
                 // update the global gui state
                 globalStates.guiState = "ui";
+
+                if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
+                    // var logic = new Logic();
+                    // realityEditor.gui.crafting.initializeDataCraftingGrid(logic);
+                    realityEditor.gui.crafting.craftingBoardVisible(Object.keys(objects)[0], Object.keys(objects)[0], Object.keys(objects)[0]);
+                }
                 
             }
         }.bind(this));

@@ -162,6 +162,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
             for (var r = 0; r < menuRows; r++) {
                 var row = document.createElement('div');
+                row.classList.add('menuBlockRow');
                 menuBlockContainer.appendChild(row);
                 for (var c = 0; c < menuCols; c++) {
                     var block = document.createElement('div');
@@ -296,7 +297,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             var blockTitle = document.createElement('div');
             blockTitle.setAttribute('class', 'blockTitle');
             blockTitle.innerHTML = thisBlockData.name;
-            blockDiv.firstChild.appendChild(blockTitle);
+            blockDiv.appendChild(blockTitle);
         }
     
         // clear the remaining block divs

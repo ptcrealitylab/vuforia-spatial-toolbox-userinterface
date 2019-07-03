@@ -49,12 +49,27 @@
 
 createNameSpace("realityEditor.gui.crafting.eventHelper");
 
+realityEditor.gui.crafting.eventHelper.highlightedPlaceholder = null;
+
 // done
 realityEditor.gui.crafting.eventHelper.getCellOverPointer = function(pointerX, pointerY) {
     if(globalStates.currentLogic) {
         var grid = globalStates.currentLogic.grid;
         // returns cell if position is within grid bounds, null otherwise
         return grid.getCellFromPointerPosition(pointerX, pointerY);
+    }
+};
+
+realityEditor.gui.crafting.eventHelper.getCellPlaceholderDiv = function(cell) {
+    var col = cell.location.col;
+    var row = cell.location.row;
+    if (col % 2 === 0 && row % 2 === 0) {
+        var rowContainer = document.querySelectorAll('.blockPlaceholderRow')[row];
+        // console.log(rowContainer);
+        return rowContainer.childNodes[col/2];
+    } else {
+        console.warn('trying to get a placeholder div that isn\'t a valid cell location');
+        return null;
     }
 };
 
@@ -150,27 +165,79 @@ realityEditor.gui.crafting.eventHelper.canPlaceBlockInCell = function(tappedCont
     return canPlaceBlock;
 };
 
+realityEditor.gui.crafting.eventHelper.stylePlaceholder = function(contents, isAble) {
+    var placeholderDiv = this.getCellPlaceholderDiv(contents.cell);
+    if (placeholderDiv && isAble) {
+        placeholderDiv.classList.add('blockDivMovingAbleBorder');
+        this.highlightedPlaceholder = {
+            div: placeholderDiv,
+            cell: contents.cell
+        };
+        if (contents.cell.location.row !== 0 && contents.cell.location.row !== 6) {
+            realityEditor.gui.moveabilityCorners.removeCornersFromDiv(placeholderDiv);
+        }
+    } else if (placeholderDiv) {
+        this.unhighlightPlaceholderDiv(this.highlightedPlaceholder);
+    }
+};
+
+realityEditor.gui.crafting.eventHelper.unhighlightPlaceholderDiv = function(highlightedPlaceholder) {
+    if (!highlightedPlaceholder) { return; }
+    
+    highlightedPlaceholder.div.classList.remove('blockDivMovingAbleBorder');
+    
+    if (highlightedPlaceholder.cell.location.row !== 0 && highlightedPlaceholder.cell.location.row !== 6) {
+        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(highlightedPlaceholder.div, 0, true);
+    }
+
+    this.highlightedPlaceholder = null;
+};
+
+realityEditor.gui.crafting.eventHelper.styleBlockAsPlaced = function(contents, isPlaced) {
+    var domElement = this.getDomElementForBlock(contents.block);
+    if (isPlaced) {
+        // realityEditor.gui.moveabilityCorners.wrapDivInOutline(domElement, 5, true);
+        console.log('really add outline here...');
+        realityEditor.gui.moveabilityCorners.wrapDivInOutline(domElement, 8, true, null, -4, 3);
+
+    } else {
+        realityEditor.gui.moveabilityCorners.removeOutlineFromDiv(domElement);
+        console.log('also remove outline here.');
+    }
+};
+
 realityEditor.gui.crafting.eventHelper.styleBlockForHolding = function(contents, startHold) {
     var domElement = this.getDomElementForBlock(contents.block);
     if (!domElement) return;
     if (startHold) {
-        domElement.setAttribute('class','blockDivHighlighted blockDivMovingAbleBorder');
+        domElement.setAttribute('class','blockDivHighlighted');
         domElement.firstChild.lastChild.setAttribute('class','blockMoveDiv blockDivMovingAble');
+        console.log('remove outline (if there is one)');
+        realityEditor.gui.moveabilityCorners.removeOutlineFromDiv(domElement);
+        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(domElement, 8, true, null, -4);
+        this.styleBlockAsPlaced(contents, false);
     } else {
         domElement.setAttribute('class','blockDivPlaced');
         domElement.firstChild.lastChild.setAttribute('class','blockMoveDiv');
+        realityEditor.gui.moveabilityCorners.removeCornersFromDiv(domElement);
+        realityEditor.gui.moveabilityCorners.wrapDivInOutline(domElement, 8, true, null, -4, 3);
+        // TODO: add outline here? 
+        console.log('add outline for placement');
     }
+    this.stylePlaceholder(contents, startHold); // placeholder behind this cell lights up when you pick it up to show you can place it back
 };
 
 realityEditor.gui.crafting.eventHelper.styleBlockForPlacement = function(contents, shouldHighlight) {
     var domElement = this.getDomElementForBlock(contents.block);
     if (!domElement) return;
     if (shouldHighlight) {
-        domElement.setAttribute('class','blockDivHighlighted blockDivMovingAbleBorder');
+        domElement.setAttribute('class','blockDivHighlighted');
         domElement.firstChild.lastChild.setAttribute('class','blockMoveDiv blockDivMovingAble');
+        // realityEditor.gui.moveabilityCorners.wrapDivWithCorners(domElement, 5, true);
     } else {
-        domElement.setAttribute('class','blockDivHighlighted blockDivMovingUnableBorder');
+        domElement.setAttribute('class','blockDivHighlighted');
         domElement.firstChild.lastChild.setAttribute('class','blockMoveDiv blockDivMovingUnable');
+        // realityEditor.gui.moveabilityCorners.wrapDivWithCorners(domElement, 5, true);
     }
 };
 
@@ -304,6 +371,8 @@ realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cel
     if (cell) {
         var prevCell = this.crafting.grid.getCellForBlock(grid, contents.block, contents.item);
         var newCellsOver = grid.getCellsOver(cell, contents.block.blockSize, contents.item);
+        
+        this.styleBlockAsPlaced(contents, true);
 
         // if it's being moved to the top or bottom rows, delete the invisible port block underneath
         // this also saves the links connected to those port blocks so we can add them to the new block
@@ -318,7 +387,10 @@ realityEditor.gui.crafting.eventHelper.placeBlockInCell = function(contents, cel
             this.realityEditor.network.postNewBlockPosition(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, contents.block.globalId, {x: contents.block.x, y: contents.block.y});
         }
 
-        this.crafting.removeBlockDom(contents.block); // remove do so it can be re-rendered in the correct place
+        // TODO: analyze consequences of commenting this out!
+        if (realityEditor.gui.crafting.eventHelper.areCellsEqual(cell, prevCell)) {
+            this.crafting.removeBlockDom(contents.block); // remove do so it can be re-rendered in the correct place
+        }
         
         var _this = this;
         portLinkData.forEach( function(linkData) {

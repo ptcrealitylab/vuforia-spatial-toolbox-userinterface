@@ -294,8 +294,10 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: rgba(20,20,20,0.5);
-
+    /*background-color: rgba(20,20,20,0.5);*/
+    /*background-color: transparent;*/
+    background-color: rgba(0,0,0,0.1); /* just barely not transparent... tints the background */
+    
     /*-webkit-backdrop-filter: blur(30px);*/
 
     /*background-color: #969696;*/
@@ -974,6 +976,7 @@ Logic Interface CSS
     display: inline-block;
     -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
     box-sizing: border-box;         /* Opera/IE 8+ */
+    background-color: rgba(0,0,0,0.3);
 }
 
 .blockPlaceholderLastCol {
@@ -982,6 +985,7 @@ Logic Interface CSS
     display: inline-block;
     -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
     box-sizing: border-box;         /* Opera/IE 8+ */
+    background-color: rgba(0,0,0,0.3);
 }
 
 .blockPlaceholderLabel {
@@ -991,7 +995,7 @@ Logic Interface CSS
     -webkit-box-pack: center;
     -webkit-box-align: center;
     font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
-    font-size: 24px;
+    font-size: 18px;
 }
 
 .columnHighlight {
@@ -1034,12 +1038,13 @@ Logic Interface CSS
   display:-webkit-box;
   -webkit-box-pack:center;
   -webkit-box-align:center;
-  background-color: rgb(73,73,73);
-  border: 2px solid white;
+  background-color: rgba(0,0,0,0.7);
+  border: 2px solid rgba(0,255,255,0.5);
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
 }
 
 .blockDivHighlighted {
+  box-sizing: border-box;
   position: absolute;
   color: white;
   user-select:none;
@@ -1047,8 +1052,8 @@ Logic Interface CSS
   display:-webkit-box;
   -webkit-box-pack:center;
   -webkit-box-align:center;
-  background-color: rgb(73,73,73);
-  border: 2px solid white;
+  background-color: rgba(0,0,0,0.7);
+  border: 2px solid rgba(0,255,255,0.5);
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
 }
 
@@ -1087,6 +1092,10 @@ Logic Interface CSS
   height: 320px;
 }
 
+.menuBlockRow {
+    height: 83px;
+}
+
 #menuSideContainer {
   position: absolute;
   /*left: 400px;*/
@@ -1100,10 +1109,10 @@ Logic Interface CSS
   width: 92px;
   height: 46px;
   display: inline-block;
-  background-color: rgb(73,73,73);
+  background-color: rgba(0,0,0,0.7);
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  border: solid 2px white;
+  border: solid 2px rgba(0,255,255,0.5);
   margin: 3.5px;
   margin-bottom: 18px;
 }
@@ -1120,6 +1129,7 @@ Logic Interface CSS
   color: white;
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
   font-size: 14px;
+  position: absolute;
 }
 
 .blockIcon {
@@ -1134,6 +1144,7 @@ Logic Interface CSS
   -webkit-box-align:center;*/
   user-select:none;
   -webkit-user-select:none;
+    height: 75%;
 }
 
 .blockBox {
@@ -1143,6 +1154,10 @@ Logic Interface CSS
 .blockTitle {
   /*display: inline-block;*/
   text-align: center;
+  width: 100%;
+  bottom: -22px;
+  position: absolute;
+  color: rgb(247, 209, 71);
 }
 
 .blockMoveDiv {
@@ -1203,17 +1218,17 @@ Logic Interface CSS
 
 .blockDivMovingAble {
     /*border: 2px solid rgb(0,255,0);*/
-    background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(0, 255, 0) 16px, rgb(0, 255, 0) 32px);
+    /*background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(0, 255, 0) 16px, rgb(0, 255, 0) 32px);*/
 }
 
 .blockDivMovingUnable {
     /*border: 2px solid rgb(255,0,124);*/
-    background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,0,124) 16px, rgb(255,0,124) 32px);
+    /*background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,0,124) 16px, rgb(255,0,124) 32px);*/
 }
 
 .blockDivMovingSaveOrDeletable {
     /*border: 2px solid rgb(255,255,0);*/
-    background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,255,0) 16px, rgb(255,255,0) 32px);
+    /*background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,255,0) 16px, rgb(255,255,0) 32px);*/
 }
 
 .memoryWeb {
@@ -1361,4 +1376,41 @@ Logic Interface CSS
     -webkit-animation-timing-function: ease-out;
     -webkit-user-select: none;
     -webkit-touch-callout:none;
+}
+
+.corners {
+    position: absolute;
+    width: 100px; /* for demo purposes */
+    padding: 10px;
+}
+
+.cornersTop, .cornersBottom {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+}
+
+.cornersTop {
+    top: 0;
+    border-top: 2px solid cyan;
+}
+
+.cornersBottom {
+    bottom: 0;
+    border-bottom: 2px solid cyan;
+}
+
+.cornersLeft {
+    left: 0;
+    border-left: 2px solid cyan;
+}
+
+.cornersRight {
+    right: 0;
+    border-right: 2px solid cyan;
+}
+
+.outline {
+    position: absolute;
+    border: 2px solid cyan;
 }

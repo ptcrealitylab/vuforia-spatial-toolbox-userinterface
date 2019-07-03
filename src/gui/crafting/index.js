@@ -208,16 +208,23 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
     
     if (iconImage) {
         iconImage.style.width = blockDomElement.style.width;
-        iconImage.style.height = blockDomElement.style.height;
+        iconImage.style.height = (parseInt(blockDomElement.style.height) - 10) + 'px';
         iconImage.style.marginLeft = '-2px';
-        iconImage.style.marginTop = '-2px';
+        // iconImage.style.marginTop = '-2px';
     }
-
+    
     var blockContainer = document.getElementById('blocks');
     blockContainer.appendChild(blockDomElement);
 
     var guiState = globalStates.currentLogic.guiState;
     guiState.blockDomElements[block.globalId] = blockDomElement;
+
+    // adds outlines to blocks placed in cells, but not when in the process of dropping in from the menu
+    if (block.x !== -1 && block.y !== -1) {
+        realityEditor.gui.moveabilityCorners.wrapDivInOutline(blockDomElement, 8, true, null, -4, 3);
+    } else {
+        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(blockDomElement, 8, true, null, -4);
+    }
 };
 
 realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch) {
@@ -438,10 +445,10 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
     realityEditor.gui.menus.switchToMenu("crafting", ["freeze"], null);
     
     if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
-        
+
         var logic = new Logic();
         this.initializeDataCraftingGrid(logic);
-        
+
     } else {
         
         var nodeLogic = objects[objectKey].frames[frameKey].nodes[nodeKey];
@@ -648,16 +655,18 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
             for (var colNum = 0; colNum < logic.grid.size; colNum++) {
                 if (colNum % 2 === 0) {
                     var blockPlaceholder = document.createElement('div');
+                    rowDiv.appendChild(blockPlaceholder);
+
                     var className = (colNum === logic.grid.size - 1) ? "blockPlaceholderLastCol" : "blockPlaceholder";
                     blockPlaceholder.setAttribute("class", className);
 
                     blockPlaceholder.style.width = (gridWidth * (2/11)) + 'px';
                     blockPlaceholder.style.marginRight = (gridWidth * (1/11)) + 'px';
-
+                    
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
-                    blockPlaceholder.style.border = "2px solid " + blockColorMap[colNum / 2]; //rgb(45, 255, 254);"
                     if (rowNum === 0 || rowNum === 6) {
+                        blockPlaceholder.style.border = "2px solid " + blockColorMap[colNum / 2] + "55"; //rgb(45, 255, 254);"
                         var labelContainer = document.createElement("div");
                         labelContainer.setAttribute("class", "blockPlaceholderLabel");
                         var label = document.createElement("div");
@@ -665,8 +674,9 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                         label.innerHTML = (rowNum === 0) ? "IN" : "OUT";
                         labelContainer.appendChild(label);
                         blockPlaceholder.appendChild(labelContainer);
+                    } else {
+                        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(blockPlaceholder, 0, true, {opacity: 0.5});
                     }
-                    rowDiv.appendChild(blockPlaceholder);
                 }
             }
 
@@ -677,21 +687,21 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
             rowDiv.style.height = logic.grid.marginRowHeight;
             blockPlaceholdersContainer.appendChild(rowDiv);
 
-            for (var colNum = 0; colNum < logic.grid.size; colNum++) {
-                if (colNum % 2 === 0) {
-                    var columnHighlight = document.createElement('div');
-                    var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
-                    columnHighlight.setAttribute("class", className);
-
-                    columnHighlight.style.width = (gridWidth * 2/11) + 'px';
-                    columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
-                    
-                    //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
-                    //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
-                    columnHighlight.style.background = columnHighlightColorMap[colNum/2];
-                    rowDiv.appendChild(columnHighlight);
-                }
-            }
+            // for (var colNum = 0; colNum < logic.grid.size; colNum++) {
+            //     if (colNum % 2 === 0) {
+            //         var columnHighlight = document.createElement('div');
+            //         rowDiv.appendChild(columnHighlight);
+            //         var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
+            //         columnHighlight.setAttribute("class", className);
+            //
+            //         columnHighlight.style.width = (gridWidth * 2/11) + 'px';
+            //         columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
+            //        
+            //         //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
+            //         //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
+            //         columnHighlight.style.background = columnHighlightColorMap[colNum/2];
+            //     }
+            // }
 
         }
     }
