@@ -328,7 +328,8 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
         // _this.drawDataCraftingLine(ctx, link, 5, startCell.getColorHSL(), endCell.getColorHSL(), timeCorrection);
 
         var blueColor = {h: 180, s:100, l:60};
-        _this.drawDataCraftingLine(ctx, link, 3, blueColor, blueColor, timeCorrection);
+        // _this.drawDataCraftingLine(ctx, link, 3, blueColor, blueColor, timeCorrection);
+        _this.drawDataCraftingLineDashed(ctx, link);
     });
 
     var cutLine = globalStates.currentLogic.guiState.cutLine;
@@ -391,9 +392,39 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
     }
 };
 
+realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkObject) {
+    // context.save();
+    // start a dashed line
+    var lineLength = 6;
+    var gapLength = 8;
+    var totalLength = lineLength + gapLength;
+    context.setLineDash([lineLength, gapLength]);
+    context.beginPath();
+    context.strokeStyle = 'cyan';
+    context.lineWidth = 3;
+
+    // animate the line
+    var numFramesForAnimationLoop = 30;
+    linkObject.ballAnimationCount += totalLength / numFramesForAnimationLoop;
+    if (linkObject.ballAnimationCount >= totalLength) {
+        linkObject.ballAnimationCount = 0;
+    }
+    context.lineDashOffset = -1 * linkObject.ballAnimationCount;
+    
+    // draw it from start point -> corner -> corner -> ... -> end point
+    var points = linkObject.route.pointData.points;
+    context.moveTo(points[0].screenX, points[0].screenY);
+    for (var i = 1; i < points.length; i++) {
+        var nextPoint = points[i];
+        context.lineTo(nextPoint.screenX, nextPoint.screenY);
+    }
+    context.stroke();
+    // context.restore();
+};
+
 realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, lineStartWeight, startColor, endColor, timeCorrector ) {
     var mathPI = 2*Math.PI;
-    var spacer = 8;
+    var spacer = 3;
 
     var DEBUG_BLUE = true;
     if (DEBUG_BLUE) {
@@ -408,7 +439,7 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
 
     var percentIncrement = (lineStartWeight * spacer)/pointData.totalLength;
 
-    if (linkObject.ballAnimationCount >= percentIncrement) {
+    if (linkObject.ballAnimationCount >= 2*percentIncrement) {
         linkObject.ballAnimationCount = 0;
     }
 
@@ -417,27 +448,35 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
     var transitionColorLeft = (endColor.h - startColor.h < -180 || redToBlue);
     var color;
 
-    for (var i = 0; i < 1.0; i += percentIncrement) {
-        var percentage = i + linkObject.ballAnimationCount;
-        var position = linkObject.route.getXYPositionAtPercentage(percentage);
-        if (position !== null) {
-            if (transitionColorRight) {
-                // looks better to go down rather than up
-                hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h - 360)) % 360;
-            } else if (transitionColorLeft) {
-                // looks better to go up rather than down
-                hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h + 360)) % 360;
-            } else {
-                hue = (1.0 - percentage) * startColor.h + percentage * endColor.h;
-            }
+    for (var i = 0; i < 1.0; i += 2*percentIncrement) {
+        
+        var percentageStart = i + linkObject.ballAnimationCount;
+        var positionStart = linkObject.route.getXYPositionAtPercentage(percentageStart);
+
+        var percentageEnd = i+percentIncrement + linkObject.ballAnimationCount;
+        var positionEnd = linkObject.route.getXYPositionAtPercentage(percentageEnd);
+        
+        if (positionStart !== null && positionEnd !== null) {
+            // if (transitionColorRight) {
+            //     // looks better to go down rather than up
+            //     hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h - 360)) % 360;
+            // } else if (transitionColorLeft) {
+            //     // looks better to go up rather than down
+            //     hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h + 360)) % 360;
+            // } else {
+            //     hue = (1.0 - percentage) * startColor.h + percentage * endColor.h;
+            // }
+            hue = startColor.h;
             context.beginPath();
-            context.fillStyle = 'hsl(' + hue + ', 100%, 60%)';
-            context.arc(position.screenX, position.screenY, lineStartWeight, 0, mathPI);
-            context.fill();
+            context.strokeStyle = 'hsl(' + hue + ', 100%, 60%)';
+            context.lineWidth = 3;
+            context.moveTo(positionStart.screenX, positionStart.screenY);
+            context.lineTo(positionEnd.screenX, positionEnd.screenY);
+            context.stroke();
         }
     }
 
-    var numFramesForAnimationLoop = 30;
+    var numFramesForAnimationLoop = 10;
     linkObject.ballAnimationCount += percentIncrement/numFramesForAnimationLoop;
 };
 

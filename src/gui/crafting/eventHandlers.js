@@ -185,16 +185,18 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
             var didSnap = this.crafting.eventHelper.snapBlockToCellIfPossible(tappedContents, cell, e.pageX, e.pageY); //TODO: move to inside the canPlaceBlockInCell block to avoid redundant checks
             if (!didSnap) {
                 this.crafting.eventHelper.moveBlockDomToPosition(tappedContents, e.pageX, e.pageY);
-                if (this.crafting.eventHelper.highlightedPlaceholder) {
-                    this.crafting.eventHelper.unhighlightPlaceholderDiv(this.crafting.eventHelper.highlightedPlaceholder);
-                }
+                this.crafting.eventHelper.unhighlightPlaceholderDivs(this.crafting.eventHelper.highlightedPlaceholders);
             }
 
             // if you are over an eligible cell, style temp block to highlighted
             var cell = this.crafting.eventHelper.getCellOverPointer(e.pageX, e.pageY);
             if (this.crafting.eventHelper.canPlaceBlockInCell(tappedContents, cell)) {
                 this.crafting.eventHelper.styleBlockForPlacement(tappedContents, true);
-                this.crafting.eventHelper.stylePlaceholder({cell: cell}, true);
+
+                var cellsOver = globalStates.currentLogic.grid.getCellsOver(cell, tappedContents.block.blockSize, tappedContents.item);
+                cellsOver.forEach(function(thisCell) {
+                    realityEditor.gui.crafting.eventHelper.stylePlaceholder({cell: thisCell}, true);
+                });
 
                 // if you aren't over an eligible cell, style temp block to faded
             } else {

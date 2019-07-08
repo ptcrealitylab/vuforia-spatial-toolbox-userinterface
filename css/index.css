@@ -1175,7 +1175,7 @@ Logic Interface CSS
   margin-bottom: 3.5px;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  border: solid 2px rgb(0, 255, 255);
+  /*border: solid 2px rgb(0, 255, 255);*/
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
   display:-webkit-box;
@@ -1188,10 +1188,10 @@ Logic Interface CSS
   height: 59.5px;
   margin-top: 3.5px;
   margin-bottom: 3.5px;
-  background-color: rgba(0, 255, 255, 0.4);
+  /*background-color: rgba(0, 255, 255, 0.4);*/
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  border: solid 2px rgb(0, 255, 255);
+  /*border: solid 2px rgb(0, 255, 255);*/
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
   display:-webkit-box;
@@ -1200,20 +1200,20 @@ Logic Interface CSS
 }
 
 .menuTabIcon {
-  height: 75%;
-  -webkit-filter: invert(100%);
+  height: 100%;
+  /*-webkit-filter: invert(100%);*/
 }
 
 .blockDivMovingAbleBorder {
-    border: 2px solid rgb(0,255,0);
+    border: 2px solid rgb(0,255,0) !important;
 }
 
 .blockDivMovingUnableBorder {
-    border: 2px solid rgb(255,0,124);
+    border: 2px solid rgb(255,0,124) !important;
 }
 
 .blockDivMovingSaveOrDeletableBorder {
-    border: 2px solid rgb(255,255,0);
+    border: 2px solid rgb(255,255,0) !important;
 }
 
 .blockDivMovingAble {

@@ -582,6 +582,7 @@ realityEditor.gui.ar.lines.drawYellow = function(context, circleCenterPoint, rad
 realityEditor.gui.ar.lines.drawSimpleLine = function(context, startX, startY, endX, endY, color, width) {
 	context.strokeStyle = color;
 	context.lineWidth = width;
+	context.setLineDash([]);
 	context.beginPath();
 	context.moveTo(startX, startY);
 	context.lineTo(endX, endY);

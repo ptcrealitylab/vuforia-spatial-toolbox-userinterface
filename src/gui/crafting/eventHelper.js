@@ -49,7 +49,7 @@
 
 createNameSpace("realityEditor.gui.crafting.eventHelper");
 
-realityEditor.gui.crafting.eventHelper.highlightedPlaceholder = null;
+realityEditor.gui.crafting.eventHelper.highlightedPlaceholders = {};
 
 // done
 realityEditor.gui.crafting.eventHelper.getCellOverPointer = function(pointerX, pointerY) {
@@ -169,28 +169,30 @@ realityEditor.gui.crafting.eventHelper.stylePlaceholder = function(contents, isA
     var placeholderDiv = this.getCellPlaceholderDiv(contents.cell);
     if (placeholderDiv && isAble) {
         placeholderDiv.classList.add('blockDivMovingAbleBorder');
-        this.highlightedPlaceholder = {
-            div: placeholderDiv,
-            cell: contents.cell
-        };
+        
+        this.highlightedPlaceholders[JSON.stringify(contents.cell.location)] = placeholderDiv;
+        
         if (contents.cell.location.row !== 0 && contents.cell.location.row !== 6) {
             realityEditor.gui.moveabilityCorners.removeCornersFromDiv(placeholderDiv);
         }
     } else if (placeholderDiv) {
-        this.unhighlightPlaceholderDiv(this.highlightedPlaceholder);
+        this.unhighlightPlaceholderDivs(this.highlightedPlaceholders);
     }
 };
 
-realityEditor.gui.crafting.eventHelper.unhighlightPlaceholderDiv = function(highlightedPlaceholder) {
-    if (!highlightedPlaceholder) { return; }
+realityEditor.gui.crafting.eventHelper.unhighlightPlaceholderDivs = function(highlightedPlaceholders) {
+    if (!highlightedPlaceholders || Object.keys(highlightedPlaceholders).length === 0) { return; }
     
-    highlightedPlaceholder.div.classList.remove('blockDivMovingAbleBorder');
-    
-    if (highlightedPlaceholder.cell.location.row !== 0 && highlightedPlaceholder.cell.location.row !== 6) {
-        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(highlightedPlaceholder.div, 0, true);
-    }
+    for (var locationString in highlightedPlaceholders) {
+        var div = highlightedPlaceholders[locationString];
+        div.classList.remove('blockDivMovingAbleBorder');
+        var location = JSON.parse(locationString);
+        if (location.row !== 0 && location.row !== 6) {
+            realityEditor.gui.moveabilityCorners.wrapDivWithCorners(div, 0, true);
+        }
 
-    this.highlightedPlaceholder = null;
+        delete highlightedPlaceholders[locationString];
+    }
 };
 
 realityEditor.gui.crafting.eventHelper.styleBlockAsPlaced = function(contents, isPlaced) {

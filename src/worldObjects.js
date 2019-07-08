@@ -82,6 +82,14 @@ createNameSpace("realityEditor.worldObjects");
      * @param {string} serverIP
      */
     function onNewServerDiscovered(serverIP) {
+
+        var DEBUG_GLOBAL_WORLD_OBJECTS = false;
+        if (DEBUG_GLOBAL_WORLD_OBJECTS) {
+            if (serverIP !== '127.0.0.1') {
+                console.warn('ignored found world object because of DEBUG_GLOBAL_WORLD_OBJECTS');
+                return;
+            }
+        }
         
         // REST endpoint for for downloading the world object for that server
         
