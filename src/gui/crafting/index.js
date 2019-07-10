@@ -194,22 +194,24 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
         blockContents.appendChild(moveDiv);
     }
     blockDomElement.style.display = 'inline-block';
-    
+
+    var blockOutlinePadding = 10; // wrapping the div with corners/outline adds the remaining width to match the cell size
+
     // if we're adding a temp block, it doesn't have associated cells it can use to calculate position. we need to remember to set position to pointer afterwards
     if (!isTempBlock) { //TODO: is there a way to set position for new blocks consistently?
         var firstCell = this.grid.getCellForBlock(grid, block, 0);
         var firstCellCenterX = grid.getCellCenterX(firstCell);
-        blockDomElement.style.left = firstCellCenterX - grid.blockColWidth/2;
-        blockDomElement.style.top = grid.getCellCenterY(firstCell) - grid.blockRowHeight/2;
+        blockDomElement.style.left = firstCellCenterX - grid.blockColWidth/2 + blockOutlinePadding/2 + 'px';
+        blockDomElement.style.top = grid.getCellCenterY(firstCell) - grid.blockRowHeight/2 + blockOutlinePadding/2 + 'px';
     }
 
-    blockDomElement.style.width = this.grid.getBlockPixelWidth(block,grid);
-    blockDomElement.style.height = grid.blockRowHeight;
+    blockDomElement.style.width = this.grid.getBlockPixelWidth(block,grid) - blockOutlinePadding + 'px';
+    blockDomElement.style.height = grid.blockRowHeight - blockOutlinePadding + 'px';
     
     if (iconImage) {
-        iconImage.style.width = blockDomElement.style.width;
-        iconImage.style.height = (parseInt(blockDomElement.style.height) - 10) + 'px';
-        iconImage.style.marginLeft = '-2px';
+        // iconImage.style.width = blockDomElement.style.width;
+        // iconImage.style.height = (parseInt(blockDomElement.style.height) - 10) + 'px';
+        iconImage.style.marginLeft = '-5px';
         // iconImage.style.marginTop = '-2px';
     }
     
@@ -721,7 +723,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
                     if (rowNum === 0 || rowNum === 6) {
-                        blockPlaceholder.style.border = "2px solid " + blockColorMap[colNum / 2] + "55"; //rgb(45, 255, 254);"
+                        blockPlaceholder.style.border = "3px solid " + blockColorMap[colNum / 2] + "55"; //rgb(45, 255, 254);"
                         var labelContainer = document.createElement("div");
                         labelContainer.setAttribute("class", "blockPlaceholderLabel");
                         var label = document.createElement("div");

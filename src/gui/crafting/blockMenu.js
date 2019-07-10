@@ -307,10 +307,12 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             iconImage.src = this.crafting.getBlockIcon(globalStates.currentLogic, thisBlockData.type,false).src;
             blockDiv.firstChild.appendChild(iconImage);
 
-            var blockTitle = document.createElement('div');
-            blockTitle.setAttribute('class', 'blockTitle');
-            blockTitle.innerHTML = thisBlockData.name;
-            blockDiv.appendChild(blockTitle);
+            if (blockDiv.querySelectorAll('.blockTitle').length === 0) {
+                var blockTitle = document.createElement('div');
+                blockTitle.setAttribute('class', 'blockTitle');
+                blockTitle.innerHTML = thisBlockData.name;
+                blockDiv.appendChild(blockTitle);
+            }
         }
     
         // clear the remaining block divs
