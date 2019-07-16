@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>limiter</title>
+    <style>
+        body {
+            background-color: #4E4E4F;
+        }
+        #limiter {
+            position: absolute;
+            top: 300px;
+            width: 759px;
+        }
+        #touchpadMaxLimit {
+            position: absolute;
+            left: 525px;
+            top: 20px;
+            width: 260px;
+            height: 260px;
+            
+        }
+    </style>
+</head>
+<body style="width: 759px">
+<svg id="limiter" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 169.48 179.26">
+    <defs>
+        <style>
+            .dataFont {
+                font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+                font-size: 12pt;
+                alignment: right;
+                fill: cyan;
+            }
+
+            .cls-0 {
+                opacity: 0.75;
+            }
+
+            .cls-1 {
+                opacity: 0.5;
+            }
+
+            .cls-2 {
+                opacity: 0.25;
+            }
+
+            .cls-3 {
+                fill: #75fbfd;
+            }
+
+            .cls-4 {
+                fill: #008480;
+            }
+
+            .green-fill {
+                fill: lime;
+            }
+            
+            .cls-6 {
+                fill: #fed003;
+            }
+            
+            .red-fill {
+                fill: #FF007D;
+            }
+        </style>
+    </defs>
+    <title>progress-with-fill</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+                <g id="valueBackground">
+                    <g class="cls-1">
+                        <polygon points="0 148.76 0 179.26 15.97 179.26 80.97 179.26 80.97 164.73 80.97 148.76 0 148.76"/>
+                    </g>
+                    <g class="cls-2">
+                        <path class="cls-3" d="M79,150.76v26.5H2v-26.5H79m2-2H0v30.5H81v-30.5Z"/>
+                    </g>
+                </g>
+                <g id="unitBackground">
+                    <g class="cls-1">
+                        <rect x="83.13" y="148.76" width="29.62" height="30.5"/>
+                    </g>
+                    <g class="cls-2">
+                        <path class="cls-3" d="M110.75,150.76v26.5H85.13v-26.5h25.62m2-2H83.13v30.5h29.62v-30.5Z"/>
+                    </g>
+                </g>
+                <g id="background" class="cls-1">
+                    <rect class="cls-4" x="0.27" width="112.22" height="146.74"/>
+                </g>
+                <g id="box4" class="cls-1">
+                    <rect x="8.78" y="108.98" width="94.95" height="32.37"/>
+                </g>
+                <g id="box3" class="cls-1">
+                    <rect x="8.78" y="74.45" width="94.95" height="32.37"/>
+                </g>
+                <g id="box2" class="cls-1">
+                    <rect x="9.02" y="39.92" width="94.95" height="32.37"/>
+                </g>
+                <g id="box1" class="cls-1">
+                    <rect x="9.02" y="5.4" width="94.95" height="32.37"/>
+                </g>
+                <g id="box4-green" class="cls-0">
+                    <rect class="green-fill" x="8.78" y="108.98" width="94.95" height="32.37"/>
+                </g>
+                <g id="box3-green" class="cls-0">
+                    <rect class="green-fill" x="8.78" y="74.45" width="94.95" height="32.37"/>
+                </g>
+                <g id="box2-green" class="cls-0">
+                    <rect class="green-fill" x="9.02" y="39.92" width="94.95" height="32.37"/>
+                </g>
+                <g id="box1-green" class="cls-0">
+                    <rect class="green-fill" x="9.02" y="5.4" width="94.95" height="32.37"/>
+                </g>
+            </g>
+            <g>
+                <g id="labelText">
+                    <text class="dataFont" id="dataValue" x="18" y="170">00.000</text>
+                    <text class="dataFont" id="dataUnit" x="88" y="170">lb</text>
+                </g>
+            </g>
+        </g>
+    </g>
+
+    <g id="Layer_3" data-name="Layer 3">
+        <g id="limitMax">
+            <g>
+                <g id="handle" class="cls-2">
+                    <rect x="109.05" width="60.42" height="17.26"/>
+                </g>
+                
+                <!--<g>-->
+                    <!--<path class="cls-6" d="M122.57,12.61V11.09h-3.21v-.62L122,5.61h.71V5.9l-2.4,4.46h2.29V8.5h.8v1.86h.89v.73h-.89v1.52Z"/>-->
+                    <!--<path class="cls-6" d="M128.54,12.61V11.09h-3.21v-.62l2.61-4.86h.71V5.9l-2.4,4.46h2.29V8.5h.8v1.86h.89v.73h-.89v1.52Z"/>-->
+                    <!--<path class="cls-6" d="M131.72,12.61V11.29h.94v1.32Z"/>-->
+                    <!--<path class="cls-6" d="M134.41,10.5h.8A1.46,1.46,0,0,0,136.77,12a1.32,1.32,0,0,0,1.45-1.44,1.23,1.23,0,0,0-1.38-1.26h-.54V8.6h.49a1.13,1.13,0,0,0,1.26-1.18,1.19,1.19,0,0,0-1.3-1.23c-.88,0-1.38.58-1.39,1.54h-.8a2.07,2.07,0,0,1,2.19-2.27,2.1,2.1,0,0,1,1.53.54,1.77,1.77,0,0,1,.55,1.35,1.6,1.6,0,0,1-1,1.58A1.74,1.74,0,0,1,139,10.64a2,2,0,0,1-2.29,2.12A2.15,2.15,0,0,1,134.41,10.5Z"/>-->
+                    <!--<path class="cls-6" d="M140.67,10.5h.8A1.45,1.45,0,0,0,143,12a1.33,1.33,0,0,0,1.46-1.44,1.23,1.23,0,0,0-1.38-1.26h-.54V8.6h.49a1.13,1.13,0,0,0,1.26-1.18A1.19,1.19,0,0,0,143,6.19c-.89,0-1.38.58-1.39,1.54h-.8A2.07,2.07,0,0,1,143,5.46a2.1,2.1,0,0,1,1.53.54,1.77,1.77,0,0,1,.55,1.35,1.6,1.6,0,0,1-1,1.58,1.74,1.74,0,0,1,1.19,1.71A2,2,0,0,1,143,12.76,2.15,2.15,0,0,1,140.67,10.5Z"/>-->
+                    <!--<path class="cls-6" d="M146.93,10.5h.79A1.47,1.47,0,0,0,149.28,12a1.33,1.33,0,0,0,1.46-1.44,1.23,1.23,0,0,0-1.38-1.26h-.55V8.6h.5a1.13,1.13,0,0,0,1.26-1.18,1.19,1.19,0,0,0-1.3-1.23c-.89,0-1.38.58-1.4,1.54h-.79a2.07,2.07,0,0,1,2.19-2.27A2.1,2.1,0,0,1,150.8,6a1.77,1.77,0,0,1,.55,1.35,1.6,1.6,0,0,1-1,1.58,1.74,1.74,0,0,1,1.19,1.71,2,2,0,0,1-2.29,2.12A2.15,2.15,0,0,1,146.93,10.5Z"/>-->
+                    <!--<path class="cls-6" d="M156.49,12.61v-7h.8v7.05Z"/>-->
+                    <!--<path class="cls-6" d="M160.21,11.93l-.28.68h-.48v-7h.8V8.1a2,2,0,0,1,1.63-.75,1.73,1.73,0,0,1,1.84,1.89v1.6a1.72,1.72,0,0,1-1.81,1.89A2.19,2.19,0,0,1,160.21,11.93Zm2.71-1.15V9.3a1.13,1.13,0,0,0-1.15-1.22,2.12,2.12,0,0,0-1.52.81v2.3a2.1,2.1,0,0,0,1.51.81A1.13,1.13,0,0,0,162.92,10.78Z"/>-->
+                <!--</g>-->
+                <g id="bar">
+                    <rect class="cls-6" x="0.75" y="8.13" width="103.65" height="1"/>
+                    <rect class="cls-6" y="3.76" width="1.5" height="9.75"/>
+                    <rect class="cls-6" x="99.44" y="3.68" width="9.9" height="9.9"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
+
+<svg id="touchpadMaxLimit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 116 116">
+    <defs>
+        <style>
+            .touchpad-1 {
+                opacity: 0.25;
+            }
+
+            .touchpad-2 {
+                fill: #fed003;
+            }
+
+            .touchpad-3 {
+                fill: #fc0;
+            }
+
+            .touchpad-4 {
+                opacity: 0.5;
+            }
+        </style>
+    </defs>
+    <title>Touch Pad</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+                <g class="touchpad-1">
+                    <rect class="touchpad-2" x="2" y="2" width="112" height="112" rx="5"/>
+                </g>
+                <path class="touchpad-3" d="M109.06,116H99.85v-4H109Zm-18.37,0H81.54v-4h9.15Zm-18.3,0H63.23v-4h9.16Zm-18.31,0H44.92v-4h9.16Zm-18.31,0H26.62v-4h9.15Zm-18.31,0H8.31v-4h9.15ZM0,109V99.86H4V109Zm116-1.37h-4V98.49h4ZM4,90.71H0V81.55H4Zm112-1.37h-4V80.18h4ZM4,72.4H0V63.25H4ZM116,71h-4V61.88h4ZM4,54.09H0V44.94H4Zm112-1.37h-4V43.57h4ZM4,35.79H0V26.63H4Zm112-1.37h-4V25.26h4ZM4,17.48H0V8.33H4Zm112-1.37h-4V7l4,0ZM107.66,4H98.51V0h9.15ZM89.35,4H80.2V0h9.15ZM71,4H61.89V0H71ZM52.74,4H43.58V0h9.16ZM34.43,4H25.28V0h9.15ZM16.12,4H7L7,0h9.15Z"/>
+            </g>
+            <g class="touchpad-4">
+                <path class="touchpad-3" d="M58,93.5A35.5,35.5,0,1,1,93.5,58,35.54,35.54,0,0,1,58,93.5Zm0-70A34.5,34.5,0,1,0,92.5,58,34.54,34.54,0,0,0,58,23.5Z"/>
+            </g>
+            <path class="touchpad-3" d="M58,74A16,16,0,1,1,74,58,16,16,0,0,1,58,74Zm0-30A14,14,0,1,0,72,58,14,14,0,0,0,58,44Z"/>
+        </g>
+    </g>
+</svg>
+
+<script>
+
+    var properties = {
+        value: 0,
+        unitMax: 1,
+        unitMin: 0,
+        unit: ""
+    };
+    var limits = {
+        max: 1
+    };
+
+    var boxes = [
+        document.getElementById('box4'),
+        document.getElementById('box3'),
+        document.getElementById('box2'),
+        document.getElementById('box1')
+    ];
+    var greenBoxes = [
+        document.getElementById('box4-green'),
+        document.getElementById('box3-green'),
+        document.getElementById('box2-green'),
+        document.getElementById('box1-green')
+    ];
+
+    var boxPositionsY = greenBoxes.map(function(svgElement) {
+        return parseFloat(svgElement.children[0].getAttribute('y'));
+    });
+
+    var boxHeights = greenBoxes.map(function(svgElement) {
+        return parseFloat(svgElement.children[0].getAttribute('height'));
+    });
+
+    var dataValueText = document.getElementById('dataValue');
+    var dataUnitText = document.getElementById('dataUnit');
+
+    function render(value) {
+        value = Math.max(0, Math.min(1, value));
+        var newHeight;
+
+        // adjust the height of the top-most green region
+        if (value < 0.75) {
+            greenBoxes[3].style.visibility = 'hidden';
+        } else {
+            greenBoxes[3].style.visibility = 'visible';
+            newHeight = boxHeights[3] * (value - 0.75)/0.25;
+            greenBoxes[3].children[0].setAttribute('height', newHeight);
+            greenBoxes[3].children[0].setAttribute('y', boxPositionsY[3] + (boxHeights[3] - newHeight));
+        }
+
+        // adjust the height of the second green region
+        if (value < 0.5) {
+            greenBoxes[2].style.visibility = 'hidden';
+        } else {
+            greenBoxes[2].style.visibility = 'visible';
+            newHeight = boxHeights[2] * (Math.min(0.75, value) - 0.5)/0.25;
+            greenBoxes[2].children[0].setAttribute('height', newHeight);
+            greenBoxes[2].children[0].setAttribute('y', boxPositionsY[2] + (boxHeights[2] - newHeight));
+        }
+
+        // adjust the height of the third green region
+        if (value < 0.25) {
+            greenBoxes[1].style.visibility = 'hidden';
+        } else {
+            greenBoxes[1].style.visibility = 'visible';
+            newHeight = boxHeights[1] * (Math.min(0.5, value) - 0.25)/0.25;
+            greenBoxes[1].children[0].setAttribute('height', newHeight);
+            greenBoxes[1].children[0].setAttribute('y', boxPositionsY[1] + (boxHeights[1] - newHeight));
+        }
+
+        // adjust the height of the bottom green region
+        greenBoxes[0].style.visibility = 'visible';
+        newHeight = boxHeights[0] * Math.min(0.25, value)/0.25;
+        greenBoxes[0].children[0].setAttribute('height', newHeight);
+        greenBoxes[0].children[0].setAttribute('y', boxPositionsY[0] + (boxHeights[0] - newHeight));
+
+        // render the text labels
+        dataValueText.textContent = numberToText(value).valueText;
+        dataUnitText.textContent = numberToText(value).unitText;
+        
+        styleBasedOnLimits();
+    }
+
+    // scales the raw value from [0,1] range to [unitMin,unitMax] range
+    function scaleVal(number) {
+        return (number * (properties.unitMax - properties.unitMin)) + properties.unitMin;
+    }
+
+    // outputs the text for the value and unit labels, given a raw data value
+    function numberToText(value) {
+        return {
+            valueText: scaleVal(value).toPrecision(4).substring(0, 6),
+            unitText: properties.unit
+        }
+    }
+
+    // set up and load the reality interface
+    // var realityInterface = new RealityInterface();
+    // realityInterface.addReadListener('value', function (e) {
+    //     properties.value = e.value;
+    //     if (e.unit) {
+    //         properties.unit = e.unit;
+    //     } else {
+    //         properties.unit = "";
+    //     }
+    //     properties.unitMax = e.unitMax;
+    //     properties.unitMin = e.unitMin;
+    //     render(properties.value);
+    // });
+    //
+    // realityInterface.setMoveDelay(10);
+
+    
+    // Uncomment to run the debug update loop //
+    var fillPercent = 0;
+    function update() {
+        fillPercent += 0.002;
+        if (fillPercent > 1) {
+            fillPercent = 0;
+        }
+        render(fillPercent);
+        properties.value = fillPercent;
+        requestAnimationFrame(update);
+    }
+    update();
+    
+    
+    // custom code for limiter, in addition to the above code which is identical to the progress frame
+    var limitMax = document.getElementById('limitMax');
+    var touchpadMaxLimit = document.getElementById('touchpadMaxLimit');
+    var limitMaxOffsets = {};
+    var isMouseDown = false;
+    var centeredOffsetY = 8.13; //-28; //8.13;
+    
+    var svgViewBox = {
+        x: document.querySelector('svg').getAttribute('viewBox').split(' ')[0],
+        y: document.querySelector('svg').getAttribute('viewBox').split(' ')[1],
+        width: document.querySelector('svg').getAttribute('viewBox').split(' ')[2],
+        height: document.querySelector('svg').getAttribute('viewBox').split(' ')[3]
+    };
+    
+    var svgClientRect = document.querySelector('svg').getClientRects()[0];
+
+    function recurseThruSvgElement(svgElement, callback) {
+        if (svgElement.tagName === 'g' || svgElement.tagName === 'svg') {
+            [].slice.call(svgElement.children).forEach(function(childElement) {
+                recurseThruSvgElement(childElement, callback);
+            });
+        } else {
+            callback(svgElement);
+        }
+    }
+    
+    function buildOffsetsLookup(svgElement) {
+        // builds up the limitMaxOffsets
+        recurseThruSvgElement(svgElement, function(svgElement) {
+            console.log('found child: ' + svgElement);
+            if (svgElement.tagName === 'rect') {
+                if (!svgElement.id) { svgElement.id = 'rect' + Math.random(); }
+                limitMaxOffsets[svgElement.id] = {
+                    y: svgElement.getAttribute('y') ? svgElement.getAttribute('y') : "0"
+                }
+            }
+        });
+    }
+
+    buildOffsetsLookup(limitMax);
+    // buildOffsetsLookup(touchpadMaxLimit);
+    
+    function setGroupY(svgElement, yOffset) {
+        recurseThruSvgElement(svgElement, function(childElement) {
+            if (childElement.tagName === 'rect') {
+                var startY = parseInt(limitMaxOffsets[childElement.id].y);
+                var newY = startY + yOffset;
+                childElement.setAttribute('y', newY);
+            }
+        });
+    }
+    
+    touchpadMaxLimit.addEventListener('mousedown', function(e) {
+        isMouseDown = true;
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        isMouseDown = false;
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isMouseDown) { return; }
+        
+        var mouseY = e.pageY - 300;
+        
+        // move handle/limiter bar
+        var svgMouseY = mouseY * (svgViewBox.height / svgClientRect.height) + 28; //centeredOffsetY;
+        svgMouseY = Math.max(-3, Math.min(141.35-centeredOffsetY, svgMouseY));
+        setGroupY(limitMax, svgMouseY);
+        
+        limits.max = 1 - (svgMouseY + 3) / ((141.35-centeredOffsetY+3));
+        // console.log(limits.max);
+
+        // move touchpad
+        var touchpadY = Math.max(20, Math.min(632, e.pageY - 150));
+        touchpadMaxLimit.style.top = touchpadY + 'px';
+
+        render(properties.value);
+    });
+    
+    function renderLimit() {
+        // limits.max = newMaxLimit;
+        var percentageDown = 1 - limits.max;
+        var y = -3 + (141.35-centeredOffsetY+3) * percentageDown;
+        console.log('y = ' + y);
+        setGroupY(limitMax, y);
+    }
+    
+    renderLimit();
+    
+    function styleBasedOnLimits() {
+        if (properties.value >= limits.max) {
+            greenBoxes.forEach(function(greenBox) {
+                if (!greenBox.children[0].classList.contains('red-fill')) {
+                    greenBox.children[0].classList.add('red-fill');
+                    // greenBox.classList.remove('green-fill');
+                }
+            });
+        } else {
+            greenBoxes.forEach(function(greenBox) {
+                if (greenBox.children[0].classList.contains('red-fill')) {
+                    greenBox.children[0].classList.remove('red-fill');
+                    // greenBox.classList.add('green-fill');
+                }
+            });
+        }
+    }
+    
+    
+    // [].slice.call(limitMax.children).forEach(function(childElement) {
+    //     if (childElement.tagName === 'rect') {
+    //         if (!childElement.id) { childElement.id = 'rect' + Math.random(); }
+    //         limitMaxOffsets[childElement.id] = {
+    //             y: childElement.getAttribute('y')
+    //         }
+    //     }
+    // });
+
+</script>
+
+</body>
+</html>
