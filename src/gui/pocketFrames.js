@@ -132,7 +132,7 @@ var realityElements = [
         nodes: [
             {name: 'in_out', type: "twoSidedLimiter", x:0, y:0}
         ]
-    },/*
+    },
     {
         name: 'limiter',
         width: 510,
@@ -140,7 +140,7 @@ var realityElements = [
         nodes: [
             {name: 'in_out', type: "limiter"}
         ]
-    },*/
+    },
     {
         name: 'progress',
         width: 275,

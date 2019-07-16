@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="objectDefaultFiles/object.js"></script>
+    <script src="objectDefaultFiles/pep.min.js"></script>
     <meta charset="UTF-8">
     <title>limiter</title>
     <style>
         body {
-            background-color: #4E4E4F;
+            /*background-color: #4E4E4F;*/
         }
         #limiter {
             position: absolute;
@@ -354,11 +356,11 @@
         });
     }
     
-    touchpadMaxLimit.addEventListener('mousedown', function(e) {
+    touchpadMaxLimit.addEventListener('pointerdown', function(e) {
         isMouseDown = true;
     });
 
-    document.addEventListener('mouseup', function(e) {
+    document.addEventListener('pointerup', function(e) {
         isMouseDown = false;
         
         try {
@@ -368,7 +370,7 @@
         }
     });
     
-    document.addEventListener('mousemove', function(e) {
+    document.addEventListener('pointermove', function(e) {
         if (!isMouseDown) { return; }
         
         var mouseY = e.pageY - 300;
@@ -401,7 +403,10 @@
         
         // move touchpad
         touchpadMaxLimit.style.top = 20 + (1 - limits.max) * 612 + 'px';
-        
+
+        // update handle text
+        handleValueText.textContent = numberToText(limits.max).valueText + ' ' + numberToText(limits.max).unitText;
+
         // update colors
         render(properties.value);
     }
@@ -429,7 +434,7 @@
     try {
         // set up and load the reality interface
         var realityInterface = new RealityInterface();
-        realityInterface.addReadListener('in_ou', function (e) {
+        realityInterface.addReadListener('in_out', function (e) {
             properties.value = e.value;
             if (e.unit) {
                 properties.unit = e.unit;
@@ -445,6 +450,18 @@
             if (!isMouseDown) {
                 limits.max = e;
                 renderLimit();
+            }
+        });
+        
+        realityInterface.subscribeToMatrix();
+        realityInterface.addMatrixListener(function(modelView, projection) {
+            var zDistance = Math.abs(modelView[14]);
+            if (zDistance > 500) {
+                // hide the touch pad
+                touchpadMaxLimit.style.visibility = 'hidden';
+            } else {
+                // show the touch pad
+                touchpadMaxLimit.style.visibility = '';
             }
         });
 
