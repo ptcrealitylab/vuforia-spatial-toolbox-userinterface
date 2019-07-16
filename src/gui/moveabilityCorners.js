@@ -2,7 +2,7 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
 
 (function(exports) {
 
-    function wrapDivWithCorners(div, padding, exclusive, additionalStyling, sizeAdjustment) {
+    function wrapDivWithCorners(div, padding, exclusive, additionalStyling, sizeAdjustment, borderWidth) {
         if (!sizeAdjustment) { sizeAdjustment = 0; }
         if (exclusive) {
             var cornersFound = div.querySelector('.corners');
@@ -12,7 +12,7 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
             }
         }
         var rect = div.getClientRects()[0];
-        var corners = createMoveabilityCorners(div.id+'corners', rect.width + sizeAdjustment, rect.height + sizeAdjustment, padding);
+        var corners = createMoveabilityCorners(div.id+'corners', rect.width + sizeAdjustment, rect.height + sizeAdjustment, padding, borderWidth);
         corners.style.left = (-padding) + 'px';
         corners.style.top = (-padding) + 'px';
 

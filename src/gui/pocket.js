@@ -677,17 +677,19 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             container.dataset.height = element.height;
             container.dataset.nodes = JSON.stringify(element.nodes);
             
-            var elt = document.createElement('img');
+            var elt = document.createElement('div');
             elt.classList.add('palette-element');
             // elt.style.width = element.width + 'px';
             // elt.style.height = element.height + 'px';
             // elt.style.width = '100%'; //container.offsetWidth + 'px'; // paletteElementSize + 'px'; //container.offsetWidth; //'100%';
             // elt.style.height = '100%'; container.offsetHeight + 'px'; // paletteElementSize + 'px'; // container.offsetHeight; //'100%';
-            elt.src = gifUrl;
-
+            
+            elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
+            // elt.src = gifUrl;
+            
             container.appendChild(elt);
             palette.appendChild(container);
-
+            
             var paletteElementSize = Math.floor(parseFloat(window.getComputedStyle(container).width)) - 6;
 
             // var scale = Math.min(
@@ -706,7 +708,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // var scale = paletteElementSize / elt.naturalWidth;
             var scale = paletteElementSize / ICON_SIZE;
 
-            elt.style.transform = 'scale(' + scale + ')';
+            // elt.style.transform = 'scale(' + scale + ')';
 
             // var offsetX = (paletteElementSize - element.width * scale) / 2;
             // var offsetY = (paletteElementSize - element.height * scale) / 2;
@@ -795,6 +797,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollContainer.scrollTop = index * pageHeight;
         }
         
+        finishStylingPocket();
+    }
+    
+    function finishStylingPocket() {
+        [].slice.call(document.querySelectorAll('.palette-element')).forEach(function(paletteElement) {
+            realityEditor.gui.moveabilityCorners.wrapDivWithCorners(paletteElement, 0, true, null, null, 1);
+        });
     }
 
     exports.pocketInit = pocketInit;
