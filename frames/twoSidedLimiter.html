@@ -4,404 +4,624 @@
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
     <meta charset="UTF-8">
-    <title>graph</title>
+    <title>limiter</title>
     <style>
-        @font-face {
-            font-family: 'Speculum';
-            src: url('resources/speculum.ttf');
+        body {
+            /*background-color: #4E4E4F;*/
         }
-
-        #frame {
-            stroke: #00ffff;
-            stroke-width: 4;
-            fill: rgba(0, 255, 255, 0.3);
+        #limiter {
+            position: absolute;
+            top: 300px;
+            width: 759px;
         }
-
-        .numberOutline {
-            stroke-width: 4;
-            fill: rgba(0, 0, 0, 0.2);
+        #touchpadMaxLimit {
+            position: absolute;
+            left: 525px;
+            top: 20px;
+            width: 260px;
+            height: 260px;
         }
-
-        #backgroundFrame {
-            fill: rgba(51, 51, 51, 0.8);
+        #touchpadMinLimit {
+            position: absolute;
+            left: 525px;
+            top: 400px;
+            width: 260px;
+            height: 260px;
         }
-
-        .lines {
-            stroke-width: 2;
-            stroke: rgba(51, 255, 255, 0.4);
+        .unselectable {
+            pointer-events: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
-
-        .green {
-            fill: rgb(41, 253, 47);
-        }
-
-        .greenStroke {
-            stroke: rgb(41, 253, 47);
-        }
-
-        .red {
-            fill: rgb(242, 22, 121);
-        }
-
-        .redStroke {
-            stroke: rgb(242, 22, 121);
-
-        }
-
-        .overlay {
-            fill: rgba(0, 0, 0, 0.3);
-        }
-
-        .blue {
-            fill: rgb(45, 255, 255);
-        }
-
-        .purple {
-            fill: rgb(210, 113, 255);
-        }
-
-        .yellow {
-            fill: rgb(255, 255, 45);
-
-        }
-
-        .yellowStroke {
-            stroke: rgb(255, 255, 45);
-            fill: rgba(0, 0, 0, 0.2);
-        }
-
-        .dataFont {
-
-            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            letter-spacing: -6pt;
-            font-size: 32pt;
-            alignment: right;
-            font-stretch: semi-expanded;
-            transform: scaleX(0.7);
-        }
-
-        .dataFontMiddle {
-
-            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            letter-spacing: -4pt;
-            fill: #00ffff;
-            font-size: 26pt;
-            transform: scaleX(0.7);
-        }
-
-        .dataFontSmall {
-
-            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            fill: #00ffff;
-            letter-spacing: -1pt;
-            font-size: 12pt;
-            alignment: right;
-            transform: scaleX(0.7);
-        }
-
     </style>
 </head>
-<body style="height: 600px; width: 505px">
-<!--
-<div id= "outlineMinShadow" style=" backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform: translateZ(-1px)" >
-</div>
+<body style="width: 759px">
+<svg id="limiter" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 169.48 179.26">
+    <defs>
+        <style>
+            .dataFont {
+                font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+                font-size: 12pt;
+                alignment: right;
+                fill: cyan;
+            }
 
-<div id= "outlineMaxShadow" style="backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform: translateZ(-1px)" >
-</div>
--->
-<div id="show" style=" visibility: visible;">
+            .handleFont {
+                font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+                font-size: 6pt;
+                alignment: right;
+                fill: #fed003;
+            }
 
-    <svg id="container" width="505" height="600" version="1.1" xmlns="http://www.w3.org/2000/svg" touch-action="none">
-        <svg x="20" y="455">
-            <rect class="numberOutline redStroke" id="dataValueOutline" x="1" y="1" width="230" height="65" rx="0" ry="0"/>
-            <text class="dataFont red" id="dataValue" x="20" y="46">00.000</text>
-        </svg>
+            .cls-0 {
+                opacity: 0.75;
+            }
 
+            .cls-1 {
+                opacity: 0.5;
+            }
 
-        <svg x="20" y="145">
-            <rect id="frame" x="1" y="1" width="230" height="297" rx="0" ry="0"/>
-            <line x1="0" y1="150" x2="230" y2="150" class="lines" stroke-width="1"/>
-            <line x1="0" y1="75" x2="230" y2="75" class="lines" stroke-width="1"/>
-            <line x1="0" y1="225" x2="230" y2="225" class="lines" stroke-width="1"/>
-            <rect id="data" class="green" x="0" y="1" width="233" height="300" rx="0" ry="0"/>
+            .cls-2 {
+                opacity: 0.25;
+            }
 
-            <rect id="dataOverlayMax" class="overlay" x="0" y="1" width="233" height="150" rx="0" ry="0"/>
-            <rect id="dataOverlayMin" class="overlay" x="0" y="1" width="233" height="150" rx="0" ry="0"/>
-        </svg>
+            .cls-3 {
+                fill: #75fbfd;
+            }
 
-        <svg x="20" y="380" id="limiterMin">
-            <rect class="yellow" id="outlineMin" x="0" y="0" width="230" height="3" rx="0" ry="0"/>
-            <svg x="233" y="0">
-                <rect class="numberOutline yellowStroke" id="outlineMin" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
-                <text class="dataFont yellow" id="valueMin" x="20" y="77">00.000</text>
-            </svg><svg x="165" y="0">
-            <polygon class="yellow" points="0 0 68 68 68 0 0 0"/>
+            .cls-4 {
+                fill: #008480;
+            }
 
-        </svg>
-        </svg>
+            .green-fill {
+                fill: lime;
+            }
 
+            .cls-6 {
+                fill: #fed003;
+            }
 
-        <svg x="20" y="12" id="limiterMax">
-            <svg x="0" y="130">
-            <rect class="yellow" id="outlineMin" x="0" y="0" width="230" height="3" rx="0" ry="0"/>
-            </svg>
-            <svg x="233" y="0">
-                <rect class="numberOutline yellowStroke" id="outlineMax" x="1" y="1" width="230" height="130" rx="0" ry="0"/>
-                <text class="dataFont yellow" id="valueMax" x="20" y="77">00.000</text>
-            </svg>  <svg x="165" y="65">
-            <polygon class="yellow" points="0 68 68 0 68 68 0 68"/>
-        </svg>
-        </svg>
+            .red-fill {
+                fill: #FF007D;
+            }
+        </style>
+    </defs>
+    <title>progress-with-fill</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+                <g id="valueBackground">
+                    <g class="cls-1">
+                        <polygon points="0 148.76 0 179.26 15.97 179.26 80.97 179.26 80.97 164.73 80.97 148.76 0 148.76"/>
+                    </g>
+                    <g class="cls-2">
+                        <path class="cls-3" d="M79,150.76v26.5H2v-26.5H79m2-2H0v30.5H81v-30.5Z"/>
+                    </g>
+                </g>
+                <g id="unitBackground">
+                    <g class="cls-1">
+                        <rect x="83.13" y="148.76" width="29.62" height="30.5"/>
+                    </g>
+                    <g class="cls-2">
+                        <path class="cls-3" d="M110.75,150.76v26.5H85.13v-26.5h25.62m2-2H83.13v30.5h29.62v-30.5Z"/>
+                    </g>
+                </g>
+                <g id="background" class="cls-1">
+                    <rect class="cls-4" x="0.27" width="112.22" height="146.74"/>
+                </g>
+                <g id="box4" class="cls-1">
+                    <rect x="8.78" y="108.98" width="94.95" height="32.37"/>
+                </g>
+                <g id="box3" class="cls-1">
+                    <rect x="8.78" y="74.45" width="94.95" height="32.37"/>
+                </g>
+                <g id="box2" class="cls-1">
+                    <rect x="9.02" y="39.92" width="94.95" height="32.37"/>
+                </g>
+                <g id="box1" class="cls-1">
+                    <rect x="9.02" y="5.4" width="94.95" height="32.37"/>
+                </g>
+                <g id="box4-green" class="cls-0">
+                    <rect class="green-fill" x="8.78" y="108.98" width="94.95" height="32.37"/>
+                </g>
+                <g id="box3-green" class="cls-0">
+                    <rect class="green-fill" x="8.78" y="74.45" width="94.95" height="32.37"/>
+                </g>
+                <g id="box2-green" class="cls-0">
+                    <rect class="green-fill" x="9.02" y="39.92" width="94.95" height="32.37"/>
+                </g>
+                <g id="box1-green" class="cls-0">
+                    <rect class="green-fill" x="9.02" y="5.4" width="94.95" height="32.37"/>
+                </g>
+            </g>
+            <g>
+                <g id="labelText">
+                    <text class="dataFont unselectable" id="dataValue" x="18" y="170">00.000</text>
+                    <text class="dataFont unselectable" id="dataUnit" x="88" y="170">lb</text>
+                </g>
+            </g>
+        </g>
+    </g>
 
+    <g id="Layer_3" data-name="Layer 3">
+        <g id="limitMax">
+            <g>
+                <g id="handle" class="cls-2">
+                    <rect x="109.05" width="60.42" height="17.26"/>
+                </g>
+                <g id="handleText">
+                    <text class="handleFont unselectable" id="handleValue" x="129" y="10">0.000</text>
+                </g>
+                <g id="bar">
+                    <rect class="cls-6" x="0.75" y="8.13" width="103.65" height="1"/>
+                    <rect class="cls-6" y="3.76" width="1.5" height="9.75"/>
+                    <rect class="cls-6" x="99.44" y="3.68" width="9.9" height="9.9"/>
+                </g>
+            </g>
+        </g>
+        <g id="limitMin">
+            <g>
+                <g id="handleMin" class="cls-2">
+                    <rect x="109.05" width="60.42" height="17.26"/>
+                </g>
+                <g id="handleMinText">
+                    <text class="handleFont unselectable" id="handleMinValue" x="129" y="10">0.000</text>
+                </g>
+                <g id="barMin">
+                    <rect class="cls-6" x="0.75" y="8.13" width="103.65" height="1"/>
+                    <rect class="cls-6" y="3.76" width="1.5" height="9.75"/>
+                    <rect class="cls-6" x="99.44" y="3.68" width="9.9" height="9.9"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
 
-    </svg>
-</div>
+<svg id="touchpadMaxLimit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 116 116">
+    <defs>
+        <style>
+            .touchpad-1 {
+                opacity: 0.25;
+            }
+
+            .touchpad-2 {
+                fill: #fed003;
+            }
+
+            .touchpad-3 {
+                fill: #fc0;
+            }
+
+            .touchpad-4 {
+                opacity: 0.5;
+            }
+        </style>
+    </defs>
+    <title>Touch Pad</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+                <g class="touchpad-1">
+                    <rect class="touchpad-2" x="2" y="2" width="112" height="112" rx="5"/>
+                </g>
+                <path class="touchpad-3" d="M109.06,116H99.85v-4H109Zm-18.37,0H81.54v-4h9.15Zm-18.3,0H63.23v-4h9.16Zm-18.31,0H44.92v-4h9.16Zm-18.31,0H26.62v-4h9.15Zm-18.31,0H8.31v-4h9.15ZM0,109V99.86H4V109Zm116-1.37h-4V98.49h4ZM4,90.71H0V81.55H4Zm112-1.37h-4V80.18h4ZM4,72.4H0V63.25H4ZM116,71h-4V61.88h4ZM4,54.09H0V44.94H4Zm112-1.37h-4V43.57h4ZM4,35.79H0V26.63H4Zm112-1.37h-4V25.26h4ZM4,17.48H0V8.33H4Zm112-1.37h-4V7l4,0ZM107.66,4H98.51V0h9.15ZM89.35,4H80.2V0h9.15ZM71,4H61.89V0H71ZM52.74,4H43.58V0h9.16ZM34.43,4H25.28V0h9.15ZM16.12,4H7L7,0h9.15Z"/>
+            </g>
+            <g class="touchpad-4">
+                <path class="touchpad-3" d="M58,93.5A35.5,35.5,0,1,1,93.5,58,35.54,35.54,0,0,1,58,93.5Zm0-70A34.5,34.5,0,1,0,92.5,58,34.54,34.54,0,0,0,58,23.5Z"/>
+            </g>
+            <path class="touchpad-3" d="M58,74A16,16,0,1,1,74,58,16,16,0,0,1,58,74Zm0-30A14,14,0,1,0,72,58,14,14,0,0,0,58,44Z"/>
+        </g>
+    </g>
+</svg>
+
+<svg id="touchpadMinLimit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 116 116">
+    <defs>
+        <style>
+            .touchpad-1 {
+                opacity: 0.25;
+            }
+
+            .touchpad-2 {
+                fill: #fed003;
+            }
+
+            .touchpad-3 {
+                fill: #fc0;
+            }
+
+            .touchpad-4 {
+                opacity: 0.5;
+            }
+        </style>
+    </defs>
+    <title>Touch Pad</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+                <g class="touchpad-1">
+                    <rect class="touchpad-2" x="2" y="2" width="112" height="112" rx="5"/>
+                </g>
+                <path class="touchpad-3" d="M109.06,116H99.85v-4H109Zm-18.37,0H81.54v-4h9.15Zm-18.3,0H63.23v-4h9.16Zm-18.31,0H44.92v-4h9.16Zm-18.31,0H26.62v-4h9.15Zm-18.31,0H8.31v-4h9.15ZM0,109V99.86H4V109Zm116-1.37h-4V98.49h4ZM4,90.71H0V81.55H4Zm112-1.37h-4V80.18h4ZM4,72.4H0V63.25H4ZM116,71h-4V61.88h4ZM4,54.09H0V44.94H4Zm112-1.37h-4V43.57h4ZM4,35.79H0V26.63H4Zm112-1.37h-4V25.26h4ZM4,17.48H0V8.33H4Zm112-1.37h-4V7l4,0ZM107.66,4H98.51V0h9.15ZM89.35,4H80.2V0h9.15ZM71,4H61.89V0H71ZM52.74,4H43.58V0h9.16ZM34.43,4H25.28V0h9.15ZM16.12,4H7L7,0h9.15Z"/>
+            </g>
+            <g class="touchpad-4">
+                <path class="touchpad-3" d="M58,93.5A35.5,35.5,0,1,1,93.5,58,35.54,35.54,0,0,1,58,93.5Zm0-70A34.5,34.5,0,1,0,92.5,58,34.54,34.54,0,0,0,58,23.5Z"/>
+            </g>
+            <path class="touchpad-3" d="M58,74A16,16,0,1,1,74,58,16,16,0,0,1,58,74Zm0-30A14,14,0,1,0,72,58,14,14,0,0,0,58,44Z"/>
+        </g>
+    </g>
+</svg>
 
 
 <script>
-    var realityInterface = new RealityInterface();
-    var dataValue = document.querySelector('#dataValue');
-    var dataValueOutline = document.querySelector('#dataValueOutline');
-    var dataBar = document.querySelector('#data');
-    var valueMin = document.querySelector('#valueMin');
-    var valueMax = document.querySelector('#valueMax');
-    var limiterMin = document.querySelector('#limiterMin');
-    var limiterMax = document.querySelector('#limiterMax');
-    
-    var container = document.querySelector('#container');
 
-    // var outlineMinShadow = document.querySelector('#outlineMinShadow');
-    //  var outlineMaxShadow = document.querySelector('#outlineMaxShadow');
-
-    var screenIsTouched = false;
-
-    var dataOverlayMin = document.querySelector('#dataOverlayMin');
-    var dataOverlayMax = document.querySelector('#dataOverlayMax');
-    var sliderHeight = 300;
-    var limits = {
-        min: 0,
-        max: 300,
-        currentMax: 0,
-        currentMin: sliderHeight,
-
-    };
     var properties = {
         value: 0,
-        valueOld: 0,
-        unitMax: 0,
+        unitMax: 1,
         unitMin: 0,
         unit: ""
     };
-    var time = 50;
-    var isReady = false;
+    var limits = {
+        max: 1,
+        min: 0
+    };
 
+    var boxes = [
+        document.getElementById('box4'),
+        document.getElementById('box3'),
+        document.getElementById('box2'),
+        document.getElementById('box1')
+    ];
+    var greenBoxes = [
+        document.getElementById('box4-green'),
+        document.getElementById('box3-green'),
+        document.getElementById('box2-green'),
+        document.getElementById('box1-green')
+    ];
 
+    var boxPositionsY = greenBoxes.map(function(svgElement) {
+        return parseFloat(svgElement.children[0].getAttribute('y'));
+    });
+
+    var boxHeights = greenBoxes.map(function(svgElement) {
+        return parseFloat(svgElement.children[0].getAttribute('height'));
+    });
+
+    var dataValueText = document.getElementById('dataValue');
+    var dataUnitText = document.getElementById('dataUnit');
+
+    function render(value) {
+        value = Math.max(0, Math.min(1, value));
+        var newHeight;
+
+        // adjust the height of the top-most green region
+        if (value < 0.75) {
+            greenBoxes[3].style.visibility = 'hidden';
+        } else {
+            greenBoxes[3].style.visibility = 'visible';
+            newHeight = boxHeights[3] * (value - 0.75)/0.25;
+            greenBoxes[3].children[0].setAttribute('height', newHeight);
+            greenBoxes[3].children[0].setAttribute('y', boxPositionsY[3] + (boxHeights[3] - newHeight));
+        }
+
+        // adjust the height of the second green region
+        if (value < 0.5) {
+            greenBoxes[2].style.visibility = 'hidden';
+        } else {
+            greenBoxes[2].style.visibility = 'visible';
+            newHeight = boxHeights[2] * (Math.min(0.75, value) - 0.5)/0.25;
+            greenBoxes[2].children[0].setAttribute('height', newHeight);
+            greenBoxes[2].children[0].setAttribute('y', boxPositionsY[2] + (boxHeights[2] - newHeight));
+        }
+
+        // adjust the height of the third green region
+        if (value < 0.25) {
+            greenBoxes[1].style.visibility = 'hidden';
+        } else {
+            greenBoxes[1].style.visibility = 'visible';
+            newHeight = boxHeights[1] * (Math.min(0.5, value) - 0.25)/0.25;
+            greenBoxes[1].children[0].setAttribute('height', newHeight);
+            greenBoxes[1].children[0].setAttribute('y', boxPositionsY[1] + (boxHeights[1] - newHeight));
+        }
+
+        // adjust the height of the bottom green region
+        greenBoxes[0].style.visibility = 'visible';
+        newHeight = boxHeights[0] * Math.min(0.25, value)/0.25;
+        greenBoxes[0].children[0].setAttribute('height', newHeight);
+        greenBoxes[0].children[0].setAttribute('y', boxPositionsY[0] + (boxHeights[0] - newHeight));
+
+        // render the text labels
+        dataValueText.textContent = numberToText(value).valueText;
+        dataUnitText.textContent = numberToText(value).unitText;
+
+        styleBasedOnLimits();
+    }
+
+    // scales the raw value from [0,1] range to [unitMin,unitMax] range
     function scaleVal(number) {
         return (number * (properties.unitMax - properties.unitMin)) + properties.unitMin;
     }
 
+    // outputs the text for the value and unit labels, given a raw data value
     function numberToText(value) {
-        return scaleVal(value).toPrecision(4).substring(0, 6) + " " + properties.unit;
+        return {
+            valueText: scaleVal(value).toPrecision(4).substring(0, 6),
+            unitText: properties.unit
+        }
     }
 
+    // // Uncomment to run the debug update loop //
+    // var fillPercent = 0;
+    // function update() {
+    //     fillPercent += 0.002;
+    //     if (fillPercent > 1) {
+    //         fillPercent = 0;
+    //     }
+    //     render(fillPercent);
+    //     properties.value = fillPercent;
+    //     requestAnimationFrame(update);
+    // }
+    // update();
 
-    function checkScope() {
-        if (properties.value > (sliderHeight - limits.currentMin) / sliderHeight && properties.value < (sliderHeight - limits.currentMax) / sliderHeight) {
-            dataValueOutline.setAttribute('class', "numberOutline greenStroke");
-            dataValue.setAttribute('class', "dataFont green");
-            dataBar.setAttribute('class', "green");
+    // custom code for limiter, in addition to the above code which is identical to the progress frame
+    var limitMax = document.getElementById('limitMax');
+    var touchpadMaxLimit = document.getElementById('touchpadMaxLimit');
+    var handleValueText = document.getElementById('handleValue');
+    var limitMaxOffsets = {};
+    var isMouseDown = false;
+    var lastHandleSelected = null;
+    var centeredOffsetY = 8.13; //-28; //8.13;
+
+    var limitMin = document.getElementById('limitMin');
+    var touchpadMinLimit = document.getElementById('touchpadMinLimit');
+    var handleMinValueText = document.getElementById('handleMinValue');
+    // var limitMinOffsets = {};
+
+    var svgViewBox = {
+        x: document.querySelector('svg').getAttribute('viewBox').split(' ')[0],
+        y: document.querySelector('svg').getAttribute('viewBox').split(' ')[1],
+        width: document.querySelector('svg').getAttribute('viewBox').split(' ')[2],
+        height: document.querySelector('svg').getAttribute('viewBox').split(' ')[3]
+    };
+
+    var svgClientRect = document.querySelector('svg').getClientRects()[0];
+
+    function recurseThruSvgElement(svgElement, callback) {
+        if (svgElement.tagName === 'g' || svgElement.tagName === 'svg') {
+            [].slice.call(svgElement.children).forEach(function(childElement) {
+                recurseThruSvgElement(childElement, callback);
+            });
         } else {
-            dataValueOutline.setAttribute('class', "numberOutline redStroke");
-            dataValue.setAttribute('class', "dataFont red");
-            dataBar.setAttribute('class', "red");
+            callback(svgElement);
         }
-
-        dataOverlayMin.setAttribute('height', sliderHeight - limits.currentMin + "px");
-        dataOverlayMin.setAttribute('y', limits.currentMin + "px");
-
-        dataOverlayMax.setAttribute('height', limits.currentMax + "px");
-        dataOverlayMax.setAttribute('y', 0 + "px");
-
     }
 
-    function setMin(pageY){
-        var move = pageY;
-
-        if (move <= limits.min + 210) {
-            move = limits.min + 210;
-        }
-        if (move >= limits.max + 210) {
-            move = limits.max + 210;
-        }
-        if (move <= limits.currentMax + 211) {
-            move = limits.currentMax + 211;
-        }
-
-
-        limiterMin.setAttribute('y', move - 65 + "px");
-
-        //outlineMinShadow.style.top =  move - 65 + "px";
-
-        limits.currentMin = move - 210;
-
-        valueMin.textContent = numberToText((sliderHeight - limits.currentMin) / sliderHeight);
-        checkScope();
-    }
-
-    function setMax(pageY){
-        var move = pageY;
-
-        if (move <= limits.min + 77) {
-            move = limits.min + 77;
-        }
-        if (move >= limits.max + 77) {
-            move = limits.max + 77;
-        }
-
-        if (move >= limits.currentMin + 76) {
-            move = limits.currentMin + 76;
-        }
-
-        limiterMax.setAttribute('y', move - 65 + "px");
-
-        // outlineMaxShadow.style.top =  move - 65 + "px";
-
-        limits.currentMax = move - 77;
-        valueMax.textContent = numberToText((sliderHeight - limits.currentMax) / sliderHeight);
-        checkScope();
-    }
-
-
-    limiterMin.addEventListener("pointermove",
-        function (event) {
-            if (screenIsTouched) {
-                setMin(event.clientY);
-                // realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
+    function buildOffsetsLookup(svgElement) {
+        // builds up the limitMaxOffsets
+        recurseThruSvgElement(svgElement, function(svgElement) {
+            console.log('found child: ' + svgElement);
+            if (svgElement.tagName === 'rect' || svgElement.tagName === 'text') {
+                if (!svgElement.id) { svgElement.id = 'rect' + Math.random(); }
+                limitMaxOffsets[svgElement.id] = {
+                    y: svgElement.getAttribute('y') ? svgElement.getAttribute('y') : "0"
+                }
             }
-            // screenIsTouched = true;
+        });
+    }
 
-        }, false);
+    buildOffsetsLookup(limitMax);
+    buildOffsetsLookup(limitMin);
+    // buildOffsetsLookup(touchpadMaxLimit);
 
-
-    limiterMax.addEventListener("pointermove",
-        function (event) {
-            if (screenIsTouched) {
-                setMax(event.clientY);
-                // realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
+    function setGroupY(svgElement, yOffset) {
+        recurseThruSvgElement(svgElement, function(childElement) {
+            if (childElement.tagName === 'rect' || childElement.tagName === 'text') {
+                var startY = parseInt(limitMaxOffsets[childElement.id].y);
+                var newY = startY + yOffset;
+                childElement.setAttribute('y', newY);
             }
-            // screenIsTouched = true;
-
-        }, false);
-
-    limiterMin.addEventListener("pointerdown",
-        function (event) {
-            screenIsTouched = true;
-            // setMin(event.clientY);
-            // realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
-        }, false);
-
-
-    limiterMax.addEventListener("pointerdown",
-        function (event) {
-            screenIsTouched = true;
-            // setMax(event.clientY);
-            // realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
-        }, false);
-
-
-
-    limiterMin.addEventListener("pointerup",
-        function (event) {
-            screenIsTouched = false;
-            realityInterface.writePublicData("in_out", "min",  1-limits.currentMin/sliderHeight);
-        }, false);
-
-
-    limiterMax.addEventListener("pointerup",
-        function (event) {
-            screenIsTouched = false;
-            realityInterface.writePublicData("in_out", "max",  1-limits.currentMax/sliderHeight);
-        }, false);
-
-
-
-
-    function renderProperties() {
-        if (!isReady) {
-            return;
-        }
-
-        checkScope();
-
-
-        if (properties.value <= 0) {
-            properties.value = 0;
-        }
-        if (properties.value >= 1) {
-            properties.value = 1;
-        }
-
-        var heightCalculation = properties.value * sliderHeight;
-
-        dataBar.setAttribute('height', heightCalculation + "px");
-        dataBar.setAttribute('y', sliderHeight - heightCalculation + "px");
-
-
-        dataValue.textContent = numberToText(properties.value);
-
-
+        });
     }
 
-    function ready() {
-        isReady = true;
-        renderProperties();
+    touchpadMaxLimit.addEventListener('pointerdown', function(e) {
+        isMouseDown = true;
+        lastHandleSelected = 'max';
+        console.log(lastHandleSelected);
+    });
+    
+    touchpadMinLimit.addEventListener('pointerdown', function(e) {
+        isMouseDown = true;
+        lastHandleSelected = 'min';
+        console.log(lastHandleSelected);
+    });
+
+    document.addEventListener('pointerup', function(e) {
+        try {
+            if (lastHandleSelected === 'max') {
+                realityInterface.writePublicData("in_out", "max",  limits.max);
+            } else if (lastHandleSelected === 'min') {
+                realityInterface.writePublicData("in_out", "min",  limits.min);
+            }
+        } catch (e) {
+            console.warn('Reality Interface is not accessible');
+        }
+
+        isMouseDown = false;
+        lastHandleSelected = null;
+    });
+    
+    var maxSvgY = -3;
+    var minSvgY = 133.22;
+
+    document.addEventListener('pointermove', function(e) {
+        if (!isMouseDown) { return; }
+
+        var mouseY = e.pageY - 300;
+        
+        if (lastHandleSelected === 'max') {
+
+            // move handle/limiter bar
+            var svgMouseY = mouseY * (svgViewBox.height / svgClientRect.height) + 28; //centeredOffsetY;
+            svgMouseY = Math.max(-3, Math.min(141.35-centeredOffsetY, svgMouseY));
+            
+            maxSvgY = svgMouseY;
+            if (maxSvgY > minSvgY) {
+                maxSvgY = minSvgY;
+            }
+            setGroupY(limitMax, maxSvgY);
+            
+            // update limit value
+            limits.max = 1 - (maxSvgY + 3) / ((141.35-centeredOffsetY+3));
+            
+            console.log(limits.max);
+
+        } else if (lastHandleSelected === 'min') {
+
+            // move handle/limiter bar
+            var svgMouseY = mouseY * (svgViewBox.height / svgClientRect.height) - 52; //centeredOffsetY;
+            svgMouseY = Math.max(-3, Math.min(141.35-centeredOffsetY, svgMouseY));
+            
+            minSvgY = svgMouseY;
+            if (minSvgY < maxSvgY) {
+                minSvgY = maxSvgY;
+            }
+            setGroupY(limitMin, minSvgY);
+
+            // update limit value
+            limits.min = 1 - (minSvgY + 3) / ((141.35-centeredOffsetY+3));
+            
+        }
+
+        renderTouchpadAndHandle(lastHandleSelected);
+
+        // update colors
+        render(properties.value);
+    });
+    
+    function renderTouchpadAndHandle(minOrMax) {
+        if (minOrMax === 'max') {
+            // move touchpad
+            touchpadMaxLimit.style.top = 20 + (1 - limits.max) * 612 + 'px';
+
+            // update handle text
+            handleValueText.textContent = numberToText(limits.max).valueText + ' ' + numberToText(limits.max).unitText;
+
+        } else if (minOrMax === 'min') {
+            // move touchpad
+            touchpadMinLimit.style.top = 370 + (1 - limits.min) * 612 + 'px';
+            // update handle text
+            handleMinValueText.textContent = numberToText(limits.min).valueText + ' ' + numberToText(limits.min).unitText;
+        }
     }
 
-    ready();
+    function renderLimit() {
+        // move max handle
+        var percentageDown = 1 - Math.max(0, Math.min(1, limits.max));
+        var y = -3 + (141.35-centeredOffsetY+3) * percentageDown;
+        setGroupY(limitMax, y);
+        renderTouchpadAndHandle('max');
 
-    setInterval(function () {
-        renderProperties();
-    }, time);
+        // move min handle
+        percentageDown = 1 - Math.max(0, Math.min(1, limits.min));
+        y = -3 + (141.35-centeredOffsetY+3) * percentageDown;
+        setGroupY(limitMin, y);
+        renderTouchpadAndHandle('min');
 
-    realityInterface.addReadListener('in_out', function (e) {
+        // update colors
+        render(properties.value);
+    }
 
-        properties.value = e.value;
-        if(e.unit) {
-            properties.unit = e.unit;
+    renderLimit();
+
+    function styleBasedOnLimits() {
+        if (properties.value >= limits.max || properties.value <= limits.min) {
+            greenBoxes.forEach(function(greenBox) {
+                if (!greenBox.children[0].classList.contains('red-fill')) {
+                    greenBox.children[0].classList.add('red-fill');
+                    // greenBox.classList.remove('green-fill');
+                }
+            });
         } else {
-            properties.unit = "";
+            greenBoxes.forEach(function(greenBox) {
+                if (greenBox.children[0].classList.contains('red-fill')) {
+                    greenBox.children[0].classList.remove('red-fill');
+                    // greenBox.classList.add('green-fill');
+                }
+            });
         }
-        properties.unitMax = e.unitMax;
-        properties.unitMin = e.unitMin;
-        // console.log(e);
-    });
+    }
 
-    properties.value = 0.01;
-    properties.unitMax = 100;
-    properties.unitMin = 0;
-    properties.unit = "";
+    try {
+        // set up and load the reality interface
+        var realityInterface = new RealityInterface();
+        realityInterface.addReadListener('in_out', function (e) {
+            properties.value = e.value;
+            if (e.unit) {
+                properties.unit = e.unit;
+            } else {
+                properties.unit = "";
+            }
+            properties.unitMax = e.unitMax;
+            properties.unitMin = e.unitMin;
+            render(properties.value);
+        });
 
-    realityInterface.addReadPublicDataListener('in_out', "min", function (e) {
-        if(screenIsTouched === false) {
-            limits.currentMin = 98 + ((1 - e) * 300);
-            setMin(limits.currentMin + 112);
+        realityInterface.addReadPublicDataListener('in_out', "max", function (e) {
+            if (!isMouseDown) {
+                limits.min = Math.min(e, limits.max);
+                renderLimit();
+            }
+        });
+
+        realityInterface.addReadPublicDataListener('in_out', "min", function (e) {
+            if (!isMouseDown) {
+                limits.max = Math.max(e, limits.min);
+                renderLimit();
+            }
+        });
+
+        realityInterface.subscribeToMatrix();
+        realityInterface.addMatrixListener(function(modelView, projection) {
+            var zDistance = Math.abs(modelView[14]);
+            if (zDistance > 500) {
+                // hide the touch pad
+                touchpadMaxLimit.style.visibility = 'hidden';
+                touchpadMinLimit.style.visibility = 'hidden';
+            } else {
+                // show the touch pad
+                touchpadMaxLimit.style.visibility = '';
+                touchpadMinLimit.style.visibility = '';
+            }
+        });
+
+        realityInterface.setMoveDelay(1000);
+    } catch (e) {
+        console.warn('Reality Interface is not accessible');
+
+        // test suite for in-browser simulation without loading in AR
+        function mockListenerTrigger(e) {
+            properties.value = e;
+            render(properties.value);
         }
-    });
 
-    realityInterface.addReadPublicDataListener('in_out', "max", function (e) {
-        if(screenIsTouched === false) {
-            limits.currentMax = ((1 - e) * 300) - 35;
-            setMax(limits.currentMax + 112);
+        function mockMaxPublicDataListenerTrigger(e) {
+            if (!isMouseDown) {
+                limits.max = Math.max(e, limits.min);
+                renderLimit();
+            }
         }
-        document.querySelector('#show').style.visibility = "visible";
-    });
 
-    realityInterface.setMoveDelay(1000);
-    //  {value: 0.4565680618804775, mode: "f", unit: "volt", unitMin: 300, unitMax: 0}
+        function mockMinPublicDataListenerTrigger(e) {
+            if (!isMouseDown) {
+                limits.min = Math.min(e, limits.max);
+                renderLimit();
+            }
+        }
+    }
+
+
 </script>
+
 </body>
 </html>
