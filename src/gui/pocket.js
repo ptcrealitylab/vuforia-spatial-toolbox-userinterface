@@ -741,7 +741,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         var framesPerRow = 4;
         var numRows = Math.ceil(numFrames / framesPerRow);
         // A "chapter" is a section/segment on the scroll bar that you can tap to jump to that section of frames
-        var numChapters = Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight );
+        var numChapters = Math.max(1, Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight ) - 1);
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
         var scrollbarHeight = pageHeight - 15;  //305;
@@ -777,7 +777,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 });
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
                 e.currentTarget.classList.add('pocketScrollBarSegmentActive');
-                scrollToSegmentIndex(e.currentTarget.dataset.index);
+                // scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerenter', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
@@ -787,6 +787,19 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             segmentButton.addEventListener('pointerleave', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+            });
+            segmentButton.addEventListener('pointermove', function(e) {
+
+                var index = parseInt(e.currentTarget.dataset.index);
+                var segmentTop = e.currentTarget.getClientRects()[0].top;
+                var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
+                
+                var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
+                var scrollContainer = document.getElementById('pocketScrollContainer');
+                scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
+
+                console.log(percentageBetween, (index + percentageBetween), scrollContainer.scrollTop);
+
             });
             scrollbar.appendChild(segmentButton);
             allSegmentButtons.push(segmentButton);

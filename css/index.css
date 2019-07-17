@@ -1259,7 +1259,8 @@ Logic Interface CSS
     -webkit-transform-style: preserve-3d;
     -webkit-transform: translateZ(300px); /* Above web interfaces, below side buttons */
     /*background-color: rgba(17, 55, 55, 0.7);*/
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0,0,0,0.1);
+    -webkit-backdrop-filter: blur(10px);
     display: none;
 }
 
