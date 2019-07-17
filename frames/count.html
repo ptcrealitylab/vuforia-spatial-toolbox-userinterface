@@ -4,7 +4,7 @@
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
     <meta charset="UTF-8">
-    <title>value</title>
+    <title>count</title>
     <style>
         #text {
             position: absolute;
@@ -116,20 +116,8 @@
     changetext(0);
 
     function changetext(textContent){
-        var textLength = text.innerText.length;
         text.innerText = textContent;
-
-        var fontSize = (((textLength*6)+800)/(textLength));
-        if(fontSize>120) fontSize = 120;
-        text.style.fontSize = (fontSize)+"pt";
-
-        var boxHeight = fontSize*2;
-        if (boxHeight> 300) boxHeight = 300;
-        text.style.height = boxHeight+"px";
-        text.style.lineHeight = boxHeight+"px";
         realityInterface.writePublicData("storage", "data",  text.innerText);
-        
-        console.log('set text to ' + textContent);
     }
 
     resetButton.addEventListener("pointerdown", reset , false);
