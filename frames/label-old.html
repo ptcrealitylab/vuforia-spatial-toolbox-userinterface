@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="objectDefaultFiles/object.js"></script>
+    <script src="objectDefaultFiles/pep.min.js"></script>
+    <meta charset="UTF-8">
+    <title>label</title>
+    <style>
+        @font-face {
+            font-family: 'Speculum';
+            src: url('resources/speculum.ttf');
+        }
+
+        #frame {
+            stroke: #00ffff;
+            stroke-width: 4;
+            fill: rgba(0, 255, 255, 0.3);
+        }
+
+        .numberOutline {
+            stroke-width: 4;
+            fill: rgba(0, 0, 0, 0.2);
+        }
+
+        #backgroundFrame {
+            fill: rgba(51, 51, 51, 0.8);
+        }
+
+        .lines {
+            stroke-width: 2;
+            stroke: rgba(51, 255, 255, 0.4);
+        }
+
+        .green {
+            color: rgb(41,253,47);
+            border: 2px solid rgb(41,253,47);
+            background-color: rgba(41,253,47,0.05);
+        }
+
+        .red {
+            color: rgb(242,22,121);
+            border: 2px solid rgb(242,22,121);
+            background-color: rgba(242,22,121,0.05);
+        }
+
+        .blue {
+            color: rgb(45,255,255);
+            border: 2px solid rgb(45,255,255);
+            background-color: rgba(45,255,255,0.05);
+
+        }
+
+        .purple {
+            color: rgb(210,113,255);
+            border: 2px solid rgb(210,113,255);
+            background-color: rgba(210,113,255,0.05);
+        }
+
+        .yellow {
+            color: rgb(255,255,45);
+            border: 2px solid rgb(255,255,45);
+            background-color: rgba(255,255,45,0.05);
+        }
+        .clickAble:hover {
+            opacity: 0.75;
+            cursor: pointer;
+        }
+        .textfield{
+            /* border: 2px solid white;
+             -moz-appearance: textfield;
+             -webkit-appearance: textfield;
+           */
+            cursor: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            user-select: text;
+            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 12pt;
+        }
+        .button {
+            padding: 0px;
+            margin: 0px;
+            width: 500px;
+            height: 120px;
+            line-height: 100px;
+            text-align: center;
+            vertical-align: middle;
+            margin-top: 1px;
+            margin-left: -100px;
+            display: inline-block;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            user-select: text;
+            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 500%;
+            letter-spacing: -6pt;
+            transform: scaleX(0.7);
+            font-stretch: condensed;
+        }
+
+        .one {
+            width: 700px;
+        }
+
+        .inputText {
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            user-select: auto;
+            cursor: auto;
+        }
+
+        .dataFont {
+
+            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            letter-spacing: -6pt;
+            font-size: 32pt;
+            alignment: right;
+            font-stretch: semi-expanded;
+            transform: scaleX(0.7);
+        }
+
+        .dataFontMiddle {
+
+            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            letter-spacing: -4pt;
+            fill: #00ffff;
+            font-size: 26pt;
+            transform: scaleX(0.7);
+        }
+
+        .dataFontSmall {
+
+            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            fill: #00ffff;
+            letter-spacing: -1pt;
+            font-size: 12pt;
+            alignment: right;
+            transform: scaleX(0.7);
+        }
+
+    </style>
+</head>
+<body>
+<div id="text" class=' button blue one clickAble' contenteditable  style="cursor: pointer">edit label
+</div>
+<script>
+
+    window.addEventListener('load', function() {
+
+        var realityInterface = new RealityInterface();
+        var text = document.querySelector('#text');
+
+        var textLength = text.innerText.length;
+        console.log(textLength);
+
+        text.style.fontSize = (500/textLength)+"pt";
+
+        text.addEventListener("pointerup", function (){
+            if(text.innerText === "edit label") {
+                text.innerText = "";
+            }
+            text.focus();
+        }, false);
+
+        // if outside the frame has focus, it will receive the keyboard event via a post message
+        window.addEventListener("message", function (e) {
+
+            var msg = JSON.parse(e.data);
+
+            if (typeof msg.keyboardUpEvent !== "undefined") {
+                console.log('label frame received keyboard event', msg.keyboardUpEvent);
+                onKeyUp(msg.keyboardUpEvent);
+            }
+
+        });
+
+        // if inside the frame has focus, it will directly receive the keyboard event
+        window.addEventListener("keyup", onKeyUp);
+
+        function onKeyUp(e) {
+
+            if (document.activeElement !== text) {
+                return;
+            }
+
+            var isCharacter = !!e.key.match(/^[a-zA-Z0-9]$/);
+
+            if (isCharacter) {
+                text.innerText = text.innerText + e.key;
+            } else {
+                if (e.key === "Backspace") {
+                    text.innerText = text.innerText.slice(0, -1); // remove last character
+                } else if (e.key === " ") {
+                    text.innerText = text.innerText + "\u00a0"; // special space character doesn't get escaped
+                    resetScroll();
+                    setTimeout(function() {
+                        resetScroll(); // also do it after a slight delay
+                    }, 100);
+                }
+            }
+
+            resizeText();
+            realityInterface.writePublicData("storage", "data",  text.innerText);
+        }
+
+        function resizeText() {
+            var textLength = text.innerText.length;
+            var fontSize = Math.min(45, (((textLength*7)+500)/(textLength))); // font size increases up to 45pt
+            text.style.fontSize = fontSize + "pt";
+
+            var boxHeight = Math.min(100, fontSize*3); // box height increases with font size up to 100px
+            text.style.height = boxHeight + "px";
+            text.style.lineHeight = boxHeight + "px"; // TODO: pt vs px
+        }
+
+        function resetScroll() {
+            if (window.scrollX !== 0 || window.scrollY !== 0) {
+                window.scrollTo(0,0); // don't let keyboard events scroll the window
+            }
+            parent.postMessage(JSON.stringify({resetScroll: true}), '*');
+        }
+
+        realityInterface.addReadPublicDataListener('storage', "data", function (e) {
+            if (typeof e === 'string') {
+                text.innerText = e;
+                resizeText();
+            }
+        });
+
+        realityInterface.setMoveDelay(500);
+    });
+
+</script>
+</body>
+</html>
