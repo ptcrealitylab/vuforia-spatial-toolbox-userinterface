@@ -1308,26 +1308,34 @@ Logic Interface CSS
     top: 5px;
     height: calc(100vh - 15px);
     width: 70px;
-    border: 3px solid cyan;
-    border-radius: 10px;
+    /*border: 3px solid cyan;*/
+    /*border-radius: 10px;*/
 }
 
 .pocketScrollBarSegment {
     position: absolute;
     /*border: 3px solid cyan;*/
-    /*border-radius: 10px;*/
+    border-radius: 5px;
     width: 70px;
     height: calc(100vh - 15px);
     left: 0;
     top: 0;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .pocketScrollBarSegmentTouched {
-    background-color: rgba(0,255,255,0.6);
+    background-color: rgba(0,255,255,0.3);
 }
 
+/* The inside piece of a scrollbar that is currently selected */
 .pocketScrollBarSegmentActive {
-    background-color: rgba(0,255,255,0.3);
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    border-radius: 5px;
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    background-color: rgba(0,255,255,0.6);
 }
 
 .snappableFrame {

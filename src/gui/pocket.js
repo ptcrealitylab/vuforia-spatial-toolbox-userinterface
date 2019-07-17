@@ -741,51 +741,66 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         var framesPerRow = 4;
         var numRows = Math.ceil(numFrames / framesPerRow);
         // A "chapter" is a section/segment on the scroll bar that you can tap to jump to that section of frames
-        var numChapters = Math.max(1, Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight ) - 1);
+        var numChapters = Math.max(1, Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight ) - 1); // minus one because we can scroll to end using previous bar segment
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
-        var scrollbarHeight = pageHeight - 15;  //305;
-        
+        var marginBetweenSegments = 10;
+        var scrollbarHeight = 320; // matches menu height of sidebar buttons //pageHeight - 15;  //305;
+        var scrollbarHeightDifference = globalStates.width - scrollbarHeight;
+
         var allSegmentButtons = [];
         
         for (var i = 0; i < numChapters; i++) {
             var segmentButton = document.createElement('div');
             segmentButton.className = 'pocketScrollBarSegment';
             segmentButton.id = 'pocketScrollBarSegment' + i;
-            segmentButton.style.height = (scrollbarHeight / numChapters) + 'px';
-            segmentButton.style.top = (i * scrollbarHeight / numChapters) + 'px';
-            if (i > 0) {
-                segmentButton.style.borderTop = '2px solid cyan';
-            }
-            // if (i < numChapters-1) {
-            //     segmentButton.style.borderBottom = '1px solid cyan';
-            // }
+            segmentButton.style.height = (scrollbarHeight / numChapters - marginBetweenSegments) + 'px';
+            segmentButton.style.top = (scrollbarHeightDifference/2 - marginBetweenSegments/2) + (i * scrollbarHeight / numChapters) + 'px';
+            
+            var segmentActiveDiv = document.createElement('div');
+            segmentActiveDiv.className = 'pocketScrollBarSegmentActive';
+            segmentButton.appendChild(segmentActiveDiv);
             
             segmentButton.dataset.index = i;
+            
+            function hideAllSegmentSelections() {
+                allSegmentButtons.forEach(function(div){
+                    if (div.firstChild) {
+                        div.firstChild.style.visibility = 'hidden';
+                    }
+                    div.classList.remove('pocketScrollBarSegmentTouched');
+                });
+            }
+            
+            function selectSegment(segment) {
+                if (segment.firstChild) {
+                    segment.firstChild.style.visibility = 'visible';
+                }
+                segment.classList.add('pocketScrollBarSegmentTouched');
+            }
 
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
-                allSegmentButtons.forEach(function(div){
-                    div.classList.remove('pocketScrollBarSegmentActive');
-                });
-                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+                hideAllSegmentSelections();
+                selectSegment(e.currentTarget);
             });
             segmentButton.addEventListener('pointerup', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
-                allSegmentButtons.forEach(function(div){
-                    div.classList.remove('pocketScrollBarSegmentActive');
-                });
+                hideAllSegmentSelections();
+                selectSegment(e.currentTarget);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
-                e.currentTarget.classList.add('pocketScrollBarSegmentActive');
-                // scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerenter', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
-                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+                hideAllSegmentSelections();
+                selectSegment(e.currentTarget);
                 scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerleave', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
+                e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+            });
+            segmentButton.addEventListener('pointercancel', function(e) {
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
             });
             segmentButton.addEventListener('pointermove', function(e) {
