@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="objectDefaultFiles/object.js"></script>
+    <script src="objectDefaultFiles/pep.min.js"></script>
+    <meta charset="UTF-8">
+    <title>videoCapture-new</title>
+    <style>
+        #svgBackground {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 690px;
+            height: 711px;
+        }
+        #svgForeground {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 690px;
+            height: 711px;
+        }
+        #playButtonStart {
+            visibility: hidden;
+        }
+        #recordButtonStart {
+            visibility: hidden;
+        }
+        #recordButtonStop {
+            visibility: hidden;
+        }
+        #videoContainer {
+            visibility: hidden;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 690px;
+            height: 510px;
+            overflow: hidden;
+            border-radius: 26px;
+            /*border: 1px solid cyan;*/
+            -webkit-mask-image: -webkit-radial-gradient(white, black);
+        }
+        #recordedVideo {
+            /*transform: scale(1); !* depends on aspect ratio of video *!*/
+            object-fit: cover;
+        }
+        .background-tint {
+            /*background-color: rgba(0,0,0,0.5); !* tint color *!*/
+            /*background-blend-mode: multiply;*/
+            filter: brightness(0.4);
+        }
+    </style>
+</head>
+<body style="width: 690px; height: 711px;">
+
+<svg id="svgBackground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130.02 134.07">
+    <defs>
+        <style>
+            .cls-1 {
+                opacity: 0.25;
+            }
+
+            .cls-2 {
+                opacity: 0.5;
+            }
+
+            .cls-3 {
+                fill: #008480;
+            }
+
+            .cls-4 {
+                fill: lime;
+            }
+
+            .cls-5 {
+                fill: #75fbfd;
+            }
+
+
+            .cls-6 {
+                fill: #ff007d;
+            }
+
+        </style>
+    </defs>
+    <title>Asset 45</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+                <g id="background" class="cls-1">
+                    <rect width="130.02" height="96.08" rx="5"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
+
+<div id="videoContainer">
+    <video id="recordedVideo" class="visible" width="690" height="512" playsinline webkit-playsinline>
+        <source id="source">
+    </video>
+</div>
+
+<svg id="svgForeground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130.02 134.07">
+    <title>Asset 45</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g>
+
+                <g id="playButtonStart">
+                    <g class="cls-2">
+                        <circle class="cls-3" cx="65.01" cy="48.04" r="22.5"/>
+                    </g>
+                    <g class="cls-1">
+                        <path class="cls-4" d="M65,28A20,20,0,1,1,45,48,20,20,0,0,1,65,28m0-2.5A22.5,22.5,0,1,0,87.51,48,22.5,22.5,0,0,0,65,25.54Z"/>
+                    </g>
+                    <path class="cls-4" d="M65,25.54A22.5,22.5,0,1,1,42.51,48,22.5,22.5,0,0,1,65,25.54M65,23A25,25,0,1,0,90,48,25,25,0,0,0,65,23Z"/>
+                    <path class="cls-4" d="M72.39,48.91,59.61,56.13a1,1,0,0,1-1.49-.87V40.82A1,1,0,0,1,59.61,40l12.78,7.22A1,1,0,0,1,72.39,48.91Z"/>
+                </g>
+                <g id="recordButtonStart">
+                    <g class="cls-1">
+                        <circle class="cls-6" cx="65.01" cy="48.04" r="22.5"/>
+                    </g>
+                    <g class="cls-1">
+                        <path class="cls-6" d="M65,28A20,20,0,1,1,45,48,20,20,0,0,1,65,28m0-2.5A22.5,22.5,0,1,0,87.51,48,22.5,22.5,0,0,0,65,25.54Z"/>
+                    </g>
+                    <path class="cls-6" d="M65,25.54A22.5,22.5,0,1,1,42.51,48,22.5,22.5,0,0,1,65,25.54M65,23A25,25,0,1,0,90,48,25,25,0,0,0,65,23Z"/>
+                    <circle class="cls-6" cx="65.01" cy="48.04" r="9.68"/>
+                </g>
+                <g id="recordButtonStop">
+                    <g class="cls-1">
+                        <circle class="cls-6" cx="65.01" cy="48.04" r="22.5"/>
+                    </g>
+                    <g class="cls-1">
+                        <path class="cls-6" d="M65,28A20,20,0,1,1,45,48,20,20,0,0,1,65,28m0-2.5A22.5,22.5,0,1,0,87.51,48,22.5,22.5,0,0,0,65,25.54Z"/>
+                    </g>
+                    <path class="cls-6" d="M65,25.54A22.5,22.5,0,1,1,42.51,48,22.5,22.5,0,0,1,65,25.54M65,23A25,25,0,1,0,90,48,25,25,0,0,0,65,23Z"/>
+                    <rect class="cls-6" x="57.57" y="40.6" width="14.89" height="14.89" rx="1.82"/>
+                </g>
+                <g id="prevButton">
+                    <g class="cls-2">
+                        <path d="M45,110.15a.81.81,0,0,0-.39.1l-12,6.79a.81.81,0,0,1-.39.1.78.78,0,0,1-.78-.78v-5.42a.79.79,0,0,0-.79-.79.8.8,0,0,0-.38.1L11.4,120.93a.78.78,0,0,0,0,1.36L30.3,133a.8.8,0,0,0,.38.1.79.79,0,0,0,.79-.78v-5.42a.77.77,0,0,1,.78-.78.81.81,0,0,1,.39.1l12,6.78a.81.81,0,0,0,.39.1.78.78,0,0,0,.78-.78V110.94A.78.78,0,0,0,45,110.15Z"/>
+                    </g>
+                    <path class="cls-5" d="M45,110.15a.78.78,0,0,1,.78.79v21.35a.78.78,0,0,1-.78.78.81.81,0,0,1-.39-.1l-12-6.78a.81.81,0,0,0-.39-.1.77.77,0,0,0-.78.78v5.42a.79.79,0,0,1-.79.78.8.8,0,0,1-.38-.1L11.4,122.29a.78.78,0,0,1,0-1.36l18.9-10.68a.8.8,0,0,1,.38-.1.79.79,0,0,1,.79.79v5.42a.78.78,0,0,0,.78.78.81.81,0,0,0,.39-.1l12-6.79a.81.81,0,0,1,.39-.1m0-1a1.81,1.81,0,0,0-.88.23L32.47,116v-5a1.78,1.78,0,0,0-2.66-1.56l-18.9,10.68a1.78,1.78,0,0,0,0,3.1l18.9,10.68a1.78,1.78,0,0,0,2.66-1.55v-5l11.68,6.6a1.81,1.81,0,0,0,.88.23,1.78,1.78,0,0,0,1.78-1.78V110.94A1.79,1.79,0,0,0,45,109.15Z"/>
+                    <g class="cls-1">
+                        <path class="cls-5" d="M45,110.15a.81.81,0,0,0-.39.1l-12,6.79a.81.81,0,0,1-.39.1.78.78,0,0,1-.78-.78v-5.42a.79.79,0,0,0-.79-.79.8.8,0,0,0-.38.1L11.4,120.93a.78.78,0,0,0,0,1.36L30.3,133a.8.8,0,0,0,.38.1.79.79,0,0,0,.79-.78v-5.42a.77.77,0,0,1,.78-.78.81.81,0,0,1,.39.1l12,6.78a.81.81,0,0,0,.39.1.78.78,0,0,0,.78-.78V110.94A.78.78,0,0,0,45,110.15Zm-.22,21.77-11.68-6.6a1.81,1.81,0,0,0-.88-.23,1.78,1.78,0,0,0-1.78,1.78v5L12.22,121.61l18.25-10.3v5a1.78,1.78,0,0,0,1.78,1.78,1.81,1.81,0,0,0,.88-.23l11.68-6.6Z"/>
+                    </g>
+                </g>
+                <g id="nextButton">
+                    <g class="cls-2">
+                        <path d="M85,133.07a.8.8,0,0,0,.38-.1l12-6.78a.75.75,0,0,1,.38-.1.77.77,0,0,1,.78.78v5.42a.79.79,0,0,0,.79.78.75.75,0,0,0,.38-.1l18.91-10.68a.78.78,0,0,0,0-1.36L99.72,110.25a.75.75,0,0,0-.38-.1.79.79,0,0,0-.79.79v5.42a.78.78,0,0,1-.78.78.75.75,0,0,1-.38-.1l-12-6.79a.8.8,0,0,0-.38-.1.79.79,0,0,0-.79.79v21.35A.79.79,0,0,0,85,133.07Z"/>
+                    </g>
+                    <path class="cls-5" d="M85,133.07a.79.79,0,0,1-.79-.78V110.94a.79.79,0,0,1,.79-.79.8.8,0,0,1,.38.1l12,6.79a.75.75,0,0,0,.38.1.78.78,0,0,0,.78-.78v-5.42a.79.79,0,0,1,.79-.79.75.75,0,0,1,.38.1l18.91,10.68a.78.78,0,0,1,0,1.36L99.72,133a.75.75,0,0,1-.38.1.79.79,0,0,1-.79-.78v-5.42a.77.77,0,0,0-.78-.78.75.75,0,0,0-.38.1l-12,6.78a.8.8,0,0,1-.38.1m0,1a1.8,1.8,0,0,0,.87-.23l11.68-6.6v5a1.79,1.79,0,0,0,1.79,1.78,1.77,1.77,0,0,0,.87-.23l18.91-10.68a1.78,1.78,0,0,0,0-3.1l-18.91-10.68a1.77,1.77,0,0,0-.87-.23,1.79,1.79,0,0,0-1.79,1.79v5l-11.68-6.6a1.78,1.78,0,0,0-2.66,1.56v21.35A1.79,1.79,0,0,0,85,134.07Z"/>
+                    <g class="cls-1">
+                        <path class="cls-5" d="M85,133.07a.8.8,0,0,0,.38-.1l12-6.78a.75.75,0,0,1,.38-.1.77.77,0,0,1,.78.78v5.42a.79.79,0,0,0,.79.78.75.75,0,0,0,.38-.1l18.91-10.68a.78.78,0,0,0,0-1.36L99.72,110.25a.75.75,0,0,0-.38-.1.79.79,0,0,0-.79.79v5.42a.78.78,0,0,1-.78.78.75.75,0,0,1-.38-.1l-12-6.79a.8.8,0,0,0-.38-.1.79.79,0,0,0-.79.79v21.35A.79.79,0,0,0,85,133.07Zm.21-21.76,11.69,6.6a1.78,1.78,0,0,0,2.65-1.55v-5l18.25,10.3L99.55,131.92v-5a1.78,1.78,0,0,0-2.65-1.55l-11.69,6.6Z"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
+
+<script>
+    try {
+        var realityInterface = new RealityInterface();
+        realityInterface.setMoveDelay(1000);
+    } catch (e) {
+        console.warn('Reality Interface is not accessible');
+    }
+
+    var recordButtonStart = document.querySelector('#recordButtonStart');
+    var recordButtonStop = document.querySelector('#recordButtonStop');
+    var playButtonStart = document.querySelector('#playButtonStart');
+    var videoContainer = document.querySelector('#videoContainer');
+    var recordedVideo = document.querySelector('#recordedVideo');
+
+    var State = Object.freeze({
+        START: 'START',
+        LOADING_INITIAL: 'LOADING_INITIAL',
+        RECORD_READY: 'RECORD_READY',
+        RECORDING: 'RECORDING',
+        LOADING_PLAYER: 'LOADING_PLAYER',
+        PLAY_READY: 'PLAY_READY',
+        PLAYING: 'PLAYING'
+    });
+
+    var Action = Object.freeze({
+        START_LOADING: 'START_LOADING',
+        TIMEOUT: 'TIMEOUT',
+        LOAD_SUCCESSFUL: 'LOAD_SUCCESSFUL',
+        BUTTON_PRESSED: 'BUTTON_PRESSED',
+        INTERFACE_CHANGED_GUI: 'INTERFACE_CHANGED_GUI',
+        INTERFACE_CHANGED_LOGIC: 'INTERFACE_CHANGED_LOGIC',
+        OTHER_VIDEO_PLAYED: 'OTHER_VIDEO_PLAYED',
+        VIDEO_PLAYBACK_FINISHED: 'VIDEO_PLAYBACK_FINISHED',
+        PLAY_NODE_ACTIVATED: 'PLAY_NODE_ACTIVATED',
+        PLAY_NODE_DEACTIVATED: 'PLAY_NODE_DEACTIVATED'
+    });
+
+    var currentState = State.START;
+
+    function processStateAction(action) {
+
+        console.log('state ' + currentState + ' + action ' + action);
+
+        var previousState = currentState;
+
+        switch (currentState) {
+            case State.START:
+                if (action === Action.START_LOADING) {
+                    currentState = State.LOADING_INITIAL;
+                }
+                break;
+            case State.LOADING_INITIAL:
+                if (action === Action.TIMEOUT) {
+                    currentState = State.RECORD_READY;
+                } else if (action === Action.LOAD_SUCCESSFUL) {
+                    currentState = State.PLAY_READY;
+                }
+                break;
+            case State.RECORD_READY:
+                if (action === Action.BUTTON_PRESSED) {
+                    currentState = State.RECORDING;
+                }
+                break;
+            case State.RECORDING:
+                if (action === Action.BUTTON_PRESSED) {
+                    currentState = State.LOADING_PLAYER;
+                }
+                break;
+            case State.LOADING_PLAYER:
+                if (action === Action.LOAD_SUCCESSFUL) {
+                    currentState = State.PLAY_READY;
+                }
+                break;
+            case State.PLAY_READY:
+                if (action === Action.BUTTON_PRESSED ||
+                    action === Action.PLAY_NODE_ACTIVATED) {
+                    currentState = State.PLAYING;
+                }
+                break;
+            case State.PLAYING:
+                if (action === Action.BUTTON_PRESSED ||
+                    action === Action.INTERFACE_CHANGED_LOGIC ||
+                    action === Action.OTHER_VIDEO_PLAYED ||
+                    action === Action.VIDEO_PLAYBACK_FINISHED) {
+                    currentState = State.PLAY_READY;
+                }
+                break;
+            default:
+                console.warn('couldn\'t find a state,action pair for state:' + currentState + ', action:' + action);
+                break;
+        }
+
+        console.log(' = ' + currentState);
+
+        if (previousState !== currentState) {
+            updateUIForNewState();
+            updateSideEffectsForNewState();
+        }
+    }
+
+    function updateUIForNewState() {
+        
+        if (currentState === State.RECORD_READY) {
+            recordButtonStart.style.visibility = 'visible';
+        } else {
+            recordButtonStart.style.visibility = 'hidden';
+        }
+        
+        if (currentState === State.RECORDING) {
+            recordButtonStop.style.visibility = 'visible';
+        } else {
+            recordButtonStop.style.visibility = 'hidden';
+        }
+        
+        if (currentState === State.PLAY_READY) {
+            playButtonStart.style.visibility = 'visible';
+            videoContainer.style.visibility = 'visible';
+            videoContainer.style.opacity = 0.8;
+            videoContainer.className = 'background-tint';
+        } else {
+            playButtonStart.style.visibility = 'hidden';
+            videoContainer.className = ''; //('background-tint');
+            videoContainer.style.opacity = '';
+        }
+        
+        if (currentState === State.PLAYING) {
+            videoContainer.style.visibility = 'visible';
+            svgForeground.style.pointerEvents = 'none';
+        } else {
+            // videoContainer.style.visibility = 'hidden';
+            svgForeground.style.pointerEvents = '';
+        }
+        
+        // var divIdsToDisplay = [];
+        // switch (currentState) {
+        //     case State.START:
+        //         divIdsToDisplay = ['container initial:1'];
+        //         break;
+        //     case State.LOADING_INITIAL:
+        //     case State.LOADING_PLAYER:
+        //         divIdsToDisplay = ['container recording:0 initial:1', 'spinner'];
+        //         break;
+        //     case State.RECORD_READY:
+        //         divIdsToDisplay = ['container initial:1', 'recordButtonOutline'];
+        //         break;
+        //     case State.RECORDING:
+        //         divIdsToDisplay = ['container recording:1 initial:0', 'recordButtonOutline', 'recordingIndicator'];
+        //         break;
+        //     case State.PLAY_READY:
+        //         divIdsToDisplay = ['container initial:0', 'playButton stop:0', 'prevButton', 'nextButton', 'videoOutline'];
+        //         break;
+        //     case State.PLAYING:
+        //         divIdsToDisplay = ['container initial:0', 'prevButton', 'nextButton', 'recordedVideo'];
+        //         break;
+        //     default:
+        //         console.warn('couldn\'t find state:' + currentState);
+        //         break;
+        // }
+        // console.log('divs to display = ', divIdsToDisplay);
+    }
+    
+    function updateSideEffectsForNewState() {
+        console.log('update side effects for state ' + currentState);
+        
+        if (currentState === State.PLAY_READY) {
+            recordedVideo.pause();
+        }
+        
+        if (currentState === State.PLAYING) {
+            recordedVideo.play();
+        }
+    }
+
+    window.addEventListener('load', function() {
+        
+        addEventListeners();
+        
+        updateUIForNewState();
+        updateSideEffectsForNewState();
+        
+        processStateAction(Action.START_LOADING);
+        processStateAction(Action.TIMEOUT);
+        
+    });
+    
+    // window.addEventListener('resize', function() {
+    //     document.getElementById('container').style.width = window.innerWidth + 'px';
+    //     document.getElementById('container').style.height = window.innerHeight + 'px';
+    // });
+    
+    function addEventListeners() {
+        recordButtonStart.addEventListener('click', function() {
+            processStateAction(Action.BUTTON_PRESSED);
+        });
+        recordButtonStop.addEventListener('click', function() {
+            processStateAction(Action.BUTTON_PRESSED);
+            setTimeout(function() {
+                document.getElementById('source').setAttribute('src', "resources/test-video.mp4");
+                recordedVideo.pause();
+                processStateAction(Action.LOAD_SUCCESSFUL);
+            }, 1000);
+        });
+        playButtonStart.addEventListener('click', function() {
+            processStateAction(Action.BUTTON_PRESSED);
+        });
+        videoContainer.addEventListener('click', function() {
+            processStateAction(Action.BUTTON_PRESSED);
+        });
+        document.getElementById('recordedVideo').addEventListener('ended', function(e) {
+            if (currentState === State.PLAYING) {
+                jumpToBeginningOfVideo();
+                processStateAction(Action.VIDEO_PLAYBACK_FINISHED);
+            }
+        });
+    }
+
+    function jumpToBeginningOfVideo() {
+        document.getElementById('recordedVideo').currentTime = 0;
+    }
+
+    function buttonPressed(e) {
+        console.log('button pressed');
+        processStateAction(Action.BUTTON_PRESSED);
+    }
+
+    function prevButtonPressed(e) {
+        e.stopPropagation();
+        console.log('prev button pressed');
+        realityInterface.write('prev', 1.0, 'f', false, 0, 1, true);
+        if (currentState === State.PLAYING) {
+            processStateAction(Action.BUTTON_PRESSED);
+        }
+    }
+
+    function nextButtonPressed(e) {
+        e.stopPropagation();
+        console.log('next button pressed');
+        realityInterface.write('next', 1.0, 'f', false, 0, 1, true);
+        if (currentState === State.PLAYING) {
+            processStateAction(Action.BUTTON_PRESSED);
+        }
+    }
+    
+    
+</script>
+
+</body>
+</html>

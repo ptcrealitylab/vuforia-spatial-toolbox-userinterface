@@ -759,6 +759,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             var segmentActiveDiv = document.createElement('div');
             segmentActiveDiv.className = 'pocketScrollBarSegmentActive';
+            if (i > 0) {
+                segmentActiveDiv.style.visibility = 'hidden';
+            }
             segmentButton.appendChild(segmentActiveDiv);
             
             segmentButton.dataset.index = i;
