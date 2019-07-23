@@ -596,6 +596,10 @@
         });
 
         realityInterface.setMoveDelay(1000);
+        realityInterface.enableCustomInteractionMode();
+        // this can also be done without the API by manually giving these divs the class 'realityInteraction'
+        realityInterface.setInteractableDivs([touchpadMaxLimit, touchpadMinLimit]);
+
     } catch (e) {
         console.warn('Reality Interface is not accessible');
 

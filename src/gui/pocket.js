@@ -816,7 +816,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 var scrollContainer = document.getElementById('pocketScrollContainer');
                 scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
 
-                console.log(percentageBetween, (index + percentageBetween), scrollContainer.scrollTop);
+                // console.log(percentageBetween, (index + percentageBetween), scrollContainer.scrollTop);
 
             });
             scrollbar.appendChild(segmentButton);

@@ -26,6 +26,25 @@ createNameSpace("realityEditor.device.touchPropagation");
         // be notified when certain touch event functions get triggered in device/index.js
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
+        
+        
+        // handle touch events that hit realityInteraction divs within frames
+        realityEditor.network.addPostMessageHandler('pointerDownResult', handlePointerDownResult);
+    }
+    
+    function handlePointerDownResult(eventData, fullMessageContent) {
+        // pointerDownResult
+        console.log(eventData, fullMessageContent);
+        
+        if (eventData === 'interaction') {
+            console.log('TODO: cancel the moveDelay timer to prevent accidental moves?');
+        } else if (eventData === 'nonInteraction') {
+            console.log('TODO: immediately begin moving!');
+            realityEditor.device.beginTouchEditing(fullMessageContent.object, fullMessageContent.frame, null);
+            // clear the timer that would start dragging the previously traversed frame
+            realityEditor.device.clearTouchTimer();
+
+        }
     }
 
     /**

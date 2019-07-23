@@ -157,7 +157,7 @@
     </g>
 </svg>
 
-<svg id="touchpadMaxLimit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 116 116">
+<svg id="touchpadMaxLimit" class="realityInteraction" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 116 116">
     <defs>
         <style>
             .touchpad-1 {
@@ -434,6 +434,7 @@
     try {
         // set up and load the reality interface
         var realityInterface = new RealityInterface();
+
         realityInterface.addReadListener('in_out', function (e) {
             properties.value = e.value;
             if (e.unit) {
@@ -466,6 +467,8 @@
         });
 
         realityInterface.setMoveDelay(1000);
+        realityInterface.enableCustomInteractionMode();
+
     } catch (e) {
         console.warn('Reality Interface is not accessible');
         

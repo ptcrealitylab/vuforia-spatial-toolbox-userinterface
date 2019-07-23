@@ -101,18 +101,22 @@
 </svg>
 
 <script>
+    var text = document.querySelector('#text');
+    var resetButton = document.querySelector('#resetButton');
+    var lastTick = false;
+    var count = 0;
+
     try {
         var realityInterface = new RealityInterface();
         realityInterface.setMoveDelay(500);
+        realityInterface.enableCustomInteractionMode();
+        // this can also be done without the API by manually giving these divs the class 'realityInteraction'
+        realityInterface.setInteractableDivs([resetButton]);
+        
     } catch (e) {
         console.warn('Reality Interface is not accessible');
     }
 
-    var text = document.querySelector('#text');
-    var resetButton = document.querySelector('#resetButton');
-
-    var lastTick = false;
-    var count = 0;
     changetext(0);
 
     function changetext(textContent){
