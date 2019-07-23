@@ -863,8 +863,9 @@ body {
 }
 
 .visibleEditingSVG {
-    visibility: visible;
-    display: inline;
+    /*visibility: visible;*/
+    /*display: inline;*/
+    visibility: hidden;
 }
 
 .hiddenForDistance {

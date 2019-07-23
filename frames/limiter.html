@@ -456,8 +456,9 @@
         
         realityInterface.subscribeToMatrix();
         realityInterface.addMatrixListener(function(modelView, projection) {
+            var scaleFactor = Math.abs(modelView[0]);
             var zDistance = Math.abs(modelView[14]);
-            if (zDistance > 500) {
+            if (zDistance/scaleFactor > 1500) {
                 // hide the touch pad
                 touchpadMaxLimit.style.visibility = 'hidden';
             } else {

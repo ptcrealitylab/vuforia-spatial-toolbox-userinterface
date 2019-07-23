@@ -1015,9 +1015,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 canvas.classList.add('visibleEditingSVG');
                 // canvas.style.visibility = 'visible';
                 // canvas.style.display = 'inline';
+
+                overlay.querySelector('.corners').style.visibility = 'visible';
+
             } else {
                 // canvas.style.display = 'none';
                 canvas.classList.remove('visibleEditingSVG');
+
+                overlay.querySelector('.corners').style.visibility = 'hidden';
+
             }
             
             if (activeType === 'ui') {
@@ -1139,7 +1145,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             var finalOffsetX = positionData.x;
             var finalOffsetY = positionData.y;
-            var finalScale = positionData.scale;
+            var finalScale = positionData.scale * globalScaleAdjustment;
 
             // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
             
@@ -1871,7 +1877,9 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         globalDOMCache[activeKey].style.visibility = 'hidden';
         // globalDOMCache["svg" + activeKey].style.display = 'none';
         globalDOMCache["svg" + activeKey].classList.remove('visibleEditingSVG');
-        
+
+        globalDOMCache[activeKey].querySelector('.corners').style.visibility = 'hidden';
+
         // reset the active screen object when it disappears
         if (realityEditor.gui.screenExtension.visibleScreenObjects[activeKey]) {
             delete realityEditor.gui.screenExtension.visibleScreenObjects[activeKey];
@@ -1986,6 +1994,11 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         globalDOMCache[addIframe.id] = addIframe;
         globalDOMCache[addOverlay.id] = addOverlay;
         globalDOMCache[addSVG.id] = addSVG;
+        
+        // wrapping div in corners can only be done after it has been added
+        var padding = 24;
+        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(addOverlay, padding, false, {width: activeVehicle.width + padding/2 + 'px', height: activeVehicle.height + padding/2 + 'px', visibility: 'hidden'}, null, 4, 30);
+        
         
         // add touch event listeners
         realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);

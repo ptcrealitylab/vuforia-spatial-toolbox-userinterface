@@ -2,7 +2,7 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
 
 (function(exports) {
 
-    function wrapDivWithCorners(div, padding, exclusive, additionalStyling, sizeAdjustment, borderWidth) {
+    function wrapDivWithCorners(div, padding, exclusive, additionalStyling, sizeAdjustment, borderWidth, extraLength) {
         if (!sizeAdjustment) { sizeAdjustment = 0; }
         if (exclusive) {
             var cornersFound = div.querySelector('.corners');
@@ -12,7 +12,7 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
             }
         }
         var rect = div.getClientRects()[0];
-        var corners = createMoveabilityCorners(div.id+'corners', rect.width + sizeAdjustment, rect.height + sizeAdjustment, padding, borderWidth);
+        var corners = createMoveabilityCorners(div.id+'corners', rect.width + sizeAdjustment, rect.height + sizeAdjustment, padding, borderWidth, extraLength);
         corners.style.left = (-padding) + 'px';
         corners.style.top = (-padding) + 'px';
 
@@ -63,7 +63,7 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
         }
     }
 
-    function createMoveabilityCorners(id, width, height, padding, borderWidth) {
+    function createMoveabilityCorners(id, width, height, padding, borderWidth, extraLength) {
         var corners = createDiv(id, 'corners', null, null);
         var topLeft = createDiv(id+'topleft', 'cornersTop cornersLeft', null, corners);
         var topRight = createDiv(id+'topleft', 'cornersTop cornersRight', null, corners);
@@ -81,6 +81,12 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
 
             bottomLeft.style.borderBottom = borderWidth + 'px solid cyan';
             bottomLeft.style.borderLeft = borderWidth + 'px solid cyan';
+        }
+        if (extraLength) {
+            [topLeft, topRight, bottomRight, bottomLeft].forEach(function(corner) {
+                corner.style.width = (parseInt(corner.style.width) || 0) + extraLength + 'px';
+                corner.style.height = (parseInt(corner.style.height) || 0) + extraLength + 'px';
+            });
         }
         corners.style.width = (width-20+padding*2) + 'px';
         corners.style.height = (height-20+padding*2) + 'px';

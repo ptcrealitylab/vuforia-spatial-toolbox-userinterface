@@ -1114,9 +1114,15 @@ if (thisFrame) {
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
             // svg.style.display = 'inline';
             svg.classList.add('visibleEditingSVG');
+
+            overlay.querySelector('.corners').style.visibility = 'visible';
+            
         } else {
             // svg.style.display = 'none';
             svg.classList.remove('visibleEditingSVG');
+
+            overlay.querySelector('.corners').style.visibility = 'hidden';
+
         }
 
         // if (tempThisObject.frameTouchSynthesizer) {
@@ -2393,6 +2399,16 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         }
     }
     
+    // adjust UI to match true width and height of frame contents
+    var trueSize = {
+        width: globalDOMCache['iframe' + activeKey].clientWidth,
+        height: globalDOMCache['iframe' + activeKey].clientHeight
+    };
+    
+    var cornerPadding = 24;
+    globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
+    globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+
     this.cout("on_load");
 };
 

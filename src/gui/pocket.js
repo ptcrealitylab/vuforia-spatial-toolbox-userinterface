@@ -786,6 +786,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
+                scrollToSegmentIndex(e.currentTarget.dataset.index); // TODO: keep this? or same as pointermove and include percentage between?
             });
             segmentButton.addEventListener('pointerup', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
@@ -797,7 +798,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
-                scrollToSegmentIndex(e.currentTarget.dataset.index);
+                // scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerleave', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
