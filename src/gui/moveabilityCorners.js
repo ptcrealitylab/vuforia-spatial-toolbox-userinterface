@@ -12,7 +12,9 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
             }
         }
         var rect = div.getClientRects()[0];
-        var corners = createMoveabilityCorners(div.id+'corners', rect.width + sizeAdjustment, rect.height + sizeAdjustment, padding, borderWidth, extraLength);
+        var divWidth = rect ? rect.width : 100;
+        var divHeight = rect ? rect.height : 100;
+        var corners = createMoveabilityCorners(div.id+'corners', divWidth + sizeAdjustment, divHeight + sizeAdjustment, padding, borderWidth, extraLength);
         corners.style.left = (-padding) + 'px';
         corners.style.top = (-padding) + 'px';
 

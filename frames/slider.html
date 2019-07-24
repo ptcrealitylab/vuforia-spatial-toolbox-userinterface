@@ -99,8 +99,11 @@
     // noinspection JSSuspiciousNameCombination
     var handleHeight = handleContainerRect.width; // works because handle is square/symmetric
 
-    var minY = handleContainerRect.top - handleContainerRect.height/2 + handleHeight/2;
-    var maxY = handleContainerRect.bottom - handleContainerRect.height/2 - handleHeight/2;
+    // var minY = handleContainerRect.top - handleContainerRect.height/2 + handleHeight/2;
+    // var maxY = handleContainerRect.bottom - handleContainerRect.height/2 - handleHeight/2;
+    
+    var minY = -1/6 * handleContainerRect.height; // minY = -120;
+    var maxY = 1/6 * handleContainerRect.height;
 
     var properties = {
         value: 0.5
