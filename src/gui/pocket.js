@@ -246,6 +246,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 return;
             }
             
+            if (evt.target.dataset.src === '_PLACEHOLDER_') {
+                console.log('dont add frame from placeholder!');
+                return;
+            }
+            
             // pointermove gesture must have started with a tap on the pocket
             if (!isPocketTapped) {
                 return;
@@ -618,14 +623,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
 
     function pocketShow() {
-        // console.log('pocketShow()', palette.innerHTML.trim());
-        // if (palette.innerHTML.trim() === "") {
-        //     createPocketUIPalette();
-        //     clearTimeout(pocketDestroyTimer);
-        // } else {
-        //     clearTimeout(pocketDestroyTimer);
-        // }
-        
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn(['pocket']);
         if (globalStates.guiState === "node") {
@@ -642,15 +639,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     function pocketHide() {
-        // palette.style.display = 'none';
-        // pocketDestroyTimer = setTimeout(function() {
-        //     palette.innerHTML = "";
-        //     // remove touch event from dragged frame if needed
-        //     if (globalStates.pocketEditingMode) {
-        //         var fakeEvent = { currentTarget: document.getElementById(globalStates.editingFrame) };
-        //         realityEditor.device.onTrueTouchUp(fakeEvent);
-        //     }
-        // }, 5000);
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff(['pocket']);
         isPocketTapped = false;
@@ -662,59 +650,41 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     function createPocketUIPalette() {
         palette = document.querySelector('.palette');
+        if (realityElements.length % 4 !== 0) {
+            var numToAdd = 4 - (realityElements.length % 4);
+            for (var i = 0; i < numToAdd; i++) {
+                // console.log('add blank ' + i);
+                realityElements.push(null);
+            }
+        }
+        
         for (var i = 0; i<realityElements.length; i++){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
             container.id = 'pocket-element';
             // container.position = 'relative';
-            var thisUrl = 'frames/' + element.name + '.html';
-            var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
-            container.dataset.src = thisUrl;
+            
+            if (element === null) {
+                // this is just a placeholder to fill out the last row
+                container.dataset.src = '_PLACEHOLDER_';
+            } else {
+                var thisUrl = 'frames/' + element.name + '.html';
+                var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
+                container.dataset.src = thisUrl;
 
-            container.dataset.name = element.name;
-            container.dataset.width = element.width;
-            container.dataset.height = element.height;
-            container.dataset.nodes = JSON.stringify(element.nodes);
-            
-            var elt = document.createElement('div');
-            elt.classList.add('palette-element');
-            // elt.style.width = element.width + 'px';
-            // elt.style.height = element.height + 'px';
-            // elt.style.width = '100%'; //container.offsetWidth + 'px'; // paletteElementSize + 'px'; //container.offsetWidth; //'100%';
-            // elt.style.height = '100%'; container.offsetHeight + 'px'; // paletteElementSize + 'px'; // container.offsetHeight; //'100%';
-            
-            elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
-            // elt.src = gifUrl;
-            
-            container.appendChild(elt);
+                container.dataset.name = element.name;
+                container.dataset.width = element.width;
+                container.dataset.height = element.height;
+                container.dataset.nodes = JSON.stringify(element.nodes);
+                
+                var elt = document.createElement('div');
+                elt.classList.add('palette-element');
+                elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
+                container.appendChild(elt);
+            }
+
             palette.appendChild(container);
-            
-            var paletteElementSize = Math.floor(parseFloat(window.getComputedStyle(container).width)) - 6;
-
-            // var scale = Math.min(
-            //     paletteElementSize / (element.width),
-            //     paletteElementSize / (element.height),
-            //     1
-            // );
-
-            // var scale = Math.min(
-            //     paletteElementSize / (elt.naturalWidth),
-            //     paletteElementSize / (elt.naturalHeight),
-            //     1
-            // );
-            
-            var ICON_SIZE = 204;
-            // var scale = paletteElementSize / elt.naturalWidth;
-            var scale = paletteElementSize / ICON_SIZE;
-
-            // elt.style.transform = 'scale(' + scale + ')';
-
-            // var offsetX = (paletteElementSize - element.width * scale) / 2;
-            // var offsetY = (paletteElementSize - element.height * scale) / 2;
-
-            // elt.style.marginTop = offsetY + 'px';
-            // elt.style.marginLeft = offsetX + 'px';
         }
     }
 

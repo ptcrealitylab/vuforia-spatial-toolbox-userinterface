@@ -182,8 +182,15 @@ var realityElements = [
             {name: 'value', type: "node", x:0, y:0}
         ]
     },
-
-  
+    
+    {
+        name: 'loto',
+        width: 400,
+        height: 610,
+        nodes: [
+        ]
+    },
+    
     {
         name: 'complete',
         width: 600,

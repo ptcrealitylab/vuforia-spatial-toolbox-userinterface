@@ -46,6 +46,10 @@
             .cls-7 {
                 fill: lime;
             }
+            
+            .cls-8 {
+                opacity: 1;
+            }
         </style>
     </defs>
     <title>Asset 39</title>
@@ -129,6 +133,12 @@
         setTimeout(function(){
             newCanvas();
         }, 100);
+
+        // start out with green selected
+        var border = document.querySelector('#green').querySelector('.cls-3');
+        border.setAttribute('class', 'cls-8');
+        border.setAttribute('fill', 'lime');
+        
     }, false );
 
     function newCanvas(){
@@ -150,13 +160,21 @@
     }
 
     function selectColor(el){
-        for(var i=0;i<document.getElementsByClassName("palette").length;i++){
-            document.getElementsByClassName("palette")[i].style.borderColor = "#777";
-            document.getElementsByClassName("palette")[i].style.borderStyle = "solid";
+        for(var i=0;i<document.getElementsByClassName("palette").length;i++) {
+            var thisElt = document.getElementsByClassName("palette");
+            if (thisElt !== el) {
+                var selectedBorder = document.getElementsByClassName("palette")[i].querySelector('.cls-8');
+                if (selectedBorder) {
+                    selectedBorder.setAttribute('class', 'cls-3');
+                    selectedBorder.setAttribute('fill', 'black');
+                    // selectedBorder.removeAttribute('fill');
+                }
+            }
         }
-        el.style.borderColor = "rgba(255,255,255,0)";
-        el.style.borderStyle = "dashed";
-        // color = window.getComputedStyle(el).backgroundColor;
+        
+        el.querySelector('.cls-3').setAttribute('class', 'cls-8');
+        el.querySelector('.cls-8').setAttribute('fill', window.getComputedStyle(el.children[0]).fill);
+        
         color = window.getComputedStyle(el.children[0]).fill;
         ctx.beginPath();
         ctx.strokeStyle = color;
@@ -204,7 +222,6 @@
         ctx.lineTo(x,y);
         ctx.stroke();
     }
-
 
     realityInterface.addReadPublicDataListener('storage', "data", function (e) {
         var ctx = document.getElementById("canvas").getContext("2d");
