@@ -550,6 +550,7 @@ body {
 .memoryBar {
     margin: 0;
     padding: 0;
+    padding-top: 16px;
     z-index: 5;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 }
@@ -1272,6 +1273,7 @@ Logic Interface CSS
 .palette {
     width: calc(100% - 10vw);
     padding-top: 16px;
+    padding-bottom: 16px;
 }
 
 .palette-element {
