@@ -13,6 +13,40 @@ createNameSpace("realityEditor.network.frameContentAPI");
      */
     function initFeature() {
         realityEditor.device.keyboardEvents.registerCallback('keyUpHandler', keyUpHandler);
+        
+        realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+    }
+    
+    function onFrameAdded(params) {
+        sendMessageToAllVisibleFrames({
+            frameCreatedEvent: {
+                objectId: params.objectKey,
+                frameId: params.frameKey,
+                frameType: params.frameType
+            }
+        });
+    }
+    
+    function onVehicleDeleted(params) {
+        if (params.objectKey && params.frameKey && !params.nodeKey) { // only send message about frames, not nodes
+            sendMessageToAllVisibleFrames({
+                frameDeletedEvent: {
+                    objectId: params.objectKey,
+                    frameId: params.frameKey
+                }
+            });
+        }
+    }
+    
+    function sendMessageToAllVisibleFrames(msgContent) {
+        for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
+            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
+
+            realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
+                realityEditor.network.postMessageIntoFrame(frameKey, msgContent);
+            });
+        }
     }
 
     /**
@@ -23,13 +57,15 @@ createNameSpace("realityEditor.network.frameContentAPI");
         
         var acyclicEventObject = getMutablePointerEventCopy(params.event);
         
-        for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
-            
-            realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
-                realityEditor.network.postMessageIntoFrame(frameKey, {keyboardUpEvent: acyclicEventObject});
-            });
-        }
+        sendMessageToAllVisibleFrames({keyboardUpEvent: acyclicEventObject});
+        
+        // for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        //     if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
+        //    
+        //     realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
+        //         realityEditor.network.postMessageIntoFrame(frameKey, {keyboardUpEvent: acyclicEventObject});
+        //     });
+        // }
     }
 
     /**

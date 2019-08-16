@@ -182,6 +182,14 @@ var realityElements = [
             {name: 'value', type: "node", x:0, y:0}
         ]
     },
+
+    {
+        name: 'loto-session',
+        width: 800,
+        height: 200,
+        nodes: [
+        ]
+    },
     
     {
         name: 'loto',

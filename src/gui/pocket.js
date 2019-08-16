@@ -49,6 +49,24 @@
 
 createNameSpace("realityEditor.gui.pocket");
 
+/**
+ * @type {CallbackHandler}
+ */
+realityEditor.gui.pocket.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/pocket');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.gui.pocket.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/pocket');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
+
 realityEditor.gui.pocket.pocketButtonAction = function() {
 
 	console.log("state: " + globalStates.pocketButtonState);
@@ -381,6 +399,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
 
                 realityEditor.gui.pocket.setPocketFrame(frame, {pageX: evt.pageX, pageY: evt.pageY}, closestObjectKey);
+
+                realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
 
             } else {
                 console.warn('there aren\'t any visible objects to place this frame on!');

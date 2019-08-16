@@ -62,6 +62,8 @@
         touchDeciderRegistered: false,
         onload: null
     };
+    
+    var alreadyLoaded = false;
 
     // adding css styles nessasary for acurate 3D transformations.
     realityObject.style.type = 'text/css';
@@ -180,21 +182,22 @@
         // initialize realityObject for frames and add additional API methods
         if (typeof msgContent.node !== 'undefined') {
 
-            if (realityObject.sendFullScreen === false) {
-                realityObject.height = document.body.scrollHeight;
-                realityObject.width = document.body.scrollWidth;
-            }
-
-            var alreadyLoaded = !!realityObject.node;
-
-            realityObject.node = msgContent.node;
-            realityObject.frame = msgContent.frame;
-            realityObject.object = msgContent.object;
-
-            // Post the default state of this frame to the parent application
-            postAllDataToParent();
-
             if (!alreadyLoaded) {
+
+                if (realityObject.sendFullScreen === false) {
+                    realityObject.height = document.body.scrollHeight;
+                    realityObject.width = document.body.scrollWidth;
+                }
+
+                // var alreadyLoaded = !!realityObject.node;
+
+                realityObject.node = msgContent.node;
+                realityObject.frame = msgContent.frame;
+                realityObject.object = msgContent.object;
+
+                // Post the default state of this frame to the parent application
+                postAllDataToParent();
+                
                 if (realityInterface) {
                     // adds the API methods not reliant on the socket.io connection
                     realityInterface.injectAllNonSocketAPIs();
@@ -210,6 +213,8 @@
             if (realityObject.sendScreenObject) {
                 reality.activateScreenObject(); // make sure it gets sent with updated object,frame,node
             }
+            
+            alreadyLoaded = true;
 
             // initialize realityObject for logic block settings menus, which declare a new RealityLogic()
         } else if (typeof msgContent.logic !== "undefined") {
@@ -477,6 +482,7 @@
              */
             {
                 this.sendGlobalMessage = makeSendStub('sendGlobalMessage');
+                this.sendMessageToFrame = makeSendStub('sendMessageToFrame');
                 this.sendCreateNode = makeSendStub('sendCreateNode');
                 this.sendMoveNode = makeSendStub('sendMoveNode');
                 this.sendResetNodes = makeSendStub('sendResetNodes');
@@ -497,6 +503,8 @@
                 this.activateScreenObject = makeSendStub('activateScreenObject');
                 this.enableCustomInteractionMode = makeSendStub('enableCustomInteractionMode');
                 this.setInteractableDivs = makeSendStub('setInteractableDivs');
+                this.subscribeToFrameCreatedEvents = makeSendStub('subscribeToFrameCreatedEvents');
+                this.subscribeToFrameDeletedEvents = makeSendStub('subscribeToFrameDeletedEvents');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -506,6 +514,7 @@
              */
             {
                 this.addGlobalMessageListener = makeSendStub('addGlobalMessageListener');
+                this.addFrameMessageListener = makeSendStub('addFrameMessageListener');
                 this.addMatrixListener = makeSendStub('addMatrixListener');
                 this.addAllObjectMatricesListener = makeSendStub('addAllObjectMatricesListener');
                 this.addDevicePoseMatrixListener = makeSendStub('addGroundPlaneMatrixListener');
@@ -879,6 +888,18 @@
             });
         };
 
+        this.sendMessageToFrame = function (frameId, msgContent) {
+            console.log(realityObject.frame + ' is sending a message to ' + frameId);
+            
+            postDataToParent({
+                sendMessageToFrame: {
+                    sourceFrame: realityObject.frame,
+                    destinationFrame: frameId,
+                    msgContent: msgContent
+                }
+            });
+        };
+
         this.sendCreateNode = function (name, x, y, attachToGroundPlane) {
             postDataToParent({
                 createNode: {
@@ -946,6 +967,7 @@
 
         this.setFullScreenOn = function(zPosition) {
             realityObject.sendFullScreen = true;
+            console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             realityObject.height = '100%';
             realityObject.width = '100%';
             if (zPosition !== undefined) {
@@ -956,6 +978,7 @@
 
         this.setFullScreenOff = function () {
             realityObject.sendFullScreen = false;
+            console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             realityObject.height = document.body.scrollHeight;
             realityObject.width = document.body.scrollWidth;
             postAllDataToParent();
@@ -963,6 +986,7 @@
 
         this.setStickyFullScreenOn = function () {
             realityObject.sendFullScreen = "sticky";
+            console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             realityObject.sendSticky = true;
             realityObject.height = "100%";
             realityObject.width = "100%";
@@ -1051,6 +1075,27 @@
             });
         };
 
+        this.subscribeToFrameCreatedEvents = function(callback) {
+            realityObject.messageCallBacks.frameCreatedCall = function (msgContent) {
+                if(realityObject.visibility !== "visible") return;
+                if (typeof msgContent.frameCreatedEvent !== "undefined") {
+                    console.log(realityObject.frame + ' learned about the creation of frame ' + msgContent.frameCreatedEvent.frameId + ' (type ' + msgContent.frameCreatedEvent.frameType + ')');
+                    callback(msgContent.frameCreatedEvent);
+                }
+            };
+        };
+        
+        
+        this.subscribeToFrameDeletedEvents = function(callback) {
+            realityObject.messageCallBacks.frameDeletedCall = function (msgContent) {
+                if(realityObject.visibility !== "visible") return;
+                if (typeof msgContent.frameDeletedEvent !== "undefined") {
+                    console.log(realityObject.frame + ' learned about the deletion of frame ' + msgContent.frameDeletedEvent.frameId + ' (type ' + msgContent.frameDeletedEvent.frameType + ')');
+                    callback(msgContent.frameDeletedEvent);
+                }
+            };
+        };
+        
         /**
          * Stubbed here for backwards compatibility of API. In previous versions:
          * Hides the frame itself and instead populates a background context within the editor with this frame's contents
@@ -1074,9 +1119,16 @@
                 if (typeof msgContent.globalMessage !== 'undefined') {
                     callback(msgContent.globalMessage);
                 }
-            };
+            }
         };
-
+        
+        this.addFrameMessageListener = function(callback) {
+            realityObject.messageCallBacks.frameMessageCall = function (msgContent) {
+                if (typeof msgContent.sendMessageToFrame !== 'undefined') {
+                    callback(msgContent.sendMessageToFrame);
+                }
+            }
+        };
 
         this.addMatrixListener = function (callback) {
             if (!realityObject.sendMatrices.modelView) {

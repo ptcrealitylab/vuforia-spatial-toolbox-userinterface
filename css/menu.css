@@ -7,7 +7,7 @@
     top: 18px;*/
 
     /* this is a hack for adding the interface in front of the transformed web interface */
-    -webkit-transform: translateZ(1000px);
+    -webkit-transform: translateZ(10000px);
     z-index: 1000;
 }
 #mainButton {
@@ -480,7 +480,7 @@
 
 .searchCell {
     margin-top: 5px; margin-left: 5px;
-    height: 34px; width: 160px; -webkit-transform: translateZ(900px);
+    height: 34px; width: 160px; -webkit-transform: translateZ(9000px);
     display: inline-table; background-color: rgba(0,255,255,0.1);
 }
 

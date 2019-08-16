@@ -1663,19 +1663,20 @@ realityEditor.gui.ar.utilities.normalizeMatrix = function(m) {
  */
 realityEditor.gui.ar.utilities.extractRotation = function(matrix, flipX, flipY, flipZ) {
     var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
-    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-    if (flipX) {
-        eulerAngles.theta *= -1; // flips first axis of rotation (yaw)
+    if (flipX || flipY || flipZ) {
+        var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
+        if (flipX) {
+            eulerAngles.theta *= -1; // flips first axis of rotation (yaw)
+        }
+        if (flipY) {
+            eulerAngles.psi *= -1; // flips second axis of rotation (pitch)
+        }
+        if (flipZ) {
+            eulerAngles.phi *= -1; // flips third axis of rotation (roll)
+        }
+        q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
     }
-    if (flipY) {
-        eulerAngles.psi *= -1; // flips second axis of rotation (pitch)
-    }
-    if (flipZ) {
-        eulerAngles.phi *= -1; // flips third axis of rotation (roll)
-    }
-    var modifiedQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-    
-    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(modifiedQ);
+    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
 };
 
 /**
@@ -1760,4 +1761,113 @@ realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
 //    
 //     return matrix;
 // };
+
+/**
+ * Custom made Matrix data structure for working with transformation matrices
+ * 
+ * @param {Array.<number>} array
+ * @param {number|undefined} numRows - can be omitted if matrix is square
+ * @param {number|undefined} numCols - can be omitted if matrix is square
+ * @param {boolean} isRowMajor - by default, we use column-major matrices. pass in true if array is in row-major form
+ * @constructor
+ */
+function Matrix(array, numRows, numCols, isRowMajor) {
+    
+    if (typeof numRows === 'undefined' && typeof numCols === 'undefined') {
+        if (array.length > 0 && Math.sqrt(array.length) % 1 === 0) {
+            numRows = Math.sqrt(array.length);
+            numCols = Math.sqrt(array.length);
+        } else {
+            throw new Error('cannot create non-square Matrix without specifying shape!');
+        }
+    } else if (numRows * numCols !== array.length) {
+        throw new Error('invalid shape (' + numRows + ' x ' + numCols + ') to form Matrix from array of length ' + array.length);
+    }
+    
+    this.array = array;
+    this.numRows = numRows;
+    this.numCols = numCols;
+    this.isRowMajor = isRowMajor;
+    
+    this.isSquare = numRows === numCols;
+    
+    // create un-flattened representation of the matrix from the flattened array
+    this.mat = [];
+    if (isRowMajor) {
+        for (var r = 0; r < numRows; r++) {
+            var row = [];
+            for (var c = 0; c < numCols; c++) {
+                row[c] = array[r * numCols + c];
+            }
+            this.mat.push(row);
+        }
+    } else {
+        for (var c = 0; c < numCols; c++) {
+            var col = [];
+            for (var r = 0; r < numRows; r++) {
+                col[r] = array[r * numCols + c];
+            }
+            this.mat.push(col);
+        }
+    }
+}
+
+Matrix.prototype.determinant = function() {
+    if (!this.isSquare) { throw new Error('cannot calculate determinant of non-square Matrix'); }
+    
+    // base case
+    if (this.numRows === 2) {
+        return this.mat[0][0] * this.mat[1][1] - this.mat[0][1] * this.mat[1][0];
+    }
+    
+};
+
+Matrix.prototype.deleteRowAndColumn = function(index) {
+    var copy = this.clone();
+    
+    var newArray = JSON.parse(JSON.stringify(this.array));
+    
+    for (var r = 0; r < this.numCols; r++) {
+        for (var c = 0; c < this.numCols; c++) {
+            
+            
+            
+
+        }
+    }
+};
+
+Matrix.prototype.arrayIndex = function(row, col) {
+    if (this.isRowMajor) {
+        return row * this.numCols + col;
+    } else {
+        return col * this.numRows + row;
+    }
+};
+
+Matrix.prototype.clone = function() {
+    return new Matrix(this.array, this.numRows, this.numCols, this.isRowMajor);
+};
+
+Matrix.prototype.unflattened = function() {
+    return this.mat;
+};
+
+/**
+ * @brief  Get the determinant of this matrix.
+ * @return The determinant.
+ */
+Array.prototype.determinant = function()  {
+// #define MINOR(m, r0, r1, r2, c0, c1, c2) \
+// ((m).rows[r0][c0] * ((m).rows[r1][c1] * (m).rows[r2][c2] - (m).rows[r2][c1] * (m).rows[r1][c2]) - \
+// (m).rows[r0][c1] * ((m).rows[r1][c0] * (m).rows[r2][c2] - (m).rows[r2][c0] * (m).rows[r1][c2]) + \
+// (m).rows[r0][c2] * ((m).rows[r1][c0] * (m).rows[r2][c1] - (m).rows[r2][c0] * (m).rows[r1][c1]))
+//
+// return this->rows[0][0] * MINOR(*this, 1, 2, 3, 1, 2, 3) -
+//     this->rows[0][1] * MINOR(*this, 1, 2, 3, 0, 2, 3) +
+//     this->rows[0][2] * MINOR(*this, 1, 2, 3, 0, 1, 3) -
+//     this->rows[0][3] * MINOR(*this, 1, 2, 3, 0, 1, 2);
+//
+// #undef MINOR
+}
 
