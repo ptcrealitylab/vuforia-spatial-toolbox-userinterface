@@ -278,7 +278,7 @@ body {
     padding: 20px;
     background-color: #969696;
 
-    -webkit-transform: translateZ(300px);
+    -webkit-transform: translateZ(3000px);
 }
 
 
@@ -302,7 +302,7 @@ body {
     -webkit-user-select: none;
     user-select: none;
 
-    -webkit-transform: translateZ(300px);
+    -webkit-transform: translateZ(3000px);
     z-index: 10;
 }
 
@@ -697,7 +697,7 @@ body {
     /* this is a hack for adding the interface in front of the transformed web interface */
     z-index: 3;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: translateZ(600px);
+    -webkit-transform: translateZ(6000px);
 }
 
 #overlay.overlayPositive,
@@ -845,7 +845,7 @@ body {
     top: 0;
     margin-left: -20px;
     margin-top: -20px;
-    transform: translateZ(1000px);
+    transform: translateZ(10000px);
 }
 
 .visibleEditingSVG {
@@ -1230,7 +1230,7 @@ Logic Interface CSS
     padding: 0;
     z-index: 1;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: translateZ(300px); /* Above web interfaces, below side buttons */
+    -webkit-transform: translateZ(3000px); /* Above web interfaces, below side buttons */
     background-color: rgba(17, 55, 55, 0.7);
     display: none;
 }

@@ -1270,11 +1270,11 @@ if (thisFrame) {
             }
         }
     }
-    
+
     if (msgContent.globalMessage) {
         var iframes = document.getElementsByTagName('iframe');
         for (var i = 0; i < iframes.length; i++) {
-       
+
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
                 var objectKey = iframes[i].getAttribute("data-object-key");
                 if (objectKey) {
@@ -1292,6 +1292,37 @@ if (thisFrame) {
             }
         }
     }
+
+    if (msgContent.sendMessageToFrame) {
+        
+        var iframe = globalDOMCache['iframe' + msgContent.sendMessageToFrame.destinationFrame];
+        if (iframe) {
+            iframe.contentWindow.postMessage(JSON.stringify(msgContent), '*');
+        }
+        
+        // var iframes = document.getElementsByTagName('iframe');
+        // for (var i = 0; i < iframes.length; i++) {
+        //
+        //     if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
+        //         var objectKey = iframes[i].getAttribute("data-object-key");
+        //         if (objectKey) {
+        //             var receivingObject = (objectKey === 'pocket') ? (pocketItem[objectKey]) : objects[objectKey];
+        //             if (receivingObject.integerVersion >= 32) {
+        //                 var msg = {};
+        //                 if (receivingObject.integerVersion >= 170) {
+        //                     msg = {globalMessage: msgContent.globalMessage};
+        //                 } else {
+        //                     msg = {ohGlobalMessage: msgContent.ohGlobalMessage};
+        //                 }
+        //                 iframes[i].contentWindow.postMessage(JSON.stringify(msg), "*");
+        //             }
+        //         }
+        //     }
+        // }
+        
+    }
+
+
 
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
@@ -1504,7 +1535,7 @@ if (thisFrame) {
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
         activeVehicle.moveDelay = msgContent.moveDelay;
-        console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
+        // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
         
     }
 

@@ -14,7 +14,7 @@
     -webkit-user-select: none;
     cursor: pointer;
     z-index: 10;
-    transform: translateZ(1000px);
+    transform: translateZ(10000px);
 }
 
 .containerCollapsed {
