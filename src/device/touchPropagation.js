@@ -55,6 +55,12 @@ createNameSpace("realityEditor.device.touchPropagation");
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
      */
     function handleUnacceptedTouch(eventData, fullMessageContent) {
+        
+        console.log('handleUnacceptedTouch');
+        // eventData.x is the x coordinate projected within the previouslyTouched iframe. we need to get position on screen
+        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        eventData.x = touchPosition.x;
+        eventData.y = touchPosition.y;
 
         // clear the timer that would start dragging the previously traversed frame
         realityEditor.device.clearTouchTimer();
@@ -82,6 +88,9 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // find the next overlapping div that hasn't been traversed (and therefore hidden) yet
         var newTouchedElement = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+        // var newCoords = webkitConvertPointFromPageToNode(newTouchedElement, new WebKitPoint(eventData.x, eventData.y));
+        // eventData.x = newCoords.x;
+        // eventData.y = newCoords.y;
         dispatchSyntheticEvent(newTouchedElement, eventData);
 
         // re-show each tagged element
