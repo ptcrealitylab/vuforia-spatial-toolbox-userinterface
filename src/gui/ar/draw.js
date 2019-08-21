@@ -321,6 +321,12 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.isObjectWithNoFramesVisible = true;
     }
     
+    var visibleExclusiveFrames = realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames();
+    if (visibleExclusiveFrames.length > 1) {
+        console.log('too many exlusive frames visible at once!!', visibleExclusiveFrames);
+        
+    }
+    
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
        // if (!objects.hasOwnProperty(objectKey)) { continue; }
@@ -2190,6 +2196,76 @@ realityEditor.gui.ar.draw.doesAnythingUseGroundPlane = function() {
         }
     });
     return isAnyFrameSubscribedToGroundPlane;
+};
+
+/**
+ * Helper function to iterate over all frames on currently visible objects
+ * @param {function} callback
+ */
+realityEditor.gui.ar.draw.forEachVisibleFrame = function(callback) {
+    realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
+        if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
+            callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
+        }
+    });
+};
+
+/**
+ * Returns a list of IDs for all frames that are currently fullscreen and require exclusive control of the screen
+ * @return {Array.<{objectKey: string, frameKey: string}>}
+ */
+realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames = function() {
+    var exclusiveFrameKeys = [];
+    realityEditor.gui.ar.draw.forEachVisibleFrame(function(objectKey, frameKey) {
+        var frame = realityEditor.getFrame(objectKey, frameKey);
+        if (frame.fullScreen && frame.isFullScreenExclusive) {
+            exclusiveFrameKeys.push({
+                objectKey: objectKey,
+                frameKey: frameKey
+            });
+        }
+    });
+    return exclusiveFrameKeys;
+};
+
+/**
+ * Makes sure that there are no other exclusive fullscreen frames other than the specified one.
+ * (Turns off fullscreen mode for all the others)
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen = function(objectKey, frameKey) {
+    var exclusiveFrameKeys = this.getAllVisibleExclusiveFrames();
+    if (exclusiveFrameKeys.length > 1) {
+        exclusiveFrameKeys.forEach(function(keys) {
+            if (keys.frameKey !== frameKey) {
+                realityEditor.gui.ar.draw.removeFullscreenFromFrame(keys.objectKey, keys.frameKey);
+            }
+        });
+    }
+};
+
+/**
+ * Helper function called by frame API and elsewhere to stop rendering a frame as fullscreen
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameKey) {
+    var frame = realityEditor.getFrame(objectKey, frameKey);
+    
+    frame.fullScreen = false;
+    if (frame.uuid) {
+        globalDOMCache[frame.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
+    }
+
+    // TODO: reset left/top offset when returns to non-fullscreen?
+
+    globalDOMCache['iframe' + frame.uuid].classList.remove('webGlFrame');
+
+    var containingObject = realityEditor.getObject(objectKey);
+    if (!containingObject.objectVisible) {
+        containingObject.objectVisible = true;
+    }
 };
 
 /**

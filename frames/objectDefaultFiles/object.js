@@ -39,6 +39,7 @@
         sendScreenObject : false,
         fullscreenZPosition: 0,
         sendSticky : false,
+        isFullScreenExclusive: false,
         height: '100%',
         width: '100%',
         socketIoScript: {},
@@ -506,6 +507,8 @@
                 this.setFullScreenOff = makeSendStub('setFullScreenOff');
                 this.setStickyFullScreenOn = makeSendStub('setStickyFullScreenOn');
                 this.setStickinessOff = makeSendStub('setStickinessOff');
+                this.setExclusiveFullScreenOn = makeSendStub('setExclusiveFullScreenOn');
+                this.setExclusiveFullScreenOff = makeSendStub('setExclusiveFullScreenOff');
                 this.startVideoRecording = makeSendStub('startVideoRecording');
                 this.stopVideoRecording = makeSendStub('stopVideoRecording');
                 this.setMoveDelay = makeSendStub('setMoveDelay');
@@ -1044,6 +1047,24 @@
                 fullScreen: realityObject.sendFullScreen,
                 fullscreenZPosition: realityObject.fullscreenZPosition,
                 stickiness: realityObject.sendSticky
+            });
+        };
+
+        /**
+         * Exclusive means that there can't be another exclusive fullscreen frame visible at the same time.
+         * This function doesn't actually make this frame fullscreen, just toggles on this setting.
+         */
+        this.setExclusiveFullScreenOn = function () {
+            realityObject.isFullScreenExclusive = true;
+            postDataToParent({
+                isFullScreenExclusive: realityObject.isFullScreenExclusive
+            });
+        };
+        
+        this.setExclusiveFullScreenOff = function () {
+            realityObject.isFullScreenExclusive = false;
+            postDataToParent({
+                isFullScreenExclusive: realityObject.isFullScreenExclusive
             });
         };
 
