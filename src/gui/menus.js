@@ -192,7 +192,7 @@ createNameSpace("realityEditor.gui.menus");
         if(buttons[buttonName].overlay) {
 
             buttons[buttonName].overlay.addEventListener("pointerdown", function (event) {
-                console.log(buttonName + ' down');
+                // console.log(buttonName + ' down');
                 
                 var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
                 
@@ -201,7 +201,7 @@ createNameSpace("realityEditor.gui.menus");
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerup", function (event) {
-                console.log(buttonName + ' up');
+                // console.log(buttonName + ' up');
 
                 // Note: if you don't trigger the _x_ButtonDown for button named _x_, you will need to trigger _x_ButtonUp with
                 // event.ignoreIsDown=true because otherwise it won't register that you intended to press it

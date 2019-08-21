@@ -1421,9 +1421,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
 
                         // computes {center: {x: number, y: number}} of the frame to be sent into a fullscreen frame
-                        // TODO: add sendMatrices.screenPosition and only compute/send this in if subscribed
-                        var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2, true);
-                        thisMsg.frameScreenPosition = frameScreenPosition;
+                        // var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+                        
+                        var realScreenCoordinates = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(activeVehicle.objectId, activeKey);
+
+                        // console.log(frameScreenPosition, realScreenCoordinates);
+                        
+                        thisMsg.frameScreenPosition = realScreenCoordinates; //frameScreenPosition;
                     }
 
                     
@@ -1737,6 +1741,12 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeFrameKey);
         var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, touchPosition.x, touchPosition.y, false);
+        
+        if (typeof pocketContainer.vehicle.startPositionOffset !== 'undefined') {
+            pocketContainer.vehicle.ar.x += pocketContainer.vehicle.startPositionOffset.x;
+            pocketContainer.vehicle.ar.y += pocketContainer.vehicle.startPositionOffset.y;
+            delete pocketContainer.vehicle['startPositionOffset'];
+        }
     } else {
         // for nodes, which are dragged in from side button, just set touch offset to center of element and the rest takes care of itself
         realityEditor.device.editingState.touchOffset = {

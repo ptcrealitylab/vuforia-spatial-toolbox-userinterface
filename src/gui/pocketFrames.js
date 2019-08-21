@@ -196,7 +196,11 @@ var realityElements = [
         width: 400,
         height: 610,
         nodes: [
-        ]
+        ],
+        startPositionOffset: {
+            x: 120,
+            y: -30
+        }
     },
     
     {

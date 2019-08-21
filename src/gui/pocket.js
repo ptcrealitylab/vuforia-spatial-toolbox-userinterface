@@ -311,6 +311,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
+                if (evt.target.dataset.startPositionOffset) {
+                    var startOffset = JSON.parse(evt.target.dataset.startPositionOffset);
+                    frame.startPositionOffset = startOffset;
+                    // frame.ar.x = startOffset.x;
+                    // frame.ar.y = startOffset.y;
+                    console.log('frame offset = ', startOffset);
+                }
+                
                 frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
@@ -697,6 +705,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 container.dataset.width = element.width;
                 container.dataset.height = element.height;
                 container.dataset.nodes = JSON.stringify(element.nodes);
+                if (typeof element.startPositionOffset !== 'undefined') {
+                    container.dataset.startPositionOffset = JSON.stringify(element.startPositionOffset);
+                }
                 
                 var elt = document.createElement('div');
                 elt.classList.add('palette-element');
