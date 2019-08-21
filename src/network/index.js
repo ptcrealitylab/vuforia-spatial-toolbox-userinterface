@@ -1352,22 +1352,15 @@ if (thisFrame) {
                 realityEditor.device.resetEditingState();
                 realityEditor.device.clearTouchTimer();
             }
+            
+            // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
+            if (tempThisObject.isFullScreenExclusive) {
+                realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+            }
 
         }
         if (msgContent.fullScreen === false) {
-            tempThisObject.fullScreen = false;
-            if (tempThisObject.uuid) {
-                globalDOMCache[tempThisObject.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
-            }
-            
-            // TODO: reset left/top offset when returns to non-fullscreen?
-
-            globalDOMCache['iframe' + tempThisObject.uuid].classList.remove('webGlFrame');
-
-            var containingObject = realityEditor.getObject(msgContent.object);
-            if (!containingObject.objectVisible) {
-                containingObject.objectVisible = true;
-            }
+            realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame);
         }
         
         // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
@@ -1405,11 +1398,25 @@ if (thisFrame) {
             if (object) {
                 object.containsStickyFrame = true;
             }
+            
+            // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
+            if (tempThisObject.isFullScreenExclusive) {
+                realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+            }
         }
     }
 
     if(typeof msgContent.stickiness === "boolean") {
         tempThisObject.stickiness = msgContent.stickiness;
+    }
+    
+    if (typeof msgContent.isFullScreenExclusive !== "undefined") {
+        tempThisObject.isFullScreenExclusive = msgContent.isFullScreenExclusive;
+
+        // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
+        if (tempThisObject.isFullScreenExclusive) {
+            realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+        }
     }
 
     // todo this needs to be checked in to the present version

@@ -58,7 +58,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         
         // render the UIs if in distance editing mode or actively scaling one of them
         if (isScalingDistance || globalStates.distanceEditingMode) {
-            forEachVisibleFrame( function(objectKey, frameKey) {
+            realityEditor.gui.ar.draw.forEachVisibleFrame( function(objectKey, frameKey) {
                 // if frame it is attached to no longer exists, remove it
                 // otherwise render it
                 transformDistanceUI(objectKey, frameKey);
@@ -136,7 +136,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             // utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
             // utilities.multiplyMatrix(translatedGroundPlaneMatrix, this.globalStates.projectionMatrix, finalMatrix);   
 
-            forEachVisibleFrame( function(objectKey, frameKey) {
+            realityEditor.gui.ar.draw.forEachVisibleFrame( function(objectKey, frameKey) {
                 // if frame it is attached to no longer exists, remove it
                 // otherwise render it
                 // transformDistanceUI(objectKey, frameKey);
@@ -248,14 +248,6 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.device.enablePinchToScale(); // just in case we didn't touch up on the green button
 
     }
-
-    function forEachVisibleFrame(callback) {
-        realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
-            if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
-                callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
-            }
-        });
-    }
     
     /**
      * Triggered when the distance editing mode button is pressed
@@ -269,8 +261,8 @@ createNameSpace("realityEditor.device.distanceScaling");
             var frameKey;
             if (globalStates.distanceEditingMode) {
                 console.log('show all distance editing UIs');
-                
-                forEachVisibleFrame( function(objectKey, frameKey) {
+
+                realityEditor.gui.ar.draw.forEachVisibleFrame( function(objectKey, frameKey) {
                     getDistanceUI(frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
                 });
                 
