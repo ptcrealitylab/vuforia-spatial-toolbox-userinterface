@@ -1356,7 +1356,6 @@ if (thisFrame) {
         }
         if (msgContent.fullScreen === false) {
             tempThisObject.fullScreen = false;
-            
             if (tempThisObject.uuid) {
                 globalDOMCache[tempThisObject.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
             }

@@ -10,6 +10,7 @@
 
     // Keeps track of all state related to this frame and its API interactions
     var realityObject = {
+        alreadyLoaded: false,
         node: '',
         frame: '',
         object: '',
@@ -62,8 +63,8 @@
         touchDeciderRegistered: false,
         onload: null
     };
-    
-    var alreadyLoaded = false;
+
+    console.log('fullscreen reset for new frame ' + realityObject.sendFullScreen);
 
     // adding css styles nessasary for acurate 3D transformations.
     realityObject.style.type = 'text/css';
@@ -123,6 +124,8 @@
      * Helper function that posts entire basic state of realityObject to parent
      */
     function postAllDataToParent() {
+        console.log('check: ' + realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
+
         if (typeof realityObject.node !== 'undefined' || typeof realityObject.frame !== 'undefined') {
             parent.postMessage(JSON.stringify(
                 {
@@ -171,6 +174,10 @@
      * @param {object} msgContent - JSON contents received by the iframe's contentWindow.postMessage listener
      */
     realityObject.messageCallBacks.mainCall = function (msgContent) {
+        
+        if (typeof msgContent.sendMessageToFrame !== 'undefined') {
+            return; // TODO: fix this bug in a cleaner way
+        }
 
         // Adds the socket.io connection and adds the related API methods
         if (msgContent.objectData) { // objectData contains the IP necessary to load the socket script
@@ -182,15 +189,13 @@
         // initialize realityObject for frames and add additional API methods
         if (typeof msgContent.node !== 'undefined') {
 
-            if (!alreadyLoaded) {
+            if (!realityObject.alreadyLoaded) {
 
                 if (realityObject.sendFullScreen === false) {
                     realityObject.height = document.body.scrollHeight;
                     realityObject.width = document.body.scrollWidth;
                 }
-
-                // var alreadyLoaded = !!realityObject.node;
-
+                
                 realityObject.node = msgContent.node;
                 realityObject.frame = msgContent.frame;
                 realityObject.object = msgContent.object;
@@ -214,7 +219,7 @@
                 reality.activateScreenObject(); // make sure it gets sent with updated object,frame,node
             }
             
-            alreadyLoaded = true;
+            realityObject.alreadyLoaded = true;
 
             // initialize realityObject for logic block settings menus, which declare a new RealityLogic()
         } else if (typeof msgContent.logic !== "undefined") {
@@ -281,7 +286,12 @@
             if (realityObject.visibility === "visible") {
                 if (typeof realityObject.node !== "undefined") {
                     if(realityObject.sendSticky) {
-                        postAllDataToParent();
+                        // postAllDataToParent();
+                        postDataToParent({
+                            fullScreen: realityObject.sendFullScreen,
+                            fullscreenZPosition: realityObject.fullscreenZPosition,
+                            stickiness: realityObject.sendSticky
+                        });
                     }
                 }
             }
@@ -889,7 +899,7 @@
         };
 
         this.sendMessageToFrame = function (frameId, msgContent) {
-            console.log(realityObject.frame + ' is sending a message to ' + frameId);
+            // console.log(realityObject.frame + ' is sending a message to ' + frameId);
             
             postDataToParent({
                 sendMessageToFrame: {
@@ -932,70 +942,109 @@
         this.subscribeToMatrix = function() {
             realityObject.sendMatrix = true;
             realityObject.sendMatrices.modelView = true;
-            if (realityObject.sendFullScreen === false) {
-                realityObject.height = document.body.scrollHeight;
-                realityObject.width = document.body.scrollWidth;
-            }
-            postAllDataToParent();
+            // if (realityObject.sendFullScreen === false) {
+            //     realityObject.height = document.body.scrollHeight;
+            //     realityObject.width = document.body.scrollWidth;
+            // }
+            // postAllDataToParent();
+            postDataToParent({
+                sendMatrix: realityObject.sendMatrix,
+                sendMatrices: realityObject.sendMatrices
+            });
         };
 
         this.subscribeToScreenPosition = function() {
             realityObject.sendScreenPosition = true;
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                sendScreenPosition: realityObject.sendScreenPosition
+            });
         };
 
         this.subscribeToDevicePoseMatrix = function () {
             realityObject.sendMatrices.devicePose = true;
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                sendMatrices: realityObject.sendMatrices
+            });
         };
 
         this.subscribeToAllMatrices = function () {
             realityObject.sendMatrices.allObjects = true;
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                sendMatrices: realityObject.sendMatrices
+            });
         };
 
         this.subscribeToGroundPlaneMatrix = function () {
             realityObject.sendMatrices.groundPlane = true;
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                sendMatrices: realityObject.sendMatrices
+            });
         };
 
         // subscriptions
         this.subscribeToAcceleration = function () {
             realityObject.sendAcceleration = true;
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                sendAcceleration: realityObject.sendAcceleration
+            });
         };
 
         this.setFullScreenOn = function(zPosition) {
             realityObject.sendFullScreen = true;
-            console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
-            realityObject.height = '100%';
-            realityObject.width = '100%';
+            // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
+            // realityObject.height = '100%';
+            // realityObject.width = '100%';
             if (zPosition !== undefined) {
                 realityObject.fullscreenZPosition = zPosition;
             }
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                fullScreen: realityObject.sendFullScreen,
+                fullscreenZPosition: realityObject.fullscreenZPosition,
+                stickiness: realityObject.sendSticky
+            });
         };
 
         this.setFullScreenOff = function () {
             realityObject.sendFullScreen = false;
-            console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
-            realityObject.height = document.body.scrollHeight;
-            realityObject.width = document.body.scrollWidth;
-            postAllDataToParent();
+            // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
+            // realityObject.height = document.body.scrollHeight;
+            // realityObject.width = document.body.scrollWidth;
+            // postAllDataToParent();
+            postDataToParent({
+                fullScreen: realityObject.sendFullScreen,
+                fullscreenZPosition: realityObject.fullscreenZPosition,
+                stickiness: realityObject.sendSticky
+            });
         };
 
         this.setStickyFullScreenOn = function () {
             realityObject.sendFullScreen = "sticky";
-            console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
+            // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             realityObject.sendSticky = true;
-            realityObject.height = "100%";
-            realityObject.width = "100%";
-            postAllDataToParent();
+            // realityObject.height = "100%";
+            // realityObject.width = "100%";
+            // postAllDataToParent();
+            postDataToParent({
+                fullScreen: realityObject.sendFullScreen,
+                fullscreenZPosition: realityObject.fullscreenZPosition,
+                stickiness: realityObject.sendSticky
+            });
         };
 
         this.setStickinessOff = function () {
             realityObject.sendSticky = false;
-            postAllDataToParent();
+            // postAllDataToParent();
+            postDataToParent({
+                fullScreen: realityObject.sendFullScreen,
+                fullscreenZPosition: realityObject.fullscreenZPosition,
+                stickiness: realityObject.sendSticky
+            });
         };
 
         this.startVideoRecording = function() {
