@@ -66,7 +66,6 @@ realityEditor.gui.pocket.registerCallback = function(functionName, callback) {
     this.callbackHandler.registerCallback(functionName, callback);
 };
 
-
 realityEditor.gui.pocket.pocketButtonAction = function() {
 
 	console.log("state: " + globalStates.pocketButtonState);

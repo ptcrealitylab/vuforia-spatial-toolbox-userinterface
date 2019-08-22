@@ -171,6 +171,23 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
 };
 
 /**
+ * @type {CallbackHandler}
+ */
+realityEditor.gui.ar.draw.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/ar/draw');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.gui.ar.draw.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/ar/draw');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
+/**
  * The most recently received set of matrices for the currently visible objects.
  * A set of {objectId: matrix} pairs, one per recognized marker
  * @type {Object.<string, Array.<number>>}
@@ -2240,6 +2257,8 @@ realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen = function(objectKey, fram
         exclusiveFrameKeys.forEach(function(keys) {
             if (keys.frameKey !== frameKey) {
                 realityEditor.gui.ar.draw.removeFullscreenFromFrame(keys.objectKey, keys.frameKey);
+                // post a message into the ejected frame so that it can update its interface if necessary
+                realityEditor.gui.ar.draw.callbackHandler.triggerCallbacks('fullScreenEjected', {objectKey: keys.objectKey, frameKey: keys.frameKey});
             }
         });
     }

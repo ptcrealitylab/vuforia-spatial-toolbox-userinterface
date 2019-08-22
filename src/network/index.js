@@ -1321,9 +1321,7 @@ if (thisFrame) {
         // }
         
     }
-
-
-
+    
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
             

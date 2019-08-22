@@ -62,6 +62,7 @@
             type: null},
         touchDecider: null,
         touchDeciderRegistered: false,
+        // onFullScreenEjected: null,
         onload: null
     };
 
@@ -1054,8 +1055,17 @@
          * Exclusive means that there can't be another exclusive fullscreen frame visible at the same time.
          * This function doesn't actually make this frame fullscreen, just toggles on this setting.
          */
-        this.setExclusiveFullScreenOn = function () {
+        this.setExclusiveFullScreenOn = function (onEjectedCallback) {
             realityObject.isFullScreenExclusive = true;
+            
+            if (typeof onEjectedCallback !== 'undefined') {
+                realityObject.messageCallBacks.fullScreenEjectedCall = function (msgContent) {
+                    if (typeof msgContent.fullScreenEjectedEvent !== "undefined") {
+                        onEjectedCallback(msgContent.fullScreenEjectedEvent);
+                    }
+                };
+            }
+            
             postDataToParent({
                 isFullScreenExclusive: realityObject.isFullScreenExclusive
             });
