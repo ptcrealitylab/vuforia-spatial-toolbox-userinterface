@@ -16,6 +16,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
         
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected);
     }
     
     function onFrameAdded(params) {
@@ -37,6 +38,15 @@ createNameSpace("realityEditor.network.frameContentAPI");
                 }
             });
         }
+    }
+    
+    function onFullScreenEjected(params) {
+        realityEditor.network.postMessageIntoFrame(params.frameKey, {
+            fullScreenEjectedEvent: {
+                objectId: params.objectKey,
+                frameId: params.frameKey
+            }
+        });
     }
     
     function sendMessageToAllVisibleFrames(msgContent) {
