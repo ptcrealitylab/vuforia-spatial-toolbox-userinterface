@@ -11,38 +11,53 @@ createNameSpace("realityEditor.network.realtime");
 
     var desktopSocket;
     var sockets = {};
+    
+    var hasBeenInitialized = false;
 
     /**
      * Public init function that sets up the sockets for realtime updates.
      */
     function initFeature() {
         // TODO Is this redundant code? It seems to generate the error that pops up
+        
+        if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
 
         if (realityEditor.device.utilities.isDesktop()) {
             desktopSocket = io.connect();
         }
         setupVehicleUpdateSockets();
         setupServerSockets();
+        
+        // add server sockets for each already discovered object
+        Object.keys(objects).forEach(function(objectKey) {
+            var object = realityEditor.getObject(objectKey);
+            addServerForObjectIfNeeded(object, objectKey);
+        });
 
-        // when an object is detected, check if we need to add a world object for its server
+        // when a new object is detected, check if we need to create a socket connection with its server
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
-            // handleServerDiscovered(object.ip);
-            // setupServerSockets();
-            if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
-            
-            var serverPort = 8080;
-            var serverAddress = 'http://' + object.ip + ':' + serverPort;
-            var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
-            if (socketsIps.indexOf(serverAddress) < 0) {
-                // if we haven't already created a socket connection to that IP, create a new one,
-                //   and register update listeners, and emit a /subscribe message so it can connect back to us
-                realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
-                sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
-                addServerUpdateListener(serverAddress);
-            }
+            addServerForObjectIfNeeded(object, objectKey);
         });
         
         // setInterval(setupServerSockets, 3000);
+        
+        hasBeenInitialized = true;
+    }
+    
+    function addServerForObjectIfNeeded(object, objectKey) {
+        
+        if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+
+        var serverPort = 8080;
+        var serverAddress = 'http://' + object.ip + ':' + serverPort;
+        var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
+        if (socketsIps.indexOf(serverAddress) < 0) {
+            // if we haven't already created a socket connection to that IP, create a new one,
+            //   and register update listeners, and emit a /subscribe message so it can connect back to us
+            realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
+            sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+            addServerUpdateListener(serverAddress);
+        }
     }
 
     /**
@@ -70,6 +85,9 @@ createNameSpace("realityEditor.network.realtime");
      * @param {UpdateMessage} msgContent
      */
     function updateObject(msgContent) {
+
+        if (!globalStates.realtimeEnabled) { return; }
+
         var object = realityEditor.getObject(msgContent.objectKey);
         if (!object) { return; }
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
@@ -83,6 +101,9 @@ createNameSpace("realityEditor.network.realtime");
      * @param {UpdateMessage} msgContent
      */
     function updateFrame(msgContent) {
+
+        if (!globalStates.realtimeEnabled) { return; }
+
         var frame = realityEditor.getFrame(msgContent.objectKey, msgContent.frameKey);
         if (!frame) { return; }
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
@@ -103,6 +124,9 @@ createNameSpace("realityEditor.network.realtime");
      * @param {UpdateMessage} msgContent
      */
     function updateNode(msgContent) {
+
+        if (!globalStates.realtimeEnabled) { return; }
+
         var node = realityEditor.getNode(msgContent.objectKey, msgContent.frameKey, msgContent.nodeKey);
         if (!node) { return; }
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
@@ -201,6 +225,8 @@ createNameSpace("realityEditor.network.realtime");
      * @param {*} newValue
      */
     function broadcastUpdate(objectKey, frameKey, nodeKey, propertyPath, newValue) {
+        
+        if (!globalStates.realtimeEnabled) { return; }
         
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);

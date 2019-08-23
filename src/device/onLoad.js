@@ -96,6 +96,8 @@ realityEditor.device.onload = function () {
     // }
 
     realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
+    realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
+    realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
