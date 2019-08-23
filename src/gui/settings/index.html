@@ -51,16 +51,6 @@
                 </div>
             </li>
             <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/lock.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Object Locking
-                <small style="color: #b1b1b1;">touch ID required</small>
-                <input type="text" id="lockText" style="width:120px; height:26px; margin-top: -2px; margin-bottom: -5px; text-align: center; right: 80px;" placeholder="password" oninput="realityEditor.gui.settings.newLockTextLoad()">
-                <div class="toggle" id="lockingToggle">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
                 <a class="push-right" href="foundObjects.html"  style="background-color: rgba(0,255,255,0.05)" data-ignore="push">
                     <img class="media-object pull-left" src="../../../svg/object.svg"
                          style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
@@ -73,6 +63,24 @@
                          style=" width:26px; height:26px; margin-top: -3px; margin-bottom: -5px">
                     Develop
                 </a>
+            </li>
+            <li class="table-view-cell">
+                <img class="media-object pull-left" src="../../../svg/grouping.svg"
+                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
+                Grouping
+                <small style="color: #b1b1b1;">background double tap creates group, not memory</small>
+                <div class="toggle" id="groupingEnabled">
+                    <div class="toggle-handle"></div>
+                </div>
+            </li>
+            <li class="table-view-cell">
+                <img class="media-object pull-left" src="../../../svg/realtime.svg"
+                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
+                Realtime Collaboration
+                <small style="color: #b1b1b1;">constantly synchronizes AR elements with all other Editors</small>
+                <div class="toggle" id="realtimeEnabled">
+                    <div class="toggle-handle"></div>
+                </div>
             </li>
             <li class="table-view-cell">
                 <img class="media-object pull-left" src="../../../svg/video.svg"
@@ -89,6 +97,16 @@
                 Connect to Desktop
                 <small style="color: #b1b1b1;">sends matrices to Desktop Editor</small>
                 <div class="toggle" id="matrixBroadcastEnabled">
+                    <div class="toggle-handle"></div>
+                </div>
+            </li>
+            <li class="table-view-cell">
+                <img class="media-object pull-left" src="../../../svg/lock.svg"
+                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
+                Object Locking
+                <small style="color: #b1b1b1;">touch ID required</small>
+                <input type="text" id="lockText" style="width:120px; height:26px; margin-top: -2px; margin-bottom: -5px; text-align: center; right: 80px;" placeholder="password" oninput="realityEditor.gui.settings.newLockTextLoad()">
+                <div class="toggle" id="lockingToggle">
                     <div class="toggle-handle"></div>
                 </div>
             </li>
@@ -116,15 +134,6 @@
                 Speech Controls
                 <small style="color: #b1b1b1;">must enable microphone</small>
                 <div class="toggle" id="speechState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/speech.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Grouping
-                <small style="color: #b1b1b1;">background tap creates group, not memory</small>
-                <div class="toggle" id="groupingEnabled">
                     <div class="toggle-handle"></div>
                 </div>
             </li>

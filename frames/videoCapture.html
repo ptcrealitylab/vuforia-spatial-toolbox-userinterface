@@ -469,9 +469,15 @@
                 //     processStateAction(Action.TIMEOUT);
                 // }, 3000);
                 
-                var IP = '10.10.10.108';
-                var videoFilePath = 'http://' + IP + ':8080' + '/obj/colorgeometry/videos/aBgcyrqjvutg.mp4';
-                attemptToLoadVideo(videoFilePath, 5);
+                // var IP = '10.10.10.108';
+                // var videoFilePath = 'http://' + IP + ':8080' + '/obj/colorgeometry/videos/aBgcyrqjvutg.mp4';
+                // attemptToLoadVideo(videoFilePath, 5);
+
+                realityInterface.stopVideoRecording(function(videoFilePath) {
+                    console.log('video was saved at path: ' + videoFilePath);
+                    realityInterface.writePublicData("storage", "data",  videoFilePath);
+                    attemptToLoadVideo(videoFilePath, 5);
+                });
 
             // } catch (e) {
             //     videoFilePath = "resources/test-video.mp4";

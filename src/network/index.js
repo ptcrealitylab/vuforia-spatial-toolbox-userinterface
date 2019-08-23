@@ -1564,12 +1564,12 @@ if (thisFrame) {
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
             
-            var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
+            // var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
             
-            if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
+            // if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
                 var keys = realityEditor.getKeysFromVehicle(frame);
                 realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
-            }
+            // }
         }
         
     }
@@ -1584,7 +1584,21 @@ if (thisFrame) {
         
     }
     
+    if (typeof msgContent.getScreenshotBase64 !== "undefined") {
+        realityEditor.network.frameIdForScreenshot = msgContent.frame;
+        realityEditor.app.getScreenshot("S", function(base64String) {
+            var thisMsg = {
+                getScreenshotBase64: base64String
+                // frameKey: realityEditor.network.frameIdForScreenshot
+            };
+            globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+        });
+    }
+    
 };
+
+// TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
+realityEditor.network.frameIdForScreenshot = null;
 
 realityEditor.network.loadLogicIcon = function(data) {
     var iconImage = data.loadLogicIcon;
@@ -1654,6 +1668,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
                 hololensModeEnabled: globalStates.hololensModeEnabled,
                 groupingEnabled: globalStates.groupingEnabled,
+                realtimeEnabled: globalStates.realtimeEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1841,6 +1856,25 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     // add any one-time side-effects here:
                     console.log('TODO: grouping mode disabled...');
                     realityEditor.gui.ar.grouping.toggleGroupingMode(false);
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.realtimeEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.realtimeEnabled) {
+                if (!globalStates.realtimeEnabled) {
+                    globalStates.realtimeEnabled = true;
+                    // add any one-time side-effects here
+                    console.log('TODO: realtimeEnabled mode enabled...');
+                    // realityEditor.gui.ar.grouping.toggleGroupingMode(true);
+                    realityEditor.network.realtime.initFeature();
+                }
+            } else {
+                if (globalStates.realtimeEnabled) {
+                    globalStates.realtimeEnabled = false;
+                    // add any one-time side-effects here:
+                    console.log('TODO: realtimeEnabled mode disabled...');
+                    // realityEditor.gui.ar.grouping.toggleGroupingMode(false);
                 }
             }
         }

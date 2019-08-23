@@ -512,6 +512,7 @@
                 this.setExclusiveFullScreenOff = makeSendStub('setExclusiveFullScreenOff');
                 this.startVideoRecording = makeSendStub('startVideoRecording');
                 this.stopVideoRecording = makeSendStub('stopVideoRecording');
+                this.getScreenshotBase64 = makeSendStub('getScreenshotBase64');
                 this.setMoveDelay = makeSendStub('setMoveDelay');
                 this.setVisibilityDistance = makeSendStub('setVisibilityDistance');
                 this.activateScreenObject = makeSendStub('activateScreenObject');
@@ -1093,6 +1094,18 @@
 
             postDataToParent({
                 videoRecording: false
+            });
+        };
+        
+        this.getScreenshotBase64 = function(callback) {
+            realityObject.messageCallBacks.screenshotBase64 = function (msgContent) {
+                if (typeof msgContent.screenshotBase64 !== 'undefined') {
+                    callback(msgContent.screenshotBase64);
+                }
+            };
+
+            postDataToParent({
+                getScreenshotBase64: true
             });
         };
 

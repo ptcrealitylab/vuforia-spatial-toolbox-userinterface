@@ -46,6 +46,15 @@ var realityElements = [
     //     nodes: [
     //     ]
     // },
+
+    {
+        name: 'screenshot',
+        width: Math.max(screen.width, screen.height),
+        height: Math.min(screen.width, screen.height),
+        nodes: [
+            {name: 'storage', type: 'storeData'}
+        ]
+    },
     
     {
         name: 'videoCapture',
@@ -188,6 +197,7 @@ var realityElements = [
         width: 800,
         height: 200,
         nodes: [
+            {name: 'storage', type: 'storeData'}
         ]
     },
     
@@ -196,6 +206,8 @@ var realityElements = [
         width: 400,
         height: 610,
         nodes: [
+            {name: 'complete', type: 'node', x: 0, y: 0},
+            {name: 'storage', type: 'storeData'}
         ],
         startPositionOffset: {
             x: 120,

@@ -127,6 +127,26 @@ realityEditor.app.callbacks.onExternalState = function(savedState) {
     }
 };
 
+realityEditor.app.callbacks.onZoneState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded zone state = ', savedState);
+
+    if (savedState) {
+        globalStates.zoneState = savedState;
+    }
+};
+
+realityEditor.app.callbacks.onZoneText = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded zone text = ', savedState);
+
+    if (savedState) {
+        globalStates.zoneText = savedState;
+    }
+};
+
 /**
  * Callback for realityEditor.app.getProjectionMatrix
  * Sets the projection matrix once using the value from the AR engine
@@ -156,7 +176,20 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     // upon a new object discovery message, add the object and download its target files
     if (typeof message.id !== 'undefined' &&
         typeof message.ip !== 'undefined') {
-        realityEditor.network.addHeartbeatObject(message);
+        
+        if (typeof message.zone !== 'undefined' && message.zone !== '') {
+            if (globalStates.zoneState && globalStates.zoneText === message.zone) {
+                console.log('Added object from zone=' + message.zone);
+                realityEditor.network.addHeartbeatObject(message);
+            }
+        
+        } else {
+            if (!globalStates.zoneState) {
+                console.log('Added object without zone');
+                realityEditor.network.addHeartbeatObject(message);
+            }
+        }
+        
 
         // forward the action message to the network module, to synchronize state across multiple clients
     } else if (typeof message.action !== 'undefined') {
