@@ -29,6 +29,14 @@
         #recordButtonStop {
             visibility: hidden;
         }
+        #recordIndicator {
+            visibility: hidden;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+        }
         #videoContainer {
             visibility: hidden;
             position: absolute;
@@ -217,6 +225,8 @@
     <div class="bounce3"></div>
 </div>
 
+<img id="recordIndicator" src="resources/record-button-stop.svg">
+
 <script>
     try {
         var realityInterface = new RealityInterface();
@@ -226,11 +236,16 @@
     }
 
     var recordButtonStart = document.querySelector('#recordButtonStart');
-    var recordButtonStop = document.querySelector('#recordButtonStop');
+    // var recordButtonStop = document.querySelector('#recordButtonStop');
     var playButtonStart = document.querySelector('#playButtonStart');
     var videoContainer = document.querySelector('#videoContainer');
     var recordedVideo = document.querySelector('#recordedVideo');
     var loadingSpinner = document.querySelector('#spinner');
+    var recordIndicator = document.querySelector('#recordIndicator');
+
+    var svgBackground = document.querySelector('#svgBackground');
+    var prevButton = document.querySelector('#prevButton');
+    var nextButton = document.querySelector('#nextButton');
 
     var State = Object.freeze({
         START: 'START',
@@ -306,6 +321,7 @@
                 if (action === Action.BUTTON_PRESSED ||
                     action === Action.INTERFACE_CHANGED_LOGIC ||
                     action === Action.OTHER_VIDEO_PLAYED ||
+                    // action === Action.PLAY_NODE_DEACTIVATED ||
                     action === Action.VIDEO_PLAYBACK_FINISHED) {
                     currentState = State.PLAY_READY;
                 }
@@ -332,9 +348,20 @@
         }
         
         if (currentState === State.RECORDING) {
-            recordButtonStop.style.visibility = 'visible';
+            // recordButtonStop.style.visibility = 'visible';
+            recordIndicator.style.visibility = 'visible';
+            
+            svgBackground.style.visibility = 'hidden';
+            prevButton.style.visibility = 'hidden';
+            nextButton.style.visibility = 'hidden';
+            
         } else {
-            recordButtonStop.style.visibility = 'hidden';
+            // recordButtonStop.style.visibility = 'hidden';
+            recordIndicator.style.visibility = 'hidden';
+            
+            svgBackground.style.visibility = 'visible';
+            prevButton.style.visibility = 'visible';
+            nextButton.style.visibility = 'visible';
         }
         
         if (currentState === State.PLAY_READY) {
@@ -399,10 +426,15 @@
         }
         
         if (currentState === State.RECORDING) {
+            realityInterface.setStickyFullScreenOn();
+            realityInterface.setMoveDelay(-1); // negative move delay disables movement while in fullscreen
             realityInterface.startVideoRecording();
         }
         
         if (currentState === State.LOADING_PLAYER) {
+
+            realityInterface.setFullScreenOff();
+            realityInterface.setMoveDelay(1000); // negative move delay disables movement while in fullscreen
             
             loadTimeout = setTimeout(function() {
                 processStateAction(Action.TIMEOUT);
@@ -454,44 +486,23 @@
         recordButtonStart.addEventListener('pointerup', function() {
             processStateAction(Action.BUTTON_PRESSED);
         });
-        recordButtonStop.addEventListener('pointerup', function() {
+        
+        recordIndicator.addEventListener('pointerup', function() {
             processStateAction(Action.BUTTON_PRESSED);
             
-            // try {
-                // realityInterface.stopVideoRecording(function(savedVideoFilePath) {
-                //     videoFilePath = savedVideoFilePath;
-                //     console.log('video was saved at path: ' + videoFilePath);
-                //     realityInterface.writePublicData("storage", "data",  videoFilePath);
-                //     // attemptToLoadVideo(videoFilePath, 5);
-                //     processStateAction(Action.LOAD_SUCCESSFUL);
-                // });
-                // setTimeout(function() {
-                //     processStateAction(Action.TIMEOUT);
-                // }, 3000);
-                
-                // var IP = '10.10.10.108';
-                // var videoFilePath = 'http://' + IP + ':8080' + '/obj/colorgeometry/videos/aBgcyrqjvutg.mp4';
-                // attemptToLoadVideo(videoFilePath, 5);
-
-                realityInterface.stopVideoRecording(function(videoFilePath) {
-                    console.log('video was saved at path: ' + videoFilePath);
-                    realityInterface.writePublicData("storage", "data",  videoFilePath);
-                    attemptToLoadVideo(videoFilePath, 5);
-                });
-
-            // } catch (e) {
-            //     videoFilePath = "resources/test-video.mp4";
-            //     setTimeout(function() {
-            //         processStateAction(Action.LOAD_SUCCESSFUL);
-            //     }, 2000);
-            // }
-
-            
-
+            realityInterface.stopVideoRecording(function(videoFilePath) {
+                console.log('video was saved at path: ' + videoFilePath);
+                realityInterface.writePublicData("storage", "data",  videoFilePath);
+                attemptToLoadVideo(videoFilePath, 5);
+            });
         });
         playButtonStart.addEventListener('pointerup', function() {
             processStateAction(Action.BUTTON_PRESSED);
         });
+        
+        prevButton.addEventListener('pointerup', prevButtonPressed);
+        nextButton.addEventListener('pointerup', nextButtonPressed);
+        
         videoContainer.addEventListener('pointerup', function() {
             processStateAction(Action.BUTTON_PRESSED);
         });
@@ -532,24 +543,24 @@
     //     console.log('button pressed');
     //     processStateAction(Action.BUTTON_PRESSED);
     // }
-    //
-    // function prevButtonPressed(e) {
-    //     e.stopPropagation();
-    //     console.log('prev button pressed');
-    //     realityInterface.write('prev', 1.0, 'f', false, 0, 1, true);
-    //     if (currentState === State.PLAYING) {
-    //         processStateAction(Action.BUTTON_PRESSED);
-    //     }
-    // }
-    //
-    // function nextButtonPressed(e) {
-    //     e.stopPropagation();
-    //     console.log('next button pressed');
-    //     realityInterface.write('next', 1.0, 'f', false, 0, 1, true);
-    //     if (currentState === State.PLAYING) {
-    //         processStateAction(Action.BUTTON_PRESSED);
-    //     }
-    // }
+
+    function prevButtonPressed(e) {
+        e.stopPropagation();
+        console.log('prev button pressed');
+        realityInterface.write('prev', 1.0, 'f', false, 0, 1, true);
+        if (currentState === State.PLAYING) {
+            processStateAction(Action.BUTTON_PRESSED);
+        }
+    }
+
+    function nextButtonPressed(e) {
+        e.stopPropagation();
+        console.log('next button pressed');
+        realityInterface.write('next', 1.0, 'f', false, 0, 1, true);
+        if (currentState === State.PLAYING) {
+            processStateAction(Action.BUTTON_PRESSED);
+        }
+    }
 
     try {
         realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
@@ -571,6 +582,20 @@
 
             videoFilePath = e;
             processStateAction(Action.LOAD_SUCCESSFUL);
+        });
+
+        // var playWhenAppears = false;
+        realityInterface.addReadListener('play', function(e) {
+            if (e.value > 0.5) {
+                jumpToBeginningOfVideo();
+                // if (realityObject.sendFullScreen) {
+                //     playWhenAppears = true;
+                // } else {
+                    processStateAction(Action.PLAY_NODE_ACTIVATED);
+                // }
+            } else {
+                processStateAction(Action.PLAY_NODE_DEACTIVATED);
+            }
         });
     } catch (e) {
         console.warn('Reality Interface is not accessible');
