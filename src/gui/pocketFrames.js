@@ -47,14 +47,14 @@ var realityElements = [
     //     ]
     // },
 
-    {
-        name: 'screenshot',
-        width: Math.max(screen.width, screen.height),
-        height: Math.min(screen.width, screen.height),
-        nodes: [
-            {name: 'storage', type: 'storeData'}
-        ]
-    },
+    // {
+    //     name: 'screenshot',
+    //     width: Math.max(screen.width, screen.height),
+    //     height: Math.min(screen.width, screen.height),
+    //     nodes: [
+    //         {name: 'storage', type: 'storeData'}
+    //     ]
+    // },
     
     {
         name: 'videoCapture',
