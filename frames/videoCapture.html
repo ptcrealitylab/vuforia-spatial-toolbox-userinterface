@@ -155,9 +155,11 @@
 </svg>
 
 <div id="videoContainer">
-    <video id="recordedVideo" class="visible" width="690" height="512" playsinline webkit-playsinline>
-        <source id="source">
-    </video>
+    <div id="videoSrc">
+        <video id="recordedVideo" class="visible" width="690" height="512" playsinline webkit-playsinline>
+            <source id="source">
+        </video>
+    </div>
 </div>
 
 <svg id="svgForeground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130.02 134.07">
@@ -165,7 +167,6 @@
     <g id="Layer_2" data-name="Layer 2">
         <g id="UI">
             <g>
-
                 <g id="playButtonStart">
                     <g class="cls-2">
                         <circle class="cls-3" cx="65.01" cy="48.04" r="22.5"/>
@@ -242,8 +243,10 @@
     var recordedVideo = document.querySelector('#recordedVideo');
     var loadingSpinner = document.querySelector('#spinner');
     var recordIndicator = document.querySelector('#recordIndicator');
-
+    
+    var svgForeground = document.querySelector('#svgForeground');
     var svgBackground = document.querySelector('#svgBackground');
+    
     var prevButton = document.querySelector('#prevButton');
     var nextButton = document.querySelector('#nextButton');
 
@@ -273,6 +276,9 @@
     var currentState = State.START;
     
     var videoFilePath = '';
+
+    var currentTimeSave = 0;
+    var initialisation = false;
     
     var DEBUG_IS_NEW_INSTANCE = Math.random() > 0.5;
     console.log('DEBUG_IS_NEW_INSTANCE', DEBUG_IS_NEW_INSTANCE);
@@ -421,7 +427,7 @@
 
                 }
             }, 1000);
-
+            
             processStateAction(Action.START_LOADING);
         }
         
@@ -464,6 +470,8 @@
             recordedVideo.play();
         }
     }
+    
+    
 
     window.addEventListener('load', function() {
         
@@ -512,6 +520,86 @@
                 processStateAction(Action.VIDEO_PLAYBACK_FINISHED);
             }
         });
+
+        
+        // add event listeners to video for smart loading/unloading screenshot
+        recordedVideo.onloadeddata = function () {
+            recordedVideo.currentTime = currentTimeSave;
+        };
+
+        recordedVideo.onpause = function () {
+            showCanvas();
+            hideVideo();
+        };
+
+        recordedVideo.onplaying = function (){
+            setTimeout(function(){
+                recordedVideo.style.display = "inline";
+                hideCanvas();
+            }, 100);
+        };
+
+        // recordedVideo.oncanplay = function () {
+        //
+        //     if (!initialisation) {
+        //         recordedVideo.style.display = "inline";
+        //         recordedVideo.currentTime = currentTimeSave;
+        //         initialisation = true;
+        //         showCanvas();
+        //         hideVideo();
+        //     } else {
+        //         recordedVideo.play();
+        //     }
+        // };
+    }
+
+    function showCanvas() {
+        console.warn('showCanvas');
+        var canvas = document.createElement('canvas');
+        canvas.id = 'videoImage';
+        document.getElementById('videoSrc').appendChild(canvas);
+        var context = canvas.getContext('2d');
+        var w = recordedVideo.clientWidth; //recordedVideo.videoWidth;
+        var h = recordedVideo.clientHeight; //recordedVideo.videoHeight;
+
+        canvas.width = w;
+        canvas.height = h;
+        context.fillRect(0, 0, w, h);
+        context.drawImage(recordedVideo, 0, 0, w,h);
+        document.getElementById('videoImage').addEventListener('pointerdown', function () {
+            console.warn('videoImage pressed');
+            showVideo();
+        });
+
+    }
+
+    function hideCanvas() {
+        console.warn('hideCanvas');
+        var element = document.getElementById('videoImage');
+        if (element) {
+            console.warn('hideCanvas 2');
+            element.parentNode.removeChild(element);
+        }
+    }
+
+    function showVideo() {
+        console.warn('showVideo');
+        if (recordedVideo.style.display === "none") {
+            console.warn('showVideo 2');
+            // recordedVideo.src = videoFilePath;
+            document.getElementById('source').setAttribute('src', videoFilePath);
+            recordedVideo.load();
+            recordedVideo.currentTime = currentTimeSave;
+        }
+    }
+
+    function hideVideo() {
+        console.warn('hideVideo');
+        recordedVideo.pause();
+        currentTimeSave = recordedVideo.currentTime;
+        // recordedVideo.src = "";
+        document.getElementById('source').setAttribute('src', '');
+        recordedVideo.style.display = 'none';
     }
 
     function attemptToLoadVideo(videoUrl, attemptsLeft) {
