@@ -206,7 +206,7 @@ var realityElements = [
         width: 400,
         height: 610,
         nodes: [
-            {name: 'complete', type: 'node', x: 0, y: 0},
+            {name: 'complete', type: 'node', x: -82, y: 54},
             {name: 'storage', type: 'storeData'}
         ],
         startPositionOffset: {
