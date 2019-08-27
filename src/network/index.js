@@ -1848,6 +1848,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.groupingEnabled = true;
                     // add any one-time side-effects here
                     console.log('TODO: grouping mode enabled...');
+                    realityEditor.app.saveGroupingState(true);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(true);
                 }
             } else {
@@ -1855,6 +1856,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.groupingEnabled = false;
                     // add any one-time side-effects here:
                     console.log('TODO: grouping mode disabled...');
+                    realityEditor.app.saveGroupingState(false);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(false);
                 }
             }
@@ -1867,6 +1869,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     // add any one-time side-effects here
                     console.log('TODO: realtimeEnabled mode enabled...');
                     // realityEditor.gui.ar.grouping.toggleGroupingMode(true);
+                    realityEditor.app.saveRealtimeState(true);
                     realityEditor.network.realtime.initFeature();
                 }
             } else {
@@ -1875,6 +1878,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     // add any one-time side-effects here:
                     console.log('TODO: realtimeEnabled mode disabled...');
                     // realityEditor.gui.ar.grouping.toggleGroupingMode(false);
+                    realityEditor.app.saveRealtimeState(false);
                 }
             }
         }
