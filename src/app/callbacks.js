@@ -147,6 +147,27 @@ realityEditor.app.callbacks.onZoneText = function(savedState) {
     }
 };
 
+realityEditor.app.callbacks.onRealtimeState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded realtime state = ', savedState);
+
+    if (savedState) {
+        globalStates.realtimeEnabled = savedState;
+    }
+};
+
+realityEditor.app.callbacks.onGroupingState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded realtime state = ', savedState);
+
+    if (savedState) {
+        globalStates.groupingEnabled = savedState;
+    }
+};
+
+
 /**
  * Callback for realityEditor.app.getProjectionMatrix
  * Sets the projection matrix once using the value from the AR engine

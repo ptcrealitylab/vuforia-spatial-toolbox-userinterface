@@ -71,6 +71,13 @@ realityEditor.device.onload = function () {
         globalStates.platform = false;
     }
 
+    // load persistent state from disk
+    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
+    realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
+    realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
+    realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
+    realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
+
     // initialize additional features
     realityEditor.device.initFeature();
     realityEditor.device.touchInputs.initFeature();
@@ -94,10 +101,6 @@ realityEditor.device.onload = function () {
     // if (!realityEditor.device.utilities.isDesktop()) {
     //     realityEditor.gui.ar.draw.updateLoop();
     // }
-
-    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
-    realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
-    realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
