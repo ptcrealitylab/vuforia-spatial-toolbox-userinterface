@@ -2472,15 +2472,23 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         }
     }
     
-    // adjust UI to match true width and height of frame contents
-    var trueSize = {
-        width: globalDOMCache['iframe' + activeKey].clientWidth,
-        height: globalDOMCache['iframe' + activeKey].clientHeight
-    };
-    
-    var cornerPadding = 24;
-    globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
-    globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+    // adjust move-ability corner UI to match true width and height of frame contents
+    if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
+        var trueSize = {
+            width: globalDOMCache['iframe' + activeKey].clientWidth,
+            height: globalDOMCache['iframe' + activeKey].clientHeight
+        };
+
+        var cornerPadding = 24;
+        globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
+        globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+    }
+
+    // show the blue corners as soon as the frame loads
+    if (realityEditor.device.editingState.frame === frameKey && realityEditor.device.editingState.node === nodeKey) {
+        document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
+        globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
+    }
 
     this.cout("on_load");
 };

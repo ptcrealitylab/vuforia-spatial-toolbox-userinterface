@@ -52,6 +52,7 @@
         moveDelay: 400,
         visibilityDistance: 2.0,
         customInteractionMode: false, // this is how frames used to respond to touches. change to true and add class realityInteraction to certain divs to make only some divs interactable
+        invertedInteractionMode: false, // if true, inverts the behavior of customInteractionMode. divs with realityInteraction are the only ones that can move the frame, all others are interactable
         eventObject : {
             version : null,
             object: null,
@@ -367,21 +368,39 @@
             if (eventData.type === 'pointerdown') {
                 if (realityObject.customInteractionMode) {
                     
-                    if (elementOrRecursiveParentIsOfClass(elt, 'realityInteraction')) {
-                    // if (elt.classList.contains('realityInteraction')) {
-                        elt.dispatchEvent(event);
+                    if (!realityObject.invertedInteractionMode) {
+
+                        if (elementOrRecursiveParentIsOfClass(elt, 'realityInteraction')) {
+                            // if (elt.classList.contains('realityInteraction')) {
+                            elt.dispatchEvent(event);
+
+                            postDataToParent({
+                                pointerDownResult: 'interaction'
+                            });
+                        } else {
+                            postDataToParent({
+                                pointerDownResult: 'nonInteraction'
+                            });
+                        }
                         
-                        postDataToParent({
-                            pointerDownResult: 'interaction'
-                        });
-                        console.log('pointerdown interaction')
                     } else {
-                        postDataToParent({
-                            pointerDownResult: 'nonInteraction'
-                        });
-                        // TODO: simplify. this is the one case where
-                        console.log('pointerdown nonInteraction')
+                        
+                        // do the opposite for each condition
+                        if (elementOrRecursiveParentIsOfClass(elt, 'realityInteraction')) {
+                            postDataToParent({
+                                pointerDownResult: 'nonInteraction'
+                            });
+                        } else {
+                            elt.dispatchEvent(event);
+
+                            postDataToParent({
+                                pointerDownResult: 'interaction'
+                            });
+                        }
+                        
                     }
+                    
+
                     
                 } else {
                     elt.dispatchEvent(event);
@@ -517,6 +536,7 @@
                 this.setVisibilityDistance = makeSendStub('setVisibilityDistance');
                 this.activateScreenObject = makeSendStub('activateScreenObject');
                 this.enableCustomInteractionMode = makeSendStub('enableCustomInteractionMode');
+                this.enableCustomInteractionModeInverted = makeSendStub('enableCustomInteractionModeInverted');
                 this.setInteractableDivs = makeSendStub('setInteractableDivs');
                 this.subscribeToFrameCreatedEvents = makeSendStub('subscribeToFrameCreatedEvents');
                 this.subscribeToFrameDeletedEvents = makeSendStub('subscribeToFrameDeletedEvents');
@@ -1154,6 +1174,11 @@
         this.enableCustomInteractionMode = function() {
             realityObject.customInteractionMode = true;
         };
+        
+        this.enableCustomInteractionModeInverted = function() {
+            realityObject.customInteractionMode = true;
+            realityObject.invertedInteractionMode = true;
+        };
 
         /**
          * Only use if also enableCustomInteractionMode
@@ -1166,7 +1191,9 @@
                 console.warn('trying to set custom interactable divs without first enabling customInteractionMode');
             }
             divList.forEach(function(div) {
-                div.classList.add('realityInteraction');
+                if (div) {
+                    div.classList.add('realityInteraction');
+                }
             });
         };
 
