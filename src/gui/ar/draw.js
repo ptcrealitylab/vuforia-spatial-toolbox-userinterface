@@ -2029,9 +2029,10 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         globalDOMCache[addSVG.id] = addSVG;
         
         // wrapping div in corners can only be done after it has been added
-        var padding = 24;
-        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(addOverlay, padding, false, {width: activeVehicle.width + padding/2 + 'px', height: activeVehicle.height + padding/2 + 'px', visibility: 'hidden'}, null, 4, 30);
-        
+        // setTimeout(function() {
+            var padding = 24;
+            realityEditor.gui.moveabilityCorners.wrapDivWithCorners(addOverlay, padding, false, {width: activeVehicle.width + padding/2 + 'px', height: activeVehicle.height + padding/2 + 'px', visibility: 'hidden'}, null, 4, 30);
+        // }, 10);
         
         // add touch event listeners
         realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
