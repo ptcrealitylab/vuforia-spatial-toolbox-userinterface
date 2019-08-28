@@ -34,7 +34,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
             sendMessageToAllVisibleFrames({
                 frameDeletedEvent: {
                     objectId: params.objectKey,
-                    frameId: params.frameKey
+                    frameId: params.frameKey,
+                    frameType: params.additionalInfo.frameType
                 }
             });
         }
