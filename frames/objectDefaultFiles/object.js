@@ -520,6 +520,8 @@
                 this.setInteractableDivs = makeSendStub('setInteractableDivs');
                 this.subscribeToFrameCreatedEvents = makeSendStub('subscribeToFrameCreatedEvents');
                 this.subscribeToFrameDeletedEvents = makeSendStub('subscribeToFrameDeletedEvents');
+                this.announceVideoPlay = makeSendStub('announceVideoPlay');
+                this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -1168,6 +1170,12 @@
             });
         };
 
+        /**
+         * Add a callback that will be triggered anytime another new frame is created while this frame is loaded in the DOM
+         * The callback will be passed the frameId (uuid of the frame) and the frame type (e.g. graph, slider, loto, etc)
+         * This is useful to create relationships between frames and store the frameId for future message passing
+         * @param {function} callback - arguments is an object {frameId: string, frameType: string}
+         */
         this.subscribeToFrameCreatedEvents = function(callback) {
             realityObject.messageCallBacks.frameCreatedCall = function (msgContent) {
                 if(realityObject.visibility !== "visible") return;
@@ -1177,8 +1185,11 @@
                 }
             };
         };
-        
-        
+
+        /**
+         * Similar to subscribeToFrameCreatedEvents, but gets triggered whenever another frame is deleted while this frame is loaded in the DOM
+         * @param {function} callback
+         */
         this.subscribeToFrameDeletedEvents = function(callback) {
             realityObject.messageCallBacks.frameDeletedCall = function (msgContent) {
                 if(realityObject.visibility !== "visible") return;
@@ -1188,6 +1199,31 @@
                 }
             };
         };
+
+        /**
+         * Broadcasts a standardized message when a video plays, that will automatically pause videos in all other frames
+         * The event that is sent 
+         */
+        this.announceVideoPlay = function() {
+            var messageToSend = 'pauseOtherVideosExcept' + realityObject.frame;
+            this.sendGlobalMessage(messageToSend);
+        };
+
+        /**
+         * Adds a callback that will be triggered if a video from any other frames calls realityInterface.announceVideoPlay
+         * In the callback, you should call .pause() on your video // TODO: accept video as argument and pause it in here?
+         * @param {function} callback
+         */
+        this.subscribeToVideoPauseEvents = function(callback) {
+            this.addGlobalMessageListener(function(e) {
+                // the 'except' part ensures we don't pause our own video when it starts to play
+                if (e.indexOf('pauseOtherVideosExcept') > -1 && e !== 'pauseOtherVideosExcept'+realityObject.frame) {
+                    callback(e);
+                }
+            });
+        };
+
+
         
         /**
          * Stubbed here for backwards compatibility of API. In previous versions:

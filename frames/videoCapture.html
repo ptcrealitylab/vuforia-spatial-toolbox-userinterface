@@ -468,6 +468,7 @@
         
         if (currentState === State.PLAYING) {
             recordedVideo.play();
+            realityInterface.announceVideoPlay();
         }
     }
     
@@ -684,6 +685,12 @@
             } else {
                 processStateAction(Action.PLAY_NODE_DEACTIVATED);
             }
+        });
+
+        realityInterface.subscribeToVideoPauseEvents(function(e) {
+            // recordedVideo.pause();
+            processStateAction(Action.OTHER_VIDEO_PLAYED);
+            console.log('videoCapture video was paused because another video was played');
         });
     } catch (e) {
         console.warn('Reality Interface is not accessible');
