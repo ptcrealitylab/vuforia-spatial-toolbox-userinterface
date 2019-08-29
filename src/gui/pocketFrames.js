@@ -58,14 +58,14 @@ var realityElements = [
     
     {
         name: 'videoCapture',
-        width: Math.max(screen.width, screen.height),
-        height: Math.min(screen.width, screen.height),
+        width: 890, //Math.max(screen.width, screen.height),
+        height: 711, //Math.min(screen.width, screen.height),
         nodes: [
-            {name: 'play', type: 'node', x: 0, y: -27, scaleFactor: 0.75},
+            {name: 'play', type: 'node', x: 18, y: 11, scaleFactor: 0.75}, // 18, 11
             // {name: 'progress', type: 'node'},
             // {name: 'next', type: 'node', x: 0, y: 100},
-            {name: 'next', type: 'node', x: 50, y: 100, scaleFactor: 0.6},
-            {name: 'prev', type: 'node', x: -50, y: 100, scaleFactor: 0.6},
+            {name: 'next', type: 'node', x: 63, y: 110, scaleFactor: 0.6}, // 25, 110
+            {name: 'prev', type: 'node', x: -25, y: 110, scaleFactor: 0.6}, // 65, 110
 
             // {name: 'show', type: 'node', x: 0, y: -200},
             // {name: 'hide', type: 'node', x: 0, y: -100},

@@ -200,13 +200,13 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
         
         if (typeof message.zone !== 'undefined' && message.zone !== '') {
             if (globalStates.zoneState && globalStates.zoneText === message.zone) {
-                console.log('Added object from zone=' + message.zone);
+                // console.log('Added object from zone=' + message.zone);
                 realityEditor.network.addHeartbeatObject(message);
             }
         
         } else {
             if (!globalStates.zoneState) {
-                console.log('Added object without zone');
+                // console.log('Added object without zone');
                 realityEditor.network.addHeartbeatObject(message);
             }
         }
