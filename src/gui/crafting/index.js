@@ -278,7 +278,7 @@ realityEditor.gui.crafting.getSrcForAutoIcon = function(logic) {
     if (validBlockIDs.length > 0) {
         var firstBlock = logic.blocks[validBlockIDs[0]];
         console.log(firstBlock.type);
-        return this.getBlockIcon(logic, firstBlock.type, false).src;
+        return this.getBlockIcon(logic, firstBlock.type).src;
     }
     return null;
 };
