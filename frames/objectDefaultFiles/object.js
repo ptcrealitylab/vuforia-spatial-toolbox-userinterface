@@ -63,6 +63,7 @@
             type: null},
         touchDecider: null,
         touchDeciderRegistered: false,
+        ignoreAllTouches: false,
         // onFullScreenEjected: null,
         onload: null
     };
@@ -542,6 +543,7 @@
                 this.subscribeToFrameDeletedEvents = makeSendStub('subscribeToFrameDeletedEvents');
                 this.announceVideoPlay = makeSendStub('announceVideoPlay');
                 this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
+                this.ignoreAllTouches = makeSendStub('ignoreAllTouches');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -1251,6 +1253,19 @@
         };
 
 
+        /**
+         * Pass in true (or omit the argument) to make the frame set pointer-events none so all touches pass through un-altered
+         * Pass in false to reset this functionality so it accepts touches again
+         * @param {boolean} newValue
+         */
+        this.ignoreAllTouches = function(newValue) {
+            if (newValue !== realityObject.ignoreAllTouches) {
+                realityObject.ignoreAllTouches = newValue;
+                postDataToParent({
+                    ignoreAllTouches: newValue
+                });
+            }
+        };
         
         /**
          * Stubbed here for backwards compatibility of API. In previous versions:

@@ -821,6 +821,10 @@ body {
     display: none;
 }
 
+.ignoreAllTouches {
+    pointer-events: none;
+}
+
 .inTransitionFrame {
     opacity: 0.7;
 }

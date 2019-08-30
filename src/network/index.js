@@ -1595,6 +1595,11 @@ if (thisFrame) {
         });
     }
     
+    if (typeof msgContent.ignoreAllTouches !== "undefined") {
+        var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        frame.ignoreAllTouches = msgContent.ignoreAllTouches;
+    }
+    
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
