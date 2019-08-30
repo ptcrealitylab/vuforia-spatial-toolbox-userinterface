@@ -1558,6 +1558,20 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
     if (shouldRenderFramesInNodeView && !globalStates.renderFrameGhostsInNodeViewEnabled) {
         this.hideScreenFrame(activeKey);
     }
+
+    if (typeof activeVehicle.ignoreAllTouches !== 'undefined') {
+        if (activeVehicle.ignoreAllTouches) {
+            if ( !globalDOMCache['object' + activeKey].classList.contains('ignoreAllTouches') ) {
+                globalDOMCache['object' + activeKey].classList.add('ignoreAllTouches');
+                console.log('ignore all touches for ' + activeKey);
+            }
+        } else {
+            if ( globalDOMCache['object' + activeKey].classList.contains('ignoreAllTouches') ) {
+                globalDOMCache['object' + activeKey].classList.remove('ignoreAllTouches');
+                console.log('STOP ignoring all touches for ' + activeKey);
+            }
+        }
+    }
     
     return true;
 
