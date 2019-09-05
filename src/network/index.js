@@ -1600,6 +1600,15 @@ if (thisFrame) {
         frame.ignoreAllTouches = msgContent.ignoreAllTouches;
     }
     
+    if (typeof msgContent.getScreenDimensions !== "undefined") {
+        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+            screenDimensions: {
+                width: globalStates.height,
+                height: globalStates.width
+            }
+        }), '*');
+    }
+    
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
