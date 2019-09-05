@@ -544,6 +544,7 @@
                 this.announceVideoPlay = makeSendStub('announceVideoPlay');
                 this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
                 this.ignoreAllTouches = makeSendStub('ignoreAllTouches');
+                this.getScreenDimensions = makeSendStub('getScreenDimensions');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -1265,6 +1266,26 @@
                     ignoreAllTouches: newValue
                 });
             }
+        };
+
+        /**
+         * Asynchronously query the screen width and height from the parent application, as the iframe itself can't access that
+         * @param {function} callback
+         */
+        this.getScreenDimensions = function(callback) {
+            
+            realityObject.messageCallBacks.screenDimensionsCall = function (msgContent) {
+                if(realityObject.visibility !== "visible") return;
+                if (typeof msgContent.screenDimensions !== "undefined") {
+                    callback(msgContent.screenDimensions.width, msgContent.screenDimensions.height);
+                    delete realityObject.messageCallBacks['screenDimensionsCall']; // only trigger it once
+                }
+            };
+
+            postDataToParent({
+                getScreenDimensions: true
+            });
+            
         };
         
         /**

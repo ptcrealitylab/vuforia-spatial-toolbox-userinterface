@@ -228,6 +228,14 @@
     try {
         var realityInterface = new RealityInterface();
         realityInterface.setMoveDelay(1000);
+        
+        realityInterface.onRealityInterfaceLoaded(function() {
+            console.log('----- reality interface loaded -----');
+            console.log(realityInterface);
+            console.log(realityObject);
+            console.log('----- reality interface loaded -----');
+        });
+        
     } catch (e) {
         console.warn('Reality Interface is not accessible');
     }
@@ -289,6 +297,8 @@
             case State.START:
                 if (action === Action.START_LOADING) {
                     currentState = State.LOADING_INITIAL;
+                } else if (action === Action.TIMEOUT) {
+                    currentState = State.RECORD_READY;
                 }
                 break;
             case State.LOADING_INITIAL:
@@ -649,6 +659,10 @@
 
     try {
         realityInterface.addReadPublicDataListener('storage', 'data', function (e) {
+            if (typeof e === 'object' && Object.keys(e).length === 0) {
+                console.log('NO PUBLIC DATA, SKIP TO RECORDING');
+            }
+            
             if (typeof e !== 'string' || e.length === 0) {
                 // processStateAction(Action.TIMEOUT);
                 console.log('cant load non-string data:', e);
@@ -657,7 +671,7 @@
                         processStateAction(Action.TIMEOUT);
                         clearTimeout(loadTimeout);
                     }
-                }, 300);
+                }, 10);
                 return;
             }
             if (e === document.getElementById('source').getAttribute('src')) {
