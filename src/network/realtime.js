@@ -43,7 +43,14 @@ createNameSpace("realityEditor.network.realtime");
         
         hasBeenInitialized = true;
     }
-    
+
+    /**
+     * Gets called each time a new object is detected. If that object is from a newly detected server, add that server to
+     * the set of known servers and establish a websocket connection to it, for the purpose of streaming realtime changes
+     * of its object/frame/node position data and other properties for realtime collaboration
+     * @param {Object} object
+     * @param {string} objectKey
+     */
     function addServerForObjectIfNeeded(object, objectKey) {
         
         if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
@@ -275,20 +282,6 @@ createNameSpace("realityEditor.network.realtime");
         }
         
         return objectSocketCache[objectKey]; // don't need to recalculate each time
-        
-        // var object = realityEditor.getObject(objectKey);
-        // var serverIP = object.ip;
-        // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
-        //     return null;
-        // }
-        // var possibleSocketIPs = getSocketIPsForSet('realityServers');
-        // var foundSocket = null;
-        // possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
-        //     if (socketIP.indexOf(serverIP) > -1) {
-        //         foundSocket = socketIP;
-        //     }
-        // });
-        // return (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
     }
 
     /**
@@ -318,6 +311,7 @@ createNameSpace("realityEditor.network.realtime");
      * Creates a new socket in the specified set. Creates the set if it doesn't already exist.
      * @param {string} setName
      * @param {string} socketIP
+     * @param {function|undefined} onConnect - optional .on('connect') callback 
      */
     function createSocketInSet(setName, socketIP, onConnect) {
         var ioObject = io.connect(socketIP);

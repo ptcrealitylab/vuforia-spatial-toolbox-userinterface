@@ -18,7 +18,11 @@ createNameSpace("realityEditor.network.frameContentAPI");
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected);
     }
-    
+
+    /**
+     * Sends a frameCreatedEvent into all visible frames, which they can listen for via the object.js API
+     * @param {{objectKey: string, frameKey: string, frameType: string}} params
+     */
     function onFrameAdded(params) {
         sendMessageToAllVisibleFrames({
             frameCreatedEvent: {
@@ -28,7 +32,11 @@ createNameSpace("realityEditor.network.frameContentAPI");
             }
         });
     }
-    
+
+    /**
+     * If this comes from a frame, not a node, sends a frameDeletedEvent into all visible frames, which they can listen for via the object.js API
+     * @param {{objectKey: string, frameKey: string, additionalInfo: {frameType: string|undefined}}} params
+     */
     function onVehicleDeleted(params) {
         if (params.objectKey && params.frameKey && !params.nodeKey) { // only send message about frames, not nodes
             sendMessageToAllVisibleFrames({
@@ -40,7 +48,12 @@ createNameSpace("realityEditor.network.frameContentAPI");
             });
         }
     }
-    
+
+    /**
+     * Gets triggered when a fullscreen frame, which had requested exclusive fullscreen access, was kicked out by a new exclusive fullscreen frame
+     * Sends a fullScreenEjectedEvent message to the frame that got kicked out, so it can update its UI in response
+     * @param {{objectKey: string, frameKey: string}} params
+     */
     function onFullScreenEjected(params) {
         realityEditor.network.postMessageIntoFrame(params.frameKey, {
             fullScreenEjectedEvent: {
@@ -49,7 +62,11 @@ createNameSpace("realityEditor.network.frameContentAPI");
             }
         });
     }
-    
+
+    /**
+     * Helper function to post a message into all iframes on visible objects
+     * @param {*} msgContent
+     */
     function sendMessageToAllVisibleFrames(msgContent) {
         for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
             if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
@@ -65,24 +82,14 @@ createNameSpace("realityEditor.network.frameContentAPI");
      * @param {{event: KeyboardEvent}} params
      */
     function keyUpHandler(params) {
-        
-        var acyclicEventObject = getMutablePointerEventCopy(params.event);
-        
+        var acyclicEventObject = getMutablePointerEventCopy(params.event); // can't stringify a cyclic object, which the event might be
         sendMessageToAllVisibleFrames({keyboardUpEvent: acyclicEventObject});
-        
-        // for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
-        //     if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
-        //    
-        //     realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
-        //         realityEditor.network.postMessageIntoFrame(frameKey, {keyboardUpEvent: acyclicEventObject});
-        //     });
-        // }
     }
 
     /**
-     * Reusable function to strip out the cyclic properties of a PointerEvent and clone it so the result can be modified
-     * @param {PointerEvent} event
-     * @return {Object}
+     * Reusable function to strip out the cyclic properties of a PointerEvent (or other event) and clone it so the result can be modified or stringified
+     * @param {PointerEvent|*} event
+     * @return {*} - a shallow copy of the event, without ('currentTarget', 'srcElement', 'target', 'view', or 'path')
      */
     function getMutablePointerEventCopy(event) {
         // we need to strip out the referenced DOM elements in order to JSON.stringify it
