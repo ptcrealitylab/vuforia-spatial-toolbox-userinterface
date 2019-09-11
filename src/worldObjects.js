@@ -1,5 +1,11 @@
 createNameSpace("realityEditor.worldObjects");
 
+/**
+ * @fileOverview realityEditor.worldObjects
+ * Loads world objects from any servers where it has discovered any objects
+ * Also manually adds a _WORLD_OBJECT_local which is a special world object hosted by the iOS device but doesn't persist
+ *  data from session to session, and has the lowest priority to add frames to if any other world objects are visible
+ */
 
 (function(exports) {
     
@@ -22,7 +28,6 @@ createNameSpace("realityEditor.worldObjects");
         
         worldObjects = {};
         worldObjectKeys = [];
-        
         discoveredServerIPs = [];
         
         cameraMatrixOffset = realityEditor.gui.ar.utilities.newIdentityMatrix();
@@ -40,7 +45,6 @@ createNameSpace("realityEditor.worldObjects");
             zone: '' };
 
         var localWorldBeat =  function(worldObject){  realityEditor.network.addHeartbeatObject(worldObject); console.log(worldObject) };
-
 
         // localWorldBeat(worldObject);
         setTimeout(function() {
@@ -162,6 +166,7 @@ createNameSpace("realityEditor.worldObjects");
 
     /**
      * @todo: finish implementing so you can pick a frame off of an object and drop onto the world
+     * @todo: not currently used
      * @param {Frame} frame
      */
     function addFrameToWorldObject(frame) {
