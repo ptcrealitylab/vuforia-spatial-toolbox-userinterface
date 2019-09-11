@@ -72,7 +72,7 @@ realityEditor.device.onload = function () {
     }
 
     // load persistent state from disk
-    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
+    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
     realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
     realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');

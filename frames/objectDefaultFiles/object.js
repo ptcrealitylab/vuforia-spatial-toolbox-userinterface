@@ -544,7 +544,6 @@
                 this.announceVideoPlay = makeSendStub('announceVideoPlay');
                 this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
                 this.ignoreAllTouches = makeSendStub('ignoreAllTouches');
-                this.getScreenDimensions = makeSendStub('getScreenDimensions');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -582,6 +581,7 @@
                 this.getDevicePoseMatrix = makeSendStub('getDevicePoseMatrix');
                 this.getAllObjectMatrices = makeSendStub('getAllObjectMatrices');
                 this.getUnitValue = makeSendStub('getUnitValue');
+                this.getScreenDimensions = makeSendStub('getScreenDimensions');
                 // deprecated getters
                 this.search = makeSendStub('search');
 

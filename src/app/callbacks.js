@@ -114,10 +114,12 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 };
 
 /**
- * Loads the external userinterface URL (if any) from permanent storage, which later is used to populate the settings text field
+ * Callback for realityEditor.app.getExternalText
+ * Loads the external userinterface URL (if any) from permanent storage
+ *  (which later is used to populate the settings text field)
  * @param {string} savedState - needs to be JSON parsed
  */
-realityEditor.app.callbacks.onExternalState = function(savedState) {
+realityEditor.app.callbacks.onExternalText = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
     console.log('loaded external interface URL = ', savedState);
@@ -127,6 +129,11 @@ realityEditor.app.callbacks.onExternalState = function(savedState) {
     }
 };
 
+/**
+ * Callback for realityEditor.app.getZoneState
+ * Loads the zone on/off state (if any) from permanent storage
+ * @param {string} savedState - stringified boolean
+ */
 realityEditor.app.callbacks.onZoneState = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
@@ -137,6 +144,11 @@ realityEditor.app.callbacks.onZoneState = function(savedState) {
     }
 };
 
+/**
+ * Callback for realityEditor.app.getZoneText
+ * Loads the zone name (if any) from permanent storage
+ * @param {string} savedState
+ */
 realityEditor.app.callbacks.onZoneText = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
@@ -147,6 +159,11 @@ realityEditor.app.callbacks.onZoneText = function(savedState) {
     }
 };
 
+/**
+ * Callback for realityEditor.app.getRealtimeState
+ * Loads the realtime collaboration feature enabled on/off state (if any) from permanent storage
+ * @param {string} savedState - stringified boolean
+ */
 realityEditor.app.callbacks.onRealtimeState = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
@@ -157,6 +174,11 @@ realityEditor.app.callbacks.onRealtimeState = function(savedState) {
     }
 };
 
+/**
+ * Callback for realityEditor.app.getGroupingState
+ * Loads the grouping feature enabled on/off state (if any) from permanent storage
+ * @param savedState - stringified boolean
+ */
 realityEditor.app.callbacks.onGroupingState = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
@@ -183,7 +205,7 @@ realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
  * Handles any UDP messages received by the app.
  * Currently supports object discovery messages ("ip"/"id" pairs) and state synchronization ("action") messages
  * Additional UDP messages can be listened for by using realityEditor.network.addUDPMessageHandler
- * @param {string|Object} message
+ * @param {string|object} message
  */
 realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     if (typeof message !== 'object') {
@@ -222,7 +244,8 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
 };
 
 /**
- * Callback returning the native device name, which can be used to adjust the UI based on the phone/device type
+ * Callback for realityEditor.app.getDeviceReady
+ * Returns the native device name, which can be used to adjust the UI based on the phone/device type
  * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
  */
 realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
@@ -244,6 +267,8 @@ var DISABLE_ALL_EXTENDED_TRACKING = false;
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+    
+    // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 
     // These should be uncommented if we switch to the EXTENDED_TRACKING version
     // if (TEMP_ENABLE_EXTENDED_TRACKING) {
@@ -260,6 +285,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         }
     // }
     
+    // this next section adjusts the world origin to be centered on a hard-coded image target if it ever gets recognized
+    
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
         // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
         // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
@@ -267,6 +294,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
+    
+    // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
     
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
@@ -290,6 +319,9 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
     realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
     
+    // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
+    //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
+        
     // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
         realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
     // }
@@ -312,7 +344,6 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
  * New format of visibleObject  = {objectKey: {matrix:[], status:""}} 
  * Old format of visibleObjects = {objectKey: []}
  * @param visibleObjects
- * @todo currently not used
  */
 realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
     if (typeof realityEditor.app.callbacks.isMatrixFormatNew === 'undefined') {
@@ -329,7 +360,6 @@ realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
  * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
  * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
  * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}>} visibleObjects
- * @todo currently not used
  */
 realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObjects) {
     realityEditor.gui.ar.draw.visibleObjectsStatus = {};
@@ -353,9 +383,7 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
 realityEditor.app.callbacks.rotationXMartrix = rotationXMartrix;
 realityEditor.app.callbacks.matrix = [];
 realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
-    // console.log("receiveGroundPlaneMatricesFromAR");
-    // easiest way to implement freeze button is just to not update the new matrices
-    
+
     // completely ignore this if nothing is using ground plane right now
     if (globalStates.useGroundPlane) {
 
@@ -498,8 +526,9 @@ realityEditor.app.callbacks.doTargetFilesExist = function(success, fileNameArray
 };
 
 /**
- * Uses a combination of IP address and object name to locate the ID
- * @param fileName
+ * Uses a combination of IP address and object name to locate the ID.
+ * e.g. "http://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
+ * @param {string} fileName
  */
 function getObjectIDFromFilename(fileName) {
     var ip = fileName.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/)[0];
@@ -514,8 +543,7 @@ function getObjectIDFromFilename(fileName) {
     }
     
     console.warn('tried to download a file that couldnt locate a matching object', fileName);
-    //"http://10.10.10.108:8080/obj/monitorScreen/target/target.xml"
-};
+}
 
 /**
  * Callback for realityEditor.app.downloadFile for either target.xml or target.dat
@@ -580,31 +608,4 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
         console.log('failed to add marker: ' + fileName);
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
     }
-};
-
-/**
- * @todo: not currently used
- * // callback for getScreenshot
- * @param base64String
- */
-realityEditor.app.callbacks.uploadMemory = function(base64String) {
-
-    // var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
-    // debugShowScreenshot(screenshotBlobUrl);
-    // currentMemory.src = screenshotBlobUrl;
-    
-    var currentMemoryID = realityEditor.gui.ar.getClosestObject()[0];
-    var currentMemoryIP = realityEditor.getObject(currentMemoryID).ip;
-
-    var formData = new FormData();
-    // formData.append('ip', currentMemoryIP);
-    // formData.append('id', currentMemoryID);
-    formData.append('memoryInfo', JSON.stringify(realityEditor.gui.ar.draw.visibleObjects[currentMemoryID]));
-    var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
-    formData.append('memoryImage', blob);
-
-    var request = new XMLHttpRequest();
-    request.open("POST", "http://" + currentMemoryIP + ':' + httpPort + '/object/' + currentMemoryID + '/memory');
-    request.send(formData);
-
 };
