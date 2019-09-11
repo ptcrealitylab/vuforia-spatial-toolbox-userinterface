@@ -351,6 +351,11 @@ realityEditor.gui.crafting.eventHelper.toggleDatacraftingExceptPort = function(t
 };
 
 // todo why is isInOutBlock in grid by isPortBlock in here?
+/**
+ * Ensures that the "in" and "out" blocks don't get uploaded to server, they are just for connecting the board to other nodes
+ * @param {Block} block
+ * @return {boolean}
+ */
 realityEditor.gui.crafting.eventHelper.shouldUploadBlock = function(block) {
     return !this.crafting.grid.isInOutBlock(block.globalId);// && !block.isPortBlock; //&& !(block.x === -1 || block.y === -1)
 };

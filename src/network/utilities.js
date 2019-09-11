@@ -64,6 +64,11 @@ realityEditor.network.utilities.rename = function(object, before, after) {
     }
 };
 
+/**
+ * Updates the logic blocks on the origin (a logic node) to match those of the remote
+ * @param {Node} origin - the logic node you want to update
+ * @param {Object.<{string: Block}>} remoteBlocks - set of blocks mapped by their uuid
+ */
 realityEditor.network.utilities.syncBlocksWithRemote = function(origin, remoteBlocks) {
     // delete old blocks
     for (var blockKey in origin.blocks) {
@@ -90,15 +95,34 @@ realityEditor.network.utilities.syncBlocksWithRemote = function(origin, remoteBl
     }
 };
 
+/**
+ * Based on whether you're creating or deleting a block, tells whether the local resource needs to be updated
+ * @param {Node} origin
+ * @param {string} blockKey
+ * @param {string} mode - "create" or "delete"
+ * @return {boolean}
+ */
 realityEditor.network.utilities.shouldSyncBlock = function(origin, blockKey, mode) {
     if (mode === "create") {
         if (!origin.blocks[blockKey]) return true;
     } else if (mode === "delete") {
         if (!origin.blocks[blockKey]) return false;
     }
+    // if not create or delete mode, upload it unless it is an inOutBlock - as of 9/10/19 this path is never reached
     return realityEditor.gui.crafting.eventHelper.shouldUploadBlock(origin.blocks[blockKey]); // && (origin.blocks[blockKey].x !== -1)
 };
 
+/**
+ * Updates the logic blocks on the origin (a logic node) to match those of the remote
+ * @param {Node} origin - the logic node you want to update
+ * @param {Object.<{string: Block}>} remoteBlocks - set of blocks mapped by their uuid
+ */
+
+/**
+ * Updates the links on the origin (a frame) to match those of the remote
+ * @param {Frame} origin - the frame you want to update
+ * @param {Object.<{string: Link}>} remoteLinks - set of links mapped by their uuid
+ */
 realityEditor.network.utilities.syncLinksWithRemote = function(origin, remoteLinks) {
     // delete old links
     for (var linkKey in origin.links) {
@@ -117,8 +141,13 @@ realityEditor.network.utilities.syncLinksWithRemote = function(origin, remoteLin
     }
 };
 
-// avoids serializing cyclic data structures by only including minimal information needed for node iframe
-// (keys such as grid and links sometimes contain cyclic references)
+/**
+ * Returns a simplified json object with the persistent data that gets posted into a frame's iframe.
+ * Avoids serializing cyclic data structures by only including minimal information needed for node iframe.
+ * (keys such as grid and links sometimes contain cyclic references)
+ * @param {Object.<{string: Node}>} nodes
+ * @return {Object.<{string: Node}>}
+ */
 realityEditor.network.utilities.getNodesJsonForIframes = function(nodes) {
     var simpleNodes = {};
     var keysToExclude = ["links", "blocks", "grid", "guiState"];
