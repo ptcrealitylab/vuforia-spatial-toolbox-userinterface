@@ -60,7 +60,7 @@ createNameSpace("realityEditor.device");
  * @desc All the necessary state to track a tap-and-hold gesture that triggers a timeout callback.
  * @property {number} startX
  * @property {number} startY
- * @property {number} moveTolerance
+ * @property {number} moveToleranceSquared
  * @property {Function} timeoutFunction 
  */
 
@@ -163,8 +163,10 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
             // svg.style.display = newDisplay;
             if (newEditingMode) {
                 svg.classList.add('visibleEditingSVG');
+                globalDOMCache[frameKey].querySelector('.corners').style.visibility = 'visible';
             } else {
                 svg.classList.remove('visibleEditingSVG');
+                globalDOMCache[frameKey].querySelector('.corners').style.visibility = 'hidden';
             }
         }
         realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
@@ -173,12 +175,16 @@ realityEditor.device.setEditingMode = function(newEditingMode) {
                 // svg.style.display = newDisplay;
                 if (newEditingMode) {
                     svg.classList.add('visibleEditingSVG');
+                    globalDOMCache[nodeKey].querySelector('.corners').style.visibility = 'visible';
                 } else {
                     svg.classList.remove('visibleEditingSVG');
+                    globalDOMCache[nodeKey].querySelector('.corners').style.visibility = 'hidden';
                 }
             }
         });
     });
+
+    this.callbackHandler.triggerCallbacks('setEditingMode', {newEditingMode: newEditingMode});
     
 };
 
@@ -416,8 +422,6 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     if (globalStates.guiState === "node") {
         this.editingState.node = nodeKey;
         
-        realityEditor.gui.ar.draw.pushEditedNodeToFront(nodeKey);
-        
         // reset link creation state
         this.resetGlobalProgram();
 
@@ -429,9 +433,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
         }
 
     } else if (globalStates.guiState === "ui") {
-
-        realityEditor.gui.ar.draw.pushEditedFrameToFront(frameKey);
-
+        
         if (activeVehicle.location === "global") {
             // show the trash if this is a reusable frame
             realityEditor.gui.menus.switchToMenu("bigTrash");            
@@ -446,6 +448,22 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     //         element.parentNode.insertBefore(element.nextElementSibling, element); // TODO: this doesn't actually work with 3d transforms involved
     //     }
     // }
+
+    // if you grab a world frame when only worldObjects are visible, set inTransitionFrame/Object to true
+    // then if you drop it when there is a non-world object visible, move it to that object
+    // var editingVehicle = realityEditor.device.getEditingVehicle();
+    // if (editingVehicle) {
+        var activeObject = realityEditor.getObject(this.editingState.object);
+        if (activeObject.isWorldObject) {
+            // check if only world objects are visible
+            // one way to do this is to get the closest object and see it it's a world object
+            var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
+            if (closestObject.isWorldObject) {
+                globalStates.inTransitionObject = objectKey;
+                globalStates.inTransitionFrame = frameKey;
+            }
+        }
+    // }
     
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 
@@ -453,13 +471,18 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
-    
+    globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
+
     this.sendEditingStateToFrameContents(frameKey, true);
 
     this.callbackHandler.triggerCallbacks('beginTouchEditing');
 };
 
-// post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
+/**
+ * post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show that it's being moved
+ * @param frameKey
+ * @param frameIsMoving
+ */
 realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameIsMoving) {
     if (!frameKey) return;
     var iframe = document.getElementById('iframe' + frameKey);
@@ -470,6 +493,9 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
     }), '*');
 };
 
+/**
+ * Stop disabling unconstrained mode (gets disabled when you are changing the distance visibility threshold)
+ */
 realityEditor.device.enableUnconstrained = function() {
     
     // only do this once, otherwise it will undo the effects of saving the previous value
@@ -485,16 +511,27 @@ realityEditor.device.enableUnconstrained = function() {
     this.editingState.unconstrainedOffset = null;
 };
 
+/**
+ * Disable unconstrained editing mode so that the frame/node doesn't move when you pull the phone away from it
+ * (Useful when you want to adjust the distance visibility threshold of the frame by walking away from it)
+ */
 realityEditor.device.disableUnconstrained = function() {
     this.editingState.unconstrainedDisabled = true;
     this.editingState.preDisabledUnconstrained = this.editingState.unconstrained;
     this.editingState.unconstrained = false;
 };
 
+/**
+ * Re-enable pinch to scale (gets disabled when you are changing the distance visibility threshold)
+ */
 realityEditor.device.enablePinchToScale = function() {
     this.editingState.pinchToScaleDisabled = false;
 };
 
+/**
+ * Disable pinch to scale
+ * @todo: is this necessary anymore? This was added because we added a new 3-finger pinch gesture to adjust distance visibility threshold, but we removed that pinch gesture now so it might be ok for this to always be enabled?
+ */
 realityEditor.device.disablePinchToScale = function() {
     this.editingState.pinchToScaleDisabled = true;
 };
@@ -544,7 +581,7 @@ realityEditor.device.onElementTouchDown = function(event) {
     this.touchEditingTimer = {
         startX: event.pageX,
         startY: event.pageY,
-        moveTolerance: 100,
+        moveToleranceSquared: 100,
         timeoutFunction: timeoutFunction
     };
     
@@ -565,7 +602,7 @@ realityEditor.device.onElementTouchMove = function(event) {
         
         var dx = event.pageX - this.touchEditingTimer.startX;
         var dy = event.pageY - this.touchEditingTimer.startY;
-        if (dx * dx + dy * dy > this.touchEditingTimer.moveTolerance) {
+        if (dx * dx + dy * dy > this.touchEditingTimer.moveToleranceSquared) {
             this.clearTouchTimer();
         }
     
@@ -691,9 +728,14 @@ realityEditor.device.onElementTouchUp = function(event) {
 
     // touch up over the trash
     if (event.pageX >= this.layout.getTrashThresholdX()) {
-
-        this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node});
         
+        var isFrame = activeVehicle && globalStates.guiState === "ui";
+
+        var additionalInfo = {};
+        if (isFrame) { additionalInfo.frameType = activeVehicle.src; }
+
+        this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node, additionalInfo: additionalInfo});
+
         // delete logic node
         if (target.type === "logic") {
 
@@ -712,13 +754,12 @@ realityEditor.device.onElementTouchUp = function(event) {
 
             // remove it from the DOM
             realityEditor.gui.ar.draw.deleteNode(target.objectId, target.frameId, target.nodeId);
-            realityEditor.gui.ar.draw.removeFromEditedNodesList(target.nodeId);
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
 
             // delete frame
-        } else if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
+        } else if (isFrame && activeVehicle.location === "global") {
             
             realityEditor.device.deleteFrame(activeVehicle, this.editingState.object, this.editingState.frame);
 
@@ -761,7 +802,6 @@ realityEditor.device.deleteFrame = function(frameToDelete, objectKeyToDelete, fr
 
     // remove it from the DOM
     realityEditor.gui.ar.draw.killElement(frameKeyToDelete, frameToDelete, globalDOMCache);
-    realityEditor.gui.ar.draw.removeFromEditedFramesList(frameKeyToDelete);
     // delete it from the server
     realityEditor.network.deleteFrameFromObject(objects[objectKeyToDelete].ip, objectKeyToDelete, frameKeyToDelete);
 
@@ -812,19 +852,21 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 
         if (closestObjectKey) {
 
-            console.log('there is an object to drop this frame onto');
+            if (closestObjectKey !== globalStates.inTransitionObject) {
+                console.log('there is an object to drop this frame onto');
 
-            var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
-            var newFrameKey = closestObjectKey + frameBeingMoved.name;
+                var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
+                var newFrameKey = closestObjectKey + frameBeingMoved.name;
 
-            var screenX = event.pageX;
-            var screenY = event.pageY;
-            var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
+                var screenX = event.pageX;
+                var screenY = event.pageY;
+                var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
 
-            realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
+                realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
 
-            var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
-            realityEditor.network.postVehiclePosition(newFrame);
+                var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
+                realityEditor.network.postVehiclePosition(newFrame);
+            }
 
         } else {
 
@@ -1149,6 +1191,13 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     this.callbackHandler.triggerCallbacks('onDocumentMultiTouchMove', {event: event});
 };
 
+/**
+ * Determines if the x, y position on the phone screen falls on top of any visible screen
+ * (Can be used to make sure grouping or memory creation don't happen when you're trying to interact with a screen)
+ * @param {number} screenX
+ * @param {number} screenY
+ * @return {boolean}
+ */
 realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY) {
 
     var isWithinBounds = false;
@@ -1207,6 +1256,19 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
             // after that, if you pull out more than 100 in the z direction, turn on unconstrained
             // var zPullThreshold = 50;
             var amountPulled = Math.abs(distanceToObject - this.editingState.unconstrainedOffset);
+            
+            // if frame is on a registered screen object, only pulling towards you can pop into unconstrained (pushing sends into screen)
+            var isOnScreenObject = false;
+            for (var screenObjectKey in realityEditor.gui.screenExtension.registeredScreenObjects) {
+                var screenObjectData = realityEditor.gui.screenExtension.registeredScreenObjects[screenObjectKey];
+                if (screenObjectData.object === this.editingState.object) {
+                    isOnScreenObject = true;
+                }
+            }
+            if (isOnScreenObject) {
+                amountPulled = distanceToObject - this.editingState.unconstrainedOffset;
+            }
+            
             // console.log(amountPulled);
             if (amountPulled > globalStates.framePullThreshold) {
                 console.log('pop into unconstrained editing mode');
@@ -1308,6 +1370,8 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
             if (activeVehicle && !globalStates.editingMode) {
                 // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
                 document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).classList.remove('visibleEditingSVG');
+                globalDOMCache[(this.editingState.node || this.editingState.frame)].querySelector('.corners').style.visibility = 'hidden';
+
             }
 
             this.resetEditingState();
@@ -1425,14 +1489,6 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
 };
 
 // // // // MISC. Device Functionality // // // //
-
-/**
- * Sets the global device name to the internal hardware string of the iOS device
- * @param {string} deviceName phone or tablet identifier
- * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
- * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
- * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
- */
 
 /**
  * Sets the persistent global settings of the Reality Editor based on the state saved in iOS storage.

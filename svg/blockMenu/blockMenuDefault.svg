@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 112">
+  <defs>
+    <style>
+      .cls-1 {
+        opacity: 0.25;
+      }
+
+      .cls-2 {
+        fill: #75fbfd;
+      }
+    </style>
+  </defs>
+  <title>Asset 1</title>
+  <g id="Layer_2" data-name="Layer 2">
+    <g id="UI">
+      <g>
+        <g class="cls-1">
+          <rect width="112" height="112" rx="5"/>
+        </g>
+        <g>
+          <g>
+            <polygon class="cls-2" points="27 39.21 25 39.21 25 25 39.21 25 39.21 27 27 27 27 39.21"/>
+            <polygon class="cls-2" points="87 39.21 85 39.21 85 27 72.79 27 72.79 25 87 25 87 39.21"/>
+            <polygon class="cls-2" points="87 87 72.79 87 72.79 85 85 85 85 72.79 87 72.79 87 87"/>
+            <polygon class="cls-2" points="39.21 87 25 87 25 72.79 27 72.79 27 85 39.21 85 39.21 87"/>
+          </g>
+          <g>
+            <path class="cls-2" d="M69.21,70.21a1,1,0,0,1-.7-.29L42.08,43.49a1,1,0,1,1,1.41-1.41L69.92,68.51a1,1,0,0,1,0,1.41A1,1,0,0,1,69.21,70.21Z"/>
+            <path class="cls-2" d="M42.79,70.21a1,1,0,0,1-.71-.29,1,1,0,0,1,0-1.41L68.51,42.08a1,1,0,1,1,1.41,1.41L43.49,69.92A1,1,0,0,1,42.79,70.21Z"/>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

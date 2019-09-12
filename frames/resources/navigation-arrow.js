@@ -36,6 +36,8 @@
         realityInterface.addIsMovingListener(isMovingCallback);
 
         containerWrapper = document.createElement('div');
+        containerWrapper.style.width = '100%';
+        containerWrapper.style.height = '100%';
         wrap(container, containerWrapper);
 
         arrow = document.createElement('div');

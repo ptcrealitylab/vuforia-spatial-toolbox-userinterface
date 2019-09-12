@@ -23,6 +23,9 @@ createNameSpace("realityEditor.device.distanceScaling");
         objectKey: null,
         frameKey: null
     };
+    
+    var groundPlaneRotation = [];
+    var groundPlaneQuaternion = null;
 
     /**
      * @type {CallbackHandler}
@@ -55,7 +58,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         
         // render the UIs if in distance editing mode or actively scaling one of them
         if (isScalingDistance || globalStates.distanceEditingMode) {
-            forEachVisibleFrame( function(objectKey, frameKey) {
+            realityEditor.gui.ar.draw.forEachVisibleFrame( function(objectKey, frameKey) {
                 // if frame it is attached to no longer exists, remove it
                 // otherwise render it
                 transformDistanceUI(objectKey, frameKey);
@@ -79,6 +82,117 @@ createNameSpace("realityEditor.device.distanceScaling");
             linkObject.ballAnimationCount = 0; // prevent animation by resetting animation count each time
             realityEditor.gui.ar.lines.drawLine(globalCanvas.context, startPoint, [frame.screenX, frame.screenY], startWeight * widthFactor, frame.screenLinearZ * widthFactor, linkObject, timeCorrection, colorCode, colorCode);
         }
+        
+        var groundplaneContainer = document.getElementById('groundplaneContainer');
+        if (!groundplaneContainer) {
+            groundplaneContainer = document.createElement('div');
+            groundplaneContainer.className = 'main';
+            groundplaneContainer.id = 'groundplaneContainer';
+            groundplaneContainer.style.position = 'absolute';
+            groundplaneContainer.style.left = 0;
+            groundplaneContainer.style.top = 0;
+            document.body.appendChild(groundplaneContainer);
+        }
+        
+        var element = document.getElementById('distanceGroundplaneUI');
+        if (!element) {
+            element = document.createElement('div');
+            element.id = 'distanceGroundplaneUI';
+            element.className = 'main';
+            element.style.width = '736px';
+            element.style.height = '414px';
+            // element.style.visibility = 'visible';
+            element.style.backgroundColor = 'red';
+            groundplaneContainer.appendChild(element);
+        }
+        
+        var DEBUG_DONT_SHOW_GROUNDPLANE_HALO = true;
+        if (DEBUG_DONT_SHOW_GROUNDPLANE_HALO) { return; }
+        
+        if (realityEditor.gui.ar.draw.groundPlaneMatrix) {
+            var rotatedGroundPlaneMatrix = [];
+            var rotation3d = [
+                1, 0, 0, 0,
+                0, 0, 1, 0,
+                0, 1, 0, 0,
+                0, 0, 0, 1
+            ];
+            var finalMatrix = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(rotation3d, realityEditor.gui.ar.draw.groundPlaneMatrix, rotatedGroundPlaneMatrix);
+            realityEditor.gui.ar.utilities.multiplyMatrix(rotatedGroundPlaneMatrix, globalStates.projectionMatrix, finalMatrix);
+            
+            groundPlaneRotation = realityEditor.gui.ar.utilities.copyMatrix(finalMatrix);
+            var perspectiveValue = groundPlaneRotation[15];
+            groundPlaneRotation[12] = perspectiveValue * globalStates.height/2;
+            groundPlaneRotation[13] = -1 * perspectiveValue * globalStates.width/2;
+            groundPlaneRotation[14] = 0;
+            // groundPlaneRotation[15] = 1;
+            
+            groundPlaneQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(groundPlaneRotation);
+            
+            // element.style.transform = 'matrix3d(' + groundPlaneRotation.toString() + ')';
+
+            // var translatedGroundPlaneMatrix = [];
+            // utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
+            // utilities.multiplyMatrix(translatedGroundPlaneMatrix, this.globalStates.projectionMatrix, finalMatrix);   
+
+            realityEditor.gui.ar.draw.forEachVisibleFrame( function(objectKey, frameKey) {
+                // if frame it is attached to no longer exists, remove it
+                // otherwise render it
+                // transformDistanceUI(objectKey, frameKey);
+                
+                var frame = realityEditor.getFrame(objectKey, frameKey);
+                if (frame) {
+                    
+                    var frameMatrix = frame.mostRecentFinalMatrix;
+                    // var normalizedFrameMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(frameMatrix);
+                    // var normalizedGroundplaneRotationMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(groundPlaneRotation);
+                    //
+                    // normalizedGroundplaneRotationMatrix[12] = normalizedFrameMatrix[12];
+                    // normalizedGroundplaneRotationMatrix[13] = normalizedFrameMatrix[13];
+                    // normalizedGroundplaneRotationMatrix[14] = normalizedFrameMatrix[14];
+                    
+                    /*
+                    var rotated = [];
+                    var r = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(groundPlaneQuaternion);
+                    realityEditor.gui.ar.utilities.multiplyMatrix(frameMatrix, r, rotated);
+                    element.style.transform = 'matrix3d(' + rotated.toString() + ')';
+                    */
+                    
+                    if (!frameMatrix) return;
+                    
+                    // element.style.transform = 'matrix3d(' + frameMatrix.toString() + ')';
+                    element.style.visibility = 'visible';
+                    
+                    // TODO: calculate position of "halo" element
+                    
+                    var frameQ = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(frameMatrix);
+                    var invFrameQ = realityEditor.gui.ar.utilities.invertQuaternion(frameQ);
+                    
+                    // var frameM = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(frameQ);
+                    // var invFrameM = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invFrameQ);
+                    
+                    var frameM = realityEditor.gui.ar.utilities.extractRotation(frameMatrix);
+                    var invFrameM = realityEditor.gui.ar.utilities.invertMatrix(frameM);
+                    
+                    var rotated = [];
+                    
+                    realityEditor.gui.ar.utilities.multiplyMatrix(invFrameM, frameMatrix, rotated);
+
+                    var frameQ2 = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(rotated);
+                    
+
+                    element.style.transform = 'matrix3d(' + rotated.toString() + ')';
+
+
+                }
+                
+            });
+            
+        }
+
+        
+        
     }
 
     /**
@@ -134,14 +248,6 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.device.enablePinchToScale(); // just in case we didn't touch up on the green button
 
     }
-
-    function forEachVisibleFrame(callback) {
-        realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
-            if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
-                callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
-            }
-        });
-    }
     
     /**
      * Triggered when the distance editing mode button is pressed
@@ -155,8 +261,8 @@ createNameSpace("realityEditor.device.distanceScaling");
             var frameKey;
             if (globalStates.distanceEditingMode) {
                 console.log('show all distance editing UIs');
-                
-                forEachVisibleFrame( function(objectKey, frameKey) {
+
+                realityEditor.gui.ar.draw.forEachVisibleFrame( function(objectKey, frameKey) {
                     getDistanceUI(frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
                 });
                 

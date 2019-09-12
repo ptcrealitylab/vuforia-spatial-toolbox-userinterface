@@ -15,7 +15,7 @@
             border-color: #00ff00;
         }
     </style>
-    <script src="resources/object-frames.js"></script>
+    <script src="objectDefaultFiles/object.js"></script>
 </head>
 <body>
 <div id="output" touch-action="none"></div>
@@ -42,20 +42,6 @@
     });
     realityInterface.setMoveDelay(10);
 
-</script>
-<script src="resources/demonstration.js"></script>
-<script src="resources/resizeFrameContent.js"></script>
-<script>
-    setupDemonstrationScripts();
-    setupResizeCallback(function(resizeFrameData) {
-        var newWidth = resizeFrameData.width;
-        var newHeight = resizeFrameData.height;
-        // console.log('set width and height to ' + newWidth + ' and ' + newHeight);
-        var requiredScale = newWidth / parseInt(container.getAttribute('width'));
-        console.log(requiredScale);
-        container.setAttribute("transform-origin", "top left");
-        container.style.transform = "scale("+ requiredScale +")";
-    });
 </script>
 
 </body>

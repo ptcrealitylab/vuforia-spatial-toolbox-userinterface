@@ -278,9 +278,8 @@ body {
     padding: 20px;
     background-color: #969696;
 
-    -webkit-transform: translateZ(300px);
+    -webkit-transform: translateZ(3000px);
 }
-
 
 #craftingBoard {
     display: none;
@@ -294,15 +293,17 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: rgba(20,20,20,0.5);
-
+    /*background-color: rgba(20,20,20,0.5);*/
+    /*background-color: transparent;*/
+    background-color: rgba(0,0,0,0.3); /* just barely not transparent... tints the background */
+    
     /*-webkit-backdrop-filter: blur(30px);*/
 
     /*background-color: #969696;*/
     -webkit-user-select: none;
     user-select: none;
 
-    -webkit-transform: translateZ(300px);
+    -webkit-transform: translateZ(3000px);
     z-index: 10;
 }
 
@@ -548,6 +549,7 @@ body {
 .memoryBar {
     margin: 0;
     padding: 0;
+    padding-top: 16px;
     z-index: 5;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 }
@@ -571,6 +573,8 @@ body {
 
 .memoryContainer {
     height: calc(15vw - 18px);
+    border: none;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .nodeMemoryContainer {
@@ -592,9 +596,11 @@ body {
 }
 
 .element-template {
-    border-color: white;
+    /*border-color: white;*/
+    border: none;
     margin: 3px;
     overflow: hidden;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .memoryContainer.memoryPointer {
@@ -697,7 +703,7 @@ body {
     /* this is a hack for adding the interface in front of the transformed web interface */
     z-index: 3;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: translateZ(600px);
+    -webkit-transform: translateZ(6000px);
 }
 
 #overlay.overlayPositive,
@@ -799,6 +805,10 @@ body {
     pointer-events: none;
 }
 
+.webGlFrame {
+    opacity: 1 !important;
+}
+
 .visibleNodeContainer {
     display: inline;
 }
@@ -811,8 +821,16 @@ body {
     display: none;
 }
 
+.ignoreAllTouches {
+    pointer-events: none;
+}
+
 .inTransitionFrame {
     opacity: 0.7;
+}
+
+.outsideOfViewport {
+    display: none;
 }
 
 .distantFrame {
@@ -845,12 +863,13 @@ body {
     top: 0;
     margin-left: -20px;
     margin-top: -20px;
-    transform: translateZ(1000px);
+    transform: translateZ(10000px);
 }
 
 .visibleEditingSVG {
-    visibility: visible;
-    display: inline;
+    /*visibility: visible;*/
+    /*display: inline;*/
+    visibility: hidden;
 }
 
 .hiddenForDistance {
@@ -966,6 +985,7 @@ Logic Interface CSS
     display: inline-block;
     -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
     box-sizing: border-box;         /* Opera/IE 8+ */
+    background-color: rgba(0,0,0,0.3);
 }
 
 .blockPlaceholderLastCol {
@@ -974,6 +994,7 @@ Logic Interface CSS
     display: inline-block;
     -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
     box-sizing: border-box;         /* Opera/IE 8+ */
+    background-color: rgba(0,0,0,0.3);
 }
 
 .blockPlaceholderLabel {
@@ -983,7 +1004,7 @@ Logic Interface CSS
     -webkit-box-pack: center;
     -webkit-box-align: center;
     font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
-    font-size: 24px;
+    font-size: 18px;
 }
 
 .columnHighlight {
@@ -1026,12 +1047,13 @@ Logic Interface CSS
   display:-webkit-box;
   -webkit-box-pack:center;
   -webkit-box-align:center;
-  background-color: rgb(73,73,73);
-  border: 2px solid white;
+  background-color: rgba(0,0,0,0.7);
+  border: 2px solid rgba(0,255,255,0.5);
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
 }
 
 .blockDivHighlighted {
+  box-sizing: border-box;
   position: absolute;
   color: white;
   user-select:none;
@@ -1039,8 +1061,8 @@ Logic Interface CSS
   display:-webkit-box;
   -webkit-box-pack:center;
   -webkit-box-align:center;
-  background-color: rgb(73,73,73);
-  border: 2px solid white;
+  background-color: rgba(0,0,0,0.7);
+  border: 2px solid rgba(0,255,255,0.5);
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
 }
 
@@ -1079,6 +1101,10 @@ Logic Interface CSS
   height: 320px;
 }
 
+.menuBlockRow {
+    height: 83px;
+}
+
 #menuSideContainer {
   position: absolute;
   /*left: 400px;*/
@@ -1092,10 +1118,10 @@ Logic Interface CSS
   width: 92px;
   height: 46px;
   display: inline-block;
-  background-color: rgb(73,73,73);
+  /*background-color: rgba(0,0,0,0.7);*/
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  border: solid 2px white;
+  /*border: solid 2px rgba(0,255,255,0.5);*/
   margin: 3.5px;
   margin-bottom: 18px;
 }
@@ -1112,12 +1138,13 @@ Logic Interface CSS
   color: white;
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
   font-size: 14px;
+  position: absolute;
 }
 
 .blockIcon {
   text-align: center;
-    width: 100%;
-   /* height: 100%;*/
+    /*width: 100%;*/
+    height: 106%;
     overflow: hidden;
   /*height: 20px;*/
   /*width: 75%;*/
@@ -1126,6 +1153,7 @@ Logic Interface CSS
   -webkit-box-align:center;*/
   user-select:none;
   -webkit-user-select:none;
+    /*height: 75%;*/
 }
 
 .blockBox {
@@ -1135,6 +1163,10 @@ Logic Interface CSS
 .blockTitle {
   /*display: inline-block;*/
   text-align: center;
+  width: 100%;
+  bottom: -22px;
+  position: absolute;
+  color: rgb(247, 209, 71);
 }
 
 .blockMoveDiv {
@@ -1152,7 +1184,7 @@ Logic Interface CSS
   margin-bottom: 3.5px;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  border: solid 2px rgb(0, 255, 255);
+  /*border: solid 2px rgb(0, 255, 255);*/
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
   display:-webkit-box;
@@ -1165,10 +1197,10 @@ Logic Interface CSS
   height: 59.5px;
   margin-top: 3.5px;
   margin-bottom: 3.5px;
-  background-color: rgba(0, 255, 255, 0.4);
+  /*background-color: rgba(0, 255, 255, 0.4);*/
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  border: solid 2px rgb(0, 255, 255);
+  /*border: solid 2px rgb(0, 255, 255);*/
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
   display:-webkit-box;
@@ -1177,35 +1209,35 @@ Logic Interface CSS
 }
 
 .menuTabIcon {
-  height: 75%;
-  -webkit-filter: invert(100%);
+  height: 100%;
+  /*-webkit-filter: invert(100%);*/
 }
 
 .blockDivMovingAbleBorder {
-    border: 2px solid rgb(0,255,0);
+    border: 2px solid rgb(0,255,0) !important;
 }
 
 .blockDivMovingUnableBorder {
-    border: 2px solid rgb(255,0,124);
+    border: 2px solid rgb(255,0,124) !important;
 }
 
 .blockDivMovingSaveOrDeletableBorder {
-    border: 2px solid rgb(255,255,0);
+    border: 2px solid rgb(255,255,0) !important;
 }
 
 .blockDivMovingAble {
     /*border: 2px solid rgb(0,255,0);*/
-    background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(0, 255, 0) 16px, rgb(0, 255, 0) 32px);
+    /*background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(0, 255, 0) 16px, rgb(0, 255, 0) 32px);*/
 }
 
 .blockDivMovingUnable {
     /*border: 2px solid rgb(255,0,124);*/
-    background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,0,124) 16px, rgb(255,0,124) 32px);
+    /*background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,0,124) 16px, rgb(255,0,124) 32px);*/
 }
 
 .blockDivMovingSaveOrDeletable {
     /*border: 2px solid rgb(255,255,0);*/
-    background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,255,0) 16px, rgb(255,255,0) 32px);
+    /*background: repeating-linear-gradient(-45deg, rgb(73, 73, 73), rgb(73, 73, 73) 16px, rgb(255,255,0) 16px, rgb(255,255,0) 32px);*/
 }
 
 .memoryWeb {
@@ -1230,8 +1262,10 @@ Logic Interface CSS
     padding: 0;
     z-index: 1;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: translateZ(300px); /* Above web interfaces, below side buttons */
-    background-color: rgba(17, 55, 55, 0.7);
+    -webkit-transform: translateZ(3000px); /* Above web interfaces, below side buttons */
+    /*background-color: rgba(17, 55, 55, 0.7);*/
+    background-color: rgba(0,0,0,0.1);
+    -webkit-backdrop-filter: blur(10px);
     display: none;
 }
 
@@ -1242,12 +1276,18 @@ Logic Interface CSS
 .palette {
     width: calc(100% - 10vw);
     padding-top: 16px;
+    padding-bottom: 16px;
 }
 
 .palette-element {
+    width: 100%;
+    height: 100%;
     border: 0;
     transform-origin: 0 0;
     pointer-events: none;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 70% 70%;
 }
 
 #speechConsole {
@@ -1274,26 +1314,34 @@ Logic Interface CSS
     top: 5px;
     height: calc(100vh - 15px);
     width: 70px;
-    border: 3px solid cyan;
-    border-radius: 10px;
+    /*border: 3px solid cyan;*/
+    /*border-radius: 10px;*/
 }
 
 .pocketScrollBarSegment {
     position: absolute;
     /*border: 3px solid cyan;*/
-    /*border-radius: 10px;*/
+    border-radius: 5px;
     width: 70px;
     height: calc(100vh - 15px);
     left: 0;
     top: 0;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .pocketScrollBarSegmentTouched {
-    background-color: rgba(0,255,255,0.6);
+    background-color: rgba(0,255,255,0.3);
 }
 
+/* The inside piece of a scrollbar that is currently selected */
 .pocketScrollBarSegmentActive {
-    background-color: rgba(0,255,255,0.3);
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    border-radius: 5px;
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    background-color: rgba(0,255,255,0.6);
 }
 
 .snappableFrame {
@@ -1355,12 +1403,39 @@ Logic Interface CSS
     -webkit-touch-callout:none;
 }
 
-.groundPlaneVisualizer {
+.corners {
     position: absolute;
+    width: 100px; /* for demo purposes */
+    padding: 10px;
+}
+
+.cornersTop, .cornersBottom {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+}
+
+.cornersTop {
     top: 0;
+    border-top: 2px solid cyan;
+}
+
+.cornersBottom {
+    bottom: 0;
+    border-bottom: 2px solid cyan;
+}
+
+.cornersLeft {
     left: 0;
-    width: 300px;
-    height: 300px;
-    background-color: #00edff;
-    visibility: visible;
+    border-left: 2px solid cyan;
+}
+
+.cornersRight {
+    right: 0;
+    border-right: 2px solid cyan;
+}
+
+.outline {
+    position: absolute;
+    border: 2px solid cyan;
 }

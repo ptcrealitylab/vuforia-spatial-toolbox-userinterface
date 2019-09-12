@@ -9,8 +9,10 @@ createNameSpace("realityEditor.network.realtime");
 
 (function(exports) {
 
-    var mySocket;
+    var desktopSocket;
     var sockets = {};
+    
+    var hasBeenInitialized = false;
 
     /**
      * Public init function that sets up the sockets for realtime updates.
@@ -18,19 +20,60 @@ createNameSpace("realityEditor.network.realtime");
     function initFeature() {
         // TODO Is this redundant code? It seems to generate the error that pops up
         
-          mySocket = io.connect();
-       setupVehicleUpdateSockets();
+        if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
+
+        if (realityEditor.device.utilities.isDesktop()) {
+            desktopSocket = io.connect();
+        }
+        setupVehicleUpdateSockets();
         setupServerSockets();
-        setInterval(setupServerSockets, 3000);
+        
+        // add server sockets for each already discovered object
+        Object.keys(objects).forEach(function(objectKey) {
+            var object = realityEditor.getObject(objectKey);
+            addServerForObjectIfNeeded(object, objectKey);
+        });
+
+        // when a new object is detected, check if we need to create a socket connection with its server
+        realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
+            addServerForObjectIfNeeded(object, objectKey);
+        });
+        
+        // setInterval(setupServerSockets, 3000);
+        
+        hasBeenInitialized = true;
+    }
+
+    /**
+     * Gets called each time a new object is detected. If that object is from a newly detected server, add that server to
+     * the set of known servers and establish a websocket connection to it, for the purpose of streaming realtime changes
+     * of its object/frame/node position data and other properties for realtime collaboration
+     * @param {Object} object
+     * @param {string} objectKey
+     */
+    function addServerForObjectIfNeeded(object, objectKey) {
+        
+        if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+
+        var serverPort = 8080;
+        var serverAddress = 'http://' + object.ip + ':' + serverPort;
+        var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
+        if (socketsIps.indexOf(serverAddress) < 0) {
+            // if we haven't already created a socket connection to that IP, create a new one,
+            //   and register update listeners, and emit a /subscribe message so it can connect back to us
+            realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
+            sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+            addServerUpdateListener(serverAddress);
+        }
     }
 
     /**
      * Add socket listeners for events that update objects, frames, and nodes.
      */
     function setupVehicleUpdateSockets() {
-        addSocketMessageListener('/update/object', updateObject);
-        addSocketMessageListener('/update/frame', updateFrame);
-        addSocketMessageListener('/update/node', updateNode);
+        addDesktopSocketMessageListener('/update/object', updateObject);
+        addDesktopSocketMessageListener('/update/frame', updateFrame);
+        addDesktopSocketMessageListener('/update/node', updateNode);
     }
 
     /**
@@ -49,12 +92,15 @@ createNameSpace("realityEditor.network.realtime");
      * @param {UpdateMessage} msgContent
      */
     function updateObject(msgContent) {
+
+        if (!globalStates.realtimeEnabled) { return; }
+
         var object = realityEditor.getObject(msgContent.objectKey);
         if (!object) { return; }
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(object, msgContent.propertyPath, msgContent.newValue);
-        console.log('set object (' + msgContent.objectKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set object (' + msgContent.objectKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
     }
 
     /**
@@ -62,12 +108,15 @@ createNameSpace("realityEditor.network.realtime");
      * @param {UpdateMessage} msgContent
      */
     function updateFrame(msgContent) {
+
+        if (!globalStates.realtimeEnabled) { return; }
+
         var frame = realityEditor.getFrame(msgContent.objectKey, msgContent.frameKey);
         if (!frame) { return; }
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(frame, msgContent.propertyPath, msgContent.newValue);
-        console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
         
         // trigger secondary effects for certain properties
         if (msgContent.propertyPath === 'publicData') {
@@ -82,12 +131,15 @@ createNameSpace("realityEditor.network.realtime");
      * @param {UpdateMessage} msgContent
      */
     function updateNode(msgContent) {
+
+        if (!globalStates.realtimeEnabled) { return; }
+
         var node = realityEditor.getNode(msgContent.objectKey, msgContent.frameKey, msgContent.nodeKey);
         if (!node) { return; }
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(node, msgContent.propertyPath, msgContent.newValue);
-        console.log('set node (' + msgContent.nodeKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set node (' + msgContent.nodeKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
     }
 
     /**
@@ -154,8 +206,10 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} messageName
      * @param {function} callback
      */
-    function addSocketMessageListener(messageName, callback) {
-        mySocket.on(messageName, callback);
+    function addDesktopSocketMessageListener(messageName, callback) {
+        if (desktopSocket) {
+            desktopSocket.on(messageName, callback);
+        }
     }
 
     /**
@@ -179,16 +233,55 @@ createNameSpace("realityEditor.network.realtime");
      */
     function broadcastUpdate(objectKey, frameKey, nodeKey, propertyPath, newValue) {
         
-        var messageBody = {
-            objectKey: objectKey,
-            frameKey: frameKey,
-            nodeKey: nodeKey,
-            propertyPath: propertyPath,
-            newValue: newValue,
-            editorId: globalStates.tempUuid
-        };
+        if (!globalStates.realtimeEnabled) { return; }
         
-        sendMessageToSocketSet('realityServers', '/update', messageBody);
+        // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
+        var serverSocket = getServerSocketForObject(objectKey);
+        if (serverSocket) {
+            
+            var messageBody = {
+                objectKey: objectKey,
+                frameKey: frameKey,
+                nodeKey: nodeKey,
+                propertyPath: propertyPath,
+                newValue: newValue,
+                editorId: globalStates.tempUuid
+            };
+
+            serverSocket.emit('/update', JSON.stringify(messageBody));
+
+        }
+
+        // sendMessageToSocketSet('realityServers', '/update', messageBody);
+    }
+    
+    var objectSocketCache = {};
+
+    /**
+     * Gets the ioObject connected to the server hosting a given object
+     * @param {string} objectKey
+     * @return {null}
+     */
+    function getServerSocketForObject(objectKey) {
+        
+        if (typeof objectSocketCache[objectKey] === 'undefined') {
+            var object = realityEditor.getObject(objectKey);
+            var serverIP = object.ip;
+            if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
+                return null;
+            }
+            var possibleSocketIPs = getSocketIPsForSet('realityServers');
+            var foundSocket = null;
+            possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
+                if (socketIP.indexOf(serverIP) > -1) {
+                    foundSocket = socketIP;
+                }
+            });
+            
+            objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
+        }
+        
+        return objectSocketCache[objectKey]; // don't need to recalculate each time
     }
 
     /**
@@ -218,6 +311,7 @@ createNameSpace("realityEditor.network.realtime");
      * Creates a new socket in the specified set. Creates the set if it doesn't already exist.
      * @param {string} setName
      * @param {string} socketIP
+     * @param {function|undefined} onConnect - optional .on('connect') callback 
      */
     function createSocketInSet(setName, socketIP, onConnect) {
         var ioObject = io.connect(socketIP);
@@ -271,7 +365,7 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     exports.initFeature = initFeature;
-    exports.addSocketMessageListener = addSocketMessageListener;
+    exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.broadcastUpdate = broadcastUpdate;
     
     exports.getSocketIPsForSet = getSocketIPsForSet;

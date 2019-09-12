@@ -46,17 +46,28 @@ createNameSpace("realityEditor.app.callbacks");
  */
 
 /**
+ * @typedef {Readonly<{NOT_STARTED: number, STARTED: number, FAILED: number, SUCCEEDED: number}>} DownloadState
+ * @description used to keep track of the download status of a certain resource (e.g. DAT and XML files of each object)
+ */
+
+/**
  * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, MARKER_ADDED: DownloadState}>}
  * Maps object names to the download states of their XML and DAT files, and whether the tracking engine has added the resulting marker
  */
 var targetDownloadStates = {};
 
+/**
+ * Temporarily caches objectIDs with their heartbeat checksum, which later on gets stored
+ * to localStorage so that next time the app opens we don't re-download unmodified target data
+ * @type {Object.<string, string>}
+ */
 var temporaryChecksumMap = {};
-var temporaryHeartbeatMap = {};
 
 /**
- * @typedef {Readonly<{NOT_STARTED: number, STARTED: number, FAILED: number, SUCCEEDED: number}>} DownloadState
+ * Temporarily caches objectIDs with their full heartbeat entry so that it can be accessed in multiple download functions
+ * @type {Object.<string, {id: string, ip: string, vn: number, tcs: string, zone: string}>}
  */
+var temporaryHeartbeatMap = {};
 
 /**
  * @type DownloadState
@@ -72,7 +83,7 @@ var DownloadState = Object.freeze(
 
 /**
  * Callback for realityEditor.app.getVuforiaReady
- * Retrieves the projection matrix and starts streaming the model matrices and camera matrix
+ * Retrieves the projection matrix and starts streaming the model matrices, camera matrix, and groundplane matrix
  * Also starts the object discovery and download process
  */
 realityEditor.app.callbacks.vuforiaIsReady = function() {
@@ -103,11 +114,13 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 };
 
 /**
- * 
- * @param savedState
+ * Callback for realityEditor.app.getExternalText
+ * Loads the external userinterface URL (if any) from permanent storage
+ *  (which later is used to populate the settings text field)
+ * @param {string} savedState - needs to be JSON parsed
  */
-realityEditor.app.callbacks.onExternalState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; };
+realityEditor.app.callbacks.onExternalText = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
     console.log('loaded external interface URL = ', savedState);
 
@@ -117,15 +130,65 @@ realityEditor.app.callbacks.onExternalState = function(savedState) {
 };
 
 /**
- * TODO: implement
- * @param success
+ * Callback for realityEditor.app.getZoneState
+ * Loads the zone on/off state (if any) from permanent storage
+ * @param {string} savedState - stringified boolean
  */
-realityEditor.app.callbacks.didAddGroundAnchor = function(success) {
-    console.log('Tried to add ground anchor. Success? ' + success);
-    if (globalStates.debugSpeechConsole) {
-        document.getElementById('speechConsole').innerHTML = 'Tried to add ground anchor. Success? ' + success;
+realityEditor.app.callbacks.onZoneState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded zone state = ', savedState);
+
+    if (savedState) {
+        globalStates.zoneState = savedState;
     }
 };
+
+/**
+ * Callback for realityEditor.app.getZoneText
+ * Loads the zone name (if any) from permanent storage
+ * @param {string} savedState
+ */
+realityEditor.app.callbacks.onZoneText = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded zone text = ', savedState);
+
+    if (savedState) {
+        globalStates.zoneText = savedState;
+    }
+};
+
+/**
+ * Callback for realityEditor.app.getRealtimeState
+ * Loads the realtime collaboration feature enabled on/off state (if any) from permanent storage
+ * @param {string} savedState - stringified boolean
+ */
+realityEditor.app.callbacks.onRealtimeState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded realtime state = ', savedState);
+
+    if (savedState) {
+        globalStates.realtimeEnabled = savedState;
+    }
+};
+
+/**
+ * Callback for realityEditor.app.getGroupingState
+ * Loads the grouping feature enabled on/off state (if any) from permanent storage
+ * @param savedState - stringified boolean
+ */
+realityEditor.app.callbacks.onGroupingState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded realtime state = ', savedState);
+
+    if (savedState) {
+        globalStates.groupingEnabled = savedState;
+    }
+};
+
 
 /**
  * Callback for realityEditor.app.getProjectionMatrix
@@ -140,23 +203,36 @@ realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
 /**
  * Callback for realityEditor.app.getUDPMessages
  * Handles any UDP messages received by the app.
- * A case can be added for any additional messages to listen to.
  * Currently supports object discovery messages ("ip"/"id" pairs) and state synchronization ("action") messages
- * @param {string|Object} message
+ * Additional UDP messages can be listened for by using realityEditor.network.addUDPMessageHandler
+ * @param {string|object} message
  */
 realityEditor.app.callbacks.receivedUDPMessage = function(message) {
     if (typeof message !== 'object') {
         try {
             message = JSON.parse(message);
         } catch (e) {
-            // error parsing, string is not in correct format for json
+            // string doesn't need to be parsed... continue executing the function
         }
     }
     
     // upon a new object discovery message, add the object and download its target files
     if (typeof message.id !== 'undefined' &&
         typeof message.ip !== 'undefined') {
-        realityEditor.network.addHeartbeatObject(message);
+        
+        if (typeof message.zone !== 'undefined' && message.zone !== '') {
+            if (globalStates.zoneState && globalStates.zoneText === message.zone) {
+                // console.log('Added object from zone=' + message.zone);
+                realityEditor.network.addHeartbeatObject(message);
+            }
+        
+        } else {
+            if (!globalStates.zoneState) {
+                // console.log('Added object without zone');
+                realityEditor.network.addHeartbeatObject(message);
+            }
+        }
+        
 
         // forward the action message to the network module, to synchronize state across multiple clients
     } else if (typeof message.action !== 'undefined') {
@@ -168,8 +244,12 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
 };
 
 /**
- * Callback returning the native device name, which can be used to adjust the UI based on the phone/device type
- * @param {string} deviceName
+ * Callback for realityEditor.app.getDeviceReady
+ * Returns the native device name, which can be used to adjust the UI based on the phone/device type
+ * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
+ * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
+ * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
+ * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
  */
 realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
     console.log(deviceName);
@@ -178,38 +258,76 @@ realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
     cout("setDeviceName");
 };
 
+//this is speeding things up always! Because the scope for searching this variable becomes smaller.
+realityEditor.app.callbacks.matrixFormatCalculated = false;
+realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
+
+var DISABLE_ALL_EXTENDED_TRACKING = false;
 /**
  * Callback for realityEditor.app.getMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
  * Stores those matrices in the draw module to be rendered in the next draw frame
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
-//this is speeding things up always! Because the scope for searching this variable becomes smaller.
-realityEditor.app.callbacks.mmToMeterScale = mmToMeterScale;
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     
+    // this first section makes the app work with extended or non-extended tracking while being backwards compatible
+
+    // These should be uncommented if we switch to the EXTENDED_TRACKING version
+    // if (TEMP_ENABLE_EXTENDED_TRACKING) {
+        if (!realityEditor.app.callbacks.matrixFormatCalculated) {
+            // for speed, only calculates this one time
+            realityEditor.app.callbacks.calculateMatrixFormat(visibleObjects);
+        }
+
+        // ignore this step if using old app version that ignores EXTENDED_TRACKED objects entirely
+        if (realityEditor.app.callbacks.isMatrixFormatNew) {
+            // extract status into separate data structure and and format matrices into a backwards-compatible object
+            // if extended tracking is turned off, discard EXTENDED_TRACKED objects
+            realityEditor.app.callbacks.convertNewMatrixFormatToOld(visibleObjects);
+        }
+    // }
+    
+    // this next section adjusts the world origin to be centered on a hard-coded image target if it ever gets recognized
+    
     if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
+        // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
+        // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
+
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
     
-   // console.log(visibleObjects);
-    //console.log("receiveMatricesFromAR");
+    // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
+    
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        // scale x, y, and z elements of matrix for mm to meter conversion ratio
+
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
-            visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
+            // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
+
+            if(realityEditor.gui.ar.draw.worldCorrection === null) {
+                visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
+            } else {
+                // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+                this.matrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.worldCorrection, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
+                visibleObjects[worldObjectKey] = this.matrix;
+            }
+
         });
         
-        for (var objectKey in visibleObjects) {
-            if (!visibleObjects.hasOwnProperty(objectKey)) continue;
-        }
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
-    if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
+
+    realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
+    
+    // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
+    //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
+        
+    // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
         realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
-    }
+    // }
 };
 
 /**
@@ -218,43 +336,45 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
  * @param {Array.<number>} cameraMatrix
  */
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
-   // console.log("receiveCameraMatricesFromAR");
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-
-      //  realityEditor.gui.ar.draw.viewMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
-        // realityEditor.gui.ar.draw.viewMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraMatrix);
-        
-        // this fixes it for world coordinates
-        // var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, false, true, true);
-        // var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), false, false, false);
-        // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, realityEditor.gui.ar.draw.correctedCameraMatrix);
-
         realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
+    }
+};
 
+/**
+ * Looks at the visibleObjects and sees if it uses the old format or the new, so that we can convert to backwards-compatible
+ * New format of visibleObject  = {objectKey: {matrix:[], status:""}} 
+ * Old format of visibleObjects = {objectKey: []}
+ * @param visibleObjects
+ */
+realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
+    if (typeof realityEditor.app.callbacks.isMatrixFormatNew === 'undefined') {
+        for (var key in visibleObjects) {
+            realityEditor.app.callbacks.isMatrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
+            realityEditor.app.callbacks.matrixFormatCalculated = true;
+            break; // only needs to look at one object to determine format that this vuforia app uses
+        }
+    }
+};
 
-        // var cameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        // var cameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, true);
-        // realityEditor.gui.ar.utilities.multiplyMatrix(cameraRotation, cameraTranslation, realityEditor.gui.ar.draw.correctedCameraMatrix);
-        //
-        // // this fixes it for three.js coordinates
-        // var webGlCameraRotation = realityEditor.gui.ar.draw.utilities.extractRotation(cameraMatrix, true, true, false);
-        // var webGlCameraTranslation = realityEditor.gui.ar.draw.utilities.extractTranslation(realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix), true, false, false);
-        // realityEditor.gui.ar.utilities.multiplyMatrix(webGlCameraRotation, webGlCameraTranslation, realityEditor.gui.ar.draw.webGlCameraMatrix);
-
-        // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraMatrix);
-
-        // var negativeScale = [
-        //     -1, 0, 0, 0,
-        //     0, 1, 0, 0,
-        //     0, 0, 1, 0,
-        //     0, 0, 0, 1
-        // ];
-        //
-        // realityEditor.gui.ar.utilities.multiplyMatrix(negativeScale, cameraMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix);
-
-        // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.convertMatrixHandedness(cameraMatrix);
-
+/**
+ * Takes new matrix format and extracts each object's tracking status into visibleObjectsStatus
+ * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
+ * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
+ * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}>} visibleObjects
+ */
+realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObjects) {
+    realityEditor.gui.ar.draw.visibleObjectsStatus = {};
+    for (var key in visibleObjects) {
+        realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
+        if ( (!DISABLE_ALL_EXTENDED_TRACKING && globalStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
+            visibleObjects[key] = visibleObjects[key].matrix;
+        } else {
+            if (visibleObjects[key].status === 'EXTENDED_TRACKED') {
+                delete visibleObjects[key];
+            }
+        }
     }
 };
 
@@ -266,16 +386,20 @@ realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix)
 realityEditor.app.callbacks.rotationXMartrix = rotationXMartrix;
 realityEditor.app.callbacks.matrix = [];
 realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
-    // console.log("receiveGroundPlaneMatricesFromAR");
-    // easiest way to implement freeze button is just to not update the new matrices
-    if (!globalStates.freezeButtonState) {
-        if(realityEditor.gui.ar.draw.worldCorrection === null) {
-            realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
-        } else {
-            this.matrix = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMartrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
-            realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+
+    // completely ignore this if nothing is using ground plane right now
+    if (globalStates.useGroundPlane) {
+
+        if (!globalStates.freezeButtonState) {
+            if(realityEditor.gui.ar.draw.worldCorrection === null) {
+                realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+            } else {
+                this.matrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMartrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+            }
         }
+        
     }
 };
 
@@ -405,8 +529,9 @@ realityEditor.app.callbacks.doTargetFilesExist = function(success, fileNameArray
 };
 
 /**
- * Uses a combination of IP address and object name to locate the ID
- * @param fileName
+ * Uses a combination of IP address and object name to locate the ID.
+ * e.g. "http://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
+ * @param {string} fileName
  */
 function getObjectIDFromFilename(fileName) {
     var ip = fileName.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/)[0];
@@ -421,8 +546,7 @@ function getObjectIDFromFilename(fileName) {
     }
     
     console.warn('tried to download a file that couldnt locate a matching object', fileName);
-    //"http://10.10.10.108:8080/obj/monitorScreen/target/target.xml"
-};
+}
 
 /**
  * Callback for realityEditor.app.downloadFile for either target.xml or target.dat
@@ -487,31 +611,4 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
         console.log('failed to add marker: ' + fileName);
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
     }
-};
-
-/**
- * @todo: not currently used
- * // callback for getScreenshot
- * @param base64String
- */
-realityEditor.app.callbacks.uploadMemory = function(base64String) {
-
-    // var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
-    // debugShowScreenshot(screenshotBlobUrl);
-    // currentMemory.src = screenshotBlobUrl;
-    
-    var currentMemoryID = realityEditor.gui.ar.getClosestObject()[0];
-    var currentMemoryIP = realityEditor.getObject(currentMemoryID).ip;
-
-    var formData = new FormData();
-    // formData.append('ip', currentMemoryIP);
-    // formData.append('id', currentMemoryID);
-    formData.append('memoryInfo', JSON.stringify(realityEditor.gui.ar.draw.visibleObjects[currentMemoryID]));
-    var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
-    formData.append('memoryImage', blob);
-
-    var request = new XMLHttpRequest();
-    request.open("POST", "http://" + currentMemoryIP + ':' + httpPort + '/object/' + currentMemoryID + '/memory');
-    request.send(formData);
-
 };

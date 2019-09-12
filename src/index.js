@@ -109,7 +109,8 @@ var realityEditor = realityEditor || {
             domCache: {},
             setup: {},
             modal: {},
-            dropdown: {}
+            dropdown: {},
+            moveabilityCorners: {}
 		},
         network: {
             realtime: {},
@@ -334,7 +335,7 @@ realityEditor.forEachNodeInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;
     for (var frameKey in object.frames) {
-        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        // if (!object.frames.hasOwnProperty(frameKey)) continue;
         realityEditor.forEachNodeInFrame(objectKey, frameKey, callback);
     }
 };
@@ -349,7 +350,7 @@ realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
     var frame = realityEditor.getFrame(objectKey, frameKey);
     if (!frame) return;
     for (var nodeKey in frame.nodes) {
-        if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
+        // if (!frame.nodes.hasOwnProperty(nodeKey)) continue;
         callback(objectKey, frameKey, nodeKey);
     }
 };
@@ -374,10 +375,12 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;
     for (var frameKey in object.frames) {
-        if (!object.frames.hasOwnProperty(frameKey)) continue;
+        // if (!object.frames.hasOwnProperty(frameKey)) continue;
         callback(objectKey, frameKey);
     }
 };
+
+realityEditor.vehicleKeyCache = {};
 
 /**
  * Extracts the object and/or frame and/or node keys depending on the type of vehicle
@@ -385,6 +388,14 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
  * @return {{objectKey: string|null, frameKey: string|null, nodeKey: string|null}}
  */
 realityEditor.getKeysFromVehicle = function(vehicle) {
+
+    // load from cache if possible
+    if (typeof vehicle.uuid !== 'undefined') {
+        if (typeof this.vehicleKeyCache[vehicle.uuid] !== 'undefined') {
+            return this.vehicleKeyCache[vehicle.uuid];
+        }
+    }
+    
     var objectKey = null;
     var frameKey = null;
     var nodeKey = null;
@@ -407,12 +418,14 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
             objectKey = vehicle.uuid;
         }
     }
-    
-    return {
+
+    this.vehicleKeyCache[vehicle.uuid] = {
         objectKey: objectKey,
         frameKey: frameKey,
         nodeKey: nodeKey
     };
+    
+    return this.vehicleKeyCache[vehicle.uuid];
 };
 
 realityEditor.isVehicleAFrame = function(vehicle) {

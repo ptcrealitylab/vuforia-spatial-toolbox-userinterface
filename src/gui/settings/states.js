@@ -17,7 +17,8 @@ realityEditor.gui.settings.states = {
     videoRecordingEnabled: false,
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
-    groupingEnabled: false
+    groupingEnabled: false,
+    realtimeEnabled: false
 };
 
 realityEditor.gui.settings.objectInterval = null;

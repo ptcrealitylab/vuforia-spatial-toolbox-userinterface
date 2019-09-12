@@ -163,18 +163,6 @@ realityEditor.app.tap = function() {
 };
 
 /**
- * Tries to add an anchor for the ground plane origin.
- */
-realityEditor.app.tryPlacingGroundAnchor = function(normalizedScreenX, normalizedScreenY, callBack) {
-    this.appFunctionCall('tryPlacingGroundAnchor', {normalizedScreenX: normalizedScreenX, normalizedScreenY: normalizedScreenY}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
-
-};
-
-function debugAddAnchor() {
-    realityEditor.app.tryPlacingGroundAnchor(0.5, 0.5, 'realityEditor.app.callbacks.didAddGroundAnchor');
-}
-
-/**
  **************UDP****************
   **/
  
@@ -294,9 +282,9 @@ realityEditor.app.addSpeechListener = function (callBack) {
  **/
 
 // starts the screen recording of the camera background
-realityEditor.app.startVideoRecording = function (objectKey, objectMatrix) {
+realityEditor.app.startVideoRecording = function (objectKey, objectIP) {
     console.log("startVideoRecording");
-    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectMatrix: JSON.stringify(objectMatrix)}, null);
+    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectIP: objectIP}, null);
 };
 
 // stops the screen recording of the camera background
@@ -472,6 +460,24 @@ realityEditor.app.saveExternalText = function(newExternalText) {
 };
 
 /**
+ * Save the persistent setting to disk for realtime multi-user mode.
+ * @param {boolean} newState
+ */
+realityEditor.app.saveRealtimeState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:REALTIME', storedValue);
+};
+
+/**
+ * Save the persistent setting to disk for realtime multi-user mode.
+ * @param {boolean} newState
+ */
+realityEditor.app.saveGroupingState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:GROUPING', storedValue);
+};
+
+/**
  * Getters for each property saved to disk
  */
 
@@ -546,6 +552,22 @@ realityEditor.app.getDiscoveryText = function(callback) {
  */
 realityEditor.app.getExternalText = function(callback) {
     this.getStorage('SETUP:EXTERNAL', callback);
+};
+
+/**
+ * Get the persistent setting for whether to send/receive multi-user realtime updates of all frame interactions.
+ * @param {function} callback
+ */
+realityEditor.app.getRealtimeState = function(callback) {
+    this.getStorage('SETUP:REALTIME', callback);
+};
+
+/**
+ * Get the persistent setting for whether to enable the grouping feature.
+ * @param {function} callback
+ */
+realityEditor.app.getGroupingState = function(callback) {
+    this.getStorage('SETUP:GROUPING', callback);
 };
 
 /**

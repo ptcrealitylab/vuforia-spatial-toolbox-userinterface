@@ -111,13 +111,13 @@ realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody)
 };
 
 realityEditor.gui.settings.reloadUI = function () {
-    if (this.states.externalState !== "" && this.states.externalState !== "http") {
+    // if (this.states.externalState !== "" && this.states.externalState !== "http") {
         console.log("loadNewUI: " + this.states.externalState);
         this.appFunctionCall('setStorage', {storageID: 'SETUP:EXTERNAL', message: JSON.stringify(this.states.externalState)}, null);
         setTimeout(function() {
             this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
         }.bind(this), 100);
-    }
+    // }
 };
 
 realityEditor.gui.settings.discovery = function () {
@@ -208,6 +208,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.matrixBroadcastEnabled = msg.getSettings.matrixBroadcastEnabled;
             this.states.hololensModeEnabled = msg.getSettings.hololensModeEnabled;
             this.states.groupingEnabled = msg.getSettings.groupingEnabled;
+            this.states.realtimeEnabled = msg.getSettings.realtimeEnabled;
             this.states.externalState = msg.getSettings.externalState;
             this.states.discoveryState = msg.getSettings.discoveryState;
             this.states.settingsButton = msg.getSettings.settingsButton;
@@ -225,6 +226,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.setSettings("matrixBroadcastEnabled", this.states.matrixBroadcastEnabled)
             this.setSettings("hololensModeEnabled", this.states.hololensModeEnabled);
             this.setSettings("groupingEnabled", this.states.groupingEnabled);
+            this.setSettings("realtimeEnabled", this.states.realtimeEnabled);
             this.setSettings("editingMode", this.states.editingMode);
             this.setSettings("clearSkyState", this.states.clearSkyState);
             this.setSettings("externalText", this.states.externalState);

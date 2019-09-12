@@ -137,25 +137,50 @@ realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
  */
 realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
     if (matrix.length === 0) return [];
-    
-	var r = []; //new Array(16);
-	r[0] = matrix[0];
-	r[1] = matrix[1];
-	r[2] = matrix[2];
-	r[3] = matrix[3];
-	r[4] = matrix[4];
-	r[5] = matrix[5];
-	r[6] = matrix[6];
-	r[7] = matrix[7];
-	r[8] = matrix[8];
-	r[9] = matrix[9];
-	r[10] = matrix[10];
-	r[11] = matrix[11];
-	r[12] = matrix[12];
-	r[13] = matrix[13];
-	r[14] = matrix[14];
-	r[15] = matrix[15];
-	return r;
+
+    var r = []; //new Array(16);
+    r[0] = matrix[0];
+    r[1] = matrix[1];
+    r[2] = matrix[2];
+    r[3] = matrix[3];
+    r[4] = matrix[4];
+    r[5] = matrix[5];
+    r[6] = matrix[6];
+    r[7] = matrix[7];
+    r[8] = matrix[8];
+    r[9] = matrix[9];
+    r[10] = matrix[10];
+    r[11] = matrix[11];
+    r[12] = matrix[12];
+    r[13] = matrix[13];
+    r[14] = matrix[14];
+    r[15] = matrix[15];
+    return r;
+};
+
+/**
+ * @desc copies one m16 matrix in to another m16 matrix
+ * Use instead of copyMatrix function when speed is very important - this is faster
+ * @param {Array.<number>} m1 - source matrix
+ * @param {Array.<number>} m2 - resulting copy of the matrix
+ */
+realityEditor.gui.ar.utilities.copyMatrixInPlace = function(m1, m2) {
+    m2[0] = m1[0];
+    m2[1] = m1[1];
+    m2[2] = m1[2];
+    m2[3] = m1[3];
+    m2[4] = m1[4];
+    m2[5] = m1[5];
+    m2[6] = m1[6];
+    m2[7] = m1[7];
+    m2[8] = m1[8];
+    m2[9] = m1[9];
+    m2[10] = m1[10];
+    m2[11] = m1[11];
+    m2[12] = m1[12];
+    m2[13] = m1[13];
+    m2[14] = m1[14];
+    m2[15] = m1[15];
 };
 
 /**
@@ -430,6 +455,33 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
     ];
     return this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners);
     //console.log(thisNode.name, [thisNode.screenX, thisNode.screenY], isInsideScreen);
+};
+
+/**
+ * Uses isOutsideViewport to determine which frames are currently visible across all visible objects
+ * @return {Array.<string>} - returns frameKeys of all visible frames
+ */
+realityEditor.gui.ar.utilities.getAllVisibleFramesFast = function() {
+    
+    var visibleFrameKeys = [];
+
+    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
+    for (var objectKey in visibleObjects) {
+        if (objects[objectKey]) {
+            for (var frameKey in objects[objectKey].frames) {
+                var frame = realityEditor.getFrame(objectKey, frameKey);
+                if (frame) {
+                    if (frame.visualization !== 'ar') { continue; }
+                    if (!frame.isOutsideViewport) {
+                        visibleFrameKeys.push(frameKey);
+                    }
+                }
+            }
+        }
+
+    }
+    
+    return visibleFrameKeys;
 };
 
 /**
@@ -743,8 +795,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     /**
-     * 
-     * @param {Frame|Node} thisVehicle - 
+     *
+     * @param {Frame|Node} thisVehicle -
      * @param {Number} screenX - x coordinate on the screen plane
      * @param {Number} screenY - y coordinate on the screen plane
      * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
@@ -755,7 +807,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         var positionData;
         var previousPosition;
         var updatedCssMatrix;
-        
+
         // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
         if (relativeToMarker) {
             positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
@@ -772,21 +824,77 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                 var draw = realityEditor.gui.ar.draw;
                 var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
                 updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
+                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
             }
         }
-        
+
         var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
-        
+
         // restore the frame's relative position that nothing visually changes due to this computation
         if (previousPosition) {
             positionData.x = previousPosition.x;
             positionData.y = previousPosition.y;
             positionData.scale = previousPosition.scale;
         }
-        
+
         return results;
     }
-    
+    /**
+     *
+     * @param {Frame|Node} thisVehicle -
+     * @param {Number} screenX - x coordinate on the screen plane
+     * @param {Number} screenY - y coordinate on the screen plane
+     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
+     * @return {{point (x,y,z), offsetLeft, offsetTop}}
+     */
+    function screenCoordinatesToMatrixXY_Efficient(thisVehicle, screenX, screenY, relativeToMarker) {
+        console.warn('This gives close, but incorrect values right now... Use screenCoordinatesToMatrixXY instead');
+        var positionData;
+        // var previousPosition;
+        var updatedCssMatrix;
+
+        // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
+        if (relativeToMarker) {
+            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
+
+            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
+                // previousPosition = {
+                //     x: positionData.x,
+                //     y: positionData.y,
+                //     scale: positionData.scale
+                // };
+                // positionData.x = 0;
+                // positionData.y = 0;
+                // positionData.scale = 1;
+                var draw = realityEditor.gui.ar.draw;
+                // var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+                // updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
+                updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
+
+                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
+            }
+        }
+
+        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
+
+        // restore the frame's relative position that nothing visually changes due to this computation
+        // if (previousPosition) {
+        //     positionData.x = previousPosition.x;
+        //     positionData.y = previousPosition.y;
+        //     positionData.scale = previousPosition.scale;
+        // }
+
+        return results;
+    }
+
+
+
+
+
+
     function solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, cssMatrixToUse) {
 
         var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
@@ -908,18 +1016,26 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     function getTransformOrigin(element) {
-        var st = window.getComputedStyle(element, null);
-        var tr = st.getPropertyValue("-webkit-transform-origin") ||
-            st.getPropertyValue("-moz-transform-origin") ||
-            st.getPropertyValue("-ms-transform-origin") ||
-            st.getPropertyValue("-o-transform-origin") ||
-            st.getPropertyValue("transform-origin");
-
-        var values = tr.split(' ');
 
         var out = [ 0, 0, 0, 1 ];
-        for (var i = 0; i < values.length; ++i) {
-            out[i] = parseInt(values[i]);
+
+        // this is a speedup that works for the frames we currently use. might need to remove in the future if it messes anything up
+        if (element.style.transformOrigin) {
+            var st = window.getComputedStyle(element, null);
+            var tr = st.getPropertyValue("-webkit-transform-origin") ||
+                st.getPropertyValue("-moz-transform-origin") ||
+                st.getPropertyValue("-ms-transform-origin") ||
+                st.getPropertyValue("-o-transform-origin") ||
+                st.getPropertyValue("transform-origin");
+
+            var values = tr.split(' ');
+
+            for (var i = 0; i < values.length; ++i) {
+                out[i] = parseInt(values[i]);
+            }
+        } else {
+            out[0] = parseInt(element.style.width)/2;
+            out[1] = parseInt(element.style.height)/2;
         }
 
         return out;
@@ -940,8 +1056,8 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     }
 
     exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
+    exports.screenCoordinatesToMatrixXY_Efficient = screenCoordinatesToMatrixXY_Efficient;
     exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
-    exports.screenCoordinatesToMatrixXY_finalMatrix = screenCoordinatesToMatrixXY_finalMatrix;
     exports.computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
     exports.getTransform = getTransform;
 
@@ -1547,19 +1663,20 @@ realityEditor.gui.ar.utilities.normalizeMatrix = function(m) {
  */
 realityEditor.gui.ar.utilities.extractRotation = function(matrix, flipX, flipY, flipZ) {
     var q = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(matrix);
-    var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
-    if (flipX) {
-        eulerAngles.theta *= -1; // flips first axis of rotation (yaw)
+    if (flipX || flipY || flipZ) {
+        var eulerAngles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(q);
+        if (flipX) {
+            eulerAngles.theta *= -1; // flips first axis of rotation (yaw)
+        }
+        if (flipY) {
+            eulerAngles.psi *= -1; // flips second axis of rotation (pitch)
+        }
+        if (flipZ) {
+            eulerAngles.phi *= -1; // flips third axis of rotation (roll)
+        }
+        q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
     }
-    if (flipY) {
-        eulerAngles.psi *= -1; // flips second axis of rotation (pitch)
-    }
-    if (flipZ) {
-        eulerAngles.phi *= -1; // flips third axis of rotation (roll)
-    }
-    var modifiedQ = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(eulerAngles.theta, eulerAngles.psi, eulerAngles.phi);
-    
-    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(modifiedQ);
+    return realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
 };
 
 /**
@@ -1644,4 +1761,113 @@ realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
 //    
 //     return matrix;
 // };
+
+/**
+ * Custom made Matrix data structure for working with transformation matrices
+ * 
+ * @param {Array.<number>} array
+ * @param {number|undefined} numRows - can be omitted if matrix is square
+ * @param {number|undefined} numCols - can be omitted if matrix is square
+ * @param {boolean} isRowMajor - by default, we use column-major matrices. pass in true if array is in row-major form
+ * @constructor
+ */
+function Matrix(array, numRows, numCols, isRowMajor) {
+    
+    if (typeof numRows === 'undefined' && typeof numCols === 'undefined') {
+        if (array.length > 0 && Math.sqrt(array.length) % 1 === 0) {
+            numRows = Math.sqrt(array.length);
+            numCols = Math.sqrt(array.length);
+        } else {
+            throw new Error('cannot create non-square Matrix without specifying shape!');
+        }
+    } else if (numRows * numCols !== array.length) {
+        throw new Error('invalid shape (' + numRows + ' x ' + numCols + ') to form Matrix from array of length ' + array.length);
+    }
+    
+    this.array = array;
+    this.numRows = numRows;
+    this.numCols = numCols;
+    this.isRowMajor = isRowMajor;
+    
+    this.isSquare = numRows === numCols;
+    
+    // create un-flattened representation of the matrix from the flattened array
+    this.mat = [];
+    if (isRowMajor) {
+        for (var r = 0; r < numRows; r++) {
+            var row = [];
+            for (var c = 0; c < numCols; c++) {
+                row[c] = array[r * numCols + c];
+            }
+            this.mat.push(row);
+        }
+    } else {
+        for (var c = 0; c < numCols; c++) {
+            var col = [];
+            for (var r = 0; r < numRows; r++) {
+                col[r] = array[r * numCols + c];
+            }
+            this.mat.push(col);
+        }
+    }
+}
+
+Matrix.prototype.determinant = function() {
+    if (!this.isSquare) { throw new Error('cannot calculate determinant of non-square Matrix'); }
+    
+    // base case
+    if (this.numRows === 2) {
+        return this.mat[0][0] * this.mat[1][1] - this.mat[0][1] * this.mat[1][0];
+    }
+    
+};
+
+Matrix.prototype.deleteRowAndColumn = function(index) {
+    var copy = this.clone();
+    
+    var newArray = JSON.parse(JSON.stringify(this.array));
+    
+    for (var r = 0; r < this.numCols; r++) {
+        for (var c = 0; c < this.numCols; c++) {
+            
+            
+            
+
+        }
+    }
+};
+
+Matrix.prototype.arrayIndex = function(row, col) {
+    if (this.isRowMajor) {
+        return row * this.numCols + col;
+    } else {
+        return col * this.numRows + row;
+    }
+};
+
+Matrix.prototype.clone = function() {
+    return new Matrix(this.array, this.numRows, this.numCols, this.isRowMajor);
+};
+
+Matrix.prototype.unflattened = function() {
+    return this.mat;
+};
+
+/**
+ * @brief  Get the determinant of this matrix.
+ * @return The determinant.
+ */
+Array.prototype.determinant = function()  {
+// #define MINOR(m, r0, r1, r2, c0, c1, c2) \
+// ((m).rows[r0][c0] * ((m).rows[r1][c1] * (m).rows[r2][c2] - (m).rows[r2][c1] * (m).rows[r1][c2]) - \
+// (m).rows[r0][c1] * ((m).rows[r1][c0] * (m).rows[r2][c2] - (m).rows[r2][c0] * (m).rows[r1][c2]) + \
+// (m).rows[r0][c2] * ((m).rows[r1][c0] * (m).rows[r2][c1] - (m).rows[r2][c0] * (m).rows[r1][c1]))
+//
+// return this->rows[0][0] * MINOR(*this, 1, 2, 3, 1, 2, 3) -
+//     this->rows[0][1] * MINOR(*this, 1, 2, 3, 0, 2, 3) +
+//     this->rows[0][2] * MINOR(*this, 1, 2, 3, 0, 1, 3) -
+//     this->rows[0][3] * MINOR(*this, 1, 2, 3, 0, 1, 2);
+//
+// #undef MINOR
+}
 

@@ -5,7 +5,7 @@
     }
 
     // Hardcoded for now, host of the internet of screens.
-    var iOSHost = 'https://10.10.10.107:5000';
+    var iOSHost = 'https://localhost:5000';
 
     var realityObject = {
         node: '',
