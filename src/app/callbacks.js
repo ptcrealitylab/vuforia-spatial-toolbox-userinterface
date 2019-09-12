@@ -378,13 +378,14 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
     }
 };
 
+realityEditor.app.callbacks.rotationXMartrix = rotationXMartrix;
+realityEditor.app.callbacks.matrix = [];
+
 /**
  * Callback for realityEditor.app.getGroundPlaneMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
  * @param {Array.<number>} groundPlaneMatrix
  */
-realityEditor.app.callbacks.rotationXMartrix = rotationXMartrix;
-realityEditor.app.callbacks.matrix = [];
 realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
 
     // completely ignore this if nothing is using ground plane right now
@@ -464,6 +465,13 @@ realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject = function(ob
 
 };
 
+/**
+ * Downloads the XML and/or the DAT for the object target depending on which are still needed
+ * @param {string} objectID
+ * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
+ * @param {boolean} needsXML
+ * @param {boolean} needsDAT
+ */
 function continueDownload(objectID, objectHeartbeat, needsXML, needsDAT) {
     
     if (!needsXML && !needsDAT) {
