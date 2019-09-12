@@ -192,7 +192,7 @@ createNameSpace("realityEditor.gui.menus");
         if(buttons[buttonName].overlay) {
 
             buttons[buttonName].overlay.addEventListener("pointerdown", function (event) {
-                console.log(buttonName + ' down');
+                // console.log(buttonName + ' down');
                 
                 var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
                 
@@ -201,7 +201,7 @@ createNameSpace("realityEditor.gui.menus");
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerup", function (event) {
-                console.log(buttonName + ' up');
+                // console.log(buttonName + ' up');
 
                 // Note: if you don't trigger the _x_ButtonDown for button named _x_, you will need to trigger _x_ButtonUp with
                 // event.ignoreIsDown=true because otherwise it won't register that you intended to press it
@@ -257,10 +257,13 @@ createNameSpace("realityEditor.gui.menus");
                 buttonOn(["gui"]);
                 // update the global gui state
                 globalStates.guiState = "ui";
+
+                if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
+                    // var logic = new Logic();
+                    // realityEditor.gui.crafting.initializeDataCraftingGrid(logic);
+                    realityEditor.gui.crafting.craftingBoardVisible(Object.keys(objects)[0], Object.keys(objects)[0], Object.keys(objects)[0]);
+                }
                 
-                //TODO: remove
-                // console.warn('adding debug anchor');
-                // debugAddAnchor();
             }
         }.bind(this));
 

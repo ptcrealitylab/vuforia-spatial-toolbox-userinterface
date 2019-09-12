@@ -200,6 +200,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         groundPlane : false,
         allObjects : false
     };
+    thisObject.sendScreenPosition = false;
     thisObject.sendAcceleration = false;
     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
@@ -220,6 +221,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             groundPlane : false,
             allObjects : false
         };
+        thisFrame.sendScreenPosition = false;
         thisFrame.sendAcceleration = false;
         thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
         thisFrame.visible = false;
@@ -321,12 +323,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 };
 
 // TODO: why is frameKey passed in here? if we just iterate through all the frames anyways?
-realityEditor.network.updateObject = function (origin, remote, objectKey, frameKey) {
+realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
-    console.log(origin, remote, objectKey, frameKey);
-
-    console.warn('updateObject: ' + frameKey);
-
+    console.log(origin, remote, objectKey);
+    
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -605,7 +605,11 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
  */
 realityEditor.network.onUDPMessage = function(message) {
     if (typeof message === "string") {
-        message = JSON.parse(message);
+        try {
+            message = JSON.parse(message);
+        } catch (error) {
+            // error parsing JSON
+        }
     }
     
     this.udpMessageHandlers.forEach(function(messageHandler) {
@@ -704,9 +708,6 @@ realityEditor.network.onAction = function (action) {
 
             var urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
-                
-            // }
-            // this.getData('http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
 
                 if (objects[objectKey].integerVersion < 170) {
                     if (typeof res.objectValues !== "undefined") {
@@ -714,9 +715,9 @@ realityEditor.network.onAction = function (action) {
                     }
                 }
                 
-                console.log("updateObject", objects[objectKey], res, objectKey, frameKey);
+                console.log("updateObject", objects[objectKey], res, objectKey);
 
-                realityEditor.network.updateObject(objects[objectKey], res, objectKey, frameKey);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey);
 
                 _this.cout("got object");
 
@@ -842,6 +843,7 @@ realityEditor.network.onAction = function (action) {
             _this.cout('received memory', res.memory);
             objects[objectKey].memory = res.memory;
             objects[objectKey].memoryCameraMatrix = res.memoryCameraMatrix;
+            objects[objectKey].memoryProjectionMatrix = res.memoryProjectionMatrix;
             
             // _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
@@ -903,6 +905,7 @@ realityEditor.network.onAction = function (action) {
                 groundPlane : false,
                 allObjects : false
             };
+            frame.sendScreenPosition = false;
             frame.sendAcceleration = false;
             frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
@@ -1086,6 +1089,7 @@ if (thisFrame) {
     
     if (msgContent.width && msgContent.height) {
         var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+        
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
         var svg = document.getElementById('svg' + activeKey);
@@ -1110,9 +1114,15 @@ if (thisFrame) {
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
             // svg.style.display = 'inline';
             svg.classList.add('visibleEditingSVG');
+
+            overlay.querySelector('.corners').style.visibility = 'visible';
+            
         } else {
             // svg.style.display = 'none';
             svg.classList.remove('visibleEditingSVG');
+
+            overlay.querySelector('.corners').style.visibility = 'hidden';
+
         }
 
         // if (tempThisObject.frameTouchSynthesizer) {
@@ -1127,7 +1137,7 @@ if (thisFrame) {
     // Forward the touch events from the nodes to the overall touch event collector
     
     if (typeof msgContent.eventObject !== "undefined") {
-      
+        
         if(msgContent.eventObject.type === "touchstart"){
             realityEditor.device.touchInputs.screenTouchStart(msgContent.eventObject);
         } else if(msgContent.eventObject.type === "touchend"){
@@ -1163,9 +1173,11 @@ if (thisFrame) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
             var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-            // send the projection matrix into the iframe (e.g. for three.js to use)
-            document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            if (activeKey === msgContent.frame) { // only send these into frames, not nodes
+                // send the projection matrix into the iframe (e.g. for three.js to use)
+                globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+            }
         }
     }
 
@@ -1175,9 +1187,10 @@ if (thisFrame) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.groundPlane = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-                // send the projection matrix into the iframe (e.g. for three.js to use)
-                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
             }
         }
         if (msgContent.sendMatrices.devicePose === true) {
@@ -1185,9 +1198,11 @@ if (thisFrame) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.devicePose = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-                // send the projection matrix into the iframe (e.g. for three.js to use)
-                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                if (activeKey === msgContent.frame) {
+                    // send the projection matrix into the iframe (e.g. for three.js to use)
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
             }
         }
         if (msgContent.sendMatrices.allObjects === true) {
@@ -1195,16 +1210,25 @@ if (thisFrame) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.allObjects = true;
                 var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
-                // send the projection matrix into the iframe (e.g. for three.js to use)
-                document.getElementById("iframe" + activeKey).contentWindow.postMessage(
-                    '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                if (activeKey === msgContent.frame) {
+                    // send the projection matrix into the iframe (e.g. for three.js to use)
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
             }
+        }
+
+        globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane();
+    }
+
+    if (msgContent.sendScreenPosition === true) {
+        if (tempThisObject.integerVersion >= 32) {
+            tempThisObject.sendScreenPosition = true;
         }
     }
     
-
     if (msgContent.sendAcceleration === true) {
-
+        
         if (tempThisObject.integerVersion >= 32) {
 
             tempThisObject.sendAcceleration = true;
@@ -1246,11 +1270,11 @@ if (thisFrame) {
             }
         }
     }
-    
+
     if (msgContent.globalMessage) {
         var iframes = document.getElementsByTagName('iframe');
         for (var i = 0; i < iframes.length; i++) {
-       
+
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
                 var objectKey = iframes[i].getAttribute("data-object-key");
                 if (objectKey) {
@@ -1269,6 +1293,35 @@ if (thisFrame) {
         }
     }
 
+    if (msgContent.sendMessageToFrame) {
+        
+        var iframe = globalDOMCache['iframe' + msgContent.sendMessageToFrame.destinationFrame];
+        if (iframe) {
+            iframe.contentWindow.postMessage(JSON.stringify(msgContent), '*');
+        }
+        
+        // var iframes = document.getElementsByTagName('iframe');
+        // for (var i = 0; i < iframes.length; i++) {
+        //
+        //     if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
+        //         var objectKey = iframes[i].getAttribute("data-object-key");
+        //         if (objectKey) {
+        //             var receivingObject = (objectKey === 'pocket') ? (pocketItem[objectKey]) : objects[objectKey];
+        //             if (receivingObject.integerVersion >= 32) {
+        //                 var msg = {};
+        //                 if (receivingObject.integerVersion >= 170) {
+        //                     msg = {globalMessage: msgContent.globalMessage};
+        //                 } else {
+        //                     msg = {ohGlobalMessage: msgContent.ohGlobalMessage};
+        //                 }
+        //                 iframes[i].contentWindow.postMessage(JSON.stringify(msg), "*");
+        //             }
+        //         }
+        //     }
+        // }
+        
+    }
+    
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
             
@@ -1291,25 +1344,27 @@ if (thisFrame) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
             
+            globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
+            
             if (realityEditor.device.editingState.frame === msgContent.frame) {
                 realityEditor.device.resetEditingState();
                 realityEditor.device.clearTouchTimer();
             }
+            
+            // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
+            if (tempThisObject.isFullScreenExclusive) {
+                realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+            }
 
         }
         if (msgContent.fullScreen === false) {
-            tempThisObject.fullScreen = false;
-            
-            if (tempThisObject.uuid) {
-                globalDOMCache[tempThisObject.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
-            }
-            
-            // TODO: reset left/top offset when returns to non-fullscreen?
-            
-            var containingObject = realityEditor.getObject(msgContent.object);
-            if (!containingObject.objectVisible) {
-                containingObject.objectVisible = true;
-            }
+            realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame);
+        }
+        
+        // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
+        var object = realityEditor.getObject(msgContent.object);
+        if (object) {
+            object.containsStickyFrame = realityEditor.gui.ar.draw.doesObjectContainStickyFrame(msgContent.object);
         }
 
     } else if(typeof msgContent.fullScreen === "string") {
@@ -1334,11 +1389,32 @@ if (thisFrame) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
 
+            globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
+
+            // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
+            var object = realityEditor.getObject(msgContent.object);
+            if (object) {
+                object.containsStickyFrame = true;
+            }
+            
+            // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
+            if (tempThisObject.isFullScreenExclusive) {
+                realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+            }
         }
     }
 
     if(typeof msgContent.stickiness === "boolean") {
         tempThisObject.stickiness = msgContent.stickiness;
+    }
+    
+    if (typeof msgContent.isFullScreenExclusive !== "undefined") {
+        tempThisObject.isFullScreenExclusive = msgContent.isFullScreenExclusive;
+
+        // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
+        if (tempThisObject.isFullScreenExclusive) {
+            realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+        }
     }
 
     // todo this needs to be checked in to the present version
@@ -1406,7 +1482,6 @@ if (thisFrame) {
 
             // remove it from the DOM
             realityEditor.gui.ar.draw.deleteNode(thisObjectKey, thisFrameKey, thisNodeKey);
-            realityEditor.gui.ar.draw.removeFromEditedNodesList(thisNodeKey);
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[thisObjectKey].ip, thisObjectKey, thisFrameKey, thisNodeKey);
             
@@ -1436,35 +1511,15 @@ if (thisFrame) {
             preventDefault: function () {
             }
         };
-        if (event.type === 'touchmove') {
-            if (overlayDiv.style.display !== 'inline') {
-                // overlayDiv.style.display = "inline";
-                realityEditor.device.onDocumentPointerDown(fakeEvent);
-            //     realityEditor.device.onMultiTouchStart(fakeEvent);
-            }
-            
-            // var frameCanvasElement = document.getElementById('canvas' + msgContent.frame);
-            // if (frameCanvasElement.style.display !== 'inline') {
-            //     frameCanvasElement.style.display = "inline";
-            // }
-
-            globalStates.pointerPosition = [event.x, event.y];
-            // Translate up 1200px to be above pocket layer, crafting board, settings menu, and menu buttons
-            overlayDiv.style.transform = 'translate3d(' + event.x + 'px, ' + event.y + 'px, 1200px)';
-            
-            // realityEditor.device.onDocumentPointerMove(fakeEvent);
-            // realityEditor.device.onTouchMove(fakeEvent);
-            realityEditor.device.onMultiTouchMove(fakeEvent);
-            
-        } else if (event.type === 'touchend') {
+        if (event.type === 'touchend') {
             realityEditor.device.onDocumentPointerUp(fakeEvent);
             realityEditor.device.onMultiTouchEnd(fakeEvent);
             globalStates.tempEditingMode = false;
             console.log('stop editing mode!!!');
             globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.deactivateFrameMove(msgContent.frame);
-            var frame = document.getElementById('iframe' + msgContent.frame);
-            if (frame) {
+            var frame = globalDOMCache['iframe' + msgContent.frame];
+            if (frame && !msgContent.node) {
                 frame.contentWindow.postMessage(JSON.stringify({
                     stopTouchEditing: true
                 }), "*");
@@ -1473,7 +1528,6 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.visibilityDistance !== "undefined") {
-
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
         activeVehicle.distanceScale = msgContent.visibilityDistance;
@@ -1482,11 +1536,10 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.moveDelay !== "undefined") {
-        
         var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
         activeVehicle.moveDelay = msgContent.moveDelay;
-        console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
+        // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
         
     }
 
@@ -1510,8 +1563,13 @@ if (thisFrame) {
             publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
-            var keys = realityEditor.getKeysFromVehicle(frame);
-            realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
+            
+            // var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
+            
+            // if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
+                var keys = realityEditor.getKeysFromVehicle(frame);
+                realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
+            // }
         }
         
     }
@@ -1526,7 +1584,35 @@ if (thisFrame) {
         
     }
     
+    if (typeof msgContent.getScreenshotBase64 !== "undefined") {
+        realityEditor.network.frameIdForScreenshot = msgContent.frame;
+        realityEditor.app.getScreenshot("S", function(base64String) {
+            var thisMsg = {
+                getScreenshotBase64: base64String
+                // frameKey: realityEditor.network.frameIdForScreenshot
+            };
+            globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+        });
+    }
+    
+    if (typeof msgContent.ignoreAllTouches !== "undefined") {
+        var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        frame.ignoreAllTouches = msgContent.ignoreAllTouches;
+    }
+    
+    if (typeof msgContent.getScreenDimensions !== "undefined") {
+        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+            screenDimensions: {
+                width: globalStates.height,
+                height: globalStates.width
+            }
+        }), '*');
+    }
+    
 };
+
+// TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
+realityEditor.network.frameIdForScreenshot = null;
 
 realityEditor.network.loadLogicIcon = function(data) {
     var iconImage = data.loadLogicIcon;
@@ -1596,6 +1682,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
                 hololensModeEnabled: globalStates.hololensModeEnabled,
                 groupingEnabled: globalStates.groupingEnabled,
+                realtimeEnabled: globalStates.realtimeEnabled,
                 externalState: globalStates.externalState,
                 discoveryState: globalStates.discoveryState,
                 settingsButton : globalStates.settingsButtonState,
@@ -1775,6 +1862,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.groupingEnabled = true;
                     // add any one-time side-effects here
                     console.log('TODO: grouping mode enabled...');
+                    realityEditor.app.saveGroupingState(true);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(true);
                 }
             } else {
@@ -1782,7 +1870,29 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.groupingEnabled = false;
                     // add any one-time side-effects here:
                     console.log('TODO: grouping mode disabled...');
+                    realityEditor.app.saveGroupingState(false);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(false);
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.realtimeEnabled !== "undefined") {
+            if (msgContent.settings.setSettings.realtimeEnabled) {
+                if (!globalStates.realtimeEnabled) {
+                    globalStates.realtimeEnabled = true;
+                    // add any one-time side-effects here
+                    console.log('TODO: realtimeEnabled mode enabled...');
+                    // realityEditor.gui.ar.grouping.toggleGroupingMode(true);
+                    realityEditor.app.saveRealtimeState(true);
+                    realityEditor.network.realtime.initFeature();
+                }
+            } else {
+                if (globalStates.realtimeEnabled) {
+                    globalStates.realtimeEnabled = false;
+                    // add any one-time side-effects here:
+                    console.log('TODO: realtimeEnabled mode disabled...');
+                    // realityEditor.gui.ar.grouping.toggleGroupingMode(false);
+                    realityEditor.app.saveRealtimeState(false);
                 }
             }
         }
@@ -2376,6 +2486,24 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         }
     }
     
+    // adjust move-ability corner UI to match true width and height of frame contents
+    if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
+        var trueSize = {
+            width: globalDOMCache['iframe' + activeKey].clientWidth,
+            height: globalDOMCache['iframe' + activeKey].clientHeight
+        };
+
+        var cornerPadding = 24;
+        globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
+        globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+    }
+
+    // show the blue corners as soon as the frame loads
+    if (realityEditor.device.editingState.frame === frameKey && realityEditor.device.editingState.node === nodeKey) {
+        document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
+        globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
+    }
+
     this.cout("on_load");
 };
 

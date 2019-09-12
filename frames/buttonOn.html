@@ -1,185 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="resources/object-frames.js"></script>
-    <script src="resources/pep.min.js"></script>
+    <script src="objectDefaultFiles/object.js"></script>
+    <script src="objectDefaultFiles/pep.min.js"></script>
     <meta charset="UTF-8">
-    <title>switch</title>
-    <style>
-        @font-face {
-            font-family: 'Speculum';
-            src: url('resources/speculum.ttf');
-        }
-
-        #frame {
-            stroke: #00ffff;
-            stroke-width: 4;
-            fill: rgba(0, 255, 255, 0.3);
-        }
-
-        .numberOutline {
-            stroke-width: 4;
-            fill: rgba(0, 255, 0, 0.0);
-        }
-
-        #backgroundFrame {
-            fill: rgba(51, 51, 51, 0.8);
-        }
-
-        .lines {
-            stroke-width: 12;
-            stroke: rgba(255, 255, 255, 1);
-        }
-
-        .green {
-            fill: rgb(41, 253, 47);
-        }
-
-        .greenStroke {
-            stroke: rgb(41, 253, 47);
-        }
-
-        .red {
-            fill: rgb(242, 22, 121);
-        }
-
-        .redStroke {
-            stroke: rgb(242, 22, 121);
-
-        }
-
-        .overlay {
-            fill: rgba(0, 0, 0, 0.3);
-        }
-
-        .blue {
-            fill: rgb(45, 255, 255);
-        }
-
-        .purple {
-            fill: rgb(210, 113, 255);
-        }
-
-        .yellow {
-            fill: rgb(255, 255, 45);
-
-        }
-
-        .white {
-            fill: rgb(255, 255, 255);
-
-        }
-
-        .gray {
-            fill: rgba(0, 0, 0, 0.3);
-
-        }
-
-        .yellowStroke {
-            stroke: rgb(255, 255, 45);
-            fill: rgba(255, 255, 45, 0.01);
-        }
-
-        .dataFont {
-
-            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            letter-spacing: -6pt;
-            font-size: 100pt;
-            alignment: right;
-            font-stretch: semi-expanded;
-
-        }
-
-        .dataFontMiddle {
-
-            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            letter-spacing: -4pt;
-            fill: #00ffff;
-            font-size: 26pt;
-            transform: scaleX(0.7);
-        }
-
-        .dataFontSmall {
-
-            font-family: Speculum, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            fill: #00ffff;
-            letter-spacing: -1pt;
-            font-size: 12pt;
-            alignment: right;
-            transform: scaleX(0.7);
-        }
-
-    </style>
+    <title>buttonOn</title>
 </head>
-<body>
+<body style="width: 270px; height: 270px">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+    <defs>
+        <style>
+            .cls-1 {
+                opacity: 0.25;
+            }
 
-<svg id="container" width="270" height="270" version="1.1" xmlns="http://www.w3.org/2000/svg" touch-action="none">
-    <rect class="numberOutline gray" id="" x="0" y="0" width="270" height="270" rx="20" ry="20"/>
-    <rect class="numberOutline green" id="on" x="50" y="50" width="170" height="170" rx="0" ry="0"/>
-    <svg x="85" y="42">
-        <line id="onLetter" x1="50" y1="50" x2="50" y2="128" class="lines" stroke-width="50"/>
-    </svg>
+            .cls-2 {
+                fill: #75fbfd;
+            }
+        </style>
+    </defs>
+    <title>Asset 34</title>
+    <g id="Layer_2" data-name="Layer 2">
+        <g id="UI">
+            <g id="buttonFill" class="cls-1">
+                <polygon class="cls-2" points="75.33 75.33 75.33 4.67 38.34 4.67 4.67 4.67 4.67 38.34 4.67 75.33 75.33 75.33"/>
+            </g>
+            <path class="cls-2" d="M75.33,4.67V75.33H4.67V4.67H75.33M78.67,0H1.33A1.34,1.34,0,0,0,0,1.33V78.67A1.34,1.34,0,0,0,1.33,80H78.67A1.34,1.34,0,0,0,80,78.67V1.33A1.34,1.34,0,0,0,78.67,0Z"/>
+            <g class="cls-1">
+                <path class="cls-2" d="M70.67,9.33V70.67H9.33V9.33H70.67m4.66-4.66H4.67V75.33H75.33V4.67Z"/>
+            </g>
+            <rect class="cls-2" x="36.67" y="20" width="6.67" height="40" transform="translate(80 80) rotate(180)"/>
+        </g>
+    </g>
 </svg>
 
+
 <script>
-    var realityInterface = new RealityInterface();
-    var on = document.querySelector('#on');
-    var onLetter = document.querySelector('#onLetter');
+    try {
+        var realityInterface = new RealityInterface();
+        realityInterface.setMoveDelay(1000);
+    } catch (e) {
+        console.warn('Reality Interface is not accessible');
+    }
+
+    var button = document.querySelector('svg');
+    var buttonFill = document.querySelector('#buttonFill');
     var screenIsTouched = false;
 
     var properties = {
         value: 0,
-        valueOld: 0,
         unitMax: 0,
         unitMin: 0,
         unit: ""
     };
 
-    function execute(number){
+    function execute(number) {
         properties.value = number;
-        // if(screenIsTouched === true) {
+        try {
             realityInterface.write('value', number);
-        // }
+        } catch (e) {
+            console.warn('Reality Interface is not accessible');
+        }
     }
 
-    function changeSize(object, x,y,w,h){
-        object.setAttribute('x', x);
-        object.setAttribute('y', y);
-        object.setAttribute('width', w);
-        object.setAttribute('height', h);
-    }
-    
-    on.addEventListener("pointerdown",
-        function (event) {
-            screenIsTouched = true;
-            changeSize(on, 20,20,230,230);
-            execute(0); // wont resend if same value
-            execute(1);
-        }, false);
+    button.addEventListener("pointerdown", function () {
+        screenIsTouched = true;
+        execute(0);
+        execute(1);
+        button.style.transform = 'scale(1.1)';
+        buttonFill.style.opacity = '0.7';
+    });
 
-    onLetter.addEventListener("pointerdown",
-        function (event) {
-            screenIsTouched = true;
-            changeSize(on, 20,20,230,230);
-            execute(0);
-            execute(1);
-        }, false);
+    button.addEventListener("pointerup", function () {
+        screenIsTouched = false;
+        button.style.transform = '';
+        buttonFill.style.opacity = '';
+    });
 
-    // up
-    
-    on.addEventListener("pointerup",
-        function (event) {
-            screenIsTouched = false;
-            changeSize(on, 50,50,170,170);
-        }, false);
-
-    onLetter.addEventListener("pointerup",
-        function (event) {
-            screenIsTouched = false;
-            changeSize(on, 50,50,170,170);
-        }, false);
-
-    realityInterface.setMoveDelay(1000);
 </script>
+
 </body>
 </html>

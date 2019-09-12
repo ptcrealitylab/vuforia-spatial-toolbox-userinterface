@@ -52,6 +52,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
 (function(exports) {
 
     var blockTabImage = [];
+    var blockTabImageActive = [];
 
     /**
      * Creates the DOM elements for the logic block menu,
@@ -73,8 +74,17 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
 
         // pre-load any necessary assets
         if (blockTabImage.length === 0) {
+            // realityEditor.gui.utilities.preload(blockTabImage,
+            //     'png/iconBlocks.png', 'png/iconEvents.png', 'png/iconSignals.png', 'png/iconMath.png', 'png/iconWeb.png'
+            // );
             realityEditor.gui.utilities.preload(blockTabImage,
-                'png/iconBlocks.png', 'png/iconEvents.png', 'png/iconSignals.png', 'png/iconMath.png', 'png/iconWeb.png'
+                'svg/blockMenu/blockMenuDefault.svg', 'svg/blockMenu/blockMenuEvents.svg', 'svg/blockMenu/blockMenuSignals.svg', 'svg/blockMenu/blockMenuMath.svg', 'svg/blockMenu/blockMenuWeb.svg'
+            );
+        }
+
+        if (blockTabImageActive.length === 0) {
+            realityEditor.gui.utilities.preload(blockTabImageActive,
+                'svg/blockMenu/blockMenuDefaultActive.svg', 'svg/blockMenu/blockMenuEventsActive.svg', 'svg/blockMenu/blockMenuSignalsActive.svg', 'svg/blockMenu/blockMenuMathActive.svg', 'svg/blockMenu/blockMenuWebActive.svg'
             );
         }
         
@@ -162,6 +172,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
             for (var r = 0; r < menuRows; r++) {
                 var row = document.createElement('div');
+                row.classList.add('menuBlockRow');
                 menuBlockContainer.appendChild(row);
                 for (var c = 0; c < menuCols; c++) {
                     var block = document.createElement('div');
@@ -248,8 +259,11 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         guiState.menuTabDivs.forEach(function(tab) {
             if (guiState.menuSelectedTab === tab.tabIndex) {
                 tab.setAttribute('class', 'menuTabSelected');
+                tab.querySelector('.menuTabIcon').setAttribute('src', blockTabImageActive[tab.tabIndex].src);
+
             } else {
                 tab.setAttribute('class', 'menuTab');
+                tab.querySelector('.menuTabIcon').setAttribute('src', blockTabImage[tab.tabIndex].src);
             }
         });
     }
@@ -293,10 +307,12 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             iconImage.src = this.crafting.getBlockIcon(globalStates.currentLogic, thisBlockData.type,false).src;
             blockDiv.firstChild.appendChild(iconImage);
 
-            var blockTitle = document.createElement('div');
-            blockTitle.setAttribute('class', 'blockTitle');
-            blockTitle.innerHTML = thisBlockData.name;
-            blockDiv.firstChild.appendChild(blockTitle);
+            if (blockDiv.querySelectorAll('.blockTitle').length === 0) {
+                var blockTitle = document.createElement('div');
+                blockTitle.setAttribute('class', 'blockTitle');
+                blockTitle.innerHTML = thisBlockData.name;
+                blockDiv.appendChild(blockTitle);
+            }
         }
     
         // clear the remaining block divs

@@ -194,30 +194,39 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
         blockContents.appendChild(moveDiv);
     }
     blockDomElement.style.display = 'inline-block';
-    
+
+    var blockOutlinePadding = 10; // wrapping the div with corners/outline adds the remaining width to match the cell size
+
     // if we're adding a temp block, it doesn't have associated cells it can use to calculate position. we need to remember to set position to pointer afterwards
     if (!isTempBlock) { //TODO: is there a way to set position for new blocks consistently?
         var firstCell = this.grid.getCellForBlock(grid, block, 0);
         var firstCellCenterX = grid.getCellCenterX(firstCell);
-        blockDomElement.style.left = firstCellCenterX - grid.blockColWidth/2;
-        blockDomElement.style.top = grid.getCellCenterY(firstCell) - grid.blockRowHeight/2;
+        blockDomElement.style.left = firstCellCenterX - grid.blockColWidth/2 + blockOutlinePadding/2 + 'px';
+        blockDomElement.style.top = grid.getCellCenterY(firstCell) - grid.blockRowHeight/2 + blockOutlinePadding/2 + 'px';
     }
 
-    blockDomElement.style.width = this.grid.getBlockPixelWidth(block,grid);
-    blockDomElement.style.height = grid.blockRowHeight;
+    blockDomElement.style.width = this.grid.getBlockPixelWidth(block,grid) - blockOutlinePadding + 'px';
+    blockDomElement.style.height = grid.blockRowHeight - blockOutlinePadding + 'px';
     
     if (iconImage) {
-        iconImage.style.width = blockDomElement.style.width;
-        iconImage.style.height = blockDomElement.style.height;
-        iconImage.style.marginLeft = '-2px';
-        iconImage.style.marginTop = '-2px';
+        // iconImage.style.width = blockDomElement.style.width;
+        // iconImage.style.height = (parseInt(blockDomElement.style.height) - 10) + 'px';
+        iconImage.style.marginLeft = '-5px';
+        // iconImage.style.marginTop = '-2px';
     }
-
+    
     var blockContainer = document.getElementById('blocks');
     blockContainer.appendChild(blockDomElement);
 
     var guiState = globalStates.currentLogic.guiState;
     guiState.blockDomElements[block.globalId] = blockDomElement;
+
+    // adds outlines to blocks placed in cells, but not when in the process of dropping in from the menu
+    if (block.x !== -1 && block.y !== -1) {
+        realityEditor.gui.moveabilityCorners.wrapDivInOutline(blockDomElement, 8, true, null, -4, 3);
+    } else {
+        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(blockDomElement, 8, true, null, -4);
+    }
 };
 
 realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch) {
@@ -269,7 +278,7 @@ realityEditor.gui.crafting.getSrcForAutoIcon = function(logic) {
     if (validBlockIDs.length > 0) {
         var firstBlock = logic.blocks[validBlockIDs[0]];
         console.log(firstBlock.type);
-        return this.getBlockIcon(logic, firstBlock.type, false).src;
+        return this.getBlockIcon(logic, firstBlock.type).src;
     }
     return null;
 };
@@ -316,9 +325,13 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     grid.forEachLink( function(link) {
-        var startCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeA, globalStates.currentLogic), link.logicA);
-        var endCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeB, globalStates.currentLogic), link.logicB);
-        _this.drawDataCraftingLine(ctx, link, 5, startCell.getColorHSL(), endCell.getColorHSL(), timeCorrection);
+        // var startCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeA, globalStates.currentLogic), link.logicA);
+        // var endCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeB, globalStates.currentLogic), link.logicB);
+        // _this.drawDataCraftingLine(ctx, link, 5, startCell.getColorHSL(), endCell.getColorHSL(), timeCorrection);
+
+        var blueColor = {h: 180, s:100, l:60};
+        // _this.drawDataCraftingLine(ctx, link, 3, blueColor, blueColor, timeCorrection);
+        _this.drawDataCraftingLineDashed(ctx, link);
     });
 
     var cutLine = globalStates.currentLogic.guiState.cutLine;
@@ -328,7 +341,10 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
 
     var tempLine = globalStates.currentLogic.guiState.tempLine;
     if (tempLine.start && tempLine.end) {
-        this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, tempLine.color, 3);
+        var blueColor = {h: 180, s:100, l:60};
+        var lineColor = 'hsl('+blueColor.h+','+blueColor.s+'%,'+blueColor.l+'%)';
+        // this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, tempLine.color, 3);
+        this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, lineColor, 3);
     }
 
     var tappedContents = globalStates.currentLogic.guiState.tappedContents;
@@ -348,8 +364,10 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
             var xOffset =  0.5 * grid.blockColWidth + (grid.blockColWidth + grid.marginColWidth) * linkData.logicB;
             var endX = parseInt(domElement.style.left) + xOffset;
             var endY = parseInt(domElement.style.top) + domElement.clientHeight/2;
-            var startColor = startCell.getColorHSL();
-            var lineColor = 'hsl('+startColor.h+','+startColor.s+'%,'+startColor.l+'%)';
+            // var startColor = startCell.getColorHSL();
+            // var lineColor = 'hsl('+startColor.h+','+startColor.s+'%,'+startColor.l+'%)';
+            var blueColor = {h: 180, s:100, l:60};
+            var lineColor = 'hsl('+blueColor.h+','+blueColor.s+'%,'+blueColor.l+'%)';
 
             _this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, startX, startY, endX, endY, lineColor, 2);
         });
@@ -366,17 +384,55 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
             }
             var endX = grid.getCellCenterX(endCell);
             var endY = grid.getCellCenterY(endCell);
-            var endColor = endCell.getColorHSL();
-            var lineColor = 'hsl('+endColor.h+','+endColor.s+'%,'+endColor.l+'%)';
+            // var endColor = endCell.getColorHSL();
+            // var lineColor = 'hsl('+endColor.h+','+endColor.s+'%,'+endColor.l+'%)';
+            var blueColor = {h: 180, s:100, l:60};
+            var lineColor = 'hsl('+blueColor.h+','+blueColor.s+'%,'+blueColor.l+'%)';
 
             _this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, startX, startY, endX, endY, lineColor, 2);
         });
     }
 };
 
+realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkObject) {
+    // context.save();
+    // start a dashed line
+    var lineLength = 6;
+    var gapLength = 8;
+    var totalLength = lineLength + gapLength;
+    context.setLineDash([lineLength, gapLength]);
+    context.beginPath();
+    context.strokeStyle = 'cyan';
+    context.lineWidth = 3;
+
+    // animate the line
+    var numFramesForAnimationLoop = 30;
+    linkObject.ballAnimationCount += totalLength / numFramesForAnimationLoop;
+    if (linkObject.ballAnimationCount >= totalLength) {
+        linkObject.ballAnimationCount = 0;
+    }
+    context.lineDashOffset = -1 * linkObject.ballAnimationCount;
+    
+    // draw it from start point -> corner -> corner -> ... -> end point
+    var points = linkObject.route.pointData.points;
+    context.moveTo(points[0].screenX, points[0].screenY);
+    for (var i = 1; i < points.length; i++) {
+        var nextPoint = points[i];
+        context.lineTo(nextPoint.screenX, nextPoint.screenY);
+    }
+    context.stroke();
+    // context.restore();
+};
+
 realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, lineStartWeight, startColor, endColor, timeCorrector ) {
     var mathPI = 2*Math.PI;
-    var spacer = 2.3;
+    var spacer = 3;
+
+    var DEBUG_BLUE = true;
+    if (DEBUG_BLUE) {
+        startColor.h = 180;
+        endColor.h = 180;
+    }
 
     var pointData = linkObject.route.pointData;
 
@@ -385,7 +441,7 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
 
     var percentIncrement = (lineStartWeight * spacer)/pointData.totalLength;
 
-    if (linkObject.ballAnimationCount >= percentIncrement) {
+    if (linkObject.ballAnimationCount >= 2*percentIncrement) {
         linkObject.ballAnimationCount = 0;
     }
 
@@ -394,27 +450,35 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
     var transitionColorLeft = (endColor.h - startColor.h < -180 || redToBlue);
     var color;
 
-    for (var i = 0; i < 1.0; i += percentIncrement) {
-        var percentage = i + linkObject.ballAnimationCount;
-        var position = linkObject.route.getXYPositionAtPercentage(percentage);
-        if (position !== null) {
-            if (transitionColorRight) {
-                // looks better to go down rather than up
-                hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h - 360)) % 360;
-            } else if (transitionColorLeft) {
-                // looks better to go up rather than down
-                hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h + 360)) % 360;
-            } else {
-                hue = (1.0 - percentage) * startColor.h + percentage * endColor.h;
-            }
+    for (var i = 0; i < 1.0; i += 2*percentIncrement) {
+        
+        var percentageStart = i + linkObject.ballAnimationCount;
+        var positionStart = linkObject.route.getXYPositionAtPercentage(percentageStart);
+
+        var percentageEnd = i+percentIncrement + linkObject.ballAnimationCount;
+        var positionEnd = linkObject.route.getXYPositionAtPercentage(percentageEnd);
+        
+        if (positionStart !== null && positionEnd !== null) {
+            // if (transitionColorRight) {
+            //     // looks better to go down rather than up
+            //     hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h - 360)) % 360;
+            // } else if (transitionColorLeft) {
+            //     // looks better to go up rather than down
+            //     hue = ((1.0 - percentage) * startColor.h + percentage * (endColor.h + 360)) % 360;
+            // } else {
+            //     hue = (1.0 - percentage) * startColor.h + percentage * endColor.h;
+            // }
+            hue = startColor.h;
             context.beginPath();
-            context.fillStyle = 'hsl(' + hue + ', 100%, 60%)';
-            context.arc(position.screenX, position.screenY, lineStartWeight, 0, mathPI);
-            context.fill();
+            context.strokeStyle = 'hsl(' + hue + ', 100%, 60%)';
+            context.lineWidth = 3;
+            context.moveTo(positionStart.screenX, positionStart.screenY);
+            context.lineTo(positionEnd.screenX, positionEnd.screenY);
+            context.stroke();
         }
     }
 
-    var numFramesForAnimationLoop = 30;
+    var numFramesForAnimationLoop = 10;
     linkObject.ballAnimationCount += percentIncrement/numFramesForAnimationLoop;
 };
 
@@ -438,10 +502,10 @@ realityEditor.gui.crafting.craftingBoardVisible = function(objectKey, frameKey, 
     realityEditor.gui.menus.switchToMenu("crafting", ["freeze"], null);
     
     if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
-        
+
         var logic = new Logic();
         this.initializeDataCraftingGrid(logic);
-        
+
     } else {
         
         var nodeLogic = objects[objectKey].frames[frameKey].nodes[nodeKey];
@@ -648,25 +712,28 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
             for (var colNum = 0; colNum < logic.grid.size; colNum++) {
                 if (colNum % 2 === 0) {
                     var blockPlaceholder = document.createElement('div');
+                    rowDiv.appendChild(blockPlaceholder);
+
                     var className = (colNum === logic.grid.size - 1) ? "blockPlaceholderLastCol" : "blockPlaceholder";
                     blockPlaceholder.setAttribute("class", className);
 
                     blockPlaceholder.style.width = (gridWidth * (2/11)) + 'px';
                     blockPlaceholder.style.marginRight = (gridWidth * (1/11)) + 'px';
-
+                    
                     //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
                     //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
-                    blockPlaceholder.style.border = "2px solid " + blockColorMap[colNum / 2]; //rgb(45, 255, 254);"
                     if (rowNum === 0 || rowNum === 6) {
+                        blockPlaceholder.style.border = "3px solid " + blockColorMap[colNum / 2] + "55"; //rgb(45, 255, 254);"
                         var labelContainer = document.createElement("div");
                         labelContainer.setAttribute("class", "blockPlaceholderLabel");
                         var label = document.createElement("div");
-                        label.style.color = blockColorMap[colNum / 2];
+                        label.style.color = 'cyan'; //blockColorMap[colNum / 2];
                         label.innerHTML = (rowNum === 0) ? "IN" : "OUT";
                         labelContainer.appendChild(label);
                         blockPlaceholder.appendChild(labelContainer);
+                    } else {
+                        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(blockPlaceholder, 0, true, {opacity: 0.5});
                     }
-                    rowDiv.appendChild(blockPlaceholder);
                 }
             }
 
@@ -677,21 +744,21 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
             rowDiv.style.height = logic.grid.marginRowHeight;
             blockPlaceholdersContainer.appendChild(rowDiv);
 
-            for (var colNum = 0; colNum < logic.grid.size; colNum++) {
-                if (colNum % 2 === 0) {
-                    var columnHighlight = document.createElement('div');
-                    var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
-                    columnHighlight.setAttribute("class", className);
-
-                    columnHighlight.style.width = (gridWidth * 2/11) + 'px';
-                    columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
-                    
-                    //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
-                    //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
-                    columnHighlight.style.background = columnHighlightColorMap[colNum/2];
-                    rowDiv.appendChild(columnHighlight);
-                }
-            }
+            // for (var colNum = 0; colNum < logic.grid.size; colNum++) {
+            //     if (colNum % 2 === 0) {
+            //         var columnHighlight = document.createElement('div');
+            //         rowDiv.appendChild(columnHighlight);
+            //         var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
+            //         columnHighlight.setAttribute("class", className);
+            //
+            //         columnHighlight.style.width = (gridWidth * 2/11) + 'px';
+            //         columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
+            //        
+            //         //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
+            //         //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
+            //         columnHighlight.style.background = columnHighlightColorMap[colNum/2];
+            //     }
+            // }
 
         }
     }

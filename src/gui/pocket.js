@@ -49,6 +49,23 @@
 
 createNameSpace("realityEditor.gui.pocket");
 
+/**
+ * @type {CallbackHandler}
+ */
+realityEditor.gui.pocket.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/pocket');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.gui.pocket.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/pocket');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
 realityEditor.gui.pocket.pocketButtonAction = function() {
 
 	console.log("state: " + globalStates.pocketButtonState);
@@ -246,6 +263,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 return;
             }
             
+            if (evt.target.dataset.src === '_PLACEHOLDER_') {
+                console.log('dont add frame from placeholder!');
+                return;
+            }
+            
             // pointermove gesture must have started with a tap on the pocket
             if (!isPocketTapped) {
                 return;
@@ -288,6 +310,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 
                 frame.ar.x = 0;
                 frame.ar.y = 0;
+                if (evt.target.dataset.startPositionOffset) {
+                    var startOffset = JSON.parse(evt.target.dataset.startPositionOffset);
+                    frame.startPositionOffset = startOffset;
+                    // frame.ar.x = startOffset.x;
+                    // frame.ar.y = startOffset.y;
+                    console.log('frame offset = ', startOffset);
+                }
+                
                 frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
                 frame.frameSizeX = evt.target.dataset.width;
                 frame.frameSizeY = evt.target.dataset.height;
@@ -377,6 +407,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
                 realityEditor.gui.pocket.setPocketFrame(frame, {pageX: evt.pageX, pageY: evt.pageY}, closestObjectKey);
 
+                realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
+
             } else {
                 console.warn('there aren\'t any visible objects to place this frame on!');
             }
@@ -415,6 +447,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         function pocketButtonPressed(params) {
             if (params.newButtonState === 'up') {
+                
+                // show UI pocket by switching out of node view when the pocket button is tapped
+                var HACK_AUTO_SWITCH_TO_GUI = true;
+                if (HACK_AUTO_SWITCH_TO_GUI) {
+                    if (globalStates.guiState === 'node') {
+                        realityEditor.gui.buttons.guiButtonUp({button: "gui", ignoreIsDown: true});
+                    }
+                }
 
                 onPocketButtonUp();
 
@@ -610,14 +650,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
 
     function pocketShow() {
-        // console.log('pocketShow()', palette.innerHTML.trim());
-        // if (palette.innerHTML.trim() === "") {
-        //     createPocketUIPalette();
-        //     clearTimeout(pocketDestroyTimer);
-        // } else {
-        //     clearTimeout(pocketDestroyTimer);
-        // }
-        
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn(['pocket']);
         if (globalStates.guiState === "node") {
@@ -634,15 +666,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     function pocketHide() {
-        // palette.style.display = 'none';
-        // pocketDestroyTimer = setTimeout(function() {
-        //     palette.innerHTML = "";
-        //     // remove touch event from dragged frame if needed
-        //     if (globalStates.pocketEditingMode) {
-        //         var fakeEvent = { currentTarget: document.getElementById(globalStates.editingFrame) };
-        //         realityEditor.device.onTrueTouchUp(fakeEvent);
-        //     }
-        // }, 5000);
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff(['pocket']);
         isPocketTapped = false;
@@ -654,57 +677,44 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     function createPocketUIPalette() {
         palette = document.querySelector('.palette');
+        if (realityElements.length % 4 !== 0) {
+            var numToAdd = 4 - (realityElements.length % 4);
+            for (var i = 0; i < numToAdd; i++) {
+                // console.log('add blank ' + i);
+                realityElements.push(null);
+            }
+        }
+        
         for (var i = 0; i<realityElements.length; i++){
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');
             container.id = 'pocket-element';
             // container.position = 'relative';
-            var thisUrl = 'frames/' + element.name + '.html';
-            var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
-            container.dataset.src = thisUrl;
-
-            container.dataset.name = element.name;
-            container.dataset.width = element.width;
-            container.dataset.height = element.height;
-            container.dataset.nodes = JSON.stringify(element.nodes);
             
-            var elt = document.createElement('img');
-            elt.classList.add('palette-element');
-            // elt.style.width = element.width + 'px';
-            // elt.style.height = element.height + 'px';
-            // elt.style.width = '100%'; //container.offsetWidth + 'px'; // paletteElementSize + 'px'; //container.offsetWidth; //'100%';
-            // elt.style.height = '100%'; container.offsetHeight + 'px'; // paletteElementSize + 'px'; // container.offsetHeight; //'100%';
-            elt.src = gifUrl;
+            if (element === null) {
+                // this is just a placeholder to fill out the last row
+                container.dataset.src = '_PLACEHOLDER_';
+            } else {
+                var thisUrl = 'frames/' + element.name + '.html';
+                var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
+                container.dataset.src = thisUrl;
 
-            container.appendChild(elt);
+                container.dataset.name = element.name;
+                container.dataset.width = element.width;
+                container.dataset.height = element.height;
+                container.dataset.nodes = JSON.stringify(element.nodes);
+                if (typeof element.startPositionOffset !== 'undefined') {
+                    container.dataset.startPositionOffset = JSON.stringify(element.startPositionOffset);
+                }
+                
+                var elt = document.createElement('div');
+                elt.classList.add('palette-element');
+                elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
+                container.appendChild(elt);
+            }
+
             palette.appendChild(container);
-
-            var paletteElementSize = Math.floor(parseFloat(window.getComputedStyle(container).width)) - 6;
-
-            // var scale = Math.min(
-            //     paletteElementSize / (element.width),
-            //     paletteElementSize / (element.height),
-            //     1
-            // );
-
-            // var scale = Math.min(
-            //     paletteElementSize / (elt.naturalWidth),
-            //     paletteElementSize / (elt.naturalHeight),
-            //     1
-            // );
-            
-            var ICON_SIZE = 204;
-            // var scale = paletteElementSize / elt.naturalWidth;
-            var scale = paletteElementSize / ICON_SIZE;
-
-            elt.style.transform = 'scale(' + scale + ')';
-
-            // var offsetX = (paletteElementSize - element.width * scale) / 2;
-            // var offsetY = (paletteElementSize - element.height * scale) / 2;
-
-            // elt.style.marginTop = offsetY + 'px';
-            // elt.style.marginLeft = offsetX + 'px';
         }
     }
 
@@ -731,52 +741,84 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         var framesPerRow = 4;
         var numRows = Math.ceil(numFrames / framesPerRow);
         // A "chapter" is a section/segment on the scroll bar that you can tap to jump to that section of frames
-        var numChapters = Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight );
+        var numChapters = Math.max(1, Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight ) - 1); // minus one because we can scroll to end using previous bar segment
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
-        var scrollbarHeight = pageHeight - 15;  //305;
-        
+        var marginBetweenSegments = 10;
+        var scrollbarHeight = 320; // matches menu height of sidebar buttons //pageHeight - 15;  //305;
+        var scrollbarHeightDifference = globalStates.width - scrollbarHeight;
+
         var allSegmentButtons = [];
         
         for (var i = 0; i < numChapters; i++) {
             var segmentButton = document.createElement('div');
             segmentButton.className = 'pocketScrollBarSegment';
             segmentButton.id = 'pocketScrollBarSegment' + i;
-            segmentButton.style.height = (scrollbarHeight / numChapters) + 'px';
-            segmentButton.style.top = (i * scrollbarHeight / numChapters) + 'px';
+            segmentButton.style.height = (scrollbarHeight / numChapters - marginBetweenSegments) + 'px';
+            segmentButton.style.top = (scrollbarHeightDifference/2 - marginBetweenSegments/2) + (i * scrollbarHeight / numChapters) + 'px';
+            
+            var segmentActiveDiv = document.createElement('div');
+            segmentActiveDiv.className = 'pocketScrollBarSegmentActive';
             if (i > 0) {
-                segmentButton.style.borderTop = '2px solid cyan';
+                segmentActiveDiv.style.visibility = 'hidden';
             }
-            // if (i < numChapters-1) {
-            //     segmentButton.style.borderBottom = '1px solid cyan';
-            // }
+            segmentButton.appendChild(segmentActiveDiv);
             
             segmentButton.dataset.index = i;
+            
+            function hideAllSegmentSelections() {
+                allSegmentButtons.forEach(function(div){
+                    if (div.firstChild) {
+                        div.firstChild.style.visibility = 'hidden';
+                    }
+                    div.classList.remove('pocketScrollBarSegmentTouched');
+                });
+            }
+            
+            function selectSegment(segment) {
+                if (segment.firstChild) {
+                    segment.firstChild.style.visibility = 'visible';
+                }
+                segment.classList.add('pocketScrollBarSegmentTouched');
+            }
 
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
-                allSegmentButtons.forEach(function(div){
-                    div.classList.remove('pocketScrollBarSegmentActive');
-                });
-                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
+                hideAllSegmentSelections();
+                selectSegment(e.currentTarget);
+                scrollToSegmentIndex(e.currentTarget.dataset.index); // TODO: keep this? or same as pointermove and include percentage between?
             });
             segmentButton.addEventListener('pointerup', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
-                allSegmentButtons.forEach(function(div){
-                    div.classList.remove('pocketScrollBarSegmentActive');
-                });
+                hideAllSegmentSelections();
+                selectSegment(e.currentTarget);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
-                e.currentTarget.classList.add('pocketScrollBarSegmentActive');
-                scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerenter', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
-                e.currentTarget.classList.add('pocketScrollBarSegmentTouched');
-                scrollToSegmentIndex(e.currentTarget.dataset.index);
+                hideAllSegmentSelections();
+                selectSegment(e.currentTarget);
+                // scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerleave', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+            });
+            segmentButton.addEventListener('pointercancel', function(e) {
+                e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
+            });
+            segmentButton.addEventListener('pointermove', function(e) {
+
+                var index = parseInt(e.currentTarget.dataset.index);
+                var segmentTop = e.currentTarget.getClientRects()[0].top;
+                var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
+                
+                var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
+                var scrollContainer = document.getElementById('pocketScrollContainer');
+                scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
+
+                // console.log(percentageBetween, (index + percentageBetween), scrollContainer.scrollTop);
+
             });
             scrollbar.appendChild(segmentButton);
             allSegmentButtons.push(segmentButton);
@@ -787,6 +829,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollContainer.scrollTop = index * pageHeight;
         }
         
+        finishStylingPocket();
+    }
+    
+    function finishStylingPocket() {
+        [].slice.call(document.querySelectorAll('.palette-element')).forEach(function(paletteElement) {
+            realityEditor.gui.moveabilityCorners.wrapDivWithCorners(paletteElement, 0, true, null, null, 1);
+        });
     }
 
     exports.pocketInit = pocketInit;

@@ -26,6 +26,25 @@ createNameSpace("realityEditor.device.touchPropagation");
         // be notified when certain touch event functions get triggered in device/index.js
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
+        
+        
+        // handle touch events that hit realityInteraction divs within frames
+        realityEditor.network.addPostMessageHandler('pointerDownResult', handlePointerDownResult);
+    }
+    
+    function handlePointerDownResult(eventData, fullMessageContent) {
+        // pointerDownResult
+        console.log(eventData, fullMessageContent);
+        
+        if (eventData === 'interaction') {
+            console.log('TODO: cancel the moveDelay timer to prevent accidental moves?');
+        } else if (eventData === 'nonInteraction') {
+            console.log('TODO: immediately begin moving!');
+            realityEditor.device.beginTouchEditing(fullMessageContent.object, fullMessageContent.frame, null);
+            // clear the timer that would start dragging the previously traversed frame
+            realityEditor.device.clearTouchTimer();
+
+        }
     }
 
     /**
@@ -36,6 +55,12 @@ createNameSpace("realityEditor.device.touchPropagation");
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
      */
     function handleUnacceptedTouch(eventData, fullMessageContent) {
+        
+        console.log('handleUnacceptedTouch');
+        // eventData.x is the x coordinate projected within the previouslyTouched iframe. we need to get position on screen
+        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        eventData.x = touchPosition.x;
+        eventData.y = touchPosition.y;
 
         // clear the timer that would start dragging the previously traversed frame
         realityEditor.device.clearTouchTimer();
@@ -63,6 +88,9 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // find the next overlapping div that hasn't been traversed (and therefore hidden) yet
         var newTouchedElement = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+        // var newCoords = webkitConvertPointFromPageToNode(newTouchedElement, new WebKitPoint(eventData.x, eventData.y));
+        // eventData.x = newCoords.x;
+        // eventData.y = newCoords.y;
         dispatchSyntheticEvent(newTouchedElement, eventData);
 
         // re-show each tagged element

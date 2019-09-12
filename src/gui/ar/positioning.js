@@ -141,6 +141,9 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
     var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+    // var efficientResults = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_Efficient(activeVehicle, screenX, screenY, true);
+    // console.log(results.point.x - efficientResults.point.x, results.point.y - efficientResults.point.y);
+    
     // this.applyParentScaleToDragPosition(activeVehicle, results.point);
 
     var positionData = this.getPositionData(activeVehicle);
@@ -269,7 +272,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
         if (frame) {
             var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
             // only parent frame has matrix -> just use that
-            activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(parentFramePositionData.matrix);
+            realityEditor.gui.ar.utilities.copyMatrixInPlace(parentFramePositionData.matrix, activeVehicle.matrix);
         }
     }
 
@@ -308,7 +311,7 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     if (activeVehicle.type === 'node') { // TODO: work for other node types, e.g. delay
         var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (parentFrame.location === 'local') {
-            activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+            realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
             shouldBroadcastUpdate = true;
         }
     }
@@ -316,13 +319,13 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
     // logic nodes set their own matrix
     
     if (activeVehicle.type === 'logic') {
-        activeVehicle.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
         shouldBroadcastUpdate = true;
         
     // frames set their AR matrix
         
     } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
-        activeVehicle.ar.matrix = realityEditor.gui.ar.utilities.copyMatrix(newMatrixValue);
+        realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.ar.matrix);
         shouldBroadcastUpdate = true;
     }
 
@@ -365,6 +368,53 @@ realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable = function(activ
     }
     
     return  (typeof activeVehicle.type === 'undefined' || activeVehicle.type === 'ui' || activeVehicle.type === 'logic');
+};
+
+/**
+ * A super-optimized version of realityEditor.gui.ar.positioning.getScreenPosition that specifically computes the
+ * upperLeft, center, and lowerRight screen coordinates of a frame or node using as few arithmetic operations as possible,
+ * using only the final CSS matrix of the vehicle, and its half width and height
+ * Return value includes center even if not needed, because faster to compute lowerRight using center than without it
+ * 
+ * @param {Array.<number>} finalMatrix - the CSS transform3d matrix
+ * @param {number} vehicleHalfWidth - get from frameSizeX (scale is already stored separately in the matrix)
+ * @param {number} vehicleHalfHeight - get from frameSizeY
+ * @param {boolean} onlyCenter - if defined, doesn't waste resources computing upperLeft and lowerRight
+ * @return {{ center: {x: number, y: number}, upperLeft: {x: number, y: number}|undefined, lowerRight: {x: number, y: number}|undefined }}
+ */
+realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast = function(finalMatrix, vehicleHalfWidth, vehicleHalfHeight, onlyCenter) {
+    
+    // compute the screen coordinates for various points within the frame
+    var screenCoordinates = {};
+
+    // var halfWidth = parseInt(frame.frameSizeX)/2;
+    // var halfHeight = parseInt(frame.frameSizeY)/2;
+    
+    // super optimized version of getProjectedCoordinates (including multiplyMatrix4 and perspectiveDivide) for the 0,0 coordinate
+    screenCoordinates.center = {
+        x: (globalStates.height / 2) + (finalMatrix[12] / finalMatrix[15]),
+        y: (globalStates.width / 2) + (finalMatrix[13] / finalMatrix[15])
+    };
+    
+    if (typeof onlyCenter === 'undefined') {
+        // perspective divide is more complicated for point not at 0,0 ... but still pretty optimized
+        var perspectiveDivide = finalMatrix[3] * (-1 * vehicleHalfWidth) + finalMatrix[7] * (-1 * vehicleHalfHeight) + finalMatrix[15];
+        screenCoordinates.upperLeft = {
+            x: (globalStates.height / 2) + ((finalMatrix[0] * (-1 * vehicleHalfWidth) + finalMatrix[4] * (-1 * vehicleHalfHeight) + finalMatrix[12]) / perspectiveDivide),
+            y: (globalStates.width / 2) + ((finalMatrix[1] * (-1 * vehicleHalfWidth) + finalMatrix[5] * (-1 * vehicleHalfHeight) + finalMatrix[13]) / perspectiveDivide)
+        };
+
+        // don't calculate lowerRight with expensive matrix multiplications, it can be deduced from center and upperLeft because it is the reflection of upperLeft across the center
+        var dx = screenCoordinates.center.x - screenCoordinates.upperLeft.x;
+        var dy = screenCoordinates.center.y - screenCoordinates.upperLeft.y;
+
+        screenCoordinates.lowerRight = {
+            x: screenCoordinates.center.x + dx,
+            y: screenCoordinates.center.y + dy
+        };
+    }
+
+    return screenCoordinates;
 };
 
 /**

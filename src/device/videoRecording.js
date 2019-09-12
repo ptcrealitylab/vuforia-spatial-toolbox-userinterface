@@ -66,7 +66,8 @@ createNameSpace("realityEditor.device.videoRecording");
         if (closestObjectKey) {
             // var startingMatrix = realityEditor.getObject(closestObjectKey)
             var startingMatrix = privateState.visibleObjects[closestObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
-            realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+            // realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+            realityEditor.app.startVideoRecording(closestObjectKey, realityEditor.getObject(closestObjectKey).ip);
             privateState.isRecording = true;
             privateState.recordingObjectKey = closestObjectKey;
             privateState.startMatrix = realityEditor.gui.ar.utilities.copyMatrix(privateState.visibleObjects[closestObjectKey]);
@@ -155,8 +156,8 @@ createNameSpace("realityEditor.device.videoRecording");
         var videoPath = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/videos/' + videoId + '.mp4';
 
         var nodes = [
-            {name: 'play', type: 'node'},
-            {name: 'progress', type: 'node'},
+            {name: 'play', type: 'node', x: 40, y: 0},
+            {name: 'progress', type: 'node', x: -40, y: 0},
             {name: 'storage', type: 'storeData', publicData: {data: videoPath}}
         ];
         
@@ -175,8 +176,8 @@ createNameSpace("realityEditor.device.videoRecording");
             addedNode.type = nodeType;
             addedNode.frameSizeX = 220;
             addedNode.frameSizeY = 220;
-            addedNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-            addedNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+            addedNode.x = nodeData.x || 0; //realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+            addedNode.y = nodeData.y || 0; //realityEditor.device.utilities.randomIntInc(0, 200) - 100;
             addedNode.scale = globalStates.defaultScale;
             
             if (typeof nodeData.publicData !== 'undefined') {
@@ -254,7 +255,10 @@ createNameSpace("realityEditor.device.videoRecording");
      */
     function startRecordingForFrame(objectKey, frameKey) {
         var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
-        realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+
+        // realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
+        realityEditor.app.startVideoRecording(objectKey, realityEditor.getObject(objectKey).ip);
+
     }
 
     /**

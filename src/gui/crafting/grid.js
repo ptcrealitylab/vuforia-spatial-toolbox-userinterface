@@ -77,9 +77,9 @@ createNameSpace("realityEditor.gui.crafting.grid");
         this.yMargin = (containerHeight - gridHeight) / 2;
         
         this.blockColWidth = 2 * (gridWidth / 11);
-        this.blockRowHeight = (gridHeight / 7);
+        this.blockRowHeight = gridHeight / 5.2; //(gridHeight / 7);
         this.marginColWidth = (gridWidth / 11);
-        this.marginRowHeight = this.blockRowHeight;
+        this.marginRowHeight = gridHeight / (5.2/0.4); //this.blockRowHeight;
 
         this.cells = []; // array of [Cell] objects
 

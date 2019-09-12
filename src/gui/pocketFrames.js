@@ -46,24 +46,43 @@ var realityElements = [
     //     nodes: [
     //     ]
     // },
-    /*
+
+    // {
+    //     name: 'screenshot',
+    //     width: Math.max(screen.width, screen.height),
+    //     height: Math.min(screen.width, screen.height),
+    //     nodes: [
+    //         {name: 'storage', type: 'storeData'}
+    //     ]
+    // },
+    
     {
         name: 'videoCapture',
-        width: 568,
-        height: 320,
+        width: 890, //Math.max(screen.width, screen.height),
+        height: 711, //Math.min(screen.width, screen.height),
         nodes: [
-            {name: 'play', type: 'node', x: 0, y: -27, scaleFactor: 0.75},
+            {name: 'play', type: 'node', x: 18, y: 11, scaleFactor: 0.75}, // 18, 11
             // {name: 'progress', type: 'node'},
             // {name: 'next', type: 'node', x: 0, y: 100},
-            {name: 'next', type: 'node', x: 50, y: 100, scaleFactor: 0.6},
-            {name: 'prev', type: 'node', x: -50, y: 100, scaleFactor: 0.6},
+            {name: 'next', type: 'node', x: 63, y: 110, scaleFactor: 0.6}, // 25, 110
+            {name: 'prev', type: 'node', x: -25, y: 110, scaleFactor: 0.6}, // 65, 110
 
             // {name: 'show', type: 'node', x: 0, y: -200},
             // {name: 'hide', type: 'node', x: 0, y: -100},
 
             {name: 'storage', type: 'storeData'}
         ]
-    },*/
+    },
+    // {
+    //     name: 'memoryFrame',
+    //     width: 568,
+    //     height: 320,
+    //     nodes: [
+    //         // {name: 'hue', type: "node"},
+    //         // {name: 'saturation', type: "node"},
+    //         // {name: 'lightness', type: "node"}
+    //     ]
+    // },
     {
         name: 'slider',
         width: 206,
@@ -122,7 +141,7 @@ var realityElements = [
         nodes: [
             {name: 'in_out', type: "twoSidedLimiter", x:0, y:0}
         ]
-    },/*
+    },
     {
         name: 'limiter',
         width: 510,
@@ -130,7 +149,7 @@ var realityElements = [
         nodes: [
             {name: 'in_out', type: "limiter"}
         ]
-    },*/
+    },
     {
         name: 'progress',
         width: 275,
@@ -173,7 +192,29 @@ var realityElements = [
         ]
     },
 
-  
+    {
+        name: 'loto-session',
+        width: 800,
+        height: 200,
+        nodes: [
+            {name: 'storage', type: 'storeData'}
+        ]
+    },
+    
+    {
+        name: 'loto',
+        width: 400,
+        height: 610,
+        nodes: [
+            {name: 'complete', type: 'node', x: -82, y: 54},
+            {name: 'storage', type: 'storeData'}
+        ],
+        startPositionOffset: {
+            x: 120,
+            y: -30
+        }
+    },
+    
     {
         name: 'complete',
         width: 600,

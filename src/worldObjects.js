@@ -1,9 +1,16 @@
 createNameSpace("realityEditor.worldObjects");
 
+/**
+ * @fileOverview realityEditor.worldObjects
+ * Loads world objects from any servers where it has discovered any objects
+ * Also manually adds a _WORLD_OBJECT_local which is a special world object hosted by the iOS device but doesn't persist
+ *  data from session to session, and has the lowest priority to add frames to if any other world objects are visible
+ */
 
 (function(exports) {
     
     var worldObjects;
+    var worldObjectKeys;
     var discoveredServerIPs;
     
     var cameraMatrixOffset;
@@ -20,7 +27,7 @@ createNameSpace("realityEditor.worldObjects");
         // trigger the onNewServerDiscovered if it belongs to an undiscovered server
         
         worldObjects = {};
-        
+        worldObjectKeys = [];
         discoveredServerIPs = [];
         
         cameraMatrixOffset = realityEditor.gui.ar.utilities.newIdentityMatrix();
@@ -38,7 +45,6 @@ createNameSpace("realityEditor.worldObjects");
             zone: '' };
 
         var localWorldBeat =  function(worldObject){  realityEditor.network.addHeartbeatObject(worldObject); console.log(worldObject) };
-
 
         // localWorldBeat(worldObject);
         setTimeout(function() {
@@ -80,6 +86,14 @@ createNameSpace("realityEditor.worldObjects");
      * @param {string} serverIP
      */
     function onNewServerDiscovered(serverIP) {
+
+        var DEBUG_GLOBAL_WORLD_OBJECTS = false;
+        if (DEBUG_GLOBAL_WORLD_OBJECTS) {
+            if (serverIP !== '127.0.0.1') {
+                console.warn('ignored found world object because of DEBUG_GLOBAL_WORLD_OBJECTS');
+                return;
+            }
+        }
         
         // REST endpoint for for downloading the world object for that server
         
@@ -98,6 +112,9 @@ createNameSpace("realityEditor.worldObjects");
                 
                 // add to the internal world objects
                 worldObjects[msg.objectId] = msg;
+                if (worldObjectKeys.indexOf(msg.objectId) === -1) {
+                    worldObjectKeys.push(msg.objectId);
+                }
                 
                 // add the world object to the global objects dictionary
                 objects[msg.objectId] = msg;
@@ -138,17 +155,18 @@ createNameSpace("realityEditor.worldObjects");
      * @return {Array.<string>}
      */
     function getGlobalWorldObjectKeys() {
-        var worldObjectKeys = [];
+        var globalWorldObjectKeys = [];
         getWorldObjectKeys().forEach(function(worldObjectKey) {
             if (worldObjectKey !== localWorldObjectKey) {
-                worldObjectKeys.push(worldObjectKey);
+                globalWorldObjectKeys.push(worldObjectKey);
             }
         });
-        return worldObjectKeys;
+        return globalWorldObjectKeys;
     }
 
     /**
      * @todo: finish implementing so you can pick a frame off of an object and drop onto the world
+     * @todo: not currently used
      * @param {Frame} frame
      */
     function addFrameToWorldObject(frame) {
@@ -183,10 +201,11 @@ createNameSpace("realityEditor.worldObjects");
      * @return {Array.<string>}
      */
     function getWorldObjectKeys() {
-        if (!worldObjects) {
-            return [];
-        }
-        return Object.keys(worldObjects);
+        return worldObjectKeys;
+        // if (!worldObjects) {
+        //     return [];
+        // }
+        // return Object.keys(worldObjects);
     }
 
     /**

@@ -71,6 +71,13 @@ realityEditor.device.onload = function () {
         globalStates.platform = false;
     }
 
+    // load persistent state from disk
+    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
+    realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
+    realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
+    realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
+    realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
+
     // initialize additional features
     realityEditor.device.initFeature();
     realityEditor.device.touchInputs.initFeature();
@@ -89,14 +96,11 @@ realityEditor.device.onload = function () {
     realityEditor.device.distanceScaling.initFeature();
     realityEditor.device.keyboardEvents.initFeature();
     realityEditor.network.frameContentAPI.initFeature();
-    // realityEditor.gui.ar.groundPlane.initFeature();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
-    /*if (!realityEditor.device.utilities.isDesktop()) {
-        realityEditor.gui.ar.draw.updateLoop();
-    }*/
-
-    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalState');
+    // if (!realityEditor.device.utilities.isDesktop()) {
+    //     realityEditor.gui.ar.draw.updateLoop();
+    // }
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
@@ -155,9 +159,14 @@ realityEditor.device.onload = function () {
     overlayDiv.addEventListener('touchstart', function (e) {
         e.preventDefault();
     });
+
+    // var stats=new Stats();
+    // // stats.showPanel( 2 );
+    // document.body.appendChild(stats.dom);
     
     // start TWEEN library for animations
     (function animate(time) {
+        realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
         if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
             var areMatricesPrecomputed = true;
@@ -165,6 +174,10 @@ realityEditor.device.onload = function () {
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
+        // stats.update();
+        
+        // TODO: implement separated render and recalculate functions for the rendering engine
+        // realityEditor.gui.ar.draw.render();
     })();
     
     // start the AR framework in native iOS
