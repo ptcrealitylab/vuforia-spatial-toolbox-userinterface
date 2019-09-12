@@ -259,7 +259,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             if (thisNode.type === "logic") {
                 thisNode.guiState = new LogicGUIState();
                 var container = document.getElementById('craftingBoard');
-                thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
+                thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
         }
@@ -526,7 +526,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
             if (!origin.grid) {
                 var container = document.getElementById('craftingBoard');
-                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
+                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
             }
 
         }
@@ -560,7 +560,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
             if (!origin.grid) {
                 var container = document.getElementById('craftingBoard');
-                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
+                origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
             }
 
         }

@@ -378,7 +378,7 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
     }
 };
 
-realityEditor.app.callbacks.rotationXMartrix = rotationXMartrix;
+realityEditor.app.callbacks.rotationXMatrix = rotationXMatrix;
 realityEditor.app.callbacks.matrix = [];
 
 /**
@@ -396,7 +396,7 @@ realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPl
                 realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             } else {
                 this.matrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMartrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             }
         }

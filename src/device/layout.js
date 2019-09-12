@@ -103,7 +103,7 @@ realityEditor.device.layout.adjustForScreenSize = function() {
         document.body.appendChild(edgeDiv);
 
         // crafting
-        menuBarWidth += globalStates.rightEdgeOffset;
+        realityEditor.gui.crafting.menuBarWidth += globalStates.rightEdgeOffset;
     }
 };
 
