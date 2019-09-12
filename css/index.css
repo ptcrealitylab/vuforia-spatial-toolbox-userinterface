@@ -806,7 +806,7 @@ body {
 }
 
 .webGlFrame {
-    opacity: 1; !important
+    opacity: 1 !important;
 }
 
 .visibleNodeContainer {
