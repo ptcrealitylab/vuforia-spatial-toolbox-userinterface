@@ -478,7 +478,11 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     this.callbackHandler.triggerCallbacks('beginTouchEditing');
 };
 
-// post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show move-ability
+/**
+ * post beginTouchEditing and endTouchEditing event into frame so that 3d object can highlight to show that it's being moved
+ * @param frameKey
+ * @param frameIsMoving
+ */
 realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameIsMoving) {
     if (!frameKey) return;
     var iframe = document.getElementById('iframe' + frameKey);
@@ -489,6 +493,9 @@ realityEditor.device.sendEditingStateToFrameContents = function(frameKey, frameI
     }), '*');
 };
 
+/**
+ * Stop disabling unconstrained mode (gets disabled when you are changing the distance visibility threshold)
+ */
 realityEditor.device.enableUnconstrained = function() {
     
     // only do this once, otherwise it will undo the effects of saving the previous value
@@ -504,16 +511,27 @@ realityEditor.device.enableUnconstrained = function() {
     this.editingState.unconstrainedOffset = null;
 };
 
+/**
+ * Disable unconstrained editing mode so that the frame/node doesn't move when you pull the phone away from it
+ * (Useful when you want to adjust the distance visibility threshold of the frame by walking away from it)
+ */
 realityEditor.device.disableUnconstrained = function() {
     this.editingState.unconstrainedDisabled = true;
     this.editingState.preDisabledUnconstrained = this.editingState.unconstrained;
     this.editingState.unconstrained = false;
 };
 
+/**
+ * Re-enable pinch to scale (gets disabled when you are changing the distance visibility threshold)
+ */
 realityEditor.device.enablePinchToScale = function() {
     this.editingState.pinchToScaleDisabled = false;
 };
 
+/**
+ * Disable pinch to scale
+ * @todo: is this necessary anymore? This was added because we added a new 3-finger pinch gesture to adjust distance visibility threshold, but we removed that pinch gesture now so it might be ok for this to always be enabled?
+ */
 realityEditor.device.disablePinchToScale = function() {
     this.editingState.pinchToScaleDisabled = true;
 };
@@ -1173,6 +1191,13 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     this.callbackHandler.triggerCallbacks('onDocumentMultiTouchMove', {event: event});
 };
 
+/**
+ * Determines if the x, y position on the phone screen falls on top of any visible screen
+ * (Can be used to make sure grouping or memory creation don't happen when you're trying to interact with a screen)
+ * @param {number} screenX
+ * @param {number} screenY
+ * @return {boolean}
+ */
 realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY) {
 
     var isWithinBounds = false;
@@ -1464,14 +1489,6 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
 };
 
 // // // // MISC. Device Functionality // // // //
-
-/**
- * Sets the global device name to the internal hardware string of the iOS device
- * @param {string} deviceName phone or tablet identifier
- * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
- * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
- * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
- */
 
 /**
  * Sets the persistent global settings of the Reality Editor based on the state saved in iOS storage.
