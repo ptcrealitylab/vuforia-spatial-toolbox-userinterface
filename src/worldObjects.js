@@ -2,18 +2,19 @@ createNameSpace("realityEditor.worldObjects");
 
 /**
  * @fileOverview realityEditor.worldObjects
- * Loads world objects from any servers where it has discovered any objects
+ * Loads world objects from any servers where it has discovered any objects, because world objects are stored differently
+ *  on the server and so they aren't advertised in the same way as the rest of the objects.
  * Also manually adds a _WORLD_OBJECT_local which is a special world object hosted by the iOS device but doesn't persist
  *  data from session to session, and has the lowest priority to add frames to if any other world objects are visible
  */
 
 (function(exports) {
     
-    var worldObjects;
+    var worldObjects; // world objects are stored in the regular global "objects" variable, but also in here
     var worldObjectKeys;
     var discoveredServerIPs;
     
-    var cameraMatrixOffset;
+    var cameraMatrixOffset; // can be used to relocalize the world objects to a different origin point // todo: isn't actually used, should probably be removed
     
     var localWorldObjectKey = '_WORLD_OBJECT_local';
 
@@ -37,6 +38,7 @@ createNameSpace("realityEditor.worldObjects");
             handleServerDiscovered(object.ip);
         });
 
+        // this is a way to manually detect and create a world object from the local Node.js server running on the phone
         var worldObject = { id: '_WORLD_OBJECT_local',
             ip: "127.0.0.1", //'127.0.0.1',
             vn: 320,
@@ -44,9 +46,12 @@ createNameSpace("realityEditor.worldObjects");
             tcs: null,
             zone: '' };
 
-        var localWorldBeat =  function(worldObject){  realityEditor.network.addHeartbeatObject(worldObject); console.log(worldObject) };
+        var localWorldBeat = function(worldObject) {
+            realityEditor.network.addHeartbeatObject(worldObject);
+            console.log(worldObject);
+        };
 
-        // localWorldBeat(worldObject);
+        // send it a few times, just in case the server hasn't finished initializing by the time this first runs
         setTimeout(function() {
             localWorldBeat(worldObject);
         }, 1000);
@@ -72,7 +77,7 @@ createNameSpace("realityEditor.worldObjects");
 
     /**
      * Determines if the discovered server is new and triggers the world object downloader if so
-     * @param serverIP
+     * @param {string} serverIP
      */
     function handleServerDiscovered(serverIP) {
         if (discoveredServerIPs.indexOf(serverIP) < 0) {
@@ -135,7 +140,8 @@ createNameSpace("realityEditor.worldObjects");
         // if there are any global world objects, add to those first
         var globalWorldObjectKeys = getGlobalWorldObjectKeys();
         if (globalWorldObjectKeys.length > 0) {
-            return objects[globalWorldObjectKeys[0]];
+            // todo: should there be a better way to see which server's world object you'd be accessing?
+            return objects[globalWorldObjectKeys[0]]; // right now it arbitrarily chooses the first non-local world object
         }
         
         // otherwise add to the local one. there should always be one of these so it should never return null
@@ -165,29 +171,6 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
-     * @todo: finish implementing so you can pick a frame off of an object and drop onto the world
-     * @todo: not currently used
-     * @param {Frame} frame
-     */
-    function addFrameToWorldObject(frame) {
-        
-        console.log('add frame to world object...');
-        
-        var chosenWorldObject = getBestWorldObject();
-        if (chosenWorldObject) {
-
-            // add this frame to that object
-            chosenWorldObject.frames[frame.uuid] = frame;
-
-            // set all state appropriately
-
-            // sync with server
-            
-        }
-        
-    }
-
-    /**
      * @todo: not currently used
      * @return {*}
      */
@@ -202,20 +185,16 @@ createNameSpace("realityEditor.worldObjects");
      */
     function getWorldObjectKeys() {
         return worldObjectKeys;
-        // if (!worldObjects) {
-        //     return [];
-        // }
-        // return Object.keys(worldObjects);
     }
 
     /**
-     * @todo: this hasn't been tested or used anywhere yet
+     * @todo: this hasn't been tested or used anywhere yet. instead we relocalize in app.callbacks.receiveMatricesFromAR
      * @todo: replace with a terrain target or spatial anchor solution
      * Re-localize the camera origin to the current camera position...
      * @param {Array.<number>} currentCameraMatrix
      */
     function relocalize(currentCameraMatrix) {
-        cameraMatrixOffset = currentCameraMatrix; //realityEditor.gui.ar.draw.cameraMatrix;
+        cameraMatrixOffset = currentCameraMatrix;
     }
 
     /**
@@ -230,7 +209,6 @@ createNameSpace("realityEditor.worldObjects");
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
     exports.getBestWorldObject = getBestWorldObject;
-    exports.addFrameToWorldObject = addFrameToWorldObject;
     exports.relocalize = relocalize;
     exports.getCameraMatrixOffset = getCameraMatrixOffset;
 
