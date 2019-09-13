@@ -15,7 +15,9 @@ createNameSpace("realityEditor.worldObjects");
     var discoveredServerIPs;
     
     var cameraMatrixOffset; // can be used to relocalize the world objects to a different origin point // todo: isn't actually used, should probably be removed
-    
+
+    // a string that all world object's uuids are built from
+    var worldObjectId = '_WORLD_OBJECT_';
     var localWorldObjectKey = '_WORLD_OBJECT_local';
 
     /**
@@ -204,6 +206,15 @@ createNameSpace("realityEditor.worldObjects");
     function getCameraMatrixOffset() {
         return cameraMatrixOffset;
     }
+
+    /**
+     * Checks if the uuid of an object is from a world object (contains "_WORLD_OBJECT_")
+     * @param {string} objectKey
+     * @return {boolean}
+     */
+    function isWorldObjectKey(objectKey) {
+        return objectKey.indexOf(worldObjectId) > -1;
+    }
     
     exports.initFeature = initFeature;
     exports.getWorldObjects = getWorldObjects;
@@ -211,5 +222,6 @@ createNameSpace("realityEditor.worldObjects");
     exports.getBestWorldObject = getBestWorldObject;
     exports.relocalize = relocalize;
     exports.getCameraMatrixOffset = getCameraMatrixOffset;
+    exports.isWorldObjectKey = isWorldObjectKey;
 
 }(realityEditor.worldObjects));
