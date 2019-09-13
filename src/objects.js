@@ -46,33 +46,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-
+    
+// global variable that holds JSON data for all discovered objects (frames, nodes, etc) and their local temporary state
 var objects = {};
-var shadowObjects = {};
 
-// var enableWorldObject = true;
-var worldObjectId = '_WORLD_OBJECT_';
-// var worldObject = undefined;
-//
-// function initWorldObject() {
-//
-//     if (enableWorldObject) {
-//
-//         worldObject = new Objects();
-//         worldObject.objectId = worldObjectId;
-//         worldObject.integerVersion = 170;
-//         objects[worldObjectId] = worldObject;
-//
-//         // TODO: override this? how to adjust size when drop between different sized objects and world?
-//         // worldObject.targetSize = {
-//         //     width: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
-//         //     height: 0.3
-//         // }
-//
-//         // realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
-//         //    
-//         //    
-//         //
-//         // });
-//     }
-// }
+// not currently used, but set up to hold "shadow" copies of all object/frames/nodes
+var shadowObjects = {};
