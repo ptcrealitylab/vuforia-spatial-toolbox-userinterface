@@ -3,8 +3,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
 /**
  * @fileOverview realityEditor.grouping.js
  * Contains functions that render groups and selection GUI
- * as well as creating groups
- * functions in this file are called in device/index.js
+ * as well as creating groups.
+ * Registers callback listeners for rendering and touch events to keep dependencies acyclic
  */
 
 (function(exports) {
@@ -36,12 +36,15 @@ createNameSpace("realityEditor.gui.ar.grouping");
         frame: []
     };
 
+    /**
+     * @type {boolean}
+     */
     var isUnconstrainedEditingGroup = false;
     
     /**
      * Initialize the grouping feature regardless of whether it is enabled onLoad
-     * Subscribe to touches and rendering events, but only respond to them if the
-     * grouping feature is currently enabled at the time of the event
+     * Subscribe to touches and rendering events, and a variety of other frame events,
+     * but only respond to them if the grouping feature is currently enabled at the time of the event
      */
     function initFeature() {
         
@@ -92,7 +95,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
             }
         });
 
-        // be notified when certain touch event functions get triggered in device/index.js
+        // -- be notified when certain touch event functions get triggered in device/index.js -- //
+        
+        // on touch down, start creating a lasso if you double tap on the background
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', function(params) {
             if (globalStates.groupingEnabled) {
                 console.log('grouping.js: onDocumentMultiTouchStart', params);
@@ -123,6 +128,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             
         });
         
+        // on touch move, continue drawing a lasso. or if you're selecting a grouped frame, move all grouped frames
         realityEditor.device.registerCallback('onDocumentMultiTouchMove', function(params) {
             if (globalStates.groupingEnabled) {
                 // console.log('grouping.js: onDocumentMultiTouchMove', params);
@@ -145,6 +151,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             
         });
         
+        // on touch up finish the lasso and create a group out of encircled frames. or stop moving grouped frames.
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', function(params) {
             if (globalStates.groupingEnabled) {
                 console.log('grouping.js: onDocumentMultiTouchEnd', params);
@@ -168,20 +175,10 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         frame.groupTouchOffset = undefined; // recalculate groupTouchOffset each time
                     });
                 }
-            
-                /*
-                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.pointerEvents = 'none';
-
-                if (activeVehicle.groupID !== null) {
-                    for (let member of groupStruct[activeVehicle.groupID]) {
-                        document.getElementById('svg' + member).style.display = 'none';
-                        document.getElementById('svg' + member).style.pointerEvents = 'none';
-                    }
-                }
-                 */
             }
         });
         
+        // todo: decide if this can be removed entirely or if it should still be implemented
         realityEditor.device.registerCallback('beginTouchEditing', function(params) {
             
             console.log('TODO: set move overlays on for other nodes in group', params);
@@ -199,6 +196,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             // }
         });
 
+        // when you stop moving around a frame, clear some state and post the new positions of all grouped frames to the server
         realityEditor.device.registerCallback('resetEditingState', function(params) {
             isUnconstrainedEditingGroup = false;
 
@@ -229,7 +227,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             
         });
         
-        // unconstrained move grouped vehicles if needed
+        // unconstrained move grouped vehicles if needed by storing their initial matrix offset
         // TODO: also store this info when starting unconstrained editing via another method, e.g. editing mode
         realityEditor.device.registerCallback('onFramePulledIntoUnconstrained', function(params) {
             if (!globalStates.groupingEnabled) { return; }
@@ -237,7 +235,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
             var activeVehicle = params.activeVehicle;
             forEachGroupedFrame(activeVehicle, function(frame) {
                 // store relative offset
-
                 var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
                 var groupedVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(frame).matrix;
 
@@ -343,14 +340,12 @@ createNameSpace("realityEditor.gui.ar.grouping");
             }
             
         });
-
-        /**
-         * Remove the frame from its group when it gets deleted
-         */
+        
+        // Remove the frame from its group when it gets deleted -- AND delete all frames in the same group
         realityEditor.device.registerCallback('vehicleDeleted', function(params) {
             if (!globalStates.groupingEnabled) { return; }
             
-            var DELETE_ALL_FRAMES_IN_GROUP = true;
+            var DELETE_ALL_FRAMES_IN_GROUP = true; // can be easily turned off if we don't want that behavior
             if (params.objectKey && params.frameKey && !params.nodeKey) {
                 if (DELETE_ALL_FRAMES_IN_GROUP) {
                     // in this mode, delete all frames in this group
@@ -369,10 +364,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 
             }
         });
-
-        /**
-         * adjust distanceScale of grouped frames together so they get set to same amount
-         */
+        
+        // adjust distanceScale of grouped frames together so they get set to same amount
         realityEditor.device.distanceScaling.registerCallback('scaleEditingFrameDistance', function(params) {
             if (!globalStates.groupingEnabled) { return; }
 
@@ -431,7 +424,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
     /**
      * Iterator over all frames in the same group as the activeVehicle
-     * NOTE: Currently performs the callback for the activeVehicle too //TODO: give the option to exclude it?
+     * Performs the callback for the activeVehicle too, unless you pass in true for the last argument
      * @param {Frame} activeVehicle
      * @param {function} callback
      * @param {boolean} excludeActive - if true, doesn't trigger the callback for the activeVehicle, only for its co-members
@@ -676,8 +669,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
     /**
      * gets bounding box corners of frame - just the rectangle on the screen, doesn't rotate to fit tightly with CSS transformations
-     * @param frameKey
-     * @param buffer - extra padding to extend frame's bounding rect by
+     * note - currently not used because getFrameCornersScreenCoordinates does it better, but might be useful in the future for rough approximations
+     * @param {string} frameKey
+     * @param {number} buffer - extra padding to extend frame's bounding rect by
      * @returns {{upperLeft: {x: number, y: number}, upperRight: {x: number, y: number}, lowerLeft: {x: number, y: number}, lowerRight: {x: number, y: number}}}
      */
     function getFrameBoundingRectScreenCoordinates(frameKey, buffer) {
@@ -696,6 +690,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
     /**
      * Accurately calculates the screen coordinates of the corners of a frame element
+     * This can be used to draw outlines around a frame, e.g. the outline around the group of frames
      * @param {string} objectKey
      * @param {string} frameKey
      * @param {number|undefined} buffer
@@ -721,17 +716,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
         //     return null;
         // }
     }
-
-    // /**
-    //  * Provides the screen coordinates of the center, upperLeft and lowerRight coordinates of the provided frame
-    //  * (enough points to determine whether the frame overlaps with any rectangular region of the screen)
-    //  * @param {string} objectKey
-    //  * @param {string} frameKey
-    //  * @return {{ center: {x: number, y: number}, upperLeft: {x: number, y: number}, lowerRight: {x: number, y: number} }}
-    //  */
-    // realityEditor.gui.ar.positioning.getFrameScreenCoordinates = function(objectKey, frameKey) {
-    //     return this.getScreenPosition(objectKey, frameKey, true, true, false, false, true);
-    // };
 
     /**
      * gets all members in a group with object and frame keys
@@ -831,7 +815,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
      * to populate the global groupStruct with any groupID information it contains
      * @param {string} frameKey
      * @param {Frame} thisFrame
-     * @todo trigger via subscription, not as a dependency
+     * @todo trigger via subscription, not as a dependency - actually need to do this, then this module will be fully decoupled from the rest of the codebase
      */
     function reconstructGroupStruct(frameKey, thisFrame) {
         // reconstructing groups from frame groupIDs
