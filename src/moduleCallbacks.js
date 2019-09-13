@@ -3,6 +3,31 @@ createNameSpace("realityEditor.moduleCallbacks");
 /**
  * @fileOverview realityEditor.moduleCallbacks.js
  * Creates a reusable class for handling the callbacks of a given module
+ * 
+ * @example How to Use:
+ * 
+ * If you want other modules A and B to be able to register callbacks on your module C:
+ * 
+ * 1. Create a private CallbackHandler withing module C, with the name of module C:
+ * realityEditor.gui.pocket.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/pocket');
+ * 
+ * 2. Add a public method called registerCallback to module C: @todo: I have another version that automatically adds this
+ * realityEditor.gui.pocket.registerCallback = function(functionName, callback) {
+     if (!this.callbackHandler) {
+       this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/pocket'); // lazily instantiate it if not already
+     }
+     this.callbackHandler.registerCallback(functionName, callback); // register the callback within the private member
+   };
+ * 
+ * 3. In module A or B, call registerCallback on module C with the name of the event you are listening for:
+ * realityEditor.gui.pocket.registerCallback('frameAdded', function(params) {
+     console.log(params.objectKey, params.frameKey);
+   });
+ * 
+ * 4. In module C, when the event occurs, call callbackHandler.triggerCallbacks with the event name and any params:
+ * 
+ * this.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
+ * 
  */
 
 (function(exports) {
