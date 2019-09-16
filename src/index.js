@@ -51,37 +51,39 @@
  ******************************************** global namespace *******************************************************
  **********************************************************************************************************************/
 
+var objects = {}; // TODO: this is a duplicate definition from src/objects.js
 
-var objects = {};
-
+// this is an empty template that mirrors the src/ file tree. Used for auto-completion.
+// the code will run correctly without this assuming you call:
+//  createNameSpace("realityEditor.[module].[etc]")  correctly at the top of each file
 var realityEditor = realityEditor || {
         app:{
             callbacks: {}
         },
 		device: {
-		    security:{},
-            utilities: {},
-            speechProcessor: {},
-            speechPerformer: {},
-            touchInputs : {},
-            keyboardEvents: {},
-            touchPropagation: {},
             desktopAdapter: {},
+            distanceScaling: {},
             hololensAdapter: {},
-            distanceScaling: {}
+            keyboardEvents: {},
+            layout: {},
+            onLoad: {},
+            security: {},
+            speechPerformer: {},
+            speechProcessor: {},
+            touchInputs: {},
+            touchPropagation: {},
+            utilities: {},
+            videoRecording: {}
         },
 		gui: {
 			ar: {
-				draw: {
-                    visibleObjects : "",
-                    globalCanvas : {}
-				},
-                positioning: {},
+			    desktopRenderer: {},
+                draw: {},
+                frameHistoryRenderer: {},
                 grouping: {},
                 lines: {},
-                frameHistoryRenderer: {},
-                desktopRenderer: {},
-                groundPlane: {},
+                moveabilityOverlay: {},
+                positioning: {},
                 utilities: {}
             },
             crafting: {
@@ -92,31 +94,30 @@ var realityEditor = realityEditor || {
                 utilities: {}
             },
             memory: {
-			    nodeMemories: {}
+			    nodeMemories: {},
+                pointer: {}
             },
-            settings: {
-                logo:{}
+            settings: { // todo: combine gui/settings/index.js with gui/settings.js
+                logo: {},
+                states: {}
             },
             buttons: {},
-            frames:{},
-            instantConnect:{},
+            dropdown: {},
+            frames: {},
+            instantConnect: {}, // todo: rename file to be consistent with internal module name
             menus:{},
+            modal: {},
+            moveabilityCorners: {},
             pocket: {},
+            pocketFrames: {},
             screenExtension : {},
             search:{},
-            utilities: {},
-            canvasCache: {},
-            domCache: {},
-            setup: {},
-            modal: {},
-            dropdown: {},
-            moveabilityCorners: {}
+            utilities: {}
 		},
         network: {
+            frameContentAPI: {},
             realtime: {},
-            utilities: {},
-            realtime: {},
-            frameContentAPI: {}
+            utilities: {}
         },
         moduleCallbacks: {},
         worldObjects: {}
@@ -129,8 +130,8 @@ var realityEditor = realityEditor || {
  * Inspired by code examples from:
  * https://www.kenneth-truyers.net/2013/04/27/javascript-namespaces-and-modules/
  *
- * @param namespace string of the full namespace path
- * @return object that presents the actual used namespace
+ * @param {string} namespace string of the full namespace path
+ * @return {*} object that presents the actual used namespace
  **/
 var createNameSpace = createNameSpace || function (namespace) {
 		var splitNameSpace = namespace.split("."), object = this, object2;
@@ -150,9 +151,9 @@ createNameSpace("realityEditor");
 
 realityEditor.objects = objects;
 
-if(typeof shadowObjects !== "undefined")
-realityEditor.shadowObjects = shadowObjects;
-
+if (typeof shadowObjects !== "undefined") {
+    realityEditor.shadowObjects = shadowObjects;
+}
 
 realityEditor.getShadowObject = function (objectKey){
     if(!objectKey) return null;
@@ -201,24 +202,24 @@ realityEditor.getShadowNode = function (objectKey, frameKey, nodeKey){
     return  this.shadowObjects[objectKey].frames[frameKey].nodes[nodeKey] ;
 };
 
-// return the object
 /**
- * @param objectKey
+ * return the object given its uuid
+ * @param {string} objectKey
  * @return {Objects|null}
  */
-realityEditor.getObject = function (objectKey){
+realityEditor.getObject = function (objectKey) {
     if(!objectKey) return null;
     if(!(objectKey in this.objects)) return null;
     return this.objects[objectKey];
 };
 
-// return a frame located in the object
 /**
- * @param objectKey
- * @param frameKey
+ * return a frame located in the object given both uuids
+ * @param {string} objectKey
+ * @param {string} frameKey
  * @return {Frame|null}
  */
-realityEditor.getFrame = function (objectKey, frameKey){
+realityEditor.getFrame = function (objectKey, frameKey) {
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!(objectKey in this.objects)) return null;
@@ -226,14 +227,14 @@ realityEditor.getFrame = function (objectKey, frameKey){
     return this.objects[objectKey].frames[frameKey];
 };
 
-// return a node located in the object frame
 /**
- * @param objectKey
- * @param frameKey
- * @param nodeKey
+ * return a node located in the object frame given all their uuids
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
  * @return {Node|null}
  */
-realityEditor.getNode = function (objectKey, frameKey, nodeKey){
+realityEditor.getNode = function (objectKey, frameKey, nodeKey) {
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!nodeKey) return null;
@@ -245,6 +246,7 @@ realityEditor.getNode = function (objectKey, frameKey, nodeKey){
 
 /**
  * Returns the frame or node specified by the path, if one exists.
+ * Pass in null for nodeKey (or exclude it altogether) to get a frame, otherwise tries to find the node
  * @param {string} objectKey
  * @param {string} frameKey
  * @param {string|undefined} nodeKey
@@ -258,7 +260,13 @@ realityEditor.getVehicle = function(objectKey, frameKey, nodeKey) {
     }
 };
 
-// return a link located in a frame
+/**
+ * return a link located in a frame
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} linkKey
+ * @return {Link|null}
+ */
 realityEditor.getLink = function (objectKey, frameKey, linkKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
@@ -269,7 +277,14 @@ realityEditor.getLink = function (objectKey, frameKey, linkKey){
     return this.objects[objectKey].frames[frameKey].links[linkKey];
 };
 
-// return a block in a logic node
+/**
+ * return a block in a logic node
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {Block} block
+ * @return {Block|null}
+ */
 realityEditor.getBlock = function (objectKey, frameKey, nodeKey, block){
     if(!objectKey) return null;
     if(!frameKey) return null;
@@ -282,7 +297,14 @@ realityEditor.getBlock = function (objectKey, frameKey, nodeKey, block){
     return this.objects[objectKey].frames[frameKey].nodes[nodeKey].blocks[block];
 };
 
-// return a block link in a logic node
+/**
+ * return a block link in a logic node
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} linkKey
+ * @return {BlockLink|null}
+ */
 realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
@@ -299,7 +321,7 @@ realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
 
 /**
  * Perform the callback with each (object, objectKey) pair for all objects
- * @param callback 
+ * @param {function} callback 
  */
 realityEditor.forEachObject = function(callback){
     for (var objectKey in objects) {
@@ -312,7 +334,7 @@ realityEditor.forEachObject = function(callback){
 
 /**
  * Perform the callback on each (objectKey, frameKey, nodeKey) pair for all objects, frames, and nodes
- * @param callback
+ * @param {function} callback
  */
 realityEditor.forEachNodeInAllObjects = function(callback) {
     for (var objectKey in objects) {
@@ -322,8 +344,8 @@ realityEditor.forEachNodeInAllObjects = function(callback) {
 
 /**
  * Perform the callback on each (objectKey, frameKey, nodeKey) pair for the given object
- * @param objectKey
- * @param callback
+ * @param {string} objectKey
+ * @param {function} callback
  */
 realityEditor.forEachNodeInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
@@ -336,9 +358,9 @@ realityEditor.forEachNodeInObject = function(objectKey, callback) {
 
 /**
  * Perform the callback for each (objectKey, frameKey, nodeKey) pair for the given frame
- * @param objectKey
- * @param frameKey
- * @param callback
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {function} callback
  */
 realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
     var frame = realityEditor.getFrame(objectKey, frameKey);
@@ -351,7 +373,7 @@ realityEditor.forEachNodeInFrame = function(objectKey, frameKey, callback) {
 
 /**
  * Perform the callback on each (objectKey, frameKey, nodeKey) pair for all objects, frames, and nodes
- * @param callback
+ * @param {function} callback
  */
 realityEditor.forEachFrameInAllObjects = function(callback) {
     for (var objectKey in objects) {
@@ -361,8 +383,8 @@ realityEditor.forEachFrameInAllObjects = function(callback) {
 
 /**
  * Perform the callback for each (objectKey, frameKey) pair for the given object
- * @param objectKey
- * @param callback
+ * @param {string} objectKey
+ * @param {function} callback
  */
 // TODO: simplify signature: doesnt need to include objectKey in callback since its an arg
 realityEditor.forEachFrameInObject = function(objectKey, callback) {
@@ -374,11 +396,11 @@ realityEditor.forEachFrameInObject = function(objectKey, callback) {
     }
 };
 
-realityEditor.vehicleKeyCache = {};
+realityEditor.vehicleKeyCache = {}; // improves efficiency of getKeysFromVehicle by saving the search results
 
 /**
  * Extracts the object and/or frame and/or node keys depending on the type of vehicle
- * @param {Object|Frame|Node} vehicle
+ * @param {Objects|Frame|Node} vehicle
  * @return {{objectKey: string|null, frameKey: string|null, nodeKey: string|null}}
  */
 realityEditor.getKeysFromVehicle = function(vehicle) {
@@ -422,6 +444,11 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
     return this.vehicleKeyCache[vehicle.uuid];
 };
 
+/**
+ * Helper function to check if the argument is a frame or if it's a node
+ * @param {Frame|Node} vehicle
+ * @return {boolean}
+ */
 realityEditor.isVehicleAFrame = function(vehicle) {
     return (vehicle.type === 'ui' || typeof vehicle.type === 'undefined');
 };
