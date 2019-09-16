@@ -27,7 +27,6 @@ createNameSpace("realityEditor.moduleCallbacks");
  * 4. In module C, when the event occurs, call callbackHandler.triggerCallbacks with the event name and any params:
  * 
  * this.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
- * 
  */
 
 (function(exports) {
