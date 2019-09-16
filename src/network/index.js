@@ -322,7 +322,12 @@ realityEditor.network.addHeartbeatObject = function (beat) {
     }
 };
 
-// TODO: why is frameKey passed in here? if we just iterate through all the frames anyways?
+/**
+ * Updates an entire object, including all of its frames and nodes, to be in sync with the remote version on the server
+ * @param {Objects} origin - the local copy of the Object
+ * @param {Objects} remote - the copy of the Object downloaded from the server
+ * @param {string} objectKey
+ */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
     console.log(origin, remote, objectKey);
@@ -335,7 +340,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         origin.matrix = remote.matrix;
     }
     
-    // update each frame in the object
+    // update each frame in the object // TODO: create an updateFrame function, the same way we have an updateNode function
     for (var frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
@@ -348,17 +353,11 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
             console.log('added new frame', origin.frames[frameKey]);
             
-            // var frameType = origin.frames[frameKey].type;
-            // var frameUrl = '../../frames/' + frameType + '/index.html';
-            // realityEditor.gui.ar.draw.addElement(frameUrl, objectKey, frameKey, null, 'ui', origin.frames[frameKey]);
-            
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
             origin.frames[frameKey].ar = remote.frames[frameKey].ar;
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
-            
-            // console.log('updated frame');
             
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
@@ -370,32 +369,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
                 var originNode = originNodes[nodeKey];
                 var remoteNode = remoteNodes[nodeKey];
                 realityEditor.network.updateNode(originNode, remoteNode, objectKey, frameKey, nodeKey);
-
-                // if (!originNodes[nodeKey]) {
-                //     originNodes[nodeKey] = remoteNodes[nodeKey];
-                // } else {
-                //
-                //     originNodes[nodeKey].x = remoteNodes[nodeKey].x;
-                //     originNodes[nodeKey].y = remoteNodes[nodeKey].y;
-                //     originNodes[nodeKey].scale = remoteNodes[nodeKey].scale;
-                //
-                //     originNodes[nodeKey].name = remoteNodes[nodeKey].name;
-                //     originNodes[nodeKey].frameId = remoteNodes[nodeKey].frameId; // TODO: refactor every node update into a reusable function rather than reimplementing
-                //     originNodes[nodeKey].objectId = remoteNodes[nodeKey].objectId;
-                //
-                //     if (remoteNodes[nodeKey].text) {
-                //         originNodes[nodeKey].text = remoteNodes[nodeKey].text;
-                //     }
-                //     if (remoteNodes[nodeKey].matrix) {
-                //         originNodes[nodeKey].matrix = remoteNodes[nodeKey].matrix;
-                //     }
-                // }
-                //
-                // if (globalDOMCache["iframe" + nodeKey]) {
-                //     if (globalDOMCache["iframe" + nodeKey]._loaded) {
-                //         realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
-                //     }
-                // }
+                
             }
 
             // remove extra nodes from origin that don't exist in remote
@@ -408,10 +382,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         }
 
         origin.frames[frameKey].links = JSON.parse(JSON.stringify(remote.frames[frameKey].links));
-        
-        // for (var linkKey in remote.frames[frameKey].links) {
-        //     origin.frames[frameKey].links[linkKey] = JSON.parse(JSON.stringify(remote.links[linkKey]));
-        // }
 
         // TODO: invert dependency
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
@@ -430,79 +400,21 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
         }
     }
-
-    // for (var nodeKey in remote.nodes) {
-    //     if (!origin.nodes[nodeKey]) {
-    //         origin.nodes[nodeKey] = remote.nodes[nodeKey];
-    //     } else {
-    //
-    //         origin.nodes[nodeKey].x = remote.nodes[nodeKey].x;
-    //         origin.nodes[nodeKey].y = remote.nodes[nodeKey].y;
-    //         origin.nodes[nodeKey].scale = remote.nodes[nodeKey].scale;
-    //
-    //         origin.nodes[nodeKey].name = remote.nodes[nodeKey].name;
-    //         if (remote.nodes[nodeKey].text)
-    //             origin.nodes[nodeKey].text = remote.nodes[nodeKey].text;
-    //         if (remote.nodes[nodeKey].matrix)
-    //             origin.nodes[nodeKey].matrix = remote.nodes[nodeKey].matrix;
-    //     }
-    //
-    //     if (globalDOMCache["iframe" + nodeKey]) {
-    //         if (globalDOMCache["iframe" + nodeKey]._loaded) {
-    //             realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
-    //         }
-    //     }
-    // }
-    // TODO: reimplement widget frames (uncomment frame.js)
-    // var missingFrames = {};
-    // for (var frameKey in origin.frames) {
-    //     missingFrames[frameKey] = true;
-    // }
-    //
-    // if (!remote.frames) {
-    //     remote.frames = {};
-    // }
-    //
-    // for (var frameKey in remote.frames) {
-    //     if (!origin.frames[frameKey]) {
-    //         origin.frames[frameKey] = remote.frames[frameKey];
-    //         continue;
-    //     }
-    //     missingFrames[frameKey] = false;
-    //     var oFrame = origin.frames[frameKey];
-    //     var rFrame = remote.frames[frameKey];
-    //     oFrame.x = rFrame.x;
-    //     oFrame.y = rFrame.y;
-    //     oFrame.scale = rFrame.scale; // TODO: does developer property get set?
-    //
-    //     oFrame.name = rFrame.name;
-    //     if (rFrame.matrix) {
-    //         oFrame.matrix = rFrame.matrix;
-    //     }
-    //
-    //     if (globalDOMCache["iframe" + frameKey] && globalDOMCache["iframe" + frameKey]._loaded) {
-    //         realityEditor.network.onElementLoad(thisKey, frameKey);
-    //     }
-    //
-    // }
-    //
-    // for (var frameKey in missingFrames) {
-    //     if (!missingFrames[frameKey]) {
-    //         continue;
-    //     }
-    //     // Frame was deleted on remote, let's delete it here
-    //     realityEditor.gui.frame.deleteLocally(origin.objectId, frameKey);
-    // }
 };
 
-
+/**
+ * Updates a node (works for logic nodes too) to be in sync with the remote version on the server
+ * @param {Node|Logic} origin - the local copy
+ * @param {Node|Logic} remote - the copy downloaded from the server
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ */
 realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey, nodeKey) {
-
-    //console.log(remote.links, origin.links, remote.blocks, origin.blocks);
 
     var isRemoteNodeDeleted = (Object.keys(remote).length === 0 && remote.constructor === Object);
 
-    // delete local node if needed
+    // delete local node if it exists locally but not on the server
     if (origin && isRemoteNodeDeleted) {
 
         realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
@@ -515,6 +427,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         return;
     }
 
+    // create the local node if it exists on the server but not locally
     if (!origin) {
 
         origin = remote;
@@ -534,6 +447,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         objects[objectKey].frames[frameKey].nodes[nodeKey] = origin;
 
     } else {
+        // update the local node's properties to match the one on the server if they both exists
 
         origin.x = remote.x;
         origin.y = remote.y;
@@ -553,6 +467,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         origin.publicData = remote.publicData;
         // console.log("update node: lockPassword = " + remote.lockPassword + ", lockType = " + remote.lockType);
 
+        // set up the crafting board for the local node if it's a logic node
         if (origin.type === "logic") {
             if (!origin.guiState) {
                 origin.guiState = new LogicGUIState();
@@ -567,6 +482,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
 
     }
 
+    // if it's a logic node, update its logic blocks and block links to match the remote, and re-render them if the board is open
     if (remote.blocks) {
         this.utilities.syncBlocksWithRemote(origin, remote.blocks);
     }
@@ -619,6 +535,11 @@ realityEditor.network.onUDPMessage = function(message) {
     });
 };
 
+/**
+ * When the app receives a UDP message with a field called "action", this gets triggered with the action contents.
+ * Actions listened for include reload(Object|Frame|Node|Link), advertiseConnection, load(Memory|LogicIcon) and addFrame
+ * @param {object|string} action
+ */
 realityEditor.network.onAction = function (action) {
     // console.log('onAction');
     var _this = this;
@@ -823,16 +744,14 @@ realityEditor.network.onAction = function (action) {
                 }, thisAction.reloadNode.node);
         }
     }
-
-
+    
     if (typeof thisAction.advertiseConnection !== "undefined") {
         console.log(globalStates.instantState);
         if (globalStates.instantState) {
             realityEditor.gui.instantConnect.logic(thisAction.advertiseConnection);
         }
     }
-
-
+    
     if (thisAction.loadMemory) {
         var id = thisAction.loadMemory.object;
         var urlEndpoint = 'http://' + thisAction.loadMemory.ip + ':' + httpPort + '/object/' + id;
@@ -963,6 +882,13 @@ realityEditor.network.onAction = function (action) {
     }
 };
 
+/**
+ * Gets triggered when an iframe makes a POST request to communicate with the Reality Editor via the object.js API
+ * Also gets triggered when the settings.html (or other menus) makes a POST request
+ * Modules can subscribe to these events by using realityEditor.network.addPostMessageHandler, in addition to the many
+ * events already hard-coded into this method (todo: better organize these and move/distribute to the related modules)
+ * @param {object|string} e - stringified or parsed event (works for either format)
+ */
 realityEditor.network.onInternalPostMessage = function (e) {
     var msgContent = {};
     
@@ -975,10 +901,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
     } else {
         msgContent = JSON.parse(e);
     }
-    
-    // console.log("      onInternalPostMessage");
-    // console.log("frame: " + msgContent.frame + ", node: " + msgContent.node + ", width: " + msgContent.width);
-    // console.log("\n\n");
 
     // iterates over all registered postMessageHandlers to trigger events in various modules
     this.postMessageHandlers.forEach(function(messageHandler) {
@@ -1614,6 +1536,10 @@ if (thisFrame) {
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
 realityEditor.network.frameIdForScreenshot = null;
 
+/**
+ * Updates the icon of a logic node in response to UDP action message
+ * @param {{object: string, frame: string, node: string, loadLogicIcon: string}} data - loadLogicIcon is either "auto", "custom", or "null"
+ */
 realityEditor.network.loadLogicIcon = function(data) {
     var iconImage = data.loadLogicIcon;
     var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
@@ -1626,6 +1552,10 @@ realityEditor.network.loadLogicIcon = function(data) {
     }
 };
 
+/**
+ * Updates the name text of a logic node in response to UDP action message
+ * @param {{object: string, frame: string, node: string, loadLogicName: string}} data - loadLogicName is the new name
+ */
 realityEditor.network.loadLogicName = function(data) {
     var logicNode = realityEditor.getNode(data.object, data.frame, data.node);
     logicNode.name = data.loadLogicName;
@@ -1651,6 +1581,14 @@ realityEditor.network.loadLogicName = function(data) {
     this.postNewNodeName(object.ip, data.object, data.frame, data.node, logicNode.name);
 };
 
+/**
+ * POST /rename to the logic node to update it on the server
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} name
+ */
 realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKey, name) {
     var contents = {
         nodeName: name,
@@ -1660,14 +1598,17 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/", contents);
 };
 
+/**
+ * When the settings menu posts up its new state to the rest of the application, refresh/update all settings
+ * Also used for the settings menu to request data from the application, such as the list of Found Objects
+ * @param {object} msgContent
+ */
 realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     var self = document.getElementById("settingsIframe");
 
-
     /**
      * Get all the setting states
-     *
      */
 
     if (msgContent.settings.getSettings) {
@@ -1695,6 +1636,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         }), "*");
     }
 
+    // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe
     if (msgContent.settings.getObjects) {
 
         var thisObjects = {};
@@ -1722,13 +1664,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         
         self.contentWindow.postMessage(JSON.stringify({getObjects: thisObjects}), "*");
     }
-
-
+    
     /**
-     * This is where all the setters are palced for the Settings menu
-     *
+     * This is where all the setters are placed for the Settings menu
      */
 
+    // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
         
         if (typeof msgContent.settings.setSettings.extendedTracking !== "undefined") {
@@ -1945,11 +1886,17 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         }
     }
     
+    // can directly trigger native app APIs with message of correct format @todo: figure out if this is currently used?
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
     }
 };
 
+/**
+ * Helper function to perform a DELETE request on the server
+ * @param {string} url
+ * @param {object} content
+ */
 realityEditor.network.deleteData = function (url, content) {
     var request = new XMLHttpRequest();
     request.open('DELETE', url, true);
@@ -1968,6 +1915,11 @@ realityEditor.network.deleteData = function (url, content) {
     this.cout("deleteData");
 };
 
+/**
+ * Helper function to get the version number of the object. Defaults to 170.
+ * @param {string} objectKey
+ * @return {number}
+ */
 realityEditor.network.testVersion = function (objectKey) {
     var thisObject = realityEditor.getObject(objectKey);
     if (!thisObject) {
@@ -1977,6 +1929,12 @@ realityEditor.network.testVersion = function (objectKey) {
     }
 };
 
+/**
+ * Makes a DELETE request to the server to remove a frame from an object. Only works for global frames, not local.
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) {
     this.cout("I am deleting a frame: " + ip);
     var frameToDelete = realityEditor.getFrame(objectKey, frameKey);
@@ -1993,12 +1951,26 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frames/" + frameKey, contents);
 };
 
+/**
+ * Makes a POST request to add a new frame to the object
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {Frame} contents
+ * @param {function} callback
+ */
 realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback) {
     this.cout("I am adding a frame: " + ip);
     contents.lastEditor = globalStates.tempUuid;
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/addFrame/", contents, callback);
 };
 
+/**
+ * Duplicates a frame on the server (except gives it a new uuid). Used in response to pulling on staticCopy frames.
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {object|undefined} contents - currently doesn't need this, can exclude or pass in empty object {}
+ */
 realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
     this.cout("I am adding a frame: " + ip);
     contents = contents || {};
@@ -2038,6 +2010,14 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
     });
 };
 
+/**
+ * Makes a DELETE request to remove a link from the frame it is on (or object, for older versions)
+ * @todo: at this point, we can probably stop supporting the non-frame versions
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} linkKey
+ */
 realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, linkKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a link: " + ip);
@@ -2049,12 +2029,27 @@ realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, 
     }
 };
 
+/**
+ * Makes a DELETE request to remove a node from the frame it is on
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ */
 realityEditor.network.deleteNodeFromObject = function (ip, objectKey, frameKey, nodeKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a node: " + ip);
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/editor/" + globalStates.tempUuid + "/deleteLogicNode/");
 };
 
+/**
+ * Makes a DELETE request to remove a block from the logic node it is on
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} blockKey
+ */
 realityEditor.network.deleteBlockFromObject = function (ip, objectKey, frameKey, nodeKey, blockKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a block: " + ip);
@@ -2062,6 +2057,14 @@ realityEditor.network.deleteBlockFromObject = function (ip, objectKey, frameKey,
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/block/" + blockKey + "/editor/" + globalStates.tempUuid + "/deleteBlock/");
 };
 
+/**
+ * 
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} linkKey
+ */
 realityEditor.network.deleteBlockLinkFromObject = function (ip, objectKey, frameKey, nodeKey, linkKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a block link: " + ip);
@@ -2069,22 +2072,35 @@ realityEditor.network.deleteBlockLinkFromObject = function (ip, objectKey, frame
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/link/" + linkKey + "/editor/" + globalStates.tempUuid + "/deleteBlockLink/");
 };
 
+/**
+ * 
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ */
 realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, frameKey, nodeKey) {
-
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/node/" + nodeKey;
     this.getData(objectKey, frameKey, nodeKey, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
-
-    // this.getData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/node/" + nodeKey, objectKey, function (req, thisKey) {
         for (var blockKey in res.blocks) {
             if (!res.blocks.hasOwnProperty(blockKey)) continue;
             if (res.blocks[blockKey].type === 'default') continue;
-
+            // TODO: refactor using getter functions
             objects[objectKey].frames[frameKey].nodes[nodeKey].blocks[blockKey].publicData = res.blocks[blockKey].publicData;
             objects[objectKey].frames[frameKey].nodes[nodeKey].blocks[blockKey].privateData = res.blocks[blockKey].privateData;
         }
     });
 };
 
+/**
+ * Helper function to make a GET request to the server.
+ * The objectKey, frameKey, and nodeKey are optional and will just be passed into the callback as additional arguments.
+ * @param {string|undefined} objectKey
+ * @param {string|undefined} frameKey
+ * @param {string|undefined} nodeKey
+ * @param {string} url
+ * @param {function<string, string, string, object>} callback
+ */
 realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback) {
     if (!nodeKey) nodeKey = null;
     if (!frameKey) frameKey = null;
@@ -2115,8 +2131,7 @@ realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, cal
 };
 
 /**
- * POST data as json to url, calling callback with the
- * JSON-encoded response data when finished
+ * Helper function to POST data as json to url, calling callback with the JSON-encoded response data when finished
  * @param {String} url
  * @param {Object} body
  * @param {Function<Error, Object>} callback
@@ -2151,6 +2166,12 @@ realityEditor.network.postData = function (url, body, callback) {
     request.send(params);
 };
 
+/**
+ * Makes a POST request to add a new link from objectA, frameA, nodeA, to objectB, frameB, nodeB
+ * Only goes through with it after checking to make sure there is no network loop
+ * @param {Link} thisLink
+ * @param {string|undefined} existingLinkKey - include if you want server to use this as the link key. otherwise randomly generates it.
+ */
 realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
 
     var thisObjectA = realityEditor.getObject(thisLink.objectA);
@@ -2160,7 +2181,6 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
     var thisObjectB = realityEditor.getObject(thisLink.objectB);
     var thisFrameB = realityEditor.getFrame(thisLink.objectB, thisLink.frameB);
     var thisNodeB = realityEditor.getNode(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
-
     
     var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB);
     
@@ -2238,6 +2258,14 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
     }
 };
 
+/**
+ * Subroutine that postLinkToServer calls after it has determined that there is no network loop, to actually perform the network request
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} linkKey
+ * @param {Link} thisLink
+ */
 realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, thisLink) {
     // generate action for all links to be reloaded after upload
     thisLink.lastEditor = globalStates.tempUuid;
@@ -2247,6 +2275,14 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
     });
 };
 
+/**
+ * Makes a POST request to add a new node to a frame
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {Node} thisNode
+ */
 realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, thisNode) {
     thisNode.lastEditor = globalStates.tempUuid;
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode/', thisNode, function (err) {
@@ -2257,6 +2293,15 @@ realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, 
 
 };
 
+/**
+ * Makes a POST request to add a new crafting board link (logic block link) to the logic node
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} linkKey
+ * @param {BlockLink} thisLink
+ */
 realityEditor.network.postNewBlockLink = function (ip, objectKey, frameKey, nodeKey, linkKey, thisLink) {
     this.cout("sending Block Link");
     var linkMessage = this.realityEditor.gui.crafting.utilities.convertBlockLinkToServerFormat(thisLink);
@@ -2266,6 +2311,14 @@ realityEditor.network.postNewBlockLink = function (ip, objectKey, frameKey, node
     });
 };
 
+/**
+ * Makes a POST request to add a new logic node to a frame
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {Logic} logic
+ */
 realityEditor.network.postNewLogicNode = function (ip, objectKey, frameKey, nodeKey, logic) {
     this.cout("sending Logic Node");
     // /logic/*/*/node/
@@ -2276,17 +2329,21 @@ realityEditor.network.postNewLogicNode = function (ip, objectKey, frameKey, node
     });
 };
 
+/**
+ * Makes a POST request to move a logic block from one grid (x,y) position to another
+ * @todo: update to use a PUT request in all instances where we are modifying rather than creating
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} logicKey
+ * @param {string} blockKey
+ * @param {{x: number, y: number}} content
+ */
 realityEditor.network.postNewBlockPosition = function (ip, objectKey, frameKey, logicKey, blockKey, content) {
     // generate action for all links to be reloaded after upload
     this.cout("I am moving a block: " + ip);
     // /logic/*/*/block/*/
-
-    // this is color
-
-    // this.color = "red";
-    // this.objectA = objects.node[thisObjectKey];
-
-
+    
     content.lastEditor = globalStates.tempUuid;
     if (typeof content.x === "number" && typeof content.y === "number") {
         this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + logicKey + "/block/" + blockKey + "/blockPosition/", content, function () {
@@ -2294,6 +2351,15 @@ realityEditor.network.postNewBlockPosition = function (ip, objectKey, frameKey, 
     }
 };
 
+/**
+ * Makes a POST request to add a new logic block to a logic node
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} blockKey
+ * @param {Logic} block
+ */
 realityEditor.network.postNewBlock = function (ip, objectKey, frameKey, nodeKey, blockKey, block) {
     this.cout("sending Block");
     // /logic/*/*/block/*/
@@ -2301,9 +2367,22 @@ realityEditor.network.postNewBlock = function (ip, objectKey, frameKey, nodeKey,
 
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/block/" + blockKey + "/addBlock/", block, function () {
     });
-    // this.postData('http://' + ip + ':' + httpPort + '/logic/' + thisObjectKey + "/" + thisLogicKey + "/block/" + thisBlockKey, block, function (){});
 };
 
+/**
+ * Recursively check if adding the specified link would introduce a cycle in the network topology
+ * @todo fully understand what's happening here and verify that this really works
+ * @todo make sure this works for logic block links too
+ * @param {string} objectAKey
+ * @param {string} frameAKey
+ * @param {string} nodeAKey
+ * @param {string} logicAKey
+ * @param {string} objectBKey
+ * @param {string} frameBKey
+ * @param {string} nodeBKey
+ * @param {string} logicBKey
+ * @return {boolean} - true if it's ok to add
+ */
 realityEditor.network.checkForNetworkLoop = function (objectAKey, frameAKey, nodeAKey, logicAKey, objectBKey, frameBKey, nodeBKey, logicBKey) {
     var signalIsOk = true;
     var thisFrame = realityEditor.getFrame(objectAKey, frameAKey);
@@ -2355,21 +2434,20 @@ realityEditor.network.checkForNetworkLoop = function (objectAKey, frameAKey, nod
     return signalIsOk;
 };
 
-
+/**
+ * Debug method to reset the position of a specified frame or node.
+ * Doesn't actually reset the position to origin, just refreshes the position, so you need to also manually set the position to 0,0,[] before calling this
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string|undefined} type - "ui" if resetting a frame, null/undefined if resetting a node
+ */
 realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey, type) {
-// generate action for all links to be reloaded after upload
 
     var tempThisObject = {};
     if (type !== "ui") {
         tempThisObject = realityEditor.getNode(objectKey, frameKey, nodeKey);
-    } 
-    else {
-        // if (object === nodeKey) {
-        //     tempThisObject = realityEditor.getObject(objectKey);
-        // } else {
-        //     console.warn('Refusing to reset content of frame');
-        //     return;
-        // }
+    } else {
         tempThisObject = realityEditor.getFrame(objectKey, frameKey);
     }
 
@@ -2405,36 +2483,41 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     
 };
 
+/**
+ * Makes a POST request to commit the state of the specified object to the server's git system, so that it can be reset to this point
+ * @param {string} objectKey
+ */
 realityEditor.network.sendSaveCommit = function (objectKey) {
    var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/saveCommit/";
-    content ={};
-        this.postData(urlEndpoint, content, function(){});
+   content = {};
+   this.postData(urlEndpoint, content, function(){});
 };
 
+/**
+ * Makes a POST request to reset the state of the object on the server to the last commit
+ * (eventually updates the local state too, after the server resets and pings the app with an update action message)
+ * @param {string} objectKey
+ */
 realityEditor.network.sendResetToLastCommit = function (objectKey) {
     var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/resetToLastCommit/";
-    content ={};
+    content = {};
     this.postData(urlEndpoint, content, function(){});
 };
 
-
-
 /**
- * @desc
+ * Gets set as the "onload" function of each frame/node iframe element.
+ * When the iframe contents finish loading, update some local state that depends on its size, and
+ * post a message into the frame with data including its object/frame/node keys, the GUI state, etc
  * @param objectKey
  * @param frameKey
  * @param nodeKey
- * @return
- **/
-
-
+ */
 realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     realityEditor.gui.ar.draw.notLoading = false;
     
     if (nodeKey === "null") nodeKey = null;
 
-    // cout("posting Msg");
     var version = 170;
     var object = realityEditor.getObject(objectKey);
     if (object) {
@@ -2508,30 +2591,30 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
 };
 
 /**
- * @desc
- * @param
- * @param
- * @return
- **/
-
+ * Makes a POST request to add a lock to the specified node. Whether or not you are actually allowed to add the
+ *   lock is determined within the server, based on the state of the node and the password and lock type you provide
+ * @todo: get locks working again, this time with real security (e.g. encryption)
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {{lockPassword: string, lockType: string}} content - lockType is "full" or "half" (see documentation in device/security.js)
+ */
 realityEditor.network.postNewLockToNode = function (ip, objectKey, frameKey, nodeKey, content) {
-
-// generate action for all links to be reloaded after upload
     console.log("sending node lock (" + content.lockType + ")");
     this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/addLock/", content, function () {
     });
-    // postData('http://' +ip+ ':' + httpPort+"/", content);
-    //console.log("sent lock");
-
 };
 
 /**
- * @desc
- * @param
- * @param
- * @return
- **/
-
+ * Makes a DELETE request to remove a lock from the specified node, given a password to use to unlock it
+ * @todo: encrypt / etc
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {string} password
+ */
 realityEditor.network.deleteLockFromNode = function (ip, objectKey, frameKey, nodeKey, password) {
 // generate action for all links to be reloaded after upload
     console.log("I am deleting a lock: " + ip);
@@ -2541,12 +2624,13 @@ realityEditor.network.deleteLockFromNode = function (ip, objectKey, frameKey, no
 };
 
 /**
- * @desc
- * @param
- * @param
- * @return
- **/
-
+ * Makes a POST request to add a lock to the specified link.
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} linkKey
+ * @param {{lockPassword: string, lockType: string}} content
+ */
 realityEditor.network.postNewLockToLink = function (ip, objectKey, frameKey, linkKey, content) {
 
 // generate action for all links to be reloaded after upload
@@ -2559,12 +2643,13 @@ realityEditor.network.postNewLockToLink = function (ip, objectKey, frameKey, lin
 };
 
 /**
- * @desc
- * @param
- * @param
- * @return
- **/
-
+ * Makes a DELETE request to remove a lock from the specific link
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} linkKey
+ * @param {string} password
+ */
 realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, linkKey, password) {
 // generate action for all links to be reloaded after upload
     console.log("I am deleting a link lock: " + ip);
@@ -2574,12 +2659,13 @@ realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, li
 };
 
 /**
- * 
- * @param ip
- * @param objectKey
- * @param frameKey
- * @param newVisualization {string} either 'ar' or 'screen' - the new visualization mode you want to change to
- * @param oldVisualizationPositionData {{x: number, y: number, scale: number, matrix: Array.<number>}|null} optionally sync the other position data to the server before changing visualization modes
+ * Makes a POST request when a frame is pushed into a screen or pulled out into AR, to update state on server
+ * (updating on server causes the in-screen version of the frame to show/hide as a response)
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} newVisualization - (either 'ar' or 'screen') the new visualization mode you want to change to
+ * @param {{x: number, y: number, scale: number, matrix: Array.<number>}|null} oldVisualizationPositionData - optionally sync the other position data to the server before changing visualization modes. In practice, when we push into a screen we reset the AR frame's positionData to the origin 
  */
 realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKey, newVisualization, oldVisualizationPositionData) {
 
@@ -2592,16 +2678,27 @@ realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKe
         console.log('set visualization to ' + newVisualization + ' on server');
         console.log(err, response);
     });
-    
 };
 
-
-// update on the server
+/**
+ * Makes a DELETE request to remove a frame's publicData from the server
+ * (used e.g. when a frame is moved from one object to another, the old copy of its public data needs to be deleted)
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.network.deletePublicData = function(ip, objectKey, frameKey) {
-
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/publicData");
 };
 
+/**
+ * Makes a POST request to upload a frame's publicData to the server
+ * (used e.g. when a frame is moved from one object to another, to upload public data to new object/server)
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param publicData
+ */
 realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicData) {
 
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/publicData";
@@ -2614,7 +2711,6 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
         console.log('set publicData to ' + publicData + ' on server');
         console.log(err, response);
     });
-    
 };
 
 /**
@@ -2630,12 +2726,11 @@ realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
 };
 
 /**
- * update groupIds for changed frames
- * @param ip
- * @param objectKey
- * @param frameKey
- * @param newGroupID {string|null} either groupId or null for none
- * TODO: work in progress
+ * Makes a POST request to update groupIds on the server when a frame is added to or removed from a group
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string|null} newGroupID - either groupId or null for none
  */
 realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGroupID) {
     var urlEndpoint = 'http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/group/";
@@ -2649,6 +2744,11 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
     })
 };
 
+/**
+ * Makes a POST request to update the (x,y,scale,matrix) position data of a frame or node on the server
+ * @param {Frame|Node} activeVehicle
+ * @param {boolean|undefined} ignoreMatrix - include this if you only want to update (x,y,scale) not the transformation matrix
+ */
 realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix) {
     if (activeVehicle) {
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
