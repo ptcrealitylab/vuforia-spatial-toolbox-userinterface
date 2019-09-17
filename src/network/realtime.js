@@ -51,7 +51,7 @@ createNameSpace("realityEditor.network.realtime");
      * @param {Object} object
      * @param {string} objectKey
      */
-    function addServerForObjectIfNeeded(object, objectKey) {
+    function addServerForObjectIfNeeded(object, _objectKey) {
         
         if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
 
@@ -149,7 +149,7 @@ createNameSpace("realityEditor.network.realtime");
     function setupServerSockets() {
         var serverPort = 8080;
         var ipList = [];
-        realityEditor.forEachObject(function(object, objectKey) {
+        realityEditor.forEachObject(function(object, _objectKey) {
             if (ipList.indexOf(object.ip) === -1) {
                 ipList.push(object.ip);
             }

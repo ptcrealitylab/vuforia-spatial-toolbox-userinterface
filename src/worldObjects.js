@@ -36,7 +36,7 @@ createNameSpace("realityEditor.worldObjects");
         cameraMatrixOffset = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
         // when an object is detected, check if we need to add a world object for its server
-        realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
+        realityEditor.network.addObjectDiscoveredCallback(function(object, _objectKey) {
             handleServerDiscovered(object.ip);
         });
 
