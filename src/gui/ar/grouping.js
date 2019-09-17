@@ -438,7 +438,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                     if (excludeActive && frame.uuid === activeVehicle.uuid) { return; }
                     callback(frame);
                 } else {
-                    groupStruct[groupID].delete(member.frame); // group restruct
+                    groupStruct[activeVehicle.groupID].delete(member.frame); // group restruct
                 }
             });
         }

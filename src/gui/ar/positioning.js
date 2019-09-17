@@ -536,7 +536,7 @@ realityEditor.gui.ar.positioning.getProjectedCoordinates = function(frameCoordin
  */
 realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKey) {
 
-    frame = realityEditor.getFrame(objectKey, frameKey);
+    var frame = realityEditor.getFrame(objectKey, frameKey);
     
     // recompute frame.temp for the new object
     var res1 = [];

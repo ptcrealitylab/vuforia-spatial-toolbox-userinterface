@@ -143,7 +143,7 @@ realityEditor.device.onload = function () {
 	globalCanvas.canvas = document.getElementById('canvas');
     globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
     globalCanvas.canvas.height = globalStates.width;
-	globalCanvas.context = canvas.getContext('2d');
+	globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
     // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);

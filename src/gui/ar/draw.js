@@ -1064,8 +1064,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
             if (activeType === "logic" && objectKey !== "pocket") {
                 if(activeVehicle.animationScale === 1) {
-                    globalDOMCache["logic" + nodeKey].className = "mainEditing scaleOut";
-                    thisObject.animationScale = 0;
+                    globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
+                    activeVehicle.animationScale = 0;
                 }
             }
             

@@ -206,7 +206,7 @@ createNameSpace("realityEditor.device.videoRecording");
      * @param {Array.<number>} objectMatrix
      */
     function moveFrameToCameraForObjectMatrix(objectKey, frameKey, objectMatrix) {
-        frame = realityEditor.getFrame(objectKey, frameKey);
+        var frame = realityEditor.getFrame(objectKey, frameKey);
         
         // recompute frame.temp for the new object
         var res1 = [];
