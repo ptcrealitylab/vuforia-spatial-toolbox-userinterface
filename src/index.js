@@ -57,71 +57,71 @@ var objects = {}; // TODO: this is a duplicate definition from src/objects.js
 // the code will run correctly without this assuming you call:
 //  createNameSpace("realityEditor.[module].[etc]")  correctly at the top of each file
 var realityEditor = realityEditor || {
-        app:{
-            callbacks: {}
-        },
-		device: {
-            desktopAdapter: {},
-            distanceScaling: {},
-            hololensAdapter: {},
-            keyboardEvents: {},
-            layout: {},
-            onLoad: {},
-            security: {},
-            speechPerformer: {},
-            speechProcessor: {},
-            touchInputs: {},
-            touchPropagation: {},
-            utilities: {},
-            videoRecording: {}
-        },
-		gui: {
-			ar: {
-			    desktopRenderer: {},
-                draw: {},
-                frameHistoryRenderer: {},
-                grouping: {},
-                lines: {},
-                moveabilityOverlay: {},
-                positioning: {},
-                utilities: {}
-            },
-            crafting: {
-                blockMenu: {},
-                eventHandlers: {},
-                eventHelper: {},
-                grid: {},
-                utilities: {}
-            },
-            memory: {
-			    nodeMemories: {},
-                pointer: {}
-            },
-            settings: { // todo: combine gui/settings/index.js with gui/settings.js
-                logo: {},
-                states: {}
-            },
-            buttons: {},
-            dropdown: {},
-            frames: {},
-            instantConnect: {}, // todo: rename file to be consistent with internal module name
-            menus:{},
-            modal: {},
-            moveabilityCorners: {},
-            pocket: {},
-            pocketFrames: {},
-            screenExtension : {},
-            search:{},
-            utilities: {}
-		},
-        network: {
-            frameContentAPI: {},
-            realtime: {},
+    app:{
+        callbacks: {}
+    },
+    device: {
+        desktopAdapter: {},
+        distanceScaling: {},
+        hololensAdapter: {},
+        keyboardEvents: {},
+        layout: {},
+        onLoad: {},
+        security: {},
+        speechPerformer: {},
+        speechProcessor: {},
+        touchInputs: {},
+        touchPropagation: {},
+        utilities: {},
+        videoRecording: {}
+    },
+    gui: {
+        ar: {
+            desktopRenderer: {},
+            draw: {},
+            frameHistoryRenderer: {},
+            grouping: {},
+            lines: {},
+            moveabilityOverlay: {},
+            positioning: {},
             utilities: {}
         },
-        moduleCallbacks: {},
-        worldObjects: {}
-	};
+        crafting: {
+            blockMenu: {},
+            eventHandlers: {},
+            eventHelper: {},
+            grid: {},
+            utilities: {}
+        },
+        memory: {
+            nodeMemories: {},
+            pointer: {}
+        },
+        settings: { // todo: combine gui/settings/index.js with gui/settings.js
+            logo: {},
+            states: {}
+        },
+        buttons: {},
+        dropdown: {},
+        frames: {},
+        instantConnect: {}, // todo: rename file to be consistent with internal module name
+        menus:{},
+        modal: {},
+        moveabilityCorners: {},
+        pocket: {},
+        pocketFrames: {},
+        screenExtension : {},
+        search:{},
+        utilities: {}
+    },
+    network: {
+        frameContentAPI: {},
+        realtime: {},
+        utilities: {}
+    },
+    moduleCallbacks: {},
+    worldObjects: {}
+};
 
 /**
  * @desc This function generates all required namespaces and initializes a namespace if not existing.
@@ -134,18 +134,18 @@ var realityEditor = realityEditor || {
  * @return {*} object that presents the actual used namespace
  **/
 var createNameSpace = createNameSpace || function (namespace) {
-		var splitNameSpace = namespace.split("."), object = this, object2;
-		for (var i = 0; i < splitNameSpace.length; i++) {
-			object = object[splitNameSpace[i]] = object[splitNameSpace[i]] || {};
-			object2 = this;
-			for (var e = 0; e < i; e++) {
-				object2 = object2[splitNameSpace[e]];
-				object[splitNameSpace[e]] = object[splitNameSpace[e]] || object2;
-				object.cout = this.cout;
-			}
-		}
-		return object;
-	};
+    var splitNameSpace = namespace.split("."), object = this, object2;
+    for (var i = 0; i < splitNameSpace.length; i++) {
+        object = object[splitNameSpace[i]] = object[splitNameSpace[i]] || {};
+        object2 = this;
+        for (var e = 0; e < i; e++) {
+            object2 = object2[splitNameSpace[e]];
+            object[splitNameSpace[e]] = object[splitNameSpace[e]] || object2;
+            object.cout = this.cout;
+        }
+    }
+    return object;
+};
 
 createNameSpace("realityEditor");
 
@@ -157,7 +157,7 @@ if (typeof shadowObjects !== "undefined") {
 
 realityEditor.getShadowObject = function (objectKey){
     if(!objectKey) return null;
-    
+
     if(!this.shadowObjects[objectKey]){
         this.shadowObjects[objectKey] = {};
         this.shadowObjects[objectKey].frames = {};
@@ -168,7 +168,7 @@ realityEditor.getShadowObject = function (objectKey){
 realityEditor.getShadowFrame = function (objectKey, frameKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
-    
+
     if(!this.shadowObjects[objectKey]){
         this.shadowObjects[objectKey] = {};
         this.shadowObjects[objectKey].frames = {};
@@ -185,7 +185,7 @@ realityEditor.getShadowNode = function (objectKey, frameKey, nodeKey){
     if(!objectKey) return null;
     if(!frameKey) return null;
     if(!nodeKey) return null;
-    
+
     if(!this.shadowObjects[objectKey]){
         this.shadowObjects[objectKey] = {};
         this.shadowObjects[objectKey].frames = {};
@@ -321,7 +321,7 @@ realityEditor.getBlockLink = function (objectKey, frameKey, nodeKey, linkKey){
 
 /**
  * Perform the callback with each (object, objectKey) pair for all objects
- * @param {function} callback 
+ * @param {function} callback
  */
 realityEditor.forEachObject = function(callback){
     for (var objectKey in objects) {
@@ -385,8 +385,8 @@ realityEditor.forEachFrameInAllObjects = function(callback) {
  * Perform the callback for each (objectKey, frameKey) pair for the given object
  * @param {string} objectKey
  * @param {function} callback
+ * @todo: simplify signature: doesnt need to include objectKey in callback since its an arg
  */
-// TODO: simplify signature: doesnt need to include objectKey in callback since its an arg
 realityEditor.forEachFrameInObject = function(objectKey, callback) {
     var object = realityEditor.getObject(objectKey);
     if (!object) return;
@@ -411,7 +411,7 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
             return this.vehicleKeyCache[vehicle.uuid];
         }
     }
-    
+
     var objectKey = null;
     var frameKey = null;
     var nodeKey = null;
@@ -440,7 +440,7 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
         frameKey: frameKey,
         nodeKey: nodeKey
     };
-    
+
     return this.vehicleKeyCache[vehicle.uuid];
 };
 

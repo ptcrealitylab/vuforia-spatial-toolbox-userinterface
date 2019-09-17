@@ -64,37 +64,37 @@ var TEMP_DISABLE_MEMORIES = false;
  **********************************************************************************************************************/
 
 var globalStates = {
-	craftingMoveDelay : 400,
-	tempUuid : "0000",
-	debug: false,
+    craftingMoveDelay : 400,
+    tempUuid : "0000",
+    debug: false,
     debugSpeechConsole: false,
-	device: "",
-	// drawWithLines
-	ballDistance: 14,
-	ballSize: 6,
-	ballAnimationCount: 0,
+    device: "",
+    // drawWithLines
+    ballDistance: 14,
+    ballSize: 6,
+    ballAnimationCount: 0,
     nodeSpeechHighlightCounter: 0,
-    
+
     width: window.innerHeight,
     height: window.innerWidth,
-	guiState: "ui", // possible values: "ui"=(frames visible), "node"=(nodes visible), "logic"=(crafting board)
-	UIOffMode: false,
-	settingsButtonState: false,
-	extendedTracking: false,
+    guiState: "ui", // possible values: "ui"=(frames visible), "node"=(nodes visible), "logic"=(crafting board)
+    UIOffMode: false,
+    settingsButtonState: false,
+    extendedTracking: false,
     zoneText: "",
     zoneState: false,
-	currentLogic: null,
+    currentLogic: null,
 
-	extendedTrackingState: false,
-	developerState: false,
-	clearSkyState: false,
+    extendedTrackingState: false,
+    developerState: false,
+    clearSkyState: false,
     realityState: false,
-	externalState: "",
+    externalState: "",
     discoveryState: "",
     speechState: false,
-	sendMatrix3d: false,
-	sendAcl: false,
-    
+    sendMatrix3d: false,
+    sendAcl: false,
+
     lockingMode: false,
     //authenticatedUser: null,
     lockPassword: null,
@@ -108,71 +108,71 @@ var globalStates = {
     hololensModeEnabled: false,
     groupingEnabled: false,
     realtimeEnabled: false,
-    
-	pocketButtonState: false,
-    
-	freezeButtonState: false,
-	logButtonState: false,
-	editingMode: false,
+
+    pocketButtonState: false,
+
+    freezeButtonState: false,
+    logButtonState: false,
+    editingMode: false,
     tempEditingMode: false,
-	editingNode: false,
+    editingNode: false,
     editingFrame: false,
-	guiURL: "",
-	newURLText: "",
-	platform: navigator.platform,
-	lastLoop: 0,
-	notLoading: "",
-	drawDotLine: false,
-	drawDotLineX: 0,
-	drawDotLineY: 0,
-	pointerPosition: [0, 0],
-	projectionMatrix: [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	],
-	realProjectionMatrix: [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	],
-	webglProjectionMatrix: [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	],
-	acceleration:{
-		x : 0,
-		y : 0,
-		z : 0,
-		alpha: 0,
-		beta: 0,
-		gamma: 0,
-		motion:0
-	},
-	sendAcceleration : false,
-	angX: 0,
-	angY: 0,
-	angZ: 0,
-	unconstrainedPositioning: false,
+    guiURL: "",
+    newURLText: "",
+    platform: navigator.platform,
+    lastLoop: 0,
+    notLoading: "",
+    drawDotLine: false,
+    drawDotLineX: 0,
+    drawDotLineY: 0,
+    pointerPosition: [0, 0],
+    projectionMatrix: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    realProjectionMatrix: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    webglProjectionMatrix: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
+    acceleration:{
+        x : 0,
+        y : 0,
+        z : 0,
+        alpha: 0,
+        beta: 0,
+        gamma: 0,
+        motion:0
+    },
+    sendAcceleration : false,
+    angX: 0,
+    angY: 0,
+    angZ: 0,
+    unconstrainedPositioning: false,
     distanceEditingMode: false,
-    
-	thisAndthat : {
-		interval: undefined,
-		timeout: undefined
-	},
+
+    thisAndthat : {
+        interval: undefined,
+        timeout: undefined
+    },
     // constants for screen extension
     framePullThreshold: 50,
-    
+
     // default scale for new frames and nodes
     defaultScale: 0.5,
-    
-	// retail
-	reality: false,
-	interface: "gui",
+
+    // retail
+    reality: false,
+    interface: "gui",
 
     rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : ((window.innerWidth >= 812 && window.innerHeight >= 375) ? (37) : (0)), // if iPhone X, offset the right edge by 74px
 
@@ -238,15 +238,15 @@ var globalDOMCache = {};
 var shadowObjects = {};
 
 var globalProgram = {
-	objectA: false,
+    objectA: false,
     frameA: false,
-	nodeA: false,
-	logicA:false,
-	objectB: false,
+    nodeA: false,
+    logicA:false,
+    objectB: false,
     frameB: false,
-	nodeB: false,
-	logicB:false,
-	logicSelector:4
+    nodeB: false,
+    logicB:false,
+    logicSelector:4
 };
 
 var rotateX = [

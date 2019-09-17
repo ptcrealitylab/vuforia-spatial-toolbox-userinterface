@@ -299,7 +299,7 @@ realityEditor.app.startVideoRecording = function (objectKey, objectIP) {
 };
 
 /**
- * Stops the screen recording of the camera background and upload to the object specified when startVideoRecording was called.
+ * Stops the screen recording of the camera background and uploads to the object specified when startVideoRecording was called.
  * @param {string} videoId - the name to save it as (without .mp4), e.g. a random string uuid
  */
 realityEditor.app.stopVideoRecording = function (videoId) {

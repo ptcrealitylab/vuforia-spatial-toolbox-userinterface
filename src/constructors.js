@@ -226,7 +226,7 @@ function Node() {
 	// defines the origin Hardware interface of the IO Point. For example if this is arduinoYun the Server associates
 	// indicates how much calls per second is happening on this node
 	this.stress = 0;
-
+    // objects for arbitrary persistent data storage. currently only publicData has been used/tested
     this.privateData = {};
     this.publicData = {};
 
@@ -374,8 +374,7 @@ function Block() {
 	this.checksum = null; // checksum of the files for the program
 	// data for logic blocks. depending on the blockSize which one is used.
 	this.data = [new Data(), new Data(), new Data(), new Data()];
-	// experimental. This are objects for data storage. Maybe it makes sense to store data in the general object
-	// this would allow the the packages to be persistent. // todo discuss usability with Ben.
+	// objects for arbitrary persistent data storage. currently only publicData has been used/tested
 	this.privateData = {};
 	this.publicData = {};
 	// IO for logic
