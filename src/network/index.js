@@ -369,7 +369,6 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
                 var originNode = originNodes[nodeKey];
                 var remoteNode = remoteNodes[nodeKey];
                 realityEditor.network.updateNode(originNode, remoteNode, objectKey, frameKey, nodeKey);
-                
             }
 
             // remove extra nodes from origin that don't exist in remote
