@@ -1151,17 +1151,6 @@ createNameSpace("realityEditor.gui.crafting.grid");
         }
     }
 
-    function deleteSurroundingBlockLinksFromServer(linkKey) {
-        var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic);
-        var edgeLink = globalStates.currentLogic.links[linkKey];
-        var surroundingLinks = getLinksSurroundingEdgeLink(edgeLink);
-        if (surroundingLinks.length > 0) {
-            surroundingLinks.forEach( function(link) {
-                realityEditor.network.deleteBlockLinkFromObject(keys.ip, keys.objectKey, keys.frameKey, keys.logicKey, edgeBlockLinkKey(link));
-            });
-        }
-    }
-
     function edgeBlockLinkKey(link) {
         return "blockLink-" + link.nodeA + "-" + link.logicA + "-" + link.nodeB + "-" + link.logicB;
     }

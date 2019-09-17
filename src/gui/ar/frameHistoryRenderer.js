@@ -144,7 +144,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             if (thisObject.hasOwnProperty('framesHistory')) {
                 var frameHistory = thisObject.framesHistory;
                 
-                for (ghostFrameKey in frameHistory) {
+                for (var ghostFrameKey in frameHistory) {
                     if (!frameHistory.hasOwnProperty(ghostFrameKey)) continue;
                     
                     hideGhost(ghostFrameKey);
@@ -389,13 +389,13 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             // only remove ones that don't exist anymore
             if (!visibleObjects.hasOwnProperty(oldObjectKey)) {
 
-                thisObject = realityEditor.getObject(oldObjectKey);
+                var thisObject = realityEditor.getObject(oldObjectKey);
 
                 if (thisObject.hasOwnProperty('framesHistory')) {
-                    frameHistory = thisObject.framesHistory;
+                    var frameHistory = thisObject.framesHistory;
 
                     // hide each frame ghost that the newly-removed object had // TODO: do the node ghosts ever get hidden this way?
-                    for (ghostFrameKey in frameHistory) {
+                    for (var ghostFrameKey in frameHistory) {
                         if (!frameHistory.hasOwnProperty(ghostFrameKey)) continue;
                         hideGhost(ghostFrameKey);
                     }

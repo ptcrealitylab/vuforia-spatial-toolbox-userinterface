@@ -728,7 +728,6 @@ realityEditor.network.onAction = function (action) {
 
                     console.log("------------------------------");
                     console.log(objectKey + "  " + frameKey + " " + nodeKey);
-                    console.log(req);
 
                     var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
@@ -1379,7 +1378,7 @@ if (thisFrame) {
             content.scale = positionData.scale;
 
             content.lastEditor = globalStates.tempUuid;
-            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
+            var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
             realityEditor.network.postData(urlEndpoint, content);
         });
     }
@@ -2488,7 +2487,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
  */
 realityEditor.network.sendSaveCommit = function (objectKey) {
    var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/saveCommit/";
-   content = {};
+   var content = {};
    this.postData(urlEndpoint, content, function(){});
 };
 
@@ -2499,7 +2498,7 @@ realityEditor.network.sendSaveCommit = function (objectKey) {
  */
 realityEditor.network.sendResetToLastCommit = function (objectKey) {
     var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + objectKey + "/resetToLastCommit/";
-    content = {};
+    var content = {};
     this.postData(urlEndpoint, content, function(){});
 };
 
@@ -2617,7 +2616,7 @@ realityEditor.network.postNewLockToNode = function (ip, objectKey, frameKey, nod
 realityEditor.network.deleteLockFromNode = function (ip, objectKey, frameKey, nodeKey, password) {
 // generate action for all links to be reloaded after upload
     console.log("I am deleting a lock: " + ip);
-    console.log("lockPassword is " + lockPassword);
+    console.log("password is " + password);
     this.deleteData('http://' + ip + ':' + httpPort + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/password/" + password + "/deleteLock/");
     //console.log("deleteLockFromObject");
 };

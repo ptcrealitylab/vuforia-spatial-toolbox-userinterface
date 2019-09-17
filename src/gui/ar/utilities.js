@@ -752,10 +752,10 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
         var screenPoint0 = [screenX, screenY, screenZ, 1];
         // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
-        p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint0));
+        var p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint0));
         
         var screenPoint2 = [screenX, screenY, screenZ + dt, 1];
-        p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint2));
+        var p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint2));
 
         // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
 
@@ -767,7 +767,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         var y = p0[1] - dy * neededDt;
         var z = p0[2] - dz * neededDt;
 
-        point = {
+        var point = {
             x: x,
             y: y,
             z: z

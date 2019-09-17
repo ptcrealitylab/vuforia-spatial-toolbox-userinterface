@@ -220,7 +220,9 @@
             }
 
             if (realityObject.sendScreenObject) {
-                reality.activateScreenObject(); // make sure it gets sent with updated object,frame,node
+                if (realityInterface) {
+                    realityInterface.activateScreenObject(); // make sure it gets sent with updated object,frame,node
+                }
             }
             
             realityObject.alreadyLoaded = true;
@@ -248,7 +250,9 @@
             realityObject.publicData = msgContent.publicData;
 
             if (realityObject.sendScreenObject) {
-                reality.activateScreenObject(); // make sure it gets sent with updated object,frame,node
+                if (realityInterface) {
+                    realityInterface.activateScreenObject(); // make sure it gets sent with updated object,frame,node
+                }
             }
         }
 

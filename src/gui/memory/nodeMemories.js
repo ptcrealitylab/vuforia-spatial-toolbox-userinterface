@@ -241,6 +241,7 @@ realityEditor.gui.memory.nodeMemories.resetEventHandlers = function() {
 
 realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
     if (overlayDiv.storedLogicNode) {
+        var overlay = document.getElementById('overlay');
         overlay.storedLogicNode = null;
         overlayDiv.classList.remove('overlayLogicNode');
         overlayDiv.innerHTML = '';

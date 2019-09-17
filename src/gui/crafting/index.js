@@ -575,7 +575,7 @@ realityEditor.gui.crafting.blockMenuVisible = function() {
     realityEditor.gui.menus.switchToMenu("crafting", ["logicPocket"], null);
     
     // hide block settings if necessary
-    blockSettingsContainer = document.getElementById('blockSettingsContainer');
+    var blockSettingsContainer = document.getElementById('blockSettingsContainer');
     if (blockSettingsContainer) {
         realityEditor.gui.buttons.settingButtonUp({button: "setting", ignoreIsDown: true});
     }
