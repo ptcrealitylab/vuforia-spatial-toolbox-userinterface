@@ -47,6 +47,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/* exported Objects, Frame, Link, Node, Logic, BlockLink, Block, EdgeBlock */
+
 
 /**
  * @desc Constructor used to define every logic node generated in the Object. It does not need to contain its own ID
