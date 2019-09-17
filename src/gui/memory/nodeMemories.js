@@ -126,7 +126,7 @@ realityEditor.gui.memory.nodeMemories.saveNodeMemories = function() {
         if (logicNode && logicNode.hasOwnProperty('links')) {
             for (var linkKey in logicNode.links) {
                 if (!logicNode.links.hasOwnProperty(linkKey)) continue;
-                if (!!logicNode.links[linkKey].route) {
+                if (logicNode.links[linkKey].route) {
                     console.log("eliminating routes");
                     logicNode.links[linkKey] = realityEditor.gui.crafting.utilities.convertBlockLinkToServerFormat(logicNode.links[linkKey]);
                 }

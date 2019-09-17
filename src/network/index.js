@@ -1008,7 +1008,7 @@ if (thisFrame) {
     // } 
     
     if (msgContent.width && msgContent.height) {
-        var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+        var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
         
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
@@ -1092,7 +1092,7 @@ if (thisFrame) {
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
-            var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+            var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
             if (activeKey === msgContent.frame) { // only send these into frames, not nodes
                 // send the projection matrix into the iframe (e.g. for three.js to use)
                 globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
@@ -1106,7 +1106,7 @@ if (thisFrame) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.groundPlane = true;
-                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
                         '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
@@ -1117,7 +1117,7 @@ if (thisFrame) {
             if (tempThisObject.integerVersion >= 32) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.devicePose = true;
-                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
@@ -1129,7 +1129,7 @@ if (thisFrame) {
             if (tempThisObject.integerVersion >= 32) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.allObjects = true;
-                var activeKey = (!!msgContent.node) ? (msgContent.node) : (msgContent.frame);
+                var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
@@ -2522,12 +2522,12 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         version = object.integerVersion;
     }
     var frame = realityEditor.getFrame(objectKey, frameKey);
-    var nodes = (!!frame) ? frame.nodes : {};
+    var nodes = frame ? frame.nodes : {};
 
     var oldStyle = {
         obj: objectKey,
         pos: nodeKey,
-        objectValues: (!!object) ? object.nodes : {},
+        objectValues: object ? object.nodes : {},
         interface: globalStates.interface
     };
 
