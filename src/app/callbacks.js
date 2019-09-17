@@ -565,12 +565,10 @@ function getObjectIDFromFilename(fileName) {
  */
 realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName) {
     
-    // we don't have the objectID but luckily it can be extracted from the fileName
-    var objectName = fileName.split('/')[4];
-        
     var isXML = fileName.split('/')[fileName.split('/').length-1].indexOf('xml') > -1;
     var fileTypeString = isXML ? 'XML' : 'DAT';
     
+    // we don't have the objectID but luckily it can be extracted from the fileName
     // var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, fileTypeString);
     var objectID = getObjectIDFromFilename(fileName);
 
@@ -608,7 +606,6 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
  */
 realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     console.log('marker added: ' + fileName + ', success? ' + success);
-    var objectName = fileName.split('/')[4];
     // var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, 'MARKER_ADDED');
     var objectID = getObjectIDFromFilename(fileName);
 

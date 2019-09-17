@@ -148,15 +148,6 @@ createNameSpace("realityEditor.gui.buttons");
      */
     var callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/buttons');
 
-    /**
-     * A set of arrays of callbacks that other modules can register to be notified when buttons are pressed.
-     * Contains a property for each button name.
-     * The value of each property is an array containing pointers to the callback functions that should be
-     *  triggered when that function is called.
-     * @type {Object.<string, Array.<function>>}
-     */
-    var callbacks = {};
-
     // create placeholders for these functions that get generated automatically at runtime
 
     // button down events

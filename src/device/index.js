@@ -699,7 +699,7 @@ realityEditor.device.onElementTouchUp = function(event) {
         this.postEventIntoIframe(event, target.frameId, target.nodeId);
     }
 
-    var didDisplayCrafting = false;
+    // var didDisplayCrafting = false;
     if (globalStates.guiState === "node") {
 
         if (globalProgram.objectA) {
@@ -707,7 +707,7 @@ realityEditor.device.onElementTouchUp = function(event) {
             // open the crafting board if you tapped on a logic node
             if (target.nodeId === globalProgram.nodeA && target.type === "logic" && !globalStates.editingMode && !this.getEditingVehicle()) {
                 realityEditor.gui.crafting.craftingBoardVisible(target.objectId, target.frameId, target.nodeId);
-                didDisplayCrafting = true;
+                // didDisplayCrafting = true;
             }
 
             globalProgram.objectB = target.objectId;
@@ -890,7 +890,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     // Translate up 6px to be above pocket layer
     overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
     
-    var activeVehicle = this.getEditingVehicle();
+    // var activeVehicle = this.getEditingVehicle();
     
     // If the event is hitting the background and it isn't the multi-touch to scale an object
     if (realityEditor.device.utilities.isEventHittingBackground(event)) {
@@ -1049,7 +1049,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
         }
     });
 
-    var activeVehicle = this.getEditingVehicle();
+    // var activeVehicle = this.getEditingVehicle();
 
     // If the event is hitting the background and it isn't the multi-touch to scale an object
     if (realityEditor.device.utilities.isEventHittingBackground(event)) {

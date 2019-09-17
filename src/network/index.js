@@ -2381,7 +2381,7 @@ realityEditor.network.postNewBlock = function (ip, objectKey, frameKey, nodeKey,
  * @param {string} logicBKey
  * @return {boolean} - true if it's ok to add
  */
-realityEditor.network.checkForNetworkLoop = function (objectAKey, frameAKey, nodeAKey, logicAKey, objectBKey, frameBKey, nodeBKey, logicBKey) {
+realityEditor.network.checkForNetworkLoop = function (objectAKey, frameAKey, nodeAKey, _logicAKey, objectBKey, frameBKey, nodeBKey, _logicBKey) {
     var signalIsOk = true;
     var thisFrame = realityEditor.getFrame(objectAKey, frameAKey);
     var thisFrameLinks = thisFrame.links;
@@ -2405,28 +2405,29 @@ realityEditor.network.checkForNetworkLoop = function (objectAKey, frameAKey, nod
             }
         }
     }
-    // check that there is no endless loops through it self or any other connections
-    if (signalIsOk) {
-        searchL(objectAKey, frameAKey, nodeAKey, objectBKey, frameBKey, nodeBKey);
 
-        function searchL(objectA, frameA, nodeA, objectB, frameB, nodeB) {
-            var thisFrame = realityEditor.getFrame(objectB, frameB);
-            // TODO: make sure that these links dont get created in the first place - or that they get deleted / rerouted when destination frame changes
-            if (!thisFrame) return;
-            
-            for (var key in thisFrame.links) {  // this is within the frame
-                // this.cout(objectB);
-                var Bn = thisFrame.links[key];  // this is the link to work with
-                if (nodeB === Bn.nodeA) {  // check if
-                    if (nodeA === Bn.nodeB && objectA === Bn.objectB && frameA === Bn.frameB) {
-                        signalIsOk = false;
-                        break;
-                    } else {
-                        searchL(objectA, frameA, nodeA, Bn.objectB, Bn.frameB, Bn.nodeB);
-                    }
+    function searchL(objectA, frameA, nodeA, objectB, frameB, nodeB) {
+        var thisFrame = realityEditor.getFrame(objectB, frameB);
+        // TODO: make sure that these links dont get created in the first place - or that they get deleted / rerouted when destination frame changes
+        if (!thisFrame) return;
+
+        for (var key in thisFrame.links) {  // this is within the frame
+            // this.cout(objectB);
+            var Bn = thisFrame.links[key];  // this is the link to work with
+            if (nodeB === Bn.nodeA) {  // check if
+                if (nodeA === Bn.nodeB && objectA === Bn.objectB && frameA === Bn.frameB) {
+                    signalIsOk = false;
+                    break;
+                } else {
+                    searchL(objectA, frameA, nodeA, Bn.objectB, Bn.frameB, Bn.nodeB);
                 }
             }
         }
+    }
+
+    // check that there is no endless loops through it self or any other connections
+    if (signalIsOk) {
+        searchL(objectAKey, frameAKey, nodeAKey, objectBKey, frameBKey, nodeBKey);
     }
 
     return signalIsOk;

@@ -127,7 +127,7 @@ createNameSpace("realityEditor.gui.dropdown");
             this.dom.style[propKey] = this.css[propKey];
         }
 
-        this.textDiv.addEventListener('click', function(event) {
+        this.textDiv.addEventListener('click', function() {
             this.toggleExpansion();
         }.bind(this));
 
@@ -175,7 +175,7 @@ createNameSpace("realityEditor.gui.dropdown");
             this.updateState(this.states.expandedOptions);
         }
 
-        selectableDom.addEventListener('click', function(event) {
+        selectableDom.addEventListener('click', function() {
 
             if (this.isAnimating) { return; }
             

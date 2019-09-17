@@ -65,7 +65,7 @@ createNameSpace("realityEditor.device.videoRecording");
         var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
         if (closestObjectKey) {
             // var startingMatrix = realityEditor.getObject(closestObjectKey)
-            var startingMatrix = privateState.visibleObjects[closestObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
+            // var startingMatrix = privateState.visibleObjects[closestObjectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
             // realityEditor.app.startVideoRecording(closestObjectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
             realityEditor.app.startVideoRecording(closestObjectKey, realityEditor.getObject(closestObjectKey).ip);
             privateState.isRecording = true;
@@ -209,7 +209,6 @@ createNameSpace("realityEditor.device.videoRecording");
         var frame = realityEditor.getFrame(objectKey, frameKey);
         
         // recompute frame.temp for the new object
-        var res1 = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(objectMatrix, globalStates.projectionMatrix, frame.temp);
         frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
         
@@ -251,10 +250,10 @@ createNameSpace("realityEditor.device.videoRecording");
      * Public method that lets another module trigger video recording. Providing the frame path allows us to store
      * the object's matrix at the time of starting the recording, so that the resulting frame can be placed correctly.
      * @param {string} objectKey
-     * @param {string} frameKey
+     * @param {string} _frameKey
      */
-    function startRecordingForFrame(objectKey, frameKey) {
-        var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
+    function startRecordingForFrame(objectKey, _frameKey) {
+        // var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
 
         // realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
         realityEditor.app.startVideoRecording(objectKey, realityEditor.getObject(objectKey).ip);

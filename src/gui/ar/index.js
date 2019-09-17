@@ -91,7 +91,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     
     var corX = 0;
     var corY = 0;
-    var scaleAdjusting = 1;
+    // var scaleAdjusting = 1;
     
     // iPhone 5(GSM), iPhone 5 (GSM+CDMA)
     if (globalStates.device === "iPhone5,1" || globalStates.device === "iPhone5,2") {
@@ -143,7 +143,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         corX = 1;
         corY = -5;
         console.log("------------------------------------");
-        scaleAdjusting = 0.84;
+        // scaleAdjusting = 0.84;
     }
     
     // iPad
@@ -430,7 +430,7 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
             
             var thisFrame = realityEditor.getFrame(objectKey, frameKey);
             var dx = screenX - thisFrame.screenX;
-            var dy = screenY = thisFrame.screenY;
+            var dy = screenY - thisFrame.screenY;
             distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance < closest) {

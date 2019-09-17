@@ -212,9 +212,9 @@ realityEditor.device.speechProcessor.recipeMatcher = function(lastWordData) {
     });
     
     // TODO: use this for more intelligent separation of location A and B
-    var pivotWords = this.states.pendingWordData.filter( function(wordData) {
-        return wordData.category === 'PIVOT';
-    });
+    // var pivotWords = this.states.pendingWordData.filter( function(wordData) {
+    //     return wordData.category === 'PIVOT';
+    // });
 
     console.log(locationWords, actionWords, dataWords);
     

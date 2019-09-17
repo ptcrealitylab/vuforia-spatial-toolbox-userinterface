@@ -546,7 +546,7 @@ realityEditor.gui.crafting.eventHelper.replacePortBlocksIfNecessary = function(c
                 var name = "edgePlaceholder" + inOrOut + blockPos.x;
                 var globalId = name;
                 var blockJSON = _this.crafting.utilities.toBlockJSON(type, name, width, privateData, publicData, activeInputs, activeOutputs, nameInput, nameOutput);
-                var block = _this.crafting.grid.addBlock(blockPos.x, blockPos.y, blockJSON, globalId, true);
+                _this.crafting.grid.addBlock(blockPos.x, blockPos.y, blockJSON, globalId, true);
             }
         }
     });
@@ -800,7 +800,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
 
     // center on iPad
     blockSettingsContainer.classList.add('centerVerticallyAndHorizontally');
-    var scaleMultiplier = Math.max(globalStates.currentLogic.grid.containerHeight / globalStates.currentLogic.grid.gridHeight, globalStates.currentLogic.grid.containerWidth / globalStates.currentLogic.grid.gridWidth);
+    // var scaleMultiplier = Math.max(globalStates.currentLogic.grid.containerHeight / globalStates.currentLogic.grid.gridHeight, globalStates.currentLogic.grid.containerWidth / globalStates.currentLogic.grid.gridWidth);
     // blockSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
     blockSettingsContainer.style.left = 0;
     
@@ -851,7 +851,7 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
     // nodeSettingsContainer.style.width = globalStates.currentLogic.grid.gridWidth + 'px';
     // nodeSettingsContainer.style.height = globalStates.currentLogic.grid.gridHeight + 'px';
 
-    var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
+    // var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
     // nodeSettingsContainer.style.transform = 'scale(' + scaleMultiplier + ')';
     
     nodeSettingsContainer.style.left = 0;

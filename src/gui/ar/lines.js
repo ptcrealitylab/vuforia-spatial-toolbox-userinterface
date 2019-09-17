@@ -130,48 +130,48 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
     // }
     
     if(!thisFrame) return;
-	for (var linkKey in thisFrame.links) {
-		if (!thisFrame.links.hasOwnProperty(linkKey)) continue;
-		
-		var link = thisFrame.links[linkKey];
-		var frameA = thisFrame;
-		var frameB = realityEditor.getFrame(link.objectB, link.frameB);
+    for (var linkKey in thisFrame.links) {
+        if (!thisFrame.links.hasOwnProperty(linkKey)) continue;
+        
+        var link = thisFrame.links[linkKey];
+        var frameA = thisFrame;
+        var frameB = realityEditor.getFrame(link.objectB, link.frameB);
         var objectA = realityEditor.getObject(link.objectA);
         var objectB = realityEditor.getObject(link.objectB);
         var nodeASize = 0;
         var nodeBSize = 0;
 
-		if (isNaN(link.ballAnimationCount)) {
+        if (isNaN(link.ballAnimationCount)) {
             link.ballAnimationCount = 0;
         }
 
-		if (!frameA || !frameB) {
-			continue; // should not be undefined
-		}
-
-		var nodeA = frameA.nodes[link.nodeA];
-		var nodeB = frameB.nodes[link.nodeB];
-		
-		if (!nodeA || !nodeB) {
-		    continue; // should not be undefined
+        if (!frameA || !frameB) {
+            continue; // should not be undefined
         }
 
-		// Don't draw off-screen lines
-		if ( (!frameB.objectVisible && !frameA.objectVisible) || (nodeA.screenZ < -200 && nodeB.screenZ < -200) ) {
-			continue;
-		}
+        var nodeA = frameA.nodes[link.nodeA];
+        var nodeB = frameB.nodes[link.nodeB];
+        
+        if (!nodeA || !nodeB) {
+            continue; // should not be undefined
+        }
 
-		if (!frameB.objectVisible || nodeB.screenZ < -200) {
-		    
+        // Don't draw off-screen lines
+        if ( (!frameB.objectVisible && !frameA.objectVisible) || (nodeA.screenZ < -200 && nodeB.screenZ < -200) ) {
+            continue;
+        }
+
+        if (!frameB.objectVisible || nodeB.screenZ < -200) {
+            
             if (nodeB.screenZ > -200 && (objectB.memory && Object.keys(objectB.memory).length > 0)) {
-				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
-				if (!memoryPointer) {
-					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
-				}
+                var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectB); // TODO: frameId or objectId?
+                if (!memoryPointer) {
+                    memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, false);
+                }
 
-				nodeB.screenX = memoryPointer.x;
-				nodeB.screenY = memoryPointer.y;
-				nodeB.screenZ = nodeA.screenZ;
+                nodeB.screenX = memoryPointer.x;
+                nodeB.screenY = memoryPointer.y;
+                nodeB.screenZ = nodeA.screenZ;
 
                 if (memoryPointer.memory.imageLoaded && memoryPointer.memory.image.naturalWidth === 0 && memoryPointer.memory.image.naturalHeight === 0) {
                     nodeB.screenX = nodeA.screenX;
@@ -180,26 +180,26 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
                 } else {
                     memoryPointer.draw();
                 }
-			} else {
-				nodeB.screenX = nodeA.screenX;
-				nodeB.screenY = -10;
-				nodeB.screenZ = nodeA.screenZ;
+            } else {
+                nodeB.screenX = nodeA.screenX;
+                nodeB.screenY = -10;
+                nodeB.screenZ = nodeA.screenZ;
             }
-			nodeB.screenZ = nodeA.screenZ;
-			nodeB.screenLinearZ = nodeA.screenLinearZ;
-			nodeBSize = objectA.averageScale;
-		}
+            nodeB.screenZ = nodeA.screenZ;
+            nodeB.screenLinearZ = nodeA.screenLinearZ;
+            nodeBSize = objectA.averageScale;
+        }
 
-		if (!frameA.objectVisible || nodeA.screenZ < 0) {
+        if (!frameA.objectVisible || nodeA.screenZ < 0) {
             if (nodeA.screenZ > -200 && (objectA.memory && Object.keys(objectA.memory).length > 0)) {
-				var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
-				if (!memoryPointer) {
-					memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
-				}
+                var memoryPointer = realityEditor.gui.memory.getMemoryPointerWithId(link.objectA);
+                if (!memoryPointer) {
+                    memoryPointer = new realityEditor.gui.memory.MemoryPointer(link, true);
+                }
 
-				nodeA.screenX = memoryPointer.x;
-				nodeA.screenY = memoryPointer.y;
-				
+                nodeA.screenX = memoryPointer.x;
+                nodeA.screenY = memoryPointer.y;
+                
                 if (memoryPointer.memory.imageLoaded && memoryPointer.memory.image.naturalWidth === 0 && memoryPointer.memory.image.naturalHeight === 0) {
                     nodeA.screenX = nodeB.screenX;
                     nodeB.screenY = -10;
@@ -207,35 +207,35 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
                 } else {
                     memoryPointer.draw();
                 }
-			} else {
-				nodeA.screenX = nodeB.screenX;
-				nodeA.screenY = -10;
+            } else {
+                nodeA.screenX = nodeB.screenX;
+                nodeA.screenY = -10;
                 nodeA.screenZ = nodeB.screenZ;
-			}
-			nodeA.screenZ = nodeB.screenZ;
-			nodeA.screenLinearZ = nodeB.screenLinearZ;
-			nodeASize = objectB.averageScale
-		}
-		if(!nodeASize) nodeASize = objectA.averageScale;
+            }
+            nodeA.screenZ = nodeB.screenZ;
+            nodeA.screenLinearZ = nodeB.screenLinearZ;
+            nodeASize = objectB.averageScale
+        }
+        if(!nodeASize) nodeASize = objectA.averageScale;
         if(!nodeBSize) nodeBSize = objectB.averageScale;
 
-		// linearize a non linear zBuffer (see index.js)
-		var nodeAScreenZ =   nodeA.screenLinearZ*(nodeASize*1.5);
-		var nodeBScreenZ = nodeB.screenLinearZ*(nodeBSize*1.5);
-		
-		var logicA;
-		if (link.logicA == null || link.logicA === false) {
-			logicA = 4;
-		} else {
-			logicA = link.logicA;
-		}
+        // linearize a non linear zBuffer (see index.js)
+        var nodeAScreenZ =   nodeA.screenLinearZ*(nodeASize*1.5);
+        var nodeBScreenZ = nodeB.screenLinearZ*(nodeBSize*1.5);
+        
+        var logicA;
+        if (link.logicA == null || link.logicA === false) {
+            logicA = 4;
+        } else {
+            logicA = link.logicA;
+        }
 
-		var logicB;
-		if (link.logicB == null || link.logicB === false) {
-			logicB = 4;
-		} else {
-			logicB = link.logicB;
-		}
+        var logicB;
+        if (link.logicB == null || link.logicB === false) {
+            logicB = 4;
+        } else {
+            logicB = link.logicB;
+        }
 
         if(typeof nodeA.screenOpacity === 'undefined') nodeA.screenOpacity = 1.0;
         if(typeof nodeB.screenOpacity === 'undefined') nodeB.screenOpacity = 1.0;
@@ -245,8 +245,8 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
             // only draw lines in front of camera, otherwise we can get really slow/long lines
             this.drawLine(context, [nodeA.screenX, nodeA.screenY], [nodeB.screenX, nodeB.screenY], nodeAScreenZ, nodeBScreenZ, link, timeCorrection, logicA, logicB, speed, nodeA.screenOpacity,nodeB.screenOpacity);
         }
-	}
-	// context.fill();
+    }
+    // context.fill();
     
     globalCanvas.hasContent = true;
 };
@@ -263,38 +263,37 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
 
     // this function here needs to be more precise
 
-	if (globalProgram.objectA) {
+    if (globalProgram.objectA) {
 
         var objectA = realityEditor.getObject(globalProgram.objectA);
-        var frameA = realityEditor.getFrame(globalProgram.objectA, globalProgram.frameA);
-		var nodeA = realityEditor.getNode(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA);
+        var nodeA = realityEditor.getNode(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA);
 
-		// this is for making sure that the line is drawn out of the screen... Don't know why this got lost somewhere down the road.
-		// linearize a non linear zBuffer
+        // this is for making sure that the line is drawn out of the screen... Don't know why this got lost somewhere down the road.
+        // linearize a non linear zBuffer
 
-		// map the linearized zBuffer to the final ball size
-		if (!objectA.objectVisible) {
+        // map the linearized zBuffer to the final ball size
+        if (!objectA.objectVisible) {
             nodeA.screenX = globalStates.pointerPosition[0];
             nodeA.screenY = -10;
             nodeA.screenZ = 6;
-			
-		} else if(nodeA.screenLinearZ) {
+            
+        } else if(nodeA.screenLinearZ) {
             nodeA.screenZ = nodeA.screenLinearZ*objectA.averageScale;
-		}
+        }
 
-		var logicA = globalProgram.logicA;
-		if (globalProgram.logicA === false) {
-		    logicA = 4;
+        var logicA = globalProgram.logicA;
+        if (globalProgram.logicA === false) {
+            logicA = 4;
         }
         
         if(typeof nodeA.screenOpacity === 'undefined') nodeA.screenOpacity = 1.0;
-		var speed = 1;
-		this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, 8, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
-	}
+        var speed = 1;
+        this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, 8, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
+    }
 
-	if (globalStates.drawDotLine) {
-		this.drawDotLine(globalCanvas.context, [globalStates.drawDotLineX, globalStates.drawDotLineY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], 1, 1);
-	}
+    if (globalStates.drawDotLine) {
+        this.drawDotLine(globalCanvas.context, [globalStates.drawDotLineX, globalStates.drawDotLineY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]]);
+    }
 
     globalCanvas.hasContent = true;
 };
@@ -351,35 +350,35 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     if (lineStartPoint[0] < this.extendedBorderNegative) {
         lineStartPoint[0] = this.extendedBorderNegative;
         this.nodeExistsA = false;
-    };
+    }
     if (lineStartPoint[1] < this.extendedBorderNegative) {
         lineStartPoint[1] = this.extendedBorderNegative;
         this.nodeExistsA = false;
-    };
+    }
     if (lineEndPoint[0] < this.extendedBorderNegative) {
         lineEndPoint[0] = this.extendedBorderNegative;
         this.nodeExistsB = false;
-    };
+    }
     if (lineEndPoint[1] < this.extendedBorderNegative) {
         lineEndPoint[1] = this.extendedBorderNegative;
         this.nodeExistsB = false;
-    };
+    }
     if (lineStartPoint[0] > globalStates.height+this.extendedBorder) {
         lineStartPoint[0] = globalStates.height+this.extendedBorder;
         this.nodeExistsA = false;
-    };
+    }
     if (lineStartPoint[1] > globalStates.width+this.extendedBorder) {
         lineStartPoint[1] = globalStates.width+this.extendedBorder;
         this.nodeExistsA = false;
-    };
+    }
     if (lineEndPoint[0] > globalStates.height+this.extendedBorder) {
         lineEndPoint[0] = globalStates.height+this.extendedBorder;
         this.nodeExistsB = false;
-    };
+    }
     if (lineEndPoint[1] > globalStates.width+this.extendedBorder) {
         lineEndPoint[1] = globalStates.width+this.extendedBorder;
         this.nodeExistsB = false;
-    };
+    }
     
     if( !this.nodeExistsB &&  !this.nodeExistsA){
         return;
@@ -486,22 +485,19 @@ realityEditor.gui.ar.lines.transform = function (cxt, weight, object){
 
 /**
  * Draws the dotted line used to cut links, between the start and end coordinates.
- * @todo: (b1, b2) have (1, 1) passed in as an example, but aren't used anymore.
  * @param {CanvasRenderingContext2D} context
  * @param {[number, number]} lineStartPoint
  * @param {[number, number]} lineEndPoint
- * @param b1
- * @param b2
  */
-realityEditor.gui.ar.lines.drawDotLine = function(context, lineStartPoint, lineEndPoint, b1, b2) {
-	context.beginPath();
-	context.moveTo(lineStartPoint[0], lineStartPoint[1]);
-	context.lineTo(lineEndPoint[0], lineEndPoint[1]);
-	context.setLineDash([7]);
-	context.lineWidth = 2;
-	context.strokeStyle = "#ff019f";//"#00fdff";
-	context.stroke();
-	context.closePath();
+realityEditor.gui.ar.lines.drawDotLine = function(context, lineStartPoint, lineEndPoint) {
+    context.beginPath();
+    context.moveTo(lineStartPoint[0], lineStartPoint[1]);
+    context.lineTo(lineEndPoint[0], lineEndPoint[1]);
+    context.setLineDash([7]);
+    context.lineWidth = 2;
+    context.strokeStyle = "#ff019f";//"#00fdff";
+    context.stroke();
+    context.closePath();
 };
 
 /**
@@ -511,13 +507,13 @@ realityEditor.gui.ar.lines.drawDotLine = function(context, lineStartPoint, lineE
  * @param {number} radius
  */
 realityEditor.gui.ar.lines.drawGreen = function(context, circleCenterPoint, radius) {
-	context.beginPath();
-	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
-	context.strokeStyle = "#7bff08";
-	context.lineWidth = 2;
-	context.setLineDash([7]);
-	context.stroke();
-	context.closePath();
+    context.beginPath();
+    context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
+    context.strokeStyle = "#7bff08";
+    context.lineWidth = 2;
+    context.setLineDash([7]);
+    context.stroke();
+    context.closePath();
 
 };
 
@@ -528,13 +524,13 @@ realityEditor.gui.ar.lines.drawGreen = function(context, circleCenterPoint, radi
  * @param {number} radius
  */
 realityEditor.gui.ar.lines.drawRed = function(context, circleCenterPoint, radius) {
-	context.beginPath();
-	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
-	context.strokeStyle = "#ff036a";
-	context.lineWidth = 2;
-	context.setLineDash([7]);
-	context.stroke();
-	context.closePath();
+    context.beginPath();
+    context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
+    context.strokeStyle = "#ff036a";
+    context.lineWidth = 2;
+    context.setLineDash([7]);
+    context.stroke();
+    context.closePath();
 };
 
 /**
@@ -544,13 +540,13 @@ realityEditor.gui.ar.lines.drawRed = function(context, circleCenterPoint, radius
  * @param {number} radius
  */
 realityEditor.gui.ar.lines.drawBlue = function(context, circleCenterPoint, radius) {
-	context.beginPath();
-	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
-	context.strokeStyle = "#01fffd";
-	context.lineWidth = 2;
-	context.setLineDash([7]);
-	context.stroke();
-	context.closePath();
+    context.beginPath();
+    context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
+    context.strokeStyle = "#01fffd";
+    context.lineWidth = 2;
+    context.setLineDash([7]);
+    context.stroke();
+    context.closePath();
 };
 
 /**
@@ -560,13 +556,13 @@ realityEditor.gui.ar.lines.drawBlue = function(context, circleCenterPoint, radiu
  * @param {number} radius
  */
 realityEditor.gui.ar.lines.drawYellow = function(context, circleCenterPoint, radius) {
-	context.beginPath();
-	context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
-	context.strokeStyle = "#FFFF00";
-	context.lineWidth = 2;
-	context.setLineDash([7]);
-	context.stroke();
-	context.closePath();
+    context.beginPath();
+    context.arc(circleCenterPoint[0], circleCenterPoint[1], radius, 0, Math.PI * 2);
+    context.strokeStyle = "#FFFF00";
+    context.lineWidth = 2;
+    context.setLineDash([7]);
+    context.stroke();
+    context.closePath();
 };
 
 /**
@@ -580,11 +576,11 @@ realityEditor.gui.ar.lines.drawYellow = function(context, circleCenterPoint, rad
  * @param {number} width
  */
 realityEditor.gui.ar.lines.drawSimpleLine = function(context, startX, startY, endX, endY, color, width) {
-	context.strokeStyle = color;
-	context.lineWidth = width;
-	context.setLineDash([]);
-	context.beginPath();
-	context.moveTo(startX, startY);
-	context.lineTo(endX, endY);
-	context.stroke();
+    context.strokeStyle = color;
+    context.lineWidth = width;
+    context.setLineDash([]);
+    context.beginPath();
+    context.moveTo(startX, startY);
+    context.lineTo(endX, endY);
+    context.stroke();
 };

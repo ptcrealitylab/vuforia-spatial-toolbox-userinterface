@@ -117,7 +117,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                             }, 300);
                         } else { // registered double tap and start drawing selection lasso
                             selectingState.active = true;
-                            var svg = document.getElementById("groupSVG");
+                            // var svg = document.getElementById("groupSVG");
                             //TODO: start drawing
                             startLasso(params.event.pageX, params.event.pageY);
                         }
@@ -494,7 +494,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             lasso.setAttribute("fill", "rgba(0,255,255,0.2)");
             lasso.setAttribute("stroke", "#00ffff");
         }
-    };
+    }
 
     /**
      * Auto-closes lasso to start point
@@ -674,19 +674,19 @@ createNameSpace("realityEditor.gui.ar.grouping");
      * @param {number} buffer - extra padding to extend frame's bounding rect by
      * @returns {{upperLeft: {x: number, y: number}, upperRight: {x: number, y: number}, lowerLeft: {x: number, y: number}, lowerRight: {x: number, y: number}}}
      */
-    function getFrameBoundingRectScreenCoordinates(frameKey, buffer) {
-        if (typeof buffer === 'undefined') buffer = 0;
-        
-        if (globalDOMCache["iframe" + frameKey]) {
-            var boundingRect = globalDOMCache["iframe" + frameKey].getClientRects()[0];
-            return {
-                upperLeft: {x: boundingRect.left - buffer, y: boundingRect.top - buffer},
-                upperRight: {x: boundingRect.right + buffer, y: boundingRect.top - buffer},
-                lowerLeft: {x: boundingRect.left - buffer, y: boundingRect.bottom + buffer},
-                lowerRight: {x: boundingRect.right + buffer, y: boundingRect.bottom + buffer}
-            }
-        }
-    }
+    // function getFrameBoundingRectScreenCoordinates(frameKey, buffer) {
+    //     if (typeof buffer === 'undefined') buffer = 0;
+    //     
+    //     if (globalDOMCache["iframe" + frameKey]) {
+    //         var boundingRect = globalDOMCache["iframe" + frameKey].getClientRects()[0];
+    //         return {
+    //             upperLeft: {x: boundingRect.left - buffer, y: boundingRect.top - buffer},
+    //             upperRight: {x: boundingRect.right + buffer, y: boundingRect.top - buffer},
+    //             lowerLeft: {x: boundingRect.left - buffer, y: boundingRect.bottom + buffer},
+    //             lowerRight: {x: boundingRect.right + buffer, y: boundingRect.bottom + buffer}
+    //         }
+    //     }
+    // }
 
     /**
      * Accurately calculates the screen coordinates of the corners of a frame element
@@ -769,8 +769,8 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 // make sure there is an object and frame
                 if (!frame || frame.visualization !== 'ar') continue;
 
-                var x = frame.screenX;
-                var y = frame.screenY;
+                // var x = frame.screenX;
+                // var y = frame.screenY;
                 
                 // var bb = getFrameBoundingRectScreenCoordinates(frameKey, 10);
                 var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 50);

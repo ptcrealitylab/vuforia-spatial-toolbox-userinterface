@@ -105,7 +105,7 @@ realityEditor.device.onload = function () {
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
     realityEditor.app.getDiscoveryText(function(savedState) {
-        if (savedState === '(null)') { savedState = 'null'; };
+        if (savedState === '(null)') { savedState = 'null'; }
         console.log('saved discovery text = ', JSON.parse(savedState));
     });
 
