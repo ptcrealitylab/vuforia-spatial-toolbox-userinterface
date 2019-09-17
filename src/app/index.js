@@ -85,6 +85,7 @@ realityEditor.app.addNewMarker = function(markerName, callBack) {
 
 /**
  * Gets the projection matrix.
+ * Callback will have the matrix as a length-16 array as a parameter.
  * @param {FunctionName} callBack
  */
 realityEditor.app.getProjectionMatrix = function(callBack) {
@@ -92,7 +93,8 @@ realityEditor.app.getProjectionMatrix = function(callBack) {
 };
 
 /**
- * Callback for all markers and matrices that are found
+ * Sets up a callback for the model matrices of all markers that are found, that will get called every frame.
+ * Callback will have a set of objectId mapped to matrix for each visibleObjects.
  * @param {FunctionName} callBack
  */
 realityEditor.app.getMatrixStream = function(callBack) {
@@ -100,7 +102,8 @@ realityEditor.app.getMatrixStream = function(callBack) {
 };
 
 /**
- * Callback for all markers and matrices that are found
+ * Sets up a callback for the positional device tracker, reporting the pose of the camera at every frame.
+ * Callback will have the cameraMatrix (which is the inverse of the view matrix) as a parameter.
  * @param {FunctionName} callBack
  */
 realityEditor.app.getCameraMatrixStream = function(callBack) {
@@ -108,7 +111,7 @@ realityEditor.app.getCameraMatrixStream = function(callBack) {
 };
 
 /**
- * Callback for all markers and matrices that are found
+ * Sets up a callback for the ground plane matrix, which will start reporting a matrix each frame after one is detected.
  * @param {FunctionName} callBack
  */
 realityEditor.app.getGroundPlaneMatrixStream = function(callBack) {
@@ -116,39 +119,39 @@ realityEditor.app.getGroundPlaneMatrixStream = function(callBack) {
 };
 
 /**
+ * Gets a screenshot image of the camera background.
  * The callback will have a screenshot with base64. Size can be S,M,L
- * @param {string} size - 'S', 'M', or 'L'
+ * @param {string} size - 'S' (25%), 'M' (50%), or 'L' (full size)
  * @param {FunctionName} callBack
  */
 realityEditor.app.getScreenshot = function(size, callBack) {
     this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
-realityEditor.app.getScreenshotAsJpg = function() {
+/**
+ * Debug method that gets the camera background, decodes it, and passes the blob url to a callback.
+ * note - not used anywhere right now
+ * @return {string} screenshotBlobUrl
+ */
+realityEditor.app.getScreenshotAsJpg = function(callback) {
     this.getScreenshot("L", function(base64String) {
         var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
-        debugShowScreenshot(screenshotBlobUrl);
+        callback(screenshotBlobUrl);
+        // to show the screenshot, you would: 
+        // document.querySelector('#screenshotHolder').src = blobUrl;
+        // document.querySelector('#screenshotHolder').style.display ='inline';
     });
 };
 
-function debugShowScreenshot(blobUrl) {
-    document.querySelector('#screenshotHolder').src = blobUrl;
-    document.querySelector('#screenshotHolder').style.display ='inline';
-}
-
-function debugHideScreenshot() {
-    document.querySelector('#screenshotHolder').style.display ='none';
-}
-
 /**
- * Pauses the tracker.
+ * Pauses the tracker (freezes the background)
  */
 realityEditor.app.setPause = function() {
     this.appFunctionCall('setPause', null, null);
 };
 
 /**
- * Resumes the tracker.
+ * Resumes the tracker (unfreezes the background)
  */
 realityEditor.app.setResume = function() {
     this.appFunctionCall('setResume', null, null);
@@ -167,7 +170,7 @@ realityEditor.app.tap = function() {
   **/
  
 /**
- * Every time there is a new message the callback is called.
+ * Every time there is a new UDP message the callback is called. The Reality Editor listens to UDP messages on port 52316 
  * @param {FunctionName} callBack
  */
 realityEditor.app.getUDPMessages = function(callBack) {
@@ -175,7 +178,7 @@ realityEditor.app.getUDPMessages = function(callBack) {
 };
 
 /**
- * Sends out a message over UDP broadcast.
+ * Sends out a message over UDP broadcast (255.255.255.255 on port 52316)
  * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
@@ -187,7 +190,10 @@ realityEditor.app.sendUDPMessage = function(message) {
   **/
 
 /**
- * Boolean response if a file exists.
+ * Boolean response if a file exists in the local filesystem.
+ * You can pass in the same fileName as from where you downloaded the file
+ * (e.g. datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat')
+ * It will automatically convert that to the location on the local filesystem where that download would end up.
  * @param {string} fileName
  * @param {FunctionName} callBack
  */
@@ -196,9 +202,9 @@ realityEditor.app.getFileExists = function(fileName, callBack) {
 };
 
 /**
- * Downloads a file. The callback is an error or success message
- * and the fileName for reference.
- * @param {string} fileName
+ * Downloads a file. The callback is an error or success, and the filename for reference.
+ * The filename url is converted into a temp file path (works as a black box), so that file can be located again using the original filename url
+ * @param {string} fileName - the url that you are downloading, e.g. "http://10.0.0.225:8080/obj/stonesScreen/target/target.xml"
  * @param {FunctionName} callBack
  */
 realityEditor.app.downloadFile = function(fileName, callBack) {
@@ -206,7 +212,7 @@ realityEditor.app.downloadFile = function(fileName, callBack) {
 };
 
 /**
- * Boolean response if all files exists. fileNameArray should contain at least one filename.
+ * Boolean response if all files exists. fileNameArray should contain at least one filename. (similar to getFileExists)
  * @param {Array.<string>} fileNameArray
  * @param {FunctionName} callBack
  */
@@ -218,7 +224,7 @@ realityEditor.app.getFilesExist = function (fileNameArray, callBack) {
  * Returns the checksum of a group of files. fileNameArray should contain at least one filename.
  * @param {Array.<string>} fileNameArray
  * @param {FunctionName} callBack
- * @todo implement within XCode - currently does nothing
+ * @todo implement within XCode - currently does nothing (returns fileNameArray.count as a placeholder)
  */
 realityEditor.app.getChecksum = function (fileNameArray, callBack) {
     this.appFunctionCall('getChecksum', {fileNameArray: fileNameArray}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
@@ -230,7 +236,7 @@ realityEditor.app.getChecksum = function (fileNameArray, callBack) {
 
 /**
  * Store a message on the app level for persistence.
- * @param {string} storageID
+ * @param {string} storageID - e.g. 'SETUP:DEVELOPER'
  * @param {string} message
  */
 realityEditor.app.setStorage = function (storageID, message) {
@@ -238,7 +244,7 @@ realityEditor.app.setStorage = function (storageID, message) {
 };
 
 /**
- * Recall the message.
+ * Recall the message that may have been saved in a previous session.
  * @param {string} storageID
  * @param {FunctionName} callBack
  */
@@ -281,13 +287,21 @@ realityEditor.app.addSpeechListener = function (callBack) {
  **************Video****************
  **/
 
-// starts the screen recording of the camera background
+/**
+ * Starts the screen recording of the camera background.
+ * Need to pass in an object id/ip pair so it can upload the resulting video to that object's server
+ * @param {string} objectKey
+ * @param {string} objectIP
+ */
 realityEditor.app.startVideoRecording = function (objectKey, objectIP) {
     console.log("startVideoRecording");
     this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectIP: objectIP}, null);
 };
 
-// stops the screen recording of the camera background
+/**
+ * Stops the screen recording of the camera background and uploads to the object specified when startVideoRecording was called.
+ * @param {string} videoId - the name to save it as (without .mp4), e.g. a random string uuid
+ */
 realityEditor.app.stopVideoRecording = function (videoId) {
     console.log("stopVideoRecording");
     this.appFunctionCall('stopVideoRecording', {videoId: videoId}, null);
@@ -309,13 +323,22 @@ realityEditor.app.clearCache = function () {
     }, 1000);
 };
 
+/**
+ * Triggers a setFocusMode(Vuforia::CameraDevice::FOCUS_MODE_TRIGGERAUTO)
+ * note - not currently used
+ * @todo: the native implementation should revert back to auto mode after a certain amount of time
+ */
 realityEditor.app.focusCamera = function() {
     this.appFunctionCall('focusCamera', null, null);
 };
 
 // global shortcut for clearing the cache
 cc = realityEditor.app.clearCache.bind(realityEditor.app);
-// global shortcut for resetting the frame positions to object origin
+
+/**
+ * global shortcut for resetting the positions of all frames on visible objects to their object's target origin
+ * in case frames get lost in space, or to test calculations when frame matrix is identity
+ */
 rr = function() {
     for (var objectKey in objects) {
         if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
@@ -378,7 +401,7 @@ rr = function() {
 };
 
 /**
- ************** SAVE AND LOAD DATA FROM DISK ****************
+ ************** SAVE DATA TO DISK ****************
  */
 
 /**
@@ -392,6 +415,7 @@ realityEditor.app.saveDeveloperState = function(newState) {
 
 /**
  * Save the persistent setting to disk for clear sky mode.
+ * @todo: implement clear sky mode. not working in this version of the editor yet
  * @param {boolean} newState
  */
 realityEditor.app.saveClearSkyState = function(newState) {
@@ -478,9 +502,8 @@ realityEditor.app.saveGroupingState = function(newState) {
 };
 
 /**
- * Getters for each property saved to disk
+ ************** LOAD DATA FROM DISK ****************
  */
-
 
 /**
  * Get the persistent setting for developer (editing) mode.
@@ -571,9 +594,13 @@ realityEditor.app.getGroupingState = function(callback) {
 };
 
 /**
- ************** ADDITIONAL ROUTES ****************
+ ************** SECURITY ****************
  */
 
+/**
+ * Trigger the fingerprint authentication prompt to appear
+ * @todo: not working anymore, not even set up in the iOS app
+ */
 realityEditor.app.authenticateTouch = function() {
     realityEditor.app.appFunctionCall("authenticateTouch", null, null);
 };

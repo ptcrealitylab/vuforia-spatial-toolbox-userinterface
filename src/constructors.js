@@ -60,8 +60,8 @@
 /**
  * @desc This is the default constructor for the Hybrid Object.
  * It contains information about how to render the UI and how to process the internal data.
- **/
-
+ * @constructor
+ */
 function Objects() {
 	// The ID for the object will be broadcasted along with the IP. It consists of the name with a 12 letter UUID added.
 	this.objectId = null;
@@ -102,6 +102,11 @@ function Objects() {
     }
 }
 
+/**
+ * Constructor for one UI frame that will be attached to an object. Each frame is associated with an HTML iframe and
+ * contains 3d position data, and optionally links, nodes, and metadata for how it should behave and be rendered.
+ * @constructor
+ */
 function Frame() {
     // The ID for the object will be broadcasted along with the IP. It consists of the name with a 12 letter UUID added.
     this.objectId = null;
@@ -160,8 +165,8 @@ function Frame() {
 /**
  * @desc The Link constructor is used every time a new link is stored in the links object.
  * The link does not need to keep its own ID since it is created with the link ID as Obejct name.
- **/
-
+ * @constructor
+ */
 function Link() {
 	// The origin object from where the link is sending data from
 	this.objectA = null;
@@ -194,8 +199,8 @@ function Link() {
 /**
  * @desc Constructor used to define every nodes generated in the Object. It does not need to contain its own ID
  * since the object is created within the nodes with the ID as object name.
- **/
-
+ * @constructor
+ */
 function Node() {
 	// the name of each link. It is used in the Reality Editor to show the IO name.
 	this.name = "";
@@ -221,7 +226,7 @@ function Node() {
 	// defines the origin Hardware interface of the IO Point. For example if this is arduinoYun the Server associates
 	// indicates how much calls per second is happening on this node
 	this.stress = 0;
-
+    // objects for arbitrary persistent data storage. currently only publicData has been used/tested
     this.privateData = {};
     this.publicData = {};
 
@@ -232,8 +237,8 @@ function Node() {
 /**
  * @desc Constructor used to define every logic node generated in the Object. It does not need to contain its own ID
  * since the object is created within the nodes with the ID as object name.
- **/
-
+ * @constructor
+ */
 function Logic() {
 	this.name = "";
 	// data for logic blocks. depending on the blockSize which one is used.
@@ -284,8 +289,9 @@ function Logic() {
 
 /**
  * @desc Constructor used to define temporary state for drawing the GUI of a Logic node's crafting board
- **/
-
+ * This state doesn't get saved to the server - it can be reconstructed at runtime based on the data from the server
+ * @constructor
+ */
 function LogicGUIState() {
 	// lookup table for all the current dom elements for the UI of the blocks
 	this.blockDomElements = {};
@@ -309,7 +315,7 @@ function LogicGUIState() {
 		start: null,
 		end: null,
 		color: null
-	}
+	};
 	// which block you tapped on in the block menu
 	this.menuSelectedBlock = null;
 	// block to add to crafting board when menu closes
@@ -329,8 +335,7 @@ function LogicGUIState() {
 /**
  * @desc The Link constructor for Blocks is used every time a new logic Link is stored in the logic Node.
  * The block link does not need to keep its own ID since it is created with the link ID as Object name.
- **/
-
+ */
 function BlockLink() {
 	// origin block UUID
 	this.nodeA = null;
@@ -354,13 +359,11 @@ function BlockLink() {
 /**
  * @desc Constructor used to define every block within the logicNode.
  * The block does not need to keep its own ID since it is created with the link ID as Object name.
- **/
-
-
+ * @constructor
+ */
 function Block() {
 	// name of the block
 	this.type = "";
-
 	this.x = null;
 	this.y = null;
 	// amount of elements the IO point is created of. Single IO nodes have the size 1.
@@ -371,11 +374,9 @@ function Block() {
 	this.checksum = null; // checksum of the files for the program
 	// data for logic blocks. depending on the blockSize which one is used.
 	this.data = [new Data(), new Data(), new Data(), new Data()];
-	// experimental. This are objects for data storage. Maybe it makes sense to store data in the general object
-	// this would allow the the packages to be persistent. // todo discuss usability with Ben.
+	// objects for arbitrary persistent data storage. currently only publicData has been used/tested
 	this.privateData = {};
 	this.publicData = {};
-
 	// IO for logic
 	// define how many inputs are active.
 	this.activeInputs = [true, false, false, false];
@@ -389,14 +390,14 @@ function Block() {
 	// Text within the node, if no icon is available.
 	this.name = "";
 	// indicates how much calls per second is happening on this block
-	this.stress = 0;
-
+	this.stress = 0; // todo: implement this
 	this.isTempBlock = false;
 	this.isPortBlock = false;
 }
 
 /**
  * @desc Constructor used to define special blocks that are connecting the logic crafting with the outside system.
+ * @constructor
  **/
 function EdgeBlock() {
 	// name of the block
@@ -409,8 +410,8 @@ function EdgeBlock() {
 
 /**
  * @desc Definition for Values that are sent around.
- **/
-
+ * @constructor
+ */
 function Data() {
 	// storing the numerical content send between nodes. Range is between 0 and 1.
 	this.value = 0;

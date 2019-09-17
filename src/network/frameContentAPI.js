@@ -9,7 +9,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
 (function(exports) {
     
     /**
-     * Public init method sets up module
+     * Public init method sets up module by registering callbacks when important events happen in other modules
      */
     function initFeature() {
         realityEditor.device.keyboardEvents.registerCallback('keyUpHandler', keyUpHandler);

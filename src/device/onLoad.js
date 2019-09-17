@@ -114,7 +114,6 @@ realityEditor.device.onload = function () {
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
     // assign global pointers to frequently used UI elements
-    uiButtons = document.getElementById("GUI");
     overlayDiv = document.getElementById('overlay');
 
     // adds touch handlers for each of the menu buttons
