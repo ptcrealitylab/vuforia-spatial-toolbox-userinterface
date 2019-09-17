@@ -1,3 +1,5 @@
+/* exported realityElements */
+
 var realityElements = [
 /*
     {

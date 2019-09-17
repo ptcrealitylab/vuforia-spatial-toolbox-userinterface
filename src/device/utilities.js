@@ -47,6 +47,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/* exported cout */
 
 /**
  * Created by heun on 12/27/16.
