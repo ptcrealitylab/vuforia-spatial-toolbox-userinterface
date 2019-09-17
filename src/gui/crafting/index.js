@@ -49,6 +49,10 @@
 
 createNameSpace("realityEditor.gui.crafting");
 
+realityEditor.gui.crafting.blockIconCache = {};
+realityEditor.gui.crafting.menuBarWidth = 62;
+realityEditor.gui.crafting.blockColorMap = ["#00FFFF", "#00FF00", "#FFFF00", "#FF007C"];
+
 realityEditor.gui.crafting.initFeature = function() {
     realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', hideCraftingOnButtonUp);
@@ -233,27 +237,27 @@ realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch
    // if(!label) label = false;
     var keys = this.eventHelper.getServerObjectLogicKeys(logic);
 
-    if (blockIconCache[keys.logicKey] === undefined) {
-        blockIconCache[keys.logicKey] = {};
+    if (realityEditor.gui.crafting.blockIconCache[keys.logicKey] === undefined) {
+        realityEditor.gui.crafting.blockIconCache[keys.logicKey] = {};
     }
 
     // download icon to cache if not already there
-    if (blockIconCache[keys.logicKey][blockName] === undefined) {
+    if (realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName] === undefined) {
         var icon = new Image();
         icon.src = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + blockName + "/icon.svg";
-        blockIconCache[keys.logicKey][blockName] = icon;
+        realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName] = icon;
 
         var label = new Image();
         label.src = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + blockName + "/label.svg";
-        blockIconCache[keys.logicKey][blockName+"label"] = label;
+        realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName+"label"] = label;
     }
 
     // otherwise just directly return from cache
     if(labelSwitch === false) {
-        return blockIconCache[keys.logicKey][blockName];
+        return realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName];
     }
     else {
-        return blockIconCache[keys.logicKey][blockName+"label"];
+        return realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName+"label"];
     }
 
 };
@@ -663,7 +667,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
     var container = document.getElementById('craftingBoard');
     container.className = "craftingBoardBlur";
     
-    var containerWidth = container.clientWidth - menuBarWidth;
+    var containerWidth = container.clientWidth - realityEditor.gui.crafting.menuBarWidth;
     var containerHeight = container.clientHeight;
     
     var GRID_ASPECT_RATIO = CRAFTING_GRID_WIDTH / CRAFTING_GRID_HEIGHT;
@@ -720,14 +724,12 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
                     blockPlaceholder.style.width = (gridWidth * (2/11)) + 'px';
                     blockPlaceholder.style.marginRight = (gridWidth * (1/11)) + 'px';
                     
-                    //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
-                    //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
                     if (rowNum === 0 || rowNum === 6) {
-                        blockPlaceholder.style.border = "3px solid " + blockColorMap[colNum / 2] + "55"; //rgb(45, 255, 254);"
+                        blockPlaceholder.style.border = "3px solid " + realityEditor.gui.crafting.blockColorMap[colNum / 2] + "55"; //rgb(45, 255, 254);"
                         var labelContainer = document.createElement("div");
                         labelContainer.setAttribute("class", "blockPlaceholderLabel");
                         var label = document.createElement("div");
-                        label.style.color = 'cyan'; //blockColorMap[colNum / 2];
+                        label.style.color = 'cyan';
                         label.innerHTML = (rowNum === 0) ? "IN" : "OUT";
                         labelContainer.appendChild(label);
                         blockPlaceholder.appendChild(labelContainer);
@@ -743,22 +745,6 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
             rowDiv.setAttribute("class", "blockPlaceholderRow");
             rowDiv.style.height = logic.grid.marginRowHeight;
             blockPlaceholdersContainer.appendChild(rowDiv);
-
-            // for (var colNum = 0; colNum < logic.grid.size; colNum++) {
-            //     if (colNum % 2 === 0) {
-            //         var columnHighlight = document.createElement('div');
-            //         rowDiv.appendChild(columnHighlight);
-            //         var className = (colNum === logic.grid.size - 1) ? "columnHighlightLastCol" : "columnHighlight";
-            //         columnHighlight.setAttribute("class", className);
-            //
-            //         columnHighlight.style.width = (gridWidth * 2/11) + 'px';
-            //         columnHighlight.style.marginRight = (gridWidth * 1/11) + 'px';
-            //        
-            //         //var colorMapKey = (rowNum === 0 || rowNum === 6) ? "bright" : "faded";
-            //         //blockPlaceholder.style.backgroundColor = blockColorMap[colorMapKey][colNum/2];
-            //         columnHighlight.style.background = columnHighlightColorMap[colNum/2];
-            //     }
-            // }
 
         }
     }

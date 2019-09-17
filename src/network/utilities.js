@@ -113,12 +113,6 @@ realityEditor.network.utilities.shouldSyncBlock = function(origin, blockKey, mod
 };
 
 /**
- * Updates the logic blocks on the origin (a logic node) to match those of the remote
- * @param {Node} origin - the logic node you want to update
- * @param {Object.<{string: Block}>} remoteBlocks - set of blocks mapped by their uuid
- */
-
-/**
  * Updates the links on the origin (a frame) to match those of the remote
  * @param {Frame} origin - the frame you want to update
  * @param {Object.<{string: Link}>} remoteLinks - set of links mapped by their uuid

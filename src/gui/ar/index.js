@@ -322,7 +322,7 @@ realityEditor.gui.ar.getClosestObject = function () {
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
-        if (objectKey.indexOf(worldObjectId) > -1) {
+        if (realityEditor.worldObjects.isWorldObjectKey(objectKey)) {
             continue;
         }
         
@@ -333,7 +333,7 @@ realityEditor.gui.ar.getClosestObject = function () {
     }
     
     // default to world object if no visible objects
-    if (!object || object.indexOf(worldObjectId) > -1) {
+    if (!object || realityEditor.worldObjects.isWorldObjectKey(object)) {
         if (realityEditor.worldObjects.getBestWorldObject()) {
             object = realityEditor.worldObjects.getBestWorldObject().objectId;
         }
