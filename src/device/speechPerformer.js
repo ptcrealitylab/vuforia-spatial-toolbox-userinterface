@@ -15,7 +15,7 @@ realityEditor.device.speechPerformer.initFeature = function() {
     var SPEECH_FEATURE_ENABLED = true;
     
     if (SPEECH_FEATURE_ENABLED) {
-        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
+        realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
 
             if (!(globalStates.guiState === "node" || globalStates.guiState === "logic")) { return; }
             if (globalStates.editingMode) { return; }
@@ -126,7 +126,7 @@ realityEditor.device.speechPerformer.createLink = function(locationA, locationB)
  * @param {Location} locationA
  * @param {Location} locationB
  */
-realityEditor.device.speechPerformer.deleteLink = function(locationA, locationB) {
+realityEditor.device.speechPerformer.deleteLink = function(_locationA, _locationB) {
     
 };
 
@@ -135,7 +135,7 @@ realityEditor.device.speechPerformer.deleteLink = function(locationA, locationB)
  * @todo implement
  * @param {Location} location
  */
-realityEditor.device.speechPerformer.createLock = function(location) {
+realityEditor.device.speechPerformer.createLock = function(_location) {
     
 };
 
@@ -144,7 +144,7 @@ realityEditor.device.speechPerformer.createLock = function(location) {
  * @todo implement
  * @param {Location} location
  */
-realityEditor.device.speechPerformer.deleteLock = function(location) {
+realityEditor.device.speechPerformer.deleteLock = function(_location) {
     
 };
 
@@ -154,7 +154,7 @@ realityEditor.device.speechPerformer.deleteLock = function(location) {
  * @param {Location} location
  * @param {number} value
  */
-realityEditor.device.speechPerformer.setValue = function(location, value) {
+realityEditor.device.speechPerformer.setValue = function(_location, _value) {
     
 };
 

@@ -315,7 +315,7 @@ realityEditor.gui.screenExtension.onScreenPushIn = function(screenFrame) {
 
 };
 
-realityEditor.gui.screenExtension.onScreenPullOut = function(screenFrame) {
+realityEditor.gui.screenExtension.onScreenPullOut = function() {
     // set screen object hidden, wait to hear that the screen received it, then move AR frame to position and show AR frame
 
     var isScreenVisible = false;

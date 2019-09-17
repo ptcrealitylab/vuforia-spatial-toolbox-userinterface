@@ -68,57 +68,57 @@ realityEditor.gui.pocket.registerCallback = function(functionName, callback) {
 
 realityEditor.gui.pocket.pocketButtonAction = function() {
 
-	console.log("state: " + globalStates.pocketButtonState);
+    console.log("state: " + globalStates.pocketButtonState);
 
-	if (globalStates.pocketButtonState === true) {
-		console.log("buttonon");
-		globalStates.pocketButtonState = false;
+    if (globalStates.pocketButtonState === true) {
+        console.log("buttonon");
+        globalStates.pocketButtonState = false;
 
-		if (globalStates.guiState === 'logic') {
-		    realityEditor.gui.crafting.blockMenuVisible();
-		}
-	}
-	else {
-		console.log("buttonoff");
-		globalStates.pocketButtonState = true;
+        if (globalStates.guiState === 'logic') {
+            realityEditor.gui.crafting.blockMenuVisible();
+        }
+    }
+    else {
+        console.log("buttonoff");
+        globalStates.pocketButtonState = true;
 
-		if (globalStates.guiState === 'logic') {
-			realityEditor.gui.crafting.blockMenuHide();
+        if (globalStates.guiState === 'logic') {
+            realityEditor.gui.crafting.blockMenuHide();
             realityEditor.gui.menus.switchToMenu("crafting", null, ["logicPocket"]);
         }
-	}
+    }
 
 };
 
 realityEditor.gui.pocket.setPocketPosition = function(evt){
     
-	if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
+    if(pocketItem["pocket"].frames["pocket"].nodes[pocketItemId]){
 
-		var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
-		
-		var pocketDomElement = globalDOMCache['object' + thisItem.uuid];
-		if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
+        var thisItem = pocketItem["pocket"].frames["pocket"].nodes[pocketItemId];
+        
+        var pocketDomElement = globalDOMCache['object' + thisItem.uuid];
+        if (!pocketDomElement) return; // wait until DOM element for this pocket item exists before attempting to move it
 
         var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
 
-		if (!closestObjectKey) {
-		    
-			thisItem.x = evt.clientX - (globalStates.height / 2);
-			thisItem.y = evt.clientY - (globalStates.width / 2);
-			
-		} else {
-		    
-			if(thisItem.screenZ !== 2 && thisItem.screenZ) {
+        if (!closestObjectKey) {
+            
+            thisItem.x = evt.clientX - (globalStates.height / 2);
+            thisItem.y = evt.clientY - (globalStates.width / 2);
+            
+        } else {
+            
+            if(thisItem.screenZ !== 2 && thisItem.screenZ) {
                 
                 var centerOffsetX = thisItem.frameSizeX / 2;
                 var centerOffsetY = thisItem.frameSizeY / 2;
                 
                 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisItem, evt.clientX - centerOffsetX, evt.clientY - centerOffsetY, false);
 
-			}
-		}
-		
-	}
+            }
+        }
+        
+    }
 };
 
 realityEditor.gui.pocket.setPocketFrame = function(frame, positionOnLoad, closestObjectKey) {
@@ -251,7 +251,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         
         addMenuButtonActions();
 
-        pocket.addEventListener('pointerup', function(evt) {
+        pocket.addEventListener('pointerup', function() {
             isPocketTapped = false;
         });
 
@@ -418,7 +418,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
 
         createPocketUIPalette();
-		// pocketHide();
+        // pocketHide();
     }
 
     function addMenuButtonActions() {
@@ -750,6 +750,23 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         var allSegmentButtons = [];
         
+        function hideAllSegmentSelections() {
+            allSegmentButtons.forEach(function(div){
+                if (div.firstChild) {
+                    div.firstChild.style.visibility = 'hidden';
+                }
+                div.classList.remove('pocketScrollBarSegmentTouched');
+            });
+        }
+        
+        function selectSegment(segment) {
+            if (segment.firstChild) {
+                segment.firstChild.style.visibility = 'visible';
+            }
+            segment.classList.add('pocketScrollBarSegmentTouched');
+        }
+
+
         for (var i = 0; i < numChapters; i++) {
             var segmentButton = document.createElement('div');
             segmentButton.className = 'pocketScrollBarSegment';
@@ -766,22 +783,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             segmentButton.dataset.index = i;
             
-            function hideAllSegmentSelections() {
-                allSegmentButtons.forEach(function(div){
-                    if (div.firstChild) {
-                        div.firstChild.style.visibility = 'hidden';
-                    }
-                    div.classList.remove('pocketScrollBarSegmentTouched');
-                });
-            }
-            
-            function selectSegment(segment) {
-                if (segment.firstChild) {
-                    segment.firstChild.style.visibility = 'visible';
-                }
-                segment.classList.add('pocketScrollBarSegmentTouched');
-            }
-
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();

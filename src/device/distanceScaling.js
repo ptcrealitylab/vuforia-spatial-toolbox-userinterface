@@ -25,7 +25,7 @@ createNameSpace("realityEditor.device.distanceScaling");
     };
     
     var groundPlaneRotation = [];
-    var groundPlaneQuaternion = null;
+    // var groundPlaneQuaternion = null;
 
     /**
      * @type {CallbackHandler}
@@ -128,7 +128,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             groundPlaneRotation[14] = 0;
             // groundPlaneRotation[15] = 1;
             
-            groundPlaneQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(groundPlaneRotation);
+            // groundPlaneQuaternion = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(groundPlaneRotation);
             
             // element.style.transform = 'matrix3d(' + groundPlaneRotation.toString() + ')';
 
@@ -166,8 +166,8 @@ createNameSpace("realityEditor.device.distanceScaling");
                     
                     // TODO: calculate position of "halo" element
                     
-                    var frameQ = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(frameMatrix);
-                    var invFrameQ = realityEditor.gui.ar.utilities.invertQuaternion(frameQ);
+                    // var frameQ = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(frameMatrix);
+                    // var invFrameQ = realityEditor.gui.ar.utilities.invertQuaternion(frameQ);
                     
                     // var frameM = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(frameQ);
                     // var invFrameM = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(invFrameQ);
@@ -179,7 +179,7 @@ createNameSpace("realityEditor.device.distanceScaling");
                     
                     realityEditor.gui.ar.utilities.multiplyMatrix(invFrameM, frameMatrix, rotated);
 
-                    var frameQ2 = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(rotated);
+                    // var frameQ2 = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(rotated);
                     
 
                     element.style.transform = 'matrix3d(' + rotated.toString() + ')';
@@ -227,9 +227,9 @@ createNameSpace("realityEditor.device.distanceScaling");
 
     /**
      * Stop scaling distance when three finger touch stops
-     * @param {{event: object}} params
+     * @param {{event: object}} _params (unused)
      */
-    function onDocumentMultiTouchEnd(params) {
+    function onDocumentMultiTouchEnd(_params) {
         // console.log(params.event);
         // if (params.event.touches.length < 3) {
         isScalingDistance = false;
@@ -239,7 +239,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             // don't hide it if we're in permanent distance editing mode
             if (!globalStates.distanceEditingMode) {
                 hideDistanceUI(distanceScalingState.frameKey);
-            } 
+            }
             distanceScalingState.objectKey = null;
             distanceScalingState.frameKey = null;
         }

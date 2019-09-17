@@ -16,7 +16,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     function initFeature() {
         window.addEventListener('keyup', keyUpHandler);
         window.addEventListener('keydown', keyDownHandler);
-        realityEditor.network.addPostMessageHandler('resetScroll', function(eventData, fullMessageContent) {
+        realityEditor.network.addPostMessageHandler('resetScroll', function() {
             resetScroll();
             setTimeout(function() {
                 resetScroll(); // also do it after a slight delay

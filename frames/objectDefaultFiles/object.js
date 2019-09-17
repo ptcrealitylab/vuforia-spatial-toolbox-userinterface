@@ -1,5 +1,6 @@
 (function(exports) {
 
+    /* eslint no-inner-declarations: "off" */
     // makes sure this only gets loaded once per iframe
     if (typeof exports.realityObject !== 'undefined') {
         return;
@@ -1522,8 +1523,8 @@
         // that means it hits a transparent part and touch should go through
         (function registerDefaultTouchDecider() {
             realityObject.touchDecider = function(eventData) {
-                var x = eventData.x;
-                var y = eventData.y;
+                var _x = eventData.x;
+                var _y = eventData.y;
             };
             realityObject.touchDeciderRegistered = true;
         })();

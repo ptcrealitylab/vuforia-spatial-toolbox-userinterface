@@ -239,7 +239,7 @@ realityEditor.gui.memory.nodeMemories.resetEventHandlers = function() {
     pocket.addEventListener('pointerup', nodeMemories.touchUpHandler, false);
 };
 
-realityEditor.gui.memory.nodeMemories.touchUpHandler = function(event) {
+realityEditor.gui.memory.nodeMemories.touchUpHandler = function() {
     if (overlayDiv.storedLogicNode) {
         var overlay = document.getElementById('overlay');
         overlay.storedLogicNode = null;
@@ -256,7 +256,7 @@ realityEditor.gui.memory.nodeMemories.addDragListener = function(memoryContainer
     var nodeMemories = realityEditor.gui.memory.nodeMemories;
     
     // store each event listener in an array so that we can cancel them all later
-    nodeMemories.states.dragEventListeners[i] = function(evt) {
+    nodeMemories.states.dragEventListeners[i] = function() {
         
         if (!logicNodeObject) {
             console.log('cant add a logic node from here because there isnt one saved');
@@ -300,7 +300,7 @@ realityEditor.gui.memory.nodeMemories.addUpListener = function(memoryContainer, 
     var nodeMemories = realityEditor.gui.memory.nodeMemories;
     
     // store each event listener in an array so that we can cancel them all later
-    nodeMemories.states.upEventListeners[i] = function(evt) {
+    nodeMemories.states.upEventListeners[i] = function() {
 
         var overlay = document.getElementById("overlay");
         if (overlay.storedLogicNode) {

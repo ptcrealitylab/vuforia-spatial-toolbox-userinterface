@@ -333,7 +333,7 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
         // var endCell =  _this.grid.getCellForBlock(grid, _this.grid.blockWithID(link.nodeB, globalStates.currentLogic), link.logicB);
         // _this.drawDataCraftingLine(ctx, link, 5, startCell.getColorHSL(), endCell.getColorHSL(), timeCorrection);
 
-        var blueColor = {h: 180, s:100, l:60};
+        // var blueColor = {h: 180, s:100, l:60};
         // _this.drawDataCraftingLine(ctx, link, 3, blueColor, blueColor, timeCorrection);
         _this.drawDataCraftingLineDashed(ctx, link);
     });
@@ -428,8 +428,7 @@ realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkOb
     // context.restore();
 };
 
-realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, lineStartWeight, startColor, endColor, timeCorrector ) {
-    var mathPI = 2*Math.PI;
+realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, lineStartWeight, startColor, endColor) {
     var spacer = 3;
 
     var DEBUG_BLUE = true;
@@ -440,8 +439,8 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
 
     var pointData = linkObject.route.pointData;
 
-    var blueToRed = (startColor.h === 180) && (endColor.h === 333);
-    var redToBlue = (startColor.h === 333) && (endColor.h === 180);
+    // var blueToRed = (startColor.h === 180) && (endColor.h === 333);
+    // var redToBlue = (startColor.h === 333) && (endColor.h === 180);
 
     var percentIncrement = (lineStartWeight * spacer)/pointData.totalLength;
 
@@ -450,12 +449,10 @@ realityEditor.gui.crafting.drawDataCraftingLine = function(context, linkObject, 
     }
 
     var hue = startColor;
-    var transitionColorRight = (endColor.h - startColor.h > 180 || blueToRed);
-    var transitionColorLeft = (endColor.h - startColor.h < -180 || redToBlue);
-    var color;
+    // var transitionColorRight = (endColor.h - startColor.h > 180 || blueToRed);
+    // var transitionColorLeft = (endColor.h - startColor.h < -180 || redToBlue);
 
     for (var i = 0; i < 1.0; i += 2*percentIncrement) {
-        
         var percentageStart = i + linkObject.ballAnimationCount;
         var positionStart = linkObject.route.getXYPositionAtPercentage(percentageStart);
 
@@ -792,7 +789,7 @@ realityEditor.gui.crafting.initLogicInOutBlocks = function() {
             var activeOutputs = (y === -1) ? [true, false, false, false] : [false, false, false, false];
             var blockJSON = this.utilities.toBlockJSON(type, name, 1, {}, {}, activeInputs, activeOutputs, ["","","",""], ["","","",""]);
             var globalId = name;
-            var block = this.grid.addBlock(x, y, blockJSON, globalId, true);
+            this.grid.addBlock(x, y, blockJSON, globalId, true);
         }
     }
 };

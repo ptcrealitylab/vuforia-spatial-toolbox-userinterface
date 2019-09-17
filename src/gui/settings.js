@@ -82,7 +82,7 @@ realityEditor.gui.settings.hideSettings = function() {
 	document.getElementById("settingsIframe").style.display = "none";
 	
 	if (document.getElementById("settingsEdgeDiv")) {
-	    document.getElementById("settingsEdgeDiv").style.display = "none";
+        document.getElementById("settingsEdgeDiv").style.display = "none";
     }
     
     if (globalStates.clearSkyState) {

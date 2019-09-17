@@ -1411,7 +1411,6 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
  */
 realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
     var intermediateMatrix = [];
-    var intermediateMatrix2 = [];
     var correctedMatrix = [];
     var obj = {};
     
@@ -1820,21 +1819,6 @@ Matrix.prototype.determinant = function() {
         return this.mat[0][0] * this.mat[1][1] - this.mat[0][1] * this.mat[1][0];
     }
     
-};
-
-Matrix.prototype.deleteRowAndColumn = function(index) {
-    var copy = this.clone();
-    
-    var newArray = JSON.parse(JSON.stringify(this.array));
-    
-    for (var r = 0; r < this.numCols; r++) {
-        for (var c = 0; c < this.numCols; c++) {
-            
-            
-            
-
-        }
-    }
 };
 
 Matrix.prototype.arrayIndex = function(row, col) {

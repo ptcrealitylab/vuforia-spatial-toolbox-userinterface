@@ -365,7 +365,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
                     continue;
                 }
             } else if (globalStates.freezeButtonState || areMatricesPrecomputed) {
-                
+                // Do nothing
             } else {
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix); // TODO: to really optimize, could inline/simplify the rotateX multiplication
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey] );
@@ -780,7 +780,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     // add the frame to the new object and post the new frame on the server (must exist there before we can update the links)
     objects[newObjectKey].frames[newFrameKey] = frame;
     var newObjectIP = realityEditor.getObject(newObjectKey).ip;
-    realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame, function(err, res) {
+    realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame, function(err) {
         
         if (!err) {
             console.log('successfully created frame on new object');
@@ -983,11 +983,11 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
  * @param finalMatrix - stores the resulting final CSS3D matrix for the vehicle @todo this doesnt seem to be used anywhere?
  * @param utilities - reference to realityEditor.gui.ar.utilities
  * @param nodeCalculations - reference to realityEditor.gui.ar.draw.nodeCalculations
- * @param cout - reference to debug logging function
+ * @param _cout - reference to debug logging function (unused)
  * @return {boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
  * @todo finish documenting function
  */
-realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, _cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
 
     // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
@@ -1649,8 +1649,9 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  * Updates the visibility / touch events of a sticky fullscreen frame differently than other frames,
  * because they can't rely on events to trigger them becoming visible or invisible, need to check state each frame
  * @param {string} activeKey
+ * @param {boolean} _isFullscreen (unused)
  */
-realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, isFullScreen) {
+realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, _isFullScreen) {
     // sticky frames need a special process to show and hide depending on guiState....
     if (globalStates.guiState === 'node' && 
         (globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer') ||
@@ -1836,7 +1837,7 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
     pocketDropAnimation = new TWEEN.Tween(position)
         .to({z: zEnd}, duration)
         .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate( function(t) {
+        .onUpdate(function() {
             editingAnimationsMatrix[15] = position.z;
         }).onComplete(function() {
             editingAnimationsMatrix[15] = zEnd;
@@ -2481,13 +2482,13 @@ realityEditor.gui.ar.draw.removeFrameMatrixFromFinalMatrix = function(activeVehi
  * @param matrix
  * @param finalMatrix
  * @param utilities
- * @param nodeCalculations
- * @param cout
+ * @param {any} _nodeCalculations - unused
+ * @param {function} _cout - unused
  * @return {*}
  * @todo: simplify this! there shouldnt be a need for so much duplicate code. might even be a simple matrix multiplication to take
  * @todo:       mostRecentFinalMatrix * translation^-1    which would give the same result as this function for the use cases I'm doing
  */
-realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, cout) {
+realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _nodeCalculations, _cout) {
     
     // return activeVehicle.mostRecentFinalMatrix;
 
