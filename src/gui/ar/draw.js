@@ -1968,7 +1968,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
  */
 realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, nodeKey, activeType, activeVehicle) {
 
-    var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+    var activeKey = nodeKey ? nodeKey : frameKey;
     var isFrameElement = activeKey === frameKey;
     
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
@@ -2068,14 +2068,14 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
  */
 realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, frameKey, nodeKey, activeVehicle) {
 
-    var activeKey = (!!nodeKey) ? nodeKey : frameKey;
+    var activeKey = nodeKey ? nodeKey : frameKey;
 
     var addContainer = document.createElement('div');
     addContainer.id = "object" + activeKey;
     addContainer.className = "main";
     addContainer.style.width = globalStates.height + "px";
     addContainer.style.height = globalStates.width + "px";
-    if (!!nodeKey) {
+    if (nodeKey) {
         addContainer.classList.add('hiddenNodeContainer');
     } else {
         addContainer.classList.add('hiddenFrameContainer');

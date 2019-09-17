@@ -601,7 +601,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         var groupID = frame.groupID;
 
         if (frame === undefined || groupID === undefined) return;
-        if (!!groupID) {
+        if (groupID) {
             console.log('removing ' + frameKey + 'from any group');
             groupStruct[groupID].delete(frameKey); // group restruct
             frame.groupID = null;
