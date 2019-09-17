@@ -69,5 +69,12 @@ module.exports = {
           "error",
           {"builtinGlobals": false}
         ],
+        "no-unused-vars": [
+          "error",
+          {
+            "varsIgnorePattern": "^_",
+            "argsIgnorePattern": "^_",
+          },
+        ],
     }
 };
