@@ -1,0 +1,23 @@
+{
+  "name": "userinterface",
+  "version": "1.0.0",
+  "description": "User interface of the Reality Editor",
+  "main": "src/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^6.4.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PTCInc/RE-userinterface.git"
+  },
+  "author": "Reality Editor Team",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/PTCInc/RE-userinterface/issues"
+  },
+  "homepage": "https://github.com/PTCInc/RE-userinterface#readme"
+}
