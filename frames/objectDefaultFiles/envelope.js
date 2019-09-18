@@ -15,6 +15,7 @@
     }
 
     /**
+     * @constructor
      * Defines an interface that declares this frame to be an "envelope" frame that can contain other frames to
      * form some form of a relationship between them all. Envelopes have an "open" state, where they take up the
      * fullscreen 2D UI, and a "closed" state, where they are minimized into a small 3D icon in space. Their contained
@@ -25,15 +26,18 @@
      * @param {HTMLElement} bodyWhenClosed - a containing div that will be rendered when closed (small 3D icon)
      * @param {boolean|undefined} isStackable - defaults to false
      * @param {boolean|undefined} areFramesOrdered - defaults to false
-     * @constructor
      */
-    function Envelope(compatibleFrameTypes, bodyWhenOpen, bodyWhenClosed, isStackable, areFramesOrdered) {
+    function Envelope(realityInterface, compatibleFrameTypes, bodyWhenOpen, bodyWhenClosed, isStackable, areFramesOrdered) {
         if (typeof compatibleFrameTypes === 'undefined' || compatibleFrameTypes.length === 0) {
             console.warn('You must specify at least one compatible frame type for this envelope');
         }
         if (typeof isStackable === 'undefined') { isStackable = false; }
         if (typeof areFramesOrdered === 'undefined') { areFramesOrdered = false; }
-        
+
+        /**
+         * A pointer to the envelope frame's RealityInterface object, so that this can interact with the other JavaScript APIs
+         */
+        this.realityInterface = realityInterface;
         /**
          * The names of which frames can be added to this envelope
          * @type {Array.<string>}
@@ -95,6 +99,12 @@
         // UI
         this.bodyWhenOpen = bodyWhenOpen;
         this.bodyWhenClosed = bodyWhenOpen;
+        
+        if (this.isOpen) {
+            this.bodyWhenClosed.style.display = 'none';
+        } else {
+            this.bodyWhenOpen.style.display = 'none';
+        }
 
         /**
          * Triggers all callbacks functions when the iframe receives an 'envelopeMessage' POST message from the parent window.
@@ -155,7 +165,7 @@
     //
     
     Envelope.prototype.onFrameAdded = function(callback) {
-        this.addCallback('onFrameAdded', callback);
+        this.addCallback('onFrameAdded', callback); // TODO: call onOrderUpdated here? or handle it somewhere else?
     };
     
     Envelope.prototype.onFrameDeleted = function(callback) {
@@ -182,10 +192,11 @@
      * Sends a JSON message to a particular contained frame, if there is one matching that ID
      * @param {string} id - the uuid of the frame
      * @param {Object} message
-     * @todo: implement
      */
     Envelope.prototype.sendMessageToFrameWithId = function(id, message) {
-        // todo: post message to parent window with specific format
+        this.realityInterface.sendMessageToFrame(id, {
+            envelopeMessage: message // TODO: is this the right format?
+        });
     };
 
     /**

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="objectDefaultFiles/object.js"></script>
+    <script src="objectDefaultFiles/envelope.js"></script>
+    <script src="objectDefaultFiles/pep.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Test Envelope</title>
+    <style>
+        #bodyWhenOpen {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 736px;
+            height: 414px;
+            background-color: transparent;
+            color: black;
+        }
+        
+        #bodyWhenClosed {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 300px;
+            height: 300px;
+            background-color: rgba(100, 255, 50, 0.7);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="bodyWhenOpen">
+        Open. Contains ___.
+    </div>
+    <div id="bodyWhenClosed">
+        Closed.
+    </div>
+</body>
+<script>
+    let bodyWhenOpen = document.getElementById('bodyWhenOpen');
+    let bodyWhenClosed = document.getElementById('bodyWhenClosed');
+    
+    let realityInterface = new RealityInterface();
+    let isStackable = false;
+    let areFramesOrdered = true;
+    let envelope = new Envelope(realityInterface, ['test-envelope-contents'], bodyWhenOpen, bodyWhenClosed, isStackable, areFramesOrdered);
+    
+    envelope.onFrameAdded(function(_frameAddedMessage) {
+        console.log('frame was added');
+        render();
+    });
+    
+    envelope.onFrameDeleted(function(_frameDeletedMessage) {
+        console.log('frame was deleted');
+        render();
+    });
+    
+    envelope.onOpen(function() {
+        console.log('envelope was opened');
+        render();
+    });
+    
+    envelope.onClose(function() {
+        console.log('envelope was closed');
+        render();
+    });
+    
+    function render() {
+        if (envelope.isOpen) {
+            console.log('render open');
+            bodyWhenOpen.innerHTML = 'Open. Contains ' + envelope.containedFrames.length + '.';
+        } else {
+            console.log('render closed');
+        }
+    }
+    
+</script>
+</html>
