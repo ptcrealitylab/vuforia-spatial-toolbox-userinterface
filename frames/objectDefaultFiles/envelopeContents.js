@@ -11,9 +11,12 @@
      */
     function EnvelopeContents(realityInterface) {
         this.realityInterface = realityInterface;
+        this.envelopeId = null;
+        
         // this.isOrdered = false;
         // this.orderIndex = -1;
         // this.totalNumberOfFramesInEnvelope = 1;
+        
         /**
          * Callbacks for various events from contained frames or the reality editor
          * @type {{onFrameAdded: null, onFrameDeleted: null, onMessageFromFrame: null, onOpen: null, onClose: null}}
@@ -51,12 +54,17 @@
             }
         }.bind(this));
 
+        this.onMessageFromEnvelope(function(messageFromEnvelope) {
+            if (!this.envelopeId) {
+                this.envelopeId = messageFromEnvelope.sourceFrame; // received first message from an envelope. you now belong to that one.
+            }
+        }.bind(this));
+        
         // // this keeps the list of contained frames and the ordering up-to-date
         // this.onOrderUpdated(function(orderUpdatedMessage) {
         //     this.orderIndex = orderUpdatedMessage.index;
         //     this.totalNumberOfFramesInEnvelope = orderUpdatedMessage.total;
         // }.bind(this));
-
     }
 
     //
@@ -68,7 +76,12 @@
     };
 
     EnvelopeContents.prototype.onMessageFromEnvelope = function(callback) {
-        this.addCallback('onMessageFromEnvelope', callback);
+        // this.addCallback('onMessageFromEnvelope', callback);
+        this.addCallback('onMessageFromEnvelope', function(messageFromEnvelope) {
+            if (!this.envelopeId || this.envelopeId === messageFromEnvelope.sourceFrame) {
+                callback(messageFromEnvelope); // pre-filter out messages from different envelopes
+            }
+        });
     };
     
     EnvelopeContents.prototype.onOrderUpdated = function(callback) {
