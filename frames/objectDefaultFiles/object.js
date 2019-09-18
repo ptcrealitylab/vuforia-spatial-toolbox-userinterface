@@ -1519,16 +1519,6 @@
             return true;
         };
         
-        // by default, check if the touch hits the background of the body...
-        // that means it hits a transparent part and touch should go through
-        (function registerDefaultTouchDecider() {
-            realityObject.touchDecider = function(eventData) {
-                var _x = eventData.x;
-                var _y = eventData.y;
-            };
-            realityObject.touchDeciderRegistered = true;
-        })();
-
         this.registerTouchDecider = function(callback) {
             realityObject.touchDecider = callback;
             realityObject.touchDeciderRegistered = true;
