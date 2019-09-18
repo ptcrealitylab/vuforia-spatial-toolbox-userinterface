@@ -668,10 +668,10 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
             };
             
             if (unconstrainedMatrix) {
-                var finalMatrix = unconstrainedMatrix;
+                let finalMatrix = unconstrainedMatrix;
                 point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
             } else {
-                var finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+                let finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
                 point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
             }
             
@@ -1793,17 +1793,17 @@ function Matrix(array, numRows, numCols, isRowMajor) {
     // create un-flattened representation of the matrix from the flattened array
     this.mat = [];
     if (isRowMajor) {
-        for (var r = 0; r < numRows; r++) {
+        for (let r = 0; r < numRows; r++) {
             var row = [];
-            for (var c = 0; c < numCols; c++) {
+            for (let c = 0; c < numCols; c++) {
                 row[c] = array[r * numCols + c];
             }
             this.mat.push(row);
         }
     } else {
-        for (var c = 0; c < numCols; c++) {
+        for (let c = 0; c < numCols; c++) {
             var col = [];
-            for (var r = 0; r < numRows; r++) {
+            for (let r = 0; r < numRows; r++) {
                 col[r] = array[r * numCols + c];
             }
             this.mat.push(col);

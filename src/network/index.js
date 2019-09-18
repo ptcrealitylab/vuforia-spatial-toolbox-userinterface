@@ -125,7 +125,7 @@ realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey
         thisObject.frames[frameKey].nodes = thisObject.nodes;
         thisObject.frames[frameKey].links = thisObject.links;
 
-        for (var linkKey in objects[objectKey].frames[frameKey].links) {
+        for (let linkKey in objects[objectKey].frames[frameKey].links) {
             thisObject = objects[objectKey].frames[frameKey].links[linkKey];
 
             _this.utilities.rename(thisObject, "ObjectA", "objectA");
@@ -144,7 +144,7 @@ realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey
         /*for (var nodeKey in objects[objectKey].nodes) {
          _this.utilities.rename(objects[objectKey].nodes, nodeKey, objectKey + nodeKey);
          }*/
-        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
+        for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             thisObject = objects[objectKey].frames[frameKey].nodes[nodeKey];
             _this.utilities.rename(thisObject, "plugin", "type");
             _this.utilities.rename(thisObject, "appearance", "type");
@@ -171,11 +171,11 @@ realityEditor.network.oldFormatToNew = function (thisObject, objectKey, frameKey
     objects[objectKey].uuid = objectKey;
     objects[objectKey].frames[frameKey].uuid = frameKey;
 
-    for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
+    for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
         objects[objectKey].frames[frameKey].nodes[nodeKey].uuid = nodeKey;
     }
 
-    for (var linkKey in objects[objectKey].frames[frameKey].links) {
+    for (let linkKey in objects[objectKey].frames[frameKey].links) {
         objects[objectKey].frames[frameKey].links[linkKey].uuid = linkKey;
     }
 
@@ -208,7 +208,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     //     thisObject.matrix = [];
     // }
 
-    for (var frameKey in objects[objectKey].frames) {
+    for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
         // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
@@ -237,7 +237,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             positionData.matrix = [];
         }
 
-        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
+        for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
                 thisNode.matrix = [];
@@ -258,7 +258,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
 
             if (thisNode.type === "logic") {
                 thisNode.guiState = new LogicGUIState();
-                var container = document.getElementById('craftingBoard');
+                let container = document.getElementById('craftingBoard');
                 thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
@@ -274,13 +274,13 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
 
     objects[objectKey].uuid = objectKey;
 
-    for (var frameKey in objects[objectKey].frames) {
+    for (let frameKey in objects[objectKey].frames) {
         objects[objectKey].frames[frameKey].uuid = frameKey;
-        for (var nodeKey in objects[objectKey].frames[frameKey].nodes) {
+        for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             objects[objectKey].frames[frameKey].nodes[nodeKey].uuid = nodeKey;
         }
 
-        for (var linkKey in objects[objectKey].frames[frameKey].links) {
+        for (let linkKey in objects[objectKey].frames[frameKey].links) {
             objects[objectKey].frames[frameKey].links[linkKey].uuid = linkKey;
         }
     }
@@ -341,7 +341,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
     }
     
     // update each frame in the object // TODO: create an updateFrame function, the same way we have an updateNode function
-    for (var frameKey in remote.frames) {
+    for (let frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
@@ -363,7 +363,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             var remoteNodes = remote.frames[frameKey].nodes;
             var originNodes = origin.frames[frameKey].nodes;
             
-            for (var nodeKey in remoteNodes) {
+            for (let nodeKey in remoteNodes) {
                 if (!remoteNodes.hasOwnProperty(nodeKey)) continue;
 
                 var originNode = originNodes[nodeKey];
@@ -372,7 +372,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             }
 
             // remove extra nodes from origin that don't exist in remote
-            for (var nodeKey in originNodes) {
+            for (let nodeKey in originNodes) {
                 if (originNodes.hasOwnProperty(nodeKey) && !remoteNodes.hasOwnProperty(nodeKey)) {
                     realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
                 }
@@ -393,7 +393,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
     }
 
     // remove extra frames from origin that don't exist in remote
-    for (var frameKey in origin.frames) {
+    for (let frameKey in origin.frames) {
         if (origin.frames.hasOwnProperty(frameKey) && !remote.frames.hasOwnProperty(frameKey)) {
             // delete origin.frames[frameKey];
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
@@ -437,7 +437,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
             }
 
             if (!origin.grid) {
-                var container = document.getElementById('craftingBoard');
+                let container = document.getElementById('craftingBoard');
                 origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
             }
 
@@ -473,7 +473,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
             }
 
             if (!origin.grid) {
-                var container = document.getElementById('craftingBoard');
+                let container = document.getElementById('craftingBoard');
                 origin.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, origin.uuid);
             }
 
@@ -572,7 +572,7 @@ realityEditor.network.onAction = function (action) {
         }
 
         if (thisAction.reloadLink.object in objects) {
-            var urlEndpoint = 'http://' + objects[thisAction.reloadLink.object].ip + ':' + httpPort + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame;
+            let urlEndpoint = 'http://' + objects[thisAction.reloadLink.object].ip + ':' + httpPort + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame;
             this.getData(thisAction.reloadLink.object, thisAction.reloadLink.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
                 
             // });
@@ -606,11 +606,11 @@ realityEditor.network.onAction = function (action) {
                 objects[objectKey].uuid = objectKey;
                 thisFrame.uuid = frameKey;
 
-                for (var nodeKey in thisFrame.nodes) {
+                for (let nodeKey in thisFrame.nodes) {
                     thisFrame.nodes[nodeKey].uuid = nodeKey;
                 }
 
-                for (var linkKey in thisFrame.links) {
+                for (let linkKey in thisFrame.links) {
                     thisFrame.links[linkKey].uuid = linkKey;
                 }
 
@@ -626,7 +626,7 @@ realityEditor.network.onAction = function (action) {
 
         if (thisAction.reloadObject.object in objects) {
 
-            var urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
+            let urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
                 if (objects[objectKey].integerVersion < 170) {
@@ -646,25 +646,25 @@ realityEditor.network.onAction = function (action) {
     }
     
     if (typeof thisAction.reloadFrame !== "undefined") {
-        var thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
+        let thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
         if (!thisFrame) {
             console.log('this is a new frame... add it to the object...');
 
             // actionSender({reloadFrame: {object: objectID, frame: frameID, propertiesToIgnore: propertiesToIgnore}, lastEditor: body.lastEditor});
             thisFrame = new Frame();
             
-            var thisObject = realityEditor.getObject(thisAction.reloadFrame.object);
+            let thisObject = realityEditor.getObject(thisAction.reloadFrame.object);
             thisObject.frames[thisAction.reloadFrame.frame] = thisFrame;
         }
         
         if (thisFrame) {
 
-            var urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + httpPort + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
+            let urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + httpPort + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
             
             this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
                 console.log('got frame');
                 
-                for (var thisKey in res) {
+                for (let thisKey in res) {
                     if (!res.hasOwnProperty(thisKey)) continue;
                     if (!thisFrame.hasOwnProperty(thisKey)) continue;
                     if (thisAction.reloadFrame.propertiesToIgnore) {
@@ -688,11 +688,11 @@ realityEditor.network.onAction = function (action) {
                         
                         // only rewrite existing properties of nodes, otherwise node.loaded gets removed and another element added
                         if (thisKey === 'nodes') {
-                            for (var nodeKey in res.nodes) {
+                            for (let nodeKey in res.nodes) {
                                 if (!thisFrame.nodes.hasOwnProperty(nodeKey)) {
                                     thisFrame.nodes[nodeKey] = res.nodes[nodeKey];
                                 } else {
-                                    for (var propertyKey in res.nodes[nodeKey]) {
+                                    for (let propertyKey in res.nodes[nodeKey]) {
                                         if (propertyKey === 'loaded') { continue; }
                                         thisFrame.nodes[nodeKey][propertyKey] = res.nodes[nodeKey][propertyKey];
                                     }
@@ -715,12 +715,12 @@ realityEditor.network.onAction = function (action) {
     if (typeof thisAction.reloadNode !== "undefined") {
         console.log("gotdata: " + thisAction.reloadNode.object + " " + thisAction.reloadNode.frame+ " " + thisAction.reloadNode.node);
        // console.log('http://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + "/node/" + thisAction.reloadNode.node + "/");
-       var thisFrame = realityEditor.getFrame(thisAction.reloadNode.object, thisAction.reloadNode.frame);
+       let thisFrame = realityEditor.getFrame(thisAction.reloadNode.object, thisAction.reloadNode.frame);
        
         if (thisFrame !== null) {
             // TODO: getData         webServer.get('/object/*/') ... instead of /object/node
 
-            var urlEndpoint = 'http://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + '/frame/' + thisAction.reloadNode.frame + '/node/' + thisAction.reloadNode.node + '/';
+            let urlEndpoint = 'http://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + '/frame/' + thisAction.reloadNode.frame + '/node/' + thisAction.reloadNode.node + '/';
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, thisAction.reloadObject.node, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
             // this.getData(
@@ -752,7 +752,7 @@ realityEditor.network.onAction = function (action) {
     
     if (thisAction.loadMemory) {
         var id = thisAction.loadMemory.object;
-        var urlEndpoint = 'http://' + thisAction.loadMemory.ip + ':' + httpPort + '/object/' + id;
+        let urlEndpoint = 'http://' + thisAction.loadMemory.ip + ':' + httpPort + '/object/' + id;
 
         this.getData(id, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
@@ -773,7 +773,7 @@ realityEditor.network.onAction = function (action) {
     if (thisAction.addFrame) {
         console.log("addFrame");
         
-        var thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
+        let thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
         
         if (thisObject) {
             
@@ -875,7 +875,7 @@ realityEditor.network.onAction = function (action) {
         // }
     }
 
-    for (var key in thisAction) {
+    for (let key in thisAction) {
         this.cout("found action: " + JSON.stringify(key));
     }
 };
@@ -1008,7 +1008,7 @@ if (thisFrame) {
     // } 
     
     if (msgContent.width && msgContent.height) {
-        var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+        let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
         
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
@@ -1092,7 +1092,7 @@ if (thisFrame) {
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
-            var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+            let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
             if (activeKey === msgContent.frame) { // only send these into frames, not nodes
                 // send the projection matrix into the iframe (e.g. for three.js to use)
                 globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
@@ -1106,7 +1106,7 @@ if (thisFrame) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.groundPlane = true;
-                var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
                         '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
@@ -1117,7 +1117,7 @@ if (thisFrame) {
             if (tempThisObject.integerVersion >= 32) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.devicePose = true;
-                var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
@@ -1129,7 +1129,7 @@ if (thisFrame) {
             if (tempThisObject.integerVersion >= 32) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.allObjects = true;
-                var activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
@@ -1193,7 +1193,7 @@ if (thisFrame) {
 
     if (msgContent.globalMessage) {
         var iframes = document.getElementsByTagName('iframe');
-        for (var i = 0; i < iframes.length; i++) {
+        for (let i = 0; i < iframes.length; i++) {
 
             if (iframes[i].id !== "iframe" + msgContent.node && iframes[i].style.visibility !== "hidden") {
                 var objectKey = iframes[i].getAttribute("data-object-key");
@@ -1248,7 +1248,7 @@ if (thisFrame) {
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
             
-            var zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
@@ -1282,7 +1282,7 @@ if (thisFrame) {
         }
         
         // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
-        var object = realityEditor.getObject(msgContent.object);
+        let object = realityEditor.getObject(msgContent.object);
         if (object) {
             object.containsStickyFrame = realityEditor.gui.ar.draw.doesObjectContainStickyFrame(msgContent.object);
         }
@@ -1293,7 +1293,7 @@ if (thisFrame) {
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
             
-            var zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
@@ -1312,7 +1312,7 @@ if (thisFrame) {
             globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
 
             // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
-            var object = realityEditor.getObject(msgContent.object);
+            let object = realityEditor.getObject(msgContent.object);
             if (object) {
                 object.containsStickyFrame = true;
             }
@@ -1339,14 +1339,14 @@ if (thisFrame) {
 
     // todo this needs to be checked in to the present version
     if (typeof msgContent.createNode !== "undefined") {
-        var node = new Node();
+        let node = new Node();
         node.name = msgContent.createNode.name;
         node.frameId = msgContent.frame;
         node.objectId = msgContent.object;
         var nodeKey = node.frameId + msgContent.createNode.name + realityEditor.device.utilities.uuidTime();
         node.uuid = nodeKey;
         var thisObject = realityEditor.getObject(msgContent.object);
-        var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
         node.x = (msgContent.createNode.x) || (-200 + Math.random() * 400);
         node.y = (msgContent.createNode.y) || (-200 + Math.random() * 400);
         
@@ -1360,7 +1360,7 @@ if (thisFrame) {
     }
     
     if (typeof msgContent.moveNode !== "undefined") {
-        var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
         // move each node within this frame with a matching name to the provided x,y coordinates
         Object.keys(thisFrame.nodes).map(function(nodeKey) {
@@ -1378,7 +1378,7 @@ if (thisFrame) {
             content.scale = positionData.scale;
 
             content.lastEditor = globalStates.tempUuid;
-            var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
+            let urlEndpoint = 'http://' + objects[objectKey].ip + ':' + httpPort + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
             realityEditor.network.postData(urlEndpoint, content);
         });
     }
@@ -1410,7 +1410,7 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.beginTouchEditing !== "undefined") {
-        var activeKey = msgContent.node || msgContent.frame;
+        let activeKey = msgContent.node || msgContent.frame;
         var element = document.getElementById(activeKey);
         realityEditor.device.beginTouchEditing(element);
     }
@@ -1438,7 +1438,7 @@ if (thisFrame) {
             console.log('stop editing mode!!!');
             globalStates.unconstrainedSnapInitialPosition = null;
             realityEditor.device.deactivateFrameMove(msgContent.frame);
-            var frame = globalDOMCache['iframe' + msgContent.frame];
+            let frame = globalDOMCache['iframe' + msgContent.frame];
             if (frame && !msgContent.node) {
                 frame.contentWindow.postMessage(JSON.stringify({
                     stopTouchEditing: true
@@ -1448,7 +1448,7 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.visibilityDistance !== "undefined") {
-        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
         activeVehicle.distanceScale = msgContent.visibilityDistance;
         console.log('visibility distance for ' + activeVehicle.name + ' is set to ' + activeVehicle.visibilityDistance);
@@ -1456,7 +1456,7 @@ if (thisFrame) {
     }
 
     if (typeof msgContent.moveDelay !== "undefined") {
-        var activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
         activeVehicle.moveDelay = msgContent.moveDelay;
         // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
@@ -1473,8 +1473,8 @@ if (thisFrame) {
     
     if (typeof msgContent.publicData !== "undefined") {
         
-        var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-        var node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
+        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
         
         if (frame && node) {
             if (!publicDataCache.hasOwnProperty(msgContent.frame)) {
@@ -1516,7 +1516,7 @@ if (thisFrame) {
     }
     
     if (typeof msgContent.ignoreAllTouches !== "undefined") {
-        var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
         frame.ignoreAllTouches = msgContent.ignoreAllTouches;
     }
     
@@ -1639,7 +1639,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
         var thisObjects = {};
 
-        for (var objectKey in realityEditor.objects) {
+        for (let objectKey in realityEditor.objects) {
             var thisObject = realityEditor.getObject(objectKey);
             thisObjects[objectKey] = {
                 name: thisObject.name,
@@ -1648,7 +1648,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 frames : {}
             };
 
-            for (var frameKey in thisObject.frames) {
+            for (let frameKey in thisObject.frames) {
                var thisFrame = realityEditor.getFrame(objectKey, frameKey);
                 if(thisFrame) {
                     thisObjects[objectKey].frames[frameKey] = {
@@ -1992,7 +1992,7 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
         } else {
             var responseFrame = response.frame;
             var newFrame = new Frame();
-            for (var propertyKey in responseFrame) {
+            for (let propertyKey in responseFrame) {
                 if (!responseFrame.hasOwnProperty(propertyKey)) continue;
                 newFrame[propertyKey] = responseFrame[propertyKey];
             }
@@ -2552,7 +2552,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
             ip: object.ip
         };
     }
-    var activeKey = nodeKey || frameKey;
+    let activeKey = nodeKey || frameKey;
     
     // if (globalDOMCache['svg' + activeKey]) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);

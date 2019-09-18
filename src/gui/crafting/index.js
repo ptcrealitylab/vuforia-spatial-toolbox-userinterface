@@ -85,7 +85,7 @@ realityEditor.gui.crafting.updateGrid = function(grid) {
 
             // reset domElements 
             for (var domKey in logic.guiState.blockDomElements) {
-                var blockDomElement = logic.guiState.blockDomElements[domKey];
+                let blockDomElement = logic.guiState.blockDomElements[domKey];
 
                 // remove dom elements if their blocks are gone or needs to be reset
                 if (this.shouldRemoveBlockDom(blockDomElement)) {
@@ -104,7 +104,7 @@ realityEditor.gui.crafting.updateGrid = function(grid) {
                 }
 
                 // only add if the block doesn't already have one
-                var blockDomElement = logic.guiState.blockDomElements[block.globalId];
+                let blockDomElement = logic.guiState.blockDomElements[block.globalId];
                 if (!blockDomElement) {
                     this.addDomElementForBlock(block, grid);
                 }
@@ -705,7 +705,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
 
         if (rowNum % 2 === 0) {
 
-            var rowDiv = document.createElement('div');
+            let rowDiv = document.createElement('div');
             rowDiv.setAttribute("class", "blockPlaceholderRow");
             rowDiv.style.height = logic.grid.blockRowHeight;
             blockPlaceholdersContainer.appendChild(rowDiv);
@@ -738,7 +738,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
 
         } else {
 
-            var rowDiv = document.createElement('div');
+            let rowDiv = document.createElement('div');
             rowDiv.setAttribute("class", "blockPlaceholderRow");
             rowDiv.style.height = logic.grid.marginRowHeight;
             blockPlaceholdersContainer.appendChild(rowDiv);

@@ -940,7 +940,7 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
         var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
         var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
-        var scaleFactor = oldTargetSize.width / newTargetSize.width;
+        scaleFactor = oldTargetSize.width / newTargetSize.width;
 
         realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
 
@@ -1009,7 +1009,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             activeVehicle.visible = true;
             
             var container = globalDOMCache["object" + activeKey];
-            var iFrame = globalDOMCache["iframe" + activeKey];
+            let iFrame = globalDOMCache["iframe" + activeKey];
             var overlay = globalDOMCache[activeKey];
             var canvas = globalDOMCache["svg" + activeKey];
             
@@ -1151,7 +1151,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
             }
 
-            var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+            let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
             // set initial position of frames and nodes placed in from pocket
             // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
@@ -1201,7 +1201,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 var svg = globalDOMCache["svg" + activeKey];
                 if (svg.children.length === 0) {
                     console.log('retroactively creating the svg overlay');
-                    var iFrame = globalDOMCache["iframe" + activeKey];
+                    let iFrame = globalDOMCache["iframe" + activeKey];
                     svg.style.width = iFrame.style.width;
                     svg.style.height = iFrame.style.height;
                     realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
@@ -1231,7 +1231,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             utilities.copyMatrixInPlace(activeVehicle.temp, activeVehicle.begin);
                         }
                         
-                        var resultMatrix = [];
+                        let resultMatrix = [];
                         utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix); // TODO: fix this somehow, make it more understandable
                         
@@ -1239,7 +1239,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         
                     // if this isn't the first frame of unconstrained editing, just use the previously stored begin and temp
                     } else {
-                        var resultMatrix = [];
+                        let resultMatrix = [];
                         realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
                     }
@@ -1408,7 +1408,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var thisMsg = {};
 
                     if (activeVehicle.sendMatrix === true) {
-                        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+                        let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                         thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
                     }
                     
@@ -1890,7 +1890,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
             globalDOMCache['object' + activeKey].classList.remove('visibleFrameContainer');
             globalDOMCache['object' + activeKey].classList.add('hiddenFrameContainer');
             
-            var shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen' || !this.visibleObjects[activeVehicle.objectId][0];
+            let shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen' || !this.visibleObjects[activeVehicle.objectId][0];
             if (shouldReallyHide) {
                 globalDOMCache['object' + activeKey].classList.add('displayNone');
             }
@@ -1947,7 +1947,7 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
         }
         
         if (!globalDOMCache['object' + activeKey].classList.contains('displayNone')) {
-            var shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen' || !this.visibleObjects[activeVehicle.objectId][0];
+            let shouldReallyHide = !this.visibleObjects.hasOwnProperty(activeVehicle.objectId) || activeVehicle.visualization === 'screen' || !this.visibleObjects[activeVehicle.objectId][0];
             if (shouldReallyHide) {
                 globalDOMCache['object' + activeKey].classList.add('displayNone');
             }
