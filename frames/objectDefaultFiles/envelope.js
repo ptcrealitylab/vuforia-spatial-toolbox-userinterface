@@ -236,7 +236,16 @@
         let currentIndex = this.frameIdOrdering.indexOf(frameId);
         if (currentIndex > -1) {
             this.frameIdOrdering.move(currentIndex, newIndex);
-            // TODO: notify all frames of their new indices
+            
+            // notify all frames of their new indices
+            this.frameIdOrdering.forEach(function(id, index) {
+                this.sendMessageToFrameWithId(id, {
+                    onOrderUpdated: {
+                        index: index,
+                        total: this.frameIdOrdering.length
+                    }
+                });
+            }.bind(this));
         }
     };
     
