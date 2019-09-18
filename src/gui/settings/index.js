@@ -31,9 +31,6 @@ realityEditor.gui.settings.setSettings = function (id, state) {
             this.states.discoveryActive = false;
         }
 
-
-        buttonState = document.getElementById('discoveryButton');
-
         if (realityEditor.gui.settings.states.discoveryActive) {
             buttonState.innerText = "Deactivate";
             buttonState.className = "btn btn-negative pull-right";
@@ -41,7 +38,6 @@ realityEditor.gui.settings.setSettings = function (id, state) {
             buttonState.innerText = "Activate";
             buttonState.className = "btn btn-positive pull-right";
         }
-
 
         return;
     }
