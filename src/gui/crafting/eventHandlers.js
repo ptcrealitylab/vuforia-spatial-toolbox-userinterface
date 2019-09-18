@@ -189,7 +189,7 @@ createNameSpace("realityEditor.gui.crafting.eventHandlers");
             }
 
             // if you are over an eligible cell, style temp block to highlighted
-            var cell = this.crafting.eventHelper.getCellOverPointer(e.pageX, e.pageY);
+            cell = this.crafting.eventHelper.getCellOverPointer(e.pageX, e.pageY);
             if (this.crafting.eventHelper.canPlaceBlockInCell(tappedContents, cell)) {
                 this.crafting.eventHelper.styleBlockForPlacement(tappedContents, true);
 

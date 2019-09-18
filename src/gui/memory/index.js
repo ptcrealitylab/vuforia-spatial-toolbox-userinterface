@@ -260,7 +260,7 @@ MemoryContainer.prototype.stopDragging = function() {
     if (isBar) {
         // Move requested
         if (imageRect.right < containerRect.left || imageRect.left > containerRect.right) {
-            var newContainer = getBarContainerAtLeft(imageRect.left);
+            let newContainer = getBarContainerAtLeft(imageRect.left);
             if (newContainer) {
                 newContainer.set(this.obj);
                 this.clear();
@@ -269,7 +269,7 @@ MemoryContainer.prototype.stopDragging = function() {
     } else {
         // Move into bar
         if (imageRect.top < memoryBarHeight) {
-            var newContainer = getBarContainerAtLeft(imageRect.left);
+            let newContainer = getBarContainerAtLeft(imageRect.left);
             if (newContainer) {
                 addKnownObject(this.obj.objectId);
                 newContainer.set(this.obj);

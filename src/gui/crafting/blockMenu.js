@@ -157,7 +157,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             // load each block from the downloaded json and add it to the appropriate category
             for (var key in blockData) {
                 if (!blockData.hasOwnProperty(key)) continue;
-                var block = blockData[key];
+                let block = blockData[key];
     
                 var categoryIndex = 0;
                 if (block.category) {
@@ -175,7 +175,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                 row.classList.add('menuBlockRow');
                 menuBlockContainer.appendChild(row);
                 for (var c = 0; c < menuCols; c++) {
-                    var block = document.createElement('div');
+                    let block = document.createElement('div');
                     block.setAttribute('class', 'menuBlock');
                     block.style.visibility = 'hidden';
                     var blockContents = document.createElement('div');
@@ -282,7 +282,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
         var blockDiv;
         // reassign as many divs as needed to the current set of blocks
-        for (var i = 0; i < blocksInThisSection.length; i++) {
+        for (let i = 0; i < blocksInThisSection.length; i++) {
             blockDiv = guiState.menuBlockDivs[i];
             var thisBlockData = blocksInThisSection[i];
             blockDiv.blockData = thisBlockData;
@@ -316,7 +316,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         }
     
         // clear the remaining block divs
-        for (var i = blocksInThisSection.length; i < guiState.menuBlockDivs.length; i++) {
+        for (let i = blocksInThisSection.length; i < guiState.menuBlockDivs.length; i++) {
             blockDiv = guiState.menuBlockDivs[i];
             blockDiv.blockData = '';
             blockDiv.style.display = 'none';

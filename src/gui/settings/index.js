@@ -32,7 +32,7 @@ realityEditor.gui.settings.setSettings = function (id, state) {
         }
 
 
-        var buttonState = document.getElementById('discoveryButton');
+        buttonState = document.getElementById('discoveryButton');
 
         if (realityEditor.gui.settings.states.discoveryActive) {
             buttonState.innerText = "Deactivate";

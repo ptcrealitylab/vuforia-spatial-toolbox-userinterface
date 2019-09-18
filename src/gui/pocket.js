@@ -679,13 +679,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         palette = document.querySelector('.palette');
         if (realityElements.length % 4 !== 0) {
             var numToAdd = 4 - (realityElements.length % 4);
-            for (var i = 0; i < numToAdd; i++) {
+            for (let i = 0; i < numToAdd; i++) {
                 // console.log('add blank ' + i);
                 realityElements.push(null);
             }
         }
         
-        for (var i = 0; i<realityElements.length; i++){
+        for (let i = 0; i < realityElements.length; i++) {
             var element = realityElements[i];
             var container = document.createElement('div');
             container.classList.add('element-template');

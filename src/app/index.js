@@ -351,7 +351,7 @@ rr = function() {
         if (globalStates.guiState ==="ui") {
 
             // shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
-            for (var frameKey in tempResetObject.frames) {
+            for (let frameKey in tempResetObject.frames) {
                 var activeFrame = tempResetObject.frames[frameKey];
                 if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames
                 if (activeFrame.staticCopy) continue; // don't reset positions of staticCopy frames
@@ -372,9 +372,9 @@ rr = function() {
         }
 
         if (globalStates.guiState === "node") {
-            for (var frameKey in tempResetObject.frames) {
+            for (let frameKey in tempResetObject.frames) {
 
-                var activeFrame = tempResetObject.frames[frameKey];
+                let activeFrame = tempResetObject.frames[frameKey];
                 // cannot move nodes inside static copy frames
                 if (activeFrame && activeFrame.staticCopy) continue;
 

@@ -84,7 +84,7 @@ realityEditor.gui.crafting.utilities.convertLogicToServerFormat = function(logic
     var logicServer = {};
 
     var keysToSkip = ["guiState", "grid", "blocks", "links"];
-    for (var key in logic) {
+    for (let key in logic) {
         if (!logic.hasOwnProperty(key)) continue;
         if (keysToSkip.indexOf(key) > -1) continue;
         logicServer[key] = logic[key];
@@ -98,7 +98,7 @@ realityEditor.gui.crafting.utilities.convertLogicToServerFormat = function(logic
     // don't upload in/out blocks, those are always the same and live in the editor?
     logicServer["blocks"] = {};
     // logicServer["blockData"] = {}; // TODO: did I hide a bug by adding this line
-    for (var key in logic.blocks) {
+    for (let key in logic.blocks) {
         if (!logic.blocks.hasOwnProperty(key)) continue;
         if (!this.crafting.grid.isInOutBlock(key)) {
             // logicServer.blockData[key] = logic.blocks[key]; // TODO: this used to cause a bug
@@ -108,7 +108,7 @@ realityEditor.gui.crafting.utilities.convertLogicToServerFormat = function(logic
     
     // TODO: make sure this doesn't cause bugs somewhere else
     logicServer["links"] = {};
-    for (var key in logic.links) {
+    for (let key in logic.links) {
         if (!logic.links.hasOwnProperty(key)) continue;
         logicServer.links[key] = this.convertBlockLinkToServerFormat(logic.links[key]);
     }

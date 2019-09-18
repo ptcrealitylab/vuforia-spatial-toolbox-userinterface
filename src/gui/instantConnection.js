@@ -213,16 +213,16 @@ realityEditor.gui.instantConnect = {
         var thisX = (320 / 2) - (thisWidth / 2) + 45;
 
         if (message === "disconnected") {
-            var my_gradient = ctx.createLinearGradient(58 + thisY, 0, 0 + thisY, 0);
-            my_gradient.addColorStop(0, "#777777");
-            my_gradient.addColorStop(1, "#ff007c");
-            ctx.fillStyle = my_gradient;
+            let myGradient = ctx.createLinearGradient(58 + thisY, 0, 0 + thisY, 0);
+            myGradient.addColorStop(0, "#777777");
+            myGradient.addColorStop(1, "#ff007c");
+            ctx.fillStyle = myGradient;
         }
         else if (message === "connected") {
-            var my_gradient = ctx.createLinearGradient(58 + thisY, 0, 0 + thisY, 0);
-            my_gradient.addColorStop(0, "#777777");
-            my_gradient.addColorStop(1, "#00ff00");
-            ctx.fillStyle = my_gradient;
+            let myGradient = ctx.createLinearGradient(58 + thisY, 0, 0 + thisY, 0);
+            myGradient.addColorStop(0, "#777777");
+            myGradient.addColorStop(1, "#00ff00");
+            ctx.fillStyle = myGradient;
         } else {
             ctx.fillStyle = "#777777";
         }
