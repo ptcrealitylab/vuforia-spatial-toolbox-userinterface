@@ -17,7 +17,7 @@ createNameSpace("realityEditor.network.realtime");
     /**
      * Public init function that sets up the sockets for realtime updates.
      */
-    function initFeature() {
+    function initService() {
         // TODO Is this redundant code? It seems to generate the error that pops up
         
         if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
@@ -364,7 +364,7 @@ createNameSpace("realityEditor.network.realtime");
         }
     }
 
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.broadcastUpdate = broadcastUpdate;
     

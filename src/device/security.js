@@ -61,7 +61,7 @@ createNameSpace("realityEditor.device.security");
  * @todo the security features are not currently fully supported anymore
  */
 
-realityEditor.device.security.initFeature = function() {
+realityEditor.device.security.initService = function() {
 
     realityEditor.gui.buttons.registerCallbackForButton('lock', function(params) {
         if (params.newButtonState === 'up') {

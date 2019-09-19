@@ -18,7 +18,7 @@ createNameSpace("realityEditor.device.touchPropagation");
     /**
      * Sets up the touch propagation model by listening for accepted and unaccepted touches
      */
-    function initFeature() {
+    function initService() {
         // listen for messages posted up from frame content windows
         realityEditor.network.addPostMessageHandler('unacceptedTouch', handleUnacceptedTouch);
         realityEditor.network.addPostMessageHandler('acceptedTouch', handleAcceptedTouch);
@@ -165,6 +165,6 @@ createNameSpace("realityEditor.device.touchPropagation");
         stopHidingFramesForTouchDuration();
     }
     
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     
 })(realityEditor.device.touchPropagation);

@@ -128,7 +128,7 @@ realityEditor.device.registerCallback = function(functionName, callback) {
 /**
  * Initialize the device module by registering callbacks to other modules
  */
-realityEditor.device.initFeature = function() {
+realityEditor.device.initService = function() {
 
     realityEditor.gui.buttons.registerCallbackForButton('gui', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);

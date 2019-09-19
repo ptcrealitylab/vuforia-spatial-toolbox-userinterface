@@ -62,6 +62,7 @@
 /**
  * @desc This is the default constructor for the Hybrid Object.
  * It contains information about how to render the UI and how to process the internal data.
+ * note - this constructor never gets used in the userinterface, just on the server
  * @constructor
  */
 function Objects() {
@@ -108,6 +109,7 @@ function Objects() {
  * Constructor for one UI frame that will be attached to an object. Each frame is associated with an HTML iframe and
  * contains 3d position data, and optionally links, nodes, and metadata for how it should behave and be rendered.
  * @constructor
+ * @todo - update to be consistent with server
  */
 function Frame() {
     // The ID for the object will be broadcasted along with the IP. It consists of the name with a 12 letter UUID added.

@@ -53,7 +53,7 @@ realityEditor.gui.crafting.blockIconCache = {};
 realityEditor.gui.crafting.menuBarWidth = 62;
 realityEditor.gui.crafting.blockColorMap = ["#00FFFF", "#00FF00", "#FFFF00", "#FF007C"];
 
-realityEditor.gui.crafting.initFeature = function() {
+realityEditor.gui.crafting.initService = function() {
     realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', hideCraftingOnButtonUp);
 

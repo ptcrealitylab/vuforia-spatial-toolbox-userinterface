@@ -24,7 +24,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
-    function initFeature() {
+    function initService() {
 
         // register callbacks to various buttons to perform commits
         realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
@@ -667,6 +667,6 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         ctx.fill();
     }
     
-    exports.initFeature = initFeature;
+    exports.initService = initService;
 
 }(realityEditor.gui.ar.frameHistoryRenderer));
