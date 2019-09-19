@@ -21,7 +21,7 @@ createNameSpace("realityEditor.device.videoRecording");
     /**
      * Public init method sets up module and registers callbacks in other modules
      */
-    function initFeature() {
+    function initService() {
         
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
 
@@ -277,7 +277,7 @@ createNameSpace("realityEditor.device.videoRecording");
 
     //////////////////////////////////////////
 
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.toggleRecording = toggleRecording;
     exports.startRecordingOnClosestObject = startRecordingOnClosestObject;
     exports.stopRecording = stopRecording;

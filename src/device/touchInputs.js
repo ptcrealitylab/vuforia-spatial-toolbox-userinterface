@@ -11,7 +11,7 @@ createNameSpace("realityEditor.device.touchInputs");
     /**
      * Public init method sets up module and registers callbacks in other modules
      */
-    function initFeature() {
+    function initService() {
         realityEditor.gui.ar.draw.addUpdateListener(update);
     }
 
@@ -49,7 +49,7 @@ createNameSpace("realityEditor.device.touchInputs");
         realityEditor.gui.screenExtension.update();
     }
 
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.screenTouchStart = screenTouchStart;
     exports.screenTouchEnd = screenTouchEnd;
     exports.screenTouchMove = screenTouchMove;

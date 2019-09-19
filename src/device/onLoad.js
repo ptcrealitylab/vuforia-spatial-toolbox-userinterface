@@ -78,24 +78,24 @@ realityEditor.device.onload = function () {
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
     realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
 
-    // initialize additional features
-    realityEditor.device.initFeature();
-    realityEditor.device.touchInputs.initFeature();
-    realityEditor.device.videoRecording.initFeature();
-    realityEditor.gui.ar.frameHistoryRenderer.initFeature();
-    realityEditor.gui.ar.grouping.initFeature();
-    realityEditor.device.touchPropagation.initFeature();
-    realityEditor.device.speechPerformer.initFeature(); // TODO: feature is internally disabled
-    realityEditor.device.security.initFeature(); // TODO: feature is internally disabled
-    realityEditor.network.realtime.initFeature();
-    realityEditor.device.hololensAdapter.initFeature();
-    realityEditor.device.desktopAdapter.initFeature();
-    realityEditor.gui.ar.desktopRenderer.initFeature();
-    realityEditor.gui.crafting.initFeature();
-    realityEditor.worldObjects.initFeature();
-    realityEditor.device.distanceScaling.initFeature();
-    realityEditor.device.keyboardEvents.initFeature();
-    realityEditor.network.frameContentAPI.initFeature();
+    // initialize additional services
+    realityEditor.device.initService();
+    realityEditor.device.touchInputs.initService();
+    realityEditor.device.videoRecording.initService();
+    realityEditor.gui.ar.frameHistoryRenderer.initService();
+    realityEditor.gui.ar.grouping.initService();
+    realityEditor.device.touchPropagation.initService();
+    realityEditor.device.speechPerformer.initService(); // TODO: feature is internally disabled
+    realityEditor.device.security.initService(); // TODO: feature is internally disabled
+    realityEditor.network.realtime.initService();
+    realityEditor.device.hololensAdapter.initService(); // TODO: disable this
+    realityEditor.device.desktopAdapter.initService();
+    realityEditor.gui.ar.desktopRenderer.initService();
+    realityEditor.gui.crafting.initService();
+    realityEditor.worldObjects.initService();
+    realityEditor.device.distanceScaling.initService();
+    realityEditor.device.keyboardEvents.initService();
+    realityEditor.network.frameContentAPI.initService();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {

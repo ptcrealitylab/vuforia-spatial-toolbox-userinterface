@@ -11,7 +11,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
     /**
      * Public init method sets up module by registering callbacks when important events happen in other modules
      */
-    function initFeature() {
+    function initService() {
         realityEditor.device.keyboardEvents.registerCallback('keyUpHandler', keyUpHandler);
         
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
@@ -116,7 +116,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
         return newObject;
     }
 
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.getMutablePointerEventCopy = getMutablePointerEventCopy;
 
 })(realityEditor.network.frameContentAPI);
