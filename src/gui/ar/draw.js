@@ -1308,14 +1308,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // utilities.multiplyMatrix(matrix.r3, realityEditor.gui.ar.draw.groundPlaneMatrix, translatedGroundPlaneMatrix);
                 utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
                 
-                var tempFinalMatrix = [];
+                var finalWithoutProjection = [];
                 if (typeof positionData.matrix !== "undefined" && positionData.matrix.length === 16 && !isNaN(positionData.matrix[0])) {
-                    utilities.multiplyMatrix(positionData.matrix, translatedGroundPlaneMatrix, tempFinalMatrix);
+                    utilities.multiplyMatrix(positionData.matrix, translatedGroundPlaneMatrix, finalWithoutProjection);
                 } else {
-                    tempFinalMatrix = translatedGroundPlaneMatrix;
+                    finalWithoutProjection = translatedGroundPlaneMatrix;
                 }
                 
-                utilities.multiplyMatrix(tempFinalMatrix, this.globalStates.projectionMatrix, finalMatrix);
+                utilities.multiplyMatrix(finalWithoutProjection, this.globalStates.projectionMatrix, finalMatrix);
             }
             
             // multiply in the animation matrix if you are editing this frame in unconstrained mode.
