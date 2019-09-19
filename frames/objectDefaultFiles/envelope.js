@@ -159,6 +159,33 @@
     }
     
     // Methods to adapt the UI to the open/closed state
+
+    /**
+     * Triggers the envelope to open if it's closed, which means it becomes sticky fullscreen and triggers onOpen events
+     */
+    Envelope.prototype.open = function() {
+        if (this.isOpen) { return; }
+        
+        this.isOpen = true;
+        
+        this.realityInterface.setStickyFullScreenOn(); // I'm assuming envelopes want 'sticky' fullscreen, not regular
+        
+        if (!this.isStackable) {
+            this.realityInterface.setExclusiveFullScreenOn(function() {
+                this.close(); // trigger all the side-effects related to the envelope closing
+            }.bind(this));
+        }
+    };
+
+    /**
+     * Triggers the envelope to close if it's open, which means it turns off fullscreen and triggers onClosed events
+     */
+    Envelope.prototype.close = function() {
+        if (!this.isOpen) { return; }
+        
+        this.isOpen = false;
+        
+    };
     
     //
     // Methods to subscribe to events from contained frames or from the reality editor 
