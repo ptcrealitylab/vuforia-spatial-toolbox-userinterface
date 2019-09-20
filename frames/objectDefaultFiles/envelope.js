@@ -98,7 +98,7 @@
         
         // UI
         this.bodyWhenOpen = bodyWhenOpen;
-        this.bodyWhenClosed = bodyWhenOpen;
+        this.bodyWhenClosed = bodyWhenClosed;
         
         if (this.isOpen) {
             this.bodyWhenClosed.style.display = 'none';
@@ -129,16 +129,16 @@
         // this keeps the list of contained frames and the ordering up-to-date
         // add your own callback to adjust the UI based on frames being added or removed
         this.onFrameAdded(function(frameAddedMessage) {
-            this.containedFrames[frameAddedMessage.id] = new FrameData(frameAddedMessage.id, frameAddedMessage.type);
+            this.containedFrames[frameAddedMessage.frameId] = new FrameData(frameAddedMessage.frameId, frameAddedMessage.frameType);
             if (this.areFramesOrdered) {
-                this.frameIdOrdering.push(frameAddedMessage.id); // add to ordering
+                this.frameIdOrdering.push(frameAddedMessage.frameId); // add to ordering
             }
         }.bind(this));
         
         this.onFrameDeleted(function(frameDeletedMessage) {
-            delete this.containedFrames[frameDeletedMessage.id];
+            delete this.containedFrames[frameDeletedMessage.frameId];
             if (this.areFramesOrdered) {
-                let index = this.frameIdOrdering.indexOf(frameDeletedMessage.id);
+                let index = this.frameIdOrdering.indexOf(frameDeletedMessage.frameId);
                 if (index > -1) {
                     this.frameIdOrdering.splice(index, 1); // remove from ordering
                 }
@@ -148,15 +148,36 @@
         // this updates the UI automatically when the frame is opened or closed to switch between its two container divs
         this.onOpen(function(_openMessage) {
             this.bodyWhenClosed.style.display = 'none'; // TODO: move to a class that gets added?
-            this.bodyWhenOpen.style.display = '';
+            this.bodyWhenOpen.style.display = 'inline';
         }.bind(this));
 
         this.onClose(function(_closeMessage) {
-            this.bodyWhenClosed.style.display = ''; // TODO: move to a class that gets added?
+            this.bodyWhenClosed.style.display = 'inline'; // TODO: move to a class that gets added?
             this.bodyWhenOpen.style.display = 'none';
         }.bind(this));
         
+        this.realityInterface.sendEnvelopeMessage({
+            isEnvelope: true,
+            compatibleFrameTypes: this.compatibleFrameTypes
+        });
     }
+    
+    Envelope.prototype.triggerCallbacks = function(callbackName, msgContent) {
+
+        // let msgContent = JSON.parse(msg.data);
+        // if (typeof msgContent.envelopeMessage === 'undefined') {
+        //     return;
+        // }
+
+        if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
+            this.callbacks[callbackName].forEach(function(addedCallback) {
+                var msgObject = {};
+                msgObject[callbackName] = msgContent;
+                addedCallback(msgObject);
+            });
+        }
+        
+    };
     
     // Methods to adapt the UI to the open/closed state
 
@@ -167,14 +188,18 @@
         if (this.isOpen) { return; }
         
         this.isOpen = true;
-        
         this.realityInterface.setStickyFullScreenOn(); // I'm assuming envelopes want 'sticky' fullscreen, not regular
-        
         if (!this.isStackable) {
             this.realityInterface.setExclusiveFullScreenOn(function() {
                 this.close(); // trigger all the side-effects related to the envelope closing
             }.bind(this));
         }
+
+        this.triggerCallbacks('onOpen', {});
+        
+        this.realityInterface.sendEnvelopeMessage({
+            open: true
+        });
     };
 
     /**
@@ -184,7 +209,13 @@
         if (!this.isOpen) { return; }
         
         this.isOpen = false;
-        
+        this.realityInterface.setFullScreenOff();
+
+        this.triggerCallbacks('onClose', {});
+
+        this.realityInterface.sendEnvelopeMessage({
+            close: true
+        });
     };
     
     //

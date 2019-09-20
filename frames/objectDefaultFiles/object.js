@@ -520,6 +520,7 @@
             {
                 this.sendGlobalMessage = makeSendStub('sendGlobalMessage');
                 this.sendMessageToFrame = makeSendStub('sendMessageToFrame');
+                this.sendEnvelopeMessage = makeSendStub('sendEnvelopeMessage');
                 this.sendCreateNode = makeSendStub('sendCreateNode');
                 this.sendMoveNode = makeSendStub('sendMoveNode');
                 this.sendResetNodes = makeSendStub('sendResetNodes');
@@ -942,6 +943,12 @@
                     destinationFrame: frameId,
                     msgContent: msgContent
                 }
+            });
+        };
+        
+        this.sendEnvelopeMessage = function (msgContent) {
+            postDataToParent({
+                envelopeMessage: msgContent
             });
         };
 

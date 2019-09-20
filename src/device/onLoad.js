@@ -96,6 +96,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.distanceScaling.initService();
     realityEditor.device.keyboardEvents.initService();
     realityEditor.network.frameContentAPI.initService();
+    realityEditor.envelopeManager.initService();
 
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {
