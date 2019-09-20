@@ -13,7 +13,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     /**
      * Public init method sets up module and registers callbacks in other modules
      */
-    function initFeature() {
+    function initService() {
         window.addEventListener('keyup', keyUpHandler);
         window.addEventListener('keydown', keyDownHandler);
         realityEditor.network.addPostMessageHandler('resetScroll', function() {
@@ -66,7 +66,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
         callbackHandler.registerCallback(functionName, callback);
     }
 
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.registerCallback = registerCallback;
 
 })(realityEditor.device.keyboardEvents);

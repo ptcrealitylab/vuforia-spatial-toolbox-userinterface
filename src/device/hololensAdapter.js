@@ -2,7 +2,7 @@ createNameSpace("realityEditor.device.hololensAdapter");
 
 /**
  * @fileOverview realityEditor.device.hololensAdapter.js
- * Contains hololens-specific feature code for stereoscopic rendering.
+ * Contains hololens-specific service code for stereoscopic rendering.
  */
 
 (function(exports) {
@@ -21,7 +21,7 @@ createNameSpace("realityEditor.device.hololensAdapter");
      * Initializes the API for HoloLens communication.
      * It is OK to call this even if not running on a HoloLens.
      */
-    function initFeature() {
+    function initService() {
         realityEditor.network.addPostMessageHandler('hololensMessage', handleHololensMessage);
     }
 
@@ -91,7 +91,7 @@ createNameSpace("realityEditor.device.hololensAdapter");
         }
     }
     
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.toggleHololensMode = toggleHololensMode;
 
 }(realityEditor.device.hololensAdapter));

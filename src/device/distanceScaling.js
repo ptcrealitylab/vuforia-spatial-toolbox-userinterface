@@ -44,7 +44,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         callbackHandler.registerCallback(functionName, callback);
     };
     
-    function initFeature() {
+    function initService() {
         realityEditor.gui.ar.draw.addUpdateListener(loop);
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', onDocumentMultiTouchStart);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', onDocumentMultiTouchEnd);
@@ -457,7 +457,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         svgOverlay.classList.remove('hiddenForDistance');
     }
     
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.defaultDistance = defaultDistance;
 
 })(realityEditor.device.distanceScaling);

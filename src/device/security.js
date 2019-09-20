@@ -58,10 +58,10 @@ createNameSpace("realityEditor.device.security");
  * A collection of functions around user authentication and permissions.
  * A user can authenticate using a password and fingerprint, and then "lock" sets of nodes
  * and links to prevent unauthorized modifications.
- * @todo the security features are not currently fully supported anymore
+ * @todo the security services are not currently fully supported anymore
  */
 
-realityEditor.device.security.initFeature = function() {
+realityEditor.device.security.initService = function() {
 
     realityEditor.gui.buttons.registerCallbackForButton('lock', function(params) {
         if (params.newButtonState === 'up') {
