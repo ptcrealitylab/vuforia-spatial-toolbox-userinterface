@@ -23,7 +23,7 @@ createNameSpace("realityEditor.worldObjects");
     /**
      * Init world object module
      */
-    function initFeature() {
+    function initService() {
         
         // register a callback for when new objects / IPs are discovered
         // (look at desktopAdapter to figure out how I did it there)
@@ -216,7 +216,7 @@ createNameSpace("realityEditor.worldObjects");
         return objectKey.indexOf(worldObjectId) > -1;
     }
     
-    exports.initFeature = initFeature;
+    exports.initService = initService;
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
     exports.getBestWorldObject = getBestWorldObject;

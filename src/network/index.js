@@ -1823,7 +1823,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     console.log('TODO: realtimeEnabled mode enabled...');
                     // realityEditor.gui.ar.grouping.toggleGroupingMode(true);
                     realityEditor.app.saveRealtimeState(true);
-                    realityEditor.network.realtime.initFeature();
+                    realityEditor.network.realtime.initService();
                 }
             } else {
                 if (globalStates.realtimeEnabled) {
