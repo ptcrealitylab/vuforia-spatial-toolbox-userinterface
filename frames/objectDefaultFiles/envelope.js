@@ -122,6 +122,12 @@
                     });
                 }
             }
+            
+            if (typeof msgContent.envelopeMessage.sendMessageToContents !== 'undefined') {
+                // sendMessageToContents
+                this.sendMessageToAllFrames(msgContent.envelopeMessage.sendMessageToContents);
+            }
+            
         }.bind(this));
         
         // initialize by adding some default event listeners that adjust the UI based on some events
@@ -163,12 +169,6 @@
     }
     
     Envelope.prototype.triggerCallbacks = function(callbackName, msgContent) {
-
-        // let msgContent = JSON.parse(msg.data);
-        // if (typeof msgContent.envelopeMessage === 'undefined') {
-        //     return;
-        // }
-
         if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
             this.callbacks[callbackName].forEach(function(addedCallback) {
                 var msgObject = {};
@@ -176,7 +176,6 @@
                 addedCallback(msgObject);
             });
         }
-        
     };
     
     // Methods to adapt the UI to the open/closed state
