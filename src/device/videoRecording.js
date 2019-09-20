@@ -2,7 +2,7 @@ createNameSpace("realityEditor.device.videoRecording");
 
 /**
  * @fileOverview realityEditor.device.videoRecording.js
- * Contains the feature code to interact with the native API for recording
+ * Contains the service code to interact with the native API for recording
  * the camera feed and adding video frames to objects.
  * Shows visual feedback while recording.
  */

@@ -85,8 +85,8 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.device.touchPropagation.initService();
-    realityEditor.device.speechPerformer.initService(); // TODO: feature is internally disabled
-    realityEditor.device.security.initService(); // TODO: feature is internally disabled
+    realityEditor.device.speechPerformer.initService(); // TODO: service is internally disabled
+    realityEditor.device.security.initService(); // TODO: service is internally disabled
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
     realityEditor.device.desktopAdapter.initService();

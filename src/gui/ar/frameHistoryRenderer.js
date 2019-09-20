@@ -2,7 +2,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
 
 /**
  * @fileOverview realityEditor.gui.ar.frameHistoryRenderer.js
- * Contains the feature code to render partially-transparent versions of frames at
+ * Contains the service code to render partially-transparent versions of frames at
  * their previously-saved git position, if they've been moved since then.
  */
 
@@ -77,7 +77,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         });
 
         // only adds the render update listener for frame history ghosts after you enter editing mode for the first time
-        // saves resources when we don't use the feature
+        // saves resources when we don't use the service
         realityEditor.device.registerCallback('setEditingMode', function(params) {
             if (!isUpdateListenerRegistered && params.newEditingMode) {
 
