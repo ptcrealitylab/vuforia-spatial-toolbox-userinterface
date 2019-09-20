@@ -54,6 +54,18 @@
             }
         }.bind(this));
 
+        realityInterface.addFrameMessageListener(function(message) {
+
+            var msgContent = message.msgContent;
+            var sourceFrame = message.sourceFrame;
+            var destinationFrame = message.destinationFrame;
+            
+            if (typeof msgContent.envelopeMessage !== 'undefined') {
+                console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
+                this.triggerCallbacks('onMessageFromEnvelope', message);
+            }
+        }.bind(this));
+
         this.onMessageFromEnvelope(function(messageFromEnvelope) {
             if (!this.envelopeId) {
                 this.envelopeId = messageFromEnvelope.sourceFrame; // received first message from an envelope. you now belong to that one.
@@ -66,6 +78,16 @@
         //     this.totalNumberOfFramesInEnvelope = orderUpdatedMessage.total;
         // }.bind(this));
     }
+
+    EnvelopeContents.prototype.triggerCallbacks = function(callbackName, msgContent) {
+        if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
+            this.callbacks[callbackName].forEach(function(addedCallback) {
+                var msgObject = {};
+                msgObject[callbackName] = msgContent;
+                addedCallback(msgObject);
+            });
+        }
+    };
 
     //
     // Methods to subscribe to events from contained frames or from the reality editor 

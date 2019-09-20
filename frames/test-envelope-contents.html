@@ -37,5 +37,9 @@
         container.innerHTML = 'Step ' + index + '/' + total;
     });
     
+    envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
+        console.warn('Contained frame received message from envelope', messageFromEnvelope);
+    })
+    
 </script>
 </html>

@@ -43,10 +43,18 @@ createNameSpace("realityEditor.envelopeManager");
         
         if (typeof eventData.open !== 'undefined') {
             knownEnvelopes[fullMessageContent.frame].isOpen = true;
+            // show all contained frames
+            sendMessageToOpenEnvelopeContents({
+                showContainedFrame: true
+            });
         }
         
         if (typeof eventData.close !== 'undefined') {
             knownEnvelopes[fullMessageContent.frame].isOpen = false;
+            // hide all contained frames
+            sendMessageToOpenEnvelopeContents({
+                showContainedFrame: false
+            });
         }
     }
     
@@ -88,7 +96,6 @@ createNameSpace("realityEditor.envelopeManager");
                 var envelopeMessage = {
                     envelopeMessage: message
                 };
-                console.warn('TODO: implement sendMessageToOpenEnvelopes to send a message to ' + frameKey, envelopeMessage);
 
                 realityEditor.network.postMessageIntoFrame(frameKey, envelopeMessage);
             }
@@ -96,7 +103,26 @@ createNameSpace("realityEditor.envelopeManager");
     }
     
     function sendMessageToOpenEnvelopeContents(message) {
-        
+        for (var frameKey in knownEnvelopes) {
+            var envelope = knownEnvelopes[frameKey];
+
+            // if we specify that the message should only be sent to envelopes of a certain type, make other envelopes ignore the message
+            // if (typeof compatibilityTypeRequirement !== 'undefined') {
+            //     if (envelope.compatibleFrameTypes.indexOf(compatibilityTypeRequirement) === -1) {
+            //         continue;
+            //     }
+            // }
+
+            if (envelope.isOpen) {
+                var envelopeMessage = {
+                    envelopeMessage: {
+                        sendMessageToContents: message
+                    }
+                };
+
+                realityEditor.network.postMessageIntoFrame(frameKey, envelopeMessage);
+            }
+        }
     }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export
