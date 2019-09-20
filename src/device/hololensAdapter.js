@@ -2,7 +2,7 @@ createNameSpace("realityEditor.device.hololensAdapter");
 
 /**
  * @fileOverview realityEditor.device.hololensAdapter.js
- * Contains hololens-specific feature code for stereoscopic rendering.
+ * Contains hololens-specific service code for stereoscopic rendering.
  */
 
 (function(exports) {

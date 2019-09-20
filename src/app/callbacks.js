@@ -161,7 +161,7 @@ realityEditor.app.callbacks.onZoneText = function(savedState) {
 
 /**
  * Callback for realityEditor.app.getRealtimeState
- * Loads the realtime collaboration feature enabled on/off state (if any) from permanent storage
+ * Loads the realtime collaboration service enabled on/off state (if any) from permanent storage
  * @param {string} savedState - stringified boolean
  */
 realityEditor.app.callbacks.onRealtimeState = function(savedState) {
@@ -176,7 +176,7 @@ realityEditor.app.callbacks.onRealtimeState = function(savedState) {
 
 /**
  * Callback for realityEditor.app.getGroupingState
- * Loads the grouping feature enabled on/off state (if any) from permanent storage
+ * Loads the grouping service enabled on/off state (if any) from permanent storage
  * @param savedState - stringified boolean
  */
 realityEditor.app.callbacks.onGroupingState = function(savedState) {

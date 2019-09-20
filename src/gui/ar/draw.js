@@ -642,9 +642,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
     }
 
     // TODO: push more edge-case functionality from this function into extensible callbacks
-    // make the update loop extensible by additional features that wish to subscribe to matrix updates
+    // make the update loop extensible by additional services that wish to subscribe to matrix updates
     this.updateListeners.forEach(function(callback) {
-        // send a deep clone of the list so that extensible features can't break the render loop by modifying the original
+        // send a deep clone of the list so that extensible services can't break the render loop by modifying the original
         callback(realityEditor.gui.ar.draw.visibleObjects);
     });
 
@@ -1541,9 +1541,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             // temporary UI styling to visualize locks
 
-            var LOCK_FEATURE_ENABLED = false;
+            var LOCK_SERVICE_ENABLED = false;
             
-            if (LOCK_FEATURE_ENABLED) {
+            if (LOCK_SERVICE_ENABLED) {
                 if (activeType !== "ui") {
                     if (!!activeVehicle.lockPassword && activeVehicle.lockType === "full") {
                         globalDOMCache["iframe" + activeKey].style.opacity = 0.25;

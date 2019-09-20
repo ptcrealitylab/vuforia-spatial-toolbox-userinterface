@@ -586,7 +586,7 @@ realityEditor.app.getRealtimeState = function(callback) {
 };
 
 /**
- * Get the persistent setting for whether to enable the grouping feature.
+ * Get the persistent setting for whether to enable the grouping service.
  * @param {function} callback
  */
 realityEditor.app.getGroupingState = function(callback) {

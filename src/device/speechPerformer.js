@@ -12,9 +12,9 @@ createNameSpace('realityEditor.device.speechPerformer');
  * Public init method sets up module and registers callbacks in other modules
  */
 realityEditor.device.speechPerformer.initService = function() {
-    var SPEECH_FEATURE_ENABLED = false;
+    var SPEECH_SERVICE_ENABLED = false;
     
-    if (SPEECH_FEATURE_ENABLED) {
+    if (SPEECH_SERVICE_ENABLED) {
         realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
 
             if (!(globalStates.guiState === "node" || globalStates.guiState === "logic")) { return; }

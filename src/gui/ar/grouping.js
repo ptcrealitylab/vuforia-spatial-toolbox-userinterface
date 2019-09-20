@@ -42,9 +42,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
     var isUnconstrainedEditingGroup = false;
     
     /**
-     * Initialize the grouping feature regardless of whether it is enabled onLoad
+     * Initialize the grouping service regardless of whether it is enabled onLoad
      * Subscribe to touches and rendering events, and a variety of other frame events,
-     * but only respond to them if the grouping feature is currently enabled at the time of the event
+     * but only respond to them if the grouping service is currently enabled at the time of the event
      */
     function initService() {
         
