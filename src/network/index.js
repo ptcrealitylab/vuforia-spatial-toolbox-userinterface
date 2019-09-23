@@ -1358,7 +1358,7 @@ if (thisFrame) {
         node.name = msgContent.createNode.name;
         node.frameId = msgContent.frame;
         node.objectId = msgContent.object;
-        var nodeKey = node.frameId + msgContent.createNode.name + realityEditor.device.utilities.uuidTime();
+        var nodeKey = node.frameId + msgContent.createNode.name;// + realityEditor.device.utilities.uuidTime();
         node.uuid = nodeKey;
         var thisObject = realityEditor.getObject(msgContent.object);
         let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
