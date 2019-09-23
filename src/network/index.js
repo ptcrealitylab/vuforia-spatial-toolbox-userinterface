@@ -1339,6 +1339,21 @@ if (thisFrame) {
 
     // todo this needs to be checked in to the present version
     if (typeof msgContent.createNode !== "undefined") {
+        
+        if (typeof msgContent.createNode.noDuplicate !== 'undefined') {
+            if (msgContent.createNode.noDuplicate) {
+                // check if a node with this name already exists on this frame
+                var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+                var nodeNames = Object.keys(frame.nodes).map(function(nodeKey) {
+                    return frame.nodes[nodeKey].name;
+                });
+                if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
+                    console.log('don\'t duplicate node');
+                    return; 
+                }
+            }
+        }
+        
         let node = new Node();
         node.name = msgContent.createNode.name;
         node.frameId = msgContent.frame;
@@ -1352,6 +1367,10 @@ if (thisFrame) {
         
         if (msgContent.createNode.attachToGroundPlane) {
             node.attachToGroundPlane = true;
+        }
+        
+        if (typeof msgContent.createNode.nodeType !== 'undefined') {
+            node.type = msgContent.createNode.nodeType;
         }
         
         thisFrame.nodes[nodeKey] = node;

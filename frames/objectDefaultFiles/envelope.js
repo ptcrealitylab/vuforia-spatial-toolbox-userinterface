@@ -139,6 +139,7 @@
             if (this.areFramesOrdered) {
                 this.frameIdOrdering.push(frameAddedMessage.frameId); // add to ordering
             }
+            this.savePersistentData();
         }.bind(this));
         
         this.onFrameDeleted(function(frameDeletedMessage) {
@@ -149,6 +150,7 @@
                     this.frameIdOrdering.splice(index, 1); // remove from ordering
                 }
             }
+            this.savePersistentData();
         }.bind(this));
 
         // this updates the UI automatically when the frame is opened or closed to switch between its two container divs
@@ -166,8 +168,49 @@
             isEnvelope: true,
             compatibleFrameTypes: this.compatibleFrameTypes
         });
+        
+        // automatically ensure that there is a storeData node called 'storage' on the envelope frame
+        let nodeParams = {
+            name: 'storage',
+            x: 0,
+            y: 0,
+            groundplane: false,
+            type: 'storeData',
+            noDuplicate: true
+        };
+        this.realityInterface.sendCreateNode(nodeParams.name, nodeParams.x, nodeParams.y, nodeParams.groundplane, nodeParams.type, nodeParams.noDuplicate);
+
+        // read from storage to restore any relationships with contained frames
+        realityInterface.addReadPublicDataListener('storage', 'envelopeContents', function (savedContents) {
+            console.log('saved envelope contents', savedContents);
+            if (typeof savedContents.containedFrames !== 'undefined') {
+                this.containedFrames = savedContents.containedFrames;
+                console.log('loaded containedFrames');
+            }
+            if (typeof savedContents.frameIdOrdering !== 'undefined') {
+                this.frameIdOrdering = savedContents.frameIdOrdering;
+                console.log('loaded frameIdOrdering');
+            }
+        }.bind(this));
     }
-    
+
+    Envelope.prototype.savePersistentData = function() {
+        let envelopeContents = {
+            containedFrames: this.containedFrames
+        };
+        if (this.areFramesOrdered) {
+            envelopeContents.frameIdOrdering = this.frameIdOrdering;
+        }
+        console.log('savePersistentData', envelopeContents);
+        realityInterface.writePublicData('storage', 'envelopeContents',  envelopeContents);
+    };
+
+    /**
+     * Method to manually trigger callbacks via the envelope object, rather than responding to POST message events.
+     * They usually get triggered via the window.addEventListener('message', ...) callback handler.
+     * @param {string} callbackName
+     * @param {Object} msgContent
+     */
     Envelope.prototype.triggerCallbacks = function(callbackName, msgContent) {
         if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
             this.callbacks[callbackName].forEach(function(addedCallback) {
@@ -178,8 +221,10 @@
         }
     };
     
+    //
     // Methods to adapt the UI to the open/closed state
-
+    //
+    
     /**
      * Triggers the envelope to open if it's closed, which means it becomes sticky fullscreen and triggers onOpen events
      */

@@ -952,14 +952,23 @@
             });
         };
 
-        this.sendCreateNode = function (name, x, y, attachToGroundPlane) {
+        this.sendCreateNode = function (name, x, y, attachToGroundPlane, nodeType, noDuplicate) {
+            var data = {
+                name: name,
+                x: x,
+                y: y
+            };
+            if (typeof attachToGroundPlane !== 'undefined') {
+                data.attachToGroundPlane = attachToGroundPlane;
+            }
+            if (typeof nodeType !== 'undefined') {
+                data.nodeType = nodeType;
+            }
+            if (typeof noDuplicate !== 'undefined') {
+                data.noDuplicate = noDuplicate;
+            }
             postDataToParent({
-                createNode: {
-                    name: name,
-                    x: x,
-                    y: y,
-                    attachToGroundPlane: attachToGroundPlane
-                }
+                createNode: data
             });
         };
 

@@ -27,11 +27,26 @@
             color: white;
             border-radius: 10px;
         }
+        
+        .colorChangeButton {
+            position: absolute;
+            top: 10px;
+            width: 80px;
+            height: 80px;
+            color: black;
+            border: 2px solid black;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
     <div id="bodyWhenOpen">
-        Open. Contains ___.
+        <div id="description">
+            Open. Contains ___.
+        </div>
+        <div class="colorChangeButton" id="cyan">Cyan</div>
+        <div class="colorChangeButton" id="magenta">Magenta</div>
+        <div class="colorChangeButton" id="yellow">Yellow</div>
     </div>
     <div id="bodyWhenClosed">
         Closed.
@@ -40,6 +55,11 @@
 <script>
     let bodyWhenOpen = document.getElementById('bodyWhenOpen');
     let bodyWhenClosed = document.getElementById('bodyWhenClosed');
+    
+    let description = document.getElementById('description');
+    let cyanButton = document.getElementById('cyan');
+    let magentaButton = document.getElementById('magenta');
+    let yellowButton = document.getElementById('yellow');
     
     let realityInterface = new RealityInterface();
     let isStackable = false;
@@ -69,8 +89,18 @@
     function render() {
         if (envelope.isOpen) {
             console.log('render open');
-            var numContainedFrames = Object.keys(envelope.containedFrames).length;
-            bodyWhenOpen.innerHTML = 'Open. Contains ' + numContainedFrames + '.';
+            let numContainedFrames = Object.keys(envelope.containedFrames).length;
+            description.innerHTML = 'Open. Contains ' + numContainedFrames + '.';
+            [cyanButton, magentaButton, yellowButton].forEach(function(button, index) {
+                button.style.backgroundColor = button.id;
+                button.style.left = (90 * index) + 'px';
+                button.addEventListener('pointerup', function(event) {
+                    event.stopPropagation();
+                    envelope.sendMessageToAllFrames({
+                        setColor: button.id
+                    });
+                });
+            });
         } else {
             console.log('render closed');
         }
