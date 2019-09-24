@@ -58,11 +58,11 @@
         realityInterface.addFrameMessageListener(function(message) {
 
             var msgContent = message.msgContent;
-            var sourceFrame = message.sourceFrame;
-            var destinationFrame = message.destinationFrame;
+            // var sourceFrame = message.sourceFrame;
+            // var destinationFrame = message.destinationFrame;
             
             if (typeof msgContent.envelopeMessage !== 'undefined') {
-                console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
+                // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
                 this.triggerCallbacks('onMessageFromEnvelope', message);
             }
         }.bind(this));
@@ -72,14 +72,15 @@
                 this.envelopeId = messageFromEnvelope.sourceFrame; // received first message from an envelope. you now belong to that one.
             }
             
-            // trigger onOrderUpdated if needed
             if (typeof messageFromEnvelope.msgContent.envelopeMessage !== 'undefined') {
                 let envelopeMessage = messageFromEnvelope.msgContent.envelopeMessage;
-                
+
+                // trigger onOrderUpdated if needed
                 if (typeof envelopeMessage.onOrderUpdated !== 'undefined') {
                     this.triggerCallbacks('onOrderUpdated', envelopeMessage.onOrderUpdated);
                 }
                 
+                // show/hide in response to envelope opening/closing
                 if (typeof envelopeMessage.showContainedFrame !== 'undefined') {
                     if (envelopeMessage.showContainedFrame) {
                         this.show();
@@ -100,13 +101,11 @@
     }
     
     EnvelopeContents.prototype.show = function() {
-        console.warn('show contained frame');
         this.rootElement.style.display = '';
         this.realityInterface.ignoreAllTouches(false);
     };
     
     EnvelopeContents.prototype.hide = function() {
-        console.warn('hide contained frame');
         this.rootElement.style.display = 'none';
         this.realityInterface.ignoreAllTouches(true);
     };

@@ -72,22 +72,18 @@
     let envelope = new Envelope(realityInterface, ['test-envelope-contents'], bodyWhenOpen, bodyWhenClosed, isStackable, areFramesOrdered);
     
     envelope.onFrameAdded(function(_frameAddedMessage) {
-        console.log('frame was added');
         render();
     });
     
     envelope.onFrameDeleted(function(_frameDeletedMessage) {
-        console.log('frame was deleted');
         render();
     });
     
     envelope.onOpen(function() {
-        console.log('envelope was opened');
         render();
     });
     
     envelope.onClose(function() {
-        console.log('envelope was closed');
         render();
     });
     
@@ -112,12 +108,10 @@
     }
     
     bodyWhenClosed.addEventListener('pointerup', function(event) {
-        // open it
         envelope.open();
     });
     
     bodyWhenOpen.addEventListener('pointerup', function(event) {
-        // close it
         envelope.close();
     });
     
