@@ -386,7 +386,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
         
         if (globalDOMCache["iframe" + frameKey]) {
-            if (globalDOMCache["iframe" + frameKey]._loaded) {
+            if (globalDOMCache["iframe" + frameKey].getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
@@ -507,8 +507,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         // console.log("NO");
 
         if (globalDOMCache["iframe" + nodeKey]) {
-            if (globalDOMCache["iframe" + nodeKey]._loaded)
+            if (globalDOMCache["iframe" + nodeKey].getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+            }
         }
     }
 
@@ -2577,7 +2578,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
     
-    globalDOMCache["iframe" + activeKey]._loaded = true;
+    globalDOMCache["iframe" + activeKey].setAttribute('loaded', true);
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
 
     if (nodeKey) {

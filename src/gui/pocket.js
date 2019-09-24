@@ -205,7 +205,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', addedLogic);
 
             var _thisNode = document.getElementById("iframe" + logicKey);
-            if (_thisNode && _thisNode._loaded) {
+            if (_thisNode && _thisNode.getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(closestObjectKey, logicKey);
             }
 

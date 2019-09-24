@@ -9,8 +9,9 @@
     /**
      * @constructor
      */
-    function EnvelopeContents(realityInterface) {
+    function EnvelopeContents(realityInterface, rootElement) {
         this.realityInterface = realityInterface;
+        this.rootElement = rootElement; // the HTML element to show or hide when the envelope opens and closes
         this.envelopeId = null;
         
         // this.isOrdered = false;
@@ -70,6 +71,25 @@
             if (!this.envelopeId) {
                 this.envelopeId = messageFromEnvelope.sourceFrame; // received first message from an envelope. you now belong to that one.
             }
+            
+            // trigger onOrderUpdated if needed
+            if (typeof messageFromEnvelope.msgContent.envelopeMessage !== 'undefined') {
+                let envelopeMessage = messageFromEnvelope.msgContent.envelopeMessage;
+                
+                if (typeof envelopeMessage.onOrderUpdated !== 'undefined') {
+                    this.triggerCallbacks('onOrderUpdated', envelopeMessage.onOrderUpdated);
+                }
+                
+                if (typeof envelopeMessage.showContainedFrame !== 'undefined') {
+                    if (envelopeMessage.showContainedFrame) {
+                        this.show();
+                    } else {
+                        this.hide();
+                    }
+                }
+                
+            }
+            
         }.bind(this));
         
         // // this keeps the list of contained frames and the ordering up-to-date
@@ -78,6 +98,18 @@
         //     this.totalNumberOfFramesInEnvelope = orderUpdatedMessage.total;
         // }.bind(this));
     }
+    
+    EnvelopeContents.prototype.show = function() {
+        console.warn('show contained frame');
+        this.rootElement.style.display = '';
+        this.realityInterface.ignoreAllTouches(false);
+    };
+    
+    EnvelopeContents.prototype.hide = function() {
+        console.warn('hide contained frame');
+        this.rootElement.style.display = 'none';
+        this.realityInterface.ignoreAllTouches(true);
+    };
 
     EnvelopeContents.prototype.triggerCallbacks = function(callbackName, msgContent) {
         if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
@@ -103,7 +135,7 @@
             if (!this.envelopeId || this.envelopeId === messageFromEnvelope.sourceFrame) {
                 callback(messageFromEnvelope); // pre-filter out messages from different envelopes
             }
-        });
+        }.bind(this));
     };
     
     EnvelopeContents.prototype.onOrderUpdated = function(callback) {
