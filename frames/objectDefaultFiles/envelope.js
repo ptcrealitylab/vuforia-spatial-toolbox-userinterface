@@ -139,6 +139,8 @@
             if (this.areFramesOrdered) {
                 this.frameIdOrdering.push(frameAddedMessage.frameId); // add to ordering
             }
+            this.orderingUpdated();
+            this.containedFramesUpdated();
             this.savePersistentData();
         }.bind(this));
         
@@ -150,6 +152,8 @@
                     this.frameIdOrdering.splice(index, 1); // remove from ordering
                 }
             }
+            this.orderingUpdated();
+            this.containedFramesUpdated();
             this.savePersistentData();
         }.bind(this));
 
@@ -186,13 +190,44 @@
             if (typeof savedContents.containedFrames !== 'undefined') {
                 this.containedFrames = savedContents.containedFrames;
                 console.log('loaded containedFrames');
+                this.containedFramesUpdated();
             }
             if (typeof savedContents.frameIdOrdering !== 'undefined') {
                 this.frameIdOrdering = savedContents.frameIdOrdering;
+                this.orderingUpdated();
                 console.log('loaded frameIdOrdering');
             }
         }.bind(this));
     }
+    
+    Envelope.prototype.containedFramesUpdated = function() {
+        // send up to editor so editor module has a map of envelopes->containedFrames
+        this.realityInterface.sendEnvelopeMessage({
+            containedFrameIds: Object.keys(this.containedFrames)
+        });
+    };
+    
+    // Envelope.prototype.hideContainedFrames = function() {
+    //    
+    // };
+    //
+    // Envelope.prototype.showContainedFrames = function() {
+    //
+    // };
+    
+    Envelope.prototype.orderingUpdated = function() {
+        if (!this.areFramesOrdered) { return; }
+        // send a message to each frame with their order
+        this.frameIdOrdering.forEach(function(frameId, index) {
+            this.sendMessageToFrameWithId(frameId, {
+                onOrderUpdated: {
+                    index: index,
+                    total: this.frameIdOrdering.length
+                }
+            })
+        }.bind(this));
+        
+    };
 
     Envelope.prototype.savePersistentData = function() {
         let envelopeContents = {
