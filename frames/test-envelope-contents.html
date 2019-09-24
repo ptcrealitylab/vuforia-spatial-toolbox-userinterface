@@ -40,7 +40,7 @@
     });
     
     envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
-        console.warn('Contained frame received message from envelope', messageFromEnvelope);
+        // console.warn('Contained frame received message from envelope', messageFromEnvelope);
         if (typeof messageFromEnvelope.msgContent.envelopeMessage !== 'undefined') {
             let envelopeMessage = messageFromEnvelope.msgContent.envelopeMessage;
             if (typeof envelopeMessage.setColor !== 'undefined') {

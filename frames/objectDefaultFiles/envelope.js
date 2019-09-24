@@ -207,14 +207,6 @@
         });
     };
     
-    // Envelope.prototype.hideContainedFrames = function() {
-    //    
-    // };
-    //
-    // Envelope.prototype.showContainedFrames = function() {
-    //
-    // };
-    
     Envelope.prototype.orderingUpdated = function() {
         if (!this.areFramesOrdered) { return; }
         // send a message to each frame with their order
