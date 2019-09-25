@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: #01fffd;
+      }
+
+      .cls-2 {
+        fill-opacity: 0;
+      }
+
+      .cls-3 {
+        fill: none;
+        stroke: #01fffd;
+        stroke-linecap: round;
+        stroke-miterlimit: 10;
+        stroke-width: 2px;
+      }
+    </style>
+  </defs>
+  <title>close_buttonAsset 2</title>
+  <g id="Layer_2" data-name="Layer 2">
+    <g id="Layer_1-2" data-name="Layer 1">
+      <path class="cls-1" d="M60,60H0V0H60ZM58.1,1.9H1.9V58.2H58.2V1.9Z"/>
+      <rect id="bg" class="cls-2" width="60" height="60"/>
+      <line class="cls-3" x1="13.36" y1="13.36" x2="46.64" y2="46.64"/>
+      <line class="cls-3" x1="13.36" y1="46.64" x2="46.64" y2="13.36"/>
+    </g>
+  </g>
+</svg>

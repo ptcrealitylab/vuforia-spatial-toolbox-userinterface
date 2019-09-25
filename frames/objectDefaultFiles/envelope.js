@@ -13,6 +13,16 @@
         this.id = id;
         this.type = type;
     }
+    
+    // keep this up to date with all global frames that instantiate a new EnvelopeContents(realityInterface, container)
+    // TODO: this can be used to create a new envelope that accepts all frameTypes
+    exports.ALL_COMPATIBLE_FRAME_TYPES = [
+        'test-envelope-contents',
+        'draw',
+        'graphUI',
+        'slider-2d',
+        'slider'
+    ];
 
     /**
      * @constructor
@@ -21,7 +31,8 @@
      * fullscreen 2D UI, and a "closed" state, where they are minimized into a small 3D icon in space. Their contained
      * frames are only visible when the envelope is open.
      * 
-     * @param {Array.<string>} compatibleFrameTypes
+     * @param {RealityInterface} realityInterface - reference to the RealityInterface API object
+     * @param {Array.<string>} compatibleFrameTypes - array of types of frames that can be added to this envelope
      * @param {HTMLElement} bodyWhenOpen - a containing div that will be rendered when open (fullscreen 2D)
      * @param {HTMLElement} bodyWhenClosed - a containing div that will be rendered when closed (small 3D icon)
      * @param {boolean|undefined} isStackable - defaults to false
@@ -126,6 +137,14 @@
             if (typeof msgContent.envelopeMessage.sendMessageToContents !== 'undefined') {
                 // sendMessageToContents
                 this.sendMessageToAllFrames(msgContent.envelopeMessage.sendMessageToContents);
+            }
+            
+            if (typeof msgContent.envelopeMessage.open !== 'undefined') {
+                this.open();
+            }
+            
+            if (typeof msgContent.envelopeMessage.close !== 'undefined') {
+                this.close();
             }
             
         }.bind(this));
