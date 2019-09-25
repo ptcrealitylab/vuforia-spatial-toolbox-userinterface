@@ -3,6 +3,7 @@
 <head>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>graphUI</title>
 </head>
@@ -302,6 +303,7 @@
 
     try {
         var realityInterface = new RealityInterface();
+        var envelopeContents = new EnvelopeContents(realityInterface, document.body); // just initializing this makes it compatible with envelopes
         realityInterface.addReadListener('value', function(e) {
             properties.value = e.value;
             properties.unit = e.unit;
