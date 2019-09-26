@@ -13,16 +13,6 @@
         this.id = id;
         this.type = type;
     }
-    
-    // keep this up to date with all global frames that instantiate a new EnvelopeContents(realityInterface, container)
-    // TODO: this can be used to create a new envelope that accepts all frameTypes
-    exports.ALL_COMPATIBLE_FRAME_TYPES = [
-        'test-envelope-contents',
-        'draw',
-        'graphUI',
-        'slider-2d',
-        'slider'
-    ];
 
     /**
      * @constructor

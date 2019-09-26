@@ -84,7 +84,7 @@
     let realityInterface = new RealityInterface();
     let isStackable = false;
     let areFramesOrdered = true;
-    let compatibleFrameTypes = ALL_COMPATIBLE_FRAME_TYPES; // ['test-envelope-contents'];
+    let compatibleFrameTypes = ['test-envelope-contents'];
     let envelope = new Envelope(realityInterface, compatibleFrameTypes, bodyWhenOpen, bodyWhenClosed, isStackable, areFramesOrdered);
     
     envelope.onFrameAdded(function(_frameAddedMessage) {
