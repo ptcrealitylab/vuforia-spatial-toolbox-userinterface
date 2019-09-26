@@ -3,7 +3,6 @@
 <head>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
-    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>slider</title>
     <style>
@@ -88,7 +87,6 @@
 <script>
     try {
         var realityInterface = new RealityInterface();
-        var envelopeContents = new EnvelopeContents(realityInterface, document.body); // just initializing this makes it compatible with envelopes
         realityInterface.setMoveDelay(1000);
     } catch (e) {
         console.warn('Reality Interface is not accessible');
