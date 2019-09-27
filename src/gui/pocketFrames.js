@@ -1,20 +1,6 @@
 /* exported realityElements */
 
 var realityElements = [
-    {
-        name: 'test-envelope',
-        width: 300,
-        height: 300,
-        nodes: [
-        ]
-    },
-    {
-        name: 'test-envelope-contents',
-        width: 300,
-        height: 300,
-        nodes: [
-        ]
-    },
 /*
     {
         name: 'background',
@@ -263,6 +249,20 @@ var realityElements = [
             {name: 'state', type: "node", x:0, y:0}
         ]
     },
+    {
+        name: 'test-envelope',
+        width: 300,
+        height: 300,
+        nodes: [
+        ]
+    },
+    {
+        name: 'test-envelope-contents',
+        width: 300,
+        height: 300,
+        nodes: [
+        ]
+    },
 
     /*
     // /*  
@@ -332,5 +332,5 @@ var realityElements = [
             {name: 'y', type: "node", x:0, y:0},
             {name: 'reset', type: "node", x:150, y:0}
         ]
-    }
+    },
 ];
