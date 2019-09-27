@@ -117,15 +117,7 @@
             width: 736,
             height: 414
         };
-        
-        // Manage the UI for open and closed states
-        this.rootElementWhenOpen = rootElementWhenOpen;
-        this.rootElementWhenClosed = rootElementWhenClosed;
-        if (this.isOpen) {
-            this.rootElementWhenClosed.style.display = 'none';
-        } else {
-            this.rootElementWhenOpen.style.display = 'none';
-        }
+        this.moveDelayBeforeOpen = 400; // default 400ms when closed, gets overwritten if you change moveDelay
 
         /**
          * Triggers all callbacks functions when the iframe receives an 'envelopeMessage' POST message from the parent window.
@@ -189,15 +181,20 @@
         // these update the UI automatically when the frame is opened or closed to switch between its two container divs
         
         this.onOpen(function() {
-            this.rootElementWhenClosed.style.display = 'none'; // TODO: move to a class that gets added?
+            this.rootElementWhenClosed.style.display = 'none';
             this.rootElementWhenOpen.style.display = 'inline';
+            // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
+            this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenOpen.clientWidth), parseInt(this.rootElementWhenOpen.clientHeight));
+            this.moveDelayBeforeOpen = realityInterface.getMoveDelay() || 400;
             this.realityInterface.setMoveDelay(-1); // can't move it while fullscreen
         }.bind(this));
         
         this.onClose(function() {
-            this.rootElementWhenClosed.style.display = 'inline'; // TODO: move to a class that gets added?
+            this.rootElementWhenClosed.style.display = 'inline';
             this.rootElementWhenOpen.style.display = 'none';
-            this.realityInterface.setMoveDelay(400); // TODO: restore to previous value instead of default 400ms
+            // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
+            this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenClosed.clientWidth), parseInt(this.rootElementWhenClosed.clientHeight));
+            this.realityInterface.setMoveDelay(this.moveDelayBeforeOpen); // restore to previous value
         }.bind(this));
 
         /**
@@ -253,14 +250,20 @@
                     height: height
                 };
 
-                // changing the body size should reposition everything else nicely relative to it
-                document.body.style.width = width + 'px';
-                document.body.style.height = height + 'px';
-
+                // changing the root element size should reposition everything else nicely relative to it
                 // if necessary, reposition/resize any element with manual adjustments
                 rootElementWhenOpen.style.width = width + 'px';
                 rootElementWhenOpen.style.height = height + 'px';
             }.bind(this));
+
+            // Manage the UI for open and closed states
+            this.rootElementWhenOpen = rootElementWhenOpen;
+            this.rootElementWhenClosed = rootElementWhenClosed;
+            if (this.isOpen) {
+                this.rootElementWhenClosed.style.display = 'none';
+            } else {
+                this.rootElementWhenOpen.style.display = 'none';
+            }
         }
         
     }

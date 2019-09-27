@@ -1256,10 +1256,16 @@ if (thisFrame) {
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
-            
+
+            globalDOMCache[tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.left;
+            globalDOMCache[tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.top;
+
             globalDOMCache[tempThisObject.uuid].style.opacity = '0'; // svg overlay still exists so we can reposition, but invisible
             globalDOMCache[tempThisObject.uuid].style.left = '0';
             globalDOMCache[tempThisObject.uuid].style.top = '0';
+
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.left;
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.top;
             
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
@@ -1302,10 +1308,16 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
 
+            globalDOMCache[tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.left;
+            globalDOMCache[tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.top;
+
             globalDOMCache[tempThisObject.uuid].style.opacity = '0';
             globalDOMCache[tempThisObject.uuid].style.left = '0';
             globalDOMCache[tempThisObject.uuid].style.top = '0';
-            
+
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.left;
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.top;
+
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
@@ -1549,6 +1561,27 @@ if (thisFrame) {
         }), '*');
     }
     
+    // adjusts the iframe and touch overlay size based on a message from the iframe about the size of its contents changing
+    if (typeof msgContent.changeFrameSize !== 'undefined') {
+        let width = msgContent.changeFrameSize.width;
+        let height = msgContent.changeFrameSize.height;
+
+        let iFrame = document.getElementById('iframe' + msgContent.frame);
+        let overlay = document.getElementById(msgContent.frame);
+
+        let top = (width - height) / 2;
+        let left = (height - width) / 2;
+
+        iFrame.style.width = width + 'px';
+        iFrame.style.height = height + 'px';
+
+        overlay.style.width = width + 'px';
+        overlay.style.height = height + 'px';
+
+        let cornerPadding = 24;
+        globalDOMCache[msgContent.frame].querySelector('.corners').style.width = width + cornerPadding + 'px';
+        globalDOMCache[msgContent.frame].querySelector('.corners').style.height = height + cornerPadding + 'px';
+    }
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks

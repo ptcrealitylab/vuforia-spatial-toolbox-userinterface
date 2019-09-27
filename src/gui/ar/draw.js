@@ -2305,7 +2305,20 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
         globalDOMCache[frame.uuid].style.opacity = '1'; // svg overlay still exists so we can reposition, but invisible
     }
 
-    // TODO: reset left/top offset when returns to non-fullscreen?
+    // reset left/top offset when returns to non-fullscreen
+    if (globalDOMCache['iframe' + frame.uuid].dataset.leftBeforeFullscreen) {
+        globalDOMCache['iframe' + frame.uuid].style.left = globalDOMCache['iframe' + frame.uuid].dataset.leftBeforeFullscreen;
+    }
+    if (globalDOMCache['iframe' + frame.uuid].dataset.topBeforeFullscreen) {
+        globalDOMCache['iframe' + frame.uuid].style.top = globalDOMCache['iframe' + frame.uuid].dataset.topBeforeFullscreen;
+    }
+
+    if (globalDOMCache[frame.uuid].dataset.leftBeforeFullscreen) {
+        globalDOMCache[frame.uuid].style.left = globalDOMCache[frame.uuid].dataset.leftBeforeFullscreen;
+    }
+    if (globalDOMCache[frame.uuid].dataset.topBeforeFullscreen) {
+        globalDOMCache[frame.uuid].style.top = globalDOMCache[frame.uuid].dataset.topBeforeFullscreen;
+    }
 
     globalDOMCache['iframe' + frame.uuid].classList.remove('webGlFrame');
 
@@ -2381,7 +2394,9 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
  */
 realityEditor.gui.ar.draw.killElement = function (thisActiveVehicleKey, thisActiveVehicle) {
     thisActiveVehicle.loaded = false;
-    globalDOMCache["object" + thisActiveVehicleKey].parentNode.removeChild(globalDOMCache["object" + thisActiveVehicleKey]);
+    if (globalDOMCache["object" + thisActiveVehicleKey]) {
+        globalDOMCache["object" + thisActiveVehicleKey].parentNode.removeChild(globalDOMCache["object" + thisActiveVehicleKey]);
+    }
     delete globalDOMCache["object" + thisActiveVehicleKey];
     delete globalDOMCache["iframe" + thisActiveVehicleKey];
     delete globalDOMCache[thisActiveVehicleKey];
