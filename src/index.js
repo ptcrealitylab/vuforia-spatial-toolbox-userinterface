@@ -119,6 +119,7 @@ var realityEditor = realityEditor || {
         realtime: {},
         utilities: {}
     },
+    envelopeManager: {},
     moduleCallbacks: {},
     worldObjects: {}
 };

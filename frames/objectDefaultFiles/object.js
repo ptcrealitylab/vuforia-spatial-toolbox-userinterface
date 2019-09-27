@@ -520,6 +520,7 @@
             {
                 this.sendGlobalMessage = makeSendStub('sendGlobalMessage');
                 this.sendMessageToFrame = makeSendStub('sendMessageToFrame');
+                this.sendEnvelopeMessage = makeSendStub('sendEnvelopeMessage');
                 this.sendCreateNode = makeSendStub('sendCreateNode');
                 this.sendMoveNode = makeSendStub('sendMoveNode');
                 this.sendResetNodes = makeSendStub('sendResetNodes');
@@ -549,6 +550,7 @@
                 this.announceVideoPlay = makeSendStub('announceVideoPlay');
                 this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
                 this.ignoreAllTouches = makeSendStub('ignoreAllTouches');
+                this.changeFrameSize = makeSendStub('changeOverlaySize');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -587,6 +589,7 @@
                 this.getAllObjectMatrices = makeSendStub('getAllObjectMatrices');
                 this.getUnitValue = makeSendStub('getUnitValue');
                 this.getScreenDimensions = makeSendStub('getScreenDimensions');
+                this.getMoveDelay = makeSendStub('getMoveDelay');
                 // deprecated getters
                 this.search = makeSendStub('search');
 
@@ -944,15 +947,30 @@
                 }
             });
         };
-
-        this.sendCreateNode = function (name, x, y, attachToGroundPlane) {
+        
+        this.sendEnvelopeMessage = function (msgContent) {
             postDataToParent({
-                createNode: {
-                    name: name,
-                    x: x,
-                    y: y,
-                    attachToGroundPlane: attachToGroundPlane
-                }
+                envelopeMessage: msgContent
+            });
+        };
+
+        this.sendCreateNode = function (name, x, y, attachToGroundPlane, nodeType, noDuplicate) {
+            var data = {
+                name: name,
+                x: x,
+                y: y
+            };
+            if (typeof attachToGroundPlane !== 'undefined') {
+                data.attachToGroundPlane = attachToGroundPlane;
+            }
+            if (typeof nodeType !== 'undefined') {
+                data.nodeType = nodeType;
+            }
+            if (typeof noDuplicate !== 'undefined') {
+                data.noDuplicate = noDuplicate;
+            }
+            postDataToParent({
+                createNode: data
             });
         };
 
@@ -1274,6 +1292,22 @@
         };
 
         /**
+         * Adjust the size of the frame's touch overlay element to match the current size of this frame.
+         * @param {number} newWidth
+         * @param {number} newHeight
+         */
+        this.changeFrameSize = function(newWidth, newHeight) {
+            realityObject.width = newWidth;
+            realityObject.height = newHeight;
+            postDataToParent({
+                changeFrameSize: {
+                    width: newWidth,
+                    height: newHeight
+                }
+            })
+        };
+
+        /**
          * Asynchronously query the screen width and height from the parent application, as the iframe itself can't access that
          * @param {function} callback
          */
@@ -1291,6 +1325,10 @@
                 getScreenDimensions: true
             });
             
+        };
+        
+        this.getMoveDelay = function() {
+            return realityObject.moveDelay;
         };
         
         /**

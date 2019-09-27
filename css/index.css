@@ -1439,3 +1439,20 @@ Logic Interface CSS
     position: absolute;
     border: 2px solid cyan;
 }
+
+#exitEnvelopeButton {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border: 2px solid cyan;
+    width: 60px;
+    height: 60px;
+    /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
+    -webkit-transform: translateZ(2900px);
+    z-index: 290;
+}
+
+.highlightedPocketElement {
+    background-color: rgba(0,255,255,0.5);
+    border: 5px solid cyan;
+}

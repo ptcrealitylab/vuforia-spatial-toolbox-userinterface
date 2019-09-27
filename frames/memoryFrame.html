@@ -696,7 +696,7 @@
         // //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
         // // }
         //
-        globalDOMCache["iframe" + activeKey]._loaded = true;
+        globalDOMCache["iframe" + activeKey].setAttribute('loaded', true);
         globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
 
         // if (nodeKey) {
