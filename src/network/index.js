@@ -386,7 +386,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
         
         if (globalDOMCache["iframe" + frameKey]) {
-            if (globalDOMCache["iframe" + frameKey]._loaded) {
+            if (globalDOMCache["iframe" + frameKey].getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
@@ -507,8 +507,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         // console.log("NO");
 
         if (globalDOMCache["iframe" + nodeKey]) {
-            if (globalDOMCache["iframe" + nodeKey]._loaded)
+            if (globalDOMCache["iframe" + nodeKey].getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, nodeKey);
+            }
         }
     }
 
@@ -1255,10 +1256,16 @@ if (thisFrame) {
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
-            
+
+            globalDOMCache[tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.left;
+            globalDOMCache[tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.top;
+
             globalDOMCache[tempThisObject.uuid].style.opacity = '0'; // svg overlay still exists so we can reposition, but invisible
             globalDOMCache[tempThisObject.uuid].style.left = '0';
             globalDOMCache[tempThisObject.uuid].style.top = '0';
+
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.left;
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.top;
             
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
@@ -1301,10 +1308,16 @@ if (thisFrame) {
                 '0, 0, 1, 0,' +
                 '0, 0, ' + zIndex + ', 1)';
 
+            globalDOMCache[tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.left;
+            globalDOMCache[tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.top;
+
             globalDOMCache[tempThisObject.uuid].style.opacity = '0';
             globalDOMCache[tempThisObject.uuid].style.left = '0';
             globalDOMCache[tempThisObject.uuid].style.top = '0';
-            
+
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.left;
+            globalDOMCache['iframe' + tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.top;
+
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
@@ -1337,13 +1350,25 @@ if (thisFrame) {
         }
     }
 
-    // todo this needs to be checked in to the present version
     if (typeof msgContent.createNode !== "undefined") {
+        
+        if (msgContent.createNode.noDuplicate) {
+            // check if a node with this name already exists on this frame
+            var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+            var nodeNames = Object.keys(frame.nodes).map(function(nodeKey) {
+                return frame.nodes[nodeKey].name;
+            });
+            if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
+                console.log('don\'t duplicate node');
+                return; 
+            }
+        }
+        
         let node = new Node();
         node.name = msgContent.createNode.name;
         node.frameId = msgContent.frame;
         node.objectId = msgContent.object;
-        var nodeKey = node.frameId + msgContent.createNode.name + realityEditor.device.utilities.uuidTime();
+        var nodeKey = node.frameId + msgContent.createNode.name;// + realityEditor.device.utilities.uuidTime();
         node.uuid = nodeKey;
         var thisObject = realityEditor.getObject(msgContent.object);
         let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
@@ -1352,6 +1377,10 @@ if (thisFrame) {
         
         if (msgContent.createNode.attachToGroundPlane) {
             node.attachToGroundPlane = true;
+        }
+        
+        if (typeof msgContent.createNode.nodeType !== 'undefined') {
+            node.type = msgContent.createNode.nodeType;
         }
         
         thisFrame.nodes[nodeKey] = node;
@@ -1529,6 +1558,23 @@ if (thisFrame) {
         }), '*');
     }
     
+    // adjusts the iframe and touch overlay size based on a message from the iframe about the size of its contents changing
+    if (typeof msgContent.changeFrameSize !== 'undefined') {
+        let width = msgContent.changeFrameSize.width;
+        let height = msgContent.changeFrameSize.height;
+
+        let iFrame = document.getElementById('iframe' + msgContent.frame);
+        let overlay = document.getElementById(msgContent.frame);
+
+        iFrame.style.width = width + 'px';
+        iFrame.style.height = height + 'px';
+        overlay.style.width = width + 'px';
+        overlay.style.height = height + 'px';
+
+        let cornerPadding = 24;
+        overlay.querySelector('.corners').style.width = width + cornerPadding + 'px';
+        overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
+    }
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
@@ -2558,7 +2604,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
     
-    globalDOMCache["iframe" + activeKey]._loaded = true;
+    globalDOMCache["iframe" + activeKey].setAttribute('loaded', true);
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
 
     if (nodeKey) {

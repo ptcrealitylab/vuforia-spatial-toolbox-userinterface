@@ -205,7 +205,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', addedLogic);
 
             var _thisNode = document.getElementById("iframe" + logicKey);
-            if (_thisNode && _thisNode._loaded) {
+            if (_thisNode && _thisNode.getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(closestObjectKey, logicKey);
             }
 
@@ -647,8 +647,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             pocketShow();
         }
     }
-
-
+    
+    // external modules can register a function to apply different CSS classes to each pocket item container
+    var pocketElementHighlightFilters = [];
+    
+    function addElementHighlightFilter(callback) {
+        pocketElementHighlightFilters.push(callback);
+    }
+    
     function pocketShow() {
         pocket.classList.add('pocketShown');
         realityEditor.gui.menus.buttonOn(['pocket']);
@@ -661,6 +667,29 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
         isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
+        
+        console.warn('pocket show', document.querySelector('.palette'));
+        
+        var allPocketElements = Array.from(document.querySelector('.palette').children);
+        allPocketElements.forEach(function(pocketElement) {
+            pocketElement.classList.remove('highlightedPocketElement');
+        });
+        
+        if (pocketElementHighlightFilters.length > 0) {
+            
+            var pocketFrameNames = allPocketElements.map(function(div) { return div.dataset.name });
+            
+            pocketElementHighlightFilters.forEach(function(filterFunction) {
+                var framesToHighlight = filterFunction(pocketFrameNames);
+
+                allPocketElements.forEach(function(pocketElement) {
+                    if (framesToHighlight.indexOf(pocketElement.dataset.name) > -1) {
+                        pocketElement.classList.add('highlightedPocketElement');
+                    }
+                });
+
+            });
+        }
 
         createPocketScrollbar();
     }
@@ -849,4 +878,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     exports.onBigPocketButtonEnter = onBigPocketButtonEnter;
     exports.onHalfPocketButtonEnter = onHalfPocketButtonEnter;
 
+    exports.addElementHighlightFilter = addElementHighlightFilter;
+    
 }(realityEditor.gui.pocket));
