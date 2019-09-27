@@ -1,17 +1,29 @@
 (function(exports) {
+    /**
+     * @fileOverview
+     * How to use:
+     * 
+     * In a frame that you want to be an envelope (a container for other frames that can be opened and closed):
+     * 
+     * 1. instantiate envelope = new Envelope(...) object with a reference to a RealityInterface and other parameters
+     * 2. Use envelope APIs like envelope.open(), envelope.close(), envelope.onFrameAdded(...), ...
+     * 3. To send a message to frames dropped into this envelope, use:
+          envelope.sendMessageToAllContainedFrames({
+            exampleMessageName: messageData
+          });
+          (You can also use sendMessageToFrameWithId or sendMessageToFrameAtIndex to send to a specific one)
+     * 4. To listen for messages from contained frames, use:
+          envelope.onMessageFromContainedFrame(function(message) {
+            if (typeof message.exampleMessageName !== 'undefined') { 
+              // respond to message.exampleMessageName
+            }
+          });
+     * 5. Ensure that all frames you want to be compatible with this envelope follow the instructions in envelopeContents.js
+     */
 
-    /* eslint no-inner-declarations: "off" */
     // makes sure this only gets loaded once per iframe
     if (typeof exports.Envelope !== 'undefined') {
         return;
-    }
-
-    /**
-     * @constructor
-     */
-    function FrameData(id, type) {
-        this.id = id;
-        this.type = type;
     }
 
     /**
@@ -23,12 +35,12 @@
      * 
      * @param {RealityInterface} realityInterface - reference to the RealityInterface API object
      * @param {Array.<string>} compatibleFrameTypes - array of types of frames that can be added to this envelope
-     * @param {HTMLElement} bodyWhenOpen - a containing div that will be rendered when open (fullscreen 2D)
-     * @param {HTMLElement} bodyWhenClosed - a containing div that will be rendered when closed (small 3D icon)
+     * @param {HTMLElement} rootElementWhenOpen - a containing div that will be rendered when open (fullscreen 2D)
+     * @param {HTMLElement} rootElementWhenClosed - a containing div that will be rendered when closed (small 3D icon)
      * @param {boolean|undefined} isStackable - defaults to false
      * @param {boolean|undefined} areFramesOrdered - defaults to false
      */
-    function Envelope(realityInterface, compatibleFrameTypes, bodyWhenOpen, bodyWhenClosed, isStackable, areFramesOrdered) {
+    function Envelope(realityInterface, compatibleFrameTypes, rootElementWhenOpen, rootElementWhenClosed, isStackable, areFramesOrdered) {
         if (typeof compatibleFrameTypes === 'undefined' || compatibleFrameTypes.length === 0) {
             console.warn('You must specify at least one compatible frame type for this envelope');
         }
@@ -72,7 +84,7 @@
         this.isOpen = false;
         /**
          * Callbacks for various events from contained frames or the reality editor
-         * @type {{onFrameAdded: null, onFrameDeleted: null, onMessageFromFrame: null, onOpen: null, onClose: null}}
+         * @type {{onFrameAdded: Array, onFrameDeleted: Array, onMessageFromContainedFrame: Array, onOpen: Array, onClose: Array}}
          */
         this.callbacks = {
             /**
@@ -86,7 +98,7 @@
             /**
              * Triggered when a contained frame sends a message to the envelope (e.g. "stepCompleted")
              */
-            onMessageFromFrame: [],
+            onMessageFromContainedFrame: [],
             /**
              * Triggered when the user taps on the envelope or otherwise opens it. May need to update UI for fullscreen
              */
@@ -96,15 +108,23 @@
              */
             onClose: []
         };
+        /**
+         * The actual width and height of the screen, used to set the size of the frame when the envelope is opened
+         * These are default values, that get overridden in the constructor using realityInterface.getScreenDimensions
+         * @type {{width: number, height: number}}
+         */
+        this.screenDimensions = {
+            width: 736,
+            height: 414
+        };
         
-        // UI
-        this.bodyWhenOpen = bodyWhenOpen;
-        this.bodyWhenClosed = bodyWhenClosed;
-        
+        // Manage the UI for open and closed states
+        this.rootElementWhenOpen = rootElementWhenOpen;
+        this.rootElementWhenClosed = rootElementWhenClosed;
         if (this.isOpen) {
-            this.bodyWhenClosed.style.display = 'none';
+            this.rootElementWhenClosed.style.display = 'none';
         } else {
-            this.bodyWhenOpen.style.display = 'none';
+            this.rootElementWhenOpen.style.display = 'none';
         }
 
         /**
@@ -123,77 +143,76 @@
                     });
                 }
             }
-            
             if (typeof msgContent.envelopeMessage.sendMessageToContents !== 'undefined') {
-                // sendMessageToContents
-                this.sendMessageToAllFrames(msgContent.envelopeMessage.sendMessageToContents);
+                this.sendMessageToAllContainedFrames(msgContent.envelopeMessage.sendMessageToContents);
             }
-            
             if (typeof msgContent.envelopeMessage.open !== 'undefined') {
                 this.open();
             }
-            
             if (typeof msgContent.envelopeMessage.close !== 'undefined') {
                 this.close();
             }
-            
         }.bind(this));
         
         // initialize by adding some default event listeners that adjust the UI based on some events
         
-        // this keeps the list of contained frames and the ordering up-to-date
+        // these keep the list of contained frames and the ordering up-to-date
         // add your own callback to adjust the UI based on frames being added or removed
+        
         this.onFrameAdded(function(frameAddedMessage) {
+            // update containedFrames and ordering
             this.containedFrames[frameAddedMessage.frameId] = new FrameData(frameAddedMessage.frameId, frameAddedMessage.frameType);
             if (this.areFramesOrdered) {
-                this.frameIdOrdering.push(frameAddedMessage.frameId); // add to ordering
+                this.frameIdOrdering.push(frameAddedMessage.frameId);
             }
+            // send messages to trigger events and save persistently
             this.orderingUpdated();
             this.containedFramesUpdated();
             this.savePersistentData();
         }.bind(this));
         
         this.onFrameDeleted(function(frameDeletedMessage) {
+            // update containedFrames and ordering
             delete this.containedFrames[frameDeletedMessage.frameId];
             if (this.areFramesOrdered) {
                 let index = this.frameIdOrdering.indexOf(frameDeletedMessage.frameId);
                 if (index > -1) {
-                    this.frameIdOrdering.splice(index, 1); // remove from ordering
+                    this.frameIdOrdering.splice(index, 1);
                 }
             }
+            // send messages to trigger events and save persistently
             this.orderingUpdated();
             this.containedFramesUpdated();
             this.savePersistentData();
         }.bind(this));
 
-        // this updates the UI automatically when the frame is opened or closed to switch between its two container divs
-        this.onOpen(function(_openMessage) {
-            this.bodyWhenClosed.style.display = 'none'; // TODO: move to a class that gets added?
-            this.bodyWhenOpen.style.display = 'inline';
-        }.bind(this));
-
-        this.onClose(function(_closeMessage) {
-            this.bodyWhenClosed.style.display = 'inline'; // TODO: move to a class that gets added?
-            this.bodyWhenOpen.style.display = 'none';
+        // these update the UI automatically when the frame is opened or closed to switch between its two container divs
+        
+        this.onOpen(function() {
+            this.rootElementWhenClosed.style.display = 'none'; // TODO: move to a class that gets added?
+            this.rootElementWhenOpen.style.display = 'inline';
+            this.realityInterface.setMoveDelay(-1); // can't move it while fullscreen
         }.bind(this));
         
-        this.realityInterface.sendEnvelopeMessage({
-            isEnvelope: true,
-            compatibleFrameTypes: this.compatibleFrameTypes
-        });
-        
-        // automatically ensure that there is a storeData node called 'storage' on the envelope frame
-        let nodeParams = {
-            name: 'storage',
-            x: 0,
-            y: 0,
-            groundplane: false,
-            type: 'storeData',
-            noDuplicate: true
-        };
-        this.realityInterface.sendCreateNode(nodeParams.name, nodeParams.x, nodeParams.y, nodeParams.groundplane, nodeParams.type, nodeParams.noDuplicate);
+        this.onClose(function() {
+            this.rootElementWhenClosed.style.display = 'inline'; // TODO: move to a class that gets added?
+            this.rootElementWhenOpen.style.display = 'none';
+            this.realityInterface.setMoveDelay(400); // TODO: restore to previous value instead of default 400ms
+        }.bind(this));
 
-        // read from storage to restore any relationships with contained frames
+        /**
+         * Uses the RealityInterface frame messaging system to listen for messages from contained frames.
+         */
+        realityInterface.addFrameMessageListener(function(message) {
+            if (typeof message.msgContent.containedFrameMessage !== 'undefined') {
+                // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
+                this.triggerCallbacks('onMessageFromContainedFrame', message.msgContent.containedFrameMessage);
+            }
+        }.bind(this));
+
+        /**
+         * read from persistent storage to restore any relationships with contained frames when this loads
+         */
         realityInterface.addReadPublicDataListener('storage', 'envelopeContents', function (savedContents) {
             console.log('saved envelope contents', savedContents);
             if (typeof savedContents.containedFrames !== 'undefined') {
@@ -207,240 +226,315 @@
                 console.log('loaded frameIdOrdering');
             }
         }.bind(this));
-    }
-    
-    Envelope.prototype.containedFramesUpdated = function() {
-        // send up to editor so editor module has a map of envelopes->containedFrames
-        this.realityInterface.sendEnvelopeMessage({
-            containedFrameIds: Object.keys(this.containedFrames)
-        });
-    };
-    
-    Envelope.prototype.orderingUpdated = function() {
-        if (!this.areFramesOrdered) { return; }
-        // send a message to each frame with their order
-        this.frameIdOrdering.forEach(function(frameId, index) {
-            this.sendMessageToFrameWithId(frameId, {
-                onOrderUpdated: {
-                    index: index,
-                    total: this.frameIdOrdering.length
-                }
-            })
-        }.bind(this));
         
-    };
-
-    Envelope.prototype.savePersistentData = function() {
-        let envelopeContents = {
-            containedFrames: this.containedFrames
-        };
-        if (this.areFramesOrdered) {
-            envelopeContents.frameIdOrdering = this.frameIdOrdering;
-        }
-        console.log('savePersistentData', envelopeContents);
-        realityInterface.writePublicData('storage', 'envelopeContents',  envelopeContents);
-    };
-
-    /**
-     * Method to manually trigger callbacks via the envelope object, rather than responding to POST message events.
-     * They usually get triggered via the window.addEventListener('message', ...) callback handler.
-     * @param {string} callbackName
-     * @param {Object} msgContent
-     */
-    Envelope.prototype.triggerCallbacks = function(callbackName, msgContent) {
-        if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
-            this.callbacks[callbackName].forEach(function(addedCallback) {
-                var msgObject = {};
-                msgObject[callbackName] = msgContent;
-                addedCallback(msgObject);
+        // send messages to finish initializing the envelope with the rest of the system
+        {
+            // registers the envelope with the editor
+            this.realityInterface.sendEnvelopeMessage({
+                isEnvelope: true,
+                compatibleFrameTypes: this.compatibleFrameTypes
             });
-        }
-    };
-    
-    //
-    // Methods to adapt the UI to the open/closed state
-    //
-    
-    /**
-     * Triggers the envelope to open if it's closed, which means it becomes sticky fullscreen and triggers onOpen events
-     */
-    Envelope.prototype.open = function() {
-        if (this.isOpen) { return; }
-        
-        this.isOpen = true;
-        this.realityInterface.setStickyFullScreenOn(); // I'm assuming envelopes want 'sticky' fullscreen, not regular
-        if (!this.isStackable) {
-            this.realityInterface.setExclusiveFullScreenOn(function() {
-                this.close(); // trigger all the side-effects related to the envelope closing
+
+            // automatically ensure that there is a node called 'storage' on the envelope frame to store the publicData
+            let params = {
+                name: 'storage',
+                x: 0,
+                y: 0,
+                groundplane: false,
+                type: 'storeData',
+                noDuplicate: true // only create if doesn't already exist
+            };
+            this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
+
+            // this adjusts the size of the body to be fullscreen based on accurate device screen size
+            realityInterface.getScreenDimensions(function(width, height) {
+                this.screenDimensions = {
+                    width: width,
+                    height: height
+                };
+
+                // changing the body size should reposition everything else nicely relative to it
+                document.body.style.width = width + 'px';
+                document.body.style.height = height + 'px';
+
+                // if necessary, reposition/resize any element with manual adjustments
+                rootElementWhenOpen.style.width = width + 'px';
+                rootElementWhenOpen.style.height = height + 'px';
             }.bind(this));
         }
-
-        this.triggerCallbacks('onOpen', {});
         
-        this.realityInterface.sendEnvelopeMessage({
-            open: true
-        });
-    };
+    }
+    
+    // Envelope API - these methods can / should be called from the frame you build
+    {
+        /**
+         * API to trigger the envelope to open if it's closed, which means it becomes sticky fullscreen and triggers onOpen events
+         */
+        Envelope.prototype.open = function() {
+            if (this.isOpen) { return; }
 
-    /**
-     * Triggers the envelope to close if it's open, which means it turns off fullscreen and triggers onClosed events
-     */
-    Envelope.prototype.close = function() {
-        if (!this.isOpen) { return; }
-        
-        this.isOpen = false;
-        this.realityInterface.setFullScreenOff();
+            this.isOpen = true;
+            this.realityInterface.setStickyFullScreenOn(); // currently assumes envelopes want 'sticky' fullscreen, not regular
+            if (!this.isStackable) {
+                this.realityInterface.setExclusiveFullScreenOn(function() {
+                    this.close(); // trigger all the side-effects related to the envelope closing
+                }.bind(this));
+            }
 
-        this.triggerCallbacks('onClose', {});
+            this.triggerCallbacks('onOpen', {});
 
-        this.realityInterface.sendEnvelopeMessage({
-            close: true
-        });
-    };
-    
-    //
-    // Methods to subscribe to events from contained frames or from the reality editor 
-    //
-    
-    Envelope.prototype.onFrameAdded = function(callback) {
-        this.addCallback('onFrameAdded', callback); // TODO: call onOrderUpdated here? or handle it somewhere else?
-    };
-    
-    Envelope.prototype.onFrameDeleted = function(callback) {
-        this.addCallback('onFrameDeleted', callback);
-    };
-    
-    Envelope.prototype.onMessageFromFrame = function(callback) {
-        this.addCallback('onMessageFromFrame', callback);
-    };
-    
-    Envelope.prototype.onOpen = function(callback) {
-        this.addCallback('onOpen', callback);
-    };
-    
-    Envelope.prototype.onClose = function(callback) {
-        this.addCallback('onClose', callback);
-    };
-    
-    //
-    // Methods to trigger events on contained frames or on the envelope itself
-    //
-    
-    /**
-     * Sends a JSON message to a particular contained frame, if there is one matching that ID
-     * @param {string} id - the uuid of the frame
-     * @param {Object} message
-     */
-    Envelope.prototype.sendMessageToFrameWithId = function(id, message) {
-        this.realityInterface.sendMessageToFrame(id, {
-            envelopeMessage: message // TODO: is this the right format?
-        });
-    };
+            this.realityInterface.sendEnvelopeMessage({
+                open: true
+            });
+        };
 
-    /**
-     * Sends a JSON message to all contained frames
-     * @param {Object} message
-     */
-    Envelope.prototype.sendMessageToAllFrames = function(message) {
-        this.forEachFrame(function(frameId, _frameData) {
-            this.sendMessageToFrameWithId(frameId, message);
-        }.bind(this));
-    };
+        /**
+         * API to trigger the envelope to close if it's open, which means it turns off fullscreen and triggers onClosed events
+         */
+        Envelope.prototype.close = function() {
+            if (!this.isOpen) { return; }
 
-    /**
-     * Sends a JSON message to the contained frame in a certain index of the ordering
-     * @param {number} index
-     * @param {Object} message
-     * @todo: implement
-     */
-    Envelope.prototype.sendMessageToFrameAtIndex = function(index, message) {
-        if (!this.areFramesOrdered) {
-            console.warn('You cannot send a message by index if the frames are unordered');
-            return;
-        }
-        this.sendMessageToFrameWithId(this.getFrameIdAtIndex(index), message);
-    };
-    
-    /**
-     * Moves the frame with the specified ID to the new index
-     * @param {string} frameId
-     * @param {number} newIndex
-     */
-    Envelope.prototype.reorderFrames = function(frameId, newIndex) {
-        if (!this.areFramesOrdered) {
-            console.warn('You cannot reorder frames if the frames are unordered');
-            return;
-        }
-        let currentIndex = this.frameIdOrdering.indexOf(frameId);
-        if (currentIndex > -1) {
-            this.frameIdOrdering.move(currentIndex, newIndex);
-            
-            // notify all frames of their new indices
-            this.frameIdOrdering.forEach(function(id, index) {
-                this.sendMessageToFrameWithId(id, {
+            this.isOpen = false;
+            this.realityInterface.setFullScreenOff();
+
+            this.triggerCallbacks('onClose', {});
+
+            this.realityInterface.sendEnvelopeMessage({
+                close: true
+            });
+        };
+
+        /**
+         * API to subscribe to a compatible frame being added to the envelope.
+         * The envelope already automatically adds it to the containedFrames and updates the ordering if needed.
+         * @param {function<{objectId: string, frameId: string, frameType: string}>} callback
+         */
+        Envelope.prototype.onFrameAdded = function(callback) {
+            this.addCallback('onFrameAdded', callback);
+        };
+
+        /**
+         * API to subscribe to a contained frame being deleted from the envelope.
+         * The envelope already automatically removes it from the containedFrames and updates the ordering if needed.
+         * @param {function<{objectId: string, frameId: string, frameType: string}>} callback
+         */
+        Envelope.prototype.onFrameDeleted = function(callback) {
+            this.addCallback('onFrameDeleted', callback);
+        };
+
+        /**
+         * API to subscribe to arbitrary messages being sent to the envelope by its contained frames.
+         * @param {function<Object>} callback
+         */
+        Envelope.prototype.onMessageFromContainedFrame = function(callback) {
+            this.addCallback('onMessageFromContainedFrame', callback);
+        };
+
+        /**
+         * API to respond to the envelope opening.
+         * Its UI already automatically requests fullscreen and changes from rootElementWhenClosed to rootElementWhenOpen.
+         * @param {function<>} callback
+         */
+        Envelope.prototype.onOpen = function(callback) {
+            this.addCallback('onOpen', callback);
+        };
+
+        /**
+         * API to respond to the envelope closing.
+         * Its UI already automatically removes fullscreen and changes from rootElementWhenOpen to rootElementWhenClosed.
+         * @param {function<>} callback
+         */
+        Envelope.prototype.onClose = function(callback) {
+            this.addCallback('onClose', callback);
+        };
+
+        /**
+         * API to send a JSON message to a particular contained frame, if there is one matching that ID.
+         * @param {string} id - the uuid of the frame
+         * @param {Object} message
+         */
+        Envelope.prototype.sendMessageToFrameWithId = function(id, message) {
+            this.realityInterface.sendMessageToFrame(id, {
+                envelopeMessage: message // TODO: is this the right format?
+            });
+        };
+
+        /**
+         * API to send a JSON message to all contained frames.
+         * @param {Object} message
+         */
+        Envelope.prototype.sendMessageToAllContainedFrames = function(message) {
+            this.forEachFrame(function(frameId, _frameData) {
+                this.sendMessageToFrameWithId(frameId, message);
+            }.bind(this));
+        };
+
+        /**
+         * API to send a JSON message to the contained frame in a certain index of the ordering.
+         * @param {number} index
+         * @param {Object} message
+         */
+        Envelope.prototype.sendMessageToFrameAtIndex = function(index, message) {
+            if (!this.areFramesOrdered) {
+                console.warn('You cannot send a message by index if the frames are unordered');
+                return;
+            }
+            this.sendMessageToFrameWithId(this.getFrameIdAtIndex(index), message);
+        };
+
+        /**
+         * API to move the frame with the specified ID to the new index.
+         * @param {string} frameId
+         * @param {number} newIndex
+         */
+        Envelope.prototype.reorderFrames = function(frameId, newIndex) {
+            if (!this.areFramesOrdered) {
+                console.warn('You cannot reorder frames if the frames are unordered');
+                return;
+            }
+            let currentIndex = this.frameIdOrdering.indexOf(frameId);
+            if (currentIndex > -1) {
+                this.frameIdOrdering.move(currentIndex, newIndex);
+
+                // notify all frames of their new indices
+                this.frameIdOrdering.forEach(function(id, index) {
+                    this.sendMessageToFrameWithId(id, {
+                        onOrderUpdated: {
+                            index: index,
+                            total: this.frameIdOrdering.length
+                        }
+                    });
+                }.bind(this));
+            }
+        };
+    }
+
+    // Internal helper functions, not actually private but don't need to be called from the frame you build
+    // In conjunction with the constructor, these set up all the behind-the-scenes functionality to make envelopes work
+    {
+        /**
+         * Sends a message to the editor with all contained frames so editor has an accurate map of envelopes->containedFrames.
+         * Gets triggered automatically when frames are added or removed.
+         */
+        Envelope.prototype.containedFramesUpdated = function() {
+            this.realityInterface.sendEnvelopeMessage({
+                containedFrameIds: Object.keys(this.containedFrames)
+            });
+        };
+
+        /**
+         * Sends a message (if areFramesOrdered) to all contained frames updating them about which index they
+         * are in the ordering, and how many contained frames there are in total.
+         * Gets triggered automatically when frames are added or removed.
+         */
+        Envelope.prototype.orderingUpdated = function() {
+            if (!this.areFramesOrdered) { return; }
+            // send a message to each frame with their order
+            this.frameIdOrdering.forEach(function(frameId, index) {
+                this.sendMessageToFrameWithId(frameId, {
                     onOrderUpdated: {
                         index: index,
                         total: this.frameIdOrdering.length
                     }
-                });
+                })
             }.bind(this));
-        }
-    };
-    
-    //
-    // Helper functions
-    //
-    
-    /**
-     * Helper function to correctly add a callback function
-     * @param {string} callbackName - should match one of the keys in this.callbacks
-     * @param {function} callbackFunction
-     */
-    Envelope.prototype.addCallback = function(callbackName, callbackFunction) {
-        if (typeof this.callbacks[callbackName] === 'undefined') {
-            console.warn('Creating a new envelope callback that wasn\'t defined in the constructor');
-            this.callbacks[callbackName] = [];
-        }
 
-        this.callbacks[callbackName].push(function(envelopeMessage) {
-            if (typeof envelopeMessage[callbackName] === 'undefined') { return; }
-            callbackFunction(envelopeMessage[callbackName]);
-        });
-    };
+        };
+
+        /**
+         * Writes the containedFrames and frameIdOrdering to publicData so that the relationships persist across sessions.
+         * Gets triggered automatically when frames are added or removed.
+         */
+        Envelope.prototype.savePersistentData = function() {
+            let envelopeContents = {
+                containedFrames: this.containedFrames
+            };
+            if (this.areFramesOrdered) {
+                envelopeContents.frameIdOrdering = this.frameIdOrdering;
+            }
+            console.log('savePersistentData', envelopeContents);
+            realityInterface.writePublicData('storage', 'envelopeContents',  envelopeContents);
+        };
+
+        /**
+         * Method to manually trigger callbacks via the envelope object, rather than reacting to post message events.
+         * Used e.g. to trigger onOpen and onClose when the API's open() and close() functions are used.
+         * Otherwise, callbacks usually get triggered via the window.addEventListener('message', ...) callback handler.
+         * @param {string} callbackName
+         * @param {Object} msgContent
+         */
+        Envelope.prototype.triggerCallbacks = function(callbackName, msgContent) {
+            if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
+                this.callbacks[callbackName].forEach(function(addedCallback) {
+                    let msgObject = {};
+                    msgObject[callbackName] = msgContent;
+                    addedCallback(msgObject);
+                });
+            }
+        };
+
+        /**
+         * Helper function to correctly add a callback function
+         * @param {string} callbackName - should match one of the keys in this.callbacks
+         * @param {function<*>} callbackFunction
+         */
+        Envelope.prototype.addCallback = function(callbackName, callbackFunction) {
+            if (typeof this.callbacks[callbackName] === 'undefined') {
+                console.warn('Creating a new envelope callback that wasn\'t defined in the constructor');
+                this.callbacks[callbackName] = [];
+            }
+
+            this.callbacks[callbackName].push(function(envelopeMessage) {
+                if (typeof envelopeMessage[callbackName] === 'undefined') { return; }
+                callbackFunction(envelopeMessage[callbackName]);
+            });
+        };
+
+        /**
+         * Gets the frame id that corresponds to a certain index in the ordering.
+         * @param {number} index
+         */
+        Envelope.prototype.getFrameIdAtIndex = function(index) {
+            if (!this.areFramesOrdered) {
+                console.warn('You cannot send a message by index if the frames are unordered');
+                return;
+            }
+            return this.frameIdOrdering[index];
+        };
+
+        /**
+         * Helper function to iterate over all contained frames.
+         * @param {function<string, FrameData>} callback
+         */
+        Envelope.prototype.forEachFrame = function(callback) {
+            for (let frameId in this.containedFrames) {
+                callback(frameId, this.containedFrames[frameId]);
+            }
+        };
+
+        /**
+         * Adds a method to Arrays to move an element to a new index.
+         * @author https://stackoverflow.com/a/2440723/1190267
+         * @param {number} from - old index
+         * @param {number} to - new index
+         */
+        Array.prototype.move = function (from, to) {
+            this.splice(to, 0, this.splice(from, 1)[0]);
+        };
+    }
 
     /**
-     * Gets the frame id that corresponds to a certain index in the ordering
-     * @param index
-     * @todo: make private?
-     * @todo: implement
+     * @constructor
+     * This contains all the necessary information to keep track of a frame that the envelope contains.
+     * More params can be added as necessary for more features.
+     *
+     * @param {string} id - the frame uuid, used as an address to send messages to it
+     * @param {string} type - the frame type, used to ensure it is a compatible with this envelope or to distinguish between different contained frames' capabilities
      */
-    Envelope.prototype.getFrameIdAtIndex = function(index) {
-        if (!this.areFramesOrdered) {
-            console.warn('You cannot send a message by index if the frames are unordered');
-            return;
-        }
-        return this.frameIdOrdering[index];
-    };
-
-    /**
-     * Helper function to iterate over all contained frames
-     * @param {function} callback
-     */
-    Envelope.prototype.forEachFrame = function(callback) {
-        for (let frameId in this.containedFrames) {
-            callback(frameId, this.containedFrames[frameId]);
-        }
-    };
-
-    /**
-     * Adds a helper function to Arrays to move an element to a new index
-     * @author https://stackoverflow.com/a/2440723/1190267
-     * @param from
-     * @param to
-     */
-    Array.prototype.move = function (from, to) {
-        this.splice(to, 0, this.splice(from, 1)[0]);
-    };
+    function FrameData(id, type) {
+        this.id = id;
+        this.type = type;
+    }
     
     exports.Envelope = Envelope;
 
