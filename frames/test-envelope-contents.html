@@ -35,7 +35,7 @@
     let container = document.getElementById('container');
     
     let realityInterface = new RealityInterface();
-    let envelopeContents = new EnvelopeContents(realityInterface, container); // TODO: automatically do this in object.js so that all frames are compatible inside envelopes without having to edit each file?
+    let envelopeContents = new EnvelopeContents(realityInterface, document.body);
     
     envelopeContents.onOrderUpdated(function(orderUpdatedMessage) {
         let index = orderUpdatedMessage.index;
@@ -44,13 +44,15 @@
     });
     
     envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
-        // console.warn('Contained frame received message from envelope', messageFromEnvelope);
-        if (typeof messageFromEnvelope.msgContent.envelopeMessage !== 'undefined') {
-            let envelopeMessage = messageFromEnvelope.msgContent.envelopeMessage;
-            if (typeof envelopeMessage.setColor !== 'undefined') {
-                container.style.backgroundColor = envelopeMessage.setColor;
-            }
+        if (typeof messageFromEnvelope.setColor !== 'undefined') {
+            container.style.backgroundColor = messageFromEnvelope.setColor;
         }
+    });
+    
+    container.addEventListener('pointerup', function(_event) {
+        envelopeContents.sendMessageToEnvelope({
+            containedFrameTapped: true
+        });
     });
     
 </script>
