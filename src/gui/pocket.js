@@ -670,7 +670,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         
         console.warn('pocket show', document.querySelector('.palette'));
         
-        var allPocketElements = [].slice.call(document.querySelector('.palette').children);
+        var allPocketElements = Array.from(document.querySelector('.palette').children);
         allPocketElements.forEach(function(pocketElement) {
             pocketElement.classList.remove('highlightedPocketElement');
         });

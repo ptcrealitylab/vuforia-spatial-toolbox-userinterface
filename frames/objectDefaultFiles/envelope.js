@@ -117,155 +117,70 @@
             width: 736,
             height: 414
         };
-        this.moveDelayBeforeOpen = 400; // default 400ms when closed, gets overwritten if you change moveDelay
-
         /**
-         * Triggers all callbacks functions when the iframe receives an 'envelopeMessage' POST message from the parent window.
-         * It is the responsibility of each callback function to filter out messages that aren't directed to it.
+         * default 400ms when closed, gets overwritten if you change realityInterface.setMoveDelay
+         * @type {number}
          */
-        window.addEventListener('message', function (msg) {
-            let msgContent = JSON.parse(msg.data);
-            if (typeof msgContent.envelopeMessage === 'undefined') {
-                return;
-            }
-            for (let callbackKey in this.callbacks) {
-                if (this.callbacks[callbackKey]) { // only trigger for callbacks that have been set
-                    this.callbacks[callbackKey].forEach(function(addedCallback) {
-                        addedCallback(msgContent.envelopeMessage)
-                    });
-                }
-            }
-            if (typeof msgContent.envelopeMessage.sendMessageToContents !== 'undefined') {
-                this.sendMessageToAllContainedFrames(msgContent.envelopeMessage.sendMessageToContents);
-            }
-            if (typeof msgContent.envelopeMessage.open !== 'undefined') {
-                this.open();
-            }
-            if (typeof msgContent.envelopeMessage.close !== 'undefined') {
-                this.close();
-            }
-        }.bind(this));
+        this.moveDelayBeforeOpen = 400;
         
-        // initialize by adding some default event listeners that adjust the UI based on some events
+        // finish setting up the envelope by adding default callbacks and listeners for certain events
+        
+        // listen to post messages from the editor to trigger certain envelope events
+        window.addEventListener('message', this.onWindowMessage.bind(this));
         
         // these keep the list of contained frames and the ordering up-to-date
         // add your own callback to adjust the UI based on frames being added or removed
-        
-        this.onFrameAdded(function(frameAddedMessage) {
-            // update containedFrames and ordering
-            this.containedFrames[frameAddedMessage.frameId] = new FrameData(frameAddedMessage.frameId, frameAddedMessage.frameType);
-            if (this.areFramesOrdered) {
-                this.frameIdOrdering.push(frameAddedMessage.frameId);
-            }
-            // send messages to trigger events and save persistently
-            this.orderingUpdated();
-            this.containedFramesUpdated();
-            this.savePersistentData();
-        }.bind(this));
-        
-        this.onFrameDeleted(function(frameDeletedMessage) {
-            // update containedFrames and ordering
-            delete this.containedFrames[frameDeletedMessage.frameId];
-            if (this.areFramesOrdered) {
-                let index = this.frameIdOrdering.indexOf(frameDeletedMessage.frameId);
-                if (index > -1) {
-                    this.frameIdOrdering.splice(index, 1);
-                }
-            }
-            // send messages to trigger events and save persistently
-            this.orderingUpdated();
-            this.containedFramesUpdated();
-            this.savePersistentData();
-        }.bind(this));
+        this.onFrameAdded(this._defaultOnFrameAdded.bind(this));
+        this.onFrameDeleted(this._defaultOnFrameDeleted.bind(this));
 
         // these update the UI automatically when the frame is opened or closed to switch between its two container divs
+        this.onOpen(this._defaultOnOpen.bind(this));
+        this.onClose(this._defaultOnClose.bind(this));
         
-        this.onOpen(function() {
-            this.rootElementWhenClosed.style.display = 'none';
-            this.rootElementWhenOpen.style.display = 'inline';
-            // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
-            this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenOpen.clientWidth), parseInt(this.rootElementWhenOpen.clientHeight));
-            this.moveDelayBeforeOpen = realityInterface.getMoveDelay() || 400;
-            this.realityInterface.setMoveDelay(-1); // can't move it while fullscreen
-        }.bind(this));
+        // Uses the RealityInterface frame messaging system to listen for messages from contained frames.
+        realityInterface.addFrameMessageListener(this._defaultFrameMessageListener.bind(this));
         
-        this.onClose(function() {
-            this.rootElementWhenClosed.style.display = 'inline';
-            this.rootElementWhenOpen.style.display = 'none';
-            // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
-            this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenClosed.clientWidth), parseInt(this.rootElementWhenClosed.clientHeight));
-            this.realityInterface.setMoveDelay(this.moveDelayBeforeOpen); // restore to previous value
-        }.bind(this));
-
-        /**
-         * Uses the RealityInterface frame messaging system to listen for messages from contained frames.
-         */
-        realityInterface.addFrameMessageListener(function(message) {
-            if (typeof message.msgContent.containedFrameMessage !== 'undefined') {
-                // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
-                this.triggerCallbacks('onMessageFromContainedFrame', message.msgContent.containedFrameMessage);
-            }
-        }.bind(this));
-
-        /**
-         * read from persistent storage to restore any relationships with contained frames when this loads
-         */
-        realityInterface.addReadPublicDataListener('storage', 'envelopeContents', function (savedContents) {
-            console.log('saved envelope contents', savedContents);
-            if (typeof savedContents.containedFrames !== 'undefined') {
-                this.containedFrames = savedContents.containedFrames;
-                console.log('loaded containedFrames');
-                this.containedFramesUpdated();
-            }
-            if (typeof savedContents.frameIdOrdering !== 'undefined') {
-                this.frameIdOrdering = savedContents.frameIdOrdering;
-                this.orderingUpdated();
-                console.log('loaded frameIdOrdering');
-            }
-        }.bind(this));
+        // read from persistent storage to restore any relationships with contained frames when this loads
+        realityInterface.addReadPublicDataListener('storage', 'envelopeContents', this._defaultPublicDataListener.bind(this));
         
-        // send messages to finish initializing the envelope with the rest of the system
-        {
-            // registers the envelope with the editor
-            this.realityInterface.sendEnvelopeMessage({
-                isEnvelope: true,
-                compatibleFrameTypes: this.compatibleFrameTypes
-            });
+        // registers the envelope with the editor
+        this.realityInterface.sendEnvelopeMessage({
+            isEnvelope: true,
+            compatibleFrameTypes: this.compatibleFrameTypes
+        });
 
-            // automatically ensure that there is a node called 'storage' on the envelope frame to store the publicData
-            let params = {
-                name: 'storage',
-                x: 0,
-                y: 0,
-                groundplane: false,
-                type: 'storeData',
-                noDuplicate: true // only create if doesn't already exist
+        // automatically ensure that there is a node called 'storage' on the envelope frame to store the publicData
+        let params = {
+            name: 'storage',
+            x: 0,
+            y: 0,
+            groundplane: false,
+            type: 'storeData',
+            noDuplicate: true // only create if doesn't already exist
+        };
+        this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
+
+        // this adjusts the size of the body to be fullscreen based on accurate device screen size
+        realityInterface.getScreenDimensions(function(width, height) {
+            this.screenDimensions = {
+                width: width,
+                height: height
             };
-            this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
 
-            // this adjusts the size of the body to be fullscreen based on accurate device screen size
-            realityInterface.getScreenDimensions(function(width, height) {
-                this.screenDimensions = {
-                    width: width,
-                    height: height
-                };
+            // changing the root element size should reposition everything else nicely relative to it
+            // if necessary, reposition/resize any element with manual adjustments
+            rootElementWhenOpen.style.width = width + 'px';
+            rootElementWhenOpen.style.height = height + 'px';
+        }.bind(this));
 
-                // changing the root element size should reposition everything else nicely relative to it
-                // if necessary, reposition/resize any element with manual adjustments
-                rootElementWhenOpen.style.width = width + 'px';
-                rootElementWhenOpen.style.height = height + 'px';
-            }.bind(this));
-
-            // Manage the UI for open and closed states
-            this.rootElementWhenOpen = rootElementWhenOpen;
-            this.rootElementWhenClosed = rootElementWhenClosed;
-            if (this.isOpen) {
-                this.rootElementWhenClosed.style.display = 'none';
-            } else {
-                this.rootElementWhenOpen.style.display = 'none';
-            }
+        // Manage the UI for open and closed states
+        this.rootElementWhenOpen = rootElementWhenOpen;
+        this.rootElementWhenClosed = rootElementWhenClosed;
+        if (this.isOpen) {
+            this.rootElementWhenClosed.style.display = 'none';
+        } else {
+            this.rootElementWhenOpen.style.display = 'none';
         }
-        
     }
     
     // Envelope API - these methods can / should be called from the frame you build
@@ -416,6 +331,119 @@
     // In conjunction with the constructor, these set up all the behind-the-scenes functionality to make envelopes work
     {
         /**
+         * Triggers all callbacks functions when the iframe receives an 'envelopeMessage' POST message from the parent window.
+         * It is the responsibility of each callback function to filter out messages that aren't directed to it.
+         * @param {string} msg - stringified JSON message
+         */
+        Envelope.prototype.onWindowMessage = function(msg) {
+            let msgContent = JSON.parse(msg.data);
+            if (typeof msgContent.envelopeMessage === 'undefined') {
+                return;
+            }
+            for (let callbackKey in this.callbacks) {
+                if (this.callbacks[callbackKey]) { // only trigger for callbacks that have been set
+                    this.callbacks[callbackKey].forEach(function(addedCallback) {
+                        addedCallback(msgContent.envelopeMessage)
+                    });
+                }
+            }
+            if (typeof msgContent.envelopeMessage.sendMessageToContents !== 'undefined') {
+                this.sendMessageToAllContainedFrames(msgContent.envelopeMessage.sendMessageToContents);
+            }
+            if (typeof msgContent.envelopeMessage.open !== 'undefined') {
+                this.open();
+            }
+            if (typeof msgContent.envelopeMessage.close !== 'undefined') {
+                this.close();
+            }
+        };
+
+        /**
+         * Maintains set of contained frames when a compatible frame is added
+         * @param {{objectId: string, frameId: string, frameType: string}} frameAddedMessage
+         */
+        Envelope.prototype._defaultOnFrameAdded = function(frameAddedMessage) {
+            // update containedFrames and ordering
+            this.containedFrames[frameAddedMessage.frameId] = new FrameData(frameAddedMessage.frameId, frameAddedMessage.frameType);
+            if (this.areFramesOrdered) {
+                this.frameIdOrdering.push(frameAddedMessage.frameId);
+            }
+            // send messages to trigger events and save persistently
+            this.orderingUpdated();
+            this.containedFramesUpdated();
+            this.savePersistentData();
+        };
+
+        /**
+         * Maintains set of contained frames when a contained frame is deleted
+         * @param {{objectId: string, frameId: string, frameType: string}} frameDeletedMessage
+         */
+        Envelope.prototype._defaultOnFrameDeleted = function(frameDeletedMessage) {
+            // update containedFrames and ordering
+            delete this.containedFrames[frameDeletedMessage.frameId];
+            if (this.areFramesOrdered) {
+                let index = this.frameIdOrdering.indexOf(frameDeletedMessage.frameId);
+                if (index > -1) {
+                    this.frameIdOrdering.splice(index, 1);
+                }
+            }
+            // send messages to trigger events and save persistently
+            this.orderingUpdated();
+            this.containedFramesUpdated();
+            this.savePersistentData();
+        };
+
+        /**
+         * Updates the UI and relevant frame properties when the envelope should become fullscreen.
+         */
+        Envelope.prototype._defaultOnOpen = function() {
+            this.rootElementWhenClosed.style.display = 'none';
+            this.rootElementWhenOpen.style.display = 'inline';
+            // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
+            this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenOpen.clientWidth), parseInt(this.rootElementWhenOpen.clientHeight));
+            this.moveDelayBeforeOpen = realityInterface.getMoveDelay() || 400;
+            this.realityInterface.setMoveDelay(-1); // can't move it while fullscreen
+        };
+
+        /**
+         * Resets the UI and relevant frame properties when the envelope is closed.
+         */
+        Envelope.prototype._defaultOnClose = function() {
+            this.rootElementWhenClosed.style.display = 'inline';
+            this.rootElementWhenOpen.style.display = 'none';
+            // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
+            this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenClosed.clientWidth), parseInt(this.rootElementWhenClosed.clientHeight));
+            this.realityInterface.setMoveDelay(this.moveDelayBeforeOpen); // restore to previous value
+        };
+
+        /**
+         * Uses the RealityInterface frame messaging system to listen for messages from contained frames.
+         * @param {{msgContent: Object, sourceFrame: string, destinationFrame: string}} message
+         */
+        Envelope.prototype._defaultFrameMessageListener = function(message) {
+            if (typeof message.msgContent.containedFrameMessage !== 'undefined') {
+                // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
+                this.triggerCallbacks('onMessageFromContainedFrame', message.msgContent.containedFrameMessage);
+            }
+        };
+
+        /**
+         * Read from persistent storage to restore any relationships with contained frames when this loads.
+         * @param {{containedFrames: Object|undefined, frameIdOrdering: Array.<string>|undefined}} savedContents
+         */
+        Envelope.prototype._defaultPublicDataListener = function(savedContents) {             
+            console.log('saved envelope contents', savedContents);
+            if (typeof savedContents.containedFrames !== 'undefined') {
+                this.containedFrames = savedContents.containedFrames;
+                this.containedFramesUpdated();
+            }
+            if (typeof savedContents.frameIdOrdering !== 'undefined') {
+                this.frameIdOrdering = savedContents.frameIdOrdering;
+                this.orderingUpdated();
+            }
+        };
+
+        /**
          * Sends a message to the editor with all contained frames so editor has an accurate map of envelopes->containedFrames.
          * Gets triggered automatically when frames are added or removed.
          */
@@ -456,7 +484,7 @@
                 envelopeContents.frameIdOrdering = this.frameIdOrdering;
             }
             console.log('savePersistentData', envelopeContents);
-            realityInterface.writePublicData('storage', 'envelopeContents',  envelopeContents);
+            this.realityInterface.writePublicData('storage', 'envelopeContents',  envelopeContents);
         };
 
         /**
