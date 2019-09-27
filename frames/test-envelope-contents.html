@@ -40,7 +40,7 @@
     envelopeContents.onOrderUpdated(function(orderUpdatedMessage) {
         let index = orderUpdatedMessage.index;
         let total = orderUpdatedMessage.total;
-        container.innerHTML = 'Step ' + (index+1) + '/' + total;
+        container.innerText = 'Step ' + (index+1) + '/' + total;
     });
     
     envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {

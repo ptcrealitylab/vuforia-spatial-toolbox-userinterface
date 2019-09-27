@@ -195,6 +195,7 @@
                 this.callbacks[callbackName] = [];
             }
 
+            // TODO: provide same functionality without doubling the number of function allocations per callback
             this.callbacks[callbackName].push(function(envelopeMessage) {
                 if (typeof envelopeMessage[callbackName] === 'undefined') { return; }
                 callbackFunction(envelopeMessage[callbackName]);

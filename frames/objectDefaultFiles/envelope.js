@@ -273,7 +273,7 @@
          */
         Envelope.prototype.sendMessageToFrameWithId = function(id, message) {
             this.realityInterface.sendMessageToFrame(id, {
-                envelopeMessage: message // TODO: is this the right format?
+                envelopeMessage: message
             });
         };
 
@@ -302,6 +302,7 @@
 
         /**
          * API to move the frame with the specified ID to the new index.
+         * Note - this hasn't been fully tested in practice yet.
          * @param {string} frameId
          * @param {number} newIndex
          */
@@ -312,7 +313,8 @@
             }
             let currentIndex = this.frameIdOrdering.indexOf(frameId);
             if (currentIndex > -1) {
-                this.frameIdOrdering.move(currentIndex, newIndex);
+                // moves element from currentIndex to newIndex - see https://stackoverflow.com/a/2440723/1190267
+                this.frameIdOrdering.splice(newIndex, 0, this.frameIdOrdering.splice(currentIndex, 1)[0]);
 
                 // notify all frames of their new indices
                 this.frameIdOrdering.forEach(function(id, index) {
@@ -515,6 +517,7 @@
                 this.callbacks[callbackName] = [];
             }
 
+            // TODO: provide same functionality without doubling the number of function allocations per callback
             this.callbacks[callbackName].push(function(envelopeMessage) {
                 if (typeof envelopeMessage[callbackName] === 'undefined') { return; }
                 callbackFunction(envelopeMessage[callbackName]);
@@ -541,16 +544,6 @@
             for (let frameId in this.containedFrames) {
                 callback(frameId, this.containedFrames[frameId]);
             }
-        };
-
-        /**
-         * Adds a method to Arrays to move an element to a new index.
-         * @author https://stackoverflow.com/a/2440723/1190267
-         * @param {number} from - old index
-         * @param {number} to - new index
-         */
-        Array.prototype.move = function (from, to) {
-            this.splice(to, 0, this.splice(from, 1)[0]);
         };
     }
 
