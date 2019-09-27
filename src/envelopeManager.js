@@ -14,8 +14,8 @@ createNameSpace("realityEditor.envelopeManager");
      * @typedef {Object} Envelope
      * @property {string} object
      * @property {string} frame
-     * @property {Array.<string> compatibleFrameTypes
-     * @property {Array.<string> containedFrameIds
+     * @property {Array.<string>} compatibleFrameTypes
+     * @property {Array.<string>} containedFrameIds
      * @property {boolean} isOpen
      */
 
@@ -298,7 +298,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @return {Array.<Envelope>}
      */
     function getOpenEnvelopes() {
-        return Object.keys(knownEnvelopes).map(function(key) { return knownEnvelopes[key]; }).filter(function(envelope) {
+        return Object.values(knownEnvelopes).filter(function(envelope) {
             return envelope.isOpen;
         });
     }

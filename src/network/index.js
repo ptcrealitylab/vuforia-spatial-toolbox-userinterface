@@ -1350,20 +1350,17 @@ if (thisFrame) {
         }
     }
 
-    // todo this needs to be checked in to the present version
     if (typeof msgContent.createNode !== "undefined") {
         
-        if (typeof msgContent.createNode.noDuplicate !== 'undefined') {
-            if (msgContent.createNode.noDuplicate) {
-                // check if a node with this name already exists on this frame
-                var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-                var nodeNames = Object.keys(frame.nodes).map(function(nodeKey) {
-                    return frame.nodes[nodeKey].name;
-                });
-                if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
-                    console.log('don\'t duplicate node');
-                    return; 
-                }
+        if (msgContent.createNode.noDuplicate) {
+            // check if a node with this name already exists on this frame
+            var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+            var nodeNames = Object.keys(frame.nodes).map(function(nodeKey) {
+                return frame.nodes[nodeKey].name;
+            });
+            if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
+                console.log('don\'t duplicate node');
+                return; 
             }
         }
         
@@ -1569,18 +1566,14 @@ if (thisFrame) {
         let iFrame = document.getElementById('iframe' + msgContent.frame);
         let overlay = document.getElementById(msgContent.frame);
 
-        let top = (width - height) / 2;
-        let left = (height - width) / 2;
-
         iFrame.style.width = width + 'px';
         iFrame.style.height = height + 'px';
-
         overlay.style.width = width + 'px';
         overlay.style.height = height + 'px';
 
         let cornerPadding = 24;
-        globalDOMCache[msgContent.frame].querySelector('.corners').style.width = width + cornerPadding + 'px';
-        globalDOMCache[msgContent.frame].querySelector('.corners').style.height = height + cornerPadding + 'px';
+        overlay.querySelector('.corners').style.width = width + cornerPadding + 'px';
+        overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
     }
 };
 
