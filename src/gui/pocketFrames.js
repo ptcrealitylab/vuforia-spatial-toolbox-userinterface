@@ -3,8 +3,8 @@
 var realityElements = [
     {
         name: 'test-envelope',
-        width: 768,
-        height: 414,
+        width: 300,
+        height: 300,
         nodes: [
         ]
     },
