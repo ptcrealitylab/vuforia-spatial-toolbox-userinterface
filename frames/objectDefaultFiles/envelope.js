@@ -334,7 +334,6 @@
     {
         /**
          * Triggers all callbacks functions when the iframe receives an 'envelopeMessage' POST message from the parent window.
-         * It is the responsibility of each callback function to filter out messages that aren't directed to it.
          * @param {string} msg - stringified JSON message
          */
         Envelope.prototype.onWindowMessage = function(msg) {
@@ -342,13 +341,15 @@
             if (typeof msgContent.envelopeMessage === 'undefined') {
                 return;
             }
-            for (let callbackKey in this.callbacks) {
-                if (this.callbacks[callbackKey]) { // only trigger for callbacks that have been set
-                    this.callbacks[callbackKey].forEach(function(addedCallback) {
-                        addedCallback(msgContent.envelopeMessage)
-                    });
-                }
+            
+            // if any keys that envelopeMessage contains match the name of any callbacks, those callbacks will be triggered
+            for (let callbackKey in msgContent.envelopeMessage) {
+                if (typeof this.callbacks[callbackKey] === 'undefined') { continue; }
+                this.callbacks[callbackKey].forEach(function(addedCallback) {
+                    addedCallback(msgContent.envelopeMessage[callbackKey]);
+                });
             }
+
             if (typeof msgContent.envelopeMessage.sendMessageToContents !== 'undefined') {
                 this.sendMessageToAllContainedFrames(msgContent.envelopeMessage.sendMessageToContents);
             }
@@ -499,9 +500,7 @@
         Envelope.prototype.triggerCallbacks = function(callbackName, msgContent) {
             if (this.callbacks[callbackName]) { // only trigger for callbacks that have been set
                 this.callbacks[callbackName].forEach(function(addedCallback) {
-                    let msgObject = {};
-                    msgObject[callbackName] = msgContent;
-                    addedCallback(msgObject);
+                    addedCallback(msgContent);
                 });
             }
         };
@@ -516,12 +515,8 @@
                 console.warn('Creating a new envelope callback that wasn\'t defined in the constructor');
                 this.callbacks[callbackName] = [];
             }
-
-            // TODO: provide same functionality without doubling the number of function allocations per callback
-            this.callbacks[callbackName].push(function(envelopeMessage) {
-                if (typeof envelopeMessage[callbackName] === 'undefined') { return; }
-                callbackFunction(envelopeMessage[callbackName]);
-            });
+            
+            this.callbacks[callbackName].push(callbackFunction);
         };
 
         /**
