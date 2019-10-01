@@ -404,7 +404,7 @@
             this.rootElementWhenOpen.style.display = 'inline';
             // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
             this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenOpen.clientWidth), parseInt(this.rootElementWhenOpen.clientHeight));
-            this.moveDelayBeforeOpen = realityInterface.getMoveDelay() || 400;
+            this.moveDelayBeforeOpen = this.realityInterface.getMoveDelay() || 400;
             this.realityInterface.setMoveDelay(-1); // can't move it while fullscreen
         };
 
