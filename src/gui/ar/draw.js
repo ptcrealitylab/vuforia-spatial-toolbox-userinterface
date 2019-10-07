@@ -2066,9 +2066,13 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         
         // determine if the frame should be loaded locally or from the server (by default thisUrl points to server)
         if (isFrameElement && activeVehicle.location === 'global') {
-            thisUrl = 'frames/' + activeVehicle.src + '.html'; // loads the frame locally from the /frames/ directory
-        }
+            // thisUrl = 'frames/' + activeVehicle.src + '.html'; // old version loaded the frame locally from the /frames/ directory
 
+            // new version loads frames from server of the object it is being added to
+            thisUrl = 'http://' + realityEditor.getObject(objectKey).ip + ':8080/frames/active/' + activeVehicle.src + '/index.html';
+            console.log('thisUrl = ' + thisUrl);
+        }
+        
         // Create DOM elements for everything associated with this frame/node
         var domElements = this.createSubElements(thisUrl, objectKey, frameKey, nodeKey, activeVehicle);
         var addContainer = domElements.addContainer;
