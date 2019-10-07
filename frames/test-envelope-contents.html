@@ -46,6 +46,7 @@
     envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
         if (typeof messageFromEnvelope.setColor !== 'undefined') {
             container.style.backgroundColor = messageFromEnvelope.setColor;
+            envelopeContents.setCategories([messageFromEnvelope.setColor]);
         }
     });
     

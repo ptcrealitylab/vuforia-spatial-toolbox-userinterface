@@ -145,6 +145,12 @@
                 containedFrameMessage: message
             });
         };
+        
+        EnvelopeContents.prototype.setCategories = function(categories) {
+            this.sendMessageToEnvelope({
+                setCategories: categories
+            });
+        }
     }
 
     // Internal helper functions, not actually private but don't need to be called from the frame you build
