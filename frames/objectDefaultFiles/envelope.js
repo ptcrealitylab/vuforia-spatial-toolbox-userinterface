@@ -291,13 +291,14 @@
          * API to send a JSON message to the contained frame in a certain index of the ordering.
          * @param {number} index
          * @param {Object} message
+         * @param {string|undefined} category - optionally filter down the set of frames and get the nth frame of this category 
          */
-        Envelope.prototype.sendMessageToFrameAtIndex = function(index, message) {
+        Envelope.prototype.sendMessageToFrameAtIndex = function(index, message, category) {
             if (!this.areFramesOrdered) {
                 console.warn('You cannot send a message by index if the frames are unordered');
                 return;
             }
-            this.sendMessageToFrameWithId(this.getFrameIdAtIndex(index), message);
+            this.sendMessageToFrameWithId(this.getFrameIdAtIndex(index, category), message);
         };
 
         /**
@@ -425,9 +426,29 @@
          */
         Envelope.prototype._defaultFrameMessageListener = function(message) {
             if (typeof message.msgContent.containedFrameMessage !== 'undefined') {
+                
+                if (typeof message.msgContent.containedFrameMessage.setCategories !== 'undefined') {
+                    this.updateContainedFrameCategories(message.sourceFrame, message.msgContent.containedFrameMessage.setCategories);
+                }
+                
                 // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
                 this.triggerCallbacks('onMessageFromContainedFrame', message.msgContent.containedFrameMessage);
             }
+        };
+
+        /**
+         * Updates the frame to be tagged with the array of categories. Also includes the frame's type as a default.
+         * @param {string} frameId
+         * @param {Array.<string>} categories
+         */
+        Envelope.prototype.updateContainedFrameCategories = function(frameId, categories) {
+            this.containedFrames[frameId].categories = categories;
+            // ensure that it always uses type as a category
+            if (this.containedFrames[frameId].categories.indexOf(this.containedFrames[frameId].type) === -1) {
+                this.containedFrames[frameId].categories.push(this.containedFrames[frameId].type);
+            }
+            let categoryOrders = this.getCategoryOrderMap();
+            console.log(categoryOrders);
         };
 
         /**
@@ -474,7 +495,45 @@
             }.bind(this));
 
         };
+        
+        /**
+         * Returns an object containing each frameId, mapped to the set of categories it is tagged with, and its respective index in each of their orderings.
+         */
+        Envelope.prototype.getCategoryOrderMap = function() {
+            if (!this.areFramesOrdered) { return; }
+            let frameCategoryMap = {};
+            this.frameIdOrdering.forEach(function(frameId, index) {
+                frameCategoryMap[frameId] = {
+                    allFrames: {
+                        index: index,
+                        total: this.frameIdOrdering.length
+                    }
+                };
+                this.containedFrames[frameId].categories.forEach(function(thisCategoryName) {
+                    frameCategoryMap[frameId][thisCategoryName] = this.getFrameIndex(frameId, thisCategoryName);
+                }.bind(this));
+            }.bind(this));
+            return frameCategoryMap;
+        };
 
+        /**
+         * Returns the index of a frame compared to all others tagged with the same category
+         * @param {string} frameId
+         * @param {string} category
+         * @return {{index: number, total: number}}
+         */
+        Envelope.prototype.getFrameIndex = function(frameId, category) {
+            // filter down an ordered list of all frames with that category
+            // return this frameId's index in that list
+            let framesOfThisCategory = this.frameIdOrdering.filter(function(frameId) {
+                return this.containedFrames[frameId].categories.indexOf(category) > -1;
+            }.bind(this));
+            return {
+                index: framesOfThisCategory.indexOf(frameId),
+                total: framesOfThisCategory.length
+            };
+        };
+        
         /**
          * Writes the containedFrames and frameIdOrdering to publicData so that the relationships persist across sessions.
          * Gets triggered automatically when frames are added or removed.
@@ -520,13 +579,19 @@
         };
 
         /**
-         * Gets the frame id that corresponds to a certain index in the ordering.
+         * Gets the frame id that corresponds to a certain index in the ordering (optionally, of a given category of frame).
          * @param {number} index
+         * @param {string|undefined} category
          */
-        Envelope.prototype.getFrameIdAtIndex = function(index) {
+        Envelope.prototype.getFrameIdAtIndex = function(index, category) {
             if (!this.areFramesOrdered) {
                 console.warn('You cannot send a message by index if the frames are unordered');
                 return;
+            }
+            if (typeof category !== 'undefined') {
+                return this.frameIdOrdering.filter(function(frameId) {
+                    return this.containedFrames[frameId].categories.indexOf(category) > -1;
+                }.bind(this))[index];
             }
             return this.frameIdOrdering[index];
         };
@@ -553,6 +618,7 @@
     function FrameData(id, type) {
         this.id = id;
         this.type = type;
+        this.categories = [type];
     }
     
     exports.Envelope = Envelope;
