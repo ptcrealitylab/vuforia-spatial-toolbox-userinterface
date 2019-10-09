@@ -565,6 +565,7 @@
                 this.addAllObjectMatricesListener = makeSendStub('addAllObjectMatricesListener');
                 this.addDevicePoseMatrixListener = makeSendStub('addGroundPlaneMatrixListener');
                 this.addScreenPositionListener = makeSendStub('addScreenPositionListener');
+                this.cancelScreenPositionListener = makeSendStub('cancelScreenPositionListener');
                 this.addVisibilityListener = makeSendStub('addVisibilityListener');
                 this.addInterfaceListener = makeSendStub('addInterfaceListener');
                 this.addIsMovingListener = makeSendStub('addIsMovingListener');
@@ -1427,6 +1428,18 @@
                     callback(msgContent.frameScreenPosition);
                 }
             };
+            return 'screenPositionCall'+numScreenPositionCallbacks; // returns a handle that can be used to cancel the listener
+        };
+
+        this.cancelScreenPositionListener = function(handle) {
+            if (handle.indexOf('screenPositionCall') === -1) {
+                console.warn('improperly formatted handle for a screenPositionListener. refusing to cancel.');
+                return;
+            }
+            if (realityObject.messageCallBacks[handle]) {
+                delete realityObject.messageCallBacks['screenPositionCall'+numScreenPositionCallbacks];
+                numScreenPositionCallbacks--;
+            }
         };
 
         this.addAccelerationListener = function (callback) {

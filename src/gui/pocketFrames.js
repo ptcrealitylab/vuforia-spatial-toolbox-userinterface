@@ -8,7 +8,11 @@ var realityElements = [
         height: 300,
         nodes: [
             {name: 'storage', type: 'storeData'}
-        ]
+        ],
+        startPositionOffset: {
+            x: 145,
+            y: 55
+        }
     },
 
     {
@@ -16,12 +20,12 @@ var realityElements = [
         width: 400,
         height: 610,
         nodes: [
-            {name: 'complete', type: 'node', x: -25, y: 54},
+            {name: 'step_complete', type: 'node', x: -25, y: 54},
             {name: 'storage', type: 'storeData'}
         ],
         startPositionOffset: {
-            x: 70,
-            y: -30
+            x: 77,
+            y: -28
         }
     },
     
