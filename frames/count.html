@@ -109,6 +109,7 @@
 
     try {
         var realityInterface = new RealityInterface();
+        var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
         realityInterface.setMoveDelay(500);
         realityInterface.enableCustomInteractionMode();
         // this can also be done without the API by manually giving these divs the class 'realityInteraction'
