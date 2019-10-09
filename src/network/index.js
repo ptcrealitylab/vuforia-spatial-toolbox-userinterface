@@ -1372,8 +1372,16 @@ if (thisFrame) {
         node.uuid = nodeKey;
         var thisObject = realityEditor.getObject(msgContent.object);
         let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-        node.x = (msgContent.createNode.x) || (-200 + Math.random() * 400);
-        node.y = (msgContent.createNode.y) || (-200 + Math.random() * 400);
+        if (typeof msgContent.createNode.x !== 'undefined') {
+            node.x = msgContent.createNode.x;
+        } else {
+            node.x = (-200 + Math.random() * 400);
+        }
+        if (typeof msgContent.createNode.y !== 'undefined') {
+            node.y = msgContent.createNode.y;
+        } else {
+            node.y = (-200 + Math.random() * 400);
+        }
         
         if (msgContent.createNode.attachToGroundPlane) {
             node.attachToGroundPlane = true;

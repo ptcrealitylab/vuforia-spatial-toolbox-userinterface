@@ -3,6 +3,7 @@
 <head>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>Envelope Contents</title>
     <style>
@@ -34,33 +35,27 @@
     let container = document.getElementById('container');
     
     let realityInterface = new RealityInterface();
-    let envelopeContents = null; //new EnvelopeContents(realityInterface, document.body);
-    realityInterface.getEnvelopeContents(document.body, initEnvelopeContents);
-    
-    function initEnvelopeContents(envelopeReference) {
-        envelopeContents = envelopeReference;
+    let envelopeContents = new EnvelopeContents(realityInterface, document.body);
         
-        envelopeContents.onOrderUpdated(function(orderUpdatedMessage) {
-            let stepOrder = orderUpdatedMessage.categories['test-envelope-contents'];
-            let index = stepOrder.index;
-            let total = stepOrder.total;
-            container.innerText = 'Step ' + (index+1) + '/' + total;
-        });
+    envelopeContents.onOrderUpdated(function(orderUpdatedMessage) {
+        let stepOrder = orderUpdatedMessage.categories['test-envelope-contents'];
+        let index = stepOrder.index;
+        let total = stepOrder.total;
+        container.innerText = 'Step ' + (index+1) + '/' + total;
+    });
 
-        envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
-            if (typeof messageFromEnvelope.setColor !== 'undefined') {
-                container.style.backgroundColor = messageFromEnvelope.setColor;
-                envelopeContents.setCategories([messageFromEnvelope.setColor]);
-            }
-        });
+    envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
+        if (typeof messageFromEnvelope.setColor !== 'undefined') {
+            container.style.backgroundColor = messageFromEnvelope.setColor;
+            envelopeContents.setCategories([messageFromEnvelope.setColor]);
+        }
+    });
 
-        container.addEventListener('pointerup', function(_event) {
-            envelopeContents.sendMessageToEnvelope({
-                containedFrameTapped: true
-            });
+    container.addEventListener('pointerup', function(_event) {
+        envelopeContents.sendMessageToEnvelope({
+            containedFrameTapped: true
         });
-    }
-
+    });
     
 </script>
 </html>

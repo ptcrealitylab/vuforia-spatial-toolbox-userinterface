@@ -66,8 +66,7 @@
         touchDeciderRegistered: false,
         ignoreAllTouches: false,
         // onFullScreenEjected: null,
-        onload: null,
-        envelopeContents: null
+        onload: null
     };
 
     console.log('fullscreen reset for new frame ' + realityObject.sendFullScreen);
@@ -551,7 +550,7 @@
                 this.announceVideoPlay = makeSendStub('announceVideoPlay');
                 this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
                 this.ignoreAllTouches = makeSendStub('ignoreAllTouches');
-                this.changeFrameSize = makeSendStub('changeOverlaySize');
+                this.changeFrameSize = makeSendStub('changeFrameSize');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -592,7 +591,6 @@
                 this.getUnitValue = makeSendStub('getUnitValue');
                 this.getScreenDimensions = makeSendStub('getScreenDimensions');
                 this.getMoveDelay = makeSendStub('getMoveDelay');
-                this.getEnvelopeContents = makeSendStub('getEnvelopeContents');
                 // deprecated getters
                 this.search = makeSendStub('search');
 
@@ -1590,33 +1588,6 @@
         this.getMoveDelay = function() {
             return realityObject.moveDelay;
         };
-
-        /**
-         * injects envelopeContents.js into the page so that the frames can be added to envelopes without modification
-         */
-        this.getEnvelopeContents = function(rootElement, callback) {
-            if (realityObject.envelopeContents) {
-                if (envelopeContents.rootElement !== rootElement) {
-                    envelopeContents.rootElement = rootElement;
-                }
-                callback(realityObject.envelopeContents);
-            }
-
-            var script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = 'objectDefaultFiles/envelopeContents.js';
-
-            script.addEventListener('load', function() {
-                // initialize a new EnvelopeContents if it doesn't already exist
-                realityObject.envelopeContents = new EnvelopeContents(realityInterface, rootElement);
-                callback(realityObject.envelopeContents);
-            });
-
-            document.body.appendChild(script);
-        };
-        this.getEnvelopeContents(document.body, function() {
-            console.log('injected envelopeContents into this frame by default. retrieve the pointer to it using realityInterface.getEnvelopeContents');
-        })
     };
 
     RealityInterface.prototype.injectInternetOfScreensAPI = function() {
