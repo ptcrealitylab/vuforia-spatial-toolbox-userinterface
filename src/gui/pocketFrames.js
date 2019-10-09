@@ -1,41 +1,6 @@
 /* exported realityElements */
 
 var realityElements = [
-    {
-        name: 'all-frame-envelope',
-        width: 300,
-        height: 300,
-        nodes: [
-        ]
-    },
-    
-    {
-        name: 'loto-envelope',
-        width: 300,
-        height: 300,
-        nodes: [
-            {name: 'storage', type: 'storeData'}
-        ],
-        startPositionOffset: {
-            x: 145,
-            y: 55
-        }
-    },
-
-    {
-        name: 'loto-step',
-        width: 400,
-        height: 610,
-        nodes: [
-            {name: 'step_complete', type: 'node', x: -25, y: 54},
-            {name: 'storage', type: 'storeData'}
-        ],
-        startPositionOffset: {
-            x: 77,
-            y: -28
-        }
-    },
-    
 /*
     {
         name: 'background',
@@ -284,20 +249,48 @@ var realityElements = [
             {name: 'state', type: "node", x:0, y:0}
         ]
     },
+
     {
-        name: 'test-envelope',
+        name: 'loto-envelope',
         width: 300,
         height: 300,
         nodes: [
-        ]
+            {name: 'storage', type: 'storeData'}
+        ],
+        startPositionOffset: {
+            x: 145,
+            y: 55
+        }
     },
+
     {
-        name: 'test-envelope-contents',
-        width: 300,
-        height: 300,
+        name: 'loto-step',
+        width: 400,
+        height: 610,
         nodes: [
-        ]
+            {name: 'step_complete', type: 'node', x: -25, y: 54},
+            {name: 'storage', type: 'storeData'}
+        ],
+        startPositionOffset: {
+            x: 77,
+            y: -28
+        }
     },
+    
+    // {
+    //     name: 'test-envelope',
+    //     width: 300,
+    //     height: 300,
+    //     nodes: [
+    //     ]
+    // },
+    // {
+    //     name: 'test-envelope-contents',
+    //     width: 300,
+    //     height: 300,
+    //     nodes: [
+    //     ]
+    // },
 
     /*
     // /*  
@@ -368,4 +361,12 @@ var realityElements = [
             {name: 'reset', type: "node", x:150, y:0}
         ]
     },
+
+    {
+        name: 'all-frame-envelope',
+        width: 300,
+        height: 300,
+        nodes: [
+        ]
+    }
 ];
