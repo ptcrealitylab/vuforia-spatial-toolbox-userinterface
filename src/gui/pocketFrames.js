@@ -1,7 +1,14 @@
 /* exported realityElements */
 
 var realityElements = [
-
+    {
+        name: 'all-frame-envelope',
+        width: 300,
+        height: 300,
+        nodes: [
+        ]
+    },
+    
     {
         name: 'loto-envelope',
         width: 300,
