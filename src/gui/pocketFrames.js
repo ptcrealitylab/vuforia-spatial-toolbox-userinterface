@@ -218,28 +218,28 @@ var realityElements = [
         ]
     },
 
-    {
-        name: 'loto-session',
-        width: 800,
-        height: 200,
-        nodes: [
-            {name: 'storage', type: 'storeData'}
-        ]
-    },
-    
-    {
-        name: 'loto',
-        width: 400,
-        height: 610,
-        nodes: [
-            {name: 'complete', type: 'node', x: -82, y: 54},
-            {name: 'storage', type: 'storeData'}
-        ],
-        startPositionOffset: {
-            x: 120,
-            y: -30
-        }
-    },
+    // {
+    //     name: 'loto-session',
+    //     width: 800,
+    //     height: 200,
+    //     nodes: [
+    //         {name: 'storage', type: 'storeData'}
+    //     ]
+    // },
+    //
+    // {
+    //     name: 'loto',
+    //     width: 400,
+    //     height: 610,
+    //     nodes: [
+    //         {name: 'complete', type: 'node', x: -82, y: 54},
+    //         {name: 'storage', type: 'storeData'}
+    //     ],
+    //     startPositionOffset: {
+    //         x: 120,
+    //         y: -30
+    //     }
+    // },
     
     {
         name: 'complete',
