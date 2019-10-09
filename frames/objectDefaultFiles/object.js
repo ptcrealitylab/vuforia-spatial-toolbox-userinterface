@@ -66,7 +66,8 @@
         touchDeciderRegistered: false,
         ignoreAllTouches: false,
         // onFullScreenEjected: null,
-        onload: null
+        onload: null,
+        envelopeContents: null
     };
 
     console.log('fullscreen reset for new frame ' + realityObject.sendFullScreen);
@@ -591,6 +592,7 @@
                 this.getUnitValue = makeSendStub('getUnitValue');
                 this.getScreenDimensions = makeSendStub('getScreenDimensions');
                 this.getMoveDelay = makeSendStub('getMoveDelay');
+                this.getEnvelopeContents = makeSendStub('getEnvelopeContents');
                 // deprecated getters
                 this.search = makeSendStub('search');
 
@@ -1331,10 +1333,6 @@
             
         };
         
-        this.getMoveDelay = function() {
-            return realityObject.moveDelay;
-        };
-        
         /**
          * Stubbed here for backwards compatibility of API. In previous versions:
          * Hides the frame itself and instead populates a background context within the editor with this frame's contents
@@ -1588,6 +1586,37 @@
             // touchDecider is passed by reference, so setting touchDecider to null would alter the function definition
             realityObject.touchDeciderRegistered = false; // instead just set a flag to not use the callback anymore
         };
+
+        this.getMoveDelay = function() {
+            return realityObject.moveDelay;
+        };
+
+        /**
+         * injects envelopeContents.js into the page so that the frames can be added to envelopes without modification
+         */
+        this.getEnvelopeContents = function(rootElement, callback) {
+            if (realityObject.envelopeContents) {
+                if (envelopeContents.rootElement !== rootElement) {
+                    envelopeContents.rootElement = rootElement;
+                }
+                callback(realityObject.envelopeContents);
+            }
+
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'objectDefaultFiles/envelopeContents.js';
+
+            script.addEventListener('load', function() {
+                // initialize a new EnvelopeContents if it doesn't already exist
+                realityObject.envelopeContents = new EnvelopeContents(realityInterface, rootElement);
+                callback(realityObject.envelopeContents);
+            });
+
+            document.body.appendChild(script);
+        };
+        this.getEnvelopeContents(document.body, function() {
+            console.log('injected envelopeContents into this frame by default. retrieve the pointer to it using realityInterface.getEnvelopeContents');
+        })
     };
 
     RealityInterface.prototype.injectInternetOfScreensAPI = function() {
