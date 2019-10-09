@@ -307,7 +307,7 @@
          * @param {string} frameId
          * @param {number} newIndex
          */
-        Envelope.prototype.reorderFrames = function(frameId, newIndex) {
+        Envelope.prototype.reorderFrames = function(frameId, newIndex) { // TODO: support categories so it works for mixed envelopes
             if (!this.areFramesOrdered) {
                 console.warn('You cannot reorder frames if the frames are unordered');
                 return;
@@ -316,16 +316,8 @@
             if (currentIndex > -1) {
                 // moves element from currentIndex to newIndex - see https://stackoverflow.com/a/2440723/1190267
                 this.frameIdOrdering.splice(newIndex, 0, this.frameIdOrdering.splice(currentIndex, 1)[0]);
-
-                // notify all frames of their new indices
-                this.frameIdOrdering.forEach(function(id, index) {
-                    this.sendMessageToFrameWithId(id, {
-                        onOrderUpdated: {
-                            index: index,
-                            total: this.frameIdOrdering.length
-                        }
-                    });
-                }.bind(this));
+                this.orderingUpdated();
+                this.savePersistentData();
             }
         };
     }
@@ -402,7 +394,7 @@
          */
         Envelope.prototype._defaultOnOpen = function() {
             this.rootElementWhenClosed.style.display = 'none';
-            this.rootElementWhenOpen.style.display = 'inline';
+            this.rootElementWhenOpen.style.display = '';
             // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
             this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenOpen.clientWidth), parseInt(this.rootElementWhenOpen.clientHeight));
             this.moveDelayBeforeOpen = this.realityInterface.getMoveDelay() || 400;
@@ -413,7 +405,7 @@
          * Resets the UI and relevant frame properties when the envelope is closed.
          */
         Envelope.prototype._defaultOnClose = function() {
-            this.rootElementWhenClosed.style.display = 'inline';
+            this.rootElementWhenClosed.style.display = '';
             this.rootElementWhenOpen.style.display = 'none';
             // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
             this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenClosed.clientWidth), parseInt(this.rootElementWhenClosed.clientHeight));
@@ -429,6 +421,11 @@
                 
                 if (typeof message.msgContent.containedFrameMessage.setCategories !== 'undefined') {
                     this.updateContainedFrameCategories(message.sourceFrame, message.msgContent.containedFrameMessage.setCategories);
+                }
+
+                // insert the source frame into the message so the callback has that context
+                if (typeof message.msgContent.containedFrameMessage.sourceFrame === 'undefined') {
+                    message.msgContent.containedFrameMessage.sourceFrame = message.sourceFrame;
                 }
                 
                 // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
@@ -447,8 +444,8 @@
             if (this.containedFrames[frameId].categories.indexOf(this.containedFrames[frameId].type) === -1) {
                 this.containedFrames[frameId].categories.push(this.containedFrames[frameId].type);
             }
-            let categoryOrders = this.getCategoryOrderMap();
-            console.log(categoryOrders);
+            this.orderingUpdated();
+            this.savePersistentData();
         };
 
         /**
@@ -484,12 +481,16 @@
          */
         Envelope.prototype.orderingUpdated = function() {
             if (!this.areFramesOrdered) { return; }
+            
+            let categoryOrderMap = this.getCategoryOrderMap();
+            
             // send a message to each frame with their order
             this.frameIdOrdering.forEach(function(frameId, index) {
                 this.sendMessageToFrameWithId(frameId, {
                     onOrderUpdated: {
                         index: index,
-                        total: this.frameIdOrdering.length
+                        total: this.frameIdOrdering.length,
+                        categories: categoryOrderMap[frameId]
                     }
                 })
             }.bind(this));
@@ -503,12 +504,7 @@
             if (!this.areFramesOrdered) { return; }
             let frameCategoryMap = {};
             this.frameIdOrdering.forEach(function(frameId, index) {
-                frameCategoryMap[frameId] = {
-                    allFrames: {
-                        index: index,
-                        total: this.frameIdOrdering.length
-                    }
-                };
+                frameCategoryMap[frameId] = {};
                 this.containedFrames[frameId].categories.forEach(function(thisCategoryName) {
                     frameCategoryMap[frameId][thisCategoryName] = this.getFrameIndex(frameId, thisCategoryName);
                 }.bind(this));
