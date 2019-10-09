@@ -106,7 +106,11 @@
             /**
              * Triggered when the user closes/minimizes the envelope, or another non-stackable envelope kicks this one out of fullscreen
              */
-            onClose: []
+            onClose: [],
+            /**
+             * Triggered when the envelope loads new persistent data (about which frames it contains). Functions as an onload method.
+             */
+            onPublicDataLoaded: []
         };
         /**
          * The actual width and height of the screen, used to set the size of the frame when the envelope is opened
@@ -159,6 +163,18 @@
             noDuplicate: true // only create if doesn't already exist
         };
         this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
+
+        // also ensure that there is a node called 'open' on the envelope frame to open or close it
+        params = {
+            name: 'open',
+            x: 0,
+            y: 0,
+            groundplane: false,
+            type: 'node',
+            noDuplicate: true // only create if doesn't already exist
+        };
+        this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
+        realityInterface.addReadListener('open', this._defaultOpenNodeListener.bind(this));
 
         // this adjusts the size of the body to be fullscreen based on accurate device screen size
         realityInterface.getScreenDimensions(function(width, height) {
@@ -264,6 +280,16 @@
          */
         Envelope.prototype.onClose = function(callback) {
             this.addCallback('onClose', callback);
+        };
+
+        /**
+         * API to be notified when the envelope has fully loaded its publicData.
+         * At this point, its containedFrames and frameIdOrdering will be correct.
+         * Can be used as an onload method for the envelope.
+         * @param {function<>} callback
+         */
+        Envelope.prototype.onPublicDataLoaded = function(callback) {
+            this.addCallback('onPublicDataLoaded', callback);
         };
 
         /**
@@ -462,6 +488,28 @@
                 this.frameIdOrdering = savedContents.frameIdOrdering;
                 this.orderingUpdated();
             }
+            
+            this.triggerCallbacks('onPublicDataLoaded', {});
+        };
+
+        /**
+         * Listens for new values sent to the 'open' node on the envelope, and uses that to open or close it.
+         * @param {Data} event
+         */
+        Envelope.prototype._defaultOpenNodeListener = function(event) {
+            if (typeof this.lastOpenValue === 'undefined') {
+                this.lastOpenValue = event.value; 
+            }
+            if (this.lastOpenValue === event.value) {
+                return; // prevents it from closing itself when the node first loads or on duplicate data
+            }
+            if (event.value < 0.5) {
+                this.close();
+            } else {
+                this.open();
+            }
+
+            this.lastOpenValue = event.value; // prevents duplicate reads (get triggered on sendRealityEditorSubscribe)
         };
 
         /**
