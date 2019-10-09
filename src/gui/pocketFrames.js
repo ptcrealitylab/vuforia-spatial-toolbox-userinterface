@@ -1,6 +1,30 @@
 /* exported realityElements */
 
 var realityElements = [
+
+    {
+        name: 'loto-envelope',
+        width: 300,
+        height: 300,
+        nodes: [
+            {name: 'storage', type: 'storeData'}
+        ]
+    },
+
+    {
+        name: 'loto-step',
+        width: 400,
+        height: 610,
+        nodes: [
+            {name: 'complete', type: 'node', x: -25, y: 54},
+            {name: 'storage', type: 'storeData'}
+        ],
+        startPositionOffset: {
+            x: 70,
+            y: -30
+        }
+    },
+    
 /*
     {
         name: 'background',

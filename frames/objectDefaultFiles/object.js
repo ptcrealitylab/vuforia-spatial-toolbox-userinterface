@@ -1297,6 +1297,9 @@
          * @param {number} newHeight
          */
         this.changeFrameSize = function(newWidth, newHeight) {
+            if (realityObject.width === newWidth && realityObject.height === newHeight) {
+                return;
+            }
             realityObject.width = newWidth;
             realityObject.height = newHeight;
             postDataToParent({
