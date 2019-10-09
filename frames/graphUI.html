@@ -303,6 +303,7 @@
 
     try {
         var realityInterface = new RealityInterface();
+        var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
         realityInterface.addReadListener('value', function(e) {
             properties.value = e.value;
             properties.unit = e.unit;

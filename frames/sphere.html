@@ -79,6 +79,7 @@
         // make the frame fullscreen within the reality editor,
         // and subscribe to the modelview and projection matrices
         realityInterface = new RealityInterface();
+        var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
 
         realityInterface.onRealityInterfaceLoaded(function() {
             realityInterface.subscribeToMatrix();

@@ -164,6 +164,7 @@
 
     try {
         var realityInterface = new RealityInterface();
+        var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
         realityInterface.setMoveDelay(1000);
 
         realityInterface.addReadListener('value', function (e) {
