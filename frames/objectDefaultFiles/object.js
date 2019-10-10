@@ -1064,17 +1064,24 @@
             });
         };
 
-        this.setFullScreenOff = function () {
+        this.setFullScreenOff = function (params) {
             realityObject.sendFullScreen = false;
             // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             // realityObject.height = document.body.scrollHeight;
             // realityObject.width = document.body.scrollWidth;
             // postAllDataToParent();
-            postDataToParent({
+            
+            var dataToPost = {
                 fullScreen: realityObject.sendFullScreen,
                 fullscreenZPosition: realityObject.fullscreenZPosition,
                 stickiness: realityObject.sendSticky
-            });
+            };
+
+            if (typeof params.animated !== 'undefined') {
+                dataToPost.fullScreenAnimated = params.animated;
+            }
+            
+            postDataToParent(dataToPost);
         };
 
         this.setStickyFullScreenOn = function (params) {
