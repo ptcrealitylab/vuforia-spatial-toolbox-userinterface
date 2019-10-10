@@ -1,6 +1,16 @@
 /* exported realityElements */
 
 var realityElements = [
+
+
+    {
+        name: 'all-frame-envelope',
+        width: 300,
+        height: 200,
+        nodes: [
+        ]
+    },
+    
 /*
     {
         name: 'background',
@@ -359,14 +369,6 @@ var realityElements = [
             {name: 'x', type: "node", x:-150, y:0},
             {name: 'y', type: "node", x:0, y:0},
             {name: 'reset', type: "node", x:150, y:0}
-        ]
-    },
-
-    {
-        name: 'all-frame-envelope',
-        width: 300,
-        height: 300,
-        nodes: [
         ]
     }
 ];

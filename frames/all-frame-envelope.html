@@ -11,7 +11,7 @@
         body {
             font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
             width: 300px;
-            height: 300px;
+            height: 200px;
             overflow: visible;
         }
         #rootElementWhenOpen {
@@ -30,12 +30,13 @@
             left: 0;
             top: 0;
             width: 300px;
-            height: 300px;
-            background-color: rgba(100, 255, 50, 0.7);
+            height: 200px;
+            /*background-color: rgba(100, 255, 50, 0.7);*/
             border-radius: 10px;
             text-align: center;
             font-size: 24px;
-            line-height: 300px;
+            line-height: 200px;
+            color: white;
         }
         #description {
             margin-top: 10px;
@@ -94,6 +95,17 @@
                 opacity: 0;
             }
         }
+        
+        #count {
+            position: absolute;
+            left: 0;
+            top: 0;
+            text-align: center;
+            width: 300px;
+            line-height: 120px;
+            font-size: 48px;
+            color: cyan;
+        }
     </style>
 </head>
 <body>
@@ -103,13 +115,16 @@
 </div>
 <!-- rootElementWhenClosed is the UI that shows when it minimized into an icon in 3D space -->
 <div id="rootElementWhenClosed">
-    Application Envelope
+    <!--Application Envelope-->
+    <img src="resources/envelope-icon.svg">
+    <div id="count"></div>
 </div>
 </body>
 <script>
     let rootElementWhenOpen = document.getElementById('rootElementWhenOpen');
     let rootElementWhenClosed = document.getElementById('rootElementWhenClosed');
     let description = document.getElementById('description');
+    let count = document.getElementById('count');
 
     let realityInterface = new RealityInterface();
 
@@ -124,6 +139,7 @@
     envelope.onFrameDeleted(render);
     envelope.onOpen(render);
     envelope.onClose(render);
+    envelope.onPublicDataLoaded(render);
     
     // opens up the envelope into fullscreen mode when the minimized icon is tapped
     rootElementWhenClosed.addEventListener('pointerup', function() {
@@ -143,10 +159,16 @@
      * Update the UI based on the current state
      */
     function render() {
+        let numContainedFrames = Object.keys(envelope.containedFrames).length;
         if (envelope.isOpen) {
             // you can directly access envelope properties such as number of contained frames
-            let numContainedFrames = Object.keys(envelope.containedFrames).length;
-            description.innerText = 'Contains ' + numContainedFrames + ' frames';
+            // description.innerText = 'Contains ' + numContainedFrames + ' frames';
+        } else {
+            if (numContainedFrames === 0) {
+                count.innerText = '';
+            } else {
+                count.innerText = numContainedFrames;
+            }
         }
     }
 </script>
