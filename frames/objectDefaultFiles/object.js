@@ -1077,18 +1077,25 @@
             });
         };
 
-        this.setStickyFullScreenOn = function () {
+        this.setStickyFullScreenOn = function (params) {
             realityObject.sendFullScreen = "sticky";
             // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             realityObject.sendSticky = true;
             // realityObject.height = "100%";
             // realityObject.width = "100%";
             // postAllDataToParent();
-            postDataToParent({
+            
+            var dataToPost = {
                 fullScreen: realityObject.sendFullScreen,
                 fullscreenZPosition: realityObject.fullscreenZPosition,
                 stickiness: realityObject.sendSticky
-            });
+            };
+            
+            if (typeof params.animated !== 'undefined') {
+                dataToPost.fullScreenAnimated = params.animated;
+            }
+            
+            postDataToParent(dataToPost);
         };
 
         this.setStickinessOff = function () {

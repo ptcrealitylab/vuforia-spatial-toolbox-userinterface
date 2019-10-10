@@ -12,6 +12,7 @@
             font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
             width: 300px;
             height: 300px;
+            overflow: visible;
         }
         #rootElementWhenOpen {
             position: absolute;
@@ -38,6 +39,60 @@
         }
         #description {
             margin-top: 10px;
+        }
+        /*@keyframes scaleIn {*/
+            /*0% {*/
+                /*visibility: visible;*/
+                /*-webkit-transform: scale(0);*/
+            /*}*/
+            /*100% {*/
+                /*-webkit-transform: scale(1.0);*/
+                /*visibility: visible;*/
+            /*}*/
+        /*}*/
+        
+        /*@keyframes scaleOut {*/
+            /*0% {*/
+                /*-webkit-transform: scale(1.0);*/
+                /*visibility: visible;*/
+            /*}*/
+            /*100% {*/
+                /*-webkit-transform: scale(0);*/
+                /*visibility: hidden;*/
+            /*}*/
+        /*}*/
+        
+        /*.scaleIn {*/
+            /*visibility: visible;*/
+            /*animation-name: scaleIn;*/
+            /*animation-duration: 100ms;*/
+            /*-webkit-animation-fill-mode: forwards; !* Chrome, Safari, Opera *!*/
+        /*}*/
+        
+        /*.scaleOut {*/
+            /*visibility: hidden;*/
+            /*animation-name: scaleOut;*/
+            /*animation-duration: 100ms;*/
+            /*-webkit-animation-fill-mode: forwards;*/
+        /*}*/
+        
+        .maximize {
+            /*visibility: hidden;*/
+            animation-name: maximize;
+            animation-duration: 200ms;
+            -webkit-animation-timing-function: ease-out;
+            -webkit-animation-fill-mode: forwards;
+        }
+        
+        @keyframes maximize {
+            0% {
+                transform: scale(1.0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3.0);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -73,7 +128,16 @@
     // opens up the envelope into fullscreen mode when the minimized icon is tapped
     rootElementWhenClosed.addEventListener('pointerup', function() {
         envelope.open();
+        // rootElementWhenClosed.addEventListener('animationend', openEnvelope);
+        // rootElementWhenClosed.classList.add('maximize');
     });
+    
+    function openEnvelope() {
+        rootElementWhenClosed.removeEventListener('animationend', openEnvelope);
+        envelope.open();
+        console.log('open envelope');
+        rootElementWhenClosed.classList.remove('maximize');
+    }
     
     /**
      * Update the UI based on the current state

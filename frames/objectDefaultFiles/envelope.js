@@ -208,7 +208,7 @@
             if (this.isOpen) { return; }
 
             this.isOpen = true;
-            this.realityInterface.setStickyFullScreenOn(); // currently assumes envelopes want 'sticky' fullscreen, not regular
+            this.realityInterface.setStickyFullScreenOn({animated: true}); // currently assumes envelopes want 'sticky' fullscreen, not regular
             if (!this.isStackable) {
                 this.realityInterface.setExclusiveFullScreenOn(function() {
                     this.close(); // trigger all the side-effects related to the envelope closing
