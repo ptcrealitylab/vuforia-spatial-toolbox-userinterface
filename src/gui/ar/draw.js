@@ -2297,7 +2297,7 @@ realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen = function(objectKey, fram
  * @param {string} objectKey
  * @param {string} frameKey
  */
-realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameKey) {
+realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameKey, isAnimated) {
     var frame = realityEditor.getFrame(objectKey, frameKey);
     
     frame.fullScreen = false;
@@ -2325,6 +2325,68 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
     var containingObject = realityEditor.getObject(objectKey);
     if (!containingObject.objectVisible) {
         containingObject.objectVisible = true;
+    }
+
+    if (typeof isAnimated !== 'undefined') {
+
+        globalDOMCache['iframe' + frame.uuid].style.opacity = 0;
+        globalDOMCache['iframe' + frame.uuid].classList.add('envelopeFadingIn');
+        setTimeout(function() {
+            globalDOMCache['iframe' + frame.uuid].style.opacity = 1;
+            setTimeout(function() {
+                globalDOMCache['iframe' + frame.uuid].classList.remove('envelopeFadingIn');
+            }, 1000);
+        }, 50);
+
+        
+        // create a duplicate, temporary DOM element in the same place as the frame
+        var animationDiv = document.createElement('div');
+        animationDiv.classList.add('main');
+        animationDiv.classList.add('animationDivClosing');
+        animationDiv.classList.add('ignorePointerEvents');
+        animationDiv.style.width = globalDOMCache['object' + frame.uuid].style.width;
+        animationDiv.style.height = globalDOMCache['object' + frame.uuid].style.height; //width; // switched from height to width
+        // animationDiv.style.borderRadius = parseInt(globalDOMCache['object' + frame.uuid].style.width)/2;
+
+        // start with a matrix that covers the full screen
+        animationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+        animationDiv.style.opacity = 0.5;
+
+        document.getElementById('GUI').appendChild(animationDiv);
+
+        animationDiv.classList.add('animateAllProperties500ms');
+
+        setTimeout(function() {
+            /**
+             * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
+             * @param {HTMLElement} ele
+             * @return {Array.<number>}
+             */
+            function getTransform(ele) {
+                var tr = ele.style.webkitTransform;
+                if (!tr) {
+                    return realityEditor.gui.ar.utilities.newIdentityMatrix();
+                }
+                var values = tr.split('(')[1].split(')')[0].split(',');
+                var out = [ 0, 0, 0, 1 ];
+                for (var i = 0; i < values.length; ++i) {
+                    out[i] = parseFloat(values[i]);
+                }
+                return out;
+            }
+
+            var finalMatrix = getTransform(globalDOMCache['object' + frame.uuid]);//.style.transform);
+            finalMatrix[0] *= 0.5;
+            finalMatrix[5] *= 0.5;
+
+            // animationDiv.style.transform = globalDOMCache['object' + frame.uuid].style.transform;
+            animationDiv.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+
+            animationDiv.style.opacity = 0;
+            setTimeout(function() {
+                animationDiv.parentElement.removeChild(animationDiv);
+            }, 250);
+        }, 50);
     }
 };
 

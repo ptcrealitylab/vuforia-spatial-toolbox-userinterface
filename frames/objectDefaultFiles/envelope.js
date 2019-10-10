@@ -229,7 +229,7 @@
             if (!this.isOpen) { return; }
 
             this.isOpen = false;
-            this.realityInterface.setFullScreenOff();
+            this.realityInterface.setFullScreenOff({animated: true});
 
             this.triggerCallbacks('onClose', {});
 
