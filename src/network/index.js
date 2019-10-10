@@ -1302,6 +1302,24 @@ if (thisFrame) {
             
             let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
             
+            if (typeof msgContent.fullScreenAnimated !== 'undefined') {
+                globalDOMCache['object' + msgContent.frame].classList.add('animateTransform');
+                // create a duplicate, temporary DOM element in the same place as the frame
+                var animationDiv = document.createElement('div');
+                animationDiv.classList.add('main');
+                animationDiv.classList.add('animationDiv');
+                animationDiv.classList.add('ignorePointerEvents');
+                animationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
+                animationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
+                animationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform;
+                document.getElementById('main').appendChild(animationDiv);
+
+                animationDiv.classList.add('animateAllProperties');
+                
+                
+                
+            }
+            
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
