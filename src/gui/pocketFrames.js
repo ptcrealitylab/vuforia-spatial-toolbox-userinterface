@@ -6,7 +6,7 @@ var realityElements = [
     {
         name: 'all-frame-envelope',
         width: 300,
-        height: 200,
+        height: 300,
         nodes: [
         ]
     },
