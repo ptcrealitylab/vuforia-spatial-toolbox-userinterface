@@ -82,6 +82,16 @@
         var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
 
         realityInterface.onRealityInterfaceLoaded(function() {
+
+            realityInterface.getScreenDimensions(function(width, height) {
+                document.body.width = width + 'px';
+                document.body.height = height + 'px';
+                rendererWidth = width;
+                rendererHeight = height;
+                
+                realityInterface.changeFrameSize(width, height);
+            });
+            
             realityInterface.subscribeToMatrix();
             realityInterface.setFullScreenOn();
 
