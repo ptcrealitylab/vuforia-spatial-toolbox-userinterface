@@ -338,12 +338,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.isObjectWithNoFramesVisible = true;
     }
     
-    var visibleExclusiveFrames = realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames();
-    if (visibleExclusiveFrames.length > 1) {
-        console.log('too many exlusive frames visible at once!!', visibleExclusiveFrames);
-        
-    }
-    
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
        // if (!objects.hasOwnProperty(objectKey)) { continue; }
@@ -1369,20 +1363,20 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 // if (this.isLowFrequencyUpdateFrame) {
 
                     // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
-                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
-
-                    var left = frameScreenPosition.upperLeft.x;
-                    var right = frameScreenPosition.lowerRight.x;
-                    var top = frameScreenPosition.upperLeft.y;
-                    var bottom = frameScreenPosition.lowerRight.y;
-
-                    if (!activeVehicle.isOutsideViewport && (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height)) {
-                        // globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
-                        activeVehicle.isOutsideViewport = true;
-                    } else if (activeVehicle.isOutsideViewport) {
-                        // globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
-                        activeVehicle.isOutsideViewport = false;
-                    }
+                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+                    //
+                    // var left = frameScreenPosition.upperLeft.x;
+                    // var right = frameScreenPosition.lowerRight.x;
+                    // var top = frameScreenPosition.upperLeft.y;
+                    // var bottom = frameScreenPosition.lowerRight.y;
+                    //
+                    // if (!activeVehicle.isOutsideViewport && (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height)) {
+                    //     // globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
+                    //     activeVehicle.isOutsideViewport = true;
+                    // } else if (activeVehicle.isOutsideViewport) {
+                    //     // globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
+                    //     activeVehicle.isOutsideViewport = false;
+                    // }
                     // }
 
                 // }
