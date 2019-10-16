@@ -1457,12 +1457,7 @@ Logic Interface CSS
     border: 5px solid cyan;
 }
 
-.animateTransform {
-    transition: transform 0.25s;
-    -webkit-transition: -webkit-transform 0.25s;
-}
-
-.animateAllProperties {
+.animateAllProperties250ms {
     transition: all 0.25s ease-out;
     -webkit-transition: all 0.25s ease-out;
 }
@@ -1472,24 +1467,13 @@ Logic Interface CSS
     -webkit-transition: all 0.5s ease-out;
 }
 
-.animationDiv {
+.envelopeAnimationDiv {
     background-color: rgba(255, 255, 255, 0.5);
-    visibility: visible;
-}
-
-.animationDivClosing {
-    background-color: rgba(255, 255, 255, 0.5);
-    /*border: 20px solid rgba(255, 255, 255, 1);*/
     visibility: visible;
 }
 
 .transitioningToFullscreen {
     display: none;
-}
-
-.animateAll50ms {
-    transition: all 0.05s ease-in-out;
-    -webkit-transition: all 0.05s ease-in-out;
 }
 
 .envelopeFadingIn {
