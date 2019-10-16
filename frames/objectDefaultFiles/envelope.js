@@ -546,7 +546,9 @@
         };
         
         /**
-         * Returns an object containing each frameId, mapped to the set of categories it is tagged with, and its respective index in each of their orderings.
+         * Returns an object containing each frameId, mapped to the set of categories it is tagged with,
+         * and its respective index in each of their orderings.
+         * @return {Object.<string, Object.<string, number>>}
          */
         Envelope.prototype.getCategoryOrderMap = function() {
             if (!this.areFramesOrdered) { return; }
