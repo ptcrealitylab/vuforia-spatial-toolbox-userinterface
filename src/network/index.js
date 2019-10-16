@@ -1306,32 +1306,28 @@ if (thisFrame) {
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
                 // create a duplicate, temporary DOM element in the same place as the frame
-                var animationDiv = document.createElement('div');
-                animationDiv.classList.add('main');
-                animationDiv.classList.add('animationDiv');
-                animationDiv.classList.add('ignorePointerEvents');
-                animationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
-                animationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
-                animationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform;
-                document.getElementById('GUI').appendChild(animationDiv);
-
-                animationDiv.classList.add('animateAllProperties');
-
+                var envelopeAnimationDiv = document.createElement('div');
+                envelopeAnimationDiv.classList.add('main');
+                envelopeAnimationDiv.classList.add('envelopeAnimationDiv');
+                envelopeAnimationDiv.classList.add('ignorePointerEvents');
+                envelopeAnimationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
+                envelopeAnimationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
+                envelopeAnimationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform; // start with same transform as the iframe
+                document.getElementById('GUI').appendChild(envelopeAnimationDiv);
+                
+                // wait a small delay so the transition CSS property applies
+                envelopeAnimationDiv.classList.add('animateAllProperties250ms');
                 setTimeout(function() {
-                    // smaller, doesnt quite fill the screen
-                    // animationDiv.style.transform = "matrix3d(284.97496786847427, 2.4855067785009224, 0.0014745841662618135, 0.001489945252851794, -2.465625732659552, 284.3389239506381, 0.01545825290556921, 0.015452520954804438, 31.361160000808987, 10.636466878837915, -0.6669639151946903, -0.6659298690756169, -4934.863794298522, -1883.439400979858, 100200, 320.5055342679287)";
-
-                    // medium, just barely covers full screen
-                    animationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
-                    // fully covers the screen
-                    // animationDiv.style.transform = "matrix3d(951.4825001961776, 1.3784553982158865, 0.022886611763506523, 0.022934339653531886, -1.836239833899249, 949.3921943294491, 0.06710665769702098, 0.06708441611422215, 82.09600040761715, 52.18289506691503, -2.1398822147704633, -2.1364452793259225, 942.6050442110391, -9774.118896208247, 100200, 394.00084922240586)";
-                    animationDiv.style.opacity = 0;
+                    // give it a hard-coded MVP matrix that makes it fill the screen
+                    envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+                    envelopeAnimationDiv.style.opacity = 0;
                     setTimeout(function() {
-                        animationDiv.parentElement.removeChild(animationDiv);
+                        envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
                     }, 250);
                 }, 10);
             }
 
+            // make the div invisible while it switches to fullscreen mode, so we don't see a jump in content vs mode
             document.getElementById("object" + msgContent.frame).classList.add('transitioningToFullscreen');
             setTimeout(function() {
                 document.getElementById("object" + msgContent.frame).classList.remove('transitioningToFullscreen');
@@ -1619,26 +1615,6 @@ if (thisFrame) {
         overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
     }
 };
-
-function animateScale(domElement, callback) {
-    domElement.style.transform = 'scale(1.0)';
-    domElement.classList.add('animateAll50ms');
-    setTimeout(function() {
-        domElement.style.transform = 'scale(0.8)';
-        setTimeout(function() {
-            domElement.style.transform = 'scale(1.2)';
-            setTimeout(function() {
-                domElement.style.transform = '';
-                domElement.style.opacity = 0;
-                setTimeout(function() {
-                    domElement.classList.remove('animateAll50ms');
-                    callback();
-                }, 50);
-
-            }, 50);
-        }, 50);
-    }, 10);
-}
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
 realityEditor.network.frameIdForScreenshot = null;

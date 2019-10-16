@@ -2290,6 +2290,7 @@ realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen = function(objectKey, fram
  * Helper function called by frame API and elsewhere to stop rendering a frame as fullscreen
  * @param {string} objectKey
  * @param {string} frameKey
+ * @param {boolean|undefined} isAnimated - true for envelopes, add a minimizing animation and fade in the iframe
  */
 realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameKey, isAnimated) {
     var frame = realityEditor.getFrame(objectKey, frameKey);
@@ -2321,64 +2322,43 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
         containingObject.objectVisible = true;
     }
 
-    if (typeof isAnimated !== 'undefined') {
+    if (isAnimated) {
 
+        // subtly fade in the iframe instead of instantly pops up in new place
         globalDOMCache['iframe' + frame.uuid].style.opacity = 0;
         globalDOMCache['iframe' + frame.uuid].classList.add('envelopeFadingIn');
-        setTimeout(function() {
+        setTimeout(function() { // 50ms delay causes the CSS transition property to apply to the new opacity
             globalDOMCache['iframe' + frame.uuid].style.opacity = 1;
             setTimeout(function() {
                 globalDOMCache['iframe' + frame.uuid].classList.remove('envelopeFadingIn');
             }, 1000);
         }, 50);
-
         
-        // create a duplicate, temporary DOM element in the same place as the frame
-        var animationDiv = document.createElement('div');
-        animationDiv.classList.add('main');
-        animationDiv.classList.add('animationDivClosing');
-        animationDiv.classList.add('ignorePointerEvents');
-        animationDiv.style.width = globalDOMCache['object' + frame.uuid].style.width;
-        animationDiv.style.height = globalDOMCache['object' + frame.uuid].style.height; //width; // switched from height to width
-        // animationDiv.style.borderRadius = parseInt(globalDOMCache['object' + frame.uuid].style.width)/2;
+        // create a temporary, semi-transparent DOM element in , which then animates to minimize down to the same transform as the frame
+        var envelopeAnimationDiv = document.createElement('div');
+        envelopeAnimationDiv.classList.add('main', 'envelopeAnimationDiv', 'ignorePointerEvents');
+        envelopeAnimationDiv.style.width = globalDOMCache['object' + frame.uuid].style.width;
+        envelopeAnimationDiv.style.height = globalDOMCache['object' + frame.uuid].style.height;
+        // start with a hard-coded MVP matrix that covers the full screen
+        envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+        envelopeAnimationDiv.style.opacity = 0.5;
+        document.getElementById('GUI').appendChild(envelopeAnimationDiv);
 
-        // start with a matrix that covers the full screen
-        animationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
-        animationDiv.style.opacity = 0.5;
-
-        document.getElementById('GUI').appendChild(animationDiv);
-
-        animationDiv.classList.add('animateAllProperties500ms');
-
+        // wait a small delay so the transition CSS property applies
+        envelopeAnimationDiv.classList.add('animateAllProperties500ms');
         setTimeout(function() {
-            /**
-             * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
-             * @param {HTMLElement} ele
-             * @return {Array.<number>}
-             */
-            function getTransform(ele) {
-                var tr = ele.style.webkitTransform;
-                if (!tr) {
-                    return realityEditor.gui.ar.utilities.newIdentityMatrix();
-                }
-                var values = tr.split('(')[1].split(')')[0].split(',');
-                var out = [ 0, 0, 0, 1 ];
-                for (var i = 0; i < values.length; ++i) {
-                    out[i] = parseFloat(values[i]);
-                }
-                return out;
-            }
-
-            var finalMatrix = getTransform(globalDOMCache['object' + frame.uuid]);//.style.transform);
-            finalMatrix[0] *= 0.5;
-            finalMatrix[5] *= 0.5;
-
-            // animationDiv.style.transform = globalDOMCache['object' + frame.uuid].style.transform;
-            animationDiv.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
-
-            animationDiv.style.opacity = 0;
+            // animate the transformation matrix
+            var destinationMatrix = globalDOMCache['object' + frame.uuid].style.webkitTransform.split('(')[1].split(')')[0].split(',').map(function(val) {
+                return parseFloat(val);
+            });
+            destinationMatrix[0] *= 0.5; // scale it down a bit so it minimizes even smaller than the non-fullscreen frame
+            destinationMatrix[5] *= 0.5;
+            envelopeAnimationDiv.style.transform = 'matrix3d(' + destinationMatrix.toString() + ')';
+            
+            // also fade it out and remove it entirely when done
+            envelopeAnimationDiv.style.opacity = 0;
             setTimeout(function() {
-                animationDiv.parentElement.removeChild(animationDiv);
+                envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
             }, 250);
         }, 50);
     }
