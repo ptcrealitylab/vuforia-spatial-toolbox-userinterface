@@ -1285,8 +1285,7 @@ if (thisFrame) {
 
         }
         if (msgContent.fullScreen === false) {
-            var isAnimated = msgContent.fullScreenAnimated;
-            realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame, isAnimated);
+            realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame, msgContent.fullScreenAnimated);
         }
         
         // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame

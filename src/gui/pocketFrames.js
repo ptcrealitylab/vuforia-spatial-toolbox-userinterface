@@ -1,8 +1,7 @@
 /* exported realityElements */
 
 var realityElements = [
-
-
+    
     {
         name: 'all-frame-envelope',
         width: 300,

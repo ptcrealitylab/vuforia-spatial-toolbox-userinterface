@@ -1362,6 +1362,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 // if (this.isLowFrequencyUpdateFrame) {
 
+                    // TODO: this was slowing things down A LOT - figure out a better way to ignore frames outside of viewport
                     // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
                     // var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
                     //
@@ -2323,7 +2324,6 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
     }
 
     if (isAnimated) {
-
         // subtly fade in the iframe instead of instantly pops up in new place
         globalDOMCache['iframe' + frame.uuid].style.opacity = 0;
         globalDOMCache['iframe' + frame.uuid].classList.add('envelopeFadingIn');
