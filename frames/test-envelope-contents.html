@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <script src="objectDefaultFiles/object.js"></script>
-    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>Envelope Contents</title>
     <style>
@@ -36,19 +36,21 @@
     
     let realityInterface = new RealityInterface();
     let envelopeContents = new EnvelopeContents(realityInterface, document.body);
-    
+        
     envelopeContents.onOrderUpdated(function(orderUpdatedMessage) {
-        let index = orderUpdatedMessage.index;
-        let total = orderUpdatedMessage.total;
+        let stepOrder = orderUpdatedMessage.categories['test-envelope-contents'];
+        let index = stepOrder.index;
+        let total = stepOrder.total;
         container.innerText = 'Step ' + (index+1) + '/' + total;
     });
-    
+
     envelopeContents.onMessageFromEnvelope(function(messageFromEnvelope) {
         if (typeof messageFromEnvelope.setColor !== 'undefined') {
             container.style.backgroundColor = messageFromEnvelope.setColor;
+            envelopeContents.setCategories([messageFromEnvelope.setColor]);
         }
     });
-    
+
     container.addEventListener('pointerup', function(_event) {
         envelopeContents.sendMessageToEnvelope({
             containedFrameTapped: true

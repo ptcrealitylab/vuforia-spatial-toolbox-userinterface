@@ -3,6 +3,7 @@
 <head>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>progress</title>
 </head>
@@ -193,6 +194,7 @@
 
     // set up and load the reality interface
     var realityInterface = new RealityInterface();
+    var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
     realityInterface.addReadListener('value', function (e) {
         properties.value = e.value;
         if (e.unit) {

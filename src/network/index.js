@@ -1285,7 +1285,7 @@ if (thisFrame) {
 
         }
         if (msgContent.fullScreen === false) {
-            realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame);
+            realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame, msgContent.fullScreenAnimated);
         }
         
         // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
@@ -1299,9 +1299,39 @@ if (thisFrame) {
             
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
-            
+
             let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
-            
+
+            if (typeof msgContent.fullScreenAnimated !== 'undefined') {
+
+                // create a duplicate, temporary DOM element in the same place as the frame
+                var envelopeAnimationDiv = document.createElement('div');
+                envelopeAnimationDiv.classList.add('main');
+                envelopeAnimationDiv.classList.add('envelopeAnimationDiv');
+                envelopeAnimationDiv.classList.add('ignorePointerEvents');
+                envelopeAnimationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
+                envelopeAnimationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
+                envelopeAnimationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform; // start with same transform as the iframe
+                document.getElementById('GUI').appendChild(envelopeAnimationDiv);
+                
+                // wait a small delay so the transition CSS property applies
+                envelopeAnimationDiv.classList.add('animateAllProperties250ms');
+                setTimeout(function() {
+                    // give it a hard-coded MVP matrix that makes it fill the screen
+                    envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+                    envelopeAnimationDiv.style.opacity = 0;
+                    setTimeout(function() {
+                        envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
+                    }, 250);
+                }, 10);
+            }
+
+            // make the div invisible while it switches to fullscreen mode, so we don't see a jump in content vs mode
+            document.getElementById("object" + msgContent.frame).classList.add('transitioningToFullscreen');
+            setTimeout(function() {
+                document.getElementById("object" + msgContent.frame).classList.remove('transitioningToFullscreen');
+            }, 200);
+
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1329,7 +1359,7 @@ if (thisFrame) {
             if (object) {
                 object.containsStickyFrame = true;
             }
-            
+
             // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
             if (tempThisObject.isFullScreenExclusive) {
                 realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
@@ -1372,8 +1402,16 @@ if (thisFrame) {
         node.uuid = nodeKey;
         var thisObject = realityEditor.getObject(msgContent.object);
         let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-        node.x = (msgContent.createNode.x) || (-200 + Math.random() * 400);
-        node.y = (msgContent.createNode.y) || (-200 + Math.random() * 400);
+        if (typeof msgContent.createNode.x !== 'undefined') {
+            node.x = msgContent.createNode.x;
+        } else {
+            node.x = (-200 + Math.random() * 400);
+        }
+        if (typeof msgContent.createNode.y !== 'undefined') {
+            node.y = msgContent.createNode.y;
+        } else {
+            node.y = (-200 + Math.random() * 400);
+        }
         
         if (msgContent.createNode.attachToGroundPlane) {
             node.attachToGroundPlane = true;

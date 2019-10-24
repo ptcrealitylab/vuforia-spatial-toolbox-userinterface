@@ -1,6 +1,15 @@
 /* exported realityElements */
 
 var realityElements = [
+    
+    {
+        name: 'all-frame-envelope',
+        width: 300,
+        height: 300,
+        nodes: [
+        ]
+    },
+    
 /*
     {
         name: 'background',
@@ -194,28 +203,28 @@ var realityElements = [
         ]
     },
 
-    {
-        name: 'loto-session',
-        width: 800,
-        height: 200,
-        nodes: [
-            {name: 'storage', type: 'storeData'}
-        ]
-    },
-    
-    {
-        name: 'loto',
-        width: 400,
-        height: 610,
-        nodes: [
-            {name: 'complete', type: 'node', x: -82, y: 54},
-            {name: 'storage', type: 'storeData'}
-        ],
-        startPositionOffset: {
-            x: 120,
-            y: -30
-        }
-    },
+    // {
+    //     name: 'loto-session',
+    //     width: 800,
+    //     height: 200,
+    //     nodes: [
+    //         {name: 'storage', type: 'storeData'}
+    //     ]
+    // },
+    //
+    // {
+    //     name: 'loto',
+    //     width: 400,
+    //     height: 610,
+    //     nodes: [
+    //         {name: 'complete', type: 'node', x: -82, y: 54},
+    //         {name: 'storage', type: 'storeData'}
+    //     ],
+    //     startPositionOffset: {
+    //         x: 120,
+    //         y: -30
+    //     }
+    // },
     
     {
         name: 'complete',
@@ -249,20 +258,48 @@ var realityElements = [
             {name: 'state', type: "node", x:0, y:0}
         ]
     },
+
     {
-        name: 'test-envelope',
+        name: 'loto-envelope',
         width: 300,
         height: 300,
         nodes: [
-        ]
+            {name: 'storage', type: 'storeData'}
+        ],
+        startPositionOffset: {
+            x: 145,
+            y: 55
+        }
     },
+
     {
-        name: 'test-envelope-contents',
-        width: 300,
-        height: 300,
+        name: 'loto-step',
+        width: 400,
+        height: 610,
         nodes: [
-        ]
+            {name: 'step_complete', type: 'node', x: -25, y: 54},
+            {name: 'storage', type: 'storeData'}
+        ],
+        startPositionOffset: {
+            x: 77,
+            y: -28
+        }
     },
+    
+    // {
+    //     name: 'test-envelope',
+    //     width: 300,
+    //     height: 300,
+    //     nodes: [
+    //     ]
+    // },
+    // {
+    //     name: 'test-envelope-contents',
+    //     width: 300,
+    //     height: 300,
+    //     nodes: [
+    //     ]
+    // },
 
     /*
     // /*  
@@ -303,8 +340,18 @@ var realityElements = [
         nodes: [
         ]
     },
+    {
+        name: 'sphere',
+        width: 568,
+        height: 320,
+        nodes: [
+            // {name: 'hue', type: "node"},
+            // {name: 'saturation', type: "node"},
+            // {name: 'lightness', type: "node"}
+        ]
+    },
     // {
-    //     name: 'sphere',
+    //     name: 'sphere2',
     //     width: 568,
     //     height: 320,
     //     nodes: [
@@ -314,16 +361,6 @@ var realityElements = [
     //     ]
     // },
     {
-        name: 'sphere2',
-        width: 568,
-        height: 320,
-        nodes: [
-            // {name: 'hue', type: "node"},
-            // {name: 'saturation', type: "node"},
-            // {name: 'lightness', type: "node"}
-        ]
-    },
-    {
         name: 'easterEgg',
         width: 604,
         height: 324,
@@ -332,5 +369,5 @@ var realityElements = [
             {name: 'y', type: "node", x:0, y:0},
             {name: 'reset', type: "node", x:150, y:0}
         ]
-    },
+    }
 ];

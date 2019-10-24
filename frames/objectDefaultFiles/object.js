@@ -550,7 +550,7 @@
                 this.announceVideoPlay = makeSendStub('announceVideoPlay');
                 this.subscribeToVideoPauseEvents = makeSendStub('subscribeToVideoPauseEvents');
                 this.ignoreAllTouches = makeSendStub('ignoreAllTouches');
-                this.changeFrameSize = makeSendStub('changeOverlaySize');
+                this.changeFrameSize = makeSendStub('changeFrameSize');
                 // deprecated methods
                 this.sendToBackground = makeSendStub('sendToBackground');
             }
@@ -565,6 +565,7 @@
                 this.addAllObjectMatricesListener = makeSendStub('addAllObjectMatricesListener');
                 this.addDevicePoseMatrixListener = makeSendStub('addGroundPlaneMatrixListener');
                 this.addScreenPositionListener = makeSendStub('addScreenPositionListener');
+                this.cancelScreenPositionListener = makeSendStub('cancelScreenPositionListener');
                 this.addVisibilityListener = makeSendStub('addVisibilityListener');
                 this.addInterfaceListener = makeSendStub('addInterfaceListener');
                 this.addIsMovingListener = makeSendStub('addIsMovingListener');
@@ -1063,31 +1064,45 @@
             });
         };
 
-        this.setFullScreenOff = function () {
+        this.setFullScreenOff = function (params) {
             realityObject.sendFullScreen = false;
             // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             // realityObject.height = document.body.scrollHeight;
             // realityObject.width = document.body.scrollWidth;
             // postAllDataToParent();
-            postDataToParent({
+            
+            var dataToPost = {
                 fullScreen: realityObject.sendFullScreen,
                 fullscreenZPosition: realityObject.fullscreenZPosition,
                 stickiness: realityObject.sendSticky
-            });
+            };
+
+            if (typeof params.animated !== 'undefined') {
+                dataToPost.fullScreenAnimated = params.animated;
+            }
+            
+            postDataToParent(dataToPost);
         };
 
-        this.setStickyFullScreenOn = function () {
+        this.setStickyFullScreenOn = function (params) {
             realityObject.sendFullScreen = "sticky";
             // console.log(realityObject.frame + ' fullscreen = ' + realityObject.sendFullScreen);
             realityObject.sendSticky = true;
             // realityObject.height = "100%";
             // realityObject.width = "100%";
             // postAllDataToParent();
-            postDataToParent({
+            
+            var dataToPost = {
                 fullScreen: realityObject.sendFullScreen,
                 fullscreenZPosition: realityObject.fullscreenZPosition,
                 stickiness: realityObject.sendSticky
-            });
+            };
+            
+            if (typeof params.animated !== 'undefined') {
+                dataToPost.fullScreenAnimated = params.animated;
+            }
+            
+            postDataToParent(dataToPost);
         };
 
         this.setStickinessOff = function () {
@@ -1297,6 +1312,9 @@
          * @param {number} newHeight
          */
         this.changeFrameSize = function(newWidth, newHeight) {
+            if (realityObject.width === newWidth && realityObject.height === newHeight) {
+                return;
+            }
             realityObject.width = newWidth;
             realityObject.height = newHeight;
             postDataToParent({
@@ -1325,10 +1343,6 @@
                 getScreenDimensions: true
             });
             
-        };
-        
-        this.getMoveDelay = function() {
-            return realityObject.moveDelay;
         };
         
         /**
@@ -1424,6 +1438,18 @@
                     callback(msgContent.frameScreenPosition);
                 }
             };
+            return 'screenPositionCall'+numScreenPositionCallbacks; // returns a handle that can be used to cancel the listener
+        };
+
+        this.cancelScreenPositionListener = function(handle) {
+            if (handle.indexOf('screenPositionCall') === -1) {
+                console.warn('improperly formatted handle for a screenPositionListener. refusing to cancel.');
+                return;
+            }
+            if (realityObject.messageCallBacks[handle]) {
+                delete realityObject.messageCallBacks['screenPositionCall'+numScreenPositionCallbacks];
+                numScreenPositionCallbacks--;
+            }
         };
 
         this.addAccelerationListener = function (callback) {
@@ -1571,6 +1597,10 @@
         this.unregisterTouchDecider = function() {
             // touchDecider is passed by reference, so setting touchDecider to null would alter the function definition
             realityObject.touchDeciderRegistered = false; // instead just set a flag to not use the callback anymore
+        };
+
+        this.getMoveDelay = function() {
+            return realityObject.moveDelay;
         };
     };
 

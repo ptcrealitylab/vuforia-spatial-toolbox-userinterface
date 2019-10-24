@@ -338,12 +338,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
         this.isObjectWithNoFramesVisible = true;
     }
     
-    var visibleExclusiveFrames = realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames();
-    if (visibleExclusiveFrames.length > 1) {
-        console.log('too many exlusive frames visible at once!!', visibleExclusiveFrames);
-        
-    }
-    
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
        // if (!objects.hasOwnProperty(objectKey)) { continue; }
@@ -1368,21 +1362,22 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
                 // if (this.isLowFrequencyUpdateFrame) {
 
+                    // TODO: this was slowing things down A LOT - figure out a better way to ignore frames outside of viewport
                     // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
-                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
-
-                    var left = frameScreenPosition.upperLeft.x;
-                    var right = frameScreenPosition.lowerRight.x;
-                    var top = frameScreenPosition.upperLeft.y;
-                    var bottom = frameScreenPosition.lowerRight.y;
-
-                    if (!activeVehicle.isOutsideViewport && (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height)) {
-                        // globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
-                        activeVehicle.isOutsideViewport = true;
-                    } else if (activeVehicle.isOutsideViewport) {
-                        // globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
-                        activeVehicle.isOutsideViewport = false;
-                    }
+                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+                    //
+                    // var left = frameScreenPosition.upperLeft.x;
+                    // var right = frameScreenPosition.lowerRight.x;
+                    // var top = frameScreenPosition.upperLeft.y;
+                    // var bottom = frameScreenPosition.lowerRight.y;
+                    //
+                    // if (!activeVehicle.isOutsideViewport && (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height)) {
+                    //     // globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
+                    //     activeVehicle.isOutsideViewport = true;
+                    // } else if (activeVehicle.isOutsideViewport) {
+                    //     // globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
+                    //     activeVehicle.isOutsideViewport = false;
+                    // }
                     // }
 
                 // }
@@ -2296,8 +2291,9 @@ realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen = function(objectKey, fram
  * Helper function called by frame API and elsewhere to stop rendering a frame as fullscreen
  * @param {string} objectKey
  * @param {string} frameKey
+ * @param {boolean|undefined} isAnimated - true for envelopes, add a minimizing animation and fade in the iframe
  */
-realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameKey) {
+realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameKey, isAnimated) {
     var frame = realityEditor.getFrame(objectKey, frameKey);
     
     frame.fullScreen = false;
@@ -2325,6 +2321,46 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
     var containingObject = realityEditor.getObject(objectKey);
     if (!containingObject.objectVisible) {
         containingObject.objectVisible = true;
+    }
+
+    if (isAnimated) {
+        // subtly fade in the iframe instead of instantly pops up in new place
+        globalDOMCache['iframe' + frame.uuid].style.opacity = 0;
+        globalDOMCache['iframe' + frame.uuid].classList.add('envelopeFadingIn');
+        setTimeout(function() { // 50ms delay causes the CSS transition property to apply to the new opacity
+            globalDOMCache['iframe' + frame.uuid].style.opacity = 1;
+            setTimeout(function() {
+                globalDOMCache['iframe' + frame.uuid].classList.remove('envelopeFadingIn');
+            }, 1000);
+        }, 50);
+        
+        // create a temporary, semi-transparent DOM element in , which then animates to minimize down to the same transform as the frame
+        var envelopeAnimationDiv = document.createElement('div');
+        envelopeAnimationDiv.classList.add('main', 'envelopeAnimationDiv', 'ignorePointerEvents');
+        envelopeAnimationDiv.style.width = globalDOMCache['object' + frame.uuid].style.width;
+        envelopeAnimationDiv.style.height = globalDOMCache['object' + frame.uuid].style.height;
+        // start with a hard-coded MVP matrix that covers the full screen
+        envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+        envelopeAnimationDiv.style.opacity = 0.5;
+        document.getElementById('GUI').appendChild(envelopeAnimationDiv);
+
+        // wait a small delay so the transition CSS property applies
+        envelopeAnimationDiv.classList.add('animateAllProperties500ms');
+        setTimeout(function() {
+            // animate the transformation matrix
+            var destinationMatrix = globalDOMCache['object' + frame.uuid].style.webkitTransform.split('(')[1].split(')')[0].split(',').map(function(val) {
+                return parseFloat(val);
+            });
+            destinationMatrix[0] *= 0.5; // scale it down a bit so it minimizes even smaller than the non-fullscreen frame
+            destinationMatrix[5] *= 0.5;
+            envelopeAnimationDiv.style.transform = 'matrix3d(' + destinationMatrix.toString() + ')';
+            
+            // also fade it out and remove it entirely when done
+            envelopeAnimationDiv.style.opacity = 0;
+            setTimeout(function() {
+                envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
+            }, 250);
+        }, 50);
     }
 };
 

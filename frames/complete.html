@@ -3,6 +3,7 @@
 <head>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>progress</title>
     <style>
@@ -153,6 +154,7 @@ height: 130px; width: 230px; top: 12px;left: 373px; position: fixed;  transform:
 <script>
     document.querySelector('#show').style.visibility = "visible";
     var realityInterface = new RealityInterface();
+    var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
     var outline = document.querySelector('#outline');
     var stroke = document.querySelector('#stroke');
     var innerRing = document.querySelector('#innerRing');

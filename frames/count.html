@@ -3,6 +3,7 @@
 <head>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <meta charset="UTF-8">
     <title>count</title>
     <style>
@@ -108,6 +109,7 @@
 
     try {
         var realityInterface = new RealityInterface();
+        var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
         realityInterface.setMoveDelay(500);
         realityInterface.enableCustomInteractionMode();
         // this can also be done without the API by manually giving these divs the class 'realityInteraction'
