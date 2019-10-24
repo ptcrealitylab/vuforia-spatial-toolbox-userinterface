@@ -553,7 +553,7 @@
         Envelope.prototype.getCategoryOrderMap = function() {
             if (!this.areFramesOrdered) { return; }
             let frameCategoryMap = {};
-            this.frameIdOrdering.forEach(function(frameId, index) {
+            this.frameIdOrdering.forEach(function(frameId) {
                 frameCategoryMap[frameId] = {};
                 this.containedFrames[frameId].categories.forEach(function(thisCategoryName) {
                     frameCategoryMap[frameId][thisCategoryName] = this.getFrameIndex(frameId, thisCategoryName);
