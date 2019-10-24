@@ -5,6 +5,7 @@
     <title>Video Recording</title>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <style>
         body {
             width: 760px;
@@ -96,6 +97,7 @@
     <script>
         var videoUrl = '';
         var realityInterface = new RealityInterface();
+        var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
         realityInterface.setMoveDelay(300);
 
         var recordedVideo = document.getElementById('recordedVideo');

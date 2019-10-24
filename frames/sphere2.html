@@ -5,6 +5,7 @@
     <title>THREE.js Sphere</title>
     <script src="objectDefaultFiles/object.js"></script>
     <script src="objectDefaultFiles/pep.min.js"></script>
+    <script src="objectDefaultFiles/envelopeContents.js"></script>
     <script src="resources/threejs-src/2018/three.min.js"></script>
     <script src="resources/threejs-src/2018/utils/SceneUtils.js"></script>
     <script src="resources/navigation-arrow.js"></script>
@@ -151,6 +152,7 @@
             // make the frame fullscreen within the reality editor,
             // and subscribe to the modelview and projection matrices
             realityInterface = new RealityInterface();
+            var _envelopeContents = new EnvelopeContents(realityInterface, document.body);
             console.log('set up connected here!');
 
             realityInterface.setIOCallback(function () {

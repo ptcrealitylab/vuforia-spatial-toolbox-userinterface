@@ -106,7 +106,11 @@
             /**
              * Triggered when the user closes/minimizes the envelope, or another non-stackable envelope kicks this one out of fullscreen
              */
-            onClose: []
+            onClose: [],
+            /**
+             * Triggered when the envelope loads new persistent data (about which frames it contains). Functions as an onload method.
+             */
+            onPublicDataLoaded: []
         };
         /**
          * The actual width and height of the screen, used to set the size of the frame when the envelope is opened
@@ -160,6 +164,18 @@
         };
         this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
 
+        // also ensure that there is a node called 'open' on the envelope frame to open or close it
+        params = {
+            name: 'open',
+            x: 0,
+            y: 0,
+            groundplane: false,
+            type: 'node',
+            noDuplicate: true // only create if doesn't already exist
+        };
+        this.realityInterface.sendCreateNode(params.name, params.x, params.y, params.groundplane, params.type, params.noDuplicate);
+        realityInterface.addReadListener('open', this._defaultOpenNodeListener.bind(this));
+
         // this adjusts the size of the body to be fullscreen based on accurate device screen size
         realityInterface.getScreenDimensions(function(width, height) {
             this.screenDimensions = {
@@ -192,7 +208,7 @@
             if (this.isOpen) { return; }
 
             this.isOpen = true;
-            this.realityInterface.setStickyFullScreenOn(); // currently assumes envelopes want 'sticky' fullscreen, not regular
+            this.realityInterface.setStickyFullScreenOn({animated: true}); // currently assumes envelopes want 'sticky' fullscreen, not regular
             if (!this.isStackable) {
                 this.realityInterface.setExclusiveFullScreenOn(function() {
                     this.close(); // trigger all the side-effects related to the envelope closing
@@ -213,7 +229,7 @@
             if (!this.isOpen) { return; }
 
             this.isOpen = false;
-            this.realityInterface.setFullScreenOff();
+            this.realityInterface.setFullScreenOff({animated: true});
 
             this.triggerCallbacks('onClose', {});
 
@@ -267,6 +283,16 @@
         };
 
         /**
+         * API to be notified when the envelope has fully loaded its publicData.
+         * At this point, its containedFrames and frameIdOrdering will be correct.
+         * Can be used as an onload method for the envelope.
+         * @param {function<>} callback
+         */
+        Envelope.prototype.onPublicDataLoaded = function(callback) {
+            this.addCallback('onPublicDataLoaded', callback);
+        };
+
+        /**
          * API to send a JSON message to a particular contained frame, if there is one matching that ID.
          * @param {string} id - the uuid of the frame
          * @param {Object} message
@@ -291,13 +317,14 @@
          * API to send a JSON message to the contained frame in a certain index of the ordering.
          * @param {number} index
          * @param {Object} message
+         * @param {string|undefined} category - optionally filter down the set of frames and get the nth frame of this category 
          */
-        Envelope.prototype.sendMessageToFrameAtIndex = function(index, message) {
+        Envelope.prototype.sendMessageToFrameAtIndex = function(index, message, category) {
             if (!this.areFramesOrdered) {
                 console.warn('You cannot send a message by index if the frames are unordered');
                 return;
             }
-            this.sendMessageToFrameWithId(this.getFrameIdAtIndex(index), message);
+            this.sendMessageToFrameWithId(this.getFrameIdAtIndex(index, category), message);
         };
 
         /**
@@ -306,7 +333,7 @@
          * @param {string} frameId
          * @param {number} newIndex
          */
-        Envelope.prototype.reorderFrames = function(frameId, newIndex) {
+        Envelope.prototype.reorderFrames = function(frameId, newIndex) { // TODO: support categories so it works for mixed envelopes
             if (!this.areFramesOrdered) {
                 console.warn('You cannot reorder frames if the frames are unordered');
                 return;
@@ -315,16 +342,8 @@
             if (currentIndex > -1) {
                 // moves element from currentIndex to newIndex - see https://stackoverflow.com/a/2440723/1190267
                 this.frameIdOrdering.splice(newIndex, 0, this.frameIdOrdering.splice(currentIndex, 1)[0]);
-
-                // notify all frames of their new indices
-                this.frameIdOrdering.forEach(function(id, index) {
-                    this.sendMessageToFrameWithId(id, {
-                        onOrderUpdated: {
-                            index: index,
-                            total: this.frameIdOrdering.length
-                        }
-                    });
-                }.bind(this));
+                this.orderingUpdated();
+                this.savePersistentData();
             }
         };
     }
@@ -401,7 +420,7 @@
          */
         Envelope.prototype._defaultOnOpen = function() {
             this.rootElementWhenClosed.style.display = 'none';
-            this.rootElementWhenOpen.style.display = 'inline';
+            this.rootElementWhenOpen.style.display = '';
             // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
             this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenOpen.clientWidth), parseInt(this.rootElementWhenOpen.clientHeight));
             this.moveDelayBeforeOpen = this.realityInterface.getMoveDelay() || 400;
@@ -412,7 +431,7 @@
          * Resets the UI and relevant frame properties when the envelope is closed.
          */
         Envelope.prototype._defaultOnClose = function() {
-            this.rootElementWhenClosed.style.display = 'inline';
+            this.rootElementWhenClosed.style.display = '';
             this.rootElementWhenOpen.style.display = 'none';
             // change the iframe and touch overlay size (including visual feedback corners) when the frame changes size
             this.realityInterface.changeFrameSize(parseInt(this.rootElementWhenClosed.clientWidth), parseInt(this.rootElementWhenClosed.clientHeight));
@@ -425,9 +444,34 @@
          */
         Envelope.prototype._defaultFrameMessageListener = function(message) {
             if (typeof message.msgContent.containedFrameMessage !== 'undefined') {
+                
+                if (typeof message.msgContent.containedFrameMessage.setCategories !== 'undefined') {
+                    this.updateContainedFrameCategories(message.sourceFrame, message.msgContent.containedFrameMessage.setCategories);
+                }
+
+                // insert the source frame into the message so the callback has that context
+                if (typeof message.msgContent.containedFrameMessage.sourceFrame === 'undefined') {
+                    message.msgContent.containedFrameMessage.sourceFrame = message.sourceFrame;
+                }
+                
                 // console.warn('contents received envelope message', msgContent, sourceFrame, destinationFrame);
                 this.triggerCallbacks('onMessageFromContainedFrame', message.msgContent.containedFrameMessage);
             }
+        };
+
+        /**
+         * Updates the frame to be tagged with the array of categories. Also includes the frame's type as a default.
+         * @param {string} frameId
+         * @param {Array.<string>} categories
+         */
+        Envelope.prototype.updateContainedFrameCategories = function(frameId, categories) {
+            this.containedFrames[frameId].categories = categories;
+            // ensure that it always uses type as a category
+            if (this.containedFrames[frameId].categories.indexOf(this.containedFrames[frameId].type) === -1) {
+                this.containedFrames[frameId].categories.push(this.containedFrames[frameId].type);
+            }
+            this.orderingUpdated();
+            this.savePersistentData();
         };
 
         /**
@@ -444,6 +488,28 @@
                 this.frameIdOrdering = savedContents.frameIdOrdering;
                 this.orderingUpdated();
             }
+            
+            this.triggerCallbacks('onPublicDataLoaded', {});
+        };
+
+        /**
+         * Listens for new values sent to the 'open' node on the envelope, and uses that to open or close it.
+         * @param {Data} event
+         */
+        Envelope.prototype._defaultOpenNodeListener = function(event) {
+            if (typeof this.lastOpenValue === 'undefined') {
+                this.lastOpenValue = event.value; 
+            }
+            if (this.lastOpenValue === event.value) {
+                return; // prevents it from closing itself when the node first loads or on duplicate data
+            }
+            if (event.value < 0.5) {
+                this.close();
+            } else {
+                this.open();
+            }
+
+            this.lastOpenValue = event.value; // prevents duplicate reads (get triggered on sendRealityEditorSubscribe)
         };
 
         /**
@@ -463,18 +529,57 @@
          */
         Envelope.prototype.orderingUpdated = function() {
             if (!this.areFramesOrdered) { return; }
+            
+            let categoryOrderMap = this.getCategoryOrderMap();
+            
             // send a message to each frame with their order
             this.frameIdOrdering.forEach(function(frameId, index) {
                 this.sendMessageToFrameWithId(frameId, {
                     onOrderUpdated: {
                         index: index,
-                        total: this.frameIdOrdering.length
+                        total: this.frameIdOrdering.length,
+                        categories: categoryOrderMap[frameId]
                     }
                 })
             }.bind(this));
 
         };
+        
+        /**
+         * Returns an object containing each frameId, mapped to the set of categories it is tagged with,
+         * and its respective index in each of their orderings.
+         * @return {Object.<string, Object.<string, number>>}
+         */
+        Envelope.prototype.getCategoryOrderMap = function() {
+            if (!this.areFramesOrdered) { return; }
+            let frameCategoryMap = {};
+            this.frameIdOrdering.forEach(function(frameId) {
+                frameCategoryMap[frameId] = {};
+                this.containedFrames[frameId].categories.forEach(function(thisCategoryName) {
+                    frameCategoryMap[frameId][thisCategoryName] = this.getFrameIndex(frameId, thisCategoryName);
+                }.bind(this));
+            }.bind(this));
+            return frameCategoryMap;
+        };
 
+        /**
+         * Returns the index of a frame compared to all others tagged with the same category
+         * @param {string} frameId
+         * @param {string} category
+         * @return {{index: number, total: number}}
+         */
+        Envelope.prototype.getFrameIndex = function(frameId, category) {
+            // filter down an ordered list of all frames with that category
+            // return this frameId's index in that list
+            let framesOfThisCategory = this.frameIdOrdering.filter(function(frameId) {
+                return this.containedFrames[frameId].categories.indexOf(category) > -1;
+            }.bind(this));
+            return {
+                index: framesOfThisCategory.indexOf(frameId),
+                total: framesOfThisCategory.length
+            };
+        };
+        
         /**
          * Writes the containedFrames and frameIdOrdering to publicData so that the relationships persist across sessions.
          * Gets triggered automatically when frames are added or removed.
@@ -520,13 +625,19 @@
         };
 
         /**
-         * Gets the frame id that corresponds to a certain index in the ordering.
+         * Gets the frame id that corresponds to a certain index in the ordering (optionally, of a given category of frame).
          * @param {number} index
+         * @param {string|undefined} category
          */
-        Envelope.prototype.getFrameIdAtIndex = function(index) {
+        Envelope.prototype.getFrameIdAtIndex = function(index, category) {
             if (!this.areFramesOrdered) {
                 console.warn('You cannot send a message by index if the frames are unordered');
                 return;
+            }
+            if (typeof category !== 'undefined') {
+                return this.frameIdOrdering.filter(function(frameId) {
+                    return this.containedFrames[frameId].categories.indexOf(category) > -1;
+                }.bind(this))[index];
             }
             return this.frameIdOrdering[index];
         };
@@ -553,6 +664,7 @@
     function FrameData(id, type) {
         this.id = id;
         this.type = type;
+        this.categories = [type];
     }
     
     exports.Envelope = Envelope;

@@ -1456,3 +1456,27 @@ Logic Interface CSS
     background-color: rgba(0,255,255,0.5);
     border: 5px solid cyan;
 }
+
+.animateAllProperties250ms {
+    transition: all 0.25s ease-out;
+    -webkit-transition: all 0.25s ease-out;
+}
+
+.animateAllProperties500ms {
+    transition: all 0.5s ease-out;
+    -webkit-transition: all 0.5s ease-out;
+}
+
+.envelopeAnimationDiv {
+    background-color: rgba(255, 255, 255, 0.5);
+    visibility: visible;
+}
+
+.transitioningToFullscreen {
+    display: none;
+}
+
+.envelopeFadingIn {
+    transition: opacity 1s ease-out;
+    -webkit-transition: opacity 1s ease-out;
+}

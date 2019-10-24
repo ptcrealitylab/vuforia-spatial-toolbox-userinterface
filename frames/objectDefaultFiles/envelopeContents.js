@@ -54,7 +54,15 @@
             /**
              * Triggered when the envelope frame sends a message directly to this one
              */
-            onMessageFromEnvelope: []
+            onMessageFromEnvelope: [],
+            /**
+             * Triggered when the envelope is opened
+             */
+            onOpen: [],
+            /**
+             * Triggered when the envelope is minimized
+             */
+            onClose: []
         };
 
         /**
@@ -137,6 +145,22 @@
         };
 
         /**
+         * API to respond to the envelope opening.
+         * @param {function<>} callback
+         */
+        EnvelopeContents.prototype.onOpen = function(callback) {
+            this.addCallback('onOpen', callback);
+        };
+
+        /**
+         * API to respond to the envelope closing.
+         * @param {function<>} callback
+         */
+        EnvelopeContents.prototype.onClose = function(callback) {
+            this.addCallback('onClose', callback);
+        };
+
+        /**
          * API to send an arbitrary message to the envelope that this frame belongs to.
          * @param {Object} message
          */
@@ -145,6 +169,16 @@
                 containedFrameMessage: message
             });
         };
+
+        /**
+         * API to tag this frame with a list of one or more categories, in which its order will be tracked.
+         * @param categories
+         */
+        EnvelopeContents.prototype.setCategories = function(categories) {
+            this.sendMessageToEnvelope({
+                setCategories: categories
+            });
+        }
     }
 
     // Internal helper functions, not actually private but don't need to be called from the frame you build
@@ -156,6 +190,7 @@
         EnvelopeContents.prototype.show = function() {
             this.rootElement.style.display = '';
             this.realityInterface.ignoreAllTouches(false);
+            this.triggerCallbacks('onOpen', {});
         };
 
         /**
@@ -164,6 +199,7 @@
         EnvelopeContents.prototype.hide = function() {
             this.rootElement.style.display = 'none';
             this.realityInterface.ignoreAllTouches(true);
+            this.triggerCallbacks('onClose', {});
         };
 
         /**
