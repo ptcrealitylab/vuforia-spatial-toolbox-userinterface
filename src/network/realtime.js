@@ -254,6 +254,31 @@ createNameSpace("realityEditor.network.realtime");
 
         // sendMessageToSocketSet('realityServers', '/update', messageBody);
     }
+
+    /**
+     * Updates an object property on the server (and synchronizes all other clients if necessary) using a websocket
+     * @param {string} objectKey
+     * @param {string} propertyPath
+     * @param {*} newValue
+     */
+    function broadcastUpdateObjectMatrix(objectKey, propertyPath, newValue) {
+        if (!globalStates.realtimeEnabled) { return; }
+        if (propertyPath !== 'matrix' || newValue.length !== 16) { return; }
+
+        // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
+        var serverSocket = getServerSocketForObject(objectKey);
+        if (serverSocket) {
+
+            var messageBody = {
+                objectKey: objectKey,
+                propertyPath: propertyPath,
+                newValue: newValue,
+                editorId: globalStates.tempUuid
+            };
+
+            serverSocket.emit('/update/object/matrix', JSON.stringify(messageBody));
+        }
+    }
     
     var objectSocketCache = {};
 
@@ -278,7 +303,7 @@ createNameSpace("realityEditor.network.realtime");
                 }
             });
             
-            objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
+            objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : undefined;
         }
         
         return objectSocketCache[objectKey]; // don't need to recalculate each time
@@ -367,6 +392,7 @@ createNameSpace("realityEditor.network.realtime");
     exports.initService = initService;
     exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.broadcastUpdate = broadcastUpdate;
+    exports.broadcastUpdateObjectMatrix = broadcastUpdateObjectMatrix;
     
     exports.getSocketIPsForSet = getSocketIPsForSet;
     exports.createSocketInSet = createSocketInSet;

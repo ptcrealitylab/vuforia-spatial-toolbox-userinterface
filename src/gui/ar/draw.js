@@ -352,6 +352,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects, areMatricesPrecompu
             this.activeObject.visibleCounter = timeForContentLoaded;
             this.setObjectVisible(this.activeObject, true);
             
+            // update the matrix property of the object based on the world position detected by vuforia // todo: include worldCorrection in this value
+            this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
+            realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, 'matrix', this.activeObject.matrix);
+            
             if (this.activeObject.isWorldObject) {
                 // don't start rendering world frames until we've received a valid camera matrix
                 if (this.correctedCameraMatrix.length === 0) {

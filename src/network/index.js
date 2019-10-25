@@ -204,9 +204,9 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     thisObject.sendAcceleration = false;
     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
-    // if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
-    //     thisObject.matrix = [];
-    // }
+    if (typeof thisObject.matrix === 'undefined') {
+        thisObject.matrix = [];
+    }
 
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);

@@ -71,6 +71,9 @@ realityEditor.device.onload = function () {
         globalStates.platform = false;
     }
 
+    // desktop adapter needs to load first to modify namespace if needed
+    realityEditor.device.desktopAdapter.initService();
+
     // load persistent state from disk
     realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
     realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
@@ -89,7 +92,6 @@ realityEditor.device.onload = function () {
     realityEditor.device.security.initService(); // TODO: service is internally disabled
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
-    realityEditor.device.desktopAdapter.initService();
     realityEditor.gui.ar.desktopRenderer.initService();
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();
