@@ -93,6 +93,7 @@ realityEditor.device.onload = function () {
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
     realityEditor.gui.ar.desktopRenderer.initService();
+    realityEditor.device.desktopCamera.initService();
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();
     realityEditor.device.distanceScaling.initService();
@@ -171,8 +172,7 @@ realityEditor.device.onload = function () {
         realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
         if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
-            var areMatricesPrecomputed = true;
-            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, areMatricesPrecomputed); 
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);

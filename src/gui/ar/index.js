@@ -87,6 +87,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     if (realityEditor.device.utilities.isDesktop()) {
         matrix[5] *= -1;
+        matrix[0] *= -1;
     }
     
     var corX = 0;

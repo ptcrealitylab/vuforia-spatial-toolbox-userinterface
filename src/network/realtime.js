@@ -20,6 +20,8 @@ createNameSpace("realityEditor.network.realtime");
     function initService() {
         // TODO Is this redundant code? It seems to generate the error that pops up
         
+        if (realityEditor.device.utilities.isDesktop()) { globalStates.realtimeEnabled = true; } // realtime is necessary for desktop to work
+        
         if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
 
         if (realityEditor.device.utilities.isDesktop()) {
@@ -258,25 +260,32 @@ createNameSpace("realityEditor.network.realtime");
     /**
      * Updates an object property on the server (and synchronizes all other clients if necessary) using a websocket
      * @param {string} objectKey
-     * @param {string} propertyPath
-     * @param {*} newValue
+     * @param {Array.<number>} matrix
      */
-    function broadcastUpdateObjectMatrix(objectKey, propertyPath, newValue) {
+    function broadcastUpdateObjectMatrix(objectKey, matrix) {
         if (!globalStates.realtimeEnabled) { return; }
-        if (propertyPath !== 'matrix' || newValue.length !== 16) { return; }
+        if (matrix.length !== 16) { return; } // don't delete previous value by sending an empty matrix to the server
 
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);
         if (serverSocket) {
-
             var messageBody = {
                 objectKey: objectKey,
-                propertyPath: propertyPath,
-                newValue: newValue,
+                matrix: matrix,
                 editorId: globalStates.tempUuid
             };
-
             serverSocket.emit('/update/object/matrix', JSON.stringify(messageBody));
+        }
+    }
+    
+    function subscribeToObjectMatrices(objectKey, callback) {
+        if (!globalStates.realtimeEnabled) { return; }
+
+        // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
+        var serverSocket = getServerSocketForObject(objectKey);
+        if (serverSocket) {
+            serverSocket.emit('/subscribe/objectUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+            serverSocket.on('/update/object/matrix', callback);
         }
     }
     
@@ -393,6 +402,7 @@ createNameSpace("realityEditor.network.realtime");
     exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.broadcastUpdate = broadcastUpdate;
     exports.broadcastUpdateObjectMatrix = broadcastUpdateObjectMatrix;
+    exports.subscribeToObjectMatrices = subscribeToObjectMatrices;
     
     exports.getSocketIPsForSet = getSocketIPsForSet;
     exports.createSocketInSet = createSocketInSet;

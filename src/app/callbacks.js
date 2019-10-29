@@ -319,8 +319,6 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
-
-    realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
     
     // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
     //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
