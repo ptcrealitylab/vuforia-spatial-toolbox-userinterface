@@ -164,11 +164,13 @@ createNameSpace("realityEditor.worldObjects");
      */
     function getGlobalWorldObjectKeys() {
         var globalWorldObjectKeys = [];
-        getWorldObjectKeys().forEach(function(worldObjectKey) {
-            if (worldObjectKey !== localWorldObjectKey) {
-                globalWorldObjectKeys.push(worldObjectKey);
-            }
-        });
+        if (getWorldObjectKeys()) {
+            getWorldObjectKeys().forEach(function(worldObjectKey) {
+                if (worldObjectKey !== localWorldObjectKey) {
+                    globalWorldObjectKeys.push(worldObjectKey);
+                }
+            });
+        }
         return globalWorldObjectKeys;
     }
 
