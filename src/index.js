@@ -62,6 +62,7 @@ var realityEditor = realityEditor || {
     },
     device: {
         desktopAdapter: {},
+        desktopCamera: {},
         distanceScaling: {},
         hololensAdapter: {},
         keyboardEvents: {},

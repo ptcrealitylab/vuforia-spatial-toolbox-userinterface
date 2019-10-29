@@ -1098,7 +1098,7 @@
                 stickiness: realityObject.sendSticky
             };
             
-            if (typeof params.animated !== 'undefined') {
+            if (params && typeof params.animated !== 'undefined') {
                 dataToPost.fullScreenAnimated = params.animated;
             }
             
