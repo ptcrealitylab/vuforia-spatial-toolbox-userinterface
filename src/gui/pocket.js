@@ -794,7 +794,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
             segment.classList.add('pocketScrollBarSegmentTouched');
         }
-
+        
+        var pocketPointerDown = false;
+        document.addEventListener('pointerdown', function(_e) {
+            pocketPointerDown = true;
+        });
+        document.addEventListener('pointerup', function(_e) {
+            pocketPointerDown = false;
+        });
 
         for (var i = 0; i < numChapters; i++) {
             var segmentButton = document.createElement('div');
@@ -812,11 +819,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             segmentButton.dataset.index = i;
             
+            function scrollPocketForTouch(e) {
+                var index = parseInt(e.currentTarget.dataset.index);
+                var segmentTop = e.currentTarget.getClientRects()[0].top;
+                var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
+
+                var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
+                var scrollContainer = document.getElementById('pocketScrollContainer');
+                scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
+            }
+            
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
-                scrollToSegmentIndex(e.currentTarget.dataset.index); // TODO: keep this? or same as pointermove and include percentage between?
+                // scrollToSegmentIndex(e.currentTarget.dataset.index); // TODO: keep this? or same as pointermove and include percentage between?
+                scrollPocketForTouch(e);
             });
             segmentButton.addEventListener('pointerup', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
@@ -825,12 +843,16 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
             });
             segmentButton.addEventListener('pointerenter', function(e) {
+                if (!pocketPointerDown) { return; }
+
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
                 // scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerleave', function(e) {
+                if (!pocketPointerDown) { return; }
+
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
             });
@@ -838,26 +860,27 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
             });
             segmentButton.addEventListener('pointermove', function(e) {
+                if (!pocketPointerDown) { return; }
 
-                var index = parseInt(e.currentTarget.dataset.index);
-                var segmentTop = e.currentTarget.getClientRects()[0].top;
-                var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
-                
-                var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
-                var scrollContainer = document.getElementById('pocketScrollContainer');
-                scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
+                scrollPocketForTouch(e);
+                // var index = parseInt(e.currentTarget.dataset.index);
+                // var segmentTop = e.currentTarget.getClientRects()[0].top;
+                // var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
+                //
+                // var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
+                // var scrollContainer = document.getElementById('pocketScrollContainer');
+                // scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
 
                 // console.log(percentageBetween, (index + percentageBetween), scrollContainer.scrollTop);
-
             });
             scrollbar.appendChild(segmentButton);
             allSegmentButtons.push(segmentButton);
         }
         
-        function scrollToSegmentIndex(index) {
-            var scrollContainer = document.getElementById('pocketScrollContainer');
-            scrollContainer.scrollTop = index * pageHeight;
-        }
+        // function scrollToSegmentIndex(index) {
+        //     var scrollContainer = document.getElementById('pocketScrollContainer');
+        //     scrollContainer.scrollTop = index * pageHeight;
+        // }
         
         finishStylingPocket();
     }
