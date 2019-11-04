@@ -354,13 +354,19 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.setObjectVisible(this.activeObject, true);
             
             // update the matrix property of the object based on the world position detected by vuforia // todo: include worldCorrection in this value
+
+            if (this.activeObject.isWorldObject) {
+                this.activeObject.matrix = this.utilities.newIdentityMatrix();
+            }
+            
             if (!realityEditor.device.utilities.isDesktop()) {
-                if (this.activeObject.isWorldObject) {
-                    this.activeObject.matrix = this.utilities.newIdentityMatrix();
-                } else {
-                    this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
+                var HACK_DONT_NEED_WORLD_CORRECTION = false;
+                if (realityEditor.gui.ar.draw.worldCorrection !== null || HACK_DONT_NEED_WORLD_CORRECTION) {
+                    if (!this.activeObject.isWorldObject) {
+                        this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
+                        realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
+                    }
                 }
-                realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
             }
             
             if (this.activeObject.isWorldObject) {
