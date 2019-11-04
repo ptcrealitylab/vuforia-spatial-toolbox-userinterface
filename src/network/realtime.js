@@ -21,8 +21,11 @@ createNameSpace("realityEditor.network.realtime");
         // TODO Is this redundant code? It seems to generate the error that pops up
         
         if (realityEditor.device.utilities.isDesktop()) { globalStates.realtimeEnabled = true; } // realtime is necessary for desktop to work
-        
+        console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, globalStates.realtimeEnabled);
+
         if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
+        
+        console.log('actually initializing realtime services');
 
         if (realityEditor.device.utilities.isDesktop()) {
             desktopSocket = io.connect();
