@@ -360,10 +360,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             }
             
             if (!realityEditor.device.utilities.isDesktop()) {
-                var HACK_DONT_NEED_WORLD_CORRECTION = false;
-                if (realityEditor.gui.ar.draw.worldCorrection !== null || HACK_DONT_NEED_WORLD_CORRECTION) {
+                if (realityEditor.gui.ar.draw.worldCorrection !== null) {
                     if (!this.activeObject.isWorldObject) {
-                        this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
+                        // properly accounts for world correction
+                        realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.worldCorrection), this.activeObject.matrix);
+                        // this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]); // old version didn't include worldCorrection
                         realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
                     }
                 }
@@ -1125,7 +1126,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             */
 
             // frames don't fade out with distance on desktop remote renderer, but they do on the phone
-            if (!realityEditor.device.utilities.isDesktop() && !globalStates.freezeButtonState) { // can't change while frozen so don't recalculate
+            var ENABLE_DISTANCE_FADING_ON_DESKTOP = false;
+            if ((!realityEditor.device.utilities.isDesktop() || ENABLE_DISTANCE_FADING_ON_DESKTOP) && !globalStates.freezeButtonState) { // can't change while frozen so don't recalculate
                 // fade out frames and nodes when they move beyond a certain distance
                 var distance = activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
