@@ -355,9 +355,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             
             // update the matrix property of the object based on the world position detected by vuforia // todo: include worldCorrection in this value
 
-            if (this.activeObject.isWorldObject) {
-                this.activeObject.matrix = this.utilities.newIdentityMatrix();
-            }
+            // if (this.activeObject.isWorldObject) {
+            //     this.activeObject.matrix = this.utilities.newIdentityMatrix();
+            // }
             
             if (!realityEditor.device.utilities.isDesktop()) {
                 if (realityEditor.gui.ar.draw.worldCorrection !== null) {
