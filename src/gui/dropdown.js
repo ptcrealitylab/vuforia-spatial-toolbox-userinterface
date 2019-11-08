@@ -243,7 +243,7 @@ createNameSpace("realityEditor.gui.dropdown");
             setTimeout(function() {
                 element.classList.remove('dropdownExpanded');
                 element.classList.add('dropdownCollapsed');
-            }, (((this.selectables.length-1) - element.dataset.index) * 50)); // todo: base this on getExpansionSpeed
+            }, (((this.selectables.length-1) - element.dataset.index) * this.getExpansionSpeed()));
         }.bind(this));
         this.dom.classList.add('containerCollapsed');
 
@@ -283,8 +283,8 @@ createNameSpace("realityEditor.gui.dropdown");
             setTimeout(function() {
                 element.classList.remove('dropdownCollapsed');
                 element.classList.add('dropdownExpanded');
-            }, (element.dataset.index * 50)); // todo: base this on getExpansionSpeed
-        });
+            }, (element.dataset.index * this.getExpansionSpeed()));
+        }.bind(this));
         this.dom.classList.remove('containerCollapsed');
 
         if (this.selected) {

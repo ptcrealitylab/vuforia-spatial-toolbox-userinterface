@@ -37,7 +37,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     function keyUpHandler(event) {
         event.preventDefault();
         
-        console.log("keyUp", event);
+        // console.log("keyUp", event);
         callbackHandler.triggerCallbacks('keyUpHandler', {event: event});
         
         // TODO: in the future, move this to a FrameContentAPI module that subscribes to the keyboard events using the above methods
@@ -50,7 +50,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     function keyDownHandler(event) {
         event.preventDefault();
         
-        console.log("keyDown", event);
+        // console.log("keyDown", event);
         callbackHandler.triggerCallbacks('keyDownHandler', {event: event});
     }
 
