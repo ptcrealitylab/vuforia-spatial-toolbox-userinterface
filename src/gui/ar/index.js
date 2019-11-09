@@ -330,6 +330,7 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
         }
         
         distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+        
         if (realityEditor.worldObjects.isWorldObjectKey(objectKey)) {
             continue;
         }
@@ -348,6 +349,30 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     }
     
     return [object, frame, node];
+};
+
+realityEditor.gui.ar.utilities.getAllObjectDistances = function(isDesktop) {
+    
+    if (isDesktop) {
+        
+        return Object.keys(realityEditor.gui.ar.draw.visibleObjects).map(function(key) {
+            var mat = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[key], realityEditor.gui.ar.draw.correctedCameraMatrix, mat);
+            return {
+                key: key,
+                dist: realityEditor.gui.ar.utilities.distance(mat)
+            }
+        });
+
+    } else {
+        return Object.keys(realityEditor.gui.ar.draw.visibleObjects).map(function (key) {
+            return {
+                key: key,
+                dist: realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[key])
+            }
+        });
+
+    }
 };
 
 /**
