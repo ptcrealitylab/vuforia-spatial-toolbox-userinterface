@@ -1463,6 +1463,12 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
 realityEditor.gui.ar.utilities.distance = function (matrix) {
     var distance = 1000; // for now give a valid value as a fallback
     try {
+        if (realityEditor.device.utilities.isDesktop()) {
+            // calculate distance to camera
+            var matrixToCamera = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, matrixToCamera);
+            matrix = matrixToCamera;
+        }
         distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
     } catch (e) {
         console.warn('trying to calculate distance of ', matrix);
