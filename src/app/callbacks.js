@@ -294,6 +294,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
         // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
 
+        document.getElementById('speechConsole').innerText = 'WORLD ORIGIN LOCATED';
+        
         realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
