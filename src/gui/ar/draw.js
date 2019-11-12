@@ -92,6 +92,13 @@ var desktopFrameTransform = [
     0, 0, 0, 1
 ];
 
+var desktopObjectTransform = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
 var mFlipYZ = [
     1, 0, 0, 0,
     0, 0, 1, 0,
