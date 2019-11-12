@@ -2602,13 +2602,21 @@ realityEditor.gui.ar.draw.removeFrameMatrixFromFinalMatrix = function(activeVehi
 realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _nodeCalculations, _cout) {
     
     // return activeVehicle.mostRecentFinalMatrix;
-
+    
     if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
 
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
         if (visibleObjects[objectKey]) {
-            this.ar.utilities.multiplyMatrix(this.modelViewMatrices[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
+            if (realityEditor.getObject(objectKey).isWorldObject) {
+                this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
+            } else {
+                var rotated = [];
+                var visibleObjectMatrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, visibleObjects[objectKey], rotated); // fixes bug when moving while dropping in from pocket
+                realityEditor.gui.ar.utilities.multiplyMatrix(rotated, this.correctedCameraMatrix, visibleObjectMatrix);
+                this.ar.utilities.multiplyMatrix(visibleObjectMatrix, globalStates.projectionMatrix, activeObjectMatrixCopy);
+            }
         } else {
             utilities.copyMatrixInPlace(activeObjectMatrix, activeObjectMatrixCopy);
         }
