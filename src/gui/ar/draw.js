@@ -84,6 +84,21 @@ realityEditor.gui.ar.draw.nodeCalculations = {
     y: 0,
     rectPoints: []
 };
+
+var desktopFrameTransform = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+];
+
+var mFlipYZ = [
+    1, 0, 0, 0,
+    0, 0, 1, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 1
+];
+
 /**
  * @type {{temp: number[], begin: number[], end: number[], r: number[], r2: number[], r3: number[]}}
  */
@@ -378,7 +393,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // on desktop, model matrix for a world object will be origin instead of camera position, so update with camera view matrix
                 if (realityEditor.device.utilities.isDesktop()) {
                     this.activeObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
-                    realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
+                    // use rotateX?
+                    var tempM = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.activeObjectMatrix, tempM);
+                    realityEditor.gui.ar.utilities.multiplyMatrix(tempM, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
                 }
             } else {
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix); // TODO: to really optimize, could inline/simplify the rotateX multiplication
@@ -1287,6 +1305,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     console.warn('fixed NaN positionData matrix in drawTransformed');
                 }
                 
+                // var positionDataMatrix = realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix);
+
+                // if (realityEditor.device.utilities.isDesktop()) {
+                //     var positionDataCopy = realityEditor.gui.ar.utilities.copyMatrix(positionDataMatrix);
+                //     realityEditor.gui.ar.utilities.multiplyMatrix(desktopFrameTransform, positionDataCopy, positionDataMatrix);
+                // }
+                
                 if (positionData.matrix.length < 13) {
                     // utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
 
@@ -1302,6 +1327,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
                     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                 }
+            }
+            
+            // fixes rotation too late
+            if (realityEditor.device.utilities.isDesktop()) {
+                var finalMatCopy = realityEditor.gui.ar.utilities.copyMatrix(finalMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(desktopFrameTransform, finalMatCopy, finalMatrix);
             }
 
             if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
