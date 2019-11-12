@@ -315,6 +315,22 @@ createNameSpace("realityEditor.gui.dropdown");
         }
     };
     
+    Dropdown.prototype.resetSelection = function() {
+        if (this.selected && this.selected.element) {
+            // remove style from previously selected dom
+            this.selected.element.classList.remove('dropdownSelected');
+
+            // if clicked the currently selected element again, deselect it
+            this.selected = null;
+
+            this.updateState(this.states.expandedOptions);
+
+            // if (this.onSelectionChanged) {
+            //     this.onSelectionChanged(this.selected);
+            // }
+        }
+    };
+    
     exports.Dropdown = Dropdown;
 
 })(realityEditor.gui.dropdown);
