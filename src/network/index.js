@@ -1551,12 +1551,12 @@ if (thisFrame) {
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
             
-            // var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
+            var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
             
-            // if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
+            if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
                 var keys = realityEditor.getKeysFromVehicle(frame);
                 realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
-            // }
+            }
         }
         
     }
