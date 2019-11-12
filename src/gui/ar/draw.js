@@ -396,16 +396,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     // use rotateX?
                     var tempM = [];
                     realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.activeObjectMatrix, tempM);
-                    realityEditor.gui.ar.utilities.multiplyMatrix(tempM, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
+                    realityEditor.gui.ar.utilities.multiplyMatrix(tempM, this.correctedCameraMatrix, this.visibleObjects[objectKey]);
                 }
             } else {
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix); // TODO: to really optimize, could inline/simplify the rotateX multiplication
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.visibleObjects[objectKey]);
             }
 
             // compute its ModelViewProjection matrix
             this.activeObjectMatrix = [];
-            this.ar.utilities.multiplyMatrix(this.modelViewMatrices[objectKey], this.globalStates.projectionMatrix, this.activeObjectMatrix);
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], this.globalStates.projectionMatrix, this.activeObjectMatrix);
             
             if (isNaN(this.activeObjectMatrix[0])) {
                 this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
@@ -432,13 +432,13 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeType = "ui";
 
                 // I think this might be a hack and it could be done in a much better way.
-                if(!this.modelViewMatrices[objectKey][0] && this.activeFrame.fullScreen !== 'sticky' ){
+                if(!this.visibleObjects[objectKey][0] && this.activeFrame.fullScreen !== 'sticky' ){
                     this.hideTransformed(this.activeKey, this.activeVehicle, this.globalDOMCache, this.cout);
                     continue;
                 }
                 
                 // perform all the 3D calculations and CSS updates to actually show the frame and render in the correct position
-                continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
+                continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                     this.globalDOMCache, this.globalStates, this.globalCanvas,
                     this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
                     this.nodeCalculations, this.cout);
@@ -623,7 +623,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.activeKey = frameKey;
             this.activeObjectMatrix = this.activeFrame.temp;
             
-            continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
+            continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
 
             if (!continueUpdate) { return; }
         }
@@ -677,7 +677,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // make the update loop extensible by additional services that wish to subscribe to matrix updates
     this.updateListeners.forEach(function(callback) {
         // send a deep clone of the list so that extensible services can't break the render loop by modifying the original
-        callback(realityEditor.gui.ar.draw.modelViewMatrices);
+        callback(realityEditor.gui.ar.draw.visibleObjects);
     });
 };
 
@@ -1460,7 +1460,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                     if (activeVehicle.sendMatrix === true) {
                         let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-                        thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.modelViewMatrices[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
+                        thisMsg.modelViewMatrix = this.getFinalMatrixForFrame(this.visibleObjects[objectKey], positionData.matrix, positionData.x, positionData.y, positionData.scale);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
@@ -1482,7 +1482,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
-                        thisMsg.allObjects = this.modelViewMatrices;
+                        thisMsg.allObjects = this.visibleObjects;
                     }
 
                     if (activeVehicle.sendAcceleration === true) {
@@ -2608,7 +2608,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
         if (visibleObjects[objectKey]) {
-            this.ar.utilities.multiplyMatrix(this.modelViewMatrices[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
+            this.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
         } else {
             utilities.copyMatrixInPlace(activeObjectMatrix, activeObjectMatrixCopy);
         }
