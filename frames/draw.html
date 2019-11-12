@@ -202,6 +202,8 @@
                 y = e.clientY-touchDrawOffset;
                 lineTo(x,y, ctx);
                 imageContent.push({x : x, y : y});
+
+                realityInterface.writePublicData("storage", "data",  data, true);
             }
 
         };
