@@ -2608,15 +2608,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
         if (visibleObjects[objectKey]) {
-            if (realityEditor.getObject(objectKey).isWorldObject) {
-                this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
-            } else {
-                var rotated = [];
-                var visibleObjectMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, visibleObjects[objectKey], rotated); // fixes bug when moving while dropping in from pocket
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotated, this.correctedCameraMatrix, visibleObjectMatrix);
-                this.ar.utilities.multiplyMatrix(visibleObjectMatrix, globalStates.projectionMatrix, activeObjectMatrixCopy);
-            }
+            realityEditor.gui.ar.utilities.multiplyMatrix(this.modelViewMatrices[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
         } else {
             utilities.copyMatrixInPlace(activeObjectMatrix, activeObjectMatrixCopy);
         }
@@ -2679,16 +2671,16 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         //     console.log(activeVehicle.mostRecentFinalMatrix, finalMatrix);
         // }
 
-        // var editingVehicle = realityEditor.device.getEditingVehicle();
-        // var thisIsBeingEdited = (editingVehicle === activeVehicle);
+        var editingVehicle = realityEditor.device.getEditingVehicle();
+        var thisIsBeingEdited = (editingVehicle === activeVehicle);
 
         // multiply in the animation matrix if you are editing this frame in unconstrained mode.
         // in the future this can be expanded but currently this is the only time it gets animated.
-        // if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
-        //     var animatedFinalMatrix = [];
-        //     utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
-        //     finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
-        // }
+        if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+            var animatedFinalMatrix = [];
+            utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
+            finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
+        }
 
         // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
         // but we want all of them to have a positive value so they are rendered in front of background canvas

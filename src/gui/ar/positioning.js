@@ -539,7 +539,8 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
     var frame = realityEditor.getFrame(objectKey, frameKey);
     
     // recompute frame.temp for the new object
-    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, frame.temp);
+    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], globalStates.projectionMatrix, frame.temp);
+
     console.log('temp', frame.temp);
     frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
     
