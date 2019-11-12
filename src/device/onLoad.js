@@ -190,9 +190,20 @@ realityEditor.device.onload = function () {
     //     console.log(window.innerWidth, window.innerHeight);
     // });
 
-    if (globalStates.debugSpeechConsole) {
-        document.getElementById('speechConsole').style.display = 'inline';
+    if (!realityEditor.device.utilities.isDesktop()) {
+        if (globalStates.debugSpeechConsole) {
+            document.getElementById('speechConsole').style.display = 'inline';
+        }
+        
+        setInterval(function() {
+            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+            if (closestObjectKey) {
+                var mat = realityEditor.getObject(closestObjectKey).matrix; //realityEditor.gui.ar.draw.visibleObjects[closestObjectKey];
+                document.getElementById('speechConsole').innerText = '(WORLD ORIGIN LOCATED) - object ' + closestObjectKey + 'is at (' + mat[12]/mat[15] + ', ' + mat[13]/mat[15] + ', ' + mat[14]/mat[15] + ')';
+            }
+        }, 500);
     }
+
 
     // initWorldObject();
 
