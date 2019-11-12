@@ -973,7 +973,7 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
 
         // recompute frame.temp for the new object
-        this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
+        this.ar.utilities.multiplyMatrix(this.modelViewMatrices[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
 
         // compute frame.matrix based on new object
         var resultMatrix = [];
@@ -2608,15 +2608,7 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         // recompute activeObjectMatrix for the current object
         var activeObjectMatrixCopy = [];
         if (visibleObjects[objectKey]) {
-            if (realityEditor.getObject(objectKey).isWorldObject) {
-                this.ar.utilities.multiplyMatrix(visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
-            } else {
-                var rotated = [];
-                var visibleObjectMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, visibleObjects[objectKey], rotated); // fixes bug when moving while dropping in from pocket
-                realityEditor.gui.ar.utilities.multiplyMatrix(rotated, this.correctedCameraMatrix, visibleObjectMatrix);
-                this.ar.utilities.multiplyMatrix(visibleObjectMatrix, globalStates.projectionMatrix, activeObjectMatrixCopy);
-            }
+            realityEditor.gui.ar.utilities.multiplyMatrix(this.modelViewMatrices[objectKey], globalStates.projectionMatrix, activeObjectMatrixCopy);
         } else {
             utilities.copyMatrixInPlace(activeObjectMatrix, activeObjectMatrixCopy);
         }
