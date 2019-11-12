@@ -973,7 +973,7 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
 
         // recompute frame.temp for the new object
-        this.ar.utilities.multiplyMatrix(this.visibleObjects[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
+        this.ar.utilities.multiplyMatrix(this.modelViewMatrices[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
 
         // compute frame.matrix based on new object
         var resultMatrix = [];
@@ -2671,16 +2671,16 @@ realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, o
         //     console.log(activeVehicle.mostRecentFinalMatrix, finalMatrix);
         // }
 
-        var editingVehicle = realityEditor.device.getEditingVehicle();
-        var thisIsBeingEdited = (editingVehicle === activeVehicle);
+        // var editingVehicle = realityEditor.device.getEditingVehicle();
+        // var thisIsBeingEdited = (editingVehicle === activeVehicle);
 
         // multiply in the animation matrix if you are editing this frame in unconstrained mode.
         // in the future this can be expanded but currently this is the only time it gets animated.
-        if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
-            var animatedFinalMatrix = [];
-            utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
-            finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
-        }
+        // if (thisIsBeingEdited && (realityEditor.device.editingState.unconstrained || globalStates.unconstrainedPositioning)) {
+        //     var animatedFinalMatrix = [];
+        //     utilities.multiplyMatrix(finalMatrix, editingAnimationsMatrix, animatedFinalMatrix);
+        //     finalMatrix = utilities.copyMatrix(animatedFinalMatrix);
+        // }
 
         // we want nodes closer to camera to have higher z-coordinate, so that they are rendered in front
         // but we want all of them to have a positive value so they are rendered in front of background canvas
