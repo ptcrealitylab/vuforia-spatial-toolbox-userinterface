@@ -193,15 +193,17 @@ realityEditor.device.onload = function () {
     if (!realityEditor.device.utilities.isDesktop()) {
         if (globalStates.debugSpeechConsole) {
             document.getElementById('speechConsole').style.display = 'inline';
+            
+            setInterval(function() {
+                var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+                if (closestObjectKey) {
+                    var mat = realityEditor.getObject(closestObjectKey).matrix; //realityEditor.gui.ar.draw.visibleObjects[closestObjectKey];
+                    if (realityEditor.gui.ar.draw.worldCorrection !== null) {
+                        document.getElementById('speechConsole').innerText = 'object ' + closestObjectKey + ' is at (' + mat[12]/mat[15] + ', ' + mat[13]/mat[15] + ', ' + mat[14]/mat[15] + ')';
+                    }
+                }
+            }, 500);
         }
-        
-        setInterval(function() {
-            var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-            if (closestObjectKey) {
-                var mat = realityEditor.getObject(closestObjectKey).matrix; //realityEditor.gui.ar.draw.visibleObjects[closestObjectKey];
-                document.getElementById('speechConsole').innerText = '(WORLD ORIGIN LOCATED) - object ' + closestObjectKey + 'is at (' + mat[12]/mat[15] + ', ' + mat[13]/mat[15] + ', ' + mat[14]/mat[15] + ')';
-            }
-        }, 500);
     }
 
 
