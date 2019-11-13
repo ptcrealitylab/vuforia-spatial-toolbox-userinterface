@@ -265,5 +265,5 @@ realityEditor.device.utilities.isDesktop = function() {
  */
 realityEditor.device.utilities.isEventHittingBackground = function(event) {
     var activeVehicle = realityEditor.device.getEditingVehicle();
-    return (event.target.id === "canvas" || event.target.id === 'groupSVG' || event.target.className === "memoryBackground") && !activeVehicle;
+    return (event.target.tagName === 'BODY' || event.target.id === 'canvas' || event.target.id === 'groupSVG' || event.target.className === 'memoryBackground') && !activeVehicle;
 };
