@@ -1204,7 +1204,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             var finalOffsetX = positionData.x;
             var finalOffsetY = positionData.y;
-            var finalScale = positionData.scale * globalScaleAdjustment;
+            var nodeScaleMultiplier = (activeType !== 'ui') ? 2.0 : 1.0; // nodes are being rendered too small compared to everything else now
+            var finalScale = positionData.scale * globalScaleAdjustment * nodeScaleMultiplier;
 
             // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
             
