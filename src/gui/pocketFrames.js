@@ -147,8 +147,8 @@ var realityElements = [
     
     {
         name: 'twoSidedLimiter',
-        width: 600,
-        height: 505,
+        width: 759,
+        height: 1100,
         nodes: [
             {name: 'in_out', type: "twoSidedLimiter", x:0, y:0}
         ]
