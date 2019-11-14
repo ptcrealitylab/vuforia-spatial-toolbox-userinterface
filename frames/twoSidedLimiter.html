@@ -436,13 +436,21 @@
         lastHandleSelected = 'min';
         console.log(lastHandleSelected);
     });
+    
+    document.getElementById('limiter').addEventListener('pointerdown', function(e) {
+        isMouseDown = true;
+        lastHandleSelected = 'max';
+        console.log(lastHandleSelected);
+    });
 
     document.addEventListener('pointerup', function(e) {
         try {
             if (lastHandleSelected === 'max') {
                 realityInterface.writePublicData("in_out", "max",  limits.max);
+                console.log('write public data for max');
             } else if (lastHandleSelected === 'min') {
                 realityInterface.writePublicData("in_out", "min",  limits.min);
+                console.log('write public data for min');
             }
         } catch (e) {
             console.warn('Reality Interface is not accessible');
@@ -570,15 +578,18 @@
         });
 
         realityInterface.addReadPublicDataListener('in_out', "max", function (e) {
+            console.log('read in_out max');
             if (!isMouseDown) {
-                limits.min = Math.min(e, limits.max);
+                limits.max = Math.max(e, limits.min);
                 renderLimit();
             }
         });
 
         realityInterface.addReadPublicDataListener('in_out', "min", function (e) {
+            console.log('read in_out min');
+
             if (!isMouseDown) {
-                limits.max = Math.max(e, limits.min);
+                limits.min = Math.min(e, limits.max);
                 renderLimit();
             }
         });
@@ -601,10 +612,10 @@
         realityInterface.setMoveDelay(1000);
         realityInterface.enableCustomInteractionMode();
         // this can also be done without the API by manually giving these divs the class 'realityInteraction'
-        realityInterface.setInteractableDivs([touchpadMaxLimit, touchpadMinLimit]);
+        realityInterface.setInteractableDivs([touchpadMaxLimit, touchpadMinLimit, document.getElementById('limiter')]);
 
         realityInterface.onRealityInterfaceLoaded(function() {
-            realityInterface.changeFrameSize(759, 1100); // adjust the touch overlay of the iframe to match contents
+            realityInterface.changeFrameSize(800, 1300); // adjust the touch overlay of the iframe to match contents
         });
 
     } catch (e) {
