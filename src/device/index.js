@@ -574,6 +574,19 @@ realityEditor.device.onElementTouchDown = function(event) {
     // after a certain amount of time, start editing this element
     if (moveDelay >= 0) {
         var timeoutFunction = setTimeout(function () {
+
+            var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+
+            // send a pointerup event into the frame so it doesn't get stuck thinking you're clicking in it
+            var syntheticPointerUpEvent = {
+                pageX: touchPosition.x || 0,
+                pageY: touchPosition.y || 0,
+                type: 'pointerup',
+                pointerId: event.pointerId,
+                pointerType: event.pointerType
+            };
+            realityEditor.device.postEventIntoIframe(syntheticPointerUpEvent, target.frameId, target.nodeId);
+            
             realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
         }, moveDelay);
     }
