@@ -273,147 +273,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 return;
             }
 
-            // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
-            // TODO: this would make it easier to drop exactly on the the object you want
-            var closestObjectKey = realityEditor.gui.ar.getClosestObject(function(objectKey) {
-                return !!realityEditor.getObject(objectKey); // make sure its an object, not just stale data in visibleObjects array
-            })[0]; 
-            var closestObject = realityEditor.getObject(closestObjectKey);
-            
-            if (closestObject.isWorldObject) {
-                console.log('adding new frame to a world object...');
-                // realityEditor.worldObjects.addFrameToWorldObject({test: 1234});
-            }
-            
-            // make sure that the frames only sticks to 2.0 server version
-            if (closestObject && closestObject.integerVersion > 165) {
-
-                var frame = new Frame();
-
-                frame.objectId = closestObjectKey;
-                
-                // name the frame "gauge", "gauge2", "gauge3", etc... 
-                frame.name = evt.target.dataset.name;
-                var existingFrameSrcs = Object.keys(closestObject.frames).map(function(existingFrameKey){
-                    return closestObject.frames[existingFrameKey].src;
-                });
-                var numberOfSameFrames = existingFrameSrcs.filter(function(src){
-                    return src === evt.target.dataset.name;
-                }).length;
-                if (numberOfSameFrames > 0) {
-                    frame.name = evt.target.dataset.name + (numberOfSameFrames+1);
-                }
-                
-                console.log('created frame with name ' + frame.name);
-                var frameName = frame.name + realityEditor.device.utilities.uuidTime();
-                var frameID = frame.objectId + frameName;
-                frame.uuid = frameID;
-                frame.name = frameName;
-                
-                frame.ar.x = 0;
-                frame.ar.y = 0;
-                if (evt.target.dataset.startPositionOffset) {
-                    var startOffset = JSON.parse(evt.target.dataset.startPositionOffset);
-                    frame.startPositionOffset = startOffset;
-                    // frame.ar.x = startOffset.x;
-                    // frame.ar.y = startOffset.y;
-                    console.log('frame offset = ', startOffset);
-                }
-                
-                frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
-                frame.frameSizeX = evt.target.dataset.width;
-                frame.frameSizeY = evt.target.dataset.height;
-
-                // console.log("closest Frame", closestObject.averageScale);
-
-                frame.location = 'global';
-                frame.src = evt.target.dataset.name;
-
-                // set other properties
-
-                frame.animationScale = 0;
-                frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-                frame.width = frame.frameSizeX;
-                frame.height = frame.frameSizeY;
-                console.log('created pocket frame with width/height' + frame.width + '/' + frame.height);
-                frame.loaded = false;
-                // frame.objectVisible = true;
-                frame.screen = {
-                    x: frame.ar.x,
-                    y: frame.ar.y,
-                    scale: frame.ar.scale
-                };
-                // frame.screenX = 0;
-                // frame.screenY = 0;
-                frame.screenZ = 1000;
-                frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
-
-                // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
-                frame.fullScreen = false;
-                frame.sendMatrix = false;
-                frame.sendMatrices = {
-                    modelView : false,
-                    devicePose : false,
-                    groundPlane : false,
-                    allObjects : false
-                };
-                frame.sendAcceleration = false;
-                frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
-                // thisFrame.visible = false;
-
-                // add each node with a non-empty name
-                var nodes = JSON.parse(evt.target.dataset.nodes);
-                var hasMultipleNodes = nodes.length > 1;
-                nodes.forEach(function(node) {
-              
-                    if(typeof node !== "object") return;
-                    var nodeUuid = frameID + node.name;
-                    frame.nodes[nodeUuid] = new Node();
-                    var addedNode = frame.nodes[nodeUuid];
-                    addedNode.objectId = closestObjectKey;
-                    addedNode.frameId = frameID;
-                    addedNode.name = node.name;
-                    addedNode.text = undefined;
-                    addedNode.type = node.type;
-                    if (typeof node.x !== 'undefined') {
-                        addedNode.x = node.x; // use specified position if provided
-                    } else {
-                        addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
-                    }
-                    if (typeof node.y !== 'undefined') {
-                        addedNode.y = node.y;
-                    } else {
-                        addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
-                    }
-                    addedNode.frameSizeX = 220;
-                    addedNode.frameSizeY = 220;
-                    var scaleFactor = 1;
-                    if (typeof node.scaleFactor !== 'undefined') {
-                        scaleFactor = node.scaleFactor;
-                    }
-                    addedNode.scale = globalStates.defaultScale * scaleFactor;
-                    
-                });
-
-                // // set the eventObject so that the frame can interact with screens as soon as you add it
-                realityEditor.device.eventObject.object = closestObjectKey;
-                realityEditor.device.eventObject.frame = frameID;
-                realityEditor.device.eventObject.node = null;
-
-                closestObject.frames[frameID] = frame;
-
-                console.log(frame);
-                // send it to the server
-                // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
-                realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
-
-                realityEditor.gui.pocket.setPocketFrame(frame, {pageX: evt.pageX, pageY: evt.pageY}, closestObjectKey);
-
-                realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
-
-            } else {
-                console.warn('there aren\'t any visible objects to place this frame on!');
-            }
+            createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
             
             pocketHide();
             
@@ -421,6 +281,154 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         createPocketUIPalette();
         // pocketHide();
+    }
+
+    function createFrame(name, startPositionOffset, width, height, nodesList, x, y) {
+
+        // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
+        // TODO: this would make it easier to drop exactly on the the object you want
+        var closestObjectKey = realityEditor.gui.ar.getClosestObject(function(objectKey) {
+            return !!realityEditor.getObject(objectKey); // make sure its an object, not just stale data in visibleObjects array
+        })[0];
+        var closestObject = realityEditor.getObject(closestObjectKey);
+
+        if (closestObject.isWorldObject) {
+            console.log('adding new frame to a world object...');
+            // realityEditor.worldObjects.addFrameToWorldObject({test: 1234});
+        }
+
+        // make sure that the frames only sticks to 2.0 server version
+        if (closestObject && closestObject.integerVersion > 165) {
+
+            var frame = new Frame();
+
+            frame.objectId = closestObjectKey;
+
+            // name the frame "gauge", "gauge2", "gauge3", etc... 
+            frame.name = name;
+            var existingFrameSrcs = Object.keys(closestObject.frames).map(function(existingFrameKey){
+                return closestObject.frames[existingFrameKey].src;
+            });
+            var numberOfSameFrames = existingFrameSrcs.filter(function(src){
+                return src === name;
+            }).length;
+            if (numberOfSameFrames > 0) {
+                frame.name = name + (numberOfSameFrames+1);
+            }
+
+            console.log('created frame with name ' + frame.name);
+            var frameName = frame.name + realityEditor.device.utilities.uuidTime();
+            var frameID = frame.objectId + frameName;
+            frame.uuid = frameID;
+            frame.name = frameName;
+
+            frame.ar.x = 0;
+            frame.ar.y = 0;
+            if (startPositionOffset) {
+                var startOffset = JSON.parse(startPositionOffset);
+                frame.startPositionOffset = startOffset;
+                // frame.ar.x = startOffset.x;
+                // frame.ar.y = startOffset.y;
+                console.log('frame offset = ', startOffset);
+            }
+
+            frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
+            frame.frameSizeX = width;
+            frame.frameSizeY = height;
+
+            // console.log("closest Frame", closestObject.averageScale);
+
+            frame.location = 'global';
+            frame.src = name;
+
+            // set other properties
+
+            frame.animationScale = 0;
+            frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            frame.width = frame.frameSizeX;
+            frame.height = frame.frameSizeY;
+            console.log('created pocket frame with width/height' + frame.width + '/' + frame.height);
+            frame.loaded = false;
+            // frame.objectVisible = true;
+            frame.screen = {
+                x: frame.ar.x,
+                y: frame.ar.y,
+                scale: frame.ar.scale
+            };
+            // frame.screenX = 0;
+            // frame.screenY = 0;
+            frame.screenZ = 1000;
+            frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+            // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+            frame.fullScreen = false;
+            frame.sendMatrix = false;
+            frame.sendMatrices = {
+                modelView : false,
+                devicePose : false,
+                groundPlane : false,
+                allObjects : false
+            };
+            frame.sendAcceleration = false;
+            frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
+            // thisFrame.visible = false;
+
+            // add each node with a non-empty name
+            var nodes = JSON.parse(nodesList);
+            var hasMultipleNodes = nodes.length > 1;
+            nodes.forEach(function(node) {
+
+                if(typeof node !== "object") return;
+                var nodeUuid = frameID + node.name;
+                frame.nodes[nodeUuid] = new Node();
+                var addedNode = frame.nodes[nodeUuid];
+                addedNode.objectId = closestObjectKey;
+                addedNode.frameId = frameID;
+                addedNode.name = node.name;
+                addedNode.text = undefined;
+                addedNode.type = node.type;
+                if (typeof node.x !== 'undefined') {
+                    addedNode.x = node.x; // use specified position if provided
+                } else {
+                    addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
+                }
+                if (typeof node.y !== 'undefined') {
+                    addedNode.y = node.y;
+                } else {
+                    addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
+                }
+                addedNode.frameSizeX = 220;
+                addedNode.frameSizeY = 220;
+                var scaleFactor = 1;
+                if (typeof node.scaleFactor !== 'undefined') {
+                    scaleFactor = node.scaleFactor;
+                }
+                addedNode.scale = globalStates.defaultScale * scaleFactor;
+
+            });
+
+            // // set the eventObject so that the frame can interact with screens as soon as you add it
+            realityEditor.device.eventObject.object = closestObjectKey;
+            realityEditor.device.eventObject.frame = frameID;
+            realityEditor.device.eventObject.node = null;
+
+            closestObject.frames[frameID] = frame;
+
+            console.log(frame);
+            // send it to the server
+            // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
+            realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
+
+            realityEditor.gui.pocket.setPocketFrame(frame, {pageX: x, pageY: y}, closestObjectKey);
+
+            realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
+
+            return frame;
+            
+        } else {
+            console.warn('there aren\'t any visible objects to place this frame on!');
+        }
+
     }
 
     function addMenuButtonActions() {
@@ -486,32 +494,64 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
                 // this is where the virtual point creates object
 
-                if (realityEditor.gui.buttons.getButtonState(params.buttonName) === 'down' && globalStates.guiState === "node") {
+                if (realityEditor.gui.buttons.getButtonState(params.buttonName) === 'down') {
+                    
+                    // create a logic node when dragging out from the button in node mode
+                    if (globalStates.guiState === "node") {
+                        
+                        // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
+                        let addedElement = realityEditor.gui.pocket.createLogicNode();
 
-                    // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
-                    var addedElement = realityEditor.gui.pocket.createLogicNode();
+                        // set the name of the node by counting how many logic nodes the frame already has
+                        var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
+                        var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
+                            return node.type === 'logic'
+                        }).length;
+                        addedElement.logicNode.name = "LOGIC" + logicCount;
 
-                    // set the name of the node by counting how many logic nodes the frame already has
-                    var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
-                    var logicCount = Object.values(closestFrame.nodes).filter(function (node) {
-                        return node.type === 'logic'
-                    }).length;
-                    addedElement.logicNode.name = "LOGIC" + logicCount;
+                        // upload new name to server when you change it
+                        var object = realityEditor.getObject(addedElement.objectKey);
+                        realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
 
-                    // upload new name to server when you change it
-                    var object = realityEditor.getObject(addedElement.objectKey);
-                    realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
+                        var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
 
-                    var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
+                        realityEditor.device.editingState.touchOffset = {
+                            x: logicNodeSize/2,
+                            y: logicNodeSize/2
+                        };
 
-                    realityEditor.device.editingState.touchOffset = {
-                        x: logicNodeSize/2,
-                        y: logicNodeSize/2
-                    };
+                        realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
 
-                    realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
-
-                    realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
+                        realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
+                    
+                    } else if (globalStates.guiState === 'ui') {
+                        
+                        // create an envelope frame when dragging out from the button in UI mode
+                        console.log('create envelope by dragging out');
+                        
+                        var envelopeData = realityElements.find(function(elt) { return elt.name === 'all-frame-envelope'; });
+                        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                        
+                        if (envelopeData) {
+                            let addedElement = createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y);
+                            
+                            if (addedElement) {
+                                realityEditor.device.editingState.touchOffset = {
+                                    x: 0,
+                                    y: 0
+                                };
+                                
+                                try {
+                                    realityEditor.device.beginTouchEditing(addedElement.objectId, addedElement.uuid, null);
+                                } catch (e) {
+                                    console.warn('error with beginTouchEditing', e);
+                                }
+                                
+                                realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
+                            }
+                        }
+                        
+                    }
 
                 }
 

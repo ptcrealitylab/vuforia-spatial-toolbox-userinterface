@@ -140,7 +140,13 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
  */
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
-    var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+    var results;
+    try {
+        results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+    } catch (e) {
+        console.warn('coudnt compute screenCoordinatesToMatrixXY so cant move vehicle', e);
+        return;
+    }
     // var efficientResults = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_Efficient(activeVehicle, screenX, screenY, true);
     // console.log(results.point.x - efficientResults.point.x, results.point.y - efficientResults.point.y);
     
