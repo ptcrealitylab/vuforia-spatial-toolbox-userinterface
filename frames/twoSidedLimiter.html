@@ -443,7 +443,10 @@
         console.log(lastHandleSelected);
     });
 
-    document.addEventListener('pointerup', function(e) {
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+    
+    function onPointerUp(e) {
         try {
             if (lastHandleSelected === 'max') {
                 realityInterface.writePublicData("in_out", "max",  limits.max);
@@ -458,7 +461,7 @@
 
         isMouseDown = false;
         lastHandleSelected = null;
-    });
+    }
     
     var maxSvgY = -3;
     var minSvgY = 133.22;
