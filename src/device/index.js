@@ -578,14 +578,14 @@ realityEditor.device.onElementTouchDown = function(event) {
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
             // send a pointerup event into the frame so it doesn't get stuck thinking you're clicking in it
-            var syntheticPointerUpEvent = {
+            var syntheticPointerCancelEvent = {
                 pageX: touchPosition.x || 0,
                 pageY: touchPosition.y || 0,
-                type: 'pointerup',
+                type: 'pointercancel',
                 pointerId: event.pointerId,
                 pointerType: event.pointerType
             };
-            realityEditor.device.postEventIntoIframe(syntheticPointerUpEvent, target.frameId, target.nodeId);
+            realityEditor.device.postEventIntoIframe(syntheticPointerCancelEvent, target.frameId, target.nodeId);
             
             realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
         }, moveDelay);
