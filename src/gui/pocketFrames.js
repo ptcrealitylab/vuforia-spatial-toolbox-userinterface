@@ -283,7 +283,8 @@ var realityElements = [
         startPositionOffset: {
             x: 77,
             y: -28
-        }
+        },
+        requiredEnvelope: 'loto-envelope'
     },
     
     // {

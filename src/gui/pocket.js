@@ -272,18 +272,30 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             if (!isPocketTapped) {
                 return;
             }
-
+            
             createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
             
             pocketHide();
-            
         });
 
         createPocketUIPalette();
-        // pocketHide();
     }
 
-    function createFrame(name, startPositionOffset, width, height, nodesList, x, y) {
+    /**
+     * Uses information from the pocket representation of a frame, to create and add a new frame to the scene.
+     * Also posts the frame to the server. And begins touch interaction to drag the frame around (unless noUserInteraction=true)
+     * Most parameters are stringified. // todo: parse them outside of function and pass in values of correct type
+     * @param {string} name
+     * @param {string} startPositionOffset
+     * @param {string} width
+     * @param {string} height
+     * @param nodesList
+     * @param x
+     * @param y
+     * @param noUserInteraction
+     * @return {Frame}
+     */
+    function createFrame(name, startPositionOffset, width, height, nodesList, x, y, noUserInteraction) {
 
         // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
         // TODO: this would make it easier to drop exactly on the the object you want
@@ -419,7 +431,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
             realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
 
-            realityEditor.gui.pocket.setPocketFrame(frame, {pageX: x, pageY: y}, closestObjectKey);
+            if (!noUserInteraction) {
+                realityEditor.gui.pocket.setPocketFrame(frame, {pageX: x, pageY: y}, closestObjectKey);
+            }
 
             realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
 
@@ -550,7 +564,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                                 realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
                             }
                         }
-                        
                     }
 
                 }
@@ -778,6 +791,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 if (typeof element.startPositionOffset !== 'undefined') {
                     container.dataset.startPositionOffset = JSON.stringify(element.startPositionOffset);
                 }
+                if (typeof element.requiredEnvelope !== 'undefined') {
+                    container.dataset.requiredEnvelope = element.requiredEnvelope;
+                }
                 
                 var elt = document.createElement('div');
                 elt.classList.add('palette-element');
@@ -944,5 +960,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     exports.onHalfPocketButtonEnter = onHalfPocketButtonEnter;
 
     exports.addElementHighlightFilter = addElementHighlightFilter;
+    
+    exports.createFrame = createFrame;
     
 }(realityEditor.gui.pocket));
