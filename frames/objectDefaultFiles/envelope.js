@@ -386,6 +386,8 @@
          */
         Envelope.prototype._defaultOnFrameAdded = function(frameAddedMessage) {
             // update containedFrames and ordering
+            var isAlreadyContained = !!this.containedFrames[frameAddedMessage.frameId];
+            if (isAlreadyContained) { return; }
             this.containedFrames[frameAddedMessage.frameId] = new FrameData(frameAddedMessage.frameId, frameAddedMessage.frameType);
             if (this.areFramesOrdered) {
                 this.frameIdOrdering.push(frameAddedMessage.frameId);
