@@ -1421,6 +1421,8 @@ if (thisFrame) {
             node.type = msgContent.createNode.nodeType;
         }
         
+        node.scale *= newNodeScaleFactor;
+        
         thisFrame.nodes[nodeKey] = node;
         //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);

@@ -200,6 +200,7 @@ pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
 var globalScaleAdjustment = 0.5;
+var newNodeScaleFactor = 0.5; // reduces size of nodes on new frames compared to how they were rendered on old frames
 
 /**
  * @typedef {Object} PocketContainer

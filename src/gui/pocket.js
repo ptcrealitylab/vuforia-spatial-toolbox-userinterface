@@ -415,7 +415,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 if (typeof node.scaleFactor !== 'undefined') {
                     scaleFactor = node.scaleFactor;
                 }
-                var newNodeScaleFactor = 0.5; // reduces size of nodes on new frames compared to how they were rendered on old frames
                 addedNode.scale = globalStates.defaultScale * scaleFactor * newNodeScaleFactor;
 
             });
