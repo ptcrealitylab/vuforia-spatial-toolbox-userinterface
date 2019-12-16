@@ -115,7 +115,6 @@
                 alignment: right;
                 fill: #feff00;
             }
-            
         </style>
     </defs>
     <title>progress-with-fill</title>
@@ -204,20 +203,6 @@
                     <rect class="cls-6" x="158.49" y="5.89" width="11.55" height="11.55"/>
                 </g>
             </g>
-            
-<!--            <g>-->
-<!--                <g id="handleMin" class="cls-2">-->
-<!--                    <rect x="109.05" width="60.42" height="17.26"/>-->
-<!--                </g>-->
-<!--                <g id="handleMinText">-->
-<!--                    <text class="handleFont unselectable" id="handleMinValue" x="129" y="10">0.000</text>-->
-<!--                </g>-->
-<!--                <g id="barMin">-->
-<!--                    <rect class="cls-6" x="0.75" y="8.13" width="103.65" height="1"/>-->
-<!--                    <rect class="cls-6" y="3.76" width="1.5" height="9.75"/>-->
-<!--                    <rect class="cls-6" x="99.44" y="3.68" width="9.9" height="9.9"/>-->
-<!--                </g>-->
-<!--            </g>-->
         </g>
     </g>
 </svg>
@@ -375,19 +360,6 @@
         }
     }
 
-    // // Uncomment to run the debug update loop //
-    // var fillPercent = 0;
-    // function update() {
-    //     fillPercent += 0.002;
-    //     if (fillPercent > 1) {
-    //         fillPercent = 0;
-    //     }
-    //     render(fillPercent);
-    //     properties.value = fillPercent;
-    //     requestAnimationFrame(update);
-    // }
-    // update();
-
     // custom code for limiter, in addition to the above code which is identical to the progress frame
     var limitMax = document.getElementById('limitMax');
     var touchpadMaxLimit = document.getElementById('touchpadMaxLimit');
@@ -400,7 +372,6 @@
     var limitMin = document.getElementById('limitMin');
     var touchpadMinLimit = document.getElementById('touchpadMinLimit');
     var handleMinValueText = document.getElementById('handleMinValue');
-    // var limitMinOffsets = {};
 
     var svgViewBox = {
         x: document.querySelector('svg').getAttribute('viewBox').split(' ')[0],
@@ -436,7 +407,6 @@
 
     buildOffsetsLookup(limitMax);
     buildOffsetsLookup(limitMin);
-    // buildOffsetsLookup(touchpadMaxLimit);
 
     function setGroupY(svgElement, yOffset) {
         recurseThruSvgElement(svgElement, function(childElement) {
@@ -532,7 +502,6 @@
 
             // update limit value
             limits.min = 1 - (minSvgY - svgTop) / ((y141-centeredOffsetY - svgTop));
-            
         }
 
         renderTouchpadAndHandle(lastHandleSelected);
@@ -633,7 +602,7 @@
         realityInterface.addMatrixListener(function(modelView, projection) {
             var scaleFactor = Math.abs(modelView[0]);
             var zDistance = Math.abs(modelView[14]);
-            if (zDistance/scaleFactor > 950*2) { // found this to be a good distance through trial and error // todo: switch back to 950, but needs to be bigger for the desktop demo
+            if (zDistance/scaleFactor > 950*1.5) { // found this to be a good distance through trial and error // todo: switch back to 950, but needs to be bigger for the desktop demo
                 // hide the touch pad
                 touchpadMaxLimit.style.visibility = 'hidden';
                 touchpadMinLimit.style.visibility = 'hidden';
