@@ -606,7 +606,6 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
  */
 realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     console.log('marker added: ' + fileName + ', success? ' + success);
-    // var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, 'MARKER_ADDED');
     var objectID = getObjectIDFromFilename(fileName);
 
     if (success) {
@@ -615,5 +614,56 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     } else {
         console.log('failed to add marker: ' + fileName);
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
+    }
+};
+
+/**
+ * Downloads the JPG files, and adds the AR marker to the tracking engine, when a new UDP object heartbeat is detected
+ * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
+ * id: the objectId
+ * ip: the IP address of the server hosting this object
+ * vn: the object's version number, e.g. 300 for version 3.0.0
+ * tcs: the checksum which can be used to tell if anything has changed since last loading this object
+ * zone: the name of the zone this object is in, so we can ignore objects outside this editor's zone if we have previously specified one
+ */
+realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject = function(objectHeartbeat) {
+    var objectID = objectHeartbeat.id;
+    var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+    temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
+
+    var newChecksum = objectHeartbeat.tcs;
+    if (newChecksum === 'null') { newChecksum = null; }
+    temporaryChecksumMap[objectHeartbeat.id] = newChecksum;
+    // TODO: don't download again if already stored the same checksum version (look at downloadTargetFilesForDiscoveredObject implementation)
+
+    targetDownloadStates[objectID] = {
+        JPG: DownloadState.NOT_STARTED,
+        MARKER_ADDED: DownloadState.NOT_STARTED
+    };
+
+    // downloads the vuforia target.xml file if it doesn't have it yet
+    var jpgAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.jpg';
+    realityEditor.app.downloadFile(jpgAddress, 'realityEditor.app.callbacks.onTargetJPGDownloaded');
+    targetDownloadStates[objectID].JPG = DownloadState.STARTED;
+};
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetJPGDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+
+    if (success) {
+        console.log('successfully downloaded file: ' + fileName);
+        targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
+        realityEditor.app.addNewMarkerJPG(fileName, objectID, 0.3, 'realityEditor.app.callbacks.onMarkerAdded');
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+
+    } else {
+        console.log('failed to download file: ' + fileName);
+        targetDownloadStates[objectID].JPG = DownloadState.FAILED;
     }
 };
