@@ -315,6 +315,9 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     // download XML, DAT, and initialize tracker
                     if (!objects[objectKey].isWorldObject) {
                         realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
+                        
+                        // Switch to this to create Vuforia markers by downloading JPGs instead of XML/DAT
+                        // realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject(beat);
                     }
                 }
             });

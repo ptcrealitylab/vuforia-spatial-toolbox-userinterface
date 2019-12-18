@@ -84,6 +84,18 @@ realityEditor.app.addNewMarker = function(markerName, callBack) {
 };
 
 /**
+ * Adds a new marker using a JPG image and fires a callback with error or success
+ * and the markerName for reference
+ * @param {string} markerName
+ * @param {string} objectID
+ * @param {number} targetWidthMeters
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.addNewMarkerJPG = function(markerName, objectID, targetWidthMeters, callBack) {
+    this.appFunctionCall('addNewMarkerJPG', {markerName: markerName, objectID: objectID, targetWidthMeters: targetWidthMeters}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+};
+
+/**
  * Gets the projection matrix.
  * Callback will have the matrix as a length-16 array as a parameter.
  * @param {FunctionName} callBack
