@@ -319,9 +319,46 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         // Switch to this to create Vuforia markers by downloading JPGs instead of XML/DAT
                         // realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject(beat);
                     }
+                    
+                    // check if onNewServerDetected callbacks should be triggered
+                    realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
                 }
             });
         }
+    }
+};
+
+realityEditor.network.knownServers = []; // todo: make private to module
+realityEditor.network.newServerDetectedCallbacks = [];
+
+/**
+ * Register a callback that will trigger for each serverIP currently known to the system and each new one as it is detected
+ * @param callback
+ */
+realityEditor.network.onNewServerDetected = function(callback) {
+    // register callback for future detections
+    this.newServerDetectedCallbacks.push(callback);
+    
+    // immediate trigger for already known servers
+    this.knownServers.forEach(function(serverIP) {
+        callback(serverIP);
+    });
+};
+
+/**
+ * Checks if a server has already been detected, and if not, detect it and trigger callbacks
+ * @param {string} serverIP
+ */
+realityEditor.network.checkIfNewServer = function (serverIP) {
+    var foundExistingMatch = this.knownServers.indexOf(serverIP) > -1; // TODO: make robust against different formatting of "same" IP
+    
+    if (!foundExistingMatch) {
+        this.knownServers.push(serverIP);
+        
+        // trigger callbacks
+        this.newServerDetectedCallbacks.forEach(function(callback) {
+            callback(serverIP);
+        });
     }
 };
 

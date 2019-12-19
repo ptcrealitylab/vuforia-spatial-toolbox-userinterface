@@ -117,6 +117,7 @@ var realityEditor = realityEditor || {
     },
     network: {
         frameContentAPI: {},
+        availableFrames: {},
         realtime: {},
         utilities: {}
     },
