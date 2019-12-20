@@ -279,6 +279,97 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
 
         createPocketUIPalette();
+        
+        var currentPocketFrameNames = [];
+        
+        realityEditor.gui.ar.draw.onClosestObjectChanged(function(oldClosestObjectKey, newClosestObjectKey) {
+            console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
+            
+            // see which frames this closest object supports
+            // var closestServerIP = realityEditor.getObject(newClosestObjectKey).ip;
+            var availablePocketFrames = realityEditor.network.availableFrames.getFramesForPocket(newClosestObjectKey);
+            console.log(currentPocketFrameNames);
+            
+            var diff = realityEditor.device.utilities.diffArrays(currentPocketFrameNames, Object.keys(availablePocketFrames));
+            console.log(diff);
+            
+            if (!diff.isEqual) {
+
+                // update pocket UI to include the available frames only
+
+                // remove all old icons
+                Array.from(document.querySelector('.palette').children).forEach(function(child) {
+                    child.parentElement.removeChild(child);
+                });
+
+                // create all new icons
+                // setTimeout(function() {
+                    createPocketUIPaletteForAvailableFrames(newClosestObjectKey, availablePocketFrames);
+                // }, 1000);
+                
+            }
+            
+            currentPocketFrameNames = Object.keys(availablePocketFrames);
+        });
+    }
+
+    /**
+     * 
+     */
+    function createPocketUIPaletteForAvailableFrames(closestObjectKey, availablePocketFrames) {
+        
+        var realityElements = Object.keys(availablePocketFrames).map(function(frameName) {
+            return availablePocketFrames[frameName];
+        });
+        
+        palette = document.querySelector('.palette');
+        if (realityElements.length % 4 !== 0) {
+            var numToAdd = 4 - (realityElements.length % 4);
+            for (let i = 0; i < numToAdd; i++) {
+                // console.log('add blank ' + i);
+                realityElements.push(null);
+            }
+        }
+
+        for (let i = 0; i < realityElements.length; i++) {
+            if (!realityElements[i]) continue;
+            
+            var element = realityElements[i].properties;
+            
+            var container = document.createElement('div');
+            container.classList.add('element-template');
+            container.id = 'pocket-element';
+            // container.position = 'relative';
+
+            if (element === null) {
+                // this is just a placeholder to fill out the last row
+                container.dataset.src = '_PLACEHOLDER_';
+            } else {
+                // var thisUrl = 'frames/' + element.name + '.html';
+                var thisUrl = realityEditor.network.availableFrames.getFrameSrc(closestObjectKey, element.name);
+                // var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
+                var gifUrl = realityEditor.network.availableFrames.getFrameIconSrc(realityEditor.getObject(closestObjectKey).ip, element.name);
+                container.dataset.src = thisUrl;
+
+                container.dataset.name = element.name;
+                container.dataset.width = element.width;
+                container.dataset.height = element.height;
+                container.dataset.nodes = JSON.stringify(element.nodes);
+                if (typeof element.startPositionOffset !== 'undefined') {
+                    container.dataset.startPositionOffset = JSON.stringify(element.startPositionOffset);
+                }
+                if (typeof element.requiredEnvelope !== 'undefined') {
+                    container.dataset.requiredEnvelope = element.requiredEnvelope;
+                }
+
+                var elt = document.createElement('div');
+                elt.classList.add('palette-element');
+                elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
+                container.appendChild(elt);
+            }
+
+            palette.appendChild(container);
+        }
     }
 
     /**
