@@ -246,6 +246,39 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
 };
 
 /**
+ * Computes the difference between two arrays of primitive values (string or number - not objects)
+ * and presents the results in terms of what was added or subtracted from the first to the second
+ * @param {Array} oldArray
+ * @param {Array} newArray
+ * @return {{additions: Array, subtractions: Array, isEqual: boolean}}
+ */
+realityEditor.device.utilities.diffArrays = function(oldArray, newArray) {
+    var additions = [];
+    var subtractions = [];
+    var isEqual = true;
+
+    oldArray.forEach(function(elt) {
+        if (newArray.indexOf(elt) === -1) {
+            subtractions.push(elt);
+            isEqual = false;
+        }
+    });
+
+    newArray.forEach(function(elt) {
+        if (oldArray.indexOf(elt) === -1) {
+            additions.push(elt);
+            isEqual = false;
+        }
+    });
+
+    return {
+        additions: additions,
+        subtractions: subtractions,
+        isEqual: isEqual
+    }
+};
+
+/**
  * Utility function to determine if the editor is loaded on a desktop browser or within the full mobile app.
  * @todo: make more robust so that loading on a mobile safari browser is distinguisable from within the Reality Editor app
  * @return {boolean}

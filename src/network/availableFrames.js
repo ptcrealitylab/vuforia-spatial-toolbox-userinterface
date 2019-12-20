@@ -42,7 +42,6 @@ createNameSpace("realityEditor.network.availableFrames");
                 }
             });
         }
-        
     }
     
     function getAvailableFrames(objectKey) {
@@ -51,18 +50,28 @@ createNameSpace("realityEditor.network.availableFrames");
         return framesPerServer[object.ip] || {};
     }
     
-    function getFramesForPocket(serverIP) {
+    var DEBUG_TEST_POCKET = true;
+    
+    function getFramesForPocket(closestObjectKey) {
+        var serverIP = realityEditor.getObject(closestObjectKey).ip;
         var framesCopy = JSON.parse(JSON.stringify(framesPerServer[serverIP]));
         Object.keys(framesCopy).forEach(function(frameName) {
             if (!framesCopy[frameName].properties.showInPocket) {
                 delete framesCopy[frameName];
+            }
+            if (DEBUG_TEST_POCKET) {
+                if (realityEditor.getObject(closestObjectKey).isWorldObject) {
+                    if (frameName === 'buttonOff' || frameName === 'buttonOn') {
+                        delete framesCopy[frameName];
+                    }
+                }
             }
         });
         return framesCopy;
     }
     
     function getFrameIconSrc(serverIP, frameName) {
-        return 'http://' + serverIP + ':' + httpPort + '/frames/active/' + frameName + '/icon.gif';
+        return 'http://' + serverIP + ':' + httpPort + '/frames/active/' + frameName + '/icon.gif'; // todo; make consistent with getFrameSrc params
     }
     
     function getFrameSrc(objectKey, frameName) {
@@ -73,5 +82,6 @@ createNameSpace("realityEditor.network.availableFrames");
     exports.getAvailableFrames = getAvailableFrames;
     exports.getFramesForPocket = getFramesForPocket;
     exports.getFrameSrc = getFrameSrc;
+    exports.getFrameIconSrc = getFrameIconSrc;
 
 })(realityEditor.network.availableFrames);

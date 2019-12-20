@@ -255,6 +255,8 @@ realityEditor.gui.ar.draw.groundPlaneMatrix = [
 
 realityEditor.gui.ar.draw.worldCorrection = null;
 
+realityEditor.gui.ar.draw.currentClosestObject = null;
+
 /**
  * Main update loop.
  * A wrapper for the real realityEditor.gui.ar.draw.update update function.
@@ -679,6 +681,14 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             visibleObjectTapInterval = null;
         }
     }
+    
+    var newClosestObject = realityEditor.gui.ar.getClosestObject()[0];
+    if (newClosestObject !== this.currentClosestObject) {
+        this.closestObjectListeners.forEach(function(callback) {
+            callback(this.currentClosestObject, newClosestObject); 
+        }.bind(this));
+        this.currentClosestObject = newClosestObject;
+    }
 
     // TODO: push more edge-case functionality from this function into extensible callbacks
     // make the update loop extensible by additional services that wish to subscribe to matrix updates
@@ -686,6 +696,16 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         // send a deep clone of the list so that extensible services can't break the render loop by modifying the original
         callback(realityEditor.gui.ar.draw.modelViewMatrices);
     });
+};
+
+realityEditor.gui.ar.draw.closestObjectListeners = [];
+
+/**
+ * Adds a callback that will be triggered whenever the closest object changes
+ * @param {function<string, string>} callback - first parameter is old closest object, second is new
+ */
+realityEditor.gui.ar.draw.onClosestObjectChanged = function(callback) {
+    this.closestObjectListeners.push(callback);
 };
 
 /**
