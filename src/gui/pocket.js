@@ -507,7 +507,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     scaleFactor = node.scaleFactor;
                 }
                 addedNode.scale = globalStates.defaultScale * scaleFactor * newNodeScaleFactor;
-
+                
+                if (typeof node.defaultValue !== 'undefined') {
+                    addedNode.data.value = node.defaultValue;
+                }
             });
 
             // // set the eventObject so that the frame can interact with screens as soon as you add it
