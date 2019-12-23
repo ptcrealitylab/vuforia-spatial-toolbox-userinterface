@@ -80,7 +80,8 @@ createNameSpace("realityEditor.network.availableFrames");
             }
             if (DEBUG_TEST_POCKET) {
                 if (realityEditor.getObject(closestObjectKey).isWorldObject) {
-                    if (frameName === 'buttonOff' || frameName === 'buttonOn') {
+                    // if (frameName === 'buttonOff' || frameName === 'buttonOn') {
+                    if (frameName.indexOf('b') > -1 || frameName.indexOf('a') > -1) {
                         delete framesCopy[frameName];
                     }
                 }

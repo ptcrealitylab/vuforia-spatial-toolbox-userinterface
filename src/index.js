@@ -110,7 +110,6 @@ var realityEditor = realityEditor || {
         modal: {},
         moveabilityCorners: {},
         pocket: {},
-        pocketFrames: {},
         screenExtension : {},
         search:{},
         utilities: {}

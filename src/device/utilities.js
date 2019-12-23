@@ -257,20 +257,32 @@ realityEditor.device.utilities.diffArrays = function(oldArray, newArray) {
     var subtractions = [];
     var isEqual = true;
 
-    oldArray.forEach(function(elt) {
-        if (newArray.indexOf(elt) === -1) {
-            subtractions.push(elt);
+    if (oldArray && newArray) {
+        oldArray.forEach(function(elt) {
+            if (newArray.indexOf(elt) === -1) {
+                subtractions.push(elt);
+                isEqual = false;
+            }
+        });
+
+        newArray.forEach(function(elt) {
+            if (oldArray.indexOf(elt) === -1) {
+                additions.push(elt);
+                isEqual = false;
+            }
+        });
+    } else {
+        if (!oldArray && newArray) {
+            additions = newArray;
             isEqual = false;
         }
-    });
 
-    newArray.forEach(function(elt) {
-        if (oldArray.indexOf(elt) === -1) {
-            additions.push(elt);
+        if (oldArray && !newArray) {
+            subtractions = oldArray;
             isEqual = false;
         }
-    });
-
+    }
+    
     return {
         additions: additions,
         subtractions: subtractions,
