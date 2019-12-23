@@ -348,7 +348,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // var thisUrl = 'frames/' + element.name + '.html';
                 var thisUrl = realityEditor.network.availableFrames.getFrameSrc(closestObjectKey, element.name);
                 // var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
-                var gifUrl = realityEditor.network.availableFrames.getFrameIconSrc(realityEditor.getObject(closestObjectKey).ip, element.name);
+                var gifUrl = realityEditor.network.availableFrames.getFrameIconSrc(closestObjectKey, element.name);
                 container.dataset.src = thisUrl;
 
                 container.dataset.name = element.name;
