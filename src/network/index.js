@@ -1567,9 +1567,9 @@ if (thisFrame) {
     if (typeof msgContent.moveDelay !== "undefined") {
         let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
-        activeVehicle.moveDelay = msgContent.moveDelay;
-        // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
-        
+        if (activeVehicle) {
+            activeVehicle.moveDelay = msgContent.moveDelay;
+        }
     }
 
     if (msgContent.loadLogicIcon) {
