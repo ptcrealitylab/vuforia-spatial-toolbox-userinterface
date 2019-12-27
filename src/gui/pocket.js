@@ -445,8 +445,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
 
             frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
-            frame.frameSizeX = width;
-            frame.frameSizeY = height;
+            if (width !== 'undefined') {
+                frame.frameSizeX = width;
+                frame.width = frame.frameSizeX;
+            }
+            if (height !== 'undefined') {
+                frame.frameSizeY = height;
+                frame.height = frame.frameSizeY;
+            }
 
             // console.log("closest Frame", closestObject.averageScale);
 
@@ -457,8 +463,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             frame.animationScale = 0;
             frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            frame.width = frame.frameSizeX;
-            frame.height = frame.frameSizeY;
             console.log('created pocket frame with width/height' + frame.width + '/' + frame.height);
             frame.loaded = false;
             // frame.objectVisible = true;
