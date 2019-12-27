@@ -51,7 +51,7 @@ createNameSpace("realityEditor.envelopeManager");
         
         var frame = realityEditor.getFrame(objectKey, frameKey);
         
-        if (typeof frame.autoAddedEnvelope !== 'undefined') {
+        if (frame && typeof frame.autoAddedEnvelope !== 'undefined') {
 
             // then open the envelope you just added
             openEnvelope(frameKey);
