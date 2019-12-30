@@ -309,6 +309,8 @@ realityEditor.gui.ar.getVisibleLinks = function(visibleNodes) {
  **/
 realityEditor.gui.ar.objects = objects;
 
+realityEditor.gui.ar.MAX_DISTANCE = 10000000000;
+
 /**
  * @desc This function returns the closest visible object relative to the camera.
  * @param {function<string>} optionalFilter - a function used to narrow down which objects to consider. takes in an object key. if it returns false, ignore that object.
@@ -318,9 +320,8 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     var object = null;
     var frame = null;
     var node = null;
-    var MAX_DISTANCE = 10000000000;
-    var closest = MAX_DISTANCE;
-    var distance = MAX_DISTANCE;
+    var closest = this.MAX_DISTANCE;
+    var distance = this.MAX_DISTANCE;
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         if (typeof optionalFilter !== 'undefined') {

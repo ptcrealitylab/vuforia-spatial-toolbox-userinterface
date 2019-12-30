@@ -246,7 +246,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     var pocketFrameNames = {};
     var currentClosestObjectKey = null;
+    
+    var aggregateFrames = {};
 
+    var ONLY_CLOSEST_OBJECT = false;
+    
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
@@ -281,43 +285,180 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             pocketHide();
         });
         
-        realityEditor.gui.ar.draw.onClosestObjectChanged(function(oldClosestObjectKey, newClosestObjectKey) {
-            console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
-            currentClosestObjectKey = newClosestObjectKey;
+        if (ONLY_CLOSEST_OBJECT) {
+            realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged_OnlyClosest);
+        } else {
+            console.log('get all possible frames and assemble pocket out of all of them');
             
-            // see which frames this closest object supports
-            // var closestServerIP = realityEditor.getObject(newClosestObjectKey).ip;
-            var availablePocketFrames = realityEditor.network.availableFrames.getFramesForPocket(currentClosestObjectKey);
+            realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged); // TODO: this should actually trigger anytime the set of visibleObjects changes, not just the closest one
+        }
+    }
+    
+    function onClosestObjectChanged(oldClosestObjectKey, newClosestObjectKey) {
+        console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
+        currentClosestObjectKey = newClosestObjectKey;
 
-            // first check what has changed
-            var previousPocketFrameNames = (pocketFrameNames[oldClosestObjectKey]) ? Object.keys(pocketFrameNames[oldClosestObjectKey]) : null;
-            var diff = realityEditor.device.utilities.diffArrays(previousPocketFrameNames, Object.keys(availablePocketFrames));
-
-            // then update the current pocket info
-            pocketFrameNames[currentClosestObjectKey] = availablePocketFrames;
-
-            // update UI to include the available frames only
-            if (!diff.isEqual) {
-                // remove all old icons
-                Array.from(document.querySelector('.palette').children).forEach(function(child) {
-                    child.parentElement.removeChild(child);
-                });
-                // create all new icons
-                createPocketUIPaletteForAvailableFrames(currentClosestObjectKey);
-
-                // possibly update the scrollbar height
-                createPocketScrollbar();
-
-                finishStylingPocket();
+        // see which frames this closest object supports
+        // var closestServerIP = realityEditor.getObject(newClosestObjectKey).ip;
+        // var availablePocketFrames = realityEditor.network.availableFrames.getFramesForPocket(currentClosestObjectKey);
+        
+        
+        var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.draw.visibleObjects));
+        
+        // this is an array of [{actualIP: string, proxyIP: string, frames: {}}, ...], sorted by priority (distance)
+        
+        // for each unique PROXY ip, in order, add all of their frames to an aggregate, tagged with proxy and actual IPs
+        
+        // we want to generate a set of frame info, with the frame name as each key
+        aggregateFrames = {};
+        
+        var processedProxyIPs = [];
+        
+        availablePocketFrames.forEach(function(serverFrameInfo) {
+            if (processedProxyIPs.indexOf(serverFrameInfo.proxyIP) > -1) { return; }
+            
+            for (var frameName in serverFrameInfo.frames) {
+                if (typeof aggregateFrames[frameName] === 'undefined') {
+                    aggregateFrames[frameName] = serverFrameInfo.frames[frameName];
+                    aggregateFrames[frameName].actualIP = serverFrameInfo.actualIP;
+                    aggregateFrames[frameName].proxyIP = serverFrameInfo.proxyIP;
+                    // console.log('took ' + frameName + ' from ' + serverFrameInfo.actualIP + ' (' + serverFrameInfo.proxyIP + ')');
+                }
             }
             
+            processedProxyIPs.push(serverFrameInfo.proxyIP);
         });
+        
+        console.log(aggregateFrames);
+        
+
+        // // first check what has changed
+        // var previousPocketFrameNames = (pocketFrameNames[oldClosestObjectKey]) ? Object.keys(pocketFrameNames[oldClosestObjectKey]) : null;
+        // var diff = realityEditor.device.utilities.diffArrays(previousPocketFrameNames, Object.keys(availablePocketFrames));
+        //
+        // // then update the current pocket info
+        // pocketFrameNames[currentClosestObjectKey] = availablePocketFrames;
+        //
+        // // update UI to include the available frames only
+        // if (!diff.isEqual) {
+            // remove all old icons
+            Array.from(document.querySelector('.palette').children).forEach(function(child) {
+                child.parentElement.removeChild(child);
+            });
+            // create all new icons
+            createPocketUIPaletteForAggregateFrames();
+
+            // possibly update the scrollbar height
+            createPocketScrollbar();
+
+            finishStylingPocket();
+        // }
+    }
+    
+    function onClosestObjectChanged_OnlyClosest(oldClosestObjectKey, newClosestObjectKey) {
+        console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
+        currentClosestObjectKey = newClosestObjectKey;
+
+        // see which frames this closest object supports
+        // var closestServerIP = realityEditor.getObject(newClosestObjectKey).ip;
+        var availablePocketFrames = realityEditor.network.availableFrames.getFramesForPocket(currentClosestObjectKey);
+
+        // first check what has changed
+        var previousPocketFrameNames = (pocketFrameNames[oldClosestObjectKey]) ? Object.keys(pocketFrameNames[oldClosestObjectKey]) : null;
+        var diff = realityEditor.device.utilities.diffArrays(previousPocketFrameNames, Object.keys(availablePocketFrames));
+
+        // then update the current pocket info
+        pocketFrameNames[currentClosestObjectKey] = availablePocketFrames;
+
+        // update UI to include the available frames only
+        if (!diff.isEqual) {
+            // remove all old icons
+            Array.from(document.querySelector('.palette').children).forEach(function(child) {
+                child.parentElement.removeChild(child);
+            });
+            // create all new icons
+            createPocketUIPaletteForAvailableFrames(currentClosestObjectKey);
+
+            // possibly update the scrollbar height
+            createPocketScrollbar();
+
+            finishStylingPocket();
+        }
     }
     
     function getRealityElements() {
-        return Object.keys(pocketFrameNames[currentClosestObjectKey]).map(function(frameName) {
-            return pocketFrameNames[currentClosestObjectKey][frameName];
-        });
+        if (ONLY_CLOSEST_OBJECT) {
+            return Object.keys(pocketFrameNames[currentClosestObjectKey]).map(function(frameName) { // turn dictionary into array
+                return pocketFrameNames[currentClosestObjectKey][frameName];
+            });
+        
+        } else {
+            return Object.keys(aggregateFrames).map(function(frameName) { // turn dictionary into array
+                return aggregateFrames[frameName];
+            });
+        }
+    }
+
+    function createPocketUIPaletteForAggregateFrames() {
+
+        var realityElements = getRealityElements();
+
+        palette = document.querySelector('.palette');
+        if (realityElements.length % 4 !== 0) {
+            var numToAdd = 4 - (realityElements.length % 4);
+            for (let i = 0; i < numToAdd; i++) {
+                realityElements.push({properties: null}); // add blanks to fill in row if needed
+            }
+        }
+
+        for (let i = 0; i < realityElements.length; i++) {
+            if (!realityElements[i]) continue;
+
+            var element = realityElements[i].properties;
+
+            var container = document.createElement('div');
+            container.classList.add('element-template');
+            container.id = 'pocket-element';
+            // container.position = 'relative';
+
+            if (element === null) {
+                // this is just a placeholder to fill out the last row
+                container.dataset.src = '_PLACEHOLDER_';
+            } else {
+                // var thisUrl = 'frames/' + element.name + '.html';
+                var thisUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/active/' + element.name + '/index.html';
+                // var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
+                var gifUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/active/' + element.name + '/icon.gif';
+                container.dataset.src = thisUrl;
+
+                container.dataset.name = element.name;
+                container.dataset.width = element.width;
+                container.dataset.height = element.height;
+                container.dataset.nodes = JSON.stringify(element.nodes);
+                if (typeof element.startPositionOffset !== 'undefined') {
+                    container.dataset.startPositionOffset = JSON.stringify(element.startPositionOffset);
+                }
+                if (typeof element.requiredEnvelope !== 'undefined') {
+                    container.dataset.requiredEnvelope = element.requiredEnvelope;
+                }
+
+                var elt = document.createElement('div');
+                elt.classList.add('palette-element');
+                elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
+                container.appendChild(elt);
+
+                var ipLabel = document.createElement('div');
+                ipLabel.classList.add('palette-element-label');
+                ipLabel.innerText = realityElements[i].actualIP; // '127.0.0.1';
+                if (realityElements[i].actualIP !== realityElements[i].proxyIP) {
+                    ipLabel.innerText = realityElements[i].actualIP + ' (' + realityElements[i].proxyIP + ')';
+                }
+                container.appendChild(ipLabel);
+            }
+
+            palette.appendChild(container);
+        }
+        
     }
 
     /**
@@ -375,6 +516,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 elt.classList.add('palette-element');
                 elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
                 container.appendChild(elt);
+                
+                var ipLabel = document.createElement('div');
+                ipLabel.classList.add('palette-element-label');
+                ipLabel.innerText = realityEditor.getObject(closestObjectKey).ip; // '127.0.0.1';
+                container.appendChild(ipLabel);
             }
 
             palette.appendChild(container);

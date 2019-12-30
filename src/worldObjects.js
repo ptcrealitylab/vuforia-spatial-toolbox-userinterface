@@ -143,6 +143,12 @@ createNameSpace("realityEditor.worldObjects");
         var globalWorldObjectKeys = getGlobalWorldObjectKeys();
         if (globalWorldObjectKeys.length > 0) {
             // todo: should there be a better way to see which server's world object you'd be accessing?
+            
+            // sort them by newest timestamp if available
+            globalWorldObjectKeys.sort(function(a, b) {
+                return (realityEditor.getObject(b).timestamp || 0) - (realityEditor.getObject(a).timestamp || 0);
+            });
+            
             return objects[globalWorldObjectKeys[0]]; // right now it arbitrarily chooses the first non-local world object
         }
         
