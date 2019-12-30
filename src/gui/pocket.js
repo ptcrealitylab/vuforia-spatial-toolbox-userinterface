@@ -250,7 +250,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     var aggregateFrames = {};
 
     var ONLY_CLOSEST_OBJECT = false;
-    
+    var SHOW_IP_LABELS = true;
+
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
@@ -286,7 +287,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
         
         if (ONLY_CLOSEST_OBJECT) {
-            realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged_OnlyClosest);
+            realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged_OnlyClosest); // TODO: delete / cleanup old attempts
         } else {
             console.log('get all possible frames and assemble pocket out of all of them');
             
@@ -299,21 +300,14 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         currentClosestObjectKey = newClosestObjectKey;
 
         // see which frames this closest object supports
-        // var closestServerIP = realityEditor.getObject(newClosestObjectKey).ip;
-        // var availablePocketFrames = realityEditor.network.availableFrames.getFramesForPocket(currentClosestObjectKey);
-        
-        
         var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.draw.visibleObjects));
-        
         // this is an array of [{actualIP: string, proxyIP: string, frames: {}}, ...], sorted by priority (distance)
-        
-        // for each unique PROXY ip, in order, add all of their frames to an aggregate, tagged with proxy and actual IPs
-        
+
         // we want to generate a set of frame info, with the frame name as each key
         aggregateFrames = {};
-        
+
+        // for each unique PROXY ip, in order, add all of their frames to an aggregate, tagged with proxy and actual IPs
         var processedProxyIPs = [];
-        
         availablePocketFrames.forEach(function(serverFrameInfo) {
             if (processedProxyIPs.indexOf(serverFrameInfo.proxyIP) > -1) { return; }
             
@@ -331,7 +325,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         
         console.log(aggregateFrames);
         
-
         // // first check what has changed
         // var previousPocketFrameNames = (pocketFrameNames[oldClosestObjectKey]) ? Object.keys(pocketFrameNames[oldClosestObjectKey]) : null;
         // var diff = realityEditor.device.utilities.diffArrays(previousPocketFrameNames, Object.keys(availablePocketFrames));
@@ -340,7 +333,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         // pocketFrameNames[currentClosestObjectKey] = availablePocketFrames;
         //
         // // update UI to include the available frames only
-        // if (!diff.isEqual) {
+        // if (!diff.isEqual) { // TODO: add back this equality check so we don't unnecessarily rebuild the pocket
+        // TODO: one equality check could be the icon src paths for new aggregateFrames vs the ones currently rendered
             // remove all old icons
             Array.from(document.querySelector('.palette').children).forEach(function(child) {
                 child.parentElement.removeChild(child);
@@ -447,13 +441,16 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 elt.style.backgroundImage = 'url(\'' + gifUrl + '\')';
                 container.appendChild(elt);
 
-                var ipLabel = document.createElement('div');
-                ipLabel.classList.add('palette-element-label');
-                ipLabel.innerText = realityElements[i].actualIP; // '127.0.0.1';
-                if (realityElements[i].actualIP !== realityElements[i].proxyIP) {
-                    ipLabel.innerText = realityElements[i].actualIP + ' (' + realityElements[i].proxyIP + ')';
+                if (SHOW_IP_LABELS) {
+                    var ipLabel = document.createElement('div');
+                    ipLabel.classList.add('palette-element-label');
+                    ipLabel.innerText = realityElements[i].actualIP; // '127.0.0.1';
+                    if (realityElements[i].actualIP !== realityElements[i].proxyIP) {
+                        ipLabel.innerText = realityElements[i].actualIP + ' (' + realityElements[i].proxyIP + ')';
+                    }
+                    container.appendChild(ipLabel);
                 }
-                container.appendChild(ipLabel);
+
             }
 
             palette.appendChild(container);
