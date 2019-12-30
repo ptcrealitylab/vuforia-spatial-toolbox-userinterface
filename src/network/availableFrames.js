@@ -64,6 +64,93 @@ createNameSpace("realityEditor.network.availableFrames");
     }
     
     var DEBUG_TEST_POCKET = false; // turn this on to test conditional pocket functionality on local server
+    
+    function getFramesForAllVisibleObjects(visibleObjectKeys) {
+        
+        var sortedByDistance = sortByDistance(visibleObjectKeys);
+        
+        // sort by order of closest
+        var sortedVisibleServerIPs = sortedByDistance.map(function(objectInfo) {
+            var actualIP = realityEditor.getObject(objectInfo.objectKey).ip;
+            var proxyIP = getServerIPForObjectFrames(objectInfo.objectKey);
+            return {
+                actualIP: actualIP,
+                proxyIP: proxyIP // TODO: could only include proxyIP if it isn't identical to actualIP?
+            };
+        });
+        
+        // filter out duplicates
+        // var uniqueServerIPs = sortedVisibleServerIPs.filter(function(item, pos) {
+        //     return sortedVisibleServerIPs.indexOf(item) === pos; // this only works if item is a primitive
+        // });
+
+        var uniqueServerIPs = [];
+        
+        sortedVisibleServerIPs.forEach(function(item) {
+            // if uniqueServerIPs doesn't already have an item with all identical properties, add this one
+            // note: this is an N^2 solution. fine for now because N is usually very small, but may need to be optimized in the future
+            var isAlreadyContained = false;
+            uniqueServerIPs.forEach(function(uniqueItem) {
+                if (isAlreadyContained) { return; }
+                if (uniqueItem.actualIP === item.actualIP && uniqueItem.proxyIP === item.proxyIP) {
+                    isAlreadyContained = true;
+                }
+            });
+            
+            if (!isAlreadyContained) {
+                uniqueServerIPs.push(item);
+            }
+        });
+        
+        var allFrames = [];
+
+        uniqueServerIPs.forEach(function(serverInfo) {
+            var framesCopy = JSON.parse(JSON.stringify(framesPerServer[serverInfo.proxyIP])); // load from the proxy
+            Object.keys(framesCopy).forEach(function(frameName) {
+                if (!framesCopy[frameName].properties.showInPocket) {
+                    delete framesCopy[frameName];
+                }
+            });
+            
+            allFrames.push({
+                actualIP: serverInfo.actualIP,
+                proxyIP: serverInfo.proxyIP,
+                frames: framesCopy // TODO: if proxyIP !== actualIP, maybe don't include duplicate frames, just detect and retrieve them from the proxyIP's data structure instead
+            });
+            return framesCopy;
+        });
+        
+        console.log(allFrames);
+        return allFrames;
+    }
+    
+    // TODO: move to gui.ar or gui.ar.utilities
+    function sortByDistance(objectKeys) {
+        return objectKeys.map( function(objectKey) {
+            var distance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+            var isWorldObject = false;
+            var object = realityEditor.getObject(objectKey);
+            if (object && object.isWorldObject) {
+                distance = realityEditor.gui.ar.MAX_DISTANCE; // world objects are essentially infinitely far away
+                isWorldObject = true;
+            }
+            return {
+                objectKey: objectKey,
+                distance: distance,
+                isWorldObject: isWorldObject,
+                timestamp: object.timestamp || 0
+            };
+        }).sort(function (a, b) {
+            var worldObjectTimeDifference = 0;
+            if (a.isWorldObject && b.isWorldObject) {
+                worldObjectTimeDifference = b.timestamp - a.timestamp; // this sorts newer world objects above older ones (or ones without timestamp property)
+            }
+            return (a.distance - b.distance) + worldObjectTimeDifference;
+        });
+    }
+    
+    exports.getFramesForAllVisibleObjects = getFramesForAllVisibleObjects;
+    exports.sortByDistance = sortByDistance;
 
     /**
      * Gets the framesPerServer metadata for the server where the closest object is hosted.
@@ -139,6 +226,7 @@ createNameSpace("realityEditor.network.availableFrames");
 
     exports.initService = initService;
     exports.getFramesForPocket = getFramesForPocket;
+    
     exports.getFrameSrc = getFrameSrc;
     exports.getFrameIconSrc = getFrameIconSrc;
 

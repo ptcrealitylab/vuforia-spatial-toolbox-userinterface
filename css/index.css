@@ -1291,6 +1291,16 @@ Logic Interface CSS
     background-size: 70% 70%;
 }
 
+.palette-element-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    text-align: center;
+    color: #01fffc;
+    font-size: 10px;
+}
+
 #speechConsole {
     position: fixed;
     top: 0;
