@@ -545,9 +545,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
         // TODO: this would make it easier to drop exactly on the the object you want
-        var closestObjectKey = realityEditor.gui.ar.getClosestObject(function(objectKey) {
-            return !!realityEditor.getObject(objectKey); // make sure its an object, not just stale data in visibleObjects array
-        })[0];
+        
+        var objectInfo = realityEditor.network.availableFrames.getBestObjectInfoForFrame(name); // TODO: use this method to find best destination when you move a frame between objects, too
+        var closestObjectKey = objectInfo.objectKey; // TODO: refactor -> rename to closestCompatibleObjectKey
+        
+        console.log('add frame to ' + closestObjectKey);
         var closestObject = realityEditor.getObject(closestObjectKey);
 
         if (closestObject.isWorldObject) {

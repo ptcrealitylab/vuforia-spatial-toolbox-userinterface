@@ -149,6 +149,39 @@ createNameSpace("realityEditor.network.availableFrames");
         });
     }
     
+    function getBestObjectInfoForFrame(frameName) {
+        var possibleObjectKeys = getPossibleObjectsForFrame(frameName);
+        var sortedObjectInfo = sortByDistance(possibleObjectKeys);
+        // there should always be at least one element otherwise it wouldn't show up in pocket
+        return sortedObjectInfo[0];
+    }
+
+    function getPossibleObjectsForFrame(frameName) {
+        // search framesPerServer for this frameName to see which server this can go on
+        
+        var compatibleServerIPs = [];
+        
+        for (var serverIP in framesPerServer) {
+            var serverFrames = framesPerServer[serverIP];
+            if (typeof serverFrames[frameName] !== 'undefined') {
+                compatibleServerIPs.push(serverIP);
+            }
+        }
+        
+        // filter down visible objects if their IP (or proxyIP) is compatible
+        
+        var compatibleObjects = [];
+        
+        Object.keys(realityEditor.gui.ar.draw.visibleObjects).forEach(function(objectKey) {
+            var proxyIP = getServerIPForObjectFrames(objectKey);
+            if (compatibleServerIPs.indexOf(proxyIP) > -1) {
+                compatibleObjects.push(objectKey);
+            }
+        });
+        
+        return compatibleObjects;
+    }
+    
     exports.getFramesForAllVisibleObjects = getFramesForAllVisibleObjects;
     exports.sortByDistance = sortByDistance;
 
@@ -229,5 +262,8 @@ createNameSpace("realityEditor.network.availableFrames");
     
     exports.getFrameSrc = getFrameSrc;
     exports.getFrameIconSrc = getFrameIconSrc;
+    
+    exports.getPossibleObjectsForFrame = getPossibleObjectsForFrame;
+    exports.getBestObjectInfoForFrame = getBestObjectInfoForFrame;
 
 })(realityEditor.network.availableFrames);
