@@ -508,6 +508,9 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             containingPosition.x += containingFramePosition.x;
             containingPosition.y += containingFramePosition.y;
             containingPosition.scale *= (containingFramePosition.scale/globalStates.defaultScale);
+        
+        } else {
+            containingPosition.scale *= globalScaleAdjustment; // frames (but not nodes) are now affected by globalScaleAdjustment
         }
         
         var transformationMatrix = [
