@@ -2305,8 +2305,13 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
     var thisObjectB = realityEditor.getObject(thisLink.objectB);
     var thisFrameB = realityEditor.getFrame(thisLink.objectB, thisLink.frameB);
     var thisNodeB = realityEditor.getNode(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
+
+    // if exactly one of objectA and objectB is the localWorldObject of the phone, prevent the link from being made
+    var localWorldObjectKey = '_WORLD_OBJECT_local';
+    var isBetweenLocalWorldAndOtherServer = (thisLink.objectA === localWorldObjectKey && thisLink.objectB !== localWorldObjectKey) ||
+        (thisLink.objectA !== localWorldObjectKey && thisLink.objectB === localWorldObjectKey);
     
-    var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB);
+    var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB) && !isBetweenLocalWorldAndOtherServer;
     
     if (okForNewLink) {
         var linkKey = this.realityEditor.device.utilities.uuidTimeShort();

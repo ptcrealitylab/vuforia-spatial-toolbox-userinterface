@@ -706,7 +706,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC, hidePocketOnButtonPressed);
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.SETTING, hidePocketOnButtonPressed);
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC_SETTING, hidePocketOnButtonPressed);
-        realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.FREEZE, hidePocketOnButtonPressed);
+        // realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.FREEZE, hidePocketOnButtonPressed);
 
         // add callbacks for pocket button actions
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.POCKET, pocketButtonPressed);
