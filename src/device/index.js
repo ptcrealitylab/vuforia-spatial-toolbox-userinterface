@@ -350,6 +350,8 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
     
+    globalStates.inTransitionObject = null;
+    globalStates.inTransitionFrame = null;
 };
 
 /**
@@ -641,11 +643,17 @@ realityEditor.device.onElementTouchEnter = function(event) {
     if (target.type !== "ui" && !this.getEditingVehicle()) {
         var contentForFeedback;
 
+        // if exactly one of objectA and objectB is the localWorldObject of the phone, prevent the link from being made
+        var localWorldObjectKey = '_WORLD_OBJECT_local';
+        var isBetweenLocalWorldAndOtherServer = (globalProgram.objectA === localWorldObjectKey && target.objectId !== localWorldObjectKey) ||
+            (globalProgram.objectA !== localWorldObjectKey && target.objectId === localWorldObjectKey);
+
+        // when over the same node you started with
         if (globalProgram.nodeA === target.nodeId || globalProgram.nodeA === false) {
             contentForFeedback = 3; // TODO: replace ints with a human-readable enum/encoding
             overlayDiv.classList.add('overlayAction');
 
-        } else if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0)) {
+        } else if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0) && !isBetweenLocalWorldAndOtherServer) {
             contentForFeedback = 2;
             overlayDiv.classList.add('overlayPositive');
 
@@ -866,6 +874,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
         var objectInfo = realityEditor.network.availableFrames.getBestObjectInfoForFrame(frameBeingMoved.src); // TODO: use this method to find best destination when you move a frame between objects, too
         var closestObjectKey = objectInfo.objectKey; // TODO: refactor -> rename to closestCompatibleObjectKey
         
+        // TODO: when moving a frame from an object to the world, that the world doesn't support... you shouldnt be able to do that... right now it breaks
         // var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
 
         if (closestObjectKey) {
