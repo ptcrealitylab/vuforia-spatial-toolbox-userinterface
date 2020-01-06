@@ -644,7 +644,7 @@ realityEditor.device.onElementTouchEnter = function(event) {
         var contentForFeedback;
 
         // if exactly one of objectA and objectB is the localWorldObject of the phone, prevent the link from being made
-        var localWorldObjectKey = '_WORLD_OBJECT_local';
+        var localWorldObjectKey = realityEditor.worldObjects.getLocalWorldId();
         var isBetweenLocalWorldAndOtherServer = (globalProgram.objectA === localWorldObjectKey && target.objectId !== localWorldObjectKey) ||
             (globalProgram.objectA !== localWorldObjectKey && target.objectId === localWorldObjectKey);
 

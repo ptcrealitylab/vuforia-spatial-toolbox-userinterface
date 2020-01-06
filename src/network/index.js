@@ -313,12 +313,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
                     // download XML, DAT, and initialize tracker
-                    if (!objects[objectKey].isWorldObject) {
-                        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
-                        
-                        // Switch to this to create Vuforia markers by downloading JPGs instead of XML/DAT
-                        // realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject(beat);
-                    }
+                    realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
+                    
+                    // Switch to this to create Vuforia markers by downloading JPGs instead of XML/DAT
+                    // realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject(beat);
                     
                     // check if onNewServerDetected callbacks should be triggered
                     realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
@@ -2307,7 +2305,7 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
     var thisNodeB = realityEditor.getNode(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
 
     // if exactly one of objectA and objectB is the localWorldObject of the phone, prevent the link from being made
-    var localWorldObjectKey = '_WORLD_OBJECT_local';
+    var localWorldObjectKey = realityEditor.worldObjects.getLocalWorldId();
     var isBetweenLocalWorldAndOtherServer = (thisLink.objectA === localWorldObjectKey && thisLink.objectB !== localWorldObjectKey) ||
         (thisLink.objectA !== localWorldObjectKey && thisLink.objectB === localWorldObjectKey);
     
