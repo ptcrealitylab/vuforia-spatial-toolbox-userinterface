@@ -586,7 +586,7 @@ function memoryCanCreate() {
     // Exactly one visible object
     
     var visibleObjectKeys = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
-    visibleObjectKeys.splice(visibleObjectKeys.indexOf('_WORLD_OBJECT_local'), 1); // remove the local world object, its server cant support memories
+    visibleObjectKeys.splice(visibleObjectKeys.indexOf(realityEditor.worldObjects.getLocalWorldId()), 1); // remove the local world object, its server cant support memories
     
     // For now, also remove all world objects, regardless of which server they come from
     visibleObjectKeys = visibleObjectKeys.filter(function(objectKey) {

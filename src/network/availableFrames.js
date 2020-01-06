@@ -27,6 +27,15 @@ createNameSpace("realityEditor.network.availableFrames");
     function initService() {
         // immediately triggers for each server already in the system, and then triggers again every time a new server is detected
         realityEditor.network.onNewServerDetected(onNewServerDetected);
+        
+        // if frames get enabled or disabled on the server, refresh the set of availableFrames
+        realityEditor.network.addUDPMessageHandler('action', function(message) {
+            if (typeof message.action.reloadAvailableFrames !== 'undefined') {
+                // download all pocket assets from the serverIP and rebuild the pocket
+                // TODO: this could be greatly optimized by only downloading/changing the reloadAvailableFrames.frameName
+                onNewServerDetected(message.action.reloadAvailableFrames.serverIP);
+            }
+        });
     }
 
     /**
@@ -38,11 +47,11 @@ createNameSpace("realityEditor.network.availableFrames");
         console.log('availableFrames discovered server: ' + serverIP);
         var urlEndpoint = 'http://' + serverIP + ':' + httpPort + '/availableFrames/';
 
-        realityEditor.network.getData(null, null, null, urlEndpoint, function (_nullObj, _nullFrame, _nullNode, responseText) {
-            framesPerServer[serverIP] = responseText;
+        realityEditor.network.getData(null, null, null, urlEndpoint, function (_nullObj, _nullFrame, _nullNode, response) {
+            framesPerServer[serverIP] = response;
             console.log(framesPerServer);
-            
-            downloadFramePocketAssets(serverIP);
+            downloadFramePocketAssets(serverIP); // preload the icons
+            triggerServerFramesInfoUpdatedCallbacks(); // this can be detected to update the pocket if it is already open
         });
     }
 
@@ -105,7 +114,8 @@ createNameSpace("realityEditor.network.availableFrames");
         var allFrames = [];
 
         uniqueServerIPs.forEach(function(serverInfo) {
-            var framesCopy = JSON.parse(JSON.stringify(framesPerServer[serverInfo.proxyIP])); // load from the proxy
+            var knownFrames = framesPerServer[serverInfo.proxyIP] || {};
+            var framesCopy = JSON.parse(JSON.stringify(knownFrames)); // load from the proxy
             Object.keys(framesCopy).forEach(function(frameName) {
                 if (!framesCopy[frameName].properties.showInPocket) {
                     delete framesCopy[frameName];
@@ -256,6 +266,23 @@ createNameSpace("realityEditor.network.availableFrames");
         var serverIP = getServerIPForObjectFrames(objectKey);
         return 'http://' + serverIP + ':' + httpPort + '/frames/active/' + frameName + '/index.html';
     }
+    
+    var serverFrameInfoUpdatedCallbacks = [];
+
+    /**
+     * Use this to notify other services that we have discovered available frame info for a new server,
+     *  or we have received updated frame info from a previously discovered server
+     * @param {function} callback
+     */
+    function onServerFramesInfoUpdated(callback) {
+        serverFrameInfoUpdatedCallbacks.push(callback);
+    }
+    
+    function triggerServerFramesInfoUpdatedCallbacks() {
+        serverFrameInfoUpdatedCallbacks.forEach(function(callback) {
+            callback();
+        });
+    }
 
     exports.initService = initService;
     exports.getFramesForPocket = getFramesForPocket;
@@ -265,5 +292,7 @@ createNameSpace("realityEditor.network.availableFrames");
     
     exports.getPossibleObjectsForFrame = getPossibleObjectsForFrame;
     exports.getBestObjectInfoForFrame = getBestObjectInfoForFrame;
+    
+    exports.onServerFramesInfoUpdated = onServerFramesInfoUpdated;
 
 })(realityEditor.network.availableFrames);

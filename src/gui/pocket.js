@@ -292,12 +292,21 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             console.log('get all possible frames and assemble pocket out of all of them');
             
             realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged); // TODO: this should actually trigger anytime the set of visibleObjects changes, not just the closest one
+            
+            realityEditor.network.availableFrames.onServerFramesInfoUpdated(function() {
+                console.log('onServerFramesInfoUpdated');
+                onClosestObjectChanged(currentClosestObjectKey, currentClosestObjectKey);
+            });
         }
     }
     
     function onClosestObjectChanged(oldClosestObjectKey, newClosestObjectKey) {
         console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
         currentClosestObjectKey = newClosestObjectKey;
+        
+        if (!currentClosestObjectKey) {
+            return; // also gets triggered by onServerFramesInfoUpdated, and it's possible that the currentClosestObjectKey might be null
+        }
 
         // see which frames this closest object supports
         var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.draw.visibleObjects));
@@ -389,6 +398,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         } else {
             return Object.keys(aggregateFrames).map(function(frameName) { // turn dictionary into array
                 return aggregateFrames[frameName];
+            }).filter(function(frameInfo) {
+                var noMetadata = typeof frameInfo.metadata === 'undefined';
+                if (noMetadata) {
+                    return true; // older versions without metadata should show up (backwards-compatible)
+                }
+                return frameInfo.metadata.enabled; // newer versions only show up if enabled
             });
         }
     }
