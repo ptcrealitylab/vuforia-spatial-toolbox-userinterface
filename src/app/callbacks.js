@@ -290,15 +290,23 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     
     // this next section adjusts the world origin to be centered on a hard-coded image target if it ever gets recognized
     
-    if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
-        // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
-        // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
-
-        document.getElementById('speechConsole').innerText = 'WORLD ORIGIN LOCATED';
+    realityEditor.worldObjects.getWorldObjectKeys().forEach( function(worldObjectKey) {
         
-        realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
-        delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
-    }
+        if (visibleObjects.hasOwnProperty(worldObjectKey)) {
+            console.log('world object ' + worldObjectKey + ' detected... relocalize');
+            realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
+            delete visibleObjects[worldObjectKey];
+        }
+        
+    });
+    
+    // if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
+    //     // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
+    //     // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
+    //     document.getElementById('speechConsole').innerText = 'WORLD ORIGIN LOCATED';
+    //     realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
+    //     delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
+    // }
     
     // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
     
@@ -308,14 +316,18 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
             // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
 
-            if(realityEditor.gui.ar.draw.worldCorrection === null) {
-                visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
-            } else {
+            // if (realityEditor.gui.ar.draw.worldCorrection === null) {
+            //     visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
+            // } else {
                 // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+            var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
+            if (origin) {
                 this.matrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.worldCorrection, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
                 visibleObjects[worldObjectKey] = this.matrix;
             }
+
+            // }
 
         });
         
@@ -392,9 +404,10 @@ realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPl
     if (globalStates.useGroundPlane) {
 
         if (!globalStates.freezeButtonState) {
-            if(realityEditor.gui.ar.draw.worldCorrection === null) {
+            if(realityEditor.gui.ar.draw.worldCorrection === null) { // TODO: figure out how ground plane works if there are multiple world origins with different planes
                 realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             } else {
+                console.warn('Should never get here until we fix worldCorrection');
                 this.matrix = [];
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);

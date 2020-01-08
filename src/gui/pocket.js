@@ -300,14 +300,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
     }
     
-    function onClosestObjectChanged(oldClosestObjectKey, newClosestObjectKey) {
-        console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
-        currentClosestObjectKey = newClosestObjectKey;
-        
-        if (!currentClosestObjectKey) {
-            return; // also gets triggered by onServerFramesInfoUpdated, and it's possible that the currentClosestObjectKey might be null
-        }
-
+    function rebuildAggregateFrames() {
         // see which frames this closest object supports
         var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.draw.visibleObjects));
         // this is an array of [{actualIP: string, proxyIP: string, frames: {}}, ...], sorted by priority (distance)
@@ -319,7 +312,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         var processedProxyIPs = [];
         availablePocketFrames.forEach(function(serverFrameInfo) {
             if (processedProxyIPs.indexOf(serverFrameInfo.proxyIP) > -1) { return; }
-            
+
             for (var frameName in serverFrameInfo.frames) {
                 if (typeof aggregateFrames[frameName] === 'undefined') {
                     aggregateFrames[frameName] = serverFrameInfo.frames[frameName];
@@ -328,11 +321,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     // console.log('took ' + frameName + ' from ' + serverFrameInfo.actualIP + ' (' + serverFrameInfo.proxyIP + ')');
                 }
             }
-            
+
             processedProxyIPs.push(serverFrameInfo.proxyIP);
         });
-        
+
         console.log(aggregateFrames);
+    }
+    
+    function onClosestObjectChanged(oldClosestObjectKey, newClosestObjectKey) {
+        console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
+        currentClosestObjectKey = newClosestObjectKey;
+        
+        if (!currentClosestObjectKey) {
+            return; // also gets triggered by onServerFramesInfoUpdated, and it's possible that the currentClosestObjectKey might be null
+        }
+
+        rebuildAggregateFrames();
         
         // // first check what has changed
         // var previousPocketFrameNames = (pocketFrameNames[oldClosestObjectKey]) ? Object.keys(pocketFrameNames[oldClosestObjectKey]) : null;
@@ -396,6 +400,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             });
         
         } else {
+            rebuildAggregateFrames();
             return Object.keys(aggregateFrames).map(function(frameName) { // turn dictionary into array
                 return aggregateFrames[frameName];
             }).filter(function(frameInfo) {
@@ -650,41 +655,45 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // thisFrame.visible = false;
 
             // add each node with a non-empty name
-            var nodes = JSON.parse(nodesList);
-            var hasMultipleNodes = nodes.length > 1;
-            nodes.forEach(function(node) {
+            var LOAD_NODES_FROM_SERVER = false;
+            if (!LOAD_NODES_FROM_SERVER) {
 
-                if(typeof node !== "object") return;
-                var nodeUuid = frameID + node.name;
-                frame.nodes[nodeUuid] = new Node();
-                var addedNode = frame.nodes[nodeUuid];
-                addedNode.objectId = closestObjectKey;
-                addedNode.frameId = frameID;
-                addedNode.name = node.name;
-                addedNode.text = undefined;
-                addedNode.type = node.type;
-                if (typeof node.x !== 'undefined') {
-                    addedNode.x = node.x; // use specified position if provided
-                } else {
-                    addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
-                }
-                if (typeof node.y !== 'undefined') {
-                    addedNode.y = node.y;
-                } else {
-                    addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
-                }
-                addedNode.frameSizeX = 220;
-                addedNode.frameSizeY = 220;
-                var scaleFactor = 1;
-                if (typeof node.scaleFactor !== 'undefined') {
-                    scaleFactor = node.scaleFactor;
-                }
-                addedNode.scale = globalStates.defaultScale * scaleFactor * newNodeScaleFactor;
-                
-                if (typeof node.defaultValue !== 'undefined') {
-                    addedNode.data.value = node.defaultValue;
-                }
-            });
+                var nodes = JSON.parse(nodesList);
+                var hasMultipleNodes = nodes.length > 1;
+                nodes.forEach(function (node) {
+
+                    if (typeof node !== "object") return;
+                    var nodeUuid = frameID + node.name;
+                    frame.nodes[nodeUuid] = new Node();
+                    var addedNode = frame.nodes[nodeUuid];
+                    addedNode.objectId = closestObjectKey;
+                    addedNode.frameId = frameID;
+                    addedNode.name = node.name;
+                    addedNode.text = undefined;
+                    addedNode.type = node.type;
+                    if (typeof node.x !== 'undefined') {
+                        addedNode.x = node.x; // use specified position if provided
+                    } else {
+                        addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
+                    }
+                    if (typeof node.y !== 'undefined') {
+                        addedNode.y = node.y;
+                    } else {
+                        addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
+                    }
+                    addedNode.frameSizeX = 220;
+                    addedNode.frameSizeY = 220;
+                    var scaleFactor = 1;
+                    if (typeof node.scaleFactor !== 'undefined') {
+                        scaleFactor = node.scaleFactor;
+                    }
+                    addedNode.scale = globalStates.defaultScale * scaleFactor * newNodeScaleFactor;
+
+                    if (typeof node.defaultValue !== 'undefined') {
+                        addedNode.data.value = node.defaultValue;
+                    }
+                });
+            }
 
             // // set the eventObject so that the frame can interact with screens as soon as you add it
             realityEditor.device.eventObject.object = closestObjectKey;
@@ -1014,7 +1023,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             });
         }
-
+        // remove all old icons
+        Array.from(document.querySelector('.palette').children).forEach(function(child) {
+            child.parentElement.removeChild(child);
+        });
+        // create all new icons
+        createPocketUIPaletteForAggregateFrames();
+        
         createPocketScrollbar();
 
         finishStylingPocket();

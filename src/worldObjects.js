@@ -16,6 +16,12 @@ createNameSpace("realityEditor.worldObjects");
     
     var cameraMatrixOffset; // can be used to relocalize the world objects to a different origin point // todo: isn't actually used, should probably be removed
 
+    /**
+     * Will store the camera matrix offsets to each world object's origin compared to the phone's coordinate system origin
+     * @type {Object.<string, Array.<number>>}
+     */
+    var worldCorrections = {};
+
     // a string that all world object's uuids are built from
     var worldObjectId = '_WORLD_';
     var localWorldObjectKey = '_WORLD_local';
@@ -46,6 +52,7 @@ createNameSpace("realityEditor.worldObjects");
                     // add to the internal world objects
                     if (typeof worldObjects[objectKey] === 'undefined') {
                         worldObjects[objectKey] = object;
+                        worldCorrections[objectKey] = null; // until we see its target, its origin is null
                     }
                     if (worldObjectKeys.indexOf(objectKey) === -1) {
                         worldObjectKeys.push(objectKey);
@@ -142,6 +149,10 @@ createNameSpace("realityEditor.worldObjects");
                 objects[msg.objectId] = msg;
 
                 realityEditor.network.onNewObjectAdded(msg.objectId);
+                
+                if (msg.objectId === localWorldObjectKey) {
+                    realityEditor.worldObjects.setOrigin(msg.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
+                }
             }
             
         });
@@ -243,6 +254,23 @@ createNameSpace("realityEditor.worldObjects");
         return localWorldObjectKey;
     }
     
+    function setOrigin(objectKey, originMatrix) {
+        if (typeof worldCorrections[objectKey] !== 'undefined') {
+            if (worldCorrections[objectKey] === null) {
+                console.log('set origin of ' + objectKey + ' for the first time');
+            }
+            worldCorrections[objectKey] = originMatrix;
+        }
+    }
+    
+    function getOrigin(objectKey) {
+        return worldCorrections[objectKey];
+    }
+    
+    function getWorldOrigins() {
+        return worldCorrections;
+    }
+    
     exports.initService = initService;
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
@@ -251,5 +279,8 @@ createNameSpace("realityEditor.worldObjects");
     exports.getCameraMatrixOffset = getCameraMatrixOffset;
     exports.isWorldObjectKey = isWorldObjectKey;
     exports.getLocalWorldId = getLocalWorldId;
+    exports.setOrigin = setOrigin;
+    exports.getOrigin = getOrigin;
+    exports.getWorldOrigins = getWorldOrigins;
 
 }(realityEditor.worldObjects));

@@ -385,6 +385,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             
             if (!realityEditor.device.utilities.isDesktop()) {
                 if (realityEditor.gui.ar.draw.worldCorrection !== null) {
+                    console.warn('Should never get here until we fix worldCorrection');
                     if (!this.activeObject.isWorldObject) {
                         // properly accounts for world correction
                         realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.worldCorrection), this.activeObject.matrix);
