@@ -1841,9 +1841,13 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 globalStates.instantState = true;
                 realityEditor.app.saveInstantState(true);
 
+                globalStates.renderFrameGhostsInNodeViewEnabled = false;
+
             } else {
                 globalStates.instantState = false;
                 realityEditor.app.saveInstantState(false);
+                
+                globalStates.renderFrameGhostsInNodeViewEnabled = true;
             }
         }
 
@@ -1927,6 +1931,8 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     console.log('TODO: grouping mode enabled...');
                     realityEditor.app.saveGroupingState(true);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(true);
+
+                    // globalStates.HACK_DONT_DRAW_LINES = true;
                 }
             } else {
                 if (globalStates.groupingEnabled) {
@@ -1935,6 +1941,8 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     console.log('TODO: grouping mode disabled...');
                     realityEditor.app.saveGroupingState(false);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(false);
+
+                    // globalStates.HACK_DONT_DRAW_LINES = false;
                 }
             }
         }
