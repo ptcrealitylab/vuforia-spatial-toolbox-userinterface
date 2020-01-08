@@ -202,6 +202,7 @@ realityEditor.device.onload = function () {
                     if (closestObjectKey) {
                         var mat = realityEditor.getObject(closestObjectKey).matrix; //realityEditor.gui.ar.draw.visibleObjects[closestObjectKey];
                         if (realityEditor.gui.ar.draw.worldCorrection !== null) {
+                            console.warn('Should never get here until we fix worldCorrection');
                             document.getElementById('speechConsole').innerText = 'object ' + closestObjectKey + ' is at (' + mat[12]/mat[15] + ', ' + mat[13]/mat[15] + ', ' + mat[14]/mat[15] + ')';
                         }
                     }

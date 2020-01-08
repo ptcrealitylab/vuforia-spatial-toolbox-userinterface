@@ -116,11 +116,11 @@ createNameSpace("realityEditor.network.availableFrames");
         uniqueServerIPs.forEach(function(serverInfo) {
             var knownFrames = framesPerServer[serverInfo.proxyIP] || {};
             var framesCopy = JSON.parse(JSON.stringify(knownFrames)); // load from the proxy
-            Object.keys(framesCopy).forEach(function(frameName) {
-                if (!framesCopy[frameName].properties.showInPocket) {
-                    delete framesCopy[frameName];
-                }
-            });
+            // Object.keys(framesCopy).forEach(function(frameName) {
+            //     if (!framesCopy[frameName].properties.showInPocket) {
+            //         delete framesCopy[frameName];
+            //     }
+            // });
             
             allFrames.push({
                 actualIP: serverInfo.actualIP,
@@ -205,9 +205,9 @@ createNameSpace("realityEditor.network.availableFrames");
         var serverIP = getServerIPForObjectFrames(closestObjectKey);
         var framesCopy = JSON.parse(JSON.stringify(framesPerServer[serverIP]));
         Object.keys(framesCopy).forEach(function(frameName) {
-            if (!framesCopy[frameName].properties.showInPocket) {
-                delete framesCopy[frameName];
-            }
+            // if (!framesCopy[frameName].properties.showInPocket) {
+            //     delete framesCopy[frameName];
+            // }
             if (DEBUG_TEST_POCKET) {
                 if (realityEditor.getObject(closestObjectKey).isWorldObject) {
                     // if (frameName === 'buttonOff' || frameName === 'buttonOn') {
