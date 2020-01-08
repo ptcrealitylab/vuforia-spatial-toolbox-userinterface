@@ -229,10 +229,10 @@ realityEditor.gui.ar.draw.cameraMatrix = [
 ];
 
 realityEditor.gui.ar.draw.correctedCameraMatrix = [
-    // 1, 0, 0, 0,
-    // 0, 1, 0, 0,
-    // 0, 0, 1, 0,
-    // 0, 0, 0, 1
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
 ];
 
 realityEditor.gui.ar.draw.m1 = [

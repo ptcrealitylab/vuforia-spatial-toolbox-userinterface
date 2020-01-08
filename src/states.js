@@ -103,7 +103,9 @@ var globalStates = {
 
     videoRecordingEnabled: false,
     // videoRecordingMode: true,
-    renderFrameGhostsInNodeViewEnabled: true,
+    renderFrameGhostsInNodeViewEnabled: false,
+
+    HACK_DONT_DRAW_LINES: false,
 
     // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
     matrixBroadcastEnabled: false,

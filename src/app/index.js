@@ -319,6 +319,11 @@ realityEditor.app.stopVideoRecording = function (videoId) {
     this.appFunctionCall('stopVideoRecording', {videoId: videoId}, null);
 };
 
+realityEditor.app.enableExtendedTracking = function (_newState) {
+    console.log("TODO: implement enableExtendedTracking");
+    // this.appFunctionCall('enableExtendedTracking', {state: newState}, null);
+};
+
 /**
  **************Debugging****************
  **/
@@ -469,6 +474,7 @@ realityEditor.app.saveZoneState = function(newState) {
 realityEditor.app.saveExtendedTrackingState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:TRACKING', storedValue);
+    this.enableExtendedTracking(newState);
 };
 
 /**
