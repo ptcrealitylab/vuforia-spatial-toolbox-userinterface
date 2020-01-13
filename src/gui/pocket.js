@@ -251,6 +251,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     var ONLY_CLOSEST_OBJECT = false;
     var SHOW_IP_LABELS = true;
+    var SIMPLE_IP_LABELS = true;
 
     function pocketInit() {
         pocket = document.querySelector('.pocket');
@@ -424,6 +425,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 realityElements.push({properties: null}); // add blanks to fill in row if needed
             }
         }
+        
+        var closestObjectIP = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]).ip;
 
         for (let i = 0; i < realityElements.length; i++) {
             if (!realityElements[i]) continue;
@@ -462,11 +465,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 container.appendChild(elt);
 
                 if (SHOW_IP_LABELS) {
+                    
                     var ipLabel = document.createElement('div');
                     ipLabel.classList.add('palette-element-label');
-                    ipLabel.innerText = realityElements[i].actualIP; // '127.0.0.1';
-                    if (realityElements[i].actualIP !== realityElements[i].proxyIP) {
-                        ipLabel.innerText = realityElements[i].actualIP + ' (' + realityElements[i].proxyIP + ')';
+                    
+                    if (!SIMPLE_IP_LABELS) {
+                        ipLabel.innerText = realityElements[i].actualIP; // '127.0.0.1';
+                        if (realityElements[i].actualIP !== realityElements[i].proxyIP) {
+                            ipLabel.innerText = realityElements[i].actualIP + ' (' + realityElements[i].proxyIP + ')';
+                        }
+                    }
+
+                    if (realityElements[i].proxyIP !== closestObjectIP) {
+                        var worldObjects = realityEditor.worldObjects.getWorldObjectsByIP(realityElements[i].actualIP);
+                        if (worldObjects.length > 0) {
+                            ipLabel.innerText = worldObjects[0].name;
+                        }
                     }
                     container.appendChild(ipLabel);
                 }
@@ -563,8 +577,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
         // TODO: this would make it easier to drop exactly on the the object you want
         
-        var objectInfo = realityEditor.network.availableFrames.getBestObjectInfoForFrame(name); // TODO: use this method to find best destination when you move a frame between objects, too
-        var closestObjectKey = objectInfo.objectKey; // TODO: refactor -> rename to closestCompatibleObjectKey
+        var closestObjectKey = realityEditor.network.availableFrames.getBestObjectInfoForFrame(name); // TODO: use this method to find best destination when you move a frame between objects, too
         
         console.log('add frame to ' + closestObjectKey);
         var closestObject = realityEditor.getObject(closestObjectKey);

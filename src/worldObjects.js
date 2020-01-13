@@ -249,26 +249,77 @@ createNameSpace("realityEditor.worldObjects");
     function isWorldObjectKey(objectKey) {
         return objectKey.indexOf(worldObjectId) > -1;
     }
-    
+
+    /**
+     * Helper function to get the hard-coded ID of the phone's local world object
+     * @return {string}
+     */
     function getLocalWorldId() {
         return localWorldObjectKey;
     }
-    
+
+    /**
+     * Localizes a certain world object with its position relative to the phone's coordinate system origin
+     * @param {string} objectKey
+     * @param {Array.<number>} originMatrix - 4x4 matrix from tracking engine (taken directly from visibleObjects)
+     */
     function setOrigin(objectKey, originMatrix) {
         if (typeof worldCorrections[objectKey] !== 'undefined') {
             if (worldCorrections[objectKey] === null) {
                 console.log('set origin of ' + objectKey + ' for the first time');
+                realityEditor.app.tap();
+                // TODO: add a temporary message log that displays this message for a moment
             }
             worldCorrections[objectKey] = originMatrix;
         }
     }
-    
+
+    /**
+     * Retrieves the origin of a certain world object (result will be null if hasn't been seen yet)
+     * @param {string} objectKey
+     * @return {Array<number>}
+     */
     function getOrigin(objectKey) {
         return worldCorrections[objectKey];
     }
-    
+
+    /**
+     * Retrieves the origin of all world objects whose trackables have been detected at least once
+     * @return {Object<string, Array<number>>}
+     */
     function getWorldOrigins() {
         return worldCorrections;
+    }
+
+    /**
+     * Given an IP address, returns a list of all seen world objects that are hosted on that server
+     * @param {string} serverIP
+     * @return {Array.<Object>}
+     */
+    function getWorldObjectsByIP(serverIP) {
+        var matchingWorldObjects = [];
+        Object.values(worldObjects).forEach(function(worldObject) {
+            if (worldObject.ip === serverIP) {
+                matchingWorldObjects.push(worldObject);
+            }
+        });
+        return matchingWorldObjects;
+    }
+
+    /**
+     * Returns a data structure mapping each seen worldObjectKey to the estimated distance of that origin to the phone's current position
+     * @return {Object.<string, number>}
+     */
+    function getDistanceToEachWorld() {
+        var distances = {};
+        for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+            var object = realityEditor.getObject(objectKey);
+            if (object.isWorldObject) {
+                var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+                distances[objectKey] = thisDistance;
+            }
+        }
+        return distances;
     }
     
     exports.initService = initService;
@@ -282,5 +333,7 @@ createNameSpace("realityEditor.worldObjects");
     exports.setOrigin = setOrigin;
     exports.getOrigin = getOrigin;
     exports.getWorldOrigins = getWorldOrigins;
+    exports.getWorldObjectsByIP = getWorldObjectsByIP;
+    exports.getDistanceToEachWorld = getDistanceToEachWorld;
 
 }(realityEditor.worldObjects));

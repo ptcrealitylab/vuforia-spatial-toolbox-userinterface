@@ -172,7 +172,7 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
         var blockIcon = this.getBlockIcon(globalStates.currentLogic, block.type, true);
         if (blockIcon) {
             iconImage = document.createElement("img");
-            iconImage.setAttribute('class', 'blockIcon');
+            iconImage.classList.add('blockIcon', 'blockIconPlaced');
             iconImage.src = blockIcon.src;
             blockContents.appendChild(iconImage);
 

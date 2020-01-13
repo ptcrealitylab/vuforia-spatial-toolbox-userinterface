@@ -1140,12 +1140,14 @@ Logic Interface CSS
   font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
   font-size: 14px;
   position: absolute;
+  overflow: hidden; /* crop the icon to the size of the container */
 }
 
 .blockIcon {
   text-align: center;
     /*width: 100%;*/
-    height: 106%;
+    height: 100%;
+    /*height: 100%;*/
     overflow: hidden;
   /*height: 20px;*/
   /*width: 75%;*/
@@ -1155,6 +1157,14 @@ Logic Interface CSS
   user-select:none;
   -webkit-user-select:none;
     /*height: 75%;*/
+}
+
+.blockIconTinted {
+    background-color: rgba(0,0,0,0.25); /* add a slight background in case the icon didn't have one */
+}
+
+.blockIconPlaced {
+    height: 106%;
 }
 
 .blockBox {

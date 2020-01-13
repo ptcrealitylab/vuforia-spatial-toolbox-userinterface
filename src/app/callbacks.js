@@ -307,6 +307,18 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     //     realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
     //     delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     // }
+
+    // this marker for now, overwrites all other world object origins
+    // if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
+    //     document.getElementById('speechConsole').innerText = 'WORLD ORIGIN LOCATED';
+    //     realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
+    //         if (worldObjectKey !== realityEditor.worldObjects.getLocalWorldId()) {
+    //             realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]));
+    //         }
+    //     });
+    //     // realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
+    //     delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
+    // }
     
     // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
     
