@@ -320,36 +320,97 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     var object = null;
     var frame = null;
     var node = null;
+    // var closest = this.MAX_DISTANCE;
+    // var distance = this.MAX_DISTANCE;
+    
+    var info = this.closestVisibleObject(function(objectKey) {
+        if (typeof optionalFilter !== 'undefined') {
+            if (!optionalFilter(objectKey)) {
+                return false;
+            }
+        }
+        return !realityEditor.worldObjects.isWorldObjectKey(objectKey);
+    });
+
+    // if no visible non-world objects, get the closest non-local-world object
+    if (!info.objectKey) {
+        info = this.closestVisibleObject(function(objectKey) {
+            if (typeof optionalFilter !== 'undefined') {
+                if (!optionalFilter(objectKey)) {
+                    return false;
+                }
+            }
+            return realityEditor.worldObjects.isWorldObjectKey(objectKey) && objectKey !== realityEditor.worldObjects.getLocalWorldId();
+        });
+    }
+    
+    if (!info.objectKey) {
+        info = this.closestVisibleObject(function(objectKey) {
+            if (typeof optionalFilter !== 'undefined') {
+                if (!optionalFilter(objectKey)) {
+                    return false;
+                }
+            }
+            return objectKey === realityEditor.worldObjects.getLocalWorldId();
+        });
+    }
+    
+    object = info.objectKey;
+
+    // // get closest non-world object
+    // for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+    //     if (typeof optionalFilter !== 'undefined') {
+    //         if (!optionalFilter(objectKey)) {
+    //             continue;
+    //         }
+    //     }
+    //    
+    //     distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+    //    
+    //     if (realityEditor.worldObjects.isWorldObjectKey(objectKey)) {
+    //         continue;
+    //     }
+    //    
+    //     if (distance < closest) {
+    //         object = objectKey;
+    //         closest = distance;
+    //     }
+    // }
+    // default to world object if no visible objects
+    // if (!object || realityEditor.worldObjects.isWorldObjectKey(object)) {
+    //     if (realityEditor.worldObjects.getBestWorldObject()) {
+    //         object = realityEditor.worldObjects.getBestWorldObject().objectId;
+    //     }
+    // }
+    
+    return [object, frame, node];
+};
+
+
+realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
+    var object = null;
     var closest = this.MAX_DISTANCE;
     var distance = this.MAX_DISTANCE;
-
+    
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         if (typeof optionalFilter !== 'undefined') {
             if (!optionalFilter(objectKey)) {
                 continue;
             }
         }
-        
+
         distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
-        
-        if (realityEditor.worldObjects.isWorldObjectKey(objectKey)) {
-            continue;
-        }
-        
+
         if (distance < closest) {
             object = objectKey;
             closest = distance;
         }
     }
     
-    // default to world object if no visible objects
-    if (!object || realityEditor.worldObjects.isWorldObjectKey(object)) {
-        if (realityEditor.worldObjects.getBestWorldObject()) {
-            object = realityEditor.worldObjects.getBestWorldObject().objectId;
-        }
+    return {
+        objectKey: object,
+        distance: distance
     }
-    
-    return [object, frame, node];
 };
 
 realityEditor.gui.ar.utilities.getAllObjectDistances = function(isDesktop) {

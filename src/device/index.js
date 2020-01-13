@@ -871,8 +871,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 
         var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
 
-        var objectInfo = realityEditor.network.availableFrames.getBestObjectInfoForFrame(frameBeingMoved.src); // TODO: use this method to find best destination when you move a frame between objects, too
-        var closestObjectKey = objectInfo.objectKey; // TODO: refactor -> rename to closestCompatibleObjectKey
+        var closestObjectKey = realityEditor.network.availableFrames.getBestObjectInfoForFrame(frameBeingMoved.src);
         
         // TODO: when moving a frame from an object to the world, that the world doesn't support... you shouldnt be able to do that... right now it breaks
         // var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];

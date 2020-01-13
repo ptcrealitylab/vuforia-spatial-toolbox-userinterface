@@ -161,9 +161,16 @@ createNameSpace("realityEditor.network.availableFrames");
     
     function getBestObjectInfoForFrame(frameName) {
         var possibleObjectKeys = getPossibleObjectsForFrame(frameName);
-        var sortedObjectInfo = sortByDistance(possibleObjectKeys);
+        
+        // var sortedObjectInfo = sortByDistance(possibleObjectKeys); // this was the old way of doing it
+
+        // this works now that world objects have a sense of distance just like regular objects
+        return realityEditor.gui.ar.getClosestObject(function(objectKey) {
+            return possibleObjectKeys.indexOf(objectKey) > -1;
+        })[0];
+        
         // there should always be at least one element otherwise it wouldn't show up in pocket
-        return sortedObjectInfo[0];
+        // return sortedObjectInfo[0];
     }
 
     function getPossibleObjectsForFrame(frameName) {
