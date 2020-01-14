@@ -443,9 +443,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 container.dataset.src = '_PLACEHOLDER_';
             } else {
                 // var thisUrl = 'frames/' + element.name + '.html';
-                var thisUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/active/' + element.name + '/index.html';
+                var thisUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/' + element.name + '/index.html';
                 // var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
-                var gifUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/active/' + element.name + '/icon.gif';
+                var gifUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/' + element.name + '/icon.gif';
                 container.dataset.src = thisUrl;
 
                 container.dataset.name = element.name;
@@ -668,7 +668,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // thisFrame.visible = false;
 
             // add each node with a non-empty name
-            var LOAD_NODES_FROM_SERVER = false;
+            var LOAD_NODES_FROM_SERVER = true;
             if (!LOAD_NODES_FROM_SERVER) {
 
                 var nodes = JSON.parse(nodesList);

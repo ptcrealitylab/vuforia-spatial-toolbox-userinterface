@@ -260,7 +260,7 @@ createNameSpace("realityEditor.network.availableFrames");
      * @return {string} - image src path
      */
     function getFrameIconSrcByIP(serverIP, frameName) {
-        return 'http://' + serverIP + ':' + httpPort + '/frames/active/' + frameName + '/icon.gif';
+        return 'http://' + serverIP + ':' + httpPort + '/frames/' + frameName + '/icon.gif';
     }
 
     /**
@@ -271,7 +271,7 @@ createNameSpace("realityEditor.network.availableFrames");
      */
     function getFrameSrc(objectKey, frameName) {
         var serverIP = getServerIPForObjectFrames(objectKey);
-        return 'http://' + serverIP + ':' + httpPort + '/frames/active/' + frameName + '/index.html';
+        return 'http://' + serverIP + ':' + httpPort + '/frames/' + frameName + '/index.html';
     }
     
     var serverFrameInfoUpdatedCallbacks = [];
