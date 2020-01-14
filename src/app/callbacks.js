@@ -288,8 +288,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         }
     // }
     
-    // this next section adjusts the world origin to be centered on a hard-coded image target if it ever gets recognized
-    
+    // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
     realityEditor.worldObjects.getWorldObjectKeys().forEach( function(worldObjectKey) {
         
         if (visibleObjects.hasOwnProperty(worldObjectKey)) {

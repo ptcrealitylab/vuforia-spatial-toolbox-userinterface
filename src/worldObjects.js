@@ -265,11 +265,19 @@ createNameSpace("realityEditor.worldObjects");
      */
     function setOrigin(objectKey, originMatrix) {
         if (typeof worldCorrections[objectKey] !== 'undefined') {
+            
             if (worldCorrections[objectKey] === null) {
                 console.log('set origin of ' + objectKey + ' for the first time');
                 realityEditor.app.tap();
+                setTimeout(function() {
+                    realityEditor.app.tap();
+                }, 100);
+                setTimeout(function() {
+                    realityEditor.app.tap();
+                }, 200);
                 // TODO: add a temporary message log that displays this message for a moment
             }
+            
             worldCorrections[objectKey] = originMatrix;
         }
     }
