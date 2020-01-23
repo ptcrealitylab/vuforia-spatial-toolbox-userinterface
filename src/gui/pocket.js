@@ -516,6 +516,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             if (!realityElements[i]) continue;
             
             var element = realityElements[i].properties;
+            if (typeof element === 'undefined') {
+                console.log('could not find properties of ', realityElements[i]);
+                continue;
+            }
             
             var container = document.createElement('div');
             container.classList.add('element-template');
