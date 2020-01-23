@@ -1438,34 +1438,53 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
-                
-                // if (!activeVehicle.isOutsideViewport) {
-                    globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
-                // }
-                
-                // if (this.isLowFrequencyUpdateFrame) {
 
+                if (!activeVehicle.isOutsideViewport) {
+                    globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                }
+
+                if (this.isLowFrequencyUpdateFrame) {
                     // TODO: this was slowing things down A LOT - figure out a better way to ignore frames outside of viewport
                     // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
-                    // var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
-                    //
-                    // var left = frameScreenPosition.upperLeft.x;
-                    // var right = frameScreenPosition.lowerRight.x;
-                    // var top = frameScreenPosition.upperLeft.y;
-                    // var bottom = frameScreenPosition.lowerRight.y;
-                    //
-                    // if (!activeVehicle.isOutsideViewport && (bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height)) {
-                    //     // globalDOMCache["object" + activeKey].classList.add('outsideOfViewport');
-                    //     activeVehicle.isOutsideViewport = true;
-                    // } else if (activeVehicle.isOutsideViewport) {
-                    //     // globalDOMCache["object" + activeKey].classList.remove('outsideOfViewport');
-                    //     activeVehicle.isOutsideViewport = false;
-                    // }
-                    // }
+                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
 
-                // }
+                    var left = frameScreenPosition.upperLeft.x;
+                    var right = frameScreenPosition.lowerRight.x;
+                    var top = frameScreenPosition.upperLeft.y;
+                    var bottom = frameScreenPosition.lowerRight.y;
+                    var isNowOutsideViewport = bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height;
 
-                
+                    if (isNowOutsideViewport) {
+                        let elt = globalDOMCache['object' + activeKey];
+                        if (!activeVehicle.isOutsideViewport || !elt.style.transform) {
+                            // Moved out
+                            activeVehicle.isOutsideViewport = true;
+                            // Assign the display: none equivalent of matrix3d to make it not show up
+                            elt.style.transform = `matrix3d(
+                                0, 0, 0, 0,
+                                0, 0, 0, 0,
+                                0, 0, 0, 0,
+                                0, 0, 0, 1
+                            )`;
+                            let iframe = globalDOMCache['iframe' + activeKey];
+                            if (iframe) {
+                                iframe.dataset.src = iframe.src;
+                                delete iframe.src;
+                            }
+                        }
+                    } else {
+                        if (activeVehicle.isOutsideViewport) {
+                            // Moved in
+                            activeVehicle.isOutsideViewport = false;
+
+                            let iframe = globalDOMCache['iframe' + activeKey];
+                            if (iframe && iframe.dataset.src) {
+                                iframe.src = iframe.dataset.src;
+                                delete iframe.dataset.src;
+                            }
+                        }
+                    }
+                }
             } else {
                 this.updateStickyFrameCss(activeKey, activeVehicle.fullScreen);
             }
