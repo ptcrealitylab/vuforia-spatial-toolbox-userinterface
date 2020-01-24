@@ -312,11 +312,15 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     objects[objectKey] = msg;
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
+                    
                     // download XML, DAT, and initialize tracker
-                    realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
+                    // realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
                     
                     // Switch to this to create Vuforia markers by downloading JPGs instead of XML/DAT
                     // realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject(beat);
+                    
+                    // this tries DAT first, then resorts to JPG if DAT not found
+                    realityEditor.app.callbacks.downloadAvailableTargetFiles(beat);
                     
                     // check if onNewServerDetected callbacks should be triggered
                     realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
