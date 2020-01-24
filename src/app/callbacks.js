@@ -681,13 +681,111 @@ realityEditor.app.callbacks.onTargetJPGDownloaded = function(success, fileName) 
     var objectID = getObjectIDFromFilename(fileName);
 
     if (success) {
+        var object = realityEditor.getObject(objectID);
+        
         console.log('successfully downloaded file: ' + fileName);
         targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
-        realityEditor.app.addNewMarkerJPG(fileName, objectID, 0.3, 'realityEditor.app.callbacks.onMarkerAdded');
+        console.log('attempting to add target via JPG of width ' + object.targetSize.width);
+        realityEditor.app.addNewMarkerJPG(fileName, objectID, (object.targetSize.width || 0.3), 'realityEditor.app.callbacks.onMarkerAdded');
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
 
     } else {
         console.log('failed to download file: ' + fileName);
         targetDownloadStates[objectID].JPG = DownloadState.FAILED;
+    }
+};
+
+/**
+ * Downloads the JPG files, and adds the AR marker to the tracking engine, when a new UDP object heartbeat is detected
+ * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
+ * id: the objectId
+ * ip: the IP address of the server hosting this object
+ * vn: the object's version number, e.g. 300 for version 3.0.0
+ * tcs: the checksum which can be used to tell if anything has changed since last loading this object
+ * zone: the name of the zone this object is in, so we can ignore objects outside this editor's zone if we have previously specified one
+ */
+realityEditor.app.callbacks.downloadAvailableTargetFiles = function(objectHeartbeat) {
+    var objectID = objectHeartbeat.id;
+    var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+    temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
+
+    var newChecksum = objectHeartbeat.tcs;
+    if (newChecksum === 'null') { newChecksum = null; }
+    temporaryChecksumMap[objectHeartbeat.id] = newChecksum;
+    // TODO: don't download again if already stored the same checksum version (look at downloadTargetFilesForDiscoveredObject implementation)
+
+    targetDownloadStates[objectID] = {
+        XML: DownloadState.NOT_STARTED,
+        DAT: DownloadState.NOT_STARTED,
+        JPG: DownloadState.NOT_STARTED,
+        MARKER_ADDED: DownloadState.NOT_STARTED
+    };
+
+    // downloads the vuforia target.xml file if it doesn't have it yet
+    var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
+    realityEditor.app.downloadFile(xmlAddress, 'realityEditor.app.callbacks.onTargetXMLDownloaded');
+    targetDownloadStates[objectID].XML = DownloadState.STARTED;
+};
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetXMLDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+    
+    if (success) {
+        var object = realityEditor.getObject(objectID);
+        
+        console.log('successfully downloaded XML file: ' + fileName);
+        targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
+        
+        // try to download DAT
+        var datAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.dat';
+        realityEditor.app.downloadFile(datAddress, 'realityEditor.app.callbacks.onTargetDATDownloaded');
+        targetDownloadStates[objectID].XML = DownloadState.STARTED;
+        
+    } else {
+        console.log('failed to download XML file: ' + fileName);
+        targetDownloadStates[objectID].XML = DownloadState.FAILED;
+        // TODO: error handle... kick out this object or provide some feedback
+    }
+};
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetDATDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+    var object = realityEditor.getObject(objectID);
+
+    if (success) {
+
+        console.log('successfully downloaded DAT file: ' + fileName);
+        targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
+
+        var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
+        realityEditor.app.addNewMarker(xmlFileName, 'realityEditor.app.callbacks.onMarkerAdded');
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+
+        // if (temporaryChecksumMap[objectID]) {
+        //     window.localStorage.setItem('realityEditor.objectChecksums.'+objectID, temporaryChecksumMap[objectID]);
+        // }
+
+    } else {
+        console.log('failed to download DAT file: ' + fileName);
+        targetDownloadStates[objectID].XML = DownloadState.FAILED;
+        // TODO: error handle... kick out this object or provide some feedback
+        
+        console.log('try to download JPG file instead');
+        // try to download DAT
+        var jpgAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.jpg';
+        realityEditor.app.downloadFile(jpgAddress, 'realityEditor.app.callbacks.onTargetJPGDownloaded');
+        targetDownloadStates[objectID].XML = DownloadState.STARTED;
     }
 };
