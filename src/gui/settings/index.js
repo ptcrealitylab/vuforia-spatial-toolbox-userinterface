@@ -139,6 +139,7 @@ realityEditor.gui.settings.discovery = function () {
         this.states.discoveryActive = false;
         this.states.discoveryState = "";
         document.getElementById("discoveryText").value = this.states.discoveryState;
+        this.appFunctionCall('setStorage', {storageID: 'SETUP:DISCOVERY', message: JSON.stringify(this.states.discoveryState)}, null);
     }
 
     var buttonState = document.getElementById('discoveryButton');
