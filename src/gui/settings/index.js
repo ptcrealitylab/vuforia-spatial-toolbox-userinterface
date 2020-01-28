@@ -106,6 +106,14 @@ realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody)
     }), "*");
 };
 
+realityEditor.gui.settings.setDiscoveryText = function(discoveryText) {
+    parent.postMessage(JSON.stringify({
+        settings: {
+            setDiscoveryText: discoveryText
+        }
+    }), "*");
+};
+
 realityEditor.gui.settings.reloadUI = function () {
     // if (this.states.externalState !== "" && this.states.externalState !== "http") {
         console.log("loadNewUI: " + this.states.externalState);
@@ -122,6 +130,8 @@ realityEditor.gui.settings.discovery = function () {
             console.log("setDiscovery" + this.states.discoveryState);
             this.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState});
             this.states.discoveryActive = true;
+            this.setDiscoveryText(this.states.discoveryState);
+            this.appFunctionCall('setStorage', {storageID: 'SETUP:DISCOVERY', message: JSON.stringify(this.states.discoveryState)}, null);
         }
     } else {
         console.log("removeDiscovery");

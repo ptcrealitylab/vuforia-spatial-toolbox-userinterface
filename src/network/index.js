@@ -2024,6 +2024,32 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
     }
+
+    if (msgContent.settings.setDiscoveryText) {
+        globalStates.discoveryState = msgContent.settings.setDiscoveryText;
+        this.discoverObjectsFromServer(msgContent.settings.setDiscoveryText)
+    }
+};
+
+/**
+ * Ask a specific server to respond with which objects it has
+ * The server will respond with a list of json objects matching the format of discovery heartbeats
+ * Array.<{id: string, ip: string, vn: number, tcs: string, zone: string}>
+ *     These heartbeats are processed like any other heartbeats
+ * @param {string} serverUrl - url for the reality server to download objects from, e.g. 10.10.10.20:8080
+ */
+realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
+    var prefix = (serverUrl.indexOf('http://') === -1) ? ('http://') : ('');
+    var url = prefix + serverUrl + '/allObjects/';
+    realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
+        console.log('got all objects');
+        console.log(msg);
+
+        msg.forEach(function(heartbeat) {
+            console.log(heartbeat);
+            realityEditor.network.addHeartbeatObject(heartbeat);
+        });
+    });
 };
 
 /**
