@@ -13,6 +13,7 @@ createNameSpace("realityEditor.network.frameContentAPI");
      */
     function initService() {
         realityEditor.device.keyboardEvents.registerCallback('keyUpHandler', keyUpHandler);
+        realityEditor.device.keyboardEvents.registerCallback('keyboardHidden', onKeyboardHidden);
         
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
@@ -84,6 +85,10 @@ createNameSpace("realityEditor.network.frameContentAPI");
     function keyUpHandler(params) {
         var acyclicEventObject = getMutablePointerEventCopy(params.event); // can't stringify a cyclic object, which the event might be
         sendMessageToAllVisibleFrames({keyboardUpEvent: acyclicEventObject});
+    }
+
+    function onKeyboardHidden() {
+        sendMessageToAllVisibleFrames({keyboardHiddenEvent: true});
     }
 
     /**
