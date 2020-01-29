@@ -1625,6 +1625,14 @@ if (thisFrame) {
             globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
         });
     }
+
+    if (typeof msgContent.openKeyboard !== "undefined") {
+        if (msgContent.openKeyboard) {
+            realityEditor.device.keyboardEvents.openKeyboard();
+        } else {
+            realityEditor.device.keyboardEvents.closeKeyboard();
+        }
+    }
     
     if (typeof msgContent.ignoreAllTouches !== "undefined") {
         let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
