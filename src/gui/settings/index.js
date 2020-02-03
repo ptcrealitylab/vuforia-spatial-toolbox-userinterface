@@ -211,6 +211,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.states.clearSkyState = msg.getSettings.clearSkyState;
             this.states.instantState = msg.getSettings.instantState;
             this.states.speechState = msg.getSettings.speechState;
+            this.states.tutorialState = msg.getSettings.tutorialState;
             this.states.videoRecordingEnabled = msg.getSettings.videoRecordingEnabled;
             this.states.matrixBroadcastEnabled = msg.getSettings.matrixBroadcastEnabled;
             this.states.hololensModeEnabled = msg.getSettings.hololensModeEnabled;
@@ -229,6 +230,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             this.setSettings("extendedTracking", this.states.extendedTracking);
             this.setSettings("instantState", this.states.instantState);
             this.setSettings("speechState", this.states.speechState);
+            this.setSettings("tutorialState", this.states.tutorialState);
             this.setSettings("videoRecordingEnabled", this.states.videoRecordingEnabled);
             this.setSettings("matrixBroadcastEnabled", this.states.matrixBroadcastEnabled)
             this.setSettings("hololensModeEnabled", this.states.hololensModeEnabled);

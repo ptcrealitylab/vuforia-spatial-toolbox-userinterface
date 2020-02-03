@@ -81,6 +81,7 @@ realityEditor.device.onload = function () {
     realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
     realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
+    realityEditor.app.getTutorialState('realityEditor.app.callbacks.onTutorialState');
 
     // initialize additional services
     realityEditor.device.initService();

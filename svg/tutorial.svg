@@ -1,0 +1,28 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 27 27">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #000;
+      }
+
+      .cls-1 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <title>tutorial</title>
+  <path d="M21.83,1.5A3.69,3.69,0,0,1,25.5,5.17V21.83a3.69,3.69,0,0,1-3.67,3.67H5.17A3.69,3.69,0,0,1,1.5,21.83V5.17A3.69,3.69,0,0,1,5.17,1.5H21.83m0-1.5H5.17A5.19,5.19,0,0,0,0,5.17V21.83A5.19,5.19,0,0,0,5.17,27H21.83A5.19,5.19,0,0,0,27,21.83V5.17A5.19,5.19,0,0,0,21.83,0Z"/>
+  <g>
+    <polygon class="cls-1" points="22.22 11.55 12.6 6.26 2.98 11.55 12.6 16.84 22.22 11.55"/>
+    <polyline class="cls-1" points="19.59 13.05 19.59 16.95 12.6 20.74 5.7 16.95 5.7 13.05"/>
+    <polyline class="cls-2" points="14.05 11.55 22.8 11.55 22.8 14.35"/>
+    <polygon class="cls-1" points="22.8 17.98 24.02 16.67 22.75 14.35 21.47 16.67 22.8 17.98"/>
+    <circle cx="12.63" cy="11.5" r="0.5"/>
+  </g>
+</svg>

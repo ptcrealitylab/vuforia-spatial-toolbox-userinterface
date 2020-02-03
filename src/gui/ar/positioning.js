@@ -349,10 +349,20 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
  * @return {{x: number, y: number}}
  */
 realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
-    var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
+    var touchX = globalStates.height/2; // defaults to center of screen;
+    var touchY = globalStates.width/2;
+    
+    try {
+        var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
+        touchX = translate3d[0];
+        touchY = translate3d[1];
+    } catch (e) {
+        console.log('no touches on screen yet, so defaulting to center');
+    }
+    
     return {
-        x: translate3d[0],
-        y: translate3d[1]
+        x: touchX,
+        y: touchY
     }
 };
 

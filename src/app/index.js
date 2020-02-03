@@ -520,6 +520,15 @@ realityEditor.app.saveGroupingState = function(newState) {
 };
 
 /**
+ * Save the persistent setting to disk for whether tutorial mode should show on startup.
+ * @param {boolean} newState
+ */
+realityEditor.app.saveTutorialState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:TUTORIAL', storedValue);
+};
+
+/**
  ************** LOAD DATA FROM DISK ****************
  */
 
@@ -609,6 +618,14 @@ realityEditor.app.getRealtimeState = function(callback) {
  */
 realityEditor.app.getGroupingState = function(callback) {
     this.getStorage('SETUP:GROUPING', callback);
+};
+
+/**
+ * Get the persistent setting for whether to show the tutorial on app start.
+ * @param {function} callback
+ */
+realityEditor.app.getTutorialState = function(callback) {
+    this.getStorage('SETUP:TUTORIAL', callback);
 };
 
 /**
