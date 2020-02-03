@@ -563,25 +563,41 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     /**
+     * Public method to automatically generate a uiTutorial frame, and add it to the _WORLD_local object
+     */
+    function addTutorialFrame() {
+        let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, realityEditor.worldObjects.getLocalWorldId());
+        console.log('added tutorial frame', addedElement);
+    }
+
+    /**
      * Uses information from the pocket representation of a frame, to create and add a new frame to the scene.
      * Also posts the frame to the server. And begins touch interaction to drag the frame around (unless noUserInteraction=true)
      * Most parameters are stringified. // todo: parse them outside of function and pass in values of correct type
      * @param {string} name
-     * @param {string} startPositionOffset
-     * @param {string} width
-     * @param {string} height
-     * @param nodesList
-     * @param x
-     * @param y
-     * @param noUserInteraction
+     * @param {string} startPositionOffset - stringified object with x and y property
+     * @param {string} width - stringified frame width
+     * @param {string} height - stringified frame height
+     * @param {string} nodesList - stringified array of JSON data, one per node, with properties for name, type, etc
+     * @param {number} x - where to center the frame (touch x position)
+     * @param {number} y - where to center the frame (touch y position)
+     * @param {boolean|undefined} noUserInteraction
+     * @param {string|undefined} objectKeyToAddTo - if undefined, attaches frame to closest object. otherwise attaches to specified object
      * @return {Frame}
      */
-    function createFrame(name, startPositionOffset, width, height, nodesList, x, y, noUserInteraction) {
+    function createFrame(name, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo) {
 
         // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
         // TODO: this would make it easier to drop exactly on the the object you want
         
-        var closestObjectKey = realityEditor.network.availableFrames.getBestObjectInfoForFrame(name); // TODO: use this method to find best destination when you move a frame between objects, too
+        var closestObjectKey;
+        
+        if (typeof objectKeyToAddTo !== 'undefined') {
+            closestObjectKey = objectKeyToAddTo;
+        
+        } else {
+            closestObjectKey = realityEditor.network.availableFrames.getBestObjectInfoForFrame(name); // TODO: use this method to find best destination when you move a frame between objects, too
+        }
         
         console.log('add frame to ' + closestObjectKey);
         var closestObject = realityEditor.getObject(closestObjectKey);
@@ -1238,5 +1254,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     exports.addElementHighlightFilter = addElementHighlightFilter;
     
     exports.createFrame = createFrame;
+    exports.addTutorialFrame = addTutorialFrame;
     
 }(realityEditor.gui.pocket));

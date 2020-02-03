@@ -1753,6 +1753,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 clearSkyState: globalStates.clearSkyState,
                 instantState: globalStates.instantState,
                 speechState: globalStates.speechState,
+                tutorialState: globalStates.tutorialState,
                 videoRecordingEnabled: globalStates.videoRecordingEnabled,
                 matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
                 hololensModeEnabled: globalStates.hololensModeEnabled,
@@ -1879,6 +1880,24 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.speechState = false;
                     document.getElementById('speechConsole').style.display = 'none';
                     realityEditor.app.stopSpeechRecording();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.tutorialState !== "undefined") {
+            if (msgContent.settings.setSettings.tutorialState) {
+                if (!globalStates.tutorialState) {
+                    globalStates.tutorialState = true;
+                    // realityEditor.app.startSpeechRecording();
+                    console.log('set tutorialState on');
+                    realityEditor.app.saveTutorialState(true);
+                }
+            } else {
+                if (globalStates.tutorialState) {
+                    globalStates.tutorialState = false;
+                    // realityEditor.app.stopSpeechRecording();
+                    console.log('set tutorialState off');
+                    realityEditor.app.saveTutorialState(false);
                 }
             }
         }

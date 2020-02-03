@@ -199,10 +199,25 @@ realityEditor.app.callbacks.onRealtimeState = function(savedState) {
 realityEditor.app.callbacks.onGroupingState = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
-    console.log('loaded realtime state = ', savedState);
+    console.log('loaded grouping state = ', savedState);
 
     if (savedState) {
         globalStates.groupingEnabled = savedState;
+    }
+};
+
+/**
+ * Callback for realityEditor.app.getTutorialState
+ * Loads the tutorial state (if any) from permanent storage
+ * @param savedState - stringified boolean
+ */
+realityEditor.app.callbacks.onTutorialState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded tutorial state = ', savedState);
+
+    if (savedState) {
+        globalStates.tutorialState = savedState;
     }
 };
 
@@ -348,6 +363,8 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     // }
 };
 
+realityEditor.app.callbacks.isFirstTimeSettingWorldPosition = true;
+
 /**
  * Callback for realityEditor.app.getCameraMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
@@ -356,6 +373,21 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
+        if (realityEditor.app.callbacks.isFirstTimeSettingWorldPosition) {
+            if (realityEditor.worldObjects.getWorldObjectKeys().length > 0) {
+                if (typeof realityEditor.gui.ar.draw.visibleObjects[realityEditor.worldObjects.getLocalWorldId()] !== 'undefined') {
+                    realityEditor.app.callbacks.isFirstTimeSettingWorldPosition = false;
+                    setTimeout(function() {
+                        if (globalStates.tutorialState) {
+                            console.log('add tutorial frame to _WORLD_local');
+                            realityEditor.gui.pocket.addTutorialFrame();
+                        } else {
+                            console.log('tutorial is disabled, dont show it');
+                        }
+                    }, 500);
+                }
+            }
+        }
         realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
     }
 };
