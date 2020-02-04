@@ -1135,7 +1135,15 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
         if (event.touches.length === 2 && !realityEditor.device.editingState.pinchToScaleDisabled) {
 
             // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
-            var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
+            // also consider a touch that started on pocket-element to be on the frame element
+            var touchTargets = [].slice.call(event.touches).map(function(touch) {
+                var targetId = touch.target.id.replace(/^(svg)/,"");
+                if (targetId === 'pocket-element') {
+                    targetId = activeVehicle.uuid;
+                }
+                return targetId;
+            });
+
             var areBothOnElement = touchTargets[0] === touchTargets[1];
 
             var centerTouch;
