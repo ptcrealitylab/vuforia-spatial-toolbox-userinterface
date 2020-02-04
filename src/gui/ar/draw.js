@@ -2478,8 +2478,6 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     if(!activeVehicle.visibleCounter) {
         return;
     }
-    
-    // if (this.doesObjectContainStickyFrame(activeVehicle.objectId)) {
 
     if (realityEditor.getObject(activeVehicle.objectId).containsStickyFrame) {
         console.log('dont kill object with sticky frame');
