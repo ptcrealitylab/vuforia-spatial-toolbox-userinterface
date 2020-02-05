@@ -1439,8 +1439,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
 
+                let activeElt = globalDOMCache["object" + activeKey];
                 if (!activeVehicle.isOutsideViewport) {
-                    globalDOMCache["object" + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                    activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                } else if (!activeElt.classList.contains('outsideOfViewport')) {
+                    activeElt.classList.add('outsideOfViewport');
                 }
 
                 if (this.isLowFrequencyUpdateFrame) {
@@ -1455,17 +1458,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var isNowOutsideViewport = bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height;
 
                     if (isNowOutsideViewport) {
-                        let elt = globalDOMCache['object' + activeKey];
-                        if (!activeVehicle.isOutsideViewport || !elt.style.transform) {
+                        if (!activeVehicle.isOutsideViewport || !activeElt.classList.contains('outsideOfViewport')) {
                             // Moved out
                             activeVehicle.isOutsideViewport = true;
-                            // Assign the display: none equivalent of matrix3d to make it not show up
-                            elt.style.transform = `matrix3d(
-                                0, 0, 0, 0,
-                                0, 0, 0, 0,
-                                0, 0, 0, 0,
-                                0, 0, 0, 1
-                            )`;
+                            activeElt.classList.add('outsideOfViewport');
                             let iframe = globalDOMCache['iframe' + activeKey];
                             if (iframe) {
                                 iframe.dataset.src = iframe.src;
@@ -1476,6 +1472,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         if (activeVehicle.isOutsideViewport) {
                             // Moved in
                             activeVehicle.isOutsideViewport = false;
+                            activeElt.classList.remove('outsideOfViewport');
 
                             let iframe = globalDOMCache['iframe' + activeKey];
                             if (iframe && iframe.dataset.src) {
