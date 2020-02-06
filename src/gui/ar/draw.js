@@ -383,6 +383,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             //     this.activeObject.matrix = this.utilities.newIdentityMatrix();
             // }
             
+            // TODO: check if this needs to be fixed for desktop, now that we have a different method for worldCorrection / world origins
             if (!realityEditor.device.utilities.isDesktop()) {
                 if (realityEditor.gui.ar.draw.worldCorrection !== null) {
                     console.warn('Should never get here until we fix worldCorrection');
