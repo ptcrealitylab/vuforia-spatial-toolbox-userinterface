@@ -563,10 +563,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     /**
-     * Public method to automatically generate a uiTutorial frame, and add it to the _WORLD_local object
+     * Public method to automatically generate a uiTutorial frame, and add it to the world
+     * @param {string} objectKey - object to add the tutorial to (should be the _WORLD_local object)
      */
-    function addTutorialFrame() {
-        let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, realityEditor.worldObjects.getLocalWorldId());
+    function addTutorialFrame(objectKey) {
+        let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, objectKey);
         console.log('added tutorial frame', addedElement);
     }
 
