@@ -318,8 +318,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // if (globalStates.extendedTracking) {
     //     this.updateExtendedTrackingVisibility(visibleObjects);
     // }
-
+    
     this.visibleObjects = visibleObjects;
+    // So that we can call this function multiple times without mutating the original set of visibleObjects,
+    // we create a separate set of matrices called modelViewMatrices where all the computation/mutation happens.
     this.modelViewMatrices = {};
 
     // erases anything on the background canvas
@@ -383,6 +385,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             //     this.activeObject.matrix = this.utilities.newIdentityMatrix();
             // }
             
+            // TODO: check if this needs to be fixed for desktop, now that we have a different method for worldCorrection / world origins
             if (!realityEditor.device.utilities.isDesktop()) {
                 if (realityEditor.gui.ar.draw.worldCorrection !== null) {
                     console.warn('Should never get here until we fix worldCorrection');
@@ -694,7 +697,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // TODO: push more edge-case functionality from this function into extensible callbacks
     // make the update loop extensible by additional services that wish to subscribe to matrix updates
     this.updateListeners.forEach(function(callback) {
-        // send a deep clone of the list so that extensible services can't break the render loop by modifying the original
+        // warning: sends a reference to the original set of matrices, for performance reasons, instead of a deep clone.
+        // services that subscribe to this are responsible to not mutate this object.
         callback(realityEditor.gui.ar.draw.modelViewMatrices);
     });
 };
@@ -1342,13 +1346,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     positionData.matrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
                     console.warn('fixed NaN positionData matrix in drawTransformed');
                 }
-                
-                // var positionDataMatrix = realityEditor.gui.ar.utilities.copyMatrix(positionData.matrix);
-
-                // if (realityEditor.device.utilities.isDesktop()) {
-                //     var positionDataCopy = realityEditor.gui.ar.utilities.copyMatrix(positionDataMatrix);
-                //     realityEditor.gui.ar.utilities.multiplyMatrix(desktopFrameTransform, positionDataCopy, positionDataMatrix);
-                // }
                 
                 if (positionData.matrix.length < 13) {
                     // utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);

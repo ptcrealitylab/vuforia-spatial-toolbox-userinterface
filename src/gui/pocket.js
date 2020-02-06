@@ -292,15 +292,20 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         } else {
             console.log('get all possible frames and assemble pocket out of all of them');
             
+            // subscribes to the closestObjectChanged event in the draw module, and triggers the pocket to refresh its UI
             realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged); // TODO: this should actually trigger anytime the set of visibleObjects changes, not just the closest one
             
+            // also triggers pocket refresh whenever a new server with frames was detected
             realityEditor.network.availableFrames.onServerFramesInfoUpdated(function() {
                 console.log('onServerFramesInfoUpdated');
                 onClosestObjectChanged(currentClosestObjectKey, currentClosestObjectKey);
             });
         }
     }
-    
+
+    /**
+     * Looks at all visible worlds and objects, and compiles a set of frame names and srcs into the aggregateFrames variable
+     */
     function rebuildAggregateFrames() {
         // see which frames this closest object supports
         var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.draw.visibleObjects));
@@ -328,7 +333,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         console.log(aggregateFrames);
     }
-    
+
+    /**
+     * When the closest visible object changes, check what the new set of aggregate available frames is, and refresh the pocket UI
+     * @todo: conditions for refreshing the UI can be made to be more exact
+     * @param {string} oldClosestObjectKey
+     * @param {string} newClosestObjectKey
+     */
     function onClosestObjectChanged(oldClosestObjectKey, newClosestObjectKey) {
         console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
         currentClosestObjectKey = newClosestObjectKey;
@@ -362,7 +373,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             finishStylingPocket();
         // }
     }
-    
+
+    /**
+     * @deprecated - used if we turn on ONLY_CLOSEST_OBJECT mode, which means pocket will only show frames compatible
+     *  with the current closest object, instead of frames compatible with anything on the screen
+     * @param oldClosestObjectKey
+     * @param newClosestObjectKey
+     */
     function onClosestObjectChanged_OnlyClosest(oldClosestObjectKey, newClosestObjectKey) {
         console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
         currentClosestObjectKey = newClosestObjectKey;
@@ -393,7 +410,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             finishStylingPocket();
         }
     }
-    
+
+    /**
+     * Returns a data structure similar to what was previously defined in pocketFrames.js, but dynamically generated
+     * from the set of servers that have been detected and have a visible world or object on the screen
+     * @return {*[]}
+     */
     function getRealityElements() {
         if (ONLY_CLOSEST_OBJECT) {
             return Object.keys(pocketFrameNames[currentClosestObjectKey]).map(function(frameName) { // turn dictionary into array
@@ -414,6 +436,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
     }
 
+    /**
+     * Renders the pocket UI for displaying the set of all currently available frames that can be added.
+     * Loads each icon and src from the correct server that should host that frame.
+     */
     function createPocketUIPaletteForAggregateFrames() {
 
         var realityElements = getRealityElements();
@@ -493,7 +519,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     /**
-     * 
+     * @deprecated - used to create pocket frame palette UI if ONLY_CLOSEST_OBJECT is enabled
      */
     function createPocketUIPaletteForAvailableFrames(closestObjectKey) {
         
@@ -563,10 +589,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     /**
-     * Public method to automatically generate a uiTutorial frame, and add it to the _WORLD_local object
+     * Public method to automatically generate a uiTutorial frame, and add it to the world
+     * @param {string} objectKey - object to add the tutorial to (should be the _WORLD_local object)
      */
-    function addTutorialFrame() {
-        let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, realityEditor.worldObjects.getLocalWorldId());
+    function addTutorialFrame(objectKey) {
+        // TODO: ensure that it fails safely if the corresponding server doesn't have a frame named uiTutorial
+        let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, objectKey);
         console.log('added tutorial frame', addedElement);
     }
 
@@ -763,7 +791,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC, hidePocketOnButtonPressed);
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.SETTING, hidePocketOnButtonPressed);
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.LOGIC_SETTING, hidePocketOnButtonPressed);
-        // realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.FREEZE, hidePocketOnButtonPressed);
 
         // add callbacks for pocket button actions
         realityEditor.gui.buttons.registerCallbackForButton(ButtonNames.POCKET, pocketButtonPressed);
@@ -1136,6 +1163,15 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
             segment.classList.add('pocketScrollBarSegmentTouched');
         }
+
+        function scrollPocketForTouch(e) {
+            var index = parseInt(e.currentTarget.dataset.index);
+            var segmentTop = e.currentTarget.getClientRects()[0].top;
+            var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
+            var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
+            var scrollContainer = document.getElementById('pocketScrollContainer');
+            scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
+        }
         
         var pocketPointerDown = false;
         document.addEventListener('pointerdown', function(_e) {
@@ -1161,21 +1197,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             segmentButton.dataset.index = i;
             
-            function scrollPocketForTouch(e) {
-                var index = parseInt(e.currentTarget.dataset.index);
-                var segmentTop = e.currentTarget.getClientRects()[0].top;
-                var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
-
-                var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
-                var scrollContainer = document.getElementById('pocketScrollContainer');
-                scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
-            }
-            
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
-                // scrollToSegmentIndex(e.currentTarget.dataset.index); // TODO: keep this? or same as pointermove and include percentage between?
                 scrollPocketForTouch(e);
             });
             segmentButton.addEventListener('pointerup', function(e) {
@@ -1190,7 +1215,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
-                // scrollToSegmentIndex(e.currentTarget.dataset.index);
             });
             segmentButton.addEventListener('pointerleave', function(e) {
                 if (!pocketPointerDown) { return; }
@@ -1203,27 +1227,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             });
             segmentButton.addEventListener('pointermove', function(e) {
                 if (!pocketPointerDown) { return; }
-
                 scrollPocketForTouch(e);
-                // var index = parseInt(e.currentTarget.dataset.index);
-                // var segmentTop = e.currentTarget.getClientRects()[0].top;
-                // var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
-                //
-                // var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
-                // var scrollContainer = document.getElementById('pocketScrollContainer');
-                // scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
-
-                // console.log(percentageBetween, (index + percentageBetween), scrollContainer.scrollTop);
             });
             scrollbar.appendChild(segmentButton);
             allSegmentButtons.push(segmentButton);
         }
-        
-        // function scrollToSegmentIndex(index) {
-        //     var scrollContainer = document.getElementById('pocketScrollContainer');
-        //     scrollContainer.scrollTop = index * pageHeight;
-        // }
-        
     }
 
     /**
@@ -1252,6 +1260,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     exports.onHalfPocketButtonEnter = onHalfPocketButtonEnter;
 
     exports.addElementHighlightFilter = addElementHighlightFilter;
+    
+    exports.getRealityElements = getRealityElements;
     
     exports.createFrame = createFrame;
     exports.addTutorialFrame = addTutorialFrame;

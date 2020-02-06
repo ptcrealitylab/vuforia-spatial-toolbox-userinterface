@@ -187,7 +187,10 @@ realityEditor.device.onload = function () {
     // window.addEventListener('resize', function(event) {
     //     console.log(window.innerWidth, window.innerHeight);
     // });
-
+    
+    // this is purely for debugging purposes, can be removed in production.
+    // re-purposes the speechConsole from an old experiment into an on-screen message display for debug messages
+    // TODO: implement a clean system for logging info or debug messages to an on-screen display
     if (!realityEditor.device.utilities.isDesktop()) {
         if (globalStates.debugSpeechConsole) {
             document.getElementById('speechConsole').style.display = 'inline';

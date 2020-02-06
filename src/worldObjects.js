@@ -121,6 +121,7 @@ createNameSpace("realityEditor.worldObjects");
     function onNewServerDiscovered(serverIP) {
 
         // regular world objects are discovered by UDP broadcast. but the _WORLD_local on localhost gets downloaded with the old REST API
+        // TODO: there's probably a simpler implementation if we're making the assumption that we only need to download the localhost server this way
         if (serverIP !== '127.0.0.1') {
             return;
         }
@@ -330,6 +331,26 @@ createNameSpace("realityEditor.worldObjects");
         return distances;
     }
     
+    var isFirstTimeSettingWorldPosition = true;
+    
+    function checkIfFirstLocalization() {
+        if (isFirstTimeSettingWorldPosition) {
+            if (getWorldObjectKeys().length > 0) {
+                if (typeof realityEditor.gui.ar.draw.visibleObjects[getLocalWorldId()] !== 'undefined') {
+                    isFirstTimeSettingWorldPosition = false;
+                    setTimeout(function() {
+                        if (globalStates.tutorialState) {
+                            console.log('add tutorial frame to _WORLD_local');
+                            realityEditor.gui.pocket.addTutorialFrame(getLocalWorldId());
+                        } else {
+                            console.log('tutorial is disabled, dont show it');
+                        }
+                    }, 500);
+                }
+            }
+        }
+    }
+    
     exports.initService = initService;
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
@@ -343,5 +364,6 @@ createNameSpace("realityEditor.worldObjects");
     exports.getWorldOrigins = getWorldOrigins;
     exports.getWorldObjectsByIP = getWorldObjectsByIP;
     exports.getDistanceToEachWorld = getDistanceToEachWorld;
+    exports.checkIfFirstLocalization = checkIfFirstLocalization;
 
 }(realityEditor.worldObjects));

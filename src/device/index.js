@@ -579,7 +579,7 @@ realityEditor.device.onElementTouchDown = function(event) {
 
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
-            // send a pointerup event into the frame so it doesn't get stuck thinking you're clicking in it
+            // send a pointercancel event into the frame so it doesn't get stuck thinking you're clicking in it
             var syntheticPointerCancelEvent = {
                 pageX: touchPosition.x || 0,
                 pageY: touchPosition.y || 0,
@@ -881,7 +881,6 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
             if (closestObjectKey !== globalStates.inTransitionObject) {
                 console.log('there is an object to drop this frame onto');
 
-                // var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
                 var newFrameKey = closestObjectKey + frameBeingMoved.name;
 
                 var screenX = event.pageX;

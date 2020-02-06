@@ -319,8 +319,14 @@ realityEditor.app.stopVideoRecording = function (videoId) {
     this.appFunctionCall('stopVideoRecording', {videoId: videoId}, null);
 };
 
+/**
+ * Makes objects visible even when they move out of the camera view.
+ * @deprecated - was implemented in native app, but negatively impacts performance if we want it to be
+ *  backwards compatible, because of changes to the Vuforia SDK. It is intentionally internally disabled for now.
+ * @param {boolean} _newState
+ */
 realityEditor.app.enableExtendedTracking = function (_newState) {
-    console.log("TODO: implement enableExtendedTracking");
+    console.warn("TODO: implement enableExtendedTracking. currently has no effect.");
     // this.appFunctionCall('enableExtendedTracking', {state: newState}, null);
 };
 
