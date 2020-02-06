@@ -343,9 +343,6 @@ realityEditor.gui.ar.lines.nodeExistsA = true;
 realityEditor.gui.ar.lines.nodeExistsB = true;
 
 realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed, lineAlphaStart, lineAlphaEnd) {
-    if (globalStates.HACK_DONT_DRAW_LINES) {
-        return;
-    }
     this.nodeExistsA = true;
    this.nodeExistsB = true;
 

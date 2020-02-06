@@ -121,6 +121,7 @@ createNameSpace("realityEditor.worldObjects");
     function onNewServerDiscovered(serverIP) {
 
         // regular world objects are discovered by UDP broadcast. but the _WORLD_local on localhost gets downloaded with the old REST API
+        // TODO: there's probably a simpler implementation if we're making the assumption that we only need to download the localhost server this way
         if (serverIP !== '127.0.0.1') {
             return;
         }
