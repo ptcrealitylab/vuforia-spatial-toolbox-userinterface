@@ -73,7 +73,15 @@ createNameSpace("realityEditor.network.availableFrames");
     }
     
     var DEBUG_TEST_POCKET = false; // turn this on to test conditional pocket functionality on local server
-    
+
+    /**
+     * Gets the set of servers with currently visible objects/worlds, sorted by which has the closest visible object,
+     *  and for each server, gets its IP address, and the IP address of the server hosting its frames
+     *  (itself, for up-to-date servers, or localhost, if that server is too old of a version to have its own frames)
+     *  and gets the set of all frames that objects on that server can support (framesPerServer[proxyIP])
+     * @param {Array.<string>} visibleObjectKeys
+     * @return {Array.<{actualIP: string, proxyIP: string, frames: Object.<string, FrameInfo>}>}
+     */
     function getFramesForAllVisibleObjects(visibleObjectKeys) {
         
         var sortedByDistance = sortByDistance(visibleObjectKeys);
@@ -89,10 +97,6 @@ createNameSpace("realityEditor.network.availableFrames");
         });
         
         // filter out duplicates
-        // var uniqueServerIPs = sortedVisibleServerIPs.filter(function(item, pos) {
-        //     return sortedVisibleServerIPs.indexOf(item) === pos; // this only works if item is a primitive
-        // });
-
         var uniqueServerIPs = [];
         
         sortedVisibleServerIPs.forEach(function(item) {
@@ -134,7 +138,13 @@ createNameSpace("realityEditor.network.availableFrames");
         return allFrames;
     }
     
-    // TODO: move to gui.ar or gui.ar.utilities
+    /**
+     * Helper function to sort a list of object keys by the distance of that object to the camera, closest to furthest
+     * Returns the sorted list with some additional metadata for each entry
+     * @param {Array.<string>} objectKeys
+     * @return {Array.<{objectKey: string, distance: number, isWorldObject: boolean, timestamp: number}>}
+     * @todo: should be moved to gui.ar or gui.ar.utilities
+     */
     function sortByDistance(objectKeys) {
         return objectKeys.map( function(objectKey) {
             var distance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
@@ -151,28 +161,34 @@ createNameSpace("realityEditor.network.availableFrames");
                 timestamp: object.timestamp || 0
             };
         }).sort(function (a, b) {
-            var worldObjectTimeDifference = 0;
+            var worldObjectTimeDifference = 0; // todo: remove this, uses distance to world origin instead
             if (a.isWorldObject && b.isWorldObject) {
                 worldObjectTimeDifference = b.timestamp - a.timestamp; // this sorts newer world objects above older ones (or ones without timestamp property)
             }
             return (a.distance - b.distance) + worldObjectTimeDifference;
         });
     }
-    
+
+    /**
+     * Given the frame name (type), finds the closest object that supports that type of frame.
+     * Works with objects and world objects, prioritizing non-world objects according to the implementation of getClosestObject.
+     * @param frameName - the type of the frame (e.g. graphUI, slider, switch)
+     * @return {string|null}
+     */
     function getBestObjectInfoForFrame(frameName) {
         var possibleObjectKeys = getPossibleObjectsForFrame(frameName);
         
-        // var sortedObjectInfo = sortByDistance(possibleObjectKeys); // this was the old way of doing it
-
         // this works now that world objects have a sense of distance just like regular objects
         return realityEditor.gui.ar.getClosestObject(function(objectKey) {
             return possibleObjectKeys.indexOf(objectKey) > -1;
         })[0];
-        
-        // there should always be at least one element otherwise it wouldn't show up in pocket
-        // return sortedObjectInfo[0];
     }
 
+    /**
+     * Out of the current visible objects, figures out which subset of them could support having this type of frame attached.
+     * @param {string} frameName - the type of the frame (e.g. graphUI, slider, switch)
+     * @return {Array.<string>} - list of compatible objectKeys
+     */
     function getPossibleObjectsForFrame(frameName) {
         // search framesPerServer for this frameName to see which server this can go on
         
@@ -198,9 +214,6 @@ createNameSpace("realityEditor.network.availableFrames");
         
         return compatibleObjects;
     }
-    
-    exports.getFramesForAllVisibleObjects = getFramesForAllVisibleObjects;
-    exports.sortByDistance = sortByDistance;
 
     /**
      * Gets the framesPerServer metadata for the server where the closest object is hosted.
@@ -284,7 +297,10 @@ createNameSpace("realityEditor.network.availableFrames");
     function onServerFramesInfoUpdated(callback) {
         serverFrameInfoUpdatedCallbacks.push(callback);
     }
-    
+
+    /**
+     * Calls the callbacks for anything that subscribed to onServerFramesInfoUpdated
+     */
     function triggerServerFramesInfoUpdatedCallbacks() {
         serverFrameInfoUpdatedCallbacks.forEach(function(callback) {
             callback();
@@ -301,5 +317,8 @@ createNameSpace("realityEditor.network.availableFrames");
     exports.getBestObjectInfoForFrame = getBestObjectInfoForFrame;
     
     exports.onServerFramesInfoUpdated = onServerFramesInfoUpdated;
+
+    exports.getFramesForAllVisibleObjects = getFramesForAllVisibleObjects;
+    exports.sortByDistance = sortByDistance;
 
 })(realityEditor.network.availableFrames);

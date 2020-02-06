@@ -63,7 +63,8 @@ createNameSpace("realityEditor.device.keyboardEvents");
     }
 
     /**
-     * Creates an invisible contenteditable div that we can focus on to open the keyboard
+     * Creates an invisible contenteditable div that we can focus on to open the keyboard.
+     * This allows frames to use an API to safely open a keyboard and listen to events without encountering webkit keyboard bugs.
      */
     function createKeyboardInputDiv() {
         var keyboardInput = document.createElement('div');
@@ -83,6 +84,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
 
     /**
      * Programmatically opens the keyboard by focusing on a placeholder element.
+     * @todo: there is a bug where multiple frames can think they have keyboard focus if you don't call closeKeyboard between each openKeyboard
      */
     function openKeyboard() {
         if (!document.getElementById('keyboardInput')) {
@@ -90,15 +92,14 @@ createNameSpace("realityEditor.device.keyboardEvents");
         }
 
         // todo: if the keyboard is already open, notify previous active iframe that something else opened it
-        // closeKeyboard(); // this almost works (with the setTimeout on the focus(), but cancels the current target, too)
+        // closeKeyboard(); // this almost works (if you also add a setTimeout on the focus(), but it cancels the current iframe's focus, too)
 
-        // setTimeout(function() {
-            document.getElementById('keyboardInput').focus();
-        // }, 300);
+        document.getElementById('keyboardInput').focus();
     }
 
     /**
      * Programmatically closes the keyboard by blurring (un-focusing) and disabling the placeholder element
+     * From: https://stackoverflow.com/a/11160055/1190267
      */
     function closeKeyboard() {
         if (!document.getElementById('keyboardInput')) {
