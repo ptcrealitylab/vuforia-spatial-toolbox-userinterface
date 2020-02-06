@@ -330,6 +330,26 @@ createNameSpace("realityEditor.worldObjects");
         return distances;
     }
     
+    var isFirstTimeSettingWorldPosition = true;
+    
+    function checkIfFirstLocalization() {
+        if (isFirstTimeSettingWorldPosition) {
+            if (getWorldObjectKeys().length > 0) {
+                if (typeof realityEditor.gui.ar.draw.visibleObjects[getLocalWorldId()] !== 'undefined') {
+                    isFirstTimeSettingWorldPosition = false;
+                    setTimeout(function() {
+                        if (globalStates.tutorialState) {
+                            console.log('add tutorial frame to _WORLD_local');
+                            realityEditor.gui.pocket.addTutorialFrame(getLocalWorldId());
+                        } else {
+                            console.log('tutorial is disabled, dont show it');
+                        }
+                    }, 500);
+                }
+            }
+        }
+    }
+    
     exports.initService = initService;
     exports.getWorldObjects = getWorldObjects;
     exports.getWorldObjectKeys = getWorldObjectKeys;
@@ -343,5 +363,6 @@ createNameSpace("realityEditor.worldObjects");
     exports.getWorldOrigins = getWorldOrigins;
     exports.getWorldObjectsByIP = getWorldObjectsByIP;
     exports.getDistanceToEachWorld = getDistanceToEachWorld;
+    exports.checkIfFirstLocalization = checkIfFirstLocalization;
 
 }(realityEditor.worldObjects));

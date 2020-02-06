@@ -329,7 +329,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         }
     });
 
-    // we still need to ignore this default object in case the app provides it, to be backwards compatible
+    // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
     if (visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
@@ -363,8 +363,6 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
     // }
 };
 
-realityEditor.app.callbacks.isFirstTimeSettingWorldPosition = true;
-
 /**
  * Callback for realityEditor.app.getCameraMatrixStream
  * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
@@ -373,21 +371,7 @@ realityEditor.app.callbacks.isFirstTimeSettingWorldPosition = true;
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
-        if (realityEditor.app.callbacks.isFirstTimeSettingWorldPosition) {
-            if (realityEditor.worldObjects.getWorldObjectKeys().length > 0) {
-                if (typeof realityEditor.gui.ar.draw.visibleObjects[realityEditor.worldObjects.getLocalWorldId()] !== 'undefined') {
-                    realityEditor.app.callbacks.isFirstTimeSettingWorldPosition = false;
-                    setTimeout(function() {
-                        if (globalStates.tutorialState) {
-                            console.log('add tutorial frame to _WORLD_local');
-                            realityEditor.gui.pocket.addTutorialFrame();
-                        } else {
-                            console.log('tutorial is disabled, dont show it');
-                        }
-                    }, 500);
-                }
-            }
-        }
+        realityEditor.worldObjects.checkIfFirstLocalization();
         realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
     }
 };
