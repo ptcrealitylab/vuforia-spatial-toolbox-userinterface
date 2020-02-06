@@ -749,3 +749,27 @@ realityEditor.app.callbacks.onTargetDATDownloaded = function(success, fileName) 
         targetDownloadStates[objectID].XML = DownloadState.STARTED;
     }
 };
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetJPGDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+
+    if (success) {
+        var object = realityEditor.getObject(objectID);
+
+        console.log('successfully downloaded file: ' + fileName);
+        targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
+        console.log('attempting to add target via JPG of width ' + object.targetSize.width);
+        realityEditor.app.addNewMarkerJPG(fileName, objectID, (object.targetSize.width || 0.3), 'realityEditor.app.callbacks.onMarkerAdded');
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+
+    } else {
+        console.log('failed to download file: ' + fileName);
+        targetDownloadStates[objectID].JPG = DownloadState.FAILED;
+    }
+};
