@@ -103,10 +103,10 @@ var globalStates = {
 
     videoRecordingEnabled: false,
     // videoRecordingMode: true,
+    
+    // setting this to FALSE speeds up rendering while in node view by NOT also rendering the frames (semi-transparently)
     renderFrameGhostsInNodeViewEnabled: false,
-
-    HACK_DONT_DRAW_LINES: false,
-
+    
     // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
@@ -202,7 +202,9 @@ pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
 var globalScaleAdjustment = 0.5;
-var newNodeScaleFactor = 0.5; // reduces size of nodes on new frames compared to how they were rendered on old frames
+
+// reduces size of nodes on new frames compared to how they were rendered on old frames, to make rendering backwards compatible
+var newNodeScaleFactor = 0.5;
 
 /**
  * @typedef {Object} PocketContainer

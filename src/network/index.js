@@ -313,14 +313,14 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
                     
-                    // download XML, DAT, and initialize tracker
-                    // realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
-                    
-                    // Switch to this to create Vuforia markers by downloading JPGs instead of XML/DAT
-                    // realityEditor.app.callbacks.downloadTargetJPGForDiscoveredObject(beat);
-                    
-                    // this tries DAT first, then resorts to JPG if DAT not found
-                    realityEditor.app.callbacks.downloadAvailableTargetFiles(beat);
+                    var doesDeviceSupportJPGTargets = true; // TODO: verify this somehow instead of always true
+                    if (doesDeviceSupportJPGTargets) {
+                        // this tries DAT first, then resorts to JPG if DAT not found
+                        realityEditor.app.callbacks.downloadAvailableTargetFiles(beat);
+                    } else {
+                        // download XML, DAT, and initialize tracker
+                        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
+                    }
                     
                     // check if onNewServerDetected callbacks should be triggered
                     realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
@@ -335,7 +335,8 @@ realityEditor.network.newServerDetectedCallbacks = [];
 
 /**
  * Register a callback that will trigger for each serverIP currently known to the system and each new one as it is detected
- * @param callback
+ * @todo: use this method more consistently across the codebase instead of several modules implementing similar behavior
+ * @param {function} callback
  */
 realityEditor.network.onNewServerDetected = function(callback) {
     // register callback for future detections
@@ -1854,6 +1855,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 globalStates.instantState = true;
                 realityEditor.app.saveInstantState(true);
 
+                // TODO: stop hijacking old UI to debug this, and instead make a settings toggle for high-quality mode vs better-performance mode 
                 globalStates.renderFrameGhostsInNodeViewEnabled = false;
 
             } else {
@@ -1962,8 +1964,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     console.log('TODO: grouping mode enabled...');
                     realityEditor.app.saveGroupingState(true);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(true);
-
-                    // globalStates.HACK_DONT_DRAW_LINES = true;
                 }
             } else {
                 if (globalStates.groupingEnabled) {
@@ -1972,8 +1972,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     console.log('TODO: grouping mode disabled...');
                     realityEditor.app.saveGroupingState(false);
                     realityEditor.gui.ar.grouping.toggleGroupingMode(false);
-
-                    // globalStates.HACK_DONT_DRAW_LINES = false;
                 }
             }
         }
