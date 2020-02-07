@@ -330,7 +330,7 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
                 return false;
             }
         }
-        return !realityEditor.worldObjects.isWorldObjectKey(objectKey);
+        return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey);
     });
 
     // if no visible non-world objects, get the closest non-local-world object
