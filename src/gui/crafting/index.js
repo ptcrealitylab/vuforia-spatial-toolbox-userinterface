@@ -172,7 +172,7 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
         var blockIcon = this.getBlockIcon(globalStates.currentLogic, block.type, true);
         if (blockIcon) {
             iconImage = document.createElement("img");
-            iconImage.setAttribute('class', 'blockIcon');
+            iconImage.classList.add('blockIcon', 'blockIconPlaced');
             iconImage.src = blockIcon.src;
             blockContents.appendChild(iconImage);
 
@@ -282,7 +282,7 @@ realityEditor.gui.crafting.getSrcForAutoIcon = function(logic) {
     if (validBlockIDs.length > 0) {
         var firstBlock = logic.blocks[validBlockIDs[0]];
         console.log(firstBlock.type);
-        return this.getBlockIcon(logic, firstBlock.type).src;
+        return this.getBlockIcon(logic, firstBlock.type, false).src; // false specifies menu icon instead of label icon
     }
     return null;
 };

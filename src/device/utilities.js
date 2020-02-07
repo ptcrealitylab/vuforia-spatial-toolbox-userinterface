@@ -246,6 +246,51 @@ realityEditor.device.utilities.b64toBlob = function(b64Data, contentType, sliceS
 };
 
 /**
+ * Computes the difference between two arrays of primitive values (string or number - not objects)
+ * and presents the results in terms of what was added or subtracted from the first to the second
+ * @param {Array} oldArray
+ * @param {Array} newArray
+ * @return {{additions: Array, subtractions: Array, isEqual: boolean}}
+ */
+realityEditor.device.utilities.diffArrays = function(oldArray, newArray) {
+    var additions = [];
+    var subtractions = [];
+    var isEqual = true;
+
+    if (oldArray && newArray) {
+        oldArray.forEach(function(elt) {
+            if (newArray.indexOf(elt) === -1) {
+                subtractions.push(elt);
+                isEqual = false;
+            }
+        });
+
+        newArray.forEach(function(elt) {
+            if (oldArray.indexOf(elt) === -1) {
+                additions.push(elt);
+                isEqual = false;
+            }
+        });
+    } else {
+        if (!oldArray && newArray) {
+            additions = newArray;
+            isEqual = false;
+        }
+
+        if (oldArray && !newArray) {
+            subtractions = oldArray;
+            isEqual = false;
+        }
+    }
+    
+    return {
+        additions: additions,
+        subtractions: subtractions,
+        isEqual: isEqual
+    }
+};
+
+/**
  * Utility function to determine if the editor is loaded on a desktop browser or within the full mobile app.
  * @todo: make more robust so that loading on a mobile safari browser is distinguisable from within the Reality Editor app
  * @return {boolean}
@@ -265,5 +310,5 @@ realityEditor.device.utilities.isDesktop = function() {
  */
 realityEditor.device.utilities.isEventHittingBackground = function(event) {
     var activeVehicle = realityEditor.device.getEditingVehicle();
-    return (event.target.id === "canvas" || event.target.id === 'groupSVG' || event.target.className === "memoryBackground") && !activeVehicle;
+    return (event.target.tagName === 'BODY' || event.target.id === 'canvas' || event.target.id === 'groupSVG' || event.target.className === 'memoryBackground') && !activeVehicle;
 };

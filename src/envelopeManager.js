@@ -14,6 +14,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @typedef {Object} Envelope
      * @property {string} object
      * @property {string} frame
+     * @property {string} type
      * @property {Array.<string>} compatibleFrameTypes
      * @property {Array.<string>} containedFrameIds
      * @property {boolean} isOpen
@@ -33,13 +34,40 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         // realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected); // this is handled already in network/frameContentAPI the same way as it is for any exclusiveFullScreen frame, so no need to listen/handle the event here
-        
+
         realityEditor.gui.pocket.addElementHighlightFilter(function(pocketFrameNames) {
             var frameTypesToHighlight = getCurrentCompatibleFrameTypes();
             return pocketFrameNames.filter(function(frameName) {
                 return frameTypesToHighlight.indexOf(frameName) > -1;
             });
         });
+    }
+
+    /**
+     * Gets triggered when a frame declares itself to be an envelope.
+     * This is where we can detect if it was added programmatically by one of its children frames that required it,
+     * and if so, open this envelope and set up its relationships with its children
+     * @param {string} objectKey
+     * @param {string} frameKey
+     */
+    function onEnvelopeRegistered(objectKey, frameKey) {
+        
+        var frame = realityEditor.getFrame(objectKey, frameKey);
+        if (frame && typeof frame.autoAddedEnvelope !== 'undefined') {
+
+            // then open the envelope you just added
+            openEnvelope(frameKey);
+
+            // queue up a frameAdded event in the envelopeManager
+            // when the envelope's iframe loads, send this event into the envelope
+            // to set up all relationships between the contained frame and its envelope
+
+            onFrameAdded({
+                objectKey: frame.autoAddedEnvelope.containedFrameToAdd.objectKey,
+                frameKey: frame.autoAddedEnvelope.containedFrameToAdd.frameKey,
+                frameType: frame.autoAddedEnvelope.containedFrameToAdd.frameType
+            }); // todo: can simplify to just frame.autoAddedEnvelope.containedFrameToAdd
+        }
     }
     
     /**
@@ -55,7 +83,9 @@ createNameSpace("realityEditor.envelopeManager");
                     object: fullMessageContent.object,
                     frame: fullMessageContent.frame,
                     compatibleFrameTypes: eventData.compatibleFrameTypes
-                }
+                };
+                // check if registered envelope was autoAdded and needs to be configured
+                onEnvelopeRegistered(fullMessageContent.object, fullMessageContent.frame);
             } else {
                 if (knownEnvelopes[fullMessageContent.frame]) {
                     delete knownEnvelopes[fullMessageContent.frame];
@@ -91,7 +121,7 @@ createNameSpace("realityEditor.envelopeManager");
     /**
      * Opens an envelope and/or responds to an envelope opening to update UI and other frames appropriately
      * @param {string} frameId
-     * @param {boolean} wasTriggeredByEnvelope - not yet used, but could be opened via other methods
+     * @param {boolean} wasTriggeredByEnvelope - if triggered by itself, doesnt need to update iframe contents
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
         knownEnvelopes[frameId].isOpen = true;
@@ -172,6 +202,13 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {{objectKey: string, frameKey: string, frameType: string}} params
      */
     function onFrameAdded(params) {
+        
+        try {
+            addRequiredEnvelopeIfNeeded(params.objectKey, params.frameKey, params.frameType);
+        } catch (e) {
+            console.warn('error adding required envelope');
+        }
+        
         var maxAttempts = 10; // prevent infinite loops by limiting number of attempts to an arbitrary number
         
         // waits until the frame is loaded before triggering the message
@@ -227,6 +264,68 @@ createNameSpace("realityEditor.envelopeManager");
                     realityEditor.device.deleteFrame(frameToDelete, frameToDelete.objectId, frameKey);
                     console.warn('deleted frame ' + frameKey + ' because its envelope was deleted');
                 });
+            }
+        }
+    }
+
+    /**
+     * Gets triggered when any frame is created. Checks if that frame requires to be inside an envelope of a certain type,
+     *  and if so, adds that envelope and puts this frame inside that envelope.
+     * @param {string} objectKey
+     * @param {string} frameKey - the uuid of the frame that was just added
+     * @param {string} frameType - used to retrieve metadata for the frame type that was added
+     */
+    function addRequiredEnvelopeIfNeeded(objectKey, frameKey, frameType) {
+
+        var realityElements = realityEditor.gui.pocket.getRealityElements();
+        var dataset = realityElements.find(function(elt) { return elt.name === frameType; });
+
+        // check if an additional envelope frame needs to be added
+        if (dataset.requiredEnvelope) {
+            console.log('this frame needs an envelope: ' + dataset.requiredEnvelope);
+            console.log(dataset);
+            var frameTypeNeeded = dataset.requiredEnvelope; // this will be 'loto-envelope'
+
+            // check if an envelope of type frameTypeNeeded is already open
+            var openEnvelopes = getOpenEnvelopes();
+            var openEnvelopeTypes = openEnvelopes.map(function(envelopeData) {
+                return getFrameTypeFromKey(envelopeData.object, envelopeData.frame);
+            });
+            var isRequiredEnvelopeOpen = openEnvelopeTypes.indexOf(frameTypeNeeded) > -1;
+
+            if (!isRequiredEnvelopeOpen) {
+                console.log('an envelope of the required type does not exist!');
+                // tell the pocket to createFrame(frameTypeNeeded, ...)
+
+                // get the dataset for the necessary envelope
+                var envelopeData = realityElements.find(function(elt) { return elt.name === frameTypeNeeded; });
+                // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+
+                var touchPosition = {
+                    x: 100 + Math.random() * (globalStates.height - 200),
+                    y: 100 + Math.random() * (globalStates.width - 200)
+                };
+
+                if (envelopeData) {
+                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y, true);
+
+                    console.log('added an envelope (maybe in time?)', addedElement);
+
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid);
+
+                    // not loaded yet, so flag it with a certain property so we can catch it when it fully loads
+                    addedElement.autoAddedEnvelope = {
+                        shouldOpenOnLoad: true,
+                        containedFrameToAdd: {
+                            objectKey: objectKey,
+                            frameKey: frameKey,
+                            frameType: frameType
+                        }
+                    };
+                }
+
+            } else {
+                console.log('dont need to create a new envelope because the required one is already open');
             }
         }
     }
@@ -317,6 +416,17 @@ createNameSpace("realityEditor.envelopeManager");
             });
         });
         return allCompatibleFrameTypes;
+    }
+
+    /**
+     * Helper function to convert a frameKey into a frame type
+     * @param {string} objectKey
+     * @param {string} frameKey
+     * @return {string}
+     */
+    function getFrameTypeFromKey(objectKey, frameKey) {
+        var frame = realityEditor.getFrame(objectKey, frameKey);
+        return frame.src;
     }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.

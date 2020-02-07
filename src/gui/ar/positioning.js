@@ -140,7 +140,13 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
  */
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
-    var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+    var results;
+    try {
+        results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+    } catch (e) {
+        console.warn('coudnt compute screenCoordinatesToMatrixXY so cant move vehicle', e);
+        return;
+    }
     // var efficientResults = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_Efficient(activeVehicle, screenX, screenY, true);
     // console.log(results.point.x - efficientResults.point.x, results.point.y - efficientResults.point.y);
     
@@ -343,10 +349,20 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
  * @return {{x: number, y: number}}
  */
 realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
-    var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
+    var touchX = globalStates.height/2; // defaults to center of screen;
+    var touchY = globalStates.width/2;
+    
+    try {
+        var translate3d = overlayDiv.style.transform.split('(')[1].split(')')[0].split(',').map(function(elt){return parseInt(elt);});
+        touchX = translate3d[0];
+        touchY = translate3d[1];
+    } catch (e) {
+        console.log('no touches on screen yet, so defaulting to center');
+    }
+    
     return {
-        x: translate3d[0],
-        y: translate3d[1]
+        x: touchX,
+        y: touchY
     }
 };
 
@@ -539,7 +555,8 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
     var frame = realityEditor.getFrame(objectKey, frameKey);
     
     // recompute frame.temp for the new object
-    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], globalStates.projectionMatrix, frame.temp);
+    realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], globalStates.projectionMatrix, frame.temp);
+
     console.log('temp', frame.temp);
     frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
     

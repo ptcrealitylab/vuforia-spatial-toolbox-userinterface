@@ -243,7 +243,7 @@ createNameSpace("realityEditor.gui.dropdown");
             setTimeout(function() {
                 element.classList.remove('dropdownExpanded');
                 element.classList.add('dropdownCollapsed');
-            }, (((this.selectables.length-1) - element.dataset.index) * 50)); // todo: base this on getExpansionSpeed
+            }, (((this.selectables.length-1) - element.dataset.index) * this.getExpansionSpeed()));
         }.bind(this));
         this.dom.classList.add('containerCollapsed');
 
@@ -283,8 +283,8 @@ createNameSpace("realityEditor.gui.dropdown");
             setTimeout(function() {
                 element.classList.remove('dropdownCollapsed');
                 element.classList.add('dropdownExpanded');
-            }, (element.dataset.index * 50)); // todo: base this on getExpansionSpeed
-        });
+            }, (element.dataset.index * this.getExpansionSpeed()));
+        }.bind(this));
         this.dom.classList.remove('containerCollapsed');
 
         if (this.selected) {
@@ -312,6 +312,22 @@ createNameSpace("realityEditor.gui.dropdown");
             this.expand();
         } else {
             this.collapse();
+        }
+    };
+    
+    Dropdown.prototype.resetSelection = function() {
+        if (this.selected && this.selected.element) {
+            // remove style from previously selected dom
+            this.selected.element.classList.remove('dropdownSelected');
+
+            // if clicked the currently selected element again, deselect it
+            this.selected = null;
+
+            this.updateState(this.states.expandedOptions);
+
+            // if (this.onSelectionChanged) {
+            //     this.onSelectionChanged(this.selected);
+            // }
         }
     };
     
