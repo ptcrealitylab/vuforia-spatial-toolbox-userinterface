@@ -342,7 +342,6 @@ realityEditor.gui.ar.lines.extendedBorderNegative = -200;
 realityEditor.gui.ar.lines.nodeExistsA = true;
 realityEditor.gui.ar.lines.nodeExistsB = true;
 
-
 realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndPoint, lineStartWeight, lineEndWeight, linkObject, timeCorrector, startColor, endColor, speed, lineAlphaStart, lineAlphaEnd) {
     this.nodeExistsA = true;
    this.nodeExistsB = true;
@@ -391,8 +390,8 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     }
     
     if (realityEditor.device.utilities.isDesktop()) {
-        lineStartWeight *= 3;
-        lineEndWeight *= 3;
+        lineStartWeight *= 5;
+        lineEndWeight *= 5;
     }
     
     if (typeof lineAlphaStart === 'undefined') lineAlphaStart = 1.0;

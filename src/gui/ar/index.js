@@ -87,6 +87,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
 
     if (realityEditor.device.utilities.isDesktop()) {
         matrix[5] *= -1;
+        matrix[0] *= -1;
     }
     
     var corX = 0;
@@ -308,38 +309,118 @@ realityEditor.gui.ar.getVisibleLinks = function(visibleNodes) {
  **/
 realityEditor.gui.ar.objects = objects;
 
+realityEditor.gui.ar.MAX_DISTANCE = 10000000000;
+
 /**
- * @desc This function returns the closest visible object relative to the camera.
+ * This function returns the closest visible object relative to the camera.
+ * Priority: 1) closest non-world objects. 2) closest world objects other than localWorld object. 3) local world object
+ * Accepts an optional filter that will be applied to each object key to restrict which objects are considered.
+ * @param {function<string>} optionalFilter - a function used to narrow down which objects to consider. takes in an object key. if it returns false, ignore that object.
  * @return {Array.<string|null>} [ObjectKey, null, null]
  **/
-realityEditor.gui.ar.getClosestObject = function () {
+realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     var object = null;
     var frame = null;
     var node = null;
-    var MAX_DISTANCE = 10000000000;
-    var closest = MAX_DISTANCE;
-    var distance = MAX_DISTANCE;
-
-    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
-        distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
-        if (realityEditor.worldObjects.isWorldObjectKey(objectKey)) {
-            continue;
+    
+    // first looks for visible non-world objects
+    var info = this.closestVisibleObject(function(objectKey) {
+        if (typeof optionalFilter !== 'undefined') {
+            if (!optionalFilter(objectKey)) {
+                return false;
+            }
         }
-        
+        return !realityEditor.worldObjects.isWorldObjectKey(objectKey);
+    });
+
+    // if no visible non-world objects, get the closest non-local-world object
+    if (!info.objectKey) {
+        info = this.closestVisibleObject(function(objectKey) {
+            if (typeof optionalFilter !== 'undefined') {
+                if (!optionalFilter(objectKey)) {
+                    return false;
+                }
+            }
+            return realityEditor.worldObjects.isWorldObjectKey(objectKey) && objectKey !== realityEditor.worldObjects.getLocalWorldId();
+        });
+    }
+    
+    // if no non-local-world object, see if the local world object passes the filter and use it as a last resort
+    if (!info.objectKey) {
+        info = this.closestVisibleObject(function(objectKey) {
+            if (typeof optionalFilter !== 'undefined') {
+                if (!optionalFilter(objectKey)) {
+                    return false;
+                }
+            }
+            return objectKey === realityEditor.worldObjects.getLocalWorldId();
+        });
+    }
+    
+    object = info.objectKey;
+    
+    return [object, frame, node];
+};
+
+/**
+ * Reusable function that will return the object closest to the camera that passes whatever conditions you specify.
+ * @param {function|undefined} optionalFilter - function that takes in an object key and returns true or false.
+ * @return {{distance: number, objectKey: string}}
+ */
+realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
+    var object = null;
+    var closest = this.MAX_DISTANCE;
+    var distance = this.MAX_DISTANCE;
+    
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
+        if (typeof optionalFilter !== 'undefined') {
+            if (!optionalFilter(objectKey)) {
+                continue;
+            }
+        }
+
+        distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+
         if (distance < closest) {
             object = objectKey;
             closest = distance;
         }
     }
     
-    // default to world object if no visible objects
-    if (!object || realityEditor.worldObjects.isWorldObjectKey(object)) {
-        if (realityEditor.worldObjects.getBestWorldObject()) {
-            object = realityEditor.worldObjects.getBestWorldObject().objectId;
-        }
+    return {
+        objectKey: object,
+        distance: distance
     }
+};
+
+/**
+ * @note: currently not used, but may be useful
+ * Returns a list of every object and the distance from that to the camera 
+ * @param {boolean} isDesktop
+ * @return {{dist: *, key: *}[]}
+ */
+realityEditor.gui.ar.utilities.getAllObjectDistances = function(isDesktop) {
     
-    return [object, frame, node];
+    if (isDesktop) {
+        // camera behavior is different on desktop
+        return Object.keys(realityEditor.gui.ar.draw.visibleObjects).map(function(key) {
+            var mat = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[key], realityEditor.gui.ar.draw.correctedCameraMatrix, mat);
+            return {
+                key: key,
+                dist: realityEditor.gui.ar.utilities.distance(mat)
+            }
+        });
+
+    } else {
+        return Object.keys(realityEditor.gui.ar.draw.visibleObjects).map(function (key) {
+            return {
+                key: key,
+                dist: realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[key])
+            }
+        });
+
+    }
 };
 
 /**
@@ -372,8 +453,6 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
 
         }
     }
-    
-    // TODO: include frames from world object
     
     return [object, frame, node];
 };

@@ -71,12 +71,17 @@ realityEditor.device.onload = function () {
         globalStates.platform = false;
     }
 
+    // desktop adapter needs to load first to modify namespace if needed
+    realityEditor.device.desktopAdapter.initService();
+
     // load persistent state from disk
     realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
+    realityEditor.app.getDiscoveryText('realityEditor.app.callbacks.onDiscoveryText');
     realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
     realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
     realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
+    realityEditor.app.getTutorialState('realityEditor.app.callbacks.onTutorialState');
 
     // initialize additional services
     realityEditor.device.initService();
@@ -89,26 +94,22 @@ realityEditor.device.onload = function () {
     realityEditor.device.security.initService(); // TODO: service is internally disabled
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
-    realityEditor.device.desktopAdapter.initService();
     realityEditor.gui.ar.desktopRenderer.initService();
+    realityEditor.device.desktopCamera.initService();
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();
     realityEditor.device.distanceScaling.initService();
     realityEditor.device.keyboardEvents.initService();
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
-
+    realityEditor.network.availableFrames.initService();
+    
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {
     //     realityEditor.gui.ar.draw.updateLoop();
     // }
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
-
-    realityEditor.app.getDiscoveryText(function(savedState) {
-        if (savedState === '(null)') { savedState = 'null'; }
-        console.log('saved discovery text = ', JSON.parse(savedState));
-    });
 
     globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
@@ -169,8 +170,7 @@ realityEditor.device.onload = function () {
         realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
         if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
-            var areMatricesPrecomputed = true;
-            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy, areMatricesPrecomputed); 
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
@@ -187,10 +187,30 @@ realityEditor.device.onload = function () {
     // window.addEventListener('resize', function(event) {
     //     console.log(window.innerWidth, window.innerHeight);
     // });
-
-    if (globalStates.debugSpeechConsole) {
-        document.getElementById('speechConsole').style.display = 'inline';
+    
+    // this is purely for debugging purposes, can be removed in production.
+    // re-purposes the speechConsole from an old experiment into an on-screen message display for debug messages
+    // TODO: implement a clean system for logging info or debug messages to an on-screen display
+    if (!realityEditor.device.utilities.isDesktop()) {
+        if (globalStates.debugSpeechConsole) {
+            document.getElementById('speechConsole').style.display = 'inline';
+            
+            var DEBUG_SHOW_CLOSEST_OBJECT = false;
+            if (DEBUG_SHOW_CLOSEST_OBJECT) {
+                setInterval(function() {
+                    var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+                    if (closestObjectKey) {
+                        var mat = realityEditor.getObject(closestObjectKey).matrix; //realityEditor.gui.ar.draw.visibleObjects[closestObjectKey];
+                        if (realityEditor.gui.ar.draw.worldCorrection !== null) {
+                            console.warn('Should never get here until we fix worldCorrection');
+                            document.getElementById('speechConsole').innerText = 'object ' + closestObjectKey + ' is at (' + mat[12]/mat[15] + ', ' + mat[13]/mat[15] + ', ' + mat[14]/mat[15] + ')';
+                        }
+                    }
+                }, 500);
+            }
+        }
     }
+
 
     // initWorldObject();
 

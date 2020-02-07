@@ -131,7 +131,7 @@ MemoryPointer.prototype.update = function() {
         this.remove();
         return;
     }
-    if (globalStates.guiState !== 'node') {
+    if (globalStates.guiState !== 'node' && globalStates.guiState !== 'logic') { // don't remove when in crafting board either
         // Remove if no longer in connection-drawing mode
         this.remove();
         return;

@@ -115,6 +115,33 @@ realityEditor.gui.ar.utilities.multiplyMatrix = function(m2, m1, r) {
 };
 
 /**
+ * Utility to subtract one m16 from another
+ * @param {Array.<number>} m1
+ * @param {Array.<number>} m2
+ * @return {Array.<number>} = m1 - m2
+ */
+realityEditor.gui.ar.utilities.subtractMatrix = function(m1, m2) {
+    var r = [];
+    r[0] = m1[0] - m2[0];
+    r[1] = m1[1] - m2[1];
+    r[2] = m1[2] - m2[2];
+    r[3] = m1[3] - m2[3];
+    r[4] = m1[4] - m2[4];
+    r[5] = m1[5] - m2[5];
+    r[6] = m1[6] - m2[6];
+    r[7] = m1[7] - m2[7];
+    r[8] = m1[8] - m2[8];
+    r[9] = m1[9] - m2[9];
+    r[10] = m1[10] - m2[10];
+    r[11] = m1[11] - m2[11];
+    r[12] = m1[12] - m2[12];
+    r[13] = m1[13] - m2[13];
+    r[14] = m1[14] - m2[14];
+    r[15] = m1[15] - m2[15];
+    return r;
+};
+
+/**
  * @desc multiply m4 matrix with m16 matrix
  * @param {Array.<number>} m1 - origin m4 matrix
  * @param {Array.<number>} m2 - m16 matrix to multiply with
@@ -1442,6 +1469,12 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
 realityEditor.gui.ar.utilities.distance = function (matrix) {
     var distance = 1000; // for now give a valid value as a fallback
     try {
+        if (realityEditor.device.utilities.isDesktop()) {
+            // calculate distance to camera
+            var matrixToCamera = [];
+            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, matrixToCamera);
+            matrix = matrixToCamera;
+        }
         distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
     } catch (e) {
         console.warn('trying to calculate distance of ', matrix);
@@ -1734,35 +1767,8 @@ realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
     return m2;
 };
 
-// /**
-//  * @param matrix
-//  * @return {*}
-//  */
-// realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
-//    
-//     var m2 = this.newIdentityMatrix();
-//    
-//    
-//     var a = matrix[1];
-//     var b = matrix[5];
-//     var c = matrix[9];
-//     var d = matrix[13];
-//
-//     matrix[1] = matrix[2];
-//     matrix[5] = matrix[6];
-//     matrix[9] = matrix[10];
-//     matrix[13] = matrix[14];
-//
-//     matrix[2] = a;
-//     matrix[6] = b;
-//     matrix[10] = c;
-//     matrix[14] = d;
-//    
-//     return matrix;
-// };
-
 /**
- * Custom made Matrix data structure for working with transformation matrices
+ * Simple, custom made Matrix data structure for working with transformation matrices
  * 
  * @param {Array.<number>} array
  * @param {number|undefined} numRows - can be omitted if matrix is square
@@ -1818,7 +1824,6 @@ Matrix.prototype.determinant = function() {
     if (this.numRows === 2) {
         return this.mat[0][0] * this.mat[1][1] - this.mat[0][1] * this.mat[1][0];
     }
-    
 };
 
 Matrix.prototype.arrayIndex = function(row, col) {
@@ -1836,22 +1841,3 @@ Matrix.prototype.clone = function() {
 Matrix.prototype.unflattened = function() {
     return this.mat;
 };
-
-/**
- * @brief  Get the determinant of this matrix.
- * @return The determinant.
- */
-Array.prototype.determinant = function()  {
-// #define MINOR(m, r0, r1, r2, c0, c1, c2) \
-// ((m).rows[r0][c0] * ((m).rows[r1][c1] * (m).rows[r2][c2] - (m).rows[r2][c1] * (m).rows[r1][c2]) - \
-// (m).rows[r0][c1] * ((m).rows[r1][c0] * (m).rows[r2][c2] - (m).rows[r2][c0] * (m).rows[r1][c2]) + \
-// (m).rows[r0][c2] * ((m).rows[r1][c0] * (m).rows[r2][c1] - (m).rows[r2][c0] * (m).rows[r1][c1]))
-//
-// return this->rows[0][0] * MINOR(*this, 1, 2, 3, 1, 2, 3) -
-//     this->rows[0][1] * MINOR(*this, 1, 2, 3, 0, 2, 3) +
-//     this->rows[0][2] * MINOR(*this, 1, 2, 3, 0, 1, 3) -
-//     this->rows[0][3] * MINOR(*this, 1, 2, 3, 0, 1, 2);
-//
-// #undef MINOR
-}
-

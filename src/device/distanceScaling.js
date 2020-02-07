@@ -14,7 +14,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         ballAnimationCount: 0
     };
     
-    var defaultDistance = 5000;
+    var defaultDistance = 2000;
     exports.defaultDistance = defaultDistance;
     
     var isScalingDistance = false;
@@ -52,6 +52,12 @@ createNameSpace("realityEditor.device.distanceScaling");
         
         realityEditor.gui.buttons.registerCallbackForButton('distance', onDistanceEditingModeChanged);
         realityEditor.gui.buttons.registerCallbackForButton('distanceGreen', onDistanceGreenPressed);
+        
+        if (realityEditor.device.utilities.isDesktop()) {
+            console.log('adjusted default distance from ' + defaultDistance + ' to ' + defaultDistance*5 + ' (for desktop)');
+            defaultDistance = defaultDistance * 10;
+            exports.defaultDistance = defaultDistance;
+        }
     }
     
     function loop() {

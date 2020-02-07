@@ -84,6 +84,18 @@ realityEditor.app.addNewMarker = function(markerName, callBack) {
 };
 
 /**
+ * Adds a new marker using a JPG image and fires a callback with error or success
+ * and the markerName for reference
+ * @param {string} markerName
+ * @param {string} objectID
+ * @param {number} targetWidthMeters
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.addNewMarkerJPG = function(markerName, objectID, targetWidthMeters, callBack) {
+    this.appFunctionCall('addNewMarkerJPG', {markerName: markerName, objectID: objectID, targetWidthMeters: targetWidthMeters}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+};
+
+/**
  * Gets the projection matrix.
  * Callback will have the matrix as a length-16 array as a parameter.
  * @param {FunctionName} callBack
@@ -308,6 +320,17 @@ realityEditor.app.stopVideoRecording = function (videoId) {
 };
 
 /**
+ * Makes objects visible even when they move out of the camera view.
+ * @deprecated - was implemented in native app, but negatively impacts performance if we want it to be
+ *  backwards compatible, because of changes to the Vuforia SDK. It is intentionally internally disabled for now.
+ * @param {boolean} _newState
+ */
+realityEditor.app.enableExtendedTracking = function (_newState) {
+    console.warn("TODO: implement enableExtendedTracking. currently has no effect.");
+    // this.appFunctionCall('enableExtendedTracking', {state: newState}, null);
+};
+
+/**
  **************Debugging****************
  **/
 
@@ -457,6 +480,7 @@ realityEditor.app.saveZoneState = function(newState) {
 realityEditor.app.saveExtendedTrackingState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:TRACKING', storedValue);
+    this.enableExtendedTracking(newState);
 };
 
 /**
@@ -499,6 +523,15 @@ realityEditor.app.saveRealtimeState = function(newState) {
 realityEditor.app.saveGroupingState = function(newState) {
     var storedValue = newState ? 1 : 0;
     this.setStorage('SETUP:GROUPING', storedValue);
+};
+
+/**
+ * Save the persistent setting to disk for whether tutorial mode should show on startup.
+ * @param {boolean} newState
+ */
+realityEditor.app.saveTutorialState = function(newState) {
+    var storedValue = newState ? 1 : 0;
+    this.setStorage('SETUP:TUTORIAL', storedValue);
 };
 
 /**
@@ -591,6 +624,14 @@ realityEditor.app.getRealtimeState = function(callback) {
  */
 realityEditor.app.getGroupingState = function(callback) {
     this.getStorage('SETUP:GROUPING', callback);
+};
+
+/**
+ * Get the persistent setting for whether to show the tutorial on app start.
+ * @param {function} callback
+ */
+realityEditor.app.getTutorialState = function(callback) {
+    this.getStorage('SETUP:TUTORIAL', callback);
 };
 
 /**

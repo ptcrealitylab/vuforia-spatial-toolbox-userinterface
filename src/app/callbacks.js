@@ -130,6 +130,23 @@ realityEditor.app.callbacks.onExternalText = function(savedState) {
 };
 
 /**
+ * Callback for realityEditor.app.getDiscoveryText
+ * Loads an external server URL (if any) from permanent storage
+ *  (which will be used to directly load objects from instead of only using UDP)
+ * @param {string} savedState - needs to be JSON parsed
+ */
+realityEditor.app.callbacks.onDiscoveryText = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded discovery URL = ', savedState);
+
+    if (savedState) {
+        globalStates.discoveryState = savedState;
+        realityEditor.network.discoverObjectsFromServer(savedState);
+    }
+};
+
+/**
  * Callback for realityEditor.app.getZoneState
  * Loads the zone on/off state (if any) from permanent storage
  * @param {string} savedState - stringified boolean
@@ -182,10 +199,25 @@ realityEditor.app.callbacks.onRealtimeState = function(savedState) {
 realityEditor.app.callbacks.onGroupingState = function(savedState) {
     if (savedState === '(null)') { savedState = 'null'; }
     savedState = JSON.parse(savedState);
-    console.log('loaded realtime state = ', savedState);
+    console.log('loaded grouping state = ', savedState);
 
     if (savedState) {
         globalStates.groupingEnabled = savedState;
+    }
+};
+
+/**
+ * Callback for realityEditor.app.getTutorialState
+ * Loads the tutorial state (if any) from permanent storage
+ * @param savedState - stringified boolean
+ */
+realityEditor.app.callbacks.onTutorialState = function(savedState) {
+    if (savedState === '(null)') { savedState = 'null'; }
+    savedState = JSON.parse(savedState);
+    console.log('loaded tutorial state = ', savedState);
+
+    if (savedState) {
+        globalStates.tutorialState = savedState;
     }
 };
 
@@ -288,13 +320,17 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         }
     // }
     
-    // this next section adjusts the world origin to be centered on a hard-coded image target if it ever gets recognized
-    
-    if(visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")){
-        // if (realityEditor.gui.ar.draw.worldCorrection === null) { realityEditor.gui.ar.draw.worldCorrection = [] } // required for copyMatrixInPlace 
-        // realityEditor.gui.ar.utilities.copyMatrixInPlace(visibleObjects["WorldReferenceXXXXXXXXXXXX"], realityEditor.gui.ar.draw.worldCorrection);
+    // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
+    realityEditor.worldObjects.getWorldObjectKeys().forEach( function(worldObjectKey) {
+        if (visibleObjects.hasOwnProperty(worldObjectKey)) {
+            console.log('world object ' + worldObjectKey + ' detected... relocalize');
+            realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
+            delete visibleObjects[worldObjectKey];
+        }
+    });
 
-        realityEditor.gui.ar.draw.worldCorrection = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects["WorldReferenceXXXXXXXXXXXX"]);
+    // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
+    if (visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
         delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
     }
     
@@ -305,13 +341,12 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
             // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
-
-            if(realityEditor.gui.ar.draw.worldCorrection === null) {
-                visibleObjects[worldObjectKey] = realityEditor.gui.ar.draw.correctedCameraMatrix;
-            } else {
-                // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+            
+            // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+            var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
+            if (origin) {
                 this.matrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.worldCorrection, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
                 visibleObjects[worldObjectKey] = this.matrix;
             }
 
@@ -319,8 +354,6 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
         
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
     }
-
-    realityEditor.gui.ar.draw.areMatricesPrecomputed = false;
     
     // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
     //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
@@ -338,6 +371,7 @@ realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
 realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
     // easiest way to implement freeze button is just to not update the new matrices
     if (!globalStates.freezeButtonState) {
+        realityEditor.worldObjects.checkIfFirstLocalization();
         realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
     }
 };
@@ -392,9 +426,10 @@ realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPl
     if (globalStates.useGroundPlane) {
 
         if (!globalStates.freezeButtonState) {
-            if(realityEditor.gui.ar.draw.worldCorrection === null) {
+            if(realityEditor.gui.ar.draw.worldCorrection === null) { // TODO: figure out how ground plane works if there are multiple world origins with different planes
                 realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             } else {
+                console.warn('Should never get here until we fix worldCorrection');
                 this.matrix = [];
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
@@ -404,7 +439,10 @@ realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPl
     }
 };
 
+// TODO: reorganize all of these functions from here down (related to target downloading) to their own module
+
 /**
+ * @deprecated - use downloadAvailableTargetFiles instead, if the device can add objects based on DAT or JPG, not just DAT 
  * Downloads the XML and DAT files, and adds the AR marker to the tracking engine, when a new UDP object heartbeat is detected
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
  * id: the objectId
@@ -606,7 +644,6 @@ realityEditor.app.callbacks.onTargetFileDownloaded = function(success, fileName)
  */
 realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     console.log('marker added: ' + fileName + ', success? ' + success);
-    // var objectID = getObjectIDFromName(objectName, DownloadState.STARTED, 'MARKER_ADDED');
     var objectID = getObjectIDFromFilename(fileName);
 
     if (success) {
@@ -615,5 +652,124 @@ realityEditor.app.callbacks.onMarkerAdded = function(success, fileName) {
     } else {
         console.log('failed to add marker: ' + fileName);
         targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
+    }
+};
+
+/**
+ * Downloads the JPG files, and adds the AR marker to the tracking engine, when a new UDP object heartbeat is detected
+ * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
+ * id: the objectId
+ * ip: the IP address of the server hosting this object
+ * vn: the object's version number, e.g. 300 for version 3.0.0
+ * tcs: the checksum which can be used to tell if anything has changed since last loading this object
+ * zone: the name of the zone this object is in, so we can ignore objects outside this editor's zone if we have previously specified one
+ */
+realityEditor.app.callbacks.downloadAvailableTargetFiles = function(objectHeartbeat) {
+    var objectID = objectHeartbeat.id;
+    var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+    temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
+
+    var newChecksum = objectHeartbeat.tcs;
+    if (newChecksum === 'null') { newChecksum = null; }
+    temporaryChecksumMap[objectHeartbeat.id] = newChecksum;
+    // TODO: don't download again if already stored the same checksum version (look at downloadTargetFilesForDiscoveredObject implementation)
+
+    targetDownloadStates[objectID] = {
+        XML: DownloadState.NOT_STARTED,
+        DAT: DownloadState.NOT_STARTED,
+        JPG: DownloadState.NOT_STARTED,
+        MARKER_ADDED: DownloadState.NOT_STARTED
+    };
+
+    // downloads the vuforia target.xml file if it doesn't have it yet
+    var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
+    realityEditor.app.downloadFile(xmlAddress, 'realityEditor.app.callbacks.onTargetXMLDownloaded');
+    targetDownloadStates[objectID].XML = DownloadState.STARTED;
+};
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetXMLDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+    
+    if (success) {
+        var object = realityEditor.getObject(objectID);
+        
+        console.log('successfully downloaded XML file: ' + fileName);
+        targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
+        
+        // try to download DAT
+        var datAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.dat';
+        realityEditor.app.downloadFile(datAddress, 'realityEditor.app.callbacks.onTargetDATDownloaded');
+        targetDownloadStates[objectID].XML = DownloadState.STARTED;
+        
+    } else {
+        console.log('failed to download XML file: ' + fileName);
+        targetDownloadStates[objectID].XML = DownloadState.FAILED;
+        // TODO: error handle... kick out this object or provide some feedback
+    }
+};
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetDATDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+    var object = realityEditor.getObject(objectID);
+
+    if (success) {
+
+        console.log('successfully downloaded DAT file: ' + fileName);
+        targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
+
+        var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
+        realityEditor.app.addNewMarker(xmlFileName, 'realityEditor.app.callbacks.onMarkerAdded');
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+
+        // if (temporaryChecksumMap[objectID]) {
+        //     window.localStorage.setItem('realityEditor.objectChecksums.'+objectID, temporaryChecksumMap[objectID]);
+        // }
+
+    } else {
+        console.log('failed to download DAT file: ' + fileName);
+        targetDownloadStates[objectID].XML = DownloadState.FAILED;
+        // TODO: error handle... kick out this object or provide some feedback
+        
+        console.log('try to download JPG file instead');
+        // try to download DAT
+        var jpgAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.jpg';
+        realityEditor.app.downloadFile(jpgAddress, 'realityEditor.app.callbacks.onTargetJPGDownloaded');
+        targetDownloadStates[objectID].XML = DownloadState.STARTED;
+    }
+};
+
+/**
+ * If successfully downloads target JPG, tries to add a new marker to Vuforia
+ * @param {boolean} success
+ * @param {string} fileName
+ */
+realityEditor.app.callbacks.onTargetJPGDownloaded = function(success, fileName) {
+    // we don't have the objectID but luckily it can be extracted from the fileName
+    var objectID = getObjectIDFromFilename(fileName);
+
+    if (success) {
+        var object = realityEditor.getObject(objectID);
+
+        console.log('successfully downloaded file: ' + fileName);
+        targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
+        console.log('attempting to add target via JPG of width ' + object.targetSize.width);
+        realityEditor.app.addNewMarkerJPG(fileName, objectID, (object.targetSize.width || 0.3), 'realityEditor.app.callbacks.onMarkerAdded');
+        targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+
+    } else {
+        console.log('failed to download file: ' + fileName);
+        targetDownloadStates[objectID].JPG = DownloadState.FAILED;
     }
 };

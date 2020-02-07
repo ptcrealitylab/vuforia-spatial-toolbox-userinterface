@@ -290,7 +290,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     
             // load icon and title
             var iconImage = document.createElement("img");
-            iconImage.setAttribute('class', 'blockIcon');
+            iconImage.classList.add('blockIcon', 'blockIconTinted');
             
             // wait until image loads to display block
             iconImage.onload = function(e) {

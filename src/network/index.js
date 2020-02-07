@@ -204,9 +204,9 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     thisObject.sendAcceleration = false;
     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
-    // if (thisObject.matrix === null || typeof thisObject.matrix !== "object") {
-    //     thisObject.matrix = [];
-    // }
+    if (typeof thisObject.matrix === 'undefined') {
+        thisObject.matrix = [];
+    }
 
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -312,13 +312,56 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     objects[objectKey] = msg;
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
-                    // download XML, DAT, and initialize tracker
-                    if (!objects[objectKey].isWorldObject) {
+                    
+                    var doesDeviceSupportJPGTargets = true; // TODO: verify this somehow instead of always true
+                    if (doesDeviceSupportJPGTargets) {
+                        // this tries DAT first, then resorts to JPG if DAT not found
+                        realityEditor.app.callbacks.downloadAvailableTargetFiles(beat);
+                    } else {
+                        // download XML, DAT, and initialize tracker
                         realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
                     }
+                    
+                    // check if onNewServerDetected callbacks should be triggered
+                    realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
                 }
             });
         }
+    }
+};
+
+realityEditor.network.knownServers = []; // todo: make private to module
+realityEditor.network.newServerDetectedCallbacks = [];
+
+/**
+ * Register a callback that will trigger for each serverIP currently known to the system and each new one as it is detected
+ * @todo: use this method more consistently across the codebase instead of several modules implementing similar behavior
+ * @param {function} callback
+ */
+realityEditor.network.onNewServerDetected = function(callback) {
+    // register callback for future detections
+    this.newServerDetectedCallbacks.push(callback);
+    
+    // immediate trigger for already known servers
+    this.knownServers.forEach(function(serverIP) {
+        callback(serverIP);
+    });
+};
+
+/**
+ * Checks if a server has already been detected, and if not, detect it and trigger callbacks
+ * @param {string} serverIP
+ */
+realityEditor.network.checkIfNewServer = function (serverIP) {
+    var foundExistingMatch = this.knownServers.indexOf(serverIP) > -1; // TODO: make robust against different formatting of "same" IP
+    
+    if (!foundExistingMatch) {
+        this.knownServers.push(serverIP);
+        
+        // trigger callbacks
+        this.newServerDetectedCallbacks.forEach(function(callback) {
+            callback(serverIP);
+        });
     }
 };
 
@@ -1421,6 +1464,8 @@ if (thisFrame) {
             node.type = msgContent.createNode.nodeType;
         }
         
+        node.scale *= newNodeScaleFactor;
+        
         thisFrame.nodes[nodeKey] = node;
         //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
@@ -1525,9 +1570,9 @@ if (thisFrame) {
     if (typeof msgContent.moveDelay !== "undefined") {
         let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
         
-        activeVehicle.moveDelay = msgContent.moveDelay;
-        // console.log('move delay of ' + activeVehicle.name + ' is set to ' + activeVehicle.moveDelay);
-        
+        if (activeVehicle) {
+            activeVehicle.moveDelay = msgContent.moveDelay;
+        }
     }
 
     if (msgContent.loadLogicIcon) {
@@ -1551,12 +1596,12 @@ if (thisFrame) {
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
             
-            // var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
+            var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
             
-            // if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
+            if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
                 var keys = realityEditor.getKeysFromVehicle(frame);
                 realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
-            // }
+            }
         }
         
     }
@@ -1580,6 +1625,14 @@ if (thisFrame) {
             };
             globalDOMCache["iframe" + realityEditor.network.frameIdForScreenshot].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
         });
+    }
+
+    if (typeof msgContent.openKeyboard !== "undefined") {
+        if (msgContent.openKeyboard) {
+            realityEditor.device.keyboardEvents.openKeyboard();
+        } else {
+            realityEditor.device.keyboardEvents.closeKeyboard();
+        }
     }
     
     if (typeof msgContent.ignoreAllTouches !== "undefined") {
@@ -1701,6 +1754,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 clearSkyState: globalStates.clearSkyState,
                 instantState: globalStates.instantState,
                 speechState: globalStates.speechState,
+                tutorialState: globalStates.tutorialState,
                 videoRecordingEnabled: globalStates.videoRecordingEnabled,
                 matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
                 hololensModeEnabled: globalStates.hololensModeEnabled,
@@ -1801,9 +1855,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 globalStates.instantState = true;
                 realityEditor.app.saveInstantState(true);
 
+                // TODO: stop hijacking old UI to debug this, and instead make a settings toggle for high-quality mode vs better-performance mode 
+                globalStates.renderFrameGhostsInNodeViewEnabled = false;
+
             } else {
                 globalStates.instantState = false;
                 realityEditor.app.saveInstantState(false);
+                
+                globalStates.renderFrameGhostsInNodeViewEnabled = true;
             }
         }
 
@@ -1823,6 +1882,24 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.speechState = false;
                     document.getElementById('speechConsole').style.display = 'none';
                     realityEditor.app.stopSpeechRecording();
+                }
+            }
+        }
+
+        if (typeof msgContent.settings.setSettings.tutorialState !== "undefined") {
+            if (msgContent.settings.setSettings.tutorialState) {
+                if (!globalStates.tutorialState) {
+                    globalStates.tutorialState = true;
+                    // realityEditor.app.startSpeechRecording();
+                    console.log('set tutorialState on');
+                    realityEditor.app.saveTutorialState(true);
+                }
+            } else {
+                if (globalStates.tutorialState) {
+                    globalStates.tutorialState = false;
+                    // realityEditor.app.stopSpeechRecording();
+                    console.log('set tutorialState off');
+                    realityEditor.app.saveTutorialState(false);
                 }
             }
         }
@@ -1972,6 +2049,32 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
     }
+
+    if (msgContent.settings.setDiscoveryText) {
+        globalStates.discoveryState = msgContent.settings.setDiscoveryText;
+        this.discoverObjectsFromServer(msgContent.settings.setDiscoveryText)
+    }
+};
+
+/**
+ * Ask a specific server to respond with which objects it has
+ * The server will respond with a list of json objects matching the format of discovery heartbeats
+ * Array.<{id: string, ip: string, vn: number, tcs: string, zone: string}>
+ *     These heartbeats are processed like any other heartbeats
+ * @param {string} serverUrl - url for the reality server to download objects from, e.g. 10.10.10.20:8080
+ */
+realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
+    var prefix = (serverUrl.indexOf('http://') === -1) ? ('http://') : ('');
+    var url = prefix + serverUrl + '/allObjects/';
+    realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
+        console.log('got all objects');
+        console.log(msg);
+
+        msg.forEach(function(heartbeat) {
+            console.log(heartbeat);
+            realityEditor.network.addHeartbeatObject(heartbeat);
+        });
+    });
 };
 
 /**
@@ -2263,8 +2366,13 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
     var thisObjectB = realityEditor.getObject(thisLink.objectB);
     var thisFrameB = realityEditor.getFrame(thisLink.objectB, thisLink.frameB);
     var thisNodeB = realityEditor.getNode(thisLink.objectB, thisLink.frameB, thisLink.nodeB);
+
+    // if exactly one of objectA and objectB is the localWorldObject of the phone, prevent the link from being made
+    var localWorldObjectKey = realityEditor.worldObjects.getLocalWorldId();
+    var isBetweenLocalWorldAndOtherServer = (thisLink.objectA === localWorldObjectKey && thisLink.objectB !== localWorldObjectKey) ||
+        (thisLink.objectA !== localWorldObjectKey && thisLink.objectB === localWorldObjectKey);
     
-    var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB);
+    var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB) && !isBetweenLocalWorldAndOtherServer;
     
     if (okForNewLink) {
         var linkKey = this.realityEditor.device.utilities.uuidTimeShort();

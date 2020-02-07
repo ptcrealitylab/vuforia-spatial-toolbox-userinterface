@@ -641,13 +641,17 @@ createNameSpace("realityEditor.gui.menus");
             // post into each visible frame
             var frame = realityEditor.getFrame(objectKey, frameKey);
             if (frame.visible) {
-                globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                if (globalDOMCache["iframe" + frameKey] && globalDOMCache["iframe" + frameKey].contentWindow) {
+                    globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                }
 
                 // post into each visible node
                 realityEditor.forEachNodeInFrame(objectKey, frameKey, function(objectKey, frameKey, nodeKey) {
                     var node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     if (node.visible) {
-                        globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                        if (globalDOMCache["iframe" + nodeKey] && globalDOMCache["iframe" + nodeKey].contentWindow) {
+                            globalDOMCache["iframe" + nodeKey].contentWindow.postMessage(JSON.stringify(msg), "*");
+                        }
                     }
                 });
             }

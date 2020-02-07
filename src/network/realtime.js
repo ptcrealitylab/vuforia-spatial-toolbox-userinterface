@@ -20,7 +20,12 @@ createNameSpace("realityEditor.network.realtime");
     function initService() {
         // TODO Is this redundant code? It seems to generate the error that pops up
         
+        if (realityEditor.device.utilities.isDesktop()) { globalStates.realtimeEnabled = true; } // realtime is necessary for desktop to work
+        console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, globalStates.realtimeEnabled);
+
         if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
+        
+        console.log('actually initializing realtime services');
 
         if (realityEditor.device.utilities.isDesktop()) {
             desktopSocket = io.connect();
@@ -254,6 +259,38 @@ createNameSpace("realityEditor.network.realtime");
 
         // sendMessageToSocketSet('realityServers', '/update', messageBody);
     }
+
+    /**
+     * Updates an object property on the server (and synchronizes all other clients if necessary) using a websocket
+     * @param {string} objectKey
+     * @param {Array.<number>} matrix
+     */
+    function broadcastUpdateObjectMatrix(objectKey, matrix) {
+        if (!globalStates.realtimeEnabled) { return; }
+        if (matrix.length !== 16) { return; } // don't delete previous value by sending an empty matrix to the server
+
+        // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
+        var serverSocket = getServerSocketForObject(objectKey);
+        if (serverSocket) {
+            var messageBody = {
+                objectKey: objectKey,
+                matrix: matrix,
+                editorId: globalStates.tempUuid
+            };
+            serverSocket.emit('/update/object/matrix', JSON.stringify(messageBody));
+        }
+    }
+    
+    function subscribeToObjectMatrices(objectKey, callback) {
+        if (!globalStates.realtimeEnabled) { return; }
+
+        // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
+        var serverSocket = getServerSocketForObject(objectKey);
+        if (serverSocket) {
+            serverSocket.emit('/subscribe/objectUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+            serverSocket.on('/update/object/matrix', callback);
+        }
+    }
     
     var objectSocketCache = {};
 
@@ -278,7 +315,7 @@ createNameSpace("realityEditor.network.realtime");
                 }
             });
             
-            objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : null;
+            objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : undefined;
         }
         
         return objectSocketCache[objectKey]; // don't need to recalculate each time
@@ -367,6 +404,8 @@ createNameSpace("realityEditor.network.realtime");
     exports.initService = initService;
     exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.broadcastUpdate = broadcastUpdate;
+    exports.broadcastUpdateObjectMatrix = broadcastUpdateObjectMatrix;
+    exports.subscribeToObjectMatrices = subscribeToObjectMatrices;
     
     exports.getSocketIPsForSet = getSocketIPsForSet;
     exports.createSocketInSet = createSocketInSet;

@@ -350,6 +350,8 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
     
+    globalStates.inTransitionObject = null;
+    globalStates.inTransitionFrame = null;
 };
 
 /**
@@ -574,6 +576,19 @@ realityEditor.device.onElementTouchDown = function(event) {
     // after a certain amount of time, start editing this element
     if (moveDelay >= 0) {
         var timeoutFunction = setTimeout(function () {
+
+            var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+
+            // send a pointercancel event into the frame so it doesn't get stuck thinking you're clicking in it
+            var syntheticPointerCancelEvent = {
+                pageX: touchPosition.x || 0,
+                pageY: touchPosition.y || 0,
+                type: 'pointercancel',
+                pointerId: event.pointerId,
+                pointerType: event.pointerType
+            };
+            realityEditor.device.postEventIntoIframe(syntheticPointerCancelEvent, target.frameId, target.nodeId);
+            
             realityEditor.device.beginTouchEditing(target.objectId, target.frameId, target.nodeId);
         }, moveDelay);
     }
@@ -628,11 +643,17 @@ realityEditor.device.onElementTouchEnter = function(event) {
     if (target.type !== "ui" && !this.getEditingVehicle()) {
         var contentForFeedback;
 
+        // if exactly one of objectA and objectB is the localWorldObject of the phone, prevent the link from being made
+        var localWorldObjectKey = realityEditor.worldObjects.getLocalWorldId();
+        var isBetweenLocalWorldAndOtherServer = (globalProgram.objectA === localWorldObjectKey && target.objectId !== localWorldObjectKey) ||
+            (globalProgram.objectA !== localWorldObjectKey && target.objectId === localWorldObjectKey);
+
+        // when over the same node you started with
         if (globalProgram.nodeA === target.nodeId || globalProgram.nodeA === false) {
             contentForFeedback = 3; // TODO: replace ints with a human-readable enum/encoding
             overlayDiv.classList.add('overlayAction');
 
-        } else if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0)) {
+        } else if (realityEditor.network.checkForNetworkLoop(globalProgram.objectA, globalProgram.frameA, globalProgram.nodeA, globalProgram.logicA, target.objectId, target.frameId, target.nodeId, 0) && !isBetweenLocalWorldAndOtherServer) {
             contentForFeedback = 2;
             overlayDiv.classList.add('overlayPositive');
 
@@ -848,14 +869,18 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
             return;
         }
 
-        var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
+        var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
+
+        var closestObjectKey = realityEditor.network.availableFrames.getBestObjectInfoForFrame(frameBeingMoved.src);
+        
+        // TODO: when moving a frame from an object to the world, that the world doesn't support... you shouldnt be able to do that... right now it breaks
+        // var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
 
         if (closestObjectKey) {
 
             if (closestObjectKey !== globalStates.inTransitionObject) {
                 console.log('there is an object to drop this frame onto');
 
-                var frameBeingMoved = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
                 var newFrameKey = closestObjectKey + frameBeingMoved.name;
 
                 var screenX = event.pageX;
@@ -1109,7 +1134,15 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
         if (event.touches.length === 2 && !realityEditor.device.editingState.pinchToScaleDisabled) {
 
             // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
-            var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
+            // also consider a touch that started on pocket-element to be on the frame element
+            var touchTargets = Array.from(event.touches).map(function(touch) {
+                var targetId = touch.target.id.replace(/^(svg)/,"");
+                if (targetId === 'pocket-element') {
+                    targetId = activeVehicle.uuid;
+                }
+                return targetId;
+            });
+
             var areBothOnElement = touchTargets[0] === touchTargets[1];
 
             var centerTouch;

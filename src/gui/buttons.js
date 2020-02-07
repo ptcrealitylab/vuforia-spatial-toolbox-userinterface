@@ -148,7 +148,8 @@ createNameSpace("realityEditor.gui.buttons");
      */
     var callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('gui/buttons');
 
-    // create placeholders for these functions that get generated automatically at runtime
+    // uncomment to create placeholders for these functions that get generated automatically at runtime
+    // doesn't make a functional difference, but helps with autocomplete
 
     // button down events
     /*
