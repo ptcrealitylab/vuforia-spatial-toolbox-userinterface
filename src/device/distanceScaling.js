@@ -54,7 +54,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         realityEditor.gui.buttons.registerCallbackForButton('distanceGreen', onDistanceGreenPressed);
         
         if (realityEditor.device.utilities.isDesktop()) {
-            console.log('adjusted default distance from ' + defaultDistance + ' to ' + defaultDistance*5 + ' (for desktop)');
+            console.log('adjusted default distance from ' + defaultDistance + ' (for desktop)');
             defaultDistance = defaultDistance * 10;
             exports.defaultDistance = defaultDistance;
         }
