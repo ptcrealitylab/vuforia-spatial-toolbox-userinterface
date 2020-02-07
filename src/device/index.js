@@ -1135,7 +1135,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
             // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
             // also consider a touch that started on pocket-element to be on the frame element
-            var touchTargets = [].slice.call(event.touches).map(function(touch) {
+            var touchTargets = Array.from(event.touches).map(function(touch) {
                 var targetId = touch.target.id.replace(/^(svg)/,"");
                 if (targetId === 'pocket-element') {
                     targetId = activeVehicle.uuid;

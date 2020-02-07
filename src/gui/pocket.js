@@ -414,7 +414,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     /**
      * Returns a data structure similar to what was previously defined in pocketFrames.js, but dynamically generated
      * from the set of servers that have been detected and have a visible world or object on the screen
-     * @return {*[]}
+     * Result contains the IP of the server that this frame would be placed on, the "proxy" IP if this server is relying
+     *  on a different server to host its frames, the frame's inferred properties, metadata from server, and a preloaded icon image
+     * @return {Array.<{actualIP: string, proxyIP: string, properties: {name: string, ...}, metadata: {enabled: boolean, ...}, icon: Image}>}
      */
     function getRealityElements() {
         if (ONLY_CLOSEST_OBJECT) {
@@ -1143,7 +1145,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
         var marginBetweenSegments = 10;
-        var scrollbarHeight = 320; // matches menu height of sidebar buttons //pageHeight - 15;  //305;
+        var scrollbarHeight = 320; // matches menu height of sidebar buttons
         var scrollbarHeightDifference = globalStates.width - scrollbarHeight;
 
         var allSegmentButtons = [];
