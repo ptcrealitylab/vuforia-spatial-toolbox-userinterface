@@ -92,20 +92,6 @@ var desktopFrameTransform = [
     0, 0, 0, 1
 ];
 
-var desktopObjectTransform = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-
-var mFlipYZ = [
-    1, 0, 0, 0,
-    0, 0, 1, 0,
-    0, 1, 0, 0,
-    0, 0, 0, 1
-];
-
 /**
  * @type {{temp: number[], begin: number[], end: number[], r: number[], r2: number[], r3: number[]}}
  */

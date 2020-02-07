@@ -146,7 +146,11 @@ createNameSpace("realityEditor.network.availableFrames");
      * @todo: should be moved to gui.ar or gui.ar.utilities
      */
     function sortByDistance(objectKeys) {
-        return objectKeys.map( function(objectKey) {
+        var validObjectKeys = objectKeys.filter(function(objectKey) {
+            return realityEditor.getObject(objectKey); // only use objectKeys that correspond to valid objects
+        });
+        
+        return validObjectKeys.map( function(objectKey) {
             var distance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
             var isWorldObject = false;
             var object = realityEditor.getObject(objectKey);
@@ -205,7 +209,9 @@ createNameSpace("realityEditor.network.availableFrames");
         
         var compatibleObjects = [];
         
-        Object.keys(realityEditor.gui.ar.draw.visibleObjects).forEach(function(objectKey) {
+        Object.keys(realityEditor.gui.ar.draw.visibleObjects).filter(function(objectKey) {
+            return typeof objects[objectKey] !== 'undefined';
+        }).forEach(function(objectKey) {
             var proxyIP = getServerIPForObjectFrames(objectKey);
             if (compatibleServerIPs.indexOf(proxyIP) > -1) {
                 compatibleObjects.push(objectKey);
