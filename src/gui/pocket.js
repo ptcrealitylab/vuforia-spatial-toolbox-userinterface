@@ -454,7 +454,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
         }
         
-        var closestObjectIP = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]).ip;
+        var closestObject = realityEditor.getObject(realityEditor.gui.ar.getClosestObject()[0]);
+        if (!closestObject) { return; }
+        var closestObjectIP = closestObject.ip;
 
         for (let i = 0; i < realityElements.length; i++) {
             if (!realityElements[i]) continue;
@@ -1121,7 +1123,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         var realityElements = getRealityElements();
         var numFrames = realityElements.length + numMemoryContainers;
         var pageHeight = window.innerHeight; //320;
-        var frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
+        var frameHeight = 360;
+        try {
+            frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
+        } catch (e) {
+            console.warn('error parsing real pocket icon height from html elements, defaulting to 360px');
+        }
         var paddingHeight = 6; //parseFloat(document.querySelector('#pocket-element').style.margin) * 2;
         var framesPerRow = 4;
         var numRows = Math.ceil(numFrames / framesPerRow);
