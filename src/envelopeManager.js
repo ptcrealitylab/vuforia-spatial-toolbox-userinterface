@@ -278,13 +278,13 @@ createNameSpace("realityEditor.envelopeManager");
     function addRequiredEnvelopeIfNeeded(objectKey, frameKey, frameType) {
 
         var realityElements = realityEditor.gui.pocket.getRealityElements();
-        var dataset = realityElements.find(function(elt) { return elt.name === frameType; });
+        var realityElement = realityElements.find(function(elt) { return elt.name === frameType; });
 
         // check if an additional envelope frame needs to be added
-        if (dataset.requiredEnvelope) {
-            console.log('this frame needs an envelope: ' + dataset.requiredEnvelope);
-            console.log(dataset);
-            var frameTypeNeeded = dataset.requiredEnvelope; // this will be 'loto-envelope'
+        if (realityElement.requiredEnvelope) {
+            console.log('this frame needs an envelope: ' + realityElement.requiredEnvelope);
+            console.log(realityElement);
+            var frameTypeNeeded = realityElement.requiredEnvelope; // this will be 'loto-envelope'
 
             // check if an envelope of type frameTypeNeeded is already open
             var openEnvelopes = getOpenEnvelopes();
@@ -297,7 +297,7 @@ createNameSpace("realityEditor.envelopeManager");
                 console.log('an envelope of the required type does not exist!');
                 // tell the pocket to createFrame(frameTypeNeeded, ...)
 
-                // get the dataset for the necessary envelope
+                // get the realityElement for the necessary envelope
                 var envelopeData = realityElements.find(function(elt) { return elt.name === frameTypeNeeded; });
                 // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
