@@ -1363,7 +1363,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                 }
             }
-            
+
+            // todo: this code was thrown together in a pretty haphazard way for desktop rendering. needs some cleanup and documentation.
             // fixes rotation too late
             if (realityEditor.device.utilities.isDesktop()) {
                 var finalMatCopy = realityEditor.gui.ar.utilities.copyMatrix(finalMatrix);

@@ -360,17 +360,17 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         // // update UI to include the available frames only
         // if (!diff.isEqual) { // TODO: add back this equality check so we don't unnecessarily rebuild the pocket
         // TODO: one equality check could be the icon src paths for new aggregateFrames vs the ones currently rendered
-            // remove all old icons
-            Array.from(document.querySelector('.palette').children).forEach(function(child) {
-                child.parentElement.removeChild(child);
-            });
-            // create all new icons
-            createPocketUIPaletteForAggregateFrames();
+        // remove all old icons
+        Array.from(document.querySelector('.palette').children).forEach(function(child) {
+            child.parentElement.removeChild(child);
+        });
+        // create all new icons
+        createPocketUIPaletteForAggregateFrames();
 
-            // possibly update the scrollbar height
-            createPocketScrollbar();
+        // possibly update the scrollbar height
+        createPocketScrollbar();
 
-            finishStylingPocket();
+        finishStylingPocket();
         // }
     }
 
