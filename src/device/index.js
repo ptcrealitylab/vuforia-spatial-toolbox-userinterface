@@ -387,6 +387,9 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
     overlayDomElement.addEventListener('pointerdown', this.onElementTouchDown.bind(this));
     overlayDomElement.addEventListener('pointermove', this.onElementTouchMove.bind(this));
     overlayDomElement.addEventListener('pointerup', this.onElementTouchUp.bind(this));
+    overlayDomElement.addEventListener('gotpointercapture', function(evt) {
+        evt.target.releasePointerCapture(evt.pointerId);
+    });
 
     if (realityEditor.device.utilities.isDesktop()) {
         // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
