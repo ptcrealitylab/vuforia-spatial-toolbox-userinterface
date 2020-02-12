@@ -316,10 +316,10 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     var doesDeviceSupportJPGTargets = true; // TODO: verify this somehow instead of always true
                     if (doesDeviceSupportJPGTargets) {
                         // this tries DAT first, then resorts to JPG if DAT not found
-                        realityEditor.app.callbacks.downloadAvailableTargetFiles(beat);
+                        realityEditor.app.targetDownloader.downloadAvailableTargetFiles(beat);
                     } else {
                         // download XML, DAT, and initialize tracker
-                        realityEditor.app.callbacks.downloadTargetFilesForDiscoveredObject(beat);
+                        realityEditor.app.targetDownloader.downloadTargetFilesForDiscoveredObject(beat);
                     }
                     
                     // check if onNewServerDetected callbacks should be triggered
