@@ -60,9 +60,13 @@ createNameSpace("realityEditor.worldObjects");
                     
                 }
                 
-
+                // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
+                if (object.objectId === getLocalWorldId()) {
+                    initializeWorldObject(object);
+                }
             }
             
+            // backwards compatible with old servers - try downloading the local server's worldObject from http://ip:port/worldObject/
             handleServerDiscovered(object.ip);
         });
 
@@ -132,32 +136,37 @@ createNameSpace("realityEditor.worldObjects");
             console.log("did get world object for server: " + serverIP);
 
             if (msg && Object.keys(msg).length > 0) {
-                console.log('found valid object', msg);
-                
-                if (typeof msg.integerVersion === 'undefined') {
-                    msg.integerVersion = 300;
-                }
-
-                realityEditor.gui.ar.utilities.setAverageScale(msg);
-                
-                // add to the internal world objects
-                worldObjects[msg.objectId] = msg;
-                if (worldObjectKeys.indexOf(msg.objectId) === -1) {
-                    worldObjectKeys.push(msg.objectId);
-                }
-                
-                // add the world object to the global objects dictionary
-                objects[msg.objectId] = msg;
-
-                realityEditor.network.onNewObjectAdded(msg.objectId);
-                
-                if (msg.objectId === localWorldObjectKey) {
-                    realityEditor.worldObjects.setOrigin(msg.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
-                }
+                console.log('found valid object');
+                initializeWorldObject(msg);
             }
             
         });
         
+    }
+    
+    function initializeWorldObject(object) {
+        if (typeof object.integerVersion === 'undefined') {
+            object.integerVersion = 300;
+        }
+
+        realityEditor.gui.ar.utilities.setAverageScale(object);
+
+        // add to the internal world objects
+        worldObjects[object.objectId] = object;
+        if (worldObjectKeys.indexOf(object.objectId) === -1) {
+            worldObjectKeys.push(object.objectId);
+        }
+
+        // add the world object to the global objects dictionary
+        if (typeof objects[object.objectId] === 'undefined') {
+            objects[object.objectId] = object;
+            realityEditor.network.onNewObjectAdded(object.objectId);
+        }
+
+        if (object.objectId === localWorldObjectKey) {
+            realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
+        }
+        console.log('successfully initialized world object: ' + object.objectId);
     }
 
     /**
