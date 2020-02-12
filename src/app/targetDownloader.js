@@ -375,7 +375,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         }
 
-    };
+    }
 
     /**
      * Uses a combination of IP address and object name to locate the ID.
