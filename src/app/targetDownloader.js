@@ -78,7 +78,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         // downloads the vuforia target.xml file if it doesn't have it yet
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
-        realityEditor.app.downloadFile(xmlAddress, '.onTargetXMLDownloaded');
+        realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetXMLDownloaded');
         targetDownloadStates[objectID].XML = DownloadState.STARTED;
     }
 
@@ -90,6 +90,10 @@ createNameSpace("realityEditor.app.targetDownloader");
     function onTargetXMLDownloaded(success, fileName) {
         // we don't have the objectID but luckily it can be extracted from the fileName
         var objectID = getObjectIDFromFilename(fileName);
+        if (!objectID) {
+            console.warn('ignoring unknown object targets: ' + fileName);
+            return;
+        }
 
         if (success) {
             var object = realityEditor.getObject(objectID);
@@ -114,7 +118,7 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {boolean} success
      * @param {string} fileName
      */
-    function nonTargetDATDownloaded(success, fileName) {
+    function onTargetDATDownloaded(success, fileName) {
         // we don't have the objectID but luckily it can be extracted from the fileName
         var objectID = getObjectIDFromFilename(fileName);
         var object = realityEditor.getObject(objectID);
@@ -390,7 +394,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;
-    exports.nonTargetDATDownloaded = nonTargetDATDownloaded;
+    exports.onTargetDATDownloaded = onTargetDATDownloaded;
     exports.onTargetJPGDownloaded = onTargetJPGDownloaded;
     exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
