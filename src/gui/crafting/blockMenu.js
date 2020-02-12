@@ -184,6 +184,9 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                     blockContents.addEventListener('pointerdown', onBlockMenuPointerDown.bind(exports));
                     blockContents.addEventListener('pointerup', onBlockMenuPointerUp.bind(exports));
                     blockContents.addEventListener('pointerleave', onBlockMenuPointerLeave.bind(exports));
+                    blockContents.addEventListener('gotpointercapture', function(evt) {
+                        evt.target.releasePointerCapture(evt.pointerId);
+                    });
                     blockContents.addEventListener('pointermove', onBlockMenuPointerMove.bind(exports));
                     block.appendChild(blockContents);
                     logic.guiState.menuBlockDivs.push(block);
@@ -204,6 +207,9 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                 blockDiv.firstChild.removeEventListener('pointerdown', onBlockMenuPointerDown);
                 blockDiv.firstChild.removeEventListener('pointerup', onBlockMenuPointerUp);
                 blockDiv.firstChild.removeEventListener('pointerleave', onBlockMenuPointerLeave);
+                blockDiv.addEventListener('gotpointercapture', function(evt) {
+                    evt.target.releasePointerCapture(evt.pointerId);
+                });
                 blockDiv.firstChild.removeEventListener('pointermove', onBlockMenuPointerMove);
             });
         }

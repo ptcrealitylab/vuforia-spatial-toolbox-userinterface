@@ -243,6 +243,20 @@ createNameSpace("realityEditor.gui.buttons");
                 setButtonStateEntered(event.button);
             };
 
+            // ensure pointer enter and pointer leave events get triggered
+            var buttonElement = document.getElementById(buttonName + 'Button');
+            var buttonDivElement = document.getElementById(buttonName + 'ButtonDiv');
+            if (buttonElement) {
+                buttonElement.addEventListener('gotpointercapture', function(evt) {
+                    evt.target.releasePointerCapture(evt.pointerId);
+                });
+            }
+            if (buttonDivElement) {
+                buttonDivElement.addEventListener('gotpointercapture', function(evt) {
+                    evt.target.releasePointerCapture(evt.pointerId);
+                });
+            }
+
         }.bind(this));
 
     };
