@@ -214,6 +214,15 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
 
     /**
+     * Public function for determining whether an object's Vuforia target was successfully downloaded and initialized.
+     * @param {string} objectID
+     * @return {boolean}
+     */
+    function isObjectTargetInitialized(objectID) {
+        return targetDownloadStates[objectID].MARKER_ADDED === DownloadState.SUCCEEDED;
+    }
+
+    /**
      * Checks if the new checksum from the object's heartbeat matches one possibly stored from a previous time the app was run
      * @param {string} objectID
      * @return {string|boolean}
@@ -441,6 +450,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     // These functions are the public API that should be called by other modules
     exports.downloadAvailableTargetFiles = downloadAvailableTargetFiles;
     exports.downloadTargetFilesForDiscoveredObject = downloadTargetFilesForDiscoveredObject;
+    exports.isObjectTargetInitialized = isObjectTargetInitialized;
     
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;

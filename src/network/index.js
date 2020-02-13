@@ -1779,11 +1779,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
         for (let objectKey in realityEditor.objects) {
             var thisObject = realityEditor.getObject(objectKey);
+            var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(objectKey) || // either target downloaded
+                                objectKey === realityEditor.worldObjects.getLocalWorldId(); // or it's the _WORLD_local
             thisObjects[objectKey] = {
                 name: thisObject.name,
                 ip: thisObject.ip,
                 version: thisObject.version,
-                frames : {}
+                frames: {},
+                initialized: isInitialized
             };
 
             for (let frameKey in thisObject.frames) {
