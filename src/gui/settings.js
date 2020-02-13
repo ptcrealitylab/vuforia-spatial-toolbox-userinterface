@@ -53,21 +53,34 @@ createNameSpace("realityEditor.gui.settings");
 realityEditor.gui.settings.addedToggles = [];
 realityEditor.gui.settings.toggleStates = {};
 
-function SettingsToggle(title, description, propertyName, persistentStorageId, iconSrc, onToggleCallback) {
+function SettingsToggle(title, description, propertyName, persistentStorageId, iconSrc, defaultValue, onToggleCallback) {
     this.title = title;
     this.description = description;
     this.propertyName = propertyName;
     this.persistentStorageId = persistentStorageId;
     this.iconSrc = iconSrc;
+    
+    // try loading the value from persistent storage to see what its default value should be
+    var savedValue = window.localStorage.getItem(persistentStorageId);
+    if (savedValue !== null) {
+        realityEditor.gui.settings.toggleStates[propertyName] = savedValue;
+    } else {
+        // if there isn't a saved value, set it to the specified default value
+        if (typeof defaultValue !== 'undefined') {
+            realityEditor.gui.settings.toggleStates[propertyName] = defaultValue;
+        }
+    }
+
     this.onToggleCallback = function(e) {
         realityEditor.gui.settings.toggleStates[propertyName] = e;
-        realityEditor.app.setStorage(persistentStorageId);
+        // realityEditor.app.setStorage(persistentStorageId);
+        window.localStorage.setItem(persistentStorageId, realityEditor.gui.settings.toggleStates[propertyName]);
         onToggleCallback(e); // trigger additional side effects
     };
 }
 
-realityEditor.gui.settings.addToggle = function(title, description, propertyName, persistentStorageId, onToggleCallback) {
-    let newToggle = new SettingsToggle(title, description, propertyName, persistentStorageId, onToggleCallback);
+realityEditor.gui.settings.addToggle = function(title, description, propertyName, persistentStorageId, iconSrc, defaultValue, onToggleCallback) {
+    let newToggle = new SettingsToggle(title, description, propertyName, persistentStorageId, iconSrc, defaultValue, onToggleCallback);
     realityEditor.gui.settings.addedToggles.push(newToggle);
 };
 
@@ -93,6 +106,17 @@ function generateGetSettingsJsonMessage() {
         zoneText: globalStates.zoneText,
         zoneState: globalStates.zoneState
     };
+
+    // dynamically sends in the current property values for each of the switches that were added using the addToggle API
+    realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
+        defaultMessage[toggle.propertyName] = realityEditor.gui.settings.toggleStates[toggle.propertyName];
+    });
+    
+    return defaultMessage;
+}
+
+function generateGetMainDynamicSettingsJsonMessage() {
+    let defaultMessage = {};
 
     // dynamically sends in the current property values for each of the switches that were added using the addToggle API
     realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
@@ -147,7 +171,8 @@ realityEditor.gui.settings.showSettings = function() {
     }
 
     document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
-        getSettings: generateGetSettingsJsonMessage()
+        getSettings: generateGetSettingsJsonMessage(),
+        getMainDynamicSettings: generateGetMainDynamicSettingsJsonMessage()
     }), "*");
 
     overlayDiv.style.display = "none";

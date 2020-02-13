@@ -83,11 +83,11 @@ realityEditor.device.onload = function () {
     realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
     realityEditor.app.getTutorialState('realityEditor.app.callbacks.onTutorialState');
 
-    realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', function(e) {
+    realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);
     });
 
-    realityEditor.gui.settings.addToggle('Read-only', 'prevents user from making changes', 'readOnlyMode', 'SETUP:READ_ONLY', 'undefined.svg', function(e) {
+    realityEditor.gui.settings.addToggle('Read-only', 'prevents user from making changes', 'readOnlyMode', 'SETUP:READ_ONLY', 'undefined.svg', false, function(e) {
         console.log('read-only mode was set to ' + e);
     });
     
