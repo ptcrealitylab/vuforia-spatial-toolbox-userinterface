@@ -1238,6 +1238,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 if (!pocketPointerDown) { return; }
                 scrollPocketForTouch(e);
             });
+            segmentButton.addEventListener('gotpointercapture', function(evt) {
+                evt.target.releasePointerCapture(evt.pointerId);
+            });
             scrollbar.appendChild(segmentButton);
             allSegmentButtons.push(segmentButton);
         }
