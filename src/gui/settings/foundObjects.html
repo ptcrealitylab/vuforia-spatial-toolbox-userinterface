@@ -42,85 +42,126 @@
     </header>
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
-    <div class="content" style="right:65px;" id="objectList">
-
+    <div class="content" style="right:65px;">
+        <div class="card">
+            <ul class="table-view" id="objectList"></ul>
+        </div>
     </div>
+
+    <template id="tableEntry">
+            <li class="table-view-cell table-view-cell"></li>
+    </template>
+
+    <template id="row">
+        <div>
+            <div class="infoRow" style="width: 500px; height: 30px; display: inline-block">
+                <img class="media-object pull-left" src="../../../svg/object.svg" style="width: 26px; height: 26px; margin-top: -2px; margin-bottom: -5px">
+                <div class="rowName" style="display: inline-block; width: 130px; overflow: hidden; font-size: large"></div>
+                <div style="display: inline-block; width: 70px; text-align: center">
+                    <span class="badge rowVersion" style="font-size: large"></span>
+                </div>
+                <div style="display: inline-block; width: 140px; text-align: center">
+                    <span class="badge rowIP" style="font-size: large"></span>
+                </div>
+                <div style="display: inline-block; width: 40px; text-align: center">
+                    <span class="badge rowNodes" style="font-size: large"></span>
+                </div>
+                <div style="display: inline-block; width: 40px; text-align: center">
+                    <span class="badge rowLinks" style="font-size: large"></span>
+                </div>
+            </div>
+        </div>
+    </template>
 
 </div>
 
 <script>
+    var previousFoundObjects = null; // stores stringified foundObjects so that we can detect changes over time
 
+    // because this is a self-contained iframe, only way to receive data about found objects is using a message listener
     window.addEventListener("message", function (e) {
-
         var msg = JSON.parse(e.data);
-     
         if (msg.getObjects) {
             realityEditor.gui.settings.getObjectsFunction(msg.getObjects);
         }
     });
 
+    /**
+     * This gets triggered by a POST message coming into this iframe from the parent window.
+     * It receives a set of information for each discovered object, and renders a table displaying the information.
+     * This should get called on a (infrequent) loop as long as the iframe is open, so that it doesn't keep stale data.
+     * @param {Object.<string, {name: string, version: string, ip: string, initialized: boolean, frames: Object}>} msg
+     */
     realityEditor.gui.settings.getObjectsFunction = function (msg) {
-      
-        var appendText = '<div class="card"><ul class="table-view" id="objectList">';
-
-        for(var objectKey in msg){
-            appendText +=     '<li class="table-view-cell table-view-cell">';
-
-
-            appendText += '<div style="width: 500px; height: 30px; display: inline-block">'+
-                '<img class="media-object pull-left" src="../../../svg/object.svg" style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">' +
-                '<div style="display: inline-block; width: 130px; overflow: hidden; font-size: large">' + msg[objectKey].name + '</div>' +
-                '<div style="display: inline-block; width: 70px; text-align: center;">' +
-                '<span class="badge" style="font-size: large">' + msg[objectKey].version + '</span>' +
-                '</div>' +
-                '<div style="display: inline-block; width: 140px; text-align: center;">' +
-                '<span class="badge" style="font-size: large">' + msg[objectKey].ip + '</span>' +
-                '</div>' +
-                '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
-                ' ' + //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].nodes + '</span>' +
-                '</div>' +
-                '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
-                ' ' + //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].links + '</span>' +
-                '</div>'+
-                '</div>';
-            
-            
-            
-            for(var frameKey in msg[objectKey].frames){
-
-                appendText += '<div style="width: 500px; height: 30px; display: inline-block">'+
-                    '<img class="media-object pull-left" src="../../../svg/object.svg" style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">' +
-                    '<div style="display: inline-block; width: 130px; overflow: hidden; font-size: large">' + msg[objectKey].frames[frameKey].name + '</div>' +
-                    '<div style="display: inline-block; width: 70px; text-align: center;">' +
-                    //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].version + '</span>' +
-                     ' ' +
-                    '</div>' +
-                    '<div style="display: inline-block; width: 140px; text-align: center;">' +
-                    //'<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].ip + '</span>' +
-                    ' ' +
-                    '</div>' +
-                    '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
-                    '<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].nodes + '</span>' +
-                    '</div>' +
-                    '<div style="display: inline-block; width: 40px; text-align: center; font-size: large;">' +
-                    '<span class="badge" style="font-size: large">' + msg[objectKey].frames[frameKey].links + '</span>' +
-                    '</div>'+
-                    '</div>';
-                   
-                
-            }
-
-            appendText += '</li>';
+        // don't re-render if nothing has changed
+        if (previousFoundObjects && previousFoundObjects === JSON.stringify(msg)) {
+            return;
         }
-        
-        appendText += '</ul></div>';
 
-        document.getElementById("objectList").innerHTML = appendText;
+        document.getElementById("objectList").innerHTML = '';
+        for (var objectKey in msg) {
+            createObjectEntry(objectKey, msg[objectKey]);
+        }
 
+        previousFoundObjects = JSON.stringify(msg);
     };
 
-    //  objectInterval = setInterval(callObjects, 4000);
+    /**
+     * Builds an HTML element displaying all information for this object and its frames, and adds it to the table.
+     * @param {string} objectKey
+     * @param {{name: string, version: string, ip: string, initialized: boolean, frames: Object}} objectInfo
+     */
+    function createObjectEntry(objectKey, objectInfo) {
+        var entry = document.createElement('li');
+        entry.className = 'table-view-cell';
+        entry.id = 'foundObject' + objectKey;
 
+        var tableEntry = document.getElementsByTagName('template')['tableEntry'].content.cloneNode(true);
+
+        // add a row for the object with the object name, version, and IP
+        var objectRow = document.getElementsByTagName('template')['row'].content.cloneNode(true);
+        objectRow.querySelector('.rowName').innerText = objectInfo.name;
+        objectRow.querySelector('.rowVersion').innerText = objectInfo.version;
+        objectRow.querySelector('.rowIP').innerText = objectInfo.ip;
+        objectRow.querySelector('.rowNodes').style.visibility = 'hidden';
+        objectRow.querySelector('.rowLinks').style.visibility = 'hidden';
+
+        tableEntry.querySelector('.table-view-cell').appendChild(objectRow);
+
+        // add additional rows in this table entry for each of this object's frames
+        for (var frameKey in objectInfo.frames) {
+            var frameInfo = objectInfo.frames[frameKey];
+            var frameRow = createFrameRow(frameKey, frameInfo);
+            tableEntry.querySelector('.table-view-cell').appendChild(frameRow);
+        }
+
+        // give visual feedback if an object's Vuforia target was not initialized correctly
+        if (!objectInfo.initialized) {
+            tableEntry.querySelector('.table-view-cell').style.opacity = 0.5;
+            tableEntry.querySelector('.table-view-cell').style.color = 'rgb(255,0,124)';
+        }
+
+        document.getElementById("objectList").appendChild(tableEntry);
+    }
+
+    /**
+     * Helper function to build the HTML element for a particular frame
+     * @param {string} frameKey
+     * @param {{name: string, nodes: number, links: number}} frameInfo
+     * @return {Node} - returns the created element so it can be added to its parent's table entry
+     */
+    function createFrameRow(frameKey, frameInfo) {
+        var frameRow = document.getElementsByTagName('template')['row'].content.cloneNode(true);
+        frameRow.querySelector('.media-object').src = '../../../svg/foundObjectFrame.svg'; // different icon for frame
+        frameRow.querySelector('.rowName').innerText = frameInfo.name;
+        frameRow.querySelector('.rowVersion').style.visibility = 'hidden';
+        frameRow.querySelector('.rowIP').style.visibility = 'hidden';
+        frameRow.querySelector('.rowNodes').innerText = frameInfo.nodes; // number of nodes on this frame
+        frameRow.querySelector('.rowLinks').innerText = frameInfo.links; // number of links starting from this frame
+        return frameRow;
+    }
+
+    // this is triggered on a 1 second interval by the included script, ./index.js, to ask for updated object data
     realityEditor.gui.settings.callObjects = function () {
         parent.postMessage(
             JSON.stringify({
@@ -129,7 +170,7 @@
                 }
             }), "*")
     };
-    realityEditor.gui.settings.callObjects();
+    realityEditor.gui.settings.callObjects(); // also get the data immediately when the iframe loads
 
 </script>
 <script src="index.js"></script>
