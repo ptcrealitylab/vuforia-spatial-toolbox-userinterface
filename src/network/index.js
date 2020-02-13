@@ -1785,7 +1785,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 name: thisObject.name,
                 ip: thisObject.ip,
                 version: thisObject.version,
-                frames : {},
+                frames: {},
                 initialized: isInitialized
             };
 
