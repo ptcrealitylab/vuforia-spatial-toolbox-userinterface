@@ -1748,27 +1748,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     if (msgContent.settings.getSettings) {
         self.contentWindow.postMessage(JSON.stringify({
-            getSettings: {
-                extendedTracking: globalStates.extendedTracking,
-                editingMode: globalStates.editingMode,
-                clearSkyState: globalStates.clearSkyState,
-                instantState: globalStates.instantState,
-                speechState: globalStates.speechState,
-                tutorialState: globalStates.tutorialState,
-                videoRecordingEnabled: globalStates.videoRecordingEnabled,
-                matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
-                hololensModeEnabled: globalStates.hololensModeEnabled,
-                groupingEnabled: globalStates.groupingEnabled,
-                realtimeEnabled: globalStates.realtimeEnabled,
-                externalState: globalStates.externalState,
-                discoveryState: globalStates.discoveryState,
-                settingsButton : globalStates.settingsButtonState,
-                lockingMode: globalStates.lockingMode,
-                lockPassword: globalStates.lockPassword,
-                realityState: globalStates.realityState,
-                zoneText: globalStates.zoneText,
-                zoneState: globalStates.zoneState
-            }
+            getSettings: generateGetSettingsJsonMessage()
         }), "*");
     }
 
@@ -2046,6 +2026,16 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 realityEditor.app.saveRealityState(false);
             }
         }
+
+        // sets property value for each dynamically-added toggle
+        realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
+            if (typeof msgContent.settings.setSettings[toggle.propertyName] !== "undefined") {
+                realityEditor.gui.settings.toggleStates[toggle.propertyName] = msgContent.settings.setSettings[toggle.propertyName];
+                console.log('set toggle value for ' + toggle.propertyName + ' to ' + msgContent.settings.setSettings[toggle.propertyName]);
+                toggle.onToggleCallback(msgContent.settings.setSettings[toggle.propertyName]);
+            }
+        });
+        
     }
     
     // can directly trigger native app APIs with message of correct format @todo: figure out if this is currently used?
