@@ -50,13 +50,29 @@
 
 createNameSpace("realityEditor.gui.settings");
 
-realityEditor.gui.settings.hideSettings = function() {
+realityEditor.gui.settings.addedToggles = [];
+realityEditor.gui.settings.toggleStates = {};
 
-    console.log("this is what I want to show:  ",globalStates.clearSkyState);
+function SettingsToggle(title, description, propertyName, persistentStorageId, iconSrc, onToggleCallback) {
+    this.title = title;
+    this.description = description;
+    this.propertyName = propertyName;
+    this.persistentStorageId = persistentStorageId;
+    this.iconSrc = iconSrc;
+    this.onToggleCallback = function(e) {
+        realityEditor.gui.settings.toggleStates[propertyName] = e;
+        realityEditor.app.setStorage(persistentStorageId);
+        onToggleCallback(e); // trigger additional side effects
+    };
+}
 
-	globalStates.settingsButtonState = false;
+realityEditor.gui.settings.addToggle = function(title, description, propertyName, persistentStorageId, onToggleCallback) {
+    let newToggle = new SettingsToggle(title, description, propertyName, persistentStorageId, onToggleCallback);
+    realityEditor.gui.settings.addedToggles.push(newToggle);
+};
 
-    document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({getSettings: {
+function generateGetSettingsJsonMessage() {
+    let defaultMessage = {
         extendedTracking: globalStates.extendedTracking,
         editingMode: globalStates.editingMode,
         clearSkyState: globalStates.clearSkyState,
@@ -74,9 +90,26 @@ realityEditor.gui.settings.hideSettings = function() {
         lockingMode: globalStates.lockingMode,
         lockPassword: globalStates.lockPassword,
         realityState: globalStates.realityState,
-            zoneText: globalStates.zoneText,
-            zoneState: globalStates.zoneState
-    }
+        zoneText: globalStates.zoneText,
+        zoneState: globalStates.zoneState
+    };
+
+    // dynamically sends in the current property values for each of the switches that were added using the addToggle API
+    realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
+        defaultMessage[toggle.propertyName] = realityEditor.gui.settings.toggleStates[toggle.propertyName];
+    });
+    
+    return defaultMessage;
+}
+
+realityEditor.gui.settings.hideSettings = function() {
+
+    console.log("this is what I want to show:  ",globalStates.clearSkyState);
+
+	globalStates.settingsButtonState = false;
+
+    document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+        getSettings: generateGetSettingsJsonMessage()
     }), "*");
 
 	document.getElementById("settingsIframe").style.visibility = "hidden";
@@ -94,25 +127,6 @@ realityEditor.gui.settings.hideSettings = function() {
 
 	this.cout("hide Settings");
 };
-
-/**
- * @desc
- **/
-/*
-timeForContentLoaded = 240000;
-window.location.href = "of://clearSkyOn";
-
-document.body.classList.add('clearSky');
-} else {
-
-
-    // realityEditor.gui.menus.switchToMenu("main",[]);
-
-
-    globalStates.UIOffMode = false;
-    timeForContentLoaded = 240;
-
-*/
 
 realityEditor.gui.settings.showSettings = function() {
 
@@ -132,27 +146,8 @@ realityEditor.gui.settings.showSettings = function() {
         document.getElementById("settingsEdgeDiv").style.display = "inline";
     }
 
-    document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({getSettings: {
-        extendedTracking: globalStates.extendedTracking,
-        editingMode: globalStates.editingMode,
-        clearSkyState: globalStates.clearSkyState,
-        instantState: globalStates.instantState,
-        speechState: globalStates.speechState,
-        tutorialState: globalStates.tutorialState,
-        videoRecordingEnabled: globalStates.videoRecordingEnabled,
-        matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
-        hololensModeEnabled: globalStates.hololensModeEnabled,
-        groupingEnabled: globalStates.groupingEnabled,
-        realtimeEnabled: globalStates.realtimeEnabled,
-        externalState: globalStates.externalState,
-        discoveryState: globalStates.discoveryState,
-        settingsButton : globalStates.settingsButtonState,
-        lockingMode: globalStates.lockingMode,
-        lockPassword: globalStates.lockPassword,
-        realityState: globalStates.realityState, 
-            zoneText: globalStates.zoneText,
-            zoneState: globalStates.zoneState
-    }
+    document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+        getSettings: generateGetSettingsJsonMessage()
     }), "*");
 
     overlayDiv.style.display = "none";
