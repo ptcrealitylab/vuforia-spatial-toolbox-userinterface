@@ -219,7 +219,7 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @return {boolean}
      */
     function isObjectTargetInitialized(objectID) {
-        return targetDownloadStates[objectID].MARKER_ADDED === DownloadState.SUCCEEDED
+        return targetDownloadStates[objectID].MARKER_ADDED === DownloadState.SUCCEEDED;
     }
 
     /**
