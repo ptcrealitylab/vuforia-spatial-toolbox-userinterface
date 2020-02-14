@@ -165,13 +165,19 @@ realityEditor.gui.settings.newLockTextLoad = function () {
 
 realityEditor.gui.settings.loadSettingsPost = function () {
     console.log('settings/index loaded');
+
+    let settingsRequest = {
+        getSettings: true // ask for the current values of all settings variables
+    };
+
+    // this is a temporary fix to check if this script is being executed on the main settings vs the developer settings
+    if (document.querySelector('.content').id === 'mainSettings') {
+        settingsRequest.getMainDynamicSettings = true; // ask for which settings should be displayed on the main settings page
+    }
     
     //  Get all the Setting states.
     parent.postMessage(JSON.stringify({
-        settings: {
-            getSettings: true,
-            getMainDynamicSettings: true // ask for which settings should be displayed on the main settings page
-        }
+        settings: settingsRequest
     }), "*");
 
     window.addEventListener("message", function (e) {
@@ -268,7 +274,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                     textField.classList.add('pull-left', 'settingTextField');
                     textField.type = 'text';
                     textField.placeholder = 'placeholder text';
-                    // TODO: on input event
 
                     if (settingInfo.associatedText) {
                         textField.value = settingInfo.associatedText.value
@@ -293,7 +298,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 container.appendChild(newElement);
             }
         }
-
         
     }.bind(realityEditor.gui.settings);
 
