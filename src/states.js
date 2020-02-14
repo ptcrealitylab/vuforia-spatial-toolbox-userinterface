@@ -102,9 +102,6 @@ var globalStates = {
     // setting this to FALSE speeds up rendering while in node view by NOT also rendering the frames (semi-transparently)
     renderFrameGhostsInNodeViewEnabled: false,
     
-    hololensModeEnabled: false,
-    groupingEnabled: false,
-
     pocketButtonState: false,
 
     freezeButtonState: false,

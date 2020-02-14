@@ -104,7 +104,6 @@ function generateGetSettingsJsonMessage() {
         instantState: globalStates.instantState,
         speechState: globalStates.speechState,
         tutorialState: globalStates.tutorialState,
-        hololensModeEnabled: globalStates.hololensModeEnabled,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,

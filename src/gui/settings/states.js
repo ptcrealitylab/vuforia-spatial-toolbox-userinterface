@@ -12,8 +12,7 @@ realityEditor.gui.settings.states = {
     settingsButton:false,
     animationFrameRequested: false,
     setInt : false,
-    realityState: false,
-    hololensModeEnabled: false,
+    realityState: false
 };
 
 realityEditor.gui.settings.objectInterval = null;

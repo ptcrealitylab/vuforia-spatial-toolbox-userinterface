@@ -117,6 +117,11 @@ realityEditor.device.onload = function () {
             realityEditor.device.desktopAdapter.stopBroadcast();
         }
     });
+    
+    realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI foor HMD viewer (desktop only)', 'hololensModeEnabled', 'SETUP:HOLO_MODE', '../../../svg/holo.svg', false, function(newValue) {
+        console.log('hololens mode was set to ' + newValue);
+        realityEditor.device.hololensAdapter.toggleHololensMode(newValue);
+    });
 
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);
