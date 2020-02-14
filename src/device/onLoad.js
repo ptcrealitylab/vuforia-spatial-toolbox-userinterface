@@ -79,7 +79,6 @@ realityEditor.device.onload = function () {
     realityEditor.app.getDiscoveryText('realityEditor.app.callbacks.onDiscoveryText');
     realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
     realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
-    realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
     
     realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(newValue) {
         console.log('extended tracking was set to ' + newValue);
