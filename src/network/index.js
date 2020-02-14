@@ -1807,21 +1807,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
 
         }
-
-        if (typeof msgContent.settings.setSettings.zoneText !== "undefined") {
-            realityEditor.app.saveZoneText(msgContent.settings.setSettings.zoneText);
-        }
-
-        if (typeof msgContent.settings.setSettings.zoneState !== "undefined") {
-            if (msgContent.settings.setSettings.zoneState) {
-                globalStates.zoneState = true;
-                realityEditor.app.saveZoneState(true);
-
-            } else {
-                globalStates.zoneState = false;
-                realityEditor.app.saveZoneState(false);
-            }
-        }
         
         if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
 

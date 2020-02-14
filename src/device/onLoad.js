@@ -77,8 +77,15 @@ realityEditor.device.onload = function () {
     // load persistent state from disk
     realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
     realityEditor.app.getDiscoveryText('realityEditor.app.callbacks.onDiscoveryText');
-    realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
-    realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
+
+    realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', 'SETUP:ZONE', '../../../svg/zone.svg', false,
+        function(newValue) {
+            console.log('zone mode was set to ' + newValue);
+        },
+        function(newValue) {
+            console.log('zone text was set to ' + newValue);
+        }
+    );
     
     realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(newValue) {
         console.log('extended tracking was set to ' + newValue);

@@ -17,12 +17,6 @@ realityEditor.gui.settings.setSettings = function (id, state) {
         }
         return;
     }
-    if (id === "zoneText") {
-        if (state !== "") {
-            document.getElementById(id).value = state;
-        }
-        return;
-    }
 
     if (id === "discoveryText") {
 
@@ -90,10 +84,6 @@ realityEditor.gui.settings.updateLockUI = function() {
 
 realityEditor.gui.settings.newURLTextLoad = function () {
     this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
-};
-
-realityEditor.gui.settings.newZoneTextLoad = function () {
-    this.states.zoneState = document.getElementById('zoneText').value; //encodeURIComponent(document.getElementById('externalText').value);
 };
 
 realityEditor.gui.settings.newDiscoveryTextLoad = function () {
@@ -172,21 +162,6 @@ realityEditor.gui.settings.newLockTextLoad = function () {
     this.states.lockPassword = encodeURIComponent(document.getElementById('lockText').value);
     console.log("lockPassword = " + this.states.lockPassword);
 };
-
-document.addEventListener('input',
-        function (e) {
-    
-            var msg = {};
-            msg.settings = {};
-            msg.settings.setSettings = {};
-            if (e.target.id === "zoneText") {
-                realityEditor.gui.settings.states.zoneText = encodeURIComponent(document.getElementById(e.target.id).value);
-                msg.settings.setSettings[e.target.id] = realityEditor.gui.settings.states.zoneText;
-                console.log(msg);
-                parent.postMessage(JSON.stringify(msg), "*");
-            }
-        }
-    );
 
 realityEditor.gui.settings.loadSettingsPost = function () {
     console.log('settings/index loaded');
@@ -289,10 +264,19 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                     settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_DEACTIVATE_WITH_TEXT) {
 
                     let textField = document.createElement('input');
+                    textField.id = key + 'Text';
                     textField.classList.add('pull-left', 'settingTextField');
                     textField.type = 'text';
                     textField.placeholder = 'placeholder text';
                     // TODO: on input event
+
+                    if (settingInfo.associatedText) {
+                        textField.value = settingInfo.associatedText.value
+                    }
+
+                    textField.addEventListener('input', function() {
+                        uploadSettingText(this.id);
+                    });
 
                     newElement.appendChild(textField);
                 }
@@ -313,24 +297,36 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         
     }.bind(realityEditor.gui.settings);
 
-    document.addEventListener('toggle',
-        function (e) {
-            var msg = {};
-            msg.settings = {};
-            msg.settings.setSettings = {};
-            msg.settings.setSettings[e.target.id] = e.detail.isActive;
-            if (e.target.id === "lockingToggle") {
-                msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
-                realityEditor.gui.settings.updateLockUI();
-            }
-            // check if it has an attached text field, and if so, send that text too
-            if (e.target.parentElement.querySelector('.settingTextField')) {
-                let inputString = e.target.parentElement.querySelector('.settingTextField').value;
-                msg.settings.setSettings[e.target.id + 'Text'] = inputString;
-            }
-            parent.postMessage(JSON.stringify(msg), "*");
+    document.addEventListener('toggle', function (e) {
+        uploadSettingsForToggle(e.target.id, e.detail.isActive);
+    });
+
+    function uploadSettingsForToggle(elementId, isActive) {
+        var msg = {};
+        msg.settings = {};
+        msg.settings.setSettings = {};
+        msg.settings.setSettings[elementId] = isActive;
+        if (elementId === "lockingToggle") {
+            msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
+            realityEditor.gui.settings.updateLockUI();
         }
-    );
+
+        let element = document.getElementById(elementId);
+        // check if it has an attached text field, and if so, send that text too
+        if (element.parentElement.querySelector('.settingTextField')) {
+            msg.settings.setSettings[elementId + 'Text'] = element.parentElement.querySelector('.settingTextField').value;
+        }
+        parent.postMessage(JSON.stringify(msg), "*");
+    }
+
+    function uploadSettingText(textElementId) {
+        console.log('upload setting text');
+        var msg = {};
+        msg.settings = {};
+        msg.settings.setSettings = {};
+        msg.settings.setSettings[textElementId] = document.getElementById(textElementId).value;
+        parent.postMessage(JSON.stringify(msg), "*");
+    }
 
 };
 
