@@ -10,9 +10,9 @@ createNameSpace("realityEditor.worldObjects");
 
 (function(exports) {
     
-    var worldObjects; // world objects are stored in the regular global "objects" variable, but also in here
-    var worldObjectKeys;
-    var discoveredServerIPs;
+    var worldObjects = {}; // world objects are stored in the regular global "objects" variable, but also in here
+    var worldObjectKeys = [];
+    var discoveredServerIPs = [];
     
     var cameraMatrixOffset; // can be used to relocalize the world objects to a different origin point // todo: isn't actually used, should probably be removed
 
@@ -34,10 +34,6 @@ createNameSpace("realityEditor.worldObjects");
         // register a callback for when new objects / IPs are discovered
         // (look at desktopAdapter to figure out how I did it there)
         // trigger the onNewServerDiscovered if it belongs to an undiscovered server
-        
-        worldObjects = {};
-        worldObjectKeys = [];
-        discoveredServerIPs = [];
         
         cameraMatrixOffset = realityEditor.gui.ar.utilities.newIdentityMatrix();
         
