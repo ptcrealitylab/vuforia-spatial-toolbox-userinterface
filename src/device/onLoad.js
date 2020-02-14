@@ -80,7 +80,6 @@ realityEditor.device.onload = function () {
     realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
     realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
-    realityEditor.app.getTutorialState('realityEditor.app.callbacks.onTutorialState');
     
     realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(newValue) {
         console.log('extended tracking was set to ' + newValue);
@@ -140,8 +139,16 @@ realityEditor.device.onload = function () {
             document.getElementById('speechConsole').style.display = 'none';
             realityEditor.app.stopSpeechRecording();
         }
-        
     });
+
+    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState', 'SETUP:TUTORIAL', '../../../svg/tutorial.svg', false, function(newValue) {
+        console.log('tutorial mode was set to ' + newValue);
+    });
+    
+    
+    // todo; add toggle for tutorial
+    // todo; figure out how to add text boxes too (either/or text/toggle)
+    // todo; trigger side effects once when it first loads default values from storage (just trigger callback from constructor)
 
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);

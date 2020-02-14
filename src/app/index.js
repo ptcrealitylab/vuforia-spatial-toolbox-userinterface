@@ -498,15 +498,6 @@ realityEditor.app.saveRealtimeState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for whether tutorial mode should show on startup.
- * @param {boolean} newState
- */
-realityEditor.app.saveTutorialState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:TUTORIAL', storedValue);
-};
-
-/**
  ************** LOAD DATA FROM DISK ****************
  */
 
@@ -572,14 +563,6 @@ realityEditor.app.getExternalText = function(callback) {
  */
 realityEditor.app.getRealtimeState = function(callback) {
     this.getStorage('SETUP:REALTIME', callback);
-};
-
-/**
- * Get the persistent setting for whether to show the tutorial on app start.
- * @param {function} callback
- */
-realityEditor.app.getTutorialState = function(callback) {
-    this.getStorage('SETUP:TUTORIAL', callback);
 };
 
 /**
