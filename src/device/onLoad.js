@@ -80,12 +80,16 @@ realityEditor.device.onload = function () {
     realityEditor.app.getZoneState('realityEditor.app.callbacks.onZoneState');
     realityEditor.app.getZoneText('realityEditor.app.callbacks.onZoneText');
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
-    realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
     realityEditor.app.getTutorialState('realityEditor.app.callbacks.onTutorialState');
     
-    realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(e) {
-        console.log('extended tracking was set to ' + e);
-        this.enableExtendedTracking(e);
+    realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(newValue) {
+        console.log('extended tracking was set to ' + newValue);
+        this.enableExtendedTracking(newValue);
+    });
+
+    realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled', 'SETUP:GROUPING', '../../../svg/grouping.svg', false, function(newValue) {
+        console.log('grouping was set to ' + newValue);
+        realityEditor.gui.ar.grouping.toggleGroupingMode(newValue);
     });
 
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {

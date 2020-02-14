@@ -507,15 +507,6 @@ realityEditor.app.saveRealtimeState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for realtime multi-user mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveGroupingState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:GROUPING', storedValue);
-};
-
-/**
  * Save the persistent setting to disk for whether tutorial mode should show on startup.
  * @param {boolean} newState
  */
@@ -598,14 +589,6 @@ realityEditor.app.getExternalText = function(callback) {
  */
 realityEditor.app.getRealtimeState = function(callback) {
     this.getStorage('SETUP:REALTIME', callback);
-};
-
-/**
- * Get the persistent setting for whether to enable the grouping service.
- * @param {function} callback
- */
-realityEditor.app.getGroupingState = function(callback) {
-    this.getStorage('SETUP:GROUPING', callback);
 };
 
 /**

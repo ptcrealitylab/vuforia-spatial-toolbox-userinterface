@@ -1930,33 +1930,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
-        if (typeof msgContent.settings.setSettings.groupingEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.groupingEnabled) {
-                if (!globalStates.groupingEnabled) {
-                    globalStates.groupingEnabled = true;
-                    // add any one-time side-effects here
-                    console.log('TODO: grouping mode enabled...');
-                    realityEditor.app.saveGroupingState(true);
-                    realityEditor.gui.ar.grouping.toggleGroupingMode(true);
-                }
-            } else {
-                if (globalStates.groupingEnabled) {
-                    globalStates.groupingEnabled = false;
-                    // add any one-time side-effects here:
-                    console.log('TODO: grouping mode disabled...');
-                    realityEditor.app.saveGroupingState(false);
-                    realityEditor.gui.ar.grouping.toggleGroupingMode(false);
-                }
-            }
-        }
-
         if (typeof msgContent.settings.setSettings.realtimeEnabled !== "undefined") {
             if (msgContent.settings.setSettings.realtimeEnabled) {
                 if (!globalStates.realtimeEnabled) {
                     globalStates.realtimeEnabled = true;
                     // add any one-time side-effects here
                     console.log('TODO: realtimeEnabled mode enabled...');
-                    // realityEditor.gui.ar.grouping.toggleGroupingMode(true);
                     realityEditor.app.saveRealtimeState(true);
                     realityEditor.network.realtime.initService();
                 }
@@ -1965,7 +1944,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                     globalStates.realtimeEnabled = false;
                     // add any one-time side-effects here:
                     console.log('TODO: realtimeEnabled mode disabled...');
-                    // realityEditor.gui.ar.grouping.toggleGroupingMode(false);
                     realityEditor.app.saveRealtimeState(false);
                 }
             }

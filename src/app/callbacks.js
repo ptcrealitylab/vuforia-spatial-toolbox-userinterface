@@ -156,21 +156,6 @@ realityEditor.app.callbacks.onRealtimeState = function(savedState) {
 };
 
 /**
- * Callback for realityEditor.app.getGroupingState
- * Loads the grouping service enabled on/off state (if any) from permanent storage
- * @param savedState - stringified boolean
- */
-realityEditor.app.callbacks.onGroupingState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded grouping state = ', savedState);
-
-    if (savedState) {
-        globalStates.groupingEnabled = savedState;
-    }
-};
-
-/**
  * Callback for realityEditor.app.getTutorialState
  * Loads the tutorial state (if any) from permanent storage
  * @param savedState - stringified boolean
