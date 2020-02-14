@@ -63,6 +63,9 @@ function SettingsToggle(title, description, propertyName, persistentStorageId, i
     // try loading the value from persistent storage to see what its default value should be
     var savedValue = window.localStorage.getItem(persistentStorageId);
     if (savedValue !== null) {
+        if (typeof savedValue === 'string') {
+            savedValue = JSON.parse(savedValue);
+        }
         realityEditor.gui.settings.toggleStates[propertyName] = savedValue;
     } else {
         // if there isn't a saved value, set it to the specified default value
@@ -101,7 +104,6 @@ function generateGetSettingsJsonMessage() {
     let defaultMessage = {
         editingMode: globalStates.editingMode,
         clearSkyState: globalStates.clearSkyState,
-        instantState: globalStates.instantState,
         speechState: globalStates.speechState,
         tutorialState: globalStates.tutorialState,
         externalState: globalStates.externalState,

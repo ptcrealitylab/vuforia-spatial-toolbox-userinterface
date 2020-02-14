@@ -65,7 +65,7 @@ realityEditor.gui.instantConnect = {
     logic: function (advertiseConnection) {
 
         // enable or disable instant connection based on the settings
-        if(!globalStates.instantState) return;
+        if (!realityEditor.gui.settings.toggleStates.instantState) return;
 
         if (!(advertiseConnection.object in objects)) return;
         if (!(advertiseConnection.node in objects[advertiseConnection.object].nodes)) return;
