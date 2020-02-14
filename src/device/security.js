@@ -110,7 +110,7 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
         
         // updates the settings iframe graphics to match the new lockingMode and lockPassword
         document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
-            getSettings: generateGetSettingsJsonMessage()
+            getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage()
         }), "*");
         
         //globalStates.authenticatedUser = null;

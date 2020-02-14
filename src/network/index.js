@@ -1747,13 +1747,13 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     if (msgContent.settings.getSettings) {
         self.contentWindow.postMessage(JSON.stringify({
-            getSettings: generateGetSettingsJsonMessage()
+            getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage()
         }), "*");
     }
 
     if (msgContent.settings.getMainDynamicSettings) {
         self.contentWindow.postMessage(JSON.stringify({
-            getMainDynamicSettings: generateGetMainDynamicSettingsJsonMessage()
+            getMainDynamicSettings: realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage()
         }), "*"); 
     }
 
@@ -1876,6 +1876,11 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 realityEditor.gui.settings.toggleStates[toggle.propertyName] = msgContent.settings.setSettings[toggle.propertyName];
                 console.log('set toggle value for ' + toggle.propertyName + ' to ' + msgContent.settings.setSettings[toggle.propertyName]);
                 toggle.onToggleCallback(msgContent.settings.setSettings[toggle.propertyName]);
+            }
+
+            if (typeof msgContent.settings.setSettings[toggle.propertyName + 'Text'] !== "undefined") {
+                console.log('toggle also set text value for ' + toggle.propertyName + 'Text' + ' to ' + msgContent.settings.setSettings[toggle.propertyName + 'Text']);
+                toggle.onTextCallback(msgContent.settings.setSettings[toggle.propertyName + 'Text']);
             }
         });
         
