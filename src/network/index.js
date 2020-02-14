@@ -1878,22 +1878,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
-        if (typeof msgContent.settings.setSettings.videoRecordingEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.videoRecordingEnabled) {
-                if (!globalStates.videoRecordingEnabled) {
-                    globalStates.videoRecordingEnabled = true;
-                    // add any one-time side-effects here
-                }
-            } else {
-                if (globalStates.videoRecordingEnabled) {
-                    globalStates.videoRecordingEnabled = false;
-                    // add any one-time side-effects here:
-                    // stop the recording if needed, otherwise there's no UI to stop it
-                    realityEditor.device.videoRecording.stopRecording();
-                }
-            }
-        }
-
         if (typeof msgContent.settings.setSettings.matrixBroadcastEnabled !== "undefined") {
             if (msgContent.settings.setSettings.matrixBroadcastEnabled) {
                 if (!globalStates.matrixBroadcastEnabled) {

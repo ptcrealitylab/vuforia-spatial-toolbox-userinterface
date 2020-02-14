@@ -100,6 +100,15 @@ realityEditor.device.onload = function () {
         // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
     });
 
+    realityEditor.gui.settings.addToggle('Video Recording', 'show recording button to create video frames', 'videoRecordingEnabled', 'SETUP:VIDEO_RECORDING', '../../../svg/video.svg', false, function(newValue) {
+        console.log('video recording was set to ' + newValue);
+        if (!newValue) {
+            realityEditor.device.videoRecording.stopRecording(); // ensure recording is stopped when mode is turned off
+        }
+    });
+
+
+
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);
     });
