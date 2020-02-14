@@ -109,7 +109,6 @@ var globalStates = {
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
     groupingEnabled: false,
-    realtimeEnabled: false,
 
     pocketButtonState: false,
 

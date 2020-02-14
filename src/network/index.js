@@ -1929,26 +1929,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 }
             }
         }
-
-        if (typeof msgContent.settings.setSettings.realtimeEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.realtimeEnabled) {
-                if (!globalStates.realtimeEnabled) {
-                    globalStates.realtimeEnabled = true;
-                    // add any one-time side-effects here
-                    console.log('TODO: realtimeEnabled mode enabled...');
-                    realityEditor.app.saveRealtimeState(true);
-                    realityEditor.network.realtime.initService();
-                }
-            } else {
-                if (globalStates.realtimeEnabled) {
-                    globalStates.realtimeEnabled = false;
-                    // add any one-time side-effects here:
-                    console.log('TODO: realtimeEnabled mode disabled...');
-                    realityEditor.app.saveRealtimeState(false);
-                }
-            }
-        }
-
+        
         if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
 
             if (msgContent.settings.setSettings.clearSkyState) {

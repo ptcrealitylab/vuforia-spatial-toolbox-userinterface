@@ -20,10 +20,10 @@ createNameSpace("realityEditor.network.realtime");
     function initService() {
         // TODO Is this redundant code? It seems to generate the error that pops up
         
-        if (realityEditor.device.utilities.isDesktop()) { globalStates.realtimeEnabled = true; } // realtime is necessary for desktop to work
-        console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, globalStates.realtimeEnabled);
+        if (realityEditor.device.utilities.isDesktop()) { realityEditor.gui.settings.toggleStates.realtimeEnabled = true; } // realtime is necessary for desktop to work
+        console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, realityEditor.gui.settings.toggleStates.realtimeEnabled);
 
-        if (hasBeenInitialized || !globalStates.realtimeEnabled) return;
+        if (hasBeenInitialized || !realityEditor.gui.settings.toggleStates.realtimeEnabled) return;
         
         console.log('actually initializing realtime services');
 
@@ -98,7 +98,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function updateObject(msgContent) {
 
-        if (!globalStates.realtimeEnabled) { return; }
+        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
 
         var object = realityEditor.getObject(msgContent.objectKey);
         if (!object) { return; }
@@ -114,7 +114,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function updateFrame(msgContent) {
 
-        if (!globalStates.realtimeEnabled) { return; }
+        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
 
         var frame = realityEditor.getFrame(msgContent.objectKey, msgContent.frameKey);
         if (!frame) { return; }
@@ -137,7 +137,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function updateNode(msgContent) {
 
-        if (!globalStates.realtimeEnabled) { return; }
+        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
 
         var node = realityEditor.getNode(msgContent.objectKey, msgContent.frameKey, msgContent.nodeKey);
         if (!node) { return; }
@@ -238,7 +238,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function broadcastUpdate(objectKey, frameKey, nodeKey, propertyPath, newValue) {
         
-        if (!globalStates.realtimeEnabled) { return; }
+        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
         
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);
@@ -266,7 +266,7 @@ createNameSpace("realityEditor.network.realtime");
      * @param {Array.<number>} matrix
      */
     function broadcastUpdateObjectMatrix(objectKey, matrix) {
-        if (!globalStates.realtimeEnabled) { return; }
+        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
         if (matrix.length !== 16) { return; } // don't delete previous value by sending an empty matrix to the server
 
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
@@ -282,7 +282,7 @@ createNameSpace("realityEditor.network.realtime");
     }
     
     function subscribeToObjectMatrices(objectKey, callback) {
-        if (!globalStates.realtimeEnabled) { return; }
+        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
 
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);
