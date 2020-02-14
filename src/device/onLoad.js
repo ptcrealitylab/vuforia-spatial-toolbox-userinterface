@@ -92,6 +92,14 @@ realityEditor.device.onload = function () {
         realityEditor.gui.ar.grouping.toggleGroupingMode(newValue);
     });
 
+    realityEditor.gui.settings.addToggle('Realtime Collaboration', 'constantly synchronizes with other users', 'realtimeEnabled', 'SETUP:REALTIME', '../../../svg/realtime.svg', false, function(newValue) {
+        console.log('realtime was set to ' + newValue);
+        if (newValue) {
+            realityEditor.network.realtime.initService();
+        }
+        // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
+    });
+
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);
     });

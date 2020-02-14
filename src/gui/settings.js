@@ -107,7 +107,6 @@ function generateGetSettingsJsonMessage() {
         videoRecordingEnabled: globalStates.videoRecordingEnabled,
         matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
         hololensModeEnabled: globalStates.hololensModeEnabled,
-        realtimeEnabled: globalStates.realtimeEnabled,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,

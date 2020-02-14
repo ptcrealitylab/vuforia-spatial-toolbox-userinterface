@@ -141,21 +141,6 @@ realityEditor.app.callbacks.onZoneText = function(savedState) {
 };
 
 /**
- * Callback for realityEditor.app.getRealtimeState
- * Loads the realtime collaboration service enabled on/off state (if any) from permanent storage
- * @param {string} savedState - stringified boolean
- */
-realityEditor.app.callbacks.onRealtimeState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded realtime state = ', savedState);
-
-    if (savedState) {
-        globalStates.realtimeEnabled = savedState;
-    }
-};
-
-/**
  * Callback for realityEditor.app.getTutorialState
  * Loads the tutorial state (if any) from permanent storage
  * @param savedState - stringified boolean
