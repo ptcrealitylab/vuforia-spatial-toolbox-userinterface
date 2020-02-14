@@ -1755,7 +1755,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     if (msgContent.settings.getMainDynamicSettings) {
         self.contentWindow.postMessage(JSON.stringify({
             getMainDynamicSettings: generateGetMainDynamicSettingsJsonMessage()
-        }), "*");
+        }), "*"); 
     }
 
     // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe

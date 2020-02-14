@@ -246,6 +246,10 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
 
         for (let key in msg.getMainDynamicSettings) {
+
+            var settingInfo = msg.getMainDynamicSettings[key];
+            console.log(key, settingInfo);
+
             // add HTML element for this toggle if it doesn't exist already
             var existingElement = container.querySelector('#' + key);
 
@@ -259,12 +263,17 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
                 let icon = document.createElement('img');
                 icon.classList.add('media-object', 'pull-left', 'settingsIcon');
-                icon.src = '../../../svg/object.svg';
+                icon.src = settingInfo.iconSrc; //'../../../svg/object.svg';
                 newElement.appendChild(icon);
 
                 let name = document.createElement('span');
-                name.innerText = key;
+                name.innerText = settingInfo.title;
                 newElement.appendChild(name);
+
+                let description = document.createElement('small');
+                description.innerText = settingInfo.description;
+                description.className = 'description';
+                newElement.appendChild(description);
 
                 let toggle = document.createElement('div');
                 toggle.classList.add('toggle');

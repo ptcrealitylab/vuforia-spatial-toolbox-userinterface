@@ -79,6 +79,19 @@ function SettingsToggle(title, description, propertyName, persistentStorageId, i
     };
 }
 
+// function getAddedToggleForProperty(propertyName) {
+//     var foundToggle = null;
+//     realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
+//         if (toggle.propertyName === propertyName) {
+//             foundToggle = toggle;
+//         }
+//     });
+//     if (!foundToggle) {
+//         console.warn('couldnt find toggle matching property: ' + propertyName);
+//     }
+//     return foundToggle;
+// }
+
 realityEditor.gui.settings.addToggle = function(title, description, propertyName, persistentStorageId, iconSrc, defaultValue, onToggleCallback) {
     let newToggle = new SettingsToggle(title, description, propertyName, persistentStorageId, iconSrc, defaultValue, onToggleCallback);
     realityEditor.gui.settings.addedToggles.push(newToggle);
@@ -120,7 +133,12 @@ function generateGetMainDynamicSettingsJsonMessage() {
 
     // dynamically sends in the current property values for each of the switches that were added using the addToggle API
     realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
-        defaultMessage[toggle.propertyName] = realityEditor.gui.settings.toggleStates[toggle.propertyName];
+        defaultMessage[toggle.propertyName] = {
+            value: realityEditor.gui.settings.toggleStates[toggle.propertyName],
+            title: toggle.title,
+            description: toggle.description,
+            iconSrc: toggle.iconSrc
+        };
     });
     
     return defaultMessage;
