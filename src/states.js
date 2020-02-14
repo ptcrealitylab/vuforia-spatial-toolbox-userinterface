@@ -98,9 +98,6 @@ var globalStates = {
     lockingMode: false,
     //authenticatedUser: null,
     lockPassword: null,
-
-    videoRecordingEnabled: false,
-    // videoRecordingMode: true,
     
     // setting this to FALSE speeds up rendering while in node view by NOT also rendering the frames (semi-transparently)
     renderFrameGhostsInNodeViewEnabled: false,
