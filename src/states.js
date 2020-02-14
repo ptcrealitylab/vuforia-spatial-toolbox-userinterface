@@ -102,8 +102,6 @@ var globalStates = {
     // setting this to FALSE speeds up rendering while in node view by NOT also rendering the frames (semi-transparently)
     renderFrameGhostsInNodeViewEnabled: false,
     
-    // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
-    matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
     groupingEnabled: false,
 

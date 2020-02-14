@@ -13,7 +13,6 @@ realityEditor.gui.settings.states = {
     animationFrameRequested: false,
     setInt : false,
     realityState: false,
-    matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
 };
 
