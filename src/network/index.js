@@ -1878,22 +1878,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
-        if (typeof msgContent.settings.setSettings.matrixBroadcastEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.matrixBroadcastEnabled) {
-                if (!globalStates.matrixBroadcastEnabled) {
-                    globalStates.matrixBroadcastEnabled = true;
-                    // add any one-time side-effects here
-                    realityEditor.device.desktopAdapter.startBroadcast();
-                }
-            } else {
-                if (globalStates.matrixBroadcastEnabled) {
-                    globalStates.matrixBroadcastEnabled = false;
-                    // add any one-time side-effects here:
-                    realityEditor.device.desktopAdapter.stopBroadcast();
-                }
-            }
-        }
-
         if (typeof msgContent.settings.setSettings.hololensModeEnabled !== "undefined") {
             if (msgContent.settings.setSettings.hololensModeEnabled) {
                 if (!globalStates.hololensModeEnabled) {

@@ -107,7 +107,16 @@ realityEditor.device.onload = function () {
         }
     });
 
-
+    // TODO: move each of these into their respective modules, e.g. this should go in desktopAdapter.js
+    realityEditor.gui.settings.addToggle('Connect to Desktop', 'sends matrices to Desktop Editor', 'matrixBroadcastEnabled', 'SETUP:CONNECT_TO_DESKTOP', '../../../svg/desktopConnect.svg', false, function(newValue) {
+        console.log('connect to desktop was set to ' + newValue);
+        if (newValue) {
+            // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
+            realityEditor.device.desktopAdapter.startBroadcast();
+        } else {
+            realityEditor.device.desktopAdapter.stopBroadcast();
+        }
+    });
 
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);
