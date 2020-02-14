@@ -1796,21 +1796,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
-        
-        if (typeof msgContent.settings.setSettings.extendedTracking !== "undefined") {
-
-            globalStates.extendedTracking = msgContent.settings.setSettings.extendedTracking;
-
-            console.log("jetzt aber mal richtig hier!!", globalStates.extendedTracking);
-
-            if (globalStates.extendedTracking === true) {
-                realityEditor.app.saveExtendedTrackingState(true);
-
-            } else {
-                realityEditor.app.saveExtendedTrackingState(false);
-
-            }
-        }
 
         if (typeof msgContent.settings.setSettings.editingMode !== "undefined") {
 

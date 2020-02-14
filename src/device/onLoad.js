@@ -82,6 +82,11 @@ realityEditor.device.onload = function () {
     realityEditor.app.getRealtimeState('realityEditor.app.callbacks.onRealtimeState');
     realityEditor.app.getGroupingState('realityEditor.app.callbacks.onGroupingState');
     realityEditor.app.getTutorialState('realityEditor.app.callbacks.onTutorialState');
+    
+    realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(e) {
+        console.log('extended tracking was set to ' + e);
+        this.enableExtendedTracking(e);
+    });
 
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);

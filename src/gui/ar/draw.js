@@ -301,7 +301,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
     
     // TODO: not currently used, needs to be adjusted to be useful
-    // if (globalStates.extendedTracking) {
+    // if (realityEditor.gui.settings.toggleStates.extendedTracking) {
     //     this.updateExtendedTrackingVisibility(visibleObjects);
     // }
     
