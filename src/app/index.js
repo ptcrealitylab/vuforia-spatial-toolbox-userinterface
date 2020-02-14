@@ -456,15 +456,6 @@ realityEditor.app.saveRealityState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for instant (capacitive touch) mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveInstantState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:INSTANT', storedValue);
-};
-
-/**
  * Save the persistent setting to disk for whether to use zone.
  * @param {boolean} newState
  */
@@ -541,14 +532,6 @@ realityEditor.app.getClearSkyState = function(callback) {
  */
 realityEditor.app.getRealityState = function(callback) {
     this.getStorage('SETUP:REALITY', callback);
-};
-
-/**
- * Get the persistent setting for instant (capacitive touch) mode.
- * @param {function} callback
- */
-realityEditor.app.getInstantState = function(callback) {
-    this.getStorage('SETUP:INSTANT', callback);
 };
 
 /**

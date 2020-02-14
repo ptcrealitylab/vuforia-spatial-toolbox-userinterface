@@ -788,8 +788,7 @@ realityEditor.network.onAction = function (action) {
     }
     
     if (typeof thisAction.advertiseConnection !== "undefined") {
-        console.log(globalStates.instantState);
-        if (globalStates.instantState) {
+        if (realityEditor.gui.settings.toggleStates.instantState) {
             realityEditor.gui.instantConnect.logic(thisAction.advertiseConnection);
         }
     }
@@ -1823,28 +1822,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 realityEditor.app.saveZoneState(false);
             }
         }
-        
-        if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
-            if (msgContent.settings.setSettings.instantState) {
-                globalStates.instantState = true;
-                realityEditor.app.saveInstantState(true);
-
-                // TODO: stop hijacking old UI to debug this, and instead make a settings toggle for high-quality mode vs better-performance mode 
-                globalStates.renderFrameGhostsInNodeViewEnabled = false;
-
-            } else {
-                globalStates.instantState = false;
-                realityEditor.app.saveInstantState(false);
-                
-                globalStates.renderFrameGhostsInNodeViewEnabled = true;
-            }
-        }
 
         if (typeof msgContent.settings.setSettings.speechState !== "undefined") {
             if (msgContent.settings.setSettings.speechState) {
                 if (!globalStates.speechState) { 
                     globalStates.speechState = true;
-                    if (globalStates.instantState || globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
+                    if (realityEditor.gui.settings.toggleStates.instantState || globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
                         document.getElementById('speechConsole').style.display = 'inline';
                     }
                     realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");
