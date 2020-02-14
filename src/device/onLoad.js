@@ -126,6 +126,22 @@ realityEditor.device.onload = function () {
     realityEditor.gui.settings.addToggle('Instant Connect', 'if available with prepared objects', 'instantState', 'SETUP:INSTANT_CONNECT', '../../../svg/instantLink.svg', false, function(newValue) {
         console.log('instant connect was set to ' + newValue);
     });
+    
+    realityEditor.gui.settings.addToggle('Speech Controls', 'must enable microphone', 'speechState', 'SETUP:SPEECH', '../../../svg/speech.svg', false, function(newValue) {
+        console.log('speech controls was set to ' + newValue);
+        
+        if (newValue) { // TODO: if default value is true, how will these get triggered?
+            if (globalStates.debugSpeechConsole) {
+                document.getElementById('speechConsole').style.display = 'inline';
+            }
+            realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback");
+            realityEditor.app.startSpeechRecording();
+        } else {
+            document.getElementById('speechConsole').style.display = 'none';
+            realityEditor.app.stopSpeechRecording();
+        }
+        
+    });
 
     realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
         console.log('show logger was set to ' + e);

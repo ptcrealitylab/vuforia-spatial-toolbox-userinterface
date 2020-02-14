@@ -104,7 +104,6 @@ function generateGetSettingsJsonMessage() {
     let defaultMessage = {
         editingMode: globalStates.editingMode,
         clearSkyState: globalStates.clearSkyState,
-        speechState: globalStates.speechState,
         tutorialState: globalStates.tutorialState,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,

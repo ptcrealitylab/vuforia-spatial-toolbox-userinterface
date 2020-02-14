@@ -1823,26 +1823,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
         }
 
-        if (typeof msgContent.settings.setSettings.speechState !== "undefined") {
-            if (msgContent.settings.setSettings.speechState) {
-                if (!globalStates.speechState) { 
-                    globalStates.speechState = true;
-                    if (realityEditor.gui.settings.toggleStates.instantState || globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
-                        document.getElementById('speechConsole').style.display = 'inline';
-                    }
-                    realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");
-                    
-                    realityEditor.app.startSpeechRecording();
-                }
-            } else {
-                if (globalStates.speechState) {
-                    globalStates.speechState = false;
-                    document.getElementById('speechConsole').style.display = 'none';
-                    realityEditor.app.stopSpeechRecording();
-                }
-            }
-        }
-
         if (typeof msgContent.settings.setSettings.tutorialState !== "undefined") {
             if (msgContent.settings.setSettings.tutorialState) {
                 if (!globalStates.tutorialState) {
