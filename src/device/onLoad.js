@@ -82,7 +82,7 @@ realityEditor.device.onload = function () {
     
     realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(newValue) {
         console.log('extended tracking was set to ' + newValue);
-        this.enableExtendedTracking(newValue);
+        realityEditor.app.enableExtendedTracking(newValue);
     });
 
     realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled', 'SETUP:GROUPING', '../../../svg/grouping.svg', false, function(newValue) {
@@ -144,18 +144,7 @@ realityEditor.device.onload = function () {
         console.log('tutorial mode was set to ' + newValue);
     });
     
-    
-    // todo; add toggle for tutorial
     // todo; figure out how to add text boxes too (either/or text/toggle)
-    // todo; trigger side effects once when it first loads default values from storage (just trigger callback from constructor)
-
-    realityEditor.gui.settings.addToggle('Show Logger', 'prints debug information in the corner', 'loggerState', 'SETUP:SHOW_LOGGER', 'undefined.svg', false, function(e) {
-        console.log('show logger was set to ' + e);
-    });
-
-    realityEditor.gui.settings.addToggle('Read-only', 'prevents user from making changes', 'readOnlyMode', 'SETUP:READ_ONLY', 'undefined.svg', false, function(e) {
-        console.log('read-only mode was set to ' + e);
-    });
     
     // initialize additional services
     realityEditor.device.initService();

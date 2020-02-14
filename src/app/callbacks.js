@@ -220,6 +220,7 @@ var DISABLE_ALL_EXTENDED_TRACKING = false;
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+    if (!realityEditor.worldObjects) { return; } // prevents tons of error messages while app is loading but Vuforia has started
     
     // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 

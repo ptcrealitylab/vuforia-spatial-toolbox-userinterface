@@ -504,6 +504,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             lasso.setAttribute("points", "");
             lasso.classList.remove('groupLassoFadeOut');
         }
+        if (!lasso) { return; }
 
         var lassoPoints = lasso.getAttribute("points");
         var start = points[0];

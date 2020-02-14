@@ -80,6 +80,9 @@ function SettingsToggle(title, description, propertyName, persistentStorageId, i
         window.localStorage.setItem(persistentStorageId, realityEditor.gui.settings.toggleStates[propertyName]);
         onToggleCallback(e); // trigger additional side effects
     };
+    
+    // trigger the callback one time automatically on init, so that any side effects for the saved value get triggered
+    this.onToggleCallback(realityEditor.gui.settings.toggleStates[propertyName]);
 }
 
 // function getAddedToggleForProperty(propertyName) {
