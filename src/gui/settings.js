@@ -69,7 +69,7 @@ function SettingsToggle(title, description, settingType, propertyName, persisten
     this.settingType = settingType;
     
     // try loading the value from persistent storage to see what its default value should be
-    var savedValue = window.localStorage.getItem(persistentStorageId);
+    let savedValue = window.localStorage.getItem(persistentStorageId);
     if (savedValue !== null) {
         if (typeof savedValue === 'string') {
             savedValue = JSON.parse(savedValue);
@@ -90,6 +90,12 @@ function SettingsToggle(title, description, settingType, propertyName, persisten
 
     this.onTextCallback = function() {};
     if (settingType === realityEditor.gui.settings.SETTING_MENU_TYPE.TOGGLE_WITH_TEXT) {
+        let savedValue = window.localStorage.getItem(persistentStorageId + '_TEXT');
+        if (savedValue !== null) {
+            realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = savedValue;
+        } else {
+            realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = '';
+        }
         this.onTextCallback = function(newValue) {
             window.localStorage.setItem(persistentStorageId + '_TEXT', newValue);
             if (onTextCallback) {
@@ -115,7 +121,7 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
 /**
  * Creates a JSON body that can be sent into the settings iframe with all the current setting values.
  * In addition to a few hard-coded settings, injects all the settings that were created using the addToggle API.
- * @return {{discoveryState: *, lockingMode: *, editingMode: *, settingsButton: *, lockPassword: *, zoneText: *, realityState: *, externalState: *, zoneState: *, clearSkyState: *, ...}}
+ * @return {Object.<string, boolean|string>}
  */
 realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
     let defaultMessage = {
@@ -126,9 +132,7 @@ realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
         settingsButton : globalStates.settingsButtonState,
         lockingMode: globalStates.lockingMode,
         lockPassword: globalStates.lockPassword,
-        realityState: globalStates.realityState,
-        zoneText: globalStates.zoneText,
-        zoneState: globalStates.zoneState
+        realityState: globalStates.realityState
     };
 
     // dynamically sends in the current property values for each of the switches that were added using the addToggle API
@@ -157,6 +161,12 @@ realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage = function(
             iconSrc: toggle.iconSrc,
             settingType: toggle.settingType
         };
+        if (toggle.settingType === realityEditor.gui.settings.SETTING_MENU_TYPE.TOGGLE_WITH_TEXT) {
+            defaultMessage[toggle.propertyName].associatedText = {
+                propertyName: toggle.propertyName + 'Text',
+                value: this.toggleStates[toggle.propertyName + 'Text']
+            }
+        }
     }.bind(this));
     
     return defaultMessage;

@@ -111,36 +111,6 @@ realityEditor.app.callbacks.onDiscoveryText = function(savedState) {
 };
 
 /**
- * Callback for realityEditor.app.getZoneState
- * Loads the zone on/off state (if any) from permanent storage
- * @param {string} savedState - stringified boolean
- */
-realityEditor.app.callbacks.onZoneState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded zone state = ', savedState);
-
-    if (savedState) {
-        globalStates.zoneState = savedState;
-    }
-};
-
-/**
- * Callback for realityEditor.app.getZoneText
- * Loads the zone name (if any) from permanent storage
- * @param {string} savedState
- */
-realityEditor.app.callbacks.onZoneText = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded zone text = ', savedState);
-
-    if (savedState) {
-        globalStates.zoneText = savedState;
-    }
-};
-
-/**
  * Callback for realityEditor.app.getProjectionMatrix
  * Sets the projection matrix once using the value from the AR engine
  * @param {Array.<number>} matrix
@@ -171,13 +141,13 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
         typeof message.ip !== 'undefined') {
         
         if (typeof message.zone !== 'undefined' && message.zone !== '') {
-            if (globalStates.zoneState && globalStates.zoneText === message.zone) {
+            if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
                 // console.log('Added object from zone=' + message.zone);
                 realityEditor.network.addHeartbeatObject(message);
             }
         
         } else {
-            if (!globalStates.zoneState) {
+            if (!realityEditor.gui.settings.toggleStates.zoneState) {
                 // console.log('Added object without zone');
                 realityEditor.network.addHeartbeatObject(message);
             }

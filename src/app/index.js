@@ -456,23 +456,6 @@ realityEditor.app.saveRealityState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for whether to use zone.
- * @param {boolean} newState
- */
-realityEditor.app.saveZoneState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:ZONE', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for the zone string.
- * @param {string} newZoneText
- */
-realityEditor.app.saveZoneText = function(newZoneText) {
-    this.setStorage('SETUP:ZONETEXT', newZoneText);
-};
-
-/**
  * Save the persistent setting to disk for the object discovery server string.
  * @param {string} newDiscoveryText
  */
@@ -514,22 +497,6 @@ realityEditor.app.getClearSkyState = function(callback) {
  */
 realityEditor.app.getRealityState = function(callback) {
     this.getStorage('SETUP:REALITY', callback);
-};
-
-/**
- * Get the persistent setting for whether to use zone.
- * @param {function} callback
- */
-realityEditor.app.getZoneState = function(callback) {
-    this.getStorage('SETUP:ZONE', callback);
-};
-
-/**
- * Get the persistent setting for the zone string.
- * @param {function} callback
- */
-realityEditor.app.getZoneText = function(callback) {
-    this.getStorage('SETUP:ZONETEXT', callback);
 };
 
 /**

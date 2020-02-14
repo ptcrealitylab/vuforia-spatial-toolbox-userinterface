@@ -82,8 +82,6 @@ var globalStates = {
     guiState: "ui", // possible values: "ui"=(frames visible), "node"=(nodes visible), "logic"=(crafting board)
     UIOffMode: false,
     settingsButtonState: false,
-    zoneText: "",
-    zoneState: false,
     currentLogic: null,
 
     developerState: false,
