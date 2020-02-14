@@ -489,15 +489,6 @@ realityEditor.app.saveExternalText = function(newExternalText) {
 };
 
 /**
- * Save the persistent setting to disk for realtime multi-user mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveRealtimeState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:REALTIME', storedValue);
-};
-
-/**
  ************** LOAD DATA FROM DISK ****************
  */
 
@@ -555,14 +546,6 @@ realityEditor.app.getDiscoveryText = function(callback) {
  */
 realityEditor.app.getExternalText = function(callback) {
     this.getStorage('SETUP:EXTERNAL', callback);
-};
-
-/**
- * Get the persistent setting for whether to send/receive multi-user realtime updates of all frame interactions.
- * @param {function} callback
- */
-realityEditor.app.getRealtimeState = function(callback) {
-    this.getStorage('SETUP:REALTIME', callback);
 };
 
 /**
