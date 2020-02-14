@@ -99,7 +99,6 @@ realityEditor.gui.settings.addToggle = function(title, description, propertyName
 
 function generateGetSettingsJsonMessage() {
     let defaultMessage = {
-        extendedTracking: globalStates.extendedTracking,
         editingMode: globalStates.editingMode,
         clearSkyState: globalStates.clearSkyState,
         instantState: globalStates.instantState,
@@ -108,7 +107,6 @@ function generateGetSettingsJsonMessage() {
         videoRecordingEnabled: globalStates.videoRecordingEnabled,
         matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
         hololensModeEnabled: globalStates.hololensModeEnabled,
-        groupingEnabled: globalStates.groupingEnabled,
         realtimeEnabled: globalStates.realtimeEnabled,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,

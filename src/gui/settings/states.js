@@ -1,7 +1,6 @@
 createNameSpace("realityEditor.gui.settings");
 
 realityEditor.gui.settings.states = {
-    extendedTracking: false,
     editingMode: false,
     clearSkyState: false,
     externalState: "",
@@ -17,7 +16,6 @@ realityEditor.gui.settings.states = {
     videoRecordingEnabled: false,
     matrixBroadcastEnabled: false,
     hololensModeEnabled: false,
-    groupingEnabled: false,
     realtimeEnabled: false
 };
 
