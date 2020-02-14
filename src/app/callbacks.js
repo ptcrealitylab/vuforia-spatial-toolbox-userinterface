@@ -141,22 +141,6 @@ realityEditor.app.callbacks.onZoneText = function(savedState) {
 };
 
 /**
- * Callback for realityEditor.app.getTutorialState
- * Loads the tutorial state (if any) from permanent storage
- * @param savedState - stringified boolean
- */
-realityEditor.app.callbacks.onTutorialState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded tutorial state = ', savedState);
-
-    if (savedState) {
-        globalStates.tutorialState = savedState;
-    }
-};
-
-
-/**
  * Callback for realityEditor.app.getProjectionMatrix
  * Sets the projection matrix once using the value from the AR engine
  * @param {Array.<number>} matrix

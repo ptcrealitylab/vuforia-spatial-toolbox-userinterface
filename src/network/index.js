@@ -1822,24 +1822,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 realityEditor.app.saveZoneState(false);
             }
         }
-
-        if (typeof msgContent.settings.setSettings.tutorialState !== "undefined") {
-            if (msgContent.settings.setSettings.tutorialState) {
-                if (!globalStates.tutorialState) {
-                    globalStates.tutorialState = true;
-                    // realityEditor.app.startSpeechRecording();
-                    console.log('set tutorialState on');
-                    realityEditor.app.saveTutorialState(true);
-                }
-            } else {
-                if (globalStates.tutorialState) {
-                    globalStates.tutorialState = false;
-                    // realityEditor.app.stopSpeechRecording();
-                    console.log('set tutorialState off');
-                    realityEditor.app.saveTutorialState(false);
-                }
-            }
-        }
         
         if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
 

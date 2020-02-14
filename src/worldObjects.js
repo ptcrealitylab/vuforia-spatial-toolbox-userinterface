@@ -348,7 +348,7 @@ createNameSpace("realityEditor.worldObjects");
                 if (typeof realityEditor.gui.ar.draw.visibleObjects[getLocalWorldId()] !== 'undefined') {
                     isFirstTimeSettingWorldPosition = false;
                     setTimeout(function() {
-                        if (globalStates.tutorialState) {
+                        if (realityEditor.gui.settings.toggleStates.tutorialState) {
                             console.log('add tutorial frame to _WORLD_local');
                             realityEditor.gui.pocket.addTutorialFrame(getLocalWorldId());
                         } else {
