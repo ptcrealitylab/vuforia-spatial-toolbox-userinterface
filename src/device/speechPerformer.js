@@ -21,7 +21,7 @@ realityEditor.device.speechPerformer.initService = function() {
             if (globalStates.editingMode) { return; }
 
             // while speech state is on, give the user some visual feedback about which node is being recognized as speech context (closest to middle of screen)
-            if (globalStates.speechState) {
+            if (realityEditor.gui.settings.toggleStates.speechState) {
 
                 globalStates.nodeSpeechHighlightCounter++;
                 if (globalStates.nodeSpeechHighlightCounter > 20) {
