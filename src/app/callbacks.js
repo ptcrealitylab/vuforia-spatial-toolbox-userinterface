@@ -366,7 +366,7 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
     realityEditor.gui.ar.draw.visibleObjectsStatus = {};
     for (var key in visibleObjects) {
         realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-        if ( (!DISABLE_ALL_EXTENDED_TRACKING && globalStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
+        if ( (!DISABLE_ALL_EXTENDED_TRACKING && realityEditor.gui.settings.toggleStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
             visibleObjects[key] = visibleObjects[key].matrix;
         } else {
             if (visibleObjects[key].status === 'EXTENDED_TRACKED') {

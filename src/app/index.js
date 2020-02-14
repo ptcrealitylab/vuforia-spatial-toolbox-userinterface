@@ -474,16 +474,6 @@ realityEditor.app.saveZoneState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for extended tracking mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveExtendedTrackingState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:TRACKING', storedValue);
-    this.enableExtendedTracking(newState);
-};
-
-/**
  * Save the persistent setting to disk for the zone string.
  * @param {string} newZoneText
  */
@@ -576,14 +566,6 @@ realityEditor.app.getInstantState = function(callback) {
  */
 realityEditor.app.getZoneState = function(callback) {
     this.getStorage('SETUP:ZONE', callback);
-};
-
-/**
- * Get the persistent setting for extended tracking mode.
- * @param {function} callback
- */
-realityEditor.app.getExtendedTrackingState = function(callback) {
-    this.getStorage('SETUP:TRACKING', callback);
 };
 
 /**
