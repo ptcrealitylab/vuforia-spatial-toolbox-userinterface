@@ -1,5 +1,13 @@
 createNameSpace("realityEditor.gui.settings");
 
+// TODO: import this from common source as settings.js gets it instead of redefining
+const SETTING_MENU_TYPE = Object.freeze({
+    TOGGLE: 'TOGGLE',
+    TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
+    ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
+    ACTIVATE_DEACTIVATE_WITH_TEXT: 'ACTIVATE_DEACTIVATE_WITH_TEXT'
+});
+
 realityEditor.gui.settings.setSettings = function (id, state) {
     if (!document.getElementById(id)) return;
 
@@ -260,6 +268,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
                 let newElement = document.createElement('li');
                 newElement.classList.add('table-view-cell');
+                newElement.style.position = 'relative';
 
                 let icon = document.createElement('img');
                 icon.classList.add('media-object', 'pull-left', 'settingsIcon');
@@ -274,6 +283,19 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 description.innerText = settingInfo.description;
                 description.className = 'description';
                 newElement.appendChild(description);
+
+                if (settingInfo.settingType === SETTING_MENU_TYPE.TOGGLE_WITH_TEXT ||
+                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_WITH_TEXT ||
+                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_DEACTIVATE_WITH_TEXT) {
+
+                    let textField = document.createElement('input');
+                    textField.classList.add('pull-left', 'settingTextField');
+                    textField.type = 'text';
+                    textField.placeholder = 'placeholder text';
+                    // TODO: on input event
+
+                    newElement.appendChild(textField);
+                }
 
                 let toggle = document.createElement('div');
                 toggle.classList.add('toggle');
@@ -298,9 +320,13 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             msg.settings.setSettings = {};
             msg.settings.setSettings[e.target.id] = e.detail.isActive;
             if (e.target.id === "lockingToggle") {
-                
                 msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
                 realityEditor.gui.settings.updateLockUI();
+            }
+            // check if it has an attached text field, and if so, send that text too
+            if (e.target.parentElement.querySelector('.settingTextField')) {
+                let inputString = e.target.parentElement.querySelector('.settingTextField').value;
+                msg.settings.setSettings[e.target.id + 'Text'] = inputString;
             }
             parent.postMessage(JSON.stringify(msg), "*");
         }
