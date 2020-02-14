@@ -1877,26 +1877,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 }
             }
         }
-
-        if (typeof msgContent.settings.setSettings.hololensModeEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.hololensModeEnabled) {
-                if (!globalStates.hololensModeEnabled) {
-                    globalStates.hololensModeEnabled = true;
-                    // add any one-time side-effects here
-                    // realityEditor.device.desktopAdapter.startBroadcast();
-                    console.log('hololens mode enabled...');
-                    realityEditor.device.hololensAdapter.toggleHololensMode(true);
-                }
-            } else {
-                if (globalStates.hololensModeEnabled) {
-                    globalStates.hololensModeEnabled = false;
-                    // add any one-time side-effects here:
-                    // realityEditor.device.desktopAdapter.stopBroadcast();
-                    console.log('hololens mode disabled...');
-                    realityEditor.device.hololensAdapter.toggleHololensMode(false);
-                }
-            }
-        }
         
         if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
 

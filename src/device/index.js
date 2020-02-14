@@ -1086,7 +1086,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
 
-                if (!globalStates.groupingEnabled) {
+                if (!realityEditor.gui.settings.toggleStates.groupingEnabled) {
                     
                     // try only doing it for double taps now....
                     if (!this.isDoubleTap) { // on first tap
