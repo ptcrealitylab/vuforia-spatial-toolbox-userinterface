@@ -136,6 +136,14 @@ realityEditor.device.onload = function () {
     
     // add settings toggles for the Develop sub-menu
 
+    realityEditor.gui.settings.addToggle('AR-UI Repositioning', 'instantly drag frames instead of interacting', 'editingMode',  '../../../svg/move.svg', false, function(newValue) {
+        realityEditor.device.setEditingMode(newValue);
+    }).moveToDevelopMenu();
+
+    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
+        console.log('clear sky mode set to ' + newValue);
+    }).moveToDevelopMenu();
+
     realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'http://...', function(newValue, textValue) {
 
         if (newValue && textValue.length > 0) {
@@ -166,14 +174,6 @@ realityEditor.device.onload = function () {
             }, 1000); // wait to make sure all the necessary modules for object discovery/creation are ready
         }
 
-    }).moveToDevelopMenu();
-
-    realityEditor.gui.settings.addToggle('AR-UI Repositioning', 'instantly drag frames instead of interacting', 'editingMode',  '../../../svg/move.svg', false, function(newValue) {
-        realityEditor.device.setEditingMode(newValue);
-    }).moveToDevelopMenu();
-
-    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
-        console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
     // initialize additional services
