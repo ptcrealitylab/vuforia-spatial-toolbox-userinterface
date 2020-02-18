@@ -74,9 +74,7 @@ realityEditor.device.onload = function () {
     // desktop adapter needs to load first to modify namespace if needed
     realityEditor.device.desktopAdapter.initService();
 
-    // load persistent state from disk
-    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
-    realityEditor.app.getDiscoveryText('realityEditor.app.callbacks.onDiscoveryText');
+    // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 
     realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
         function(newValue) {
@@ -137,6 +135,39 @@ realityEditor.device.onload = function () {
     });
     
     // add settings toggles for the Develop sub-menu
+
+    realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'http://...', function(newValue, textValue) {
+
+        if (newValue && textValue.length > 0) {
+            // we still need to save this to native device storage to be backwards-compatible with how the interface is loaded
+            realityEditor.app.saveExternalText(textValue);
+
+            let isCurrentUrl = window.location.href.includes(textValue);
+            if (!isCurrentUrl) {
+                setTimeout(function() { // load from external server when toggled on with a new url
+                    realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: textValue});
+                }.bind(this), 1000);
+            }
+        } else {
+            realityEditor.app.saveExternalText('');
+            setTimeout(function() { // reload from local server when toggled off
+                realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: ''});
+            }.bind(this), 1000);
+        }
+
+    }, true).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1')); // default value is based on the current source
+
+    realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
+        console.log('discovery state set to ' + newValue + ' with text ' + textValue);
+
+        if (newValue) {
+            setTimeout(function() {
+                realityEditor.network.discoverObjectsFromServer(textValue);
+            }, 1000); // wait to make sure all the necessary modules for object discovery/creation are ready
+        }
+
+    }).moveToDevelopMenu();
+
     realityEditor.gui.settings.addToggle('AR-UI Repositioning', 'instantly drag frames instead of interacting', 'editingMode',  '../../../svg/move.svg', false, function(newValue) {
         realityEditor.device.setEditingMode(newValue);
     }).moveToDevelopMenu();

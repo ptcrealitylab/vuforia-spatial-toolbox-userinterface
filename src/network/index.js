@@ -1835,11 +1835,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
     }
-
-    if (msgContent.settings.setDiscoveryText) {
-        globalStates.discoveryState = msgContent.settings.setDiscoveryText;
-        this.discoverObjectsFromServer(msgContent.settings.setDiscoveryText)
-    }
 };
 
 /**
