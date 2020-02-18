@@ -136,6 +136,15 @@ realityEditor.device.onload = function () {
         console.log('tutorial mode was set to ' + newValue);
     });
     
+    // add settings toggles for the Develop sub-menu
+    realityEditor.gui.settings.addToggle('AR-UI Repositioning', 'instantly drag frames instead of interacting', 'editingMode',  '../../../svg/move.svg', false, function(newValue) {
+        realityEditor.device.setEditingMode(newValue);
+    }).moveToDevelopMenu();
+
+    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
+        console.log('clear sky mode set to ' + newValue);
+    }).moveToDevelopMenu();
+
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();

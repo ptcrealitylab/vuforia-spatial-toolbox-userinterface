@@ -68,11 +68,21 @@ realityEditor.gui.settings.toggleStates = {};
  * Enum defining different types of settings UIs
  * @type {Readonly<{TOGGLE: string, ACTIVATE_DEACTIVATE_WITH_TEXT: string, TOGGLE_WITH_TEXT: string, ACTIVATE_WITH_TEXT: string}>}
  */
-realityEditor.gui.settings.SETTING_MENU_TYPE = Object.freeze({
+realityEditor.gui.settings.InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
+    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
     ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
     ACTIVATE_DEACTIVATE_WITH_TEXT: 'ACTIVATE_DEACTIVATE_WITH_TEXT'
+});
+
+/**
+ * Enum defining the different sub-menus
+ * @type {Readonly<{MAIN: string, DEVELOP: string}>}
+ */
+realityEditor.gui.settings.MenuPages = Object.freeze({
+    MAIN: 'MAIN',
+    DEVELOP: 'DEVELOP'
 });
 
 /**
@@ -81,7 +91,7 @@ realityEditor.gui.settings.SETTING_MENU_TYPE = Object.freeze({
  *
  * @param {string} title - the text label for the setting in the menu
  * @param {string} description - a short description string that is rendered next to the title
- * @param {string} settingType - from the SETTING_MENU_TYPE enum - if TOGGLE, has a switch that changes a boolean
+ * @param {string} settingType - from the InterfaceType enum - if TOGGLE, has a switch that changes a boolean
  *                                  if TOGGLE_WITH_TEXT, also has a text box and a string variable
  * @param {string} propertyName - creates a variable with this name (in realityEditor.gui.settings.toggleStates) to store the boolean
  *                                  if TOGGLE_WITH_TEXT, also creates one named propertyName+'Text' to store the string
@@ -99,6 +109,7 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
     this.iconSrc = iconSrc;
     this.settingType = settingType;
     this.placeholderText = placeholderText;
+    this.menuName = realityEditor.gui.settings.MenuPages.MAIN; // defaults to main menu. use moveToDevelopMenu to change.
     
     // try loading the value from persistent storage to see what its default value should be
     let savedValue = window.localStorage.getItem(persistentStorageId);
@@ -117,7 +128,7 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
     };
 
     this.onTextCallback = function() {};
-    if (settingType === realityEditor.gui.settings.SETTING_MENU_TYPE.TOGGLE_WITH_TEXT) {
+    if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT) {
         // set up the property containing the value in the setting text box
         let savedValue = window.localStorage.getItem(persistentStorageId + '_TEXT');
         if (savedValue !== null) {
@@ -139,6 +150,13 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
 }
 
 /**
+ * Puts the setting in the DEVELOP sub-menu instead of the MAIN sub-menu
+ */
+SettingsToggle.prototype.moveToDevelopMenu = function() {
+    this.menuName = realityEditor.gui.settings.MenuPages.DEVELOP;
+};
+
+/**
  * Creates a new entry that will added to the settings menu, including the associated property and persistent storage.
  * This type of entry has a toggle switch UI.
  * @param {string} title
@@ -147,10 +165,12 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
  * @param {string} iconSrc
  * @param {boolean} defaultValue
  * @param {function<boolean>} onToggleCallback - gets triggered when the switch is toggled
+ * @return {SettingsToggle}
  */
 realityEditor.gui.settings.addToggle = function(title, description, propertyName, iconSrc, defaultValue, onToggleCallback) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.SETTING_MENU_TYPE.TOGGLE, propertyName, iconSrc, defaultValue, undefined, onToggleCallback);
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE, propertyName, iconSrc, defaultValue, undefined, onToggleCallback);
     realityEditor.gui.settings.addedToggles.push(newToggle);
+    return newToggle;
 };
 
 /**
@@ -164,10 +184,12 @@ realityEditor.gui.settings.addToggle = function(title, description, propertyName
  * @param {string} placeholderText
  * @param {function<boolean>} onToggleCallback - gets triggered when the switch is toggled
  * @param onTextCallback - gets triggered every time the text box changes
+ * @return {SettingsToggle}
  */
 realityEditor.gui.settings.addToggleWithText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.SETTING_MENU_TYPE.TOGGLE_WITH_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback);
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback);
     realityEditor.gui.settings.addedToggles.push(newToggle);
+    return newToggle;
 };
 
 /**
@@ -177,8 +199,6 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
  */
 realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
     let defaultMessage = {
-        editingMode: globalStates.editingMode,
-        clearSkyState: globalStates.clearSkyState,
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,
@@ -196,16 +216,19 @@ realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
 };
 
 /**
- * Creates a JSON body that can be sent into the settings iframe with the settings that should be rendered on the main
+ * Creates a JSON body that can be sent into the settings iframe with the settings that should be rendered on the specified
  * settings page, which were generated using the addToggle API. Each item consists of the name, description text,
- * icon image, and the current value of that setting.
+ * icon image, and the current value of that setting. Entries added with addToggleWithText contain more data.
+ * @param {string} menuName - from enum MenuPages - MAIN or DEVELOP
  * @return {Object.<string, {value: boolean, title: string, description: string, iconSrc: string}>}
  */
-realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage = function() {
+realityEditor.gui.settings.generateDynamicSettingsJsonMessage = function(menuName) {
     let defaultMessage = {};
 
     // dynamically sends in the current property values for each of the switches that were added using the addToggle API
-    this.addedToggles.forEach(function(toggle) {
+    this.addedToggles.filter(function(toggle) {
+        return toggle.menuName === menuName;
+    }).forEach(function(toggle) {
         defaultMessage[toggle.propertyName] = {
             value: this.toggleStates[toggle.propertyName],
             title: toggle.title,
@@ -213,7 +236,7 @@ realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage = function(
             iconSrc: toggle.iconSrc,
             settingType: toggle.settingType
         };
-        if (toggle.settingType === realityEditor.gui.settings.SETTING_MENU_TYPE.TOGGLE_WITH_TEXT) {
+        if (toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT) {
             defaultMessage[toggle.propertyName].associatedText = {
                 propertyName: toggle.propertyName + 'Text',
                 value: this.toggleStates[toggle.propertyName + 'Text'],
@@ -225,10 +248,10 @@ realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage = function(
     return defaultMessage;
 };
 
+
+
 realityEditor.gui.settings.hideSettings = function() {
-
-    console.log("this is what I want to show:  ",globalStates.clearSkyState);
-
+    
 	globalStates.settingsButtonState = false;
 
     document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
@@ -242,7 +265,7 @@ realityEditor.gui.settings.hideSettings = function() {
         document.getElementById("settingsEdgeDiv").style.display = "none";
     }
     
-    if (globalStates.clearSkyState) {
+    if (realityEditor.gui.settings.toggleStates.clearSkyState) {
         document.getElementById("UIButtons").classList.add('clearSky');
     } else {
         document.getElementById("UIButtons").classList.remove('clearSky');
@@ -270,7 +293,7 @@ realityEditor.gui.settings.showSettings = function() {
 
     document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
         getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
-        getMainDynamicSettings: realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage()
+        getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
     }), "*");
 
     overlayDiv.style.display = "none";

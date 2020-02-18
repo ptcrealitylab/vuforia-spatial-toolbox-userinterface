@@ -1,7 +1,7 @@
 createNameSpace("realityEditor.gui.settings");
 
 // TODO: import this from common source as settings.js gets it instead of redefining
-const SETTING_MENU_TYPE = Object.freeze({
+const InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
     ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
@@ -173,6 +173,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     // this is a temporary fix to check if this script is being executed on the main settings vs the developer settings
     if (document.querySelector('.content').id === 'mainSettings') {
         settingsRequest.getMainDynamicSettings = true; // ask for which settings should be displayed on the main settings page
+    
+    } else if (document.querySelector('.content').id === 'developSettings') {
+        settingsRequest.getDevelopDynamicSettings = true; // ask for which settings should be displayed on the main settings page
     }
     
     //  Get all the Setting states.
@@ -189,7 +192,16 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
 
         if (typeof msg.getMainDynamicSettings !== 'undefined') {
-            onGetMainDynamicSettings(msg);
+            if (document.querySelector('.content').id === 'mainSettings') {
+                onGetMainDynamicSettings(msg.getMainDynamicSettings);
+            }
+        }
+
+        if (typeof msg.getDevelopDynamicSettings !== 'undefined') {
+            console.log('iframe got dynamic DEVELOP settings', msg);
+            if (document.querySelector('.content').id === 'developSettings') {
+                onGetMainDynamicSettings(msg.getDevelopDynamicSettings); // TODO: see if I can re-use this function or need to create another
+            }
         }
 
     }.bind(realityEditor.gui.settings));
@@ -226,17 +238,17 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
     }.bind(realityEditor.gui.settings);
 
-    var onGetMainDynamicSettings = function(msg) {
-        console.log('settings/index.js getMainDynamicSettings', msg.getMainDynamicSettings);
+    var onGetMainDynamicSettings = function(dynamicSettings) {
+        console.log('settings/index.js getMainDynamicSettings', dynamicSettings);
         var container = document.querySelector('.content').querySelector('.table-view');
         if (!container) {
             console.warn('cant find container to create settings');
             return;
         }
 
-        for (let key in msg.getMainDynamicSettings) {
+        for (let key in dynamicSettings) {
 
-            var settingInfo = msg.getMainDynamicSettings[key];
+            var settingInfo = dynamicSettings[key];
             console.log(key, settingInfo);
 
             // add HTML element for this toggle if it doesn't exist already
@@ -265,9 +277,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 description.className = 'description';
                 newElement.appendChild(description);
 
-                if (settingInfo.settingType === SETTING_MENU_TYPE.TOGGLE_WITH_TEXT ||
-                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_WITH_TEXT ||
-                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_DEACTIVATE_WITH_TEXT) {
+                if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT ||
+                    settingInfo.settingType === InterfaceType.ACTIVATE_WITH_TEXT ||
+                    settingInfo.settingType === InterfaceType.ACTIVATE_DEACTIVATE_WITH_TEXT) {
 
                     let textField = document.createElement('input');
                     textField.id = key + 'Text';
