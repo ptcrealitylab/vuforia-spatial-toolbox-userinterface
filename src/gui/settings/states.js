@@ -1,8 +1,6 @@
 createNameSpace("realityEditor.gui.settings");
 
 realityEditor.gui.settings.states = {
-    editingMode: false,
-    clearSkyState: false,
     externalState: "",
     discoveryState: "",
     discoveryActive: false,

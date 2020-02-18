@@ -1753,8 +1753,15 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     if (msgContent.settings.getMainDynamicSettings) {
         self.contentWindow.postMessage(JSON.stringify({
-            getMainDynamicSettings: realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage()
+            getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
         }), "*"); 
+    }
+
+    if (msgContent.settings.getDevelopDynamicSettings) {
+        console.log('DEVELOP asked for dynamic settings');
+        self.contentWindow.postMessage(JSON.stringify({
+            getDevelopDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.DEVELOP)
+        }), "*");
     }
 
     // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe
@@ -1795,31 +1802,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
-
-        if (typeof msgContent.settings.setSettings.editingMode !== "undefined") {
-
-            if (msgContent.settings.setSettings.editingMode) {
-                realityEditor.device.setEditingMode(true);
-                realityEditor.app.saveDeveloperState(true);
-            } else {
-                realityEditor.device.setEditingMode(false);
-                realityEditor.app.saveDeveloperState(false);
-            }
-
-        }
-        
-        if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
-
-            if (msgContent.settings.setSettings.clearSkyState) {
-                globalStates.clearSkyState = true;
-                realityEditor.app.saveClearSkyState(true);
-
-            } else {
-                globalStates.clearSkyState = false;
-                realityEditor.app.saveClearSkyState(false);
-
-            }
-        }
 
         if (typeof msgContent.settings.setSettings.lockingToggle !== "undefined") {
 

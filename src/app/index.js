@@ -428,25 +428,6 @@ rr = function() {
  */
 
 /**
- * Save the persistent setting to disk for developer (editing) mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveDeveloperState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:DEVELOPER', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for clear sky mode.
- * @todo: implement clear sky mode. not working in this version of the editor yet
- * @param {boolean} newState
- */
-realityEditor.app.saveClearSkyState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:CLEARSKY', storedValue);
-};
-
-/**
  * Save the persistent setting to disk for reality (retail) mode.
  * @param {boolean} newState
  */
@@ -474,22 +455,6 @@ realityEditor.app.saveExternalText = function(newExternalText) {
 /**
  ************** LOAD DATA FROM DISK ****************
  */
-
-/**
- * Get the persistent setting for developer (editing) mode.
- * @param {function} callback
- */
-realityEditor.app.getDeveloperState = function(callback) {
-    this.getStorage('SETUP:DEVELOPER', callback);
-};
-
-/**
- * Get the persistent setting for clear sky mode.
- * @param {function} callback
- */
-realityEditor.app.getClearSkyState = function(callback) {
-    this.getStorage('SETUP:CLEARSKY', callback);
-};
 
 /**
  * Get the persistent setting for reality (retail) mode.

@@ -21,6 +21,29 @@
     <!-- Include the compiled Ratchet JS -->
     <script src="../../../thirdPartyCode/js/ratchet.min.js"></script>
     <script src="states.js"></script>
+    
+    <style>
+        /* TODO: move to a shared settings.css file */
+        .settingsIcon {
+            width: 26px;
+            height: 26px;
+            margin-top: -2px;
+            margin-bottom: -5px;
+        }
+
+        .description {
+            color: #b1b1b1;
+            margin-left: 5px;
+        }
+
+        .settingTextField {
+            position: absolute !important;
+            height: 35px !important;
+            width: 200px !important;
+            top: 4px;
+            right: 75px;
+        }
+    </style>
 </head>
 <body style="background-color: #efeff4;">
 <div style="position: absolute; right: 0; width: 65px; top:0; bottom: 0; background-color: #222222"></div>
@@ -37,27 +60,9 @@
     </header>
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
-    <div class="content" style="right:65px;top: -15px; bottom: -14px">
+    <div class="content" style="right:65px;top: -15px; bottom: -14px" id="developSettings">
 
         <ul class="table-view">
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/move.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                AR-UI Repositioning
-                <small style="color: #b1b1b1;">object developer access required</small>
-                <div class="toggle" id="editingMode">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/clear.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Clear Sky Mode
-                <small style="color: #b1b1b1;">hides all buttons</small>
-                <div class="toggle" id="clearSkyState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
             <li class="table-view-cell">
                 <img class="media-object pull-left" src="../../../svg/download.svg"
                      style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">Interface URL<br>
