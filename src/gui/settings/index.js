@@ -4,9 +4,7 @@ createNameSpace("realityEditor.gui.settings");
 const InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
-    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
-    ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
-    ACTIVATE_DEACTIVATE_WITH_TEXT: 'ACTIVATE_DEACTIVATE_WITH_TEXT'
+    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT'
 });
 
 realityEditor.gui.settings.setSettings = function (id, state) {
@@ -143,9 +141,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 newElement.appendChild(description);
 
                 if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT ||
-                    settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT ||
-                    settingInfo.settingType === InterfaceType.ACTIVATE_WITH_TEXT ||
-                    settingInfo.settingType === InterfaceType.ACTIVATE_DEACTIVATE_WITH_TEXT) {
+                    settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
 
                     let textField = document.createElement('input');
                     textField.id = key + 'Text';
