@@ -505,13 +505,13 @@ createNameSpace("realityEditor.gui.menus");
 
         // show correct combination of sub-menus
         if ((newMenuName === "main" || newMenuName === "gui" ||newMenuName === "logic") && !globalStates.settingsButtonState) {
-            if (globalStates.editingMode && globalStates.videoRecordingEnabled) {
+            if (globalStates.editingMode && realityEditor.gui.settings.toggleStates.videoRecordingEnabled) {
                 newMenuName = "videoRecordingEditing"
             } else if (globalStates.editingMode && globalStates.lockingMode) {
                 newMenuName = "lockingEditing";
             } else if (globalStates.editingMode) {
                 newMenuName = "editing";
-            } else if (globalStates.videoRecordingEnabled) {
+            } else if (realityEditor.gui.settings.toggleStates.videoRecordingEnabled) {
                 newMenuName = "videoRecording"
             } else if (globalStates.lockingMode) {
                 newMenuName = "locking";

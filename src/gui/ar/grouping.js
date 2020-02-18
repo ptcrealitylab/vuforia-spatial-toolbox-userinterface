@@ -50,7 +50,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         // render hulls on every update (iff grouping mode enabled)
         realityEditor.gui.ar.draw.addUpdateListener(function() {
-            if (globalStates.groupingEnabled) {
+            if (realityEditor.gui.settings.toggleStates.groupingEnabled) {
                 
                 // draw hulls if any of their elements are being moved, or if the lasso is active
                 var shouldDrawHulls = false;
@@ -99,7 +99,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         // on touch down, start creating a lasso if you double tap on the background
         realityEditor.device.registerCallback('onDocumentMultiTouchStart', function(params) {
-            if (globalStates.groupingEnabled) {
+            if (realityEditor.gui.settings.toggleStates.groupingEnabled) {
                 console.log('grouping.js: onDocumentMultiTouchStart', params);
                 
                 // If the event is hitting the background and it isn't the multi-touch to scale an object
@@ -130,7 +130,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         // on touch move, continue drawing a lasso. or if you're selecting a grouped frame, move all grouped frames
         realityEditor.device.registerCallback('onDocumentMultiTouchMove', function(params) {
-            if (globalStates.groupingEnabled) {
+            if (realityEditor.gui.settings.toggleStates.groupingEnabled) {
                 // console.log('grouping.js: onDocumentMultiTouchMove', params);
                 
                 if (selectingState.active) {
@@ -153,7 +153,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         // on touch up finish the lasso and create a group out of encircled frames. or stop moving grouped frames.
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', function(params) {
-            if (globalStates.groupingEnabled) {
+            if (realityEditor.gui.settings.toggleStates.groupingEnabled) {
                 console.log('grouping.js: onDocumentMultiTouchEnd', params);
                 
                 if (selectingState.active) {
@@ -230,7 +230,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         // unconstrained move grouped vehicles if needed by storing their initial matrix offset
         // TODO: also store this info when starting unconstrained editing via another method, e.g. editing mode
         realityEditor.device.registerCallback('onFramePulledIntoUnconstrained', function(params) {
-            if (!globalStates.groupingEnabled) { return; }
+            if (!realityEditor.gui.settings.toggleStates.groupingEnabled) { return; }
 
             var activeVehicle = params.activeVehicle;
             forEachGroupedFrame(activeVehicle, function(frame) {
@@ -249,7 +249,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         // TODO: this method is a hack, implement in a better way making use of screenExtension module
         // push/pull grouped vehicles into screens together if needed
         realityEditor.gui.screenExtension.registerCallback('updateArFrameVisibility', function(params) {
-            if (!globalStates.groupingEnabled) return;
+            if (!realityEditor.gui.settings.toggleStates.groupingEnabled) return;
                 
             var selectedFrame = realityEditor.getFrame(params.objectKey, params.frameKey);
             if (selectedFrame && selectedFrame.groupID) {
@@ -343,7 +343,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         // Remove the frame from its group when it gets deleted -- AND delete all frames in the same group
         realityEditor.device.registerCallback('vehicleDeleted', function(params) {
-            if (!globalStates.groupingEnabled) { return; }
+            if (!realityEditor.gui.settings.toggleStates.groupingEnabled) { return; }
             
             var DELETE_ALL_FRAMES_IN_GROUP = true; // can be easily turned off if we don't want that behavior
             if (params.objectKey && params.frameKey && !params.nodeKey) {
@@ -367,7 +367,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
         
         // adjust distanceScale of grouped frames together so they get set to same amount
         realityEditor.device.distanceScaling.registerCallback('scaleEditingFrameDistance', function(params) {
-            if (!globalStates.groupingEnabled) { return; }
+            if (!realityEditor.gui.settings.toggleStates.groupingEnabled) { return; }
 
             forEachGroupedFrame(params.frame, function(groupedFrame) {
                 // groupedFrame.distanceScale = params.frame.distanceScale;
@@ -445,7 +445,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
     }
 
     /**
-     * Gets triggered when the on/off switch is toggled to update globalStates.groupingEnabled
+     * Gets triggered when the on/off switch is toggled to update realityEditor.gui.settings.toggleStates.groupingEnabled
      * When toggled off, erase any visuals that should only update when grouping mode is enabled
      * @param {boolean} isEnabled
      */
@@ -504,6 +504,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             lasso.setAttribute("points", "");
             lasso.classList.remove('groupLassoFadeOut');
         }
+        if (!lasso) { return; }
 
         var lassoPoints = lasso.getAttribute("points");
         var start = points[0];

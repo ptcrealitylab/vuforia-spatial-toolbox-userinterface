@@ -1,15 +1,17 @@
 createNameSpace("realityEditor.gui.settings");
 
+// TODO: import this from common source as settings.js gets it instead of redefining
+const SETTING_MENU_TYPE = Object.freeze({
+    TOGGLE: 'TOGGLE',
+    TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
+    ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
+    ACTIVATE_DEACTIVATE_WITH_TEXT: 'ACTIVATE_DEACTIVATE_WITH_TEXT'
+});
+
 realityEditor.gui.settings.setSettings = function (id, state) {
     if (!document.getElementById(id)) return;
 
     if (id === "externalText") {
-        if (state !== "") {
-            document.getElementById(id).value = state;
-        }
-        return;
-    }
-    if (id === "zoneText") {
         if (state !== "") {
             document.getElementById(id).value = state;
         }
@@ -82,10 +84,6 @@ realityEditor.gui.settings.updateLockUI = function() {
 
 realityEditor.gui.settings.newURLTextLoad = function () {
     this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
-};
-
-realityEditor.gui.settings.newZoneTextLoad = function () {
-    this.states.zoneState = document.getElementById('zoneText').value; //encodeURIComponent(document.getElementById('externalText').value);
 };
 
 realityEditor.gui.settings.newDiscoveryTextLoad = function () {
@@ -165,131 +163,173 @@ realityEditor.gui.settings.newLockTextLoad = function () {
     console.log("lockPassword = " + this.states.lockPassword);
 };
 
-document.addEventListener('input',
-        function (e) {
-    
-            var msg = {};
-            msg.settings = {};
-            msg.settings.setSettings = {};
-            if (e.target.id === "zoneText") {
-                realityEditor.gui.settings.states.zoneText = encodeURIComponent(document.getElementById(e.target.id).value);
-                msg.settings.setSettings[e.target.id] = realityEditor.gui.settings.states.zoneText;
-                console.log(msg);
-                parent.postMessage(JSON.stringify(msg), "*");
-            }
-        }
-    );
-
-
-
-
-
-
-
-
-
-
 realityEditor.gui.settings.loadSettingsPost = function () {
-    parent.postMessage(
-        //  Gett all the Setting states.
-        JSON.stringify({
-            settings: {
-                getSettings: true
-            }
-        })
-        // this needs to contain the final interface source
-        , "*");
+    console.log('settings/index loaded');
+
+    let settingsRequest = {
+        getSettings: true // ask for the current values of all settings variables
+    };
+
+    // this is a temporary fix to check if this script is being executed on the main settings vs the developer settings
+    if (document.querySelector('.content').id === 'mainSettings') {
+        settingsRequest.getMainDynamicSettings = true; // ask for which settings should be displayed on the main settings page
+    }
+    
+    //  Get all the Setting states.
+    parent.postMessage(JSON.stringify({
+        settings: settingsRequest
+    }), "*");
 
     window.addEventListener("message", function (e) {
 
         var msg = JSON.parse(e.data);
 
-        if (msg.getSettings) {
-
-            this.states.extendedTracking = msg.getSettings.extendedTracking;
-            this.states.editingMode = msg.getSettings.editingMode;
-            this.states.clearSkyState = msg.getSettings.clearSkyState;
-            this.states.instantState = msg.getSettings.instantState;
-            this.states.speechState = msg.getSettings.speechState;
-            this.states.tutorialState = msg.getSettings.tutorialState;
-            this.states.videoRecordingEnabled = msg.getSettings.videoRecordingEnabled;
-            this.states.matrixBroadcastEnabled = msg.getSettings.matrixBroadcastEnabled;
-            this.states.hololensModeEnabled = msg.getSettings.hololensModeEnabled;
-            this.states.groupingEnabled = msg.getSettings.groupingEnabled;
-            this.states.realtimeEnabled = msg.getSettings.realtimeEnabled;
-            this.states.externalState = msg.getSettings.externalState;
-            this.states.discoveryState = msg.getSettings.discoveryState;
-            this.states.settingsButton = msg.getSettings.settingsButton;
-            this.states.lockingMode = msg.getSettings.lockingMode;
-            this.states.lockPassword = msg.getSettings.lockPassword;
-            this.states.zoneState = msg.getSettings.zoneState;
-            this.states.zoneText = msg.getSettings.zoneText;
-
-            this.states.realityState = msg.getSettings.realityState;
-
-            this.setSettings("extendedTracking", this.states.extendedTracking);
-            this.setSettings("instantState", this.states.instantState);
-            this.setSettings("speechState", this.states.speechState);
-            this.setSettings("tutorialState", this.states.tutorialState);
-            this.setSettings("videoRecordingEnabled", this.states.videoRecordingEnabled);
-            this.setSettings("matrixBroadcastEnabled", this.states.matrixBroadcastEnabled)
-            this.setSettings("hololensModeEnabled", this.states.hololensModeEnabled);
-            this.setSettings("groupingEnabled", this.states.groupingEnabled);
-            this.setSettings("realtimeEnabled", this.states.realtimeEnabled);
-            this.setSettings("editingMode", this.states.editingMode);
-            this.setSettings("clearSkyState", this.states.clearSkyState);
-            this.setSettings("externalText", this.states.externalState);
-            this.setSettings("discoveryText", this.states.discoveryState);
-            this.setSettings("lockingToggle", this.states.lockingMode);
-            this.setSettings("lockText", this.states.lockPassword);
-            this.setSettings("zoneState", this.states.zoneState);
-            this.setSettings("zoneText", this.states.zoneText);
-            
-            //if (!this.states.lockingMode) {
-            //    document.getElementById('lockingToggle').firstChild.style.transform = "translate3d(0px, 0px, 0px);";
-            //}
-
-            this.setSettings("realityState", this.states.realityState);
-
-            if (typeof realityEditor.gui.settings.logo !== "undefined" && this.states.settingsButton && !this.states.animationFrameRequested) {
-                this.states.animationFrameRequested = true;
-                if (realityEditor.gui.settings.logo && typeof(realityEditor.gui.settings.logo.step) === 'function') {
-                    window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
-                }
-            }
-
-            if (!this.states.settingsButton) {
-                this.states.animationFrameRequested = false;
-            }
-
-            if (typeof this.callObjects !== "undefined" && this.states.settingsButton && !this.states.setInt) {
-                this.states.setInt = true;
-                this.objectInterval = setInterval(this.callObjects, 1000);
-            }
-
-            if (!this.states.settingsButton) {
-                this.states.setInt = false;
-                if (typeof this.objectInterval !== "undefined") {
-                    clearInterval(this.objectInterval);
-                }
-            }
+        if (typeof msg.getSettings !== 'undefined') {
+            onGetSettings(msg);
         }
+
+        if (typeof msg.getMainDynamicSettings !== 'undefined') {
+            onGetMainDynamicSettings(msg);
+        }
+
     }.bind(realityEditor.gui.settings));
+    
+    var onGetSettings = function(msg) {
+        console.log('settings/index.js getSettings', msg.getSettings);
 
-    document.addEventListener('toggle',
-        function (e) {
-            var msg = {};
-            msg.settings = {};
-            msg.settings.setSettings = {};
-            msg.settings.setSettings[e.target.id] = e.detail.isActive;
-            if (e.target.id === "lockingToggle") {
-                
-                msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
-                realityEditor.gui.settings.updateLockUI();
-            }
-            parent.postMessage(JSON.stringify(msg), "*");
+        for (let key in msg.getSettings) {
+            this.states[key] = msg.getSettings[key];
+            this.setSettings(key, this.states[key]);
         }
-    );
+
+        if (typeof realityEditor.gui.settings.logo !== "undefined" && this.states.settingsButton && !this.states.animationFrameRequested) {
+            this.states.animationFrameRequested = true;
+            if (realityEditor.gui.settings.logo && typeof(realityEditor.gui.settings.logo.step) === 'function') {
+                window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
+            }
+        }
+
+        if (!this.states.settingsButton) {
+            this.states.animationFrameRequested = false;
+        }
+
+        if (typeof this.callObjects !== "undefined" && this.states.settingsButton && !this.states.setInt) {
+            this.states.setInt = true;
+            this.objectInterval = setInterval(this.callObjects, 1000);
+        }
+
+        if (!this.states.settingsButton) {
+            this.states.setInt = false;
+            if (typeof this.objectInterval !== "undefined") {
+                clearInterval(this.objectInterval);
+            }
+        }
+    }.bind(realityEditor.gui.settings);
+
+    var onGetMainDynamicSettings = function(msg) {
+        console.log('settings/index.js getMainDynamicSettings', msg.getMainDynamicSettings);
+        var container = document.querySelector('.content').querySelector('.table-view');
+        if (!container) {
+            console.warn('cant find container to create settings');
+            return;
+        }
+
+        for (let key in msg.getMainDynamicSettings) {
+
+            var settingInfo = msg.getMainDynamicSettings[key];
+            console.log(key, settingInfo);
+
+            // add HTML element for this toggle if it doesn't exist already
+            var existingElement = container.querySelector('#' + key);
+
+            if (existingElement) {
+                console.log('found element for ' + key);
+            } else {
+                console.log('need to create element for ' + key);
+
+                let newElement = document.createElement('li');
+                newElement.classList.add('table-view-cell');
+                newElement.style.position = 'relative';
+
+                let icon = document.createElement('img');
+                icon.classList.add('media-object', 'pull-left', 'settingsIcon');
+                icon.src = settingInfo.iconSrc; //'../../../svg/object.svg';
+                newElement.appendChild(icon);
+
+                let name = document.createElement('span');
+                name.innerText = settingInfo.title;
+                newElement.appendChild(name);
+
+                let description = document.createElement('small');
+                description.innerText = settingInfo.description;
+                description.className = 'description';
+                newElement.appendChild(description);
+
+                if (settingInfo.settingType === SETTING_MENU_TYPE.TOGGLE_WITH_TEXT ||
+                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_WITH_TEXT ||
+                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_DEACTIVATE_WITH_TEXT) {
+
+                    let textField = document.createElement('input');
+                    textField.id = key + 'Text';
+                    textField.classList.add('pull-left', 'settingTextField');
+                    textField.type = 'text';
+                    if (settingInfo.associatedText) {
+                        textField.value = settingInfo.associatedText.value;
+                        textField.placeholder = settingInfo.associatedText.placeholderText || '';
+                    }
+
+                    textField.addEventListener('input', function() {
+                        uploadSettingText(this.id);
+                    });
+
+                    newElement.appendChild(textField);
+                }
+
+                let toggle = document.createElement('div');
+                toggle.classList.add('toggle');
+                toggle.id = key;
+                newElement.appendChild(toggle);
+
+                let toggleHandle = document.createElement('div');
+                toggleHandle.classList.add('toggle-handle');
+                toggle.appendChild(toggleHandle);
+
+                container.appendChild(newElement);
+            }
+        }
+        
+    }.bind(realityEditor.gui.settings);
+
+    document.addEventListener('toggle', function (e) {
+        uploadSettingsForToggle(e.target.id, e.detail.isActive);
+    });
+
+    function uploadSettingsForToggle(elementId, isActive) {
+        var msg = {};
+        msg.settings = {};
+        msg.settings.setSettings = {};
+        msg.settings.setSettings[elementId] = isActive;
+        if (elementId === "lockingToggle") {
+            msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
+            realityEditor.gui.settings.updateLockUI();
+        }
+
+        let element = document.getElementById(elementId);
+        // check if it has an attached text field, and if so, send that text too
+        if (element.parentElement.querySelector('.settingTextField')) {
+            msg.settings.setSettings[elementId + 'Text'] = element.parentElement.querySelector('.settingTextField').value;
+        }
+        parent.postMessage(JSON.stringify(msg), "*");
+    }
+
+    function uploadSettingText(textElementId) {
+        console.log('upload setting text');
+        var msg = {};
+        msg.settings = {};
+        msg.settings.setSettings = {};
+        msg.settings.setSettings[textElementId] = document.getElementById(textElementId).value;
+        parent.postMessage(JSON.stringify(msg), "*");
+    }
 
 };
 

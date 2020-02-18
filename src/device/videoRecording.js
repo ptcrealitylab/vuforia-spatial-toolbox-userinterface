@@ -27,7 +27,7 @@ createNameSpace("realityEditor.device.videoRecording");
 
             // highlight or dim the video record button if there are visible objects, to show that it is able to be used
             var noVisibleObjects = Object.keys(visibleObjects).length === 0;
-            if (globalStates.videoRecordingEnabled) {
+            if (realityEditor.gui.settings.toggleStates.videoRecordingEnabled) {
                 var buttonOpacity = (noVisibleObjects && !privateState.isRecording) ? 0.2 : 1.0;
                 var recordButton = document.querySelector('#recordButton');
                 if (recordButton) {

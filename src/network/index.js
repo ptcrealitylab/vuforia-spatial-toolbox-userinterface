@@ -788,8 +788,7 @@ realityEditor.network.onAction = function (action) {
     }
     
     if (typeof thisAction.advertiseConnection !== "undefined") {
-        console.log(globalStates.instantState);
-        if (globalStates.instantState) {
+        if (realityEditor.gui.settings.toggleStates.instantState) {
             realityEditor.gui.instantConnect.logic(thisAction.advertiseConnection);
         }
     }
@@ -1748,28 +1747,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     if (msgContent.settings.getSettings) {
         self.contentWindow.postMessage(JSON.stringify({
-            getSettings: {
-                extendedTracking: globalStates.extendedTracking,
-                editingMode: globalStates.editingMode,
-                clearSkyState: globalStates.clearSkyState,
-                instantState: globalStates.instantState,
-                speechState: globalStates.speechState,
-                tutorialState: globalStates.tutorialState,
-                videoRecordingEnabled: globalStates.videoRecordingEnabled,
-                matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
-                hololensModeEnabled: globalStates.hololensModeEnabled,
-                groupingEnabled: globalStates.groupingEnabled,
-                realtimeEnabled: globalStates.realtimeEnabled,
-                externalState: globalStates.externalState,
-                discoveryState: globalStates.discoveryState,
-                settingsButton : globalStates.settingsButtonState,
-                lockingMode: globalStates.lockingMode,
-                lockPassword: globalStates.lockPassword,
-                realityState: globalStates.realityState,
-                zoneText: globalStates.zoneText,
-                zoneState: globalStates.zoneState
-            }
+            getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage()
         }), "*");
+    }
+
+    if (msgContent.settings.getMainDynamicSettings) {
+        self.contentWindow.postMessage(JSON.stringify({
+            getMainDynamicSettings: realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage()
+        }), "*"); 
     }
 
     // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe
@@ -1810,21 +1795,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
-        
-        if (typeof msgContent.settings.setSettings.extendedTracking !== "undefined") {
-
-            globalStates.extendedTracking = msgContent.settings.setSettings.extendedTracking;
-
-            console.log("jetzt aber mal richtig hier!!", globalStates.extendedTracking);
-
-            if (globalStates.extendedTracking === true) {
-                realityEditor.app.saveExtendedTrackingState(true);
-
-            } else {
-                realityEditor.app.saveExtendedTrackingState(false);
-
-            }
-        }
 
         if (typeof msgContent.settings.setSettings.editingMode !== "undefined") {
 
@@ -1837,169 +1807,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             }
 
         }
-
-        if (typeof msgContent.settings.setSettings.zoneText !== "undefined") {
-            realityEditor.app.saveZoneText(msgContent.settings.setSettings.zoneText);
-        }
-
-        if (typeof msgContent.settings.setSettings.zoneState !== "undefined") {
-            if (msgContent.settings.setSettings.zoneState) {
-                globalStates.zoneState = true;
-                realityEditor.app.saveZoneState(true);
-
-            } else {
-                globalStates.zoneState = false;
-                realityEditor.app.saveZoneState(false);
-            }
-        }
         
-        if (typeof msgContent.settings.setSettings.instantState !== "undefined") {
-            if (msgContent.settings.setSettings.instantState) {
-                globalStates.instantState = true;
-                realityEditor.app.saveInstantState(true);
-
-                // TODO: stop hijacking old UI to debug this, and instead make a settings toggle for high-quality mode vs better-performance mode 
-                globalStates.renderFrameGhostsInNodeViewEnabled = false;
-
-            } else {
-                globalStates.instantState = false;
-                realityEditor.app.saveInstantState(false);
-                
-                globalStates.renderFrameGhostsInNodeViewEnabled = true;
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.speechState !== "undefined") {
-            if (msgContent.settings.setSettings.speechState) {
-                if (!globalStates.speechState) { 
-                    globalStates.speechState = true;
-                    if (globalStates.instantState || globalStates.debugSpeechConsole) { // TODO: stop using instant state as temporary debug mode
-                        document.getElementById('speechConsole').style.display = 'inline';
-                    }
-                    realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback"); //"realityEditor.device.speech.speechRecordingCallback");
-                    
-                    realityEditor.app.startSpeechRecording();
-                }
-            } else {
-                if (globalStates.speechState) {
-                    globalStates.speechState = false;
-                    document.getElementById('speechConsole').style.display = 'none';
-                    realityEditor.app.stopSpeechRecording();
-                }
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.tutorialState !== "undefined") {
-            if (msgContent.settings.setSettings.tutorialState) {
-                if (!globalStates.tutorialState) {
-                    globalStates.tutorialState = true;
-                    // realityEditor.app.startSpeechRecording();
-                    console.log('set tutorialState on');
-                    realityEditor.app.saveTutorialState(true);
-                }
-            } else {
-                if (globalStates.tutorialState) {
-                    globalStates.tutorialState = false;
-                    // realityEditor.app.stopSpeechRecording();
-                    console.log('set tutorialState off');
-                    realityEditor.app.saveTutorialState(false);
-                }
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.videoRecordingEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.videoRecordingEnabled) {
-                if (!globalStates.videoRecordingEnabled) {
-                    globalStates.videoRecordingEnabled = true;
-                    // add any one-time side-effects here
-                }
-            } else {
-                if (globalStates.videoRecordingEnabled) {
-                    globalStates.videoRecordingEnabled = false;
-                    // add any one-time side-effects here:
-                    // stop the recording if needed, otherwise there's no UI to stop it
-                    realityEditor.device.videoRecording.stopRecording();
-                }
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.matrixBroadcastEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.matrixBroadcastEnabled) {
-                if (!globalStates.matrixBroadcastEnabled) {
-                    globalStates.matrixBroadcastEnabled = true;
-                    // add any one-time side-effects here
-                    realityEditor.device.desktopAdapter.startBroadcast();
-                }
-            } else {
-                if (globalStates.matrixBroadcastEnabled) {
-                    globalStates.matrixBroadcastEnabled = false;
-                    // add any one-time side-effects here:
-                    realityEditor.device.desktopAdapter.stopBroadcast();
-                }
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.hololensModeEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.hololensModeEnabled) {
-                if (!globalStates.hololensModeEnabled) {
-                    globalStates.hololensModeEnabled = true;
-                    // add any one-time side-effects here
-                    // realityEditor.device.desktopAdapter.startBroadcast();
-                    console.log('hololens mode enabled...');
-                    realityEditor.device.hololensAdapter.toggleHololensMode(true);
-                }
-            } else {
-                if (globalStates.hololensModeEnabled) {
-                    globalStates.hololensModeEnabled = false;
-                    // add any one-time side-effects here:
-                    // realityEditor.device.desktopAdapter.stopBroadcast();
-                    console.log('hololens mode disabled...');
-                    realityEditor.device.hololensAdapter.toggleHololensMode(false);
-                }
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.groupingEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.groupingEnabled) {
-                if (!globalStates.groupingEnabled) {
-                    globalStates.groupingEnabled = true;
-                    // add any one-time side-effects here
-                    console.log('TODO: grouping mode enabled...');
-                    realityEditor.app.saveGroupingState(true);
-                    realityEditor.gui.ar.grouping.toggleGroupingMode(true);
-                }
-            } else {
-                if (globalStates.groupingEnabled) {
-                    globalStates.groupingEnabled = false;
-                    // add any one-time side-effects here:
-                    console.log('TODO: grouping mode disabled...');
-                    realityEditor.app.saveGroupingState(false);
-                    realityEditor.gui.ar.grouping.toggleGroupingMode(false);
-                }
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.realtimeEnabled !== "undefined") {
-            if (msgContent.settings.setSettings.realtimeEnabled) {
-                if (!globalStates.realtimeEnabled) {
-                    globalStates.realtimeEnabled = true;
-                    // add any one-time side-effects here
-                    console.log('TODO: realtimeEnabled mode enabled...');
-                    // realityEditor.gui.ar.grouping.toggleGroupingMode(true);
-                    realityEditor.app.saveRealtimeState(true);
-                    realityEditor.network.realtime.initService();
-                }
-            } else {
-                if (globalStates.realtimeEnabled) {
-                    globalStates.realtimeEnabled = false;
-                    // add any one-time side-effects here:
-                    console.log('TODO: realtimeEnabled mode disabled...');
-                    // realityEditor.gui.ar.grouping.toggleGroupingMode(false);
-                    realityEditor.app.saveRealtimeState(false);
-                }
-            }
-        }
-
         if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
 
             if (msgContent.settings.setSettings.clearSkyState) {
@@ -2046,6 +1854,21 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 realityEditor.app.saveRealityState(false);
             }
         }
+
+        // sets property value for each dynamically-added toggle
+        realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
+            if (typeof msgContent.settings.setSettings[toggle.propertyName] !== "undefined") {
+                realityEditor.gui.settings.toggleStates[toggle.propertyName] = msgContent.settings.setSettings[toggle.propertyName];
+                console.log('set toggle value for ' + toggle.propertyName + ' to ' + msgContent.settings.setSettings[toggle.propertyName]);
+                toggle.onToggleCallback(msgContent.settings.setSettings[toggle.propertyName]);
+            }
+
+            if (typeof msgContent.settings.setSettings[toggle.propertyName + 'Text'] !== "undefined") {
+                console.log('toggle also set text value for ' + toggle.propertyName + 'Text' + ' to ' + msgContent.settings.setSettings[toggle.propertyName + 'Text']);
+                toggle.onTextCallback(msgContent.settings.setSettings[toggle.propertyName + 'Text']);
+            }
+        });
+        
     }
     
     // can directly trigger native app APIs with message of correct format @todo: figure out if this is currently used?
