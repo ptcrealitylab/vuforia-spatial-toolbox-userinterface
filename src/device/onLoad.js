@@ -176,15 +176,6 @@ realityEditor.device.onload = function () {
         console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
-    realityEditor.gui.settings.addToggle('Retail UI', 'experimental menus for retail', 'realityState',  '../../../svg/reality.svg', false, function(newValue) {
-        console.log('clear sky mode set to ' + newValue);
-        if (newValue) {
-            realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
-        } else {
-            realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
-        }
-    }, true).moveToDevelopMenu();
-
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -192,8 +183,6 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.device.touchPropagation.initService();
-    realityEditor.device.speechPerformer.initService(); // TODO: service is internally disabled
-    realityEditor.device.security.initService(); // TODO: service is internally disabled
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
     realityEditor.gui.ar.desktopRenderer.initService();
@@ -205,6 +194,10 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
+    // disabled services
+    realityEditor.device.speechPerformer.initService(); // service is internally disabled
+    realityEditor.device.security.initService(); // service is internally disabled
+    realityEditor.gui.search.initService(); // service is internally disabled
     
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {
