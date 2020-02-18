@@ -62,6 +62,25 @@ createNameSpace("realityEditor.device.security");
  */
 
 realityEditor.device.security.initService = function() {
+    var LOCKING_SERVICE_ENABLED = false;
+
+    if (!LOCKING_SERVICE_ENABLED) {
+        console.warn('Locking service is internally disabled');
+        return;
+    }
+
+    realityEditor.gui.settings.addToggleWithFrozenText('Object Locking', 'touch ID required', 'lockingToggle',  '../../../svg/lock.svg', false, 'password', function(newValue, textValue) {
+        console.log('locking mode was set to ' + newValue + ' and password is ' + textValue);
+
+        globalStates.lockingMode = newValue;
+        globalStates.lockPassword = textValue;
+
+        if (newValue) {
+            realityEditor.app.authenticateTouch();
+        } else {
+            globalStates.lockPassword = null;
+        }
+    });
 
     realityEditor.gui.buttons.registerCallbackForButton('lock', function(params) {
         if (params.newButtonState === 'up') {

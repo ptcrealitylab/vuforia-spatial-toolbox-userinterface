@@ -135,19 +135,6 @@ realityEditor.device.onload = function () {
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
     });
-
-    realityEditor.gui.settings.addToggleWithFrozenText('Object Locking', 'touch ID required', 'lockingToggle',  '../../../svg/lock.svg', false, 'password', function(newValue, textValue) {
-        console.log('locking mode was set to ' + newValue + ' and password is ' + textValue);
-
-        globalStates.lockingMode = newValue;
-        globalStates.lockPassword = textValue;
-
-        if (newValue) {
-            realityEditor.app.authenticateTouch();
-        } else {
-            globalStates.lockPassword = null;
-        }
-    });
     
     // add settings toggles for the Develop sub-menu
     realityEditor.gui.settings.addToggle('AR-UI Repositioning', 'instantly drag frames instead of interacting', 'editingMode',  '../../../svg/move.svg', false, function(newValue) {
