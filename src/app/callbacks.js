@@ -146,11 +146,9 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
                 realityEditor.network.addHeartbeatObject(message);
             }
         
-        } else {
-            if (!realityEditor.gui.settings.toggleStates.zoneState) {
-                // console.log('Added object without zone');
-                realityEditor.network.addHeartbeatObject(message);
-            }
+        } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
+            // console.log('Added object without zone');
+            realityEditor.network.addHeartbeatObject(message);
         }
         
 

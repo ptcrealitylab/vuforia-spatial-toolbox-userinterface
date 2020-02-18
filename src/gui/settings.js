@@ -59,7 +59,7 @@ realityEditor.gui.settings.addedToggles = [];
 
 /**
  * Gets a key for each SettingsToggle with its propertyName and a boolean value of whether that setting is on or off.
- * For SettingsToggles of type TOGGLE_WITH_TEXT, also contains a key named propertyName+'Text" for the text setting.
+ * For SettingsToggles of type TOGGLE_WITH_TEXT, also contains a key named propertyName+'Text' for the text setting.
  * @type {Object.<string, boolean|string>}
  */
 realityEditor.gui.settings.toggleStates = {};

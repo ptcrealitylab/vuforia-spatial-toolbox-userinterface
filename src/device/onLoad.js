@@ -123,7 +123,7 @@ realityEditor.device.onload = function () {
         }
     });
 
-    realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI foor HMD viewer (desktop only)', 'hololensModeEnabled',  '../../../svg/holo.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI for HMD viewer (desktop only)', 'hololensModeEnabled',  '../../../svg/holo.svg', false, function(newValue) {
         console.log('hololens mode was set to ' + newValue);
         realityEditor.device.hololensAdapter.toggleHololensMode(newValue);
     });
@@ -131,27 +131,10 @@ realityEditor.device.onload = function () {
     realityEditor.gui.settings.addToggle('Instant Connect', 'if available with prepared objects', 'instantState',  '../../../svg/instantLink.svg', false, function(newValue) {
         console.log('instant connect was set to ' + newValue);
     });
-    
-    realityEditor.gui.settings.addToggle('Speech Controls', 'must enable microphone', 'speechState',  '../../../svg/speech.svg', false, function(newValue) {
-        console.log('speech controls was set to ' + newValue);
-        
-        if (newValue) { // TODO: if default value is true, how will these get triggered?
-            if (globalStates.debugSpeechConsole) {
-                document.getElementById('speechConsole').style.display = 'inline';
-            }
-            realityEditor.app.addSpeechListener("realityEditor.device.speechProcessor.speechRecordingCallback");
-            realityEditor.app.startSpeechRecording();
-        } else {
-            document.getElementById('speechConsole').style.display = 'none';
-            realityEditor.app.stopSpeechRecording();
-        }
-    });
 
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
     });
-    
-    // todo; figure out how to add text boxes too (either/or text/toggle)
     
     // initialize additional services
     realityEditor.device.initService();

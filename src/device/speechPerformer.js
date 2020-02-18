@@ -15,6 +15,22 @@ realityEditor.device.speechPerformer.initService = function() {
     var SPEECH_SERVICE_ENABLED = false;
     
     if (SPEECH_SERVICE_ENABLED) {
+
+        realityEditor.gui.settings.addToggle('Speech Controls', 'must enable microphone', 'speechState',  '../../../svg/speech.svg', false, function(newValue) {
+            console.log('speech controls was set to ' + newValue);
+
+            if (newValue) {
+                if (globalStates.debugSpeechConsole) {
+                    document.getElementById('speechConsole').style.display = 'inline';
+                }
+                realityEditor.app.addSpeechListener('realityEditor.device.speechProcessor.speechRecordingCallback');
+                realityEditor.app.startSpeechRecording();
+            } else {
+                document.getElementById('speechConsole').style.display = 'none';
+                realityEditor.app.stopSpeechRecording();
+            }
+        });
+
         realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
 
             if (!(globalStates.guiState === "node" || globalStates.guiState === "logic")) { return; }
