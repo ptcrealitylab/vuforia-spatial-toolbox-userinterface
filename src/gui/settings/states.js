@@ -4,8 +4,6 @@ realityEditor.gui.settings.states = {
     externalState: "",
     discoveryState: "",
     discoveryActive: false,
-    lockingMode: false,
-    lockPassword: null,
     logoAnimation:false,
     settingsButton:false,
     animationFrameRequested: false,

@@ -4,6 +4,7 @@ createNameSpace("realityEditor.gui.settings");
 const InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
+    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
     ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
     ACTIVATE_DEACTIVATE_WITH_TEXT: 'ACTIVATE_DEACTIVATE_WITH_TEXT'
 });
@@ -43,43 +44,20 @@ realityEditor.gui.settings.setSettings = function (id, state) {
 
         return;
     }
-    
-    if (id === "lockText") {
-        //if (state !== "") {
-        //    document.getElementById(id).value = state; // TODO: do we need this?
-        //}
-        return;
-    }
 
     if (id) {
         if (state) {
-
-            document.getElementById(id).classList.add('active'); // TODO: doesn't really need this change, revert to previous?
-            
-            //document.getElementById(id).className = "toggle active";
+            document.getElementById(id).classList.add('active');
         } else {
-
             document.getElementById(id).classList.remove('active');
-
-            //document.getElementById(id).className = "toggle";
+        }
+        
+        // update associated textfield if needed
+        let textfield = document.getElementById(id).parentElement.querySelector('.settingTextField');
+        if (textfield && textfield.classList.contains('frozen')) {
+            textfield.disabled = document.getElementById(id).classList.contains('active');
         }
     }
-    
-    if (id === "lockingToggle") {
-        this.updateLockUI();
-        //document.getElementById("lockText").disabled = document.getElementById(id).classList.contains('active');  //e.detail.isActive;
-    }
-    
-    //    if (!state) {
-    //        document.getElementById(id).firstElementChild.style.transform = "translate3d(0px, 0px, 0px);";
-    //    }
-    //    //    document.getElementById("lockText").disabled = state;
-    //    //    console.log("change text disabled " + document.getElementById("lockText").disabled);
-    //}
-};
-
-realityEditor.gui.settings.updateLockUI = function() {
-    document.getElementById("lockText").disabled = document.getElementById('lockingToggle').classList.contains('active');  //e.detail.isActive;
 };
 
 realityEditor.gui.settings.newURLTextLoad = function () {
@@ -154,13 +132,6 @@ realityEditor.gui.settings.discovery = function () {
 
 realityEditor.gui.settings.discoveryState = function () {
     return this.states.discoveryState;
-};
-
-
-
-realityEditor.gui.settings.newLockTextLoad = function () {
-    this.states.lockPassword = encodeURIComponent(document.getElementById('lockText').value);
-    console.log("lockPassword = " + this.states.lockPassword);
 };
 
 realityEditor.gui.settings.loadSettingsPost = function () {
@@ -278,18 +249,22 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 newElement.appendChild(description);
 
                 if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT ||
+                    settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT ||
                     settingInfo.settingType === InterfaceType.ACTIVATE_WITH_TEXT ||
                     settingInfo.settingType === InterfaceType.ACTIVATE_DEACTIVATE_WITH_TEXT) {
 
                     let textField = document.createElement('input');
                     textField.id = key + 'Text';
                     textField.classList.add('pull-left', 'settingTextField');
+                    if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+                        textField.classList.add('frozen');
+                    }
                     textField.type = 'text';
                     if (settingInfo.associatedText) {
                         textField.value = settingInfo.associatedText.value;
                         textField.placeholder = settingInfo.associatedText.placeholderText || '';
                     }
-
+                    
                     textField.addEventListener('input', function() {
                         uploadSettingText(this.id);
                     });
@@ -314,6 +289,12 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
     document.addEventListener('toggle', function (e) {
         uploadSettingsForToggle(e.target.id, e.detail.isActive);
+        
+        let textfield = e.target.parentElement.querySelector('.settingTextField');
+        // check if it has an attached text field, and if so, update if it needs frozen/unfrozen
+        if (textfield && textfield.classList.contains('frozen')) {
+            textfield.disabled = e.target.classList.contains('active');
+        }
     });
 
     function uploadSettingsForToggle(elementId, isActive) {
@@ -321,10 +302,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         msg.settings = {};
         msg.settings.setSettings = {};
         msg.settings.setSettings[elementId] = isActive;
-        if (elementId === "lockingToggle") {
-            msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
-            realityEditor.gui.settings.updateLockUI();
-        }
 
         let element = document.getElementById(elementId);
         // check if it has an attached text field, and if so, send that text too
