@@ -100,8 +100,9 @@ realityEditor.gui.settings.MenuPages = Object.freeze({
  * @param {string|undefined} placeholderText - if TOGGLE_WITH_TEXT, placeholder text for the UI text box
  * @param {function} onToggleCallback - gets triggered when the switch is toggled
  * @param {function|undefined} onTextCallback - if TOGGLE_WITH_TEXT, gets triggered every time the text box changes
+ * @param {boolean|undefined} ignoreOnload - don't trigger the callback once automatically when it loads, only when UI adjusted
  */
-function SettingsToggle(title, description, settingType, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback) {
+function SettingsToggle(title, description, settingType, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, ignoreOnload) {
     this.title = title;
     this.description = description;
     this.propertyName = propertyName;
@@ -152,11 +153,15 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
                 onTextCallback(newValue);
             }
         };
-        this.onTextCallback(realityEditor.gui.settings.toggleStates[propertyName + 'Text']); // trigger once for side effects
+        if (!ignoreOnload) {
+            this.onTextCallback(realityEditor.gui.settings.toggleStates[propertyName + 'Text']); // trigger once for side effects
+        }
     }
     
     // trigger the callback one time automatically on init, so that any side effects for the saved value get triggered
-    this.onToggleCallback(realityEditor.gui.settings.toggleStates[propertyName]);
+    if (!ignoreOnload) {
+        this.onToggleCallback(realityEditor.gui.settings.toggleStates[propertyName]);
+    }
 }
 
 /**
@@ -164,6 +169,16 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
  */
 SettingsToggle.prototype.moveToDevelopMenu = function() {
     this.menuName = realityEditor.gui.settings.MenuPages.DEVELOP;
+    return this;
+};
+
+/**
+ * Programatically override the existing toggle value
+ * @param {boolean} newValue
+ */
+SettingsToggle.prototype.setValue = function(newValue) {
+    realityEditor.gui.settings.toggleStates[this.propertyName] = newValue;
+    return this;
 };
 
 /**
@@ -214,9 +229,10 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
  * @param {string} placeholderText
  * @param {function<boolean, string>} onToggleCallback - gets triggered when the switch is toggled. includes the textbox value
  */
-realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback);
+realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, ignoreOnload) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, undefined, ignoreOnload);
     realityEditor.gui.settings.addedToggles.push(newToggle);
+    return newToggle;
 };
 
 /**
@@ -226,8 +242,6 @@ realityEditor.gui.settings.addToggleWithFrozenText = function(title, description
  */
 realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
     let defaultMessage = {
-        externalState: globalStates.externalState,
-        discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,
         realityState: globalStates.realityState
     };

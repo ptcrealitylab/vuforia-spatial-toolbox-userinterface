@@ -437,14 +437,6 @@ realityEditor.app.saveRealityState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for the object discovery server string.
- * @param {string} newDiscoveryText
- */
-realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
-    this.setStorage('SETUP:DISCOVERY', newDiscoveryText);
-};
-
-/**
  * Save the persistent setting to disk for the IP address to load the external userinterface from.
  * @param {string} newExternalText
  */
@@ -462,22 +454,6 @@ realityEditor.app.saveExternalText = function(newExternalText) {
  */
 realityEditor.app.getRealityState = function(callback) {
     this.getStorage('SETUP:REALITY', callback);
-};
-
-/**
- * Get the persistent setting for the object discovery server string.
- * @param {function} callback
- */
-realityEditor.app.getDiscoveryText = function(callback) {
-    this.getStorage('SETUP:DISCOVERY', callback);
-};
-
-/**
- * Get the persistent setting for the IP address to load the external userinterface from.
- * @param {function} callback
- */
-realityEditor.app.getExternalText = function(callback) {
-    this.getStorage('SETUP:EXTERNAL', callback);
 };
 
 /**

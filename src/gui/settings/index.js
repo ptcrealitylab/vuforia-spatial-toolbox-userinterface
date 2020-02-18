@@ -12,39 +12,7 @@ const InterfaceType = Object.freeze({
 realityEditor.gui.settings.setSettings = function (id, state) {
     if (!document.getElementById(id)) return;
 
-    if (id === "externalText") {
-        if (state !== "") {
-            document.getElementById(id).value = state;
-        }
-        return;
-    }
-
-    if (id === "discoveryText") {
-
-        var buttonState = document.getElementById('discoveryButton');
-
-        if (state !== "") {
-            document.getElementById(id).value = state;
-            buttonState.innerText = "Deactivate";
-            buttonState.className = "btn btn-negative pull-right";
-            this.states.discoveryActive = true;
-        } else {
-            buttonState.innerText = "Activate";
-            buttonState.className = "btn btn-positive pull-right";
-            this.states.discoveryActive = false;
-        }
-
-        if (realityEditor.gui.settings.states.discoveryActive) {
-            buttonState.innerText = "Deactivate";
-            buttonState.className = "btn btn-negative pull-right";
-        } else {
-            buttonState.innerText = "Activate";
-            buttonState.className = "btn btn-positive pull-right";
-        }
-
-        return;
-    }
-
+    // updates the toggle switch to display the current value
     if (id) {
         if (state) {
             document.getElementById(id).classList.add('active');
@@ -52,86 +20,12 @@ realityEditor.gui.settings.setSettings = function (id, state) {
             document.getElementById(id).classList.remove('active');
         }
         
-        // update associated textfield if needed
+        // update associated text field if needed (for TOGGLE_WITH_FROZEN_TEXT)
         let textfield = document.getElementById(id).parentElement.querySelector('.settingTextField');
         if (textfield && textfield.classList.contains('frozen')) {
             textfield.disabled = document.getElementById(id).classList.contains('active');
         }
     }
-};
-
-realityEditor.gui.settings.newURLTextLoad = function () {
-    this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
-};
-
-realityEditor.gui.settings.newDiscoveryTextLoad = function () {
-    this.states.discoveryState = document.getElementById('discoveryText').value; //encodeURIComponent(document.getElementById('discoveryText').value);
-    this.states.discoveryActive = false;
-
-    var buttonState = document.getElementById('discoveryButton');
-        buttonState.innerText = "Activate";
-        buttonState.className = "btn btn-positive pull-right";
-};
-
-realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody) {
-    parent.postMessage(JSON.stringify({
-        settings: {
-            functionName: functionName,
-            messageBody: messageBody
-        }
-    }), "*");
-};
-
-realityEditor.gui.settings.setDiscoveryText = function(discoveryText) {
-    parent.postMessage(JSON.stringify({
-        settings: {
-            setDiscoveryText: discoveryText
-        }
-    }), "*");
-};
-
-realityEditor.gui.settings.reloadUI = function () {
-    // if (this.states.externalState !== "" && this.states.externalState !== "http") {
-        console.log("loadNewUI: " + this.states.externalState);
-        this.appFunctionCall('setStorage', {storageID: 'SETUP:EXTERNAL', message: JSON.stringify(this.states.externalState)}, null);
-        setTimeout(function() {
-            this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
-        }.bind(this), 100);
-    // }
-};
-
-realityEditor.gui.settings.discovery = function () {
-    if (!this.states.discoveryActive) {
-        if (this.states.discoveryState !== "" && this.states.discoveryState !== "http") {
-            console.log("setDiscovery" + this.states.discoveryState);
-            this.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState});
-            this.states.discoveryActive = true;
-            this.setDiscoveryText(this.states.discoveryState);
-            this.appFunctionCall('setStorage', {storageID: 'SETUP:DISCOVERY', message: JSON.stringify(this.states.discoveryState)}, null);
-        }
-    } else {
-        console.log("removeDiscovery");
-        this.appFunctionCall("removeDiscovery", null);
-        this.states.discoveryActive = false;
-        this.states.discoveryState = "";
-        document.getElementById("discoveryText").value = this.states.discoveryState;
-        this.appFunctionCall('setStorage', {storageID: 'SETUP:DISCOVERY', message: JSON.stringify(this.states.discoveryState)}, null);
-    }
-
-    var buttonState = document.getElementById('discoveryButton');
-
-    if (this.states.discoveryActive) {
-        buttonState.innerText = "Deactivate";
-        buttonState.className = "btn btn-negative pull-right";
-    } else {
-        buttonState.innerText = "Activate";
-        buttonState.className = "btn btn-positive pull-right";
-    }
-
-};
-
-realityEditor.gui.settings.discoveryState = function () {
-    return this.states.discoveryState;
 };
 
 realityEditor.gui.settings.loadSettingsPost = function () {
