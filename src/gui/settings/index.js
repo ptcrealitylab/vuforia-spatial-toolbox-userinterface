@@ -273,10 +273,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                     textField.id = key + 'Text';
                     textField.classList.add('pull-left', 'settingTextField');
                     textField.type = 'text';
-                    textField.placeholder = 'placeholder text';
-
                     if (settingInfo.associatedText) {
-                        textField.value = settingInfo.associatedText.value
+                        textField.value = settingInfo.associatedText.value;
+                        textField.placeholder = settingInfo.associatedText.placeholderText || '';
                     }
 
                     textField.addEventListener('input', function() {
