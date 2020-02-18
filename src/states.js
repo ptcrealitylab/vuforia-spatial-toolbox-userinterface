@@ -85,7 +85,6 @@ var globalStates = {
     currentLogic: null,
 
     developerState: false,
-    realityState: false,
     sendMatrix3d: false,
     sendAcl: false,
 
