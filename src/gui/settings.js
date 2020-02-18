@@ -66,7 +66,7 @@ realityEditor.gui.settings.toggleStates = {};
 
 /**
  * Enum defining different types of settings UIs
- * @type {Readonly<{TOGGLE: string, ACTIVATE_DEACTIVATE_WITH_TEXT: string, TOGGLE_WITH_TEXT: string, ACTIVATE_WITH_TEXT: string}>}
+ * @type {Readonly<{TOGGLE: string, ACTIVATE_DEACTIVATE_WITH_TEXT: string, TOGGLE_WITH_TEXT: string, TOGGLE_WITH_FROZEN_TEXT: string, ACTIVATE_WITH_TEXT: string}>}
  */
 realityEditor.gui.settings.InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
@@ -124,11 +124,18 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
     this.onToggleCallback = function(newValue) {
         realityEditor.gui.settings.toggleStates[propertyName] = newValue;
         window.localStorage.setItem(persistentStorageId, newValue);
-        onToggleCallback(newValue); // trigger additional side effects
+        if (onToggleCallback) {
+            if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+                onToggleCallback(newValue, realityEditor.gui.settings.toggleStates[propertyName + 'Text']); // trigger additional side effects
+            } else {
+                onToggleCallback(newValue); // trigger additional side effects
+            }
+        }
     };
 
     this.onTextCallback = function() {};
-    if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT) {
+    if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT ||
+        settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
         // set up the property containing the value in the setting text box
         let savedValue = window.localStorage.getItem(persistentStorageId + '_TEXT');
         if (savedValue !== null) {
@@ -136,11 +143,14 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
         } else {
             realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = placeholderText || '';
         }
+        
         // anytime a new character is typed into the text box, this will trigger
         this.onTextCallback = function(newValue) {
             realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = newValue;
             window.localStorage.setItem(persistentStorageId + '_TEXT', newValue);
-            onTextCallback(newValue);
+            if (onTextCallback) {
+                onTextCallback(newValue);
+            }
         };
         this.onTextCallback(realityEditor.gui.settings.toggleStates[propertyName + 'Text']); // trigger once for side effects
     }
@@ -193,6 +203,23 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
 };
 
 /**
+ * Creates a new entry that will added to the settings menu, including the associated property and persistent storage.
+ * This type of entry has a toggle switch UI, and a text box UI.
+ * The toggle can only turn on if there is text. While active, the text cannot be edited
+ * @param {string} title
+ * @param {string} description
+ * @param {string} propertyName
+ * @param {string} iconSrc
+ * @param {boolean} defaultValue
+ * @param {string} placeholderText
+ * @param {function<boolean, string>} onToggleCallback - gets triggered when the switch is toggled. includes the textbox value
+ */
+realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback);
+    realityEditor.gui.settings.addedToggles.push(newToggle);
+};
+
+/**
  * Creates a JSON body that can be sent into the settings iframe with all the current setting values.
  * In addition to a few hard-coded settings, injects all the settings that were created using the addToggle API.
  * @return {Object.<string, boolean|string>}
@@ -202,8 +229,6 @@ realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
         externalState: globalStates.externalState,
         discoveryState: globalStates.discoveryState,
         settingsButton : globalStates.settingsButtonState,
-        lockingMode: globalStates.lockingMode,
-        lockPassword: globalStates.lockPassword,
         realityState: globalStates.realityState
     };
 
@@ -236,7 +261,8 @@ realityEditor.gui.settings.generateDynamicSettingsJsonMessage = function(menuNam
             iconSrc: toggle.iconSrc,
             settingType: toggle.settingType
         };
-        if (toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT) {
+        if (toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT ||
+            toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
             defaultMessage[toggle.propertyName].associatedText = {
                 propertyName: toggle.propertyName + 'Text',
                 value: this.toggleStates[toggle.propertyName + 'Text'],
@@ -247,8 +273,6 @@ realityEditor.gui.settings.generateDynamicSettingsJsonMessage = function(menuNam
     
     return defaultMessage;
 };
-
-
 
 realityEditor.gui.settings.hideSettings = function() {
     

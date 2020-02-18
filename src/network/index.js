@@ -1803,26 +1803,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
 
-        if (typeof msgContent.settings.setSettings.lockingToggle !== "undefined") {
-
-            console.log("received message in settings");
-
-            if (msgContent.settings.setSettings.lockingToggle) {
-                realityEditor.app.authenticateTouch();
-
-            } else {
-                globalStates.lockingMode = false;
-                //globalStates.authenticatedUser = null;
-                globalStates.lockPassword = null;
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.lockPassword !== "undefined") {
-
-            globalStates.lockPassword = msgContent.settings.setSettings.lockPassword;
-            console.log("received lock password: " + globalStates.lockPassword);
-        }
-
         if (typeof msgContent.settings.setSettings.realityState !== "undefined") {
 
             if (msgContent.settings.setSettings.realityState) {
@@ -1841,12 +1821,10 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
             if (typeof msgContent.settings.setSettings[toggle.propertyName] !== "undefined") {
                 realityEditor.gui.settings.toggleStates[toggle.propertyName] = msgContent.settings.setSettings[toggle.propertyName];
-                console.log('set toggle value for ' + toggle.propertyName + ' to ' + msgContent.settings.setSettings[toggle.propertyName]);
                 toggle.onToggleCallback(msgContent.settings.setSettings[toggle.propertyName]);
             }
 
             if (typeof msgContent.settings.setSettings[toggle.propertyName + 'Text'] !== "undefined") {
-                console.log('toggle also set text value for ' + toggle.propertyName + 'Text' + ' to ' + msgContent.settings.setSettings[toggle.propertyName + 'Text']);
                 toggle.onTextCallback(msgContent.settings.setSettings[toggle.propertyName + 'Text']);
             }
         });
