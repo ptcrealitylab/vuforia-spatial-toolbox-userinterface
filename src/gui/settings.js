@@ -190,10 +190,11 @@ SettingsToggle.prototype.setValue = function(newValue) {
  * @param {string} iconSrc
  * @param {boolean} defaultValue
  * @param {function<boolean>} onToggleCallback - gets triggered when the switch is toggled
+ * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the toggle is added
  * @return {SettingsToggle}
  */
-realityEditor.gui.settings.addToggle = function(title, description, propertyName, iconSrc, defaultValue, onToggleCallback) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE, propertyName, iconSrc, defaultValue, undefined, onToggleCallback);
+realityEditor.gui.settings.addToggle = function(title, description, propertyName, iconSrc, defaultValue, onToggleCallback, ignoreOnload) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE, propertyName, iconSrc, defaultValue, undefined, onToggleCallback, undefined, ignoreOnload);
     realityEditor.gui.settings.addedToggles.push(newToggle);
     return newToggle;
 };
@@ -209,10 +210,11 @@ realityEditor.gui.settings.addToggle = function(title, description, propertyName
  * @param {string} placeholderText
  * @param {function<boolean>} onToggleCallback - gets triggered when the switch is toggled
  * @param onTextCallback - gets triggered every time the text box changes
+ * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the toggle is added
  * @return {SettingsToggle}
  */
-realityEditor.gui.settings.addToggleWithText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback);
+realityEditor.gui.settings.addToggleWithText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, ignoreOnload) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, ignoreOnload);
     realityEditor.gui.settings.addedToggles.push(newToggle);
     return newToggle;
 };
@@ -228,6 +230,8 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
  * @param {boolean} defaultValue
  * @param {string} placeholderText
  * @param {function<boolean, string>} onToggleCallback - gets triggered when the switch is toggled. includes the textbox value
+ * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the toggle is added
+ * @return {SettingsToggle}
  */
 realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, ignoreOnload) {
     let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, undefined, ignoreOnload);
@@ -242,8 +246,7 @@ realityEditor.gui.settings.addToggleWithFrozenText = function(title, description
  */
 realityEditor.gui.settings.generateGetSettingsJsonMessage = function() {
     let defaultMessage = {
-        settingsButton : globalStates.settingsButtonState,
-        realityState: globalStates.realityState
+        settingsButton : globalStates.settingsButtonState
     };
 
     // dynamically sends in the current property values for each of the switches that were added using the addToggle API
@@ -314,10 +317,9 @@ realityEditor.gui.settings.hideSettings = function() {
 
 realityEditor.gui.settings.showSettings = function() {
 
-    if(!globalStates.realityState) {
+    if (!realityEditor.gui.settings.toggleStates.realityState) {
         realityEditor.gui.menus.switchToMenu("setting", ["setting"], null);
-    }
-    else {
+    } else {
         realityEditor.gui.menus.switchToMenu("settingReality", ["setting"], null);
     }
 

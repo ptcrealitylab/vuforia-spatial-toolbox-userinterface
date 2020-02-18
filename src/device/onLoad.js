@@ -176,6 +176,15 @@ realityEditor.device.onload = function () {
         console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
+    realityEditor.gui.settings.addToggle('Retail UI', 'experimental menus for retail', 'realityState',  '../../../svg/reality.svg', false, function(newValue) {
+        console.log('clear sky mode set to ' + newValue);
+        if (newValue) {
+            realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
+        } else {
+            realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
+        }
+    }, true).moveToDevelopMenu();
+
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -204,7 +213,6 @@ realityEditor.device.onload = function () {
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
-    globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
