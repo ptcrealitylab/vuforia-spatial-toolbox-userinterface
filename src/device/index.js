@@ -1086,7 +1086,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
 
             if (!didTouchScreen && realityEditor.gui.memory.memoryCanCreate()) { // && window.innerWidth - event.clientX > 65) {
 
-                if (!globalStates.groupingEnabled) {
+                if (!realityEditor.gui.settings.toggleStates.groupingEnabled) {
                     
                     // try only doing it for double taps now....
                     if (!this.isDoubleTap) { // on first tap
@@ -1523,65 +1523,3 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
     }
     cb(realityEditor.device.eventObject);
 };
-
-// // // // MISC. Device Functionality // // // //
-
-/**
- * Sets the persistent global settings of the Reality Editor based on the state saved in iOS storage.
- * @param {boolean} developerState - sets editingMode on
- * @param {boolean} extendedTrackingState - enables vuforia extended tracking
- * @param {boolean} clearSkyState - hides menu buttons for clean appearance
- * @param {boolean} instantState - enables instant connection mode when connected to enabled capacitive touch hardware
- * @param {boolean} speechState - enables Siri speech API to connect this to that
- // TODO: add native app storage for this setting * @param {boolean} videoRecordingEnabled - enables video recording API to create frames from camera video stream
- // TODO: add native app storage for this setting * @param {boolean} matrixBroadcastEnabled
- * @param {string} externalState - the IP address of a userinterface directory that should be loaded in instead of default
- * @param {string} discoveryState - the IP address of a discovery server to be used instead of UDP
- * @param {boolean} realityState - sets retail mode on, showing a different menu for those use cases
- * @param {string} zoneText - the current zone that object discovery is limited to
- * @param {boolean} zoneState - whether to use zones or not
- */
-realityEditor.device.setStates = function (developerState, extendedTrackingState, clearSkyState, instantState, speechState, /*videoRecordingEnabled, matrixBroadcastEnabled,*/ externalState, discoveryState, realityState, zoneText, zoneState) {
-
-    globalStates.extendedTrackingState = extendedTrackingState;
-    globalStates.developerState = developerState;
-    globalStates.clearSkyState = clearSkyState;
-    globalStates.instantState = instantState;
-    globalStates.speechState = speechState;
-    // globalStates.videoRecordingEnabled = videoRecordingEnabled;
-    // globalStates.matrixBroadcastEnabled = matrixBroadcastEnabled;
-    globalStates.externalState = externalState;
-    globalStates.discoveryState = discoveryState;
-    globalStates.realityState = realityState;
-    globalStates.zoneText = zoneText;
-    globalStates.zoneState = zoneState;
-
-    if (globalStates.clearSkyState) {
-        document.getElementById("UIButtons").classList.add('clearSky');
-    } else {
-        document.getElementById("UIButtons").classList.remove('clearSky');
-    }
-
-    if (globalStates.realityState) {
-        realityEditor.gui.menus.switchToMenu("realityInfo", ["realityGui"], null);
-        globalStates.realityState = true;
-    } else {
-        realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
-        globalStates.realityState = false;
-    }
-
-    if (developerState) {
-        realityEditor.device.setEditingMode(true);
-    }
-
-    if (extendedTrackingState) {
-        globalStates.extendedTracking = true;
-    }
-
-    if (globalStates.editingMode) {
-        realityEditor.gui.menus.switchToMenu("editing");
-    }
-    
-    cout("setStates");
-};
-

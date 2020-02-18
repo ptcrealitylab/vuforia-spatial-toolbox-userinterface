@@ -82,37 +82,23 @@ var globalStates = {
     guiState: "ui", // possible values: "ui"=(frames visible), "node"=(nodes visible), "logic"=(crafting board)
     UIOffMode: false,
     settingsButtonState: false,
-    extendedTracking: false,
-    zoneText: "",
-    zoneState: false,
     currentLogic: null,
 
-    extendedTrackingState: false,
     developerState: false,
     clearSkyState: false,
     realityState: false,
     externalState: "",
     discoveryState: "",
-    speechState: false,
     sendMatrix3d: false,
     sendAcl: false,
 
     lockingMode: false,
     //authenticatedUser: null,
     lockPassword: null,
-
-    videoRecordingEnabled: false,
-    // videoRecordingMode: true,
     
     // setting this to FALSE speeds up rendering while in node view by NOT also rendering the frames (semi-transparently)
     renderFrameGhostsInNodeViewEnabled: false,
     
-    // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
-    matrixBroadcastEnabled: false,
-    hololensModeEnabled: false,
-    groupingEnabled: false,
-    realtimeEnabled: false,
-
     pocketButtonState: false,
 
     freezeButtonState: false,

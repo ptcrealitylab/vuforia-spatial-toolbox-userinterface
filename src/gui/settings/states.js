@@ -1,7 +1,6 @@
 createNameSpace("realityEditor.gui.settings");
 
 realityEditor.gui.settings.states = {
-    extendedTracking: false,
     editingMode: false,
     clearSkyState: false,
     externalState: "",
@@ -13,12 +12,7 @@ realityEditor.gui.settings.states = {
     settingsButton:false,
     animationFrameRequested: false,
     setInt : false,
-    realityState: false,
-    videoRecordingEnabled: false,
-    matrixBroadcastEnabled: false,
-    hololensModeEnabled: false,
-    groupingEnabled: false,
-    realtimeEnabled: false
+    realityState: false
 };
 
 realityEditor.gui.settings.objectInterval = null;

@@ -20,6 +20,29 @@
     <!-- Include the compiled Ratchet JS -->
     <script src="../../../thirdPartyCode/js/ratchet.min.js"></script>
     <script src="states.js"></script>
+    
+    <style>
+        .settingsIcon {
+            width: 26px;
+            height: 26px;
+            margin-top: -2px;
+            margin-bottom: -5px;
+        }
+
+        .description {
+            color: #b1b1b1;
+            margin-left: 5px;
+        }
+
+        .settingTextField {
+            position: absolute !important;
+            height: 35px !important;
+            width: 200px !important;
+            top: 4px;
+            right: 75px;
+        }
+        
+    </style>
 </head>
 <body style="background-color: #efeff4;">
 <div style="position: absolute; right: 0; width: 65px; top:0; bottom: 0; background-color: #222222"></div>
@@ -30,26 +53,8 @@
     </header>
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
-    <div class="content" style="right:65px; top: -15px; bottom: -14px">
+    <div class="content" style="right:65px; top: -15px; bottom: -14px" id="mainSettings">
         <ul class="table-view">
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/zone.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Zone
-                <small style="color: #b1b1b1;">access objects limited by Zone</small>
-                <input type="text" id="zoneText" style="width:120px; height:26px; margin-top: -2px; margin-bottom: -5px; text-align: center; right: 80px;" placeholder="enter Zone"">
-                <div class="toggle" id="zoneState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/extended.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Extended Tracking
-                <div class="toggle" id="extendedTracking">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
             <li class="table-view-cell">
                 <a class="push-right" href="foundObjects.html"  style="background-color: rgba(0,255,255,0.05)" data-ignore="push">
                     <img class="media-object pull-left" src="../../../svg/object.svg"
@@ -65,84 +70,12 @@
                 </a>
             </li>
             <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/grouping.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Grouping
-                <small style="color: #b1b1b1;">background double tap creates group, not memory</small>
-                <div class="toggle" id="groupingEnabled">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/realtime.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Realtime Collaboration
-                <small style="color: #b1b1b1;">constantly synchronizes AR elements with all other Editors</small>
-                <div class="toggle" id="realtimeEnabled">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/video.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Video Recording
-                <small style="color: #b1b1b1;">create frames from camera</small>
-                <div class="toggle" id="videoRecordingEnabled">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/desktopConnect.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Connect to Desktop
-                <small style="color: #b1b1b1;">sends matrices to Desktop Editor</small>
-                <div class="toggle" id="matrixBroadcastEnabled">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
                 <img class="media-object pull-left" src="../../../svg/lock.svg"
                      style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
                 Object Locking
                 <small style="color: #b1b1b1;">touch ID required</small>
                 <input type="text" id="lockText" style="width:120px; height:26px; margin-top: -2px; margin-bottom: -5px; text-align: center; right: 80px;" placeholder="password" oninput="realityEditor.gui.settings.newLockTextLoad()">
                 <div class="toggle" id="lockingToggle">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/holo.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Holo-Mode
-                <small style="color: #b1b1b1;">adjusts UI for HMD viewer (desktop only)</small>
-                <div class="toggle" id="hololensModeEnabled">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/instantLink.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Instant Connect
-                <small style="color: #b1b1b1;">if available with prepared objects</small>
-                <div class="toggle" id="instantState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/speech.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Speech Controls
-                <small style="color: #b1b1b1;">must enable microphone</small>
-                <div class="toggle" id="speechState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/tutorial.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Show Tutorial
-                <small style="color: #b1b1b1;">add tutorial frame on app start</small>
-                <div class="toggle" id="tutorialState">
                     <div class="toggle-handle"></div>
                 </div>
             </li>
@@ -161,5 +94,6 @@
 
 </div>
 <script src="index.js"></script>
+
 </body>
 </html>

@@ -111,82 +111,6 @@ realityEditor.app.callbacks.onDiscoveryText = function(savedState) {
 };
 
 /**
- * Callback for realityEditor.app.getZoneState
- * Loads the zone on/off state (if any) from permanent storage
- * @param {string} savedState - stringified boolean
- */
-realityEditor.app.callbacks.onZoneState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded zone state = ', savedState);
-
-    if (savedState) {
-        globalStates.zoneState = savedState;
-    }
-};
-
-/**
- * Callback for realityEditor.app.getZoneText
- * Loads the zone name (if any) from permanent storage
- * @param {string} savedState
- */
-realityEditor.app.callbacks.onZoneText = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded zone text = ', savedState);
-
-    if (savedState) {
-        globalStates.zoneText = savedState;
-    }
-};
-
-/**
- * Callback for realityEditor.app.getRealtimeState
- * Loads the realtime collaboration service enabled on/off state (if any) from permanent storage
- * @param {string} savedState - stringified boolean
- */
-realityEditor.app.callbacks.onRealtimeState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded realtime state = ', savedState);
-
-    if (savedState) {
-        globalStates.realtimeEnabled = savedState;
-    }
-};
-
-/**
- * Callback for realityEditor.app.getGroupingState
- * Loads the grouping service enabled on/off state (if any) from permanent storage
- * @param savedState - stringified boolean
- */
-realityEditor.app.callbacks.onGroupingState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded grouping state = ', savedState);
-
-    if (savedState) {
-        globalStates.groupingEnabled = savedState;
-    }
-};
-
-/**
- * Callback for realityEditor.app.getTutorialState
- * Loads the tutorial state (if any) from permanent storage
- * @param savedState - stringified boolean
- */
-realityEditor.app.callbacks.onTutorialState = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded tutorial state = ', savedState);
-
-    if (savedState) {
-        globalStates.tutorialState = savedState;
-    }
-};
-
-
-/**
  * Callback for realityEditor.app.getProjectionMatrix
  * Sets the projection matrix once using the value from the AR engine
  * @param {Array.<number>} matrix
@@ -217,16 +141,14 @@ realityEditor.app.callbacks.receivedUDPMessage = function(message) {
         typeof message.ip !== 'undefined') {
         
         if (typeof message.zone !== 'undefined' && message.zone !== '') {
-            if (globalStates.zoneState && globalStates.zoneText === message.zone) {
+            if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
                 // console.log('Added object from zone=' + message.zone);
                 realityEditor.network.addHeartbeatObject(message);
             }
         
-        } else {
-            if (!globalStates.zoneState) {
-                // console.log('Added object without zone');
-                realityEditor.network.addHeartbeatObject(message);
-            }
+        } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
+            // console.log('Added object without zone');
+            realityEditor.network.addHeartbeatObject(message);
         }
         
 
@@ -266,6 +188,7 @@ var DISABLE_ALL_EXTENDED_TRACKING = false;
  * @param {Object.<string, Array.<number>>} visibleObjects
  */
 realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
+    if (!realityEditor.worldObjects) { return; } // prevents tons of error messages while app is loading but Vuforia has started
     
     // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 
@@ -366,7 +289,7 @@ realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObject
     realityEditor.gui.ar.draw.visibleObjectsStatus = {};
     for (var key in visibleObjects) {
         realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-        if ( (!DISABLE_ALL_EXTENDED_TRACKING && globalStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
+        if ( (!DISABLE_ALL_EXTENDED_TRACKING && realityEditor.gui.settings.toggleStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
             visibleObjects[key] = visibleObjects[key].matrix;
         } else {
             if (visibleObjects[key].status === 'EXTENDED_TRACKED') {

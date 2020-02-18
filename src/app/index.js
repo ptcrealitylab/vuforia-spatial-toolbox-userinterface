@@ -456,42 +456,6 @@ realityEditor.app.saveRealityState = function(newState) {
 };
 
 /**
- * Save the persistent setting to disk for instant (capacitive touch) mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveInstantState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:INSTANT', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for whether to use zone.
- * @param {boolean} newState
- */
-realityEditor.app.saveZoneState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:ZONE', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for extended tracking mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveExtendedTrackingState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:TRACKING', storedValue);
-    this.enableExtendedTracking(newState);
-};
-
-/**
- * Save the persistent setting to disk for the zone string.
- * @param {string} newZoneText
- */
-realityEditor.app.saveZoneText = function(newZoneText) {
-    this.setStorage('SETUP:ZONETEXT', newZoneText);
-};
-
-/**
  * Save the persistent setting to disk for the object discovery server string.
  * @param {string} newDiscoveryText
  */
@@ -505,33 +469,6 @@ realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
  */
 realityEditor.app.saveExternalText = function(newExternalText) {
     this.setStorage('SETUP:EXTERNAL', newExternalText);
-};
-
-/**
- * Save the persistent setting to disk for realtime multi-user mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveRealtimeState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:REALTIME', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for realtime multi-user mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveGroupingState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:GROUPING', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for whether tutorial mode should show on startup.
- * @param {boolean} newState
- */
-realityEditor.app.saveTutorialState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:TUTORIAL', storedValue);
 };
 
 /**
@@ -563,38 +500,6 @@ realityEditor.app.getRealityState = function(callback) {
 };
 
 /**
- * Get the persistent setting for instant (capacitive touch) mode.
- * @param {function} callback
- */
-realityEditor.app.getInstantState = function(callback) {
-    this.getStorage('SETUP:INSTANT', callback);
-};
-
-/**
- * Get the persistent setting for whether to use zone.
- * @param {function} callback
- */
-realityEditor.app.getZoneState = function(callback) {
-    this.getStorage('SETUP:ZONE', callback);
-};
-
-/**
- * Get the persistent setting for extended tracking mode.
- * @param {function} callback
- */
-realityEditor.app.getExtendedTrackingState = function(callback) {
-    this.getStorage('SETUP:TRACKING', callback);
-};
-
-/**
- * Get the persistent setting for the zone string.
- * @param {function} callback
- */
-realityEditor.app.getZoneText = function(callback) {
-    this.getStorage('SETUP:ZONETEXT', callback);
-};
-
-/**
  * Get the persistent setting for the object discovery server string.
  * @param {function} callback
  */
@@ -608,30 +513,6 @@ realityEditor.app.getDiscoveryText = function(callback) {
  */
 realityEditor.app.getExternalText = function(callback) {
     this.getStorage('SETUP:EXTERNAL', callback);
-};
-
-/**
- * Get the persistent setting for whether to send/receive multi-user realtime updates of all frame interactions.
- * @param {function} callback
- */
-realityEditor.app.getRealtimeState = function(callback) {
-    this.getStorage('SETUP:REALTIME', callback);
-};
-
-/**
- * Get the persistent setting for whether to enable the grouping service.
- * @param {function} callback
- */
-realityEditor.app.getGroupingState = function(callback) {
-    this.getStorage('SETUP:GROUPING', callback);
-};
-
-/**
- * Get the persistent setting for whether to show the tutorial on app start.
- * @param {function} callback
- */
-realityEditor.app.getTutorialState = function(callback) {
-    this.getStorage('SETUP:TUTORIAL', callback);
 };
 
 /**

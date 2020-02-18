@@ -109,23 +109,8 @@ realityEditor.device.security.authenticateSessionForUser = function(encryptedId)
         globalStates.lockPassword = null;
         
         // updates the settings iframe graphics to match the new lockingMode and lockPassword
-        document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({getSettings: {
-            extendedTracking: globalStates.extendedTracking,
-            editingMode: globalStates.editingMode,
-            clearSkyState: globalStates.clearSkyState,
-            instantState: globalStates.instantState,
-            speechState: globalStates.speechState,
-            tutorialState: globalStates.tutorialState,
-            videoRecordingEnabled: globalStates.videoRecordingEnabled,
-            matrixBroadcastEnabled: globalStates.matrixBroadcastEnabled,
-            hololensModeEnabled: globalStates.hololensModeEnabled,
-            groupingEnabled: globalStates.groupingEnabled,
-            externalState: globalStates.externalState,
-            discoveryState: globalStates.discoveryState,
-            settingsButton : globalStates.settingsButtonState,
-            lockingMode: globalStates.lockingMode,
-            lockPassword: globalStates.lockPassword
-        }
+        document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+            getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage()
         }), "*");
         
         //globalStates.authenticatedUser = null;
