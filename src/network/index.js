@@ -1803,20 +1803,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
 
-        if (typeof msgContent.settings.setSettings.realityState !== "undefined") {
-
-            if (msgContent.settings.setSettings.realityState) {
-                realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
-                globalStates.realityState = true;
-                realityEditor.app.saveRealityState(true);
-
-            } else {
-                realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
-                globalStates.realityState = false;
-                realityEditor.app.saveRealityState(false);
-            }
-        }
-
         // sets property value for each dynamically-added toggle
         realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
             if (typeof msgContent.settings.setSettings[toggle.propertyName] !== "undefined") {
