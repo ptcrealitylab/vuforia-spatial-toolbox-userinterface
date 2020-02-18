@@ -78,7 +78,7 @@ realityEditor.device.onload = function () {
     realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
     realityEditor.app.getDiscoveryText('realityEditor.app.callbacks.onDiscoveryText');
 
-    realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', 'SETUP:ZONE', '../../../svg/zone.svg', false,
+    realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
         function(newValue) {
             console.log('zone mode was set to ' + newValue);
         },
@@ -87,17 +87,17 @@ realityEditor.device.onload = function () {
         }
     );
     
-    realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', 'SETUP:EXTENDED_TRACKING', '../../../svg/extended.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', '../../../svg/extended.svg', false, function(newValue) {
         console.log('extended tracking was set to ' + newValue);
         realityEditor.app.enableExtendedTracking(newValue);
     });
 
-    realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled', 'SETUP:GROUPING', '../../../svg/grouping.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled',  '../../../svg/grouping.svg', false, function(newValue) {
         console.log('grouping was set to ' + newValue);
         realityEditor.gui.ar.grouping.toggleGroupingMode(newValue);
     });
 
-    realityEditor.gui.settings.addToggle('Realtime Collaboration', 'constantly synchronizes with other users', 'realtimeEnabled', 'SETUP:REALTIME', '../../../svg/realtime.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Realtime Collaboration', 'constantly synchronizes with other users', 'realtimeEnabled',  '../../../svg/realtime.svg', false, function(newValue) {
         console.log('realtime was set to ' + newValue);
         if (newValue) {
             realityEditor.network.realtime.initService();
@@ -105,7 +105,7 @@ realityEditor.device.onload = function () {
         // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
     });
 
-    realityEditor.gui.settings.addToggle('Video Recording', 'show recording button to create video frames', 'videoRecordingEnabled', 'SETUP:VIDEO_RECORDING', '../../../svg/video.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Video Recording', 'show recording button to create video frames', 'videoRecordingEnabled',  '../../../svg/video.svg', false, function(newValue) {
         console.log('video recording was set to ' + newValue);
         if (!newValue) {
             realityEditor.device.videoRecording.stopRecording(); // ensure recording is stopped when mode is turned off
@@ -113,7 +113,7 @@ realityEditor.device.onload = function () {
     });
 
     // TODO: move each of these into their respective modules, e.g. this should go in desktopAdapter.js
-    realityEditor.gui.settings.addToggle('Connect to Desktop', 'sends matrices to Desktop Editor', 'matrixBroadcastEnabled', 'SETUP:CONNECT_TO_DESKTOP', '../../../svg/desktopConnect.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Connect to Desktop', 'sends matrices to Desktop Editor', 'matrixBroadcastEnabled',  '../../../svg/desktopConnect.svg', false, function(newValue) {
         console.log('connect to desktop was set to ' + newValue);
         if (newValue) {
             // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
@@ -123,16 +123,16 @@ realityEditor.device.onload = function () {
         }
     });
 
-    realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI foor HMD viewer (desktop only)', 'hololensModeEnabled', 'SETUP:HOLO_MODE', '../../../svg/holo.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI foor HMD viewer (desktop only)', 'hololensModeEnabled',  '../../../svg/holo.svg', false, function(newValue) {
         console.log('hololens mode was set to ' + newValue);
         realityEditor.device.hololensAdapter.toggleHololensMode(newValue);
     });
 
-    realityEditor.gui.settings.addToggle('Instant Connect', 'if available with prepared objects', 'instantState', 'SETUP:INSTANT_CONNECT', '../../../svg/instantLink.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Instant Connect', 'if available with prepared objects', 'instantState',  '../../../svg/instantLink.svg', false, function(newValue) {
         console.log('instant connect was set to ' + newValue);
     });
     
-    realityEditor.gui.settings.addToggle('Speech Controls', 'must enable microphone', 'speechState', 'SETUP:SPEECH', '../../../svg/speech.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Speech Controls', 'must enable microphone', 'speechState',  '../../../svg/speech.svg', false, function(newValue) {
         console.log('speech controls was set to ' + newValue);
         
         if (newValue) { // TODO: if default value is true, how will these get triggered?
@@ -147,7 +147,7 @@ realityEditor.device.onload = function () {
         }
     });
 
-    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState', 'SETUP:TUTORIAL', '../../../svg/tutorial.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
     });
     
