@@ -1,166 +1,29 @@
 createNameSpace("realityEditor.gui.settings");
 
 // TODO: import this from common source as settings.js gets it instead of redefining
-const SETTING_MENU_TYPE = Object.freeze({
+const InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
-    ACTIVATE_WITH_TEXT: 'ACTIVATE_WITH_TEXT',
-    ACTIVATE_DEACTIVATE_WITH_TEXT: 'ACTIVATE_DEACTIVATE_WITH_TEXT'
+    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT'
 });
 
 realityEditor.gui.settings.setSettings = function (id, state) {
     if (!document.getElementById(id)) return;
 
-    if (id === "externalText") {
-        if (state !== "") {
-            document.getElementById(id).value = state;
-        }
-        return;
-    }
-
-    if (id === "discoveryText") {
-
-        var buttonState = document.getElementById('discoveryButton');
-
-        if (state !== "") {
-            document.getElementById(id).value = state;
-            buttonState.innerText = "Deactivate";
-            buttonState.className = "btn btn-negative pull-right";
-            this.states.discoveryActive = true;
-        } else {
-            buttonState.innerText = "Activate";
-            buttonState.className = "btn btn-positive pull-right";
-            this.states.discoveryActive = false;
-        }
-
-        if (realityEditor.gui.settings.states.discoveryActive) {
-            buttonState.innerText = "Deactivate";
-            buttonState.className = "btn btn-negative pull-right";
-        } else {
-            buttonState.innerText = "Activate";
-            buttonState.className = "btn btn-positive pull-right";
-        }
-
-        return;
-    }
-    
-    if (id === "lockText") {
-        //if (state !== "") {
-        //    document.getElementById(id).value = state; // TODO: do we need this?
-        //}
-        return;
-    }
-
+    // updates the toggle switch to display the current value
     if (id) {
         if (state) {
-
-            document.getElementById(id).classList.add('active'); // TODO: doesn't really need this change, revert to previous?
-            
-            //document.getElementById(id).className = "toggle active";
+            document.getElementById(id).classList.add('active');
         } else {
-
             document.getElementById(id).classList.remove('active');
-
-            //document.getElementById(id).className = "toggle";
+        }
+        
+        // update associated text field if needed (for TOGGLE_WITH_FROZEN_TEXT)
+        let textfield = document.getElementById(id).parentElement.querySelector('.settingTextField');
+        if (textfield && textfield.classList.contains('frozen')) {
+            textfield.disabled = document.getElementById(id).classList.contains('active');
         }
     }
-    
-    if (id === "lockingToggle") {
-        this.updateLockUI();
-        //document.getElementById("lockText").disabled = document.getElementById(id).classList.contains('active');  //e.detail.isActive;
-    }
-    
-    //    if (!state) {
-    //        document.getElementById(id).firstElementChild.style.transform = "translate3d(0px, 0px, 0px);";
-    //    }
-    //    //    document.getElementById("lockText").disabled = state;
-    //    //    console.log("change text disabled " + document.getElementById("lockText").disabled);
-    //}
-};
-
-realityEditor.gui.settings.updateLockUI = function() {
-    document.getElementById("lockText").disabled = document.getElementById('lockingToggle').classList.contains('active');  //e.detail.isActive;
-};
-
-realityEditor.gui.settings.newURLTextLoad = function () {
-    this.states.externalState = document.getElementById('externalText').value; //encodeURIComponent(document.getElementById('externalText').value);
-};
-
-realityEditor.gui.settings.newDiscoveryTextLoad = function () {
-    this.states.discoveryState = document.getElementById('discoveryText').value; //encodeURIComponent(document.getElementById('discoveryText').value);
-    this.states.discoveryActive = false;
-
-    var buttonState = document.getElementById('discoveryButton');
-        buttonState.innerText = "Activate";
-        buttonState.className = "btn btn-positive pull-right";
-};
-
-realityEditor.gui.settings.appFunctionCall = function(functionName, messageBody) {
-    parent.postMessage(JSON.stringify({
-        settings: {
-            functionName: functionName,
-            messageBody: messageBody
-        }
-    }), "*");
-};
-
-realityEditor.gui.settings.setDiscoveryText = function(discoveryText) {
-    parent.postMessage(JSON.stringify({
-        settings: {
-            setDiscoveryText: discoveryText
-        }
-    }), "*");
-};
-
-realityEditor.gui.settings.reloadUI = function () {
-    // if (this.states.externalState !== "" && this.states.externalState !== "http") {
-        console.log("loadNewUI: " + this.states.externalState);
-        this.appFunctionCall('setStorage', {storageID: 'SETUP:EXTERNAL', message: JSON.stringify(this.states.externalState)}, null);
-        setTimeout(function() {
-            this.appFunctionCall("loadNewUI", {reloadURL: this.states.externalState});
-        }.bind(this), 100);
-    // }
-};
-
-realityEditor.gui.settings.discovery = function () {
-    if (!this.states.discoveryActive) {
-        if (this.states.discoveryState !== "" && this.states.discoveryState !== "http") {
-            console.log("setDiscovery" + this.states.discoveryState);
-            this.appFunctionCall("setDiscovery", {discoveryURL: this.states.discoveryState});
-            this.states.discoveryActive = true;
-            this.setDiscoveryText(this.states.discoveryState);
-            this.appFunctionCall('setStorage', {storageID: 'SETUP:DISCOVERY', message: JSON.stringify(this.states.discoveryState)}, null);
-        }
-    } else {
-        console.log("removeDiscovery");
-        this.appFunctionCall("removeDiscovery", null);
-        this.states.discoveryActive = false;
-        this.states.discoveryState = "";
-        document.getElementById("discoveryText").value = this.states.discoveryState;
-        this.appFunctionCall('setStorage', {storageID: 'SETUP:DISCOVERY', message: JSON.stringify(this.states.discoveryState)}, null);
-    }
-
-    var buttonState = document.getElementById('discoveryButton');
-
-    if (this.states.discoveryActive) {
-        buttonState.innerText = "Deactivate";
-        buttonState.className = "btn btn-negative pull-right";
-    } else {
-        buttonState.innerText = "Activate";
-        buttonState.className = "btn btn-positive pull-right";
-    }
-
-};
-
-realityEditor.gui.settings.discoveryState = function () {
-    return this.states.discoveryState;
-};
-
-
-
-realityEditor.gui.settings.newLockTextLoad = function () {
-    this.states.lockPassword = encodeURIComponent(document.getElementById('lockText').value);
-    console.log("lockPassword = " + this.states.lockPassword);
 };
 
 realityEditor.gui.settings.loadSettingsPost = function () {
@@ -173,6 +36,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     // this is a temporary fix to check if this script is being executed on the main settings vs the developer settings
     if (document.querySelector('.content').id === 'mainSettings') {
         settingsRequest.getMainDynamicSettings = true; // ask for which settings should be displayed on the main settings page
+    
+    } else if (document.querySelector('.content').id === 'developSettings') {
+        settingsRequest.getDevelopDynamicSettings = true; // ask for which settings should be displayed on the main settings page
     }
     
     //  Get all the Setting states.
@@ -189,7 +55,16 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
 
         if (typeof msg.getMainDynamicSettings !== 'undefined') {
-            onGetMainDynamicSettings(msg);
+            if (document.querySelector('.content').id === 'mainSettings') {
+                onGetMainDynamicSettings(msg.getMainDynamicSettings);
+            }
+        }
+
+        if (typeof msg.getDevelopDynamicSettings !== 'undefined') {
+            console.log('iframe got dynamic DEVELOP settings', msg);
+            if (document.querySelector('.content').id === 'developSettings') {
+                onGetMainDynamicSettings(msg.getDevelopDynamicSettings); // TODO: see if I can re-use this function or need to create another
+            }
         }
 
     }.bind(realityEditor.gui.settings));
@@ -226,17 +101,17 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
     }.bind(realityEditor.gui.settings);
 
-    var onGetMainDynamicSettings = function(msg) {
-        console.log('settings/index.js getMainDynamicSettings', msg.getMainDynamicSettings);
+    var onGetMainDynamicSettings = function(dynamicSettings) {
+        console.log('settings/index.js getMainDynamicSettings', dynamicSettings);
         var container = document.querySelector('.content').querySelector('.table-view');
         if (!container) {
             console.warn('cant find container to create settings');
             return;
         }
 
-        for (let key in msg.getMainDynamicSettings) {
+        for (let key in dynamicSettings) {
 
-            var settingInfo = msg.getMainDynamicSettings[key];
+            var settingInfo = dynamicSettings[key];
             console.log(key, settingInfo);
 
             // add HTML element for this toggle if it doesn't exist already
@@ -265,19 +140,21 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 description.className = 'description';
                 newElement.appendChild(description);
 
-                if (settingInfo.settingType === SETTING_MENU_TYPE.TOGGLE_WITH_TEXT ||
-                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_WITH_TEXT ||
-                    settingInfo.settingType === SETTING_MENU_TYPE.ACTIVATE_DEACTIVATE_WITH_TEXT) {
+                if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT ||
+                    settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
 
                     let textField = document.createElement('input');
                     textField.id = key + 'Text';
                     textField.classList.add('pull-left', 'settingTextField');
+                    if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+                        textField.classList.add('frozen');
+                    }
                     textField.type = 'text';
                     if (settingInfo.associatedText) {
                         textField.value = settingInfo.associatedText.value;
                         textField.placeholder = settingInfo.associatedText.placeholderText || '';
                     }
-
+                    
                     textField.addEventListener('input', function() {
                         uploadSettingText(this.id);
                     });
@@ -302,6 +179,12 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
     document.addEventListener('toggle', function (e) {
         uploadSettingsForToggle(e.target.id, e.detail.isActive);
+        
+        let textfield = e.target.parentElement.querySelector('.settingTextField');
+        // check if it has an attached text field, and if so, update if it needs frozen/unfrozen
+        if (textfield && textfield.classList.contains('frozen')) {
+            textfield.disabled = e.target.classList.contains('active');
+        }
     });
 
     function uploadSettingsForToggle(elementId, isActive) {
@@ -309,10 +192,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         msg.settings = {};
         msg.settings.setSettings = {};
         msg.settings.setSettings[elementId] = isActive;
-        if (elementId === "lockingToggle") {
-            msg.settings.setSettings['lockPassword'] = realityEditor.gui.settings.states.lockPassword;
-            realityEditor.gui.settings.updateLockUI();
-        }
 
         let element = document.getElementById(elementId);
         // check if it has an attached text field, and if so, send that text too

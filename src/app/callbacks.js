@@ -78,39 +78,6 @@ realityEditor.app.callbacks.vuforiaIsReady = function() {
 };
 
 /**
- * Callback for realityEditor.app.getExternalText
- * Loads the external userinterface URL (if any) from permanent storage
- *  (which later is used to populate the settings text field)
- * @param {string} savedState - needs to be JSON parsed
- */
-realityEditor.app.callbacks.onExternalText = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded external interface URL = ', savedState);
-
-    if (savedState) {
-        globalStates.externalState = savedState;
-    }
-};
-
-/**
- * Callback for realityEditor.app.getDiscoveryText
- * Loads an external server URL (if any) from permanent storage
- *  (which will be used to directly load objects from instead of only using UDP)
- * @param {string} savedState - needs to be JSON parsed
- */
-realityEditor.app.callbacks.onDiscoveryText = function(savedState) {
-    if (savedState === '(null)') { savedState = 'null'; }
-    savedState = JSON.parse(savedState);
-    console.log('loaded discovery URL = ', savedState);
-
-    if (savedState) {
-        globalStates.discoveryState = savedState;
-        realityEditor.network.discoverObjectsFromServer(savedState);
-    }
-};
-
-/**
  * Callback for realityEditor.app.getProjectionMatrix
  * Sets the projection matrix once using the value from the AR engine
  * @param {Array.<number>} matrix

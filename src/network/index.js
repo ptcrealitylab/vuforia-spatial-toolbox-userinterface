@@ -1753,8 +1753,15 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
     if (msgContent.settings.getMainDynamicSettings) {
         self.contentWindow.postMessage(JSON.stringify({
-            getMainDynamicSettings: realityEditor.gui.settings.generateGetMainDynamicSettingsJsonMessage()
+            getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
         }), "*"); 
+    }
+
+    if (msgContent.settings.getDevelopDynamicSettings) {
+        console.log('DEVELOP asked for dynamic settings');
+        self.contentWindow.postMessage(JSON.stringify({
+            getDevelopDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.DEVELOP)
+        }), "*");
     }
 
     // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe
@@ -1796,75 +1803,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     // iterates over all possible settings (extendedTracking, editingMode, zoneText, ...., etc) and updates local variables and triggers side effects based on new state values
     if (msgContent.settings.setSettings) {
 
-        if (typeof msgContent.settings.setSettings.editingMode !== "undefined") {
-
-            if (msgContent.settings.setSettings.editingMode) {
-                realityEditor.device.setEditingMode(true);
-                realityEditor.app.saveDeveloperState(true);
-            } else {
-                realityEditor.device.setEditingMode(false);
-                realityEditor.app.saveDeveloperState(false);
-            }
-
-        }
-        
-        if (typeof msgContent.settings.setSettings.clearSkyState !== "undefined") {
-
-            if (msgContent.settings.setSettings.clearSkyState) {
-                globalStates.clearSkyState = true;
-                realityEditor.app.saveClearSkyState(true);
-
-            } else {
-                globalStates.clearSkyState = false;
-                realityEditor.app.saveClearSkyState(false);
-
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.lockingToggle !== "undefined") {
-
-            console.log("received message in settings");
-
-            if (msgContent.settings.setSettings.lockingToggle) {
-                realityEditor.app.authenticateTouch();
-
-            } else {
-                globalStates.lockingMode = false;
-                //globalStates.authenticatedUser = null;
-                globalStates.lockPassword = null;
-            }
-        }
-
-        if (typeof msgContent.settings.setSettings.lockPassword !== "undefined") {
-
-            globalStates.lockPassword = msgContent.settings.setSettings.lockPassword;
-            console.log("received lock password: " + globalStates.lockPassword);
-        }
-
-        if (typeof msgContent.settings.setSettings.realityState !== "undefined") {
-
-            if (msgContent.settings.setSettings.realityState) {
-                realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
-                globalStates.realityState = true;
-                realityEditor.app.saveRealityState(true);
-
-            } else {
-                realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
-                globalStates.realityState = false;
-                realityEditor.app.saveRealityState(false);
-            }
-        }
-
         // sets property value for each dynamically-added toggle
         realityEditor.gui.settings.addedToggles.forEach(function(toggle) {
             if (typeof msgContent.settings.setSettings[toggle.propertyName] !== "undefined") {
                 realityEditor.gui.settings.toggleStates[toggle.propertyName] = msgContent.settings.setSettings[toggle.propertyName];
-                console.log('set toggle value for ' + toggle.propertyName + ' to ' + msgContent.settings.setSettings[toggle.propertyName]);
                 toggle.onToggleCallback(msgContent.settings.setSettings[toggle.propertyName]);
             }
 
             if (typeof msgContent.settings.setSettings[toggle.propertyName + 'Text'] !== "undefined") {
-                console.log('toggle also set text value for ' + toggle.propertyName + 'Text' + ' to ' + msgContent.settings.setSettings[toggle.propertyName + 'Text']);
                 toggle.onTextCallback(msgContent.settings.setSettings[toggle.propertyName + 'Text']);
             }
         });
@@ -1874,11 +1820,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     // can directly trigger native app APIs with message of correct format @todo: figure out if this is currently used?
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
-    }
-
-    if (msgContent.settings.setDiscoveryText) {
-        globalStates.discoveryState = msgContent.settings.setDiscoveryText;
-        this.discoverObjectsFromServer(msgContent.settings.setDiscoveryText)
     }
 };
 

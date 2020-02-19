@@ -64,35 +64,47 @@ realityEditor.gui.search.list = {
 };
 
 //set item in storage.
-if(typeof localStorage["searchList"] !== "undefined"){
+if (typeof localStorage["searchList"] !== "undefined") {
     var thisSearchList = JSON.parse(localStorage["searchList"]);
     for(var key in thisSearchList){
-      if(key in realityEditor.gui.search.list){
-          realityEditor.gui.search.list[key].state = thisSearchList[key].state;
-      }
+        if(key in realityEditor.gui.search.list){
+            realityEditor.gui.search.list[key].state = thisSearchList[key].state;
+        }
     }
 }
+
+realityEditor.gui.search.initService = function() {
+    var RETAIL_SEARCH_ENABLED = false;
+    if (!RETAIL_SEARCH_ENABLED) { return; }
+    
+    realityEditor.gui.settings.addToggle('Retail UI', 'experimental menus for retail', 'realityState',  '../../../svg/reality.svg', false, function(newValue) {
+        console.log('clear sky mode set to ' + newValue);
+        if (newValue) {
+            realityEditor.gui.menus.switchToMenu("reality", ["realityGui"], null);
+        } else {
+            realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
+        }
+    }, true).moveToDevelopMenu();
+    
+};
 
 realityEditor.gui.search.visible = false;
 
 realityEditor.gui.search.switch = function(id, state){
-
-    if(state == null){
+    if (state === null) {
         document.getElementById(id+"0").style.display = "inline";
         document.getElementById(id+"1").style.display = "none";
         document.getElementById(id+"2").style.display = "none";
-    } else if(state == false){
+    } else if(state === false) {
         document.getElementById(id+"0").style.display = "none";
         document.getElementById(id+"1").style.display = "inline";
         document.getElementById(id+"2").style.display = "none";
-    } else if(state == true){
+    } else if(state === true) {
         document.getElementById(id+"0").style.display = "none";
         document.getElementById(id+"1").style.display = "none";
         document.getElementById(id+"2").style.display = "inline";
     }
 };
-
-
 
 realityEditor.gui.search.add = function () {
     realityEditor.gui.search.visible = true;
@@ -106,13 +118,13 @@ realityEditor.gui.search.add = function () {
         searchButtonContainer.onclick = function () {
             var that = realityEditor.gui.search;
 
-            if( that.list[this.search].state == null){
-                that.list[this.search].state =false;
+            if( that.list[this.search].state === null){
+                that.list[this.search].state = false;
                 that.switch(this.search, false);
-            } else if( that.list[this.search].state == false){
-                that.list[this.search].state =true;
+            } else if( that.list[this.search].state === false){
+                that.list[this.search].state = true;
                 that.switch(this.search, true);
-            } else if( that.list[this.search].state == true){
+            } else if( that.list[this.search].state === true){
                 that.list[this.search].state = null;
                 that.switch(this.search, null);
             }
@@ -150,8 +162,6 @@ realityEditor.gui.search.add = function () {
         searchButtonText.className = "searchText";
         searchButtonText.innerText = this.list[buttonName].text;
 
-
-
         searchButtonContent.appendChild(button1);
         searchButtonContent.appendChild(button2);
         searchButtonContent.appendChild(button3);
@@ -163,15 +173,15 @@ realityEditor.gui.search.add = function () {
 
         this.switch(buttonName, this.list[buttonName].state);
     }
-
 };
+
 realityEditor.gui.search.getVisibility = function (){
     return this.visible;
-}
+};
 
 realityEditor.gui.search.getSearch = function (){
     return this.list;
-}
+};
 
 realityEditor.gui.search.remove = function (){
     realityEditor.gui.search.visible = false;

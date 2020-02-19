@@ -21,6 +21,29 @@
     <!-- Include the compiled Ratchet JS -->
     <script src="../../../thirdPartyCode/js/ratchet.min.js"></script>
     <script src="states.js"></script>
+    
+    <style>
+        /* TODO: move to a shared settings.css file */
+        .settingsIcon {
+            width: 26px;
+            height: 26px;
+            margin-top: -2px;
+            margin-bottom: -5px;
+        }
+
+        .description {
+            color: #b1b1b1;
+            margin-left: 5px;
+        }
+
+        .settingTextField {
+            position: absolute !important;
+            height: 35px !important;
+            width: 200px !important;
+            top: 4px;
+            right: 75px;
+        }
+    </style>
 </head>
 <body style="background-color: #efeff4;">
 <div style="position: absolute; right: 0; width: 65px; top:0; bottom: 0; background-color: #222222"></div>
@@ -37,63 +60,8 @@
     </header>
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
-    <div class="content" style="right:65px;top: -15px; bottom: -14px">
-
-        <ul class="table-view">
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/move.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                AR-UI Repositioning
-                <small style="color: #b1b1b1;">object developer access required</small>
-                <div class="toggle" id="editingMode">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/clear.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Clear Sky Mode
-                <small style="color: #b1b1b1;">hides all buttons</small>
-                <div class="toggle" id="clearSkyState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/download.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">Interface URL<br>
-
-                <input type="text" id="externalText" class=" pull-left" style="position: fixed; margin-left: 180px; margin-top:-29px;height: 35px; width: 200px"
-                       placeholder="http://..." oninput="realityEditor.gui.settings.newURLTextLoad()">
-
-                <button class="btn btn-positive pull-right" style="width: 80px; height: 35px; margin-top: -1px"
-                        onclick="realityEditor.gui.settings.reloadUI()">Activate
-                </button>
-
-
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/discovery.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">Discovery Server<br>
-
-                <input type="text" id="discoveryText" style="position: fixed; margin-left: 180px; margin-top:-29px;height: 35px; width: 200px"
-                       placeholder="http://..." oninput="realityEditor.gui.settings.newDiscoveryTextLoad()">
-
-                <button id="discoveryButton" class="btn btn-positive pull-right" style="width: 80px; height: 35px; margin-top: -1px"
-                        onclick="realityEditor.gui.settings.discovery()">Activate
-                </button>
-
-
-            </li>
-            <li class="table-view-cell">
-                <img class="media-object pull-left" src="../../../svg/reality.svg"
-                     style=" width:26px; height:26px; margin-top: -2px; margin-bottom: -5px">
-                Reality UI
-                <small style="color: #b1b1b1;">for browsing the Reality</small>
-                <div class="toggle" id="realityState">
-                    <div class="toggle-handle"></div>
-                </div>
-            </li>
-        </ul>
+    <div class="content" style="right:65px;top: -15px; bottom: -14px" id="developSettings">
+        <ul class="table-view"></ul>
     </div>
 
 </div>
