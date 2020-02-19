@@ -83,8 +83,8 @@ createNameSpace("realityEditor.device.hololensAdapter");
         console.log('toggle hololens mode (' + hololensSide + ') => ' + hololensMode);
 
         // hide sidebar menu buttons
-        globalStates.clearSkyState = hololensMode;
-        if (globalStates.clearSkyState) {
+        realityEditor.gui.settings.toggleStates.clearSkyState = hololensMode;
+        if (realityEditor.gui.settings.toggleStates.clearSkyState) {
             document.getElementById("UIButtons").classList.add('clearSky');
         } else {
             document.getElementById("UIButtons").classList.remove('clearSky');

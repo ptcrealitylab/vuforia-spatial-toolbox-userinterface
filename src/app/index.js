@@ -257,6 +257,10 @@ realityEditor.app.setStorage = function (storageID, message) {
 
 /**
  * Recall the message that may have been saved in a previous session.
+ * Note: currently not used because we are using window.localStorage API instead, but there is still a reason for this
+ *  to exist, which is that this data is saved even if you load the userinterface from different locations, whereas the
+ *  window.localStorage is dependent on the window href. For example, saving the external interface URL makes sense to
+ *  do with this API.
  * @param {string} storageID
  * @param {FunctionName} callBack
  */
@@ -428,91 +432,11 @@ rr = function() {
  */
 
 /**
- * Save the persistent setting to disk for developer (editing) mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveDeveloperState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:DEVELOPER', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for clear sky mode.
- * @todo: implement clear sky mode. not working in this version of the editor yet
- * @param {boolean} newState
- */
-realityEditor.app.saveClearSkyState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:CLEARSKY', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for reality (retail) mode.
- * @param {boolean} newState
- */
-realityEditor.app.saveRealityState = function(newState) {
-    var storedValue = newState ? 1 : 0;
-    this.setStorage('SETUP:REALITY', storedValue);
-};
-
-/**
- * Save the persistent setting to disk for the object discovery server string.
- * @param {string} newDiscoveryText
- */
-realityEditor.app.saveDiscoveryText = function(newDiscoveryText) {
-    this.setStorage('SETUP:DISCOVERY', newDiscoveryText);
-};
-
-/**
  * Save the persistent setting to disk for the IP address to load the external userinterface from.
  * @param {string} newExternalText
  */
 realityEditor.app.saveExternalText = function(newExternalText) {
     this.setStorage('SETUP:EXTERNAL', newExternalText);
-};
-
-/**
- ************** LOAD DATA FROM DISK ****************
- */
-
-/**
- * Get the persistent setting for developer (editing) mode.
- * @param {function} callback
- */
-realityEditor.app.getDeveloperState = function(callback) {
-    this.getStorage('SETUP:DEVELOPER', callback);
-};
-
-/**
- * Get the persistent setting for clear sky mode.
- * @param {function} callback
- */
-realityEditor.app.getClearSkyState = function(callback) {
-    this.getStorage('SETUP:CLEARSKY', callback);
-};
-
-/**
- * Get the persistent setting for reality (retail) mode.
- * @param {function} callback
- */
-realityEditor.app.getRealityState = function(callback) {
-    this.getStorage('SETUP:REALITY', callback);
-};
-
-/**
- * Get the persistent setting for the object discovery server string.
- * @param {function} callback
- */
-realityEditor.app.getDiscoveryText = function(callback) {
-    this.getStorage('SETUP:DISCOVERY', callback);
-};
-
-/**
- * Get the persistent setting for the IP address to load the external userinterface from.
- * @param {function} callback
- */
-realityEditor.app.getExternalText = function(callback) {
-    this.getStorage('SETUP:EXTERNAL', callback);
 };
 
 /**
@@ -526,7 +450,6 @@ realityEditor.app.getExternalText = function(callback) {
 realityEditor.app.authenticateTouch = function() {
     realityEditor.app.appFunctionCall("authenticateTouch", null, null);
 };
-
 
 /**
  **************UTILITIES****************

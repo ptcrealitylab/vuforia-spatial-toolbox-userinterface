@@ -74,9 +74,7 @@ realityEditor.device.onload = function () {
     // desktop adapter needs to load first to modify namespace if needed
     realityEditor.device.desktopAdapter.initService();
 
-    // load persistent state from disk
-    realityEditor.app.getExternalText('realityEditor.app.callbacks.onExternalText');
-    realityEditor.app.getDiscoveryText('realityEditor.app.callbacks.onDiscoveryText');
+    // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 
     realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
         function(newValue) {
@@ -136,6 +134,48 @@ realityEditor.device.onload = function () {
         console.log('tutorial mode was set to ' + newValue);
     });
     
+    // add settings toggles for the Develop sub-menu
+
+    realityEditor.gui.settings.addToggle('AR-UI Repositioning', 'instantly drag frames instead of interacting', 'editingMode',  '../../../svg/move.svg', false, function(newValue) {
+        realityEditor.device.setEditingMode(newValue);
+    }).moveToDevelopMenu();
+
+    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
+        console.log('clear sky mode set to ' + newValue);
+    }).moveToDevelopMenu();
+
+    realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'http://...', function(newValue, textValue) {
+
+        if (newValue && textValue.length > 0) {
+            // we still need to save this to native device storage to be backwards-compatible with how the interface is loaded
+            realityEditor.app.saveExternalText(textValue);
+
+            let isCurrentUrl = window.location.href.includes(textValue);
+            if (!isCurrentUrl) {
+                setTimeout(function() { // load from external server when toggled on with a new url
+                    realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: textValue});
+                }.bind(this), 1000);
+            }
+        } else {
+            realityEditor.app.saveExternalText('');
+            setTimeout(function() { // reload from local server when toggled off
+                realityEditor.app.appFunctionCall("loadNewUI", {reloadURL: ''});
+            }.bind(this), 1000);
+        }
+
+    }, true).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1')); // default value is based on the current source
+
+    realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
+        console.log('discovery state set to ' + newValue + ' with text ' + textValue);
+
+        if (newValue) {
+            setTimeout(function() {
+                realityEditor.network.discoverObjectsFromServer(textValue);
+            }, 1000); // wait to make sure all the necessary modules for object discovery/creation are ready
+        }
+
+    }).moveToDevelopMenu();
+
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -143,8 +183,6 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.device.touchPropagation.initService();
-    realityEditor.device.speechPerformer.initService(); // TODO: service is internally disabled
-    realityEditor.device.security.initService(); // TODO: service is internally disabled
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
     realityEditor.gui.ar.desktopRenderer.initService();
@@ -156,6 +194,10 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
+    // disabled services
+    realityEditor.device.speechPerformer.initService(); // service is internally disabled
+    realityEditor.device.security.initService(); // service is internally disabled
+    realityEditor.gui.search.initService(); // service is internally disabled
     
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {
@@ -164,7 +206,6 @@ realityEditor.device.onload = function () {
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
-    globalStates.realityState = false;
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
 
