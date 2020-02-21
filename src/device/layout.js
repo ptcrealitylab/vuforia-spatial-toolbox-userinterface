@@ -114,3 +114,20 @@ realityEditor.device.layout.adjustForScreenSize = function() {
 realityEditor.device.layout.getTrashThresholdX = function() {
     return (globalStates.height - 60 - globalStates.rightEdgeOffset);
 };
+
+/**
+ * Because we flip the entire webview with native code, the UI is correct, but we just need to fix the projection matrix
+ * because the camera view relative to the webview is rotated 180 degrees.
+ * The default UI was built for "landscapeRight" mode (left-handed).
+ * @param {string} orientationString - "landscapeLeft", "landscapeRight", "portrait", "portraitUpsideDown", or "unknown"
+ * @todo - on portrait mode detected, make big changes to pocket, menus, button rotations, crafting, etc
+ */
+realityEditor.device.layout.onOrientationChanged = function(orientationString) {
+    console.log('device orientation changed to ' + orientationString);
+
+    if (orientationString === 'landscapeRight') { // default
+        realityEditor.gui.ar.updateProjectionMatrix(false);
+    } else if (orientationString === 'landscapeLeft') { // flipped
+        realityEditor.gui.ar.updateProjectionMatrix(true);
+    }
+};

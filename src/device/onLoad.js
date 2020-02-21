@@ -250,6 +250,9 @@ realityEditor.device.onload = function () {
     // adjust for iPhoneX size if needed
     realityEditor.device.layout.adjustForScreenSize();
 
+    // adjust when phone orientation changes - also triggers one time immediately with the initial orientation
+    realityEditor.app.enableOrientationChanges('realityEditor.device.layout.onOrientationChanged');
+
     // prevent touch events on overlayDiv
     overlayDiv.addEventListener('touchstart', function (e) {
         e.preventDefault();
@@ -275,7 +278,6 @@ realityEditor.device.onload = function () {
     })();
     
     // start the AR framework in native iOS
-    targetDownloadStates = {}; // reset downloads
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
     
     // window.addEventListener('resize', function(event) {
@@ -304,9 +306,6 @@ realityEditor.device.onload = function () {
             }
         }
     }
-
-
-    // initWorldObject();
 
     this.cout("onload");
 };
