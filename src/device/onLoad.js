@@ -71,8 +71,9 @@ realityEditor.device.onload = function () {
         globalStates.platform = false;
     }
 
-    // desktop adapter needs to load first to modify namespace if needed
-    realityEditor.device.desktopAdapter.initService();
+    // Add-ons may need to modify globals or do other far-reaching changes that
+    // other services will need to pick up in their initializations
+    realityEditor.addons.onInit();
 
     // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 
@@ -107,17 +108,6 @@ realityEditor.device.onload = function () {
         console.log('video recording was set to ' + newValue);
         if (!newValue) {
             realityEditor.device.videoRecording.stopRecording(); // ensure recording is stopped when mode is turned off
-        }
-    });
-
-    // TODO: move each of these into their respective modules, e.g. this should go in desktopAdapter.js
-    realityEditor.gui.settings.addToggle('Connect to Desktop', 'sends matrices to Desktop Editor', 'matrixBroadcastEnabled',  '../../../svg/desktopConnect.svg', false, function(newValue) {
-        console.log('connect to desktop was set to ' + newValue);
-        if (newValue) {
-            // if enabled, forwards the matrix stream to a connected desktop editor via UDP messages
-            realityEditor.device.desktopAdapter.startBroadcast();
-        } else {
-            realityEditor.device.desktopAdapter.stopBroadcast();
         }
     });
 
@@ -185,8 +175,6 @@ realityEditor.device.onload = function () {
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.realtime.initService();
     realityEditor.device.hololensAdapter.initService(); // TODO: disable this
-    realityEditor.gui.ar.desktopRenderer.initService();
-    realityEditor.device.desktopCamera.initService();
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();
     realityEditor.device.distanceScaling.initService();
