@@ -781,12 +781,15 @@ realityEditor.device.onElementTouchUp = function(event) {
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
 
-
-            // delete frame
         } else if (isFrame && activeVehicle.location === "global") {
             
-            realityEditor.device.deleteFrame(activeVehicle, this.editingState.object, this.editingState.frame);
-
+            // delete frame after a slight delay so that DOM changes don't mess with touch event propagation
+            let thisVehicle = activeVehicle;
+            let thisObjectId = this.editingState.object;
+            let thisFrameId = this.editingState.frame;
+            setTimeout(function() {
+                realityEditor.device.deleteFrame(thisVehicle, thisObjectId, thisFrameId);
+            }, 10);
         }
     }
 
