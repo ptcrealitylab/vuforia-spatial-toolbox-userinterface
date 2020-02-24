@@ -124,6 +124,12 @@ var globalStates = {
         0, 0, 1, 0,
         0, 0, 0, 1
     ],
+    unflippedRealProjectionMatrix: [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ],
     webglProjectionMatrix: [
         1, 0, 0, 0,
         0, 1, 0, 0,
