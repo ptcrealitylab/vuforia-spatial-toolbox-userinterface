@@ -335,6 +335,16 @@ realityEditor.app.enableExtendedTracking = function (_newState) {
 };
 
 /**
+ * Tells the native app to rotate the webview when the device rotates between landscape left and right.
+ * Triggers the callback whenever the device orientation changes, so that content can adapt if needed (e.g. matrices)
+ * The callback has a single string argument of: "landscapeLeft", "landscapeRight", "portrait", "portraitUpsideDown", or "unknown"
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.enableOrientationChanges = function (callBack) {
+    this.appFunctionCall('enableOrientationChanges', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  **************Debugging****************
  **/
 

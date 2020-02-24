@@ -228,11 +228,26 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     
     var r = [];
 
+    globalStates.unflippedRealProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
     globalStates.realProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
-    
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
+};
+
+/**
+ * Updates the projection matrix to be rotated 180 degrees or 0 degrees based on whether the phone is upside down.
+ * @param {boolean} isFlippedUpsideDown
+ */
+realityEditor.gui.ar.updateProjectionMatrix = function(isFlippedUpsideDown) {
+    var isMatrixAlreadyFlipped = globalStates.realProjectionMatrix[0] !== globalStates.unflippedRealProjectionMatrix[0];
     
+    // rotate if screen is flipped upside down
+    if ((isFlippedUpsideDown && !isMatrixAlreadyFlipped) || (!isFlippedUpsideDown && isMatrixAlreadyFlipped)) {
+        globalStates.realProjectionMatrix[0] *= -1; // to rotate 180 degrees, just flip X and Y coordinates
+        globalStates.realProjectionMatrix[5] *= -1;
+        globalStates.projectionMatrix[0] *= -1; // needs to update both the projection and realProjection matrices
+        globalStates.projectionMatrix[5] *= -1;
+    }
 };
 
 /**
