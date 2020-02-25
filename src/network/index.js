@@ -2538,7 +2538,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
             var cornerPadding = 24;
             globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
             globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
-        }, 10); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
+        }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 
     // show the blue corners as soon as the frame loads
