@@ -20,15 +20,15 @@ cd vuforia-spatial-toolbox
 git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-ios.git
 cd vuforia-spatial-toolbox-ios
 cd bin/data
-git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-server.git
-mv vuforia-spatial-toolbox-server RE-server
+git clone git@github.com:ptcrealitylab/vuforia-spatial-edge-server.git
+mv vuforia-spatial-edge-server RE-server
 cd RE-server
 mkdir addons
 cd addons
-git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-core-addons.git
+git clone git@github.com:ptcrealitylab/vuforia-spatial-core-addon.git
 cd ../
-git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-apps.git
-mv vuforia-spatial-toolbox-apps realityframes
+git clone git@github.com:ptcrealitylab/vuforia-spatial-apps.git
+mv vuforia-spatial-apps realityframes
 cd realityframes
 mkdir .identity
 cd ../
@@ -61,7 +61,7 @@ mkdir -p vuforia-spatial-toolbox
 cd vuforia-spatial-toolbox
 ```
 
-2) Clone the vuforia-toolbox-ios repo from GitHub. The master branches of all repositories should be stable.
+2) Clone the vuforia-spatial-toolbox-ios repo from GitHub. The master branches of all repositories should be stable.
 
 ```
 git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-ios.git
@@ -69,28 +69,28 @@ cd vuforia-spatial-toolbox-ios
 ```
 
 
-3) Clone the vuforia-toolbox-server into the bin/data directory of the app and rename the directory to RE-server
+3) Clone the vuforia-spatial-edge-server into the bin/data directory of the app and rename the directory to RE-server
 
 ```
 cd bin/data
-git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-server.git
-mv vuforia-spatial-toolbox-server RE-server
+git clone git@github.com:ptcrealitylab/vuforia-spatial-edge-server.git
+mv vuforia-spatial-edge-server RE-server
 cd RE-server
 ```
 
 
-4) Create an addons folder in the RE-server and clone the vuforia-spatial-toolbox-core-addons into that folder.
+4) Create an addons folder in the RE-server and clone the vuforia-spatial-core-addon into that folder.
 
 ```
-git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-core-addons.git
+git clone git@github.com:ptcrealitylab/vuforia-spatial-core-addon.git
 cd ../
 ```
 
 
-5) Clone the vuforia-spatial-toolbox-apps into the RE-server and rename the directory to realityframes. Create a .identity folder inside it because the node server can't do that itself when running within the iOS app.
+5) Clone the vuforia-spatial-apps into the RE-server and rename the directory to realityframes. Create a .identity folder inside it because the node server can't do that itself when running within the iOS app.
 
 ```
-git clone git@github.com:ptcrealitylab/vuforia-spatial-toolbox-apps.git
+git clone git@github.com:ptcrealitylab/vuforia-spatial-apps.git
 mv vuforia-spatial-toolbox-apps realityframes
 ```
 
