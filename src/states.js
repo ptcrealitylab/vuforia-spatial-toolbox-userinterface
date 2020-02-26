@@ -166,8 +166,6 @@ var globalStates = {
     reality: false,
     interface: "gui",
 
-    rightEdgeOffset: (window.innerWidth === 856 && window.innerHeight === 375) ? (74) : ((window.innerWidth >= 812 && window.innerHeight >= 375) ? (37) : (0)), // if iPhone X, offset the right edge by 74px
-
     useGroundPlane: true
 };
 
