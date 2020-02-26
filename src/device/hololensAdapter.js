@@ -23,6 +23,11 @@ createNameSpace("realityEditor.device.hololensAdapter");
      */
     function initService() {
         realityEditor.network.addPostMessageHandler('hololensMessage', handleHololensMessage);
+
+        realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI for HMD viewer (desktop only)', 'hololensModeEnabled',  '../../../svg/holo.svg', false, function(newValue) {
+            console.log('hololens mode was set to ' + newValue);
+            toggleHololensMode(newValue);
+        });
     }
 
     /**
@@ -92,6 +97,5 @@ createNameSpace("realityEditor.device.hololensAdapter");
     }
     
     exports.initService = initService;
-    exports.toggleHololensMode = toggleHololensMode;
 
 }(realityEditor.device.hololensAdapter));
