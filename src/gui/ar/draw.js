@@ -1209,6 +1209,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
             let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
 
+            if (typeof activeVehicle.isPendingInitialPlacement !== 'undefined') {
+                let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, touchPosition.x, touchPosition.y, true);
+                delete activeVehicle.isPendingInitialPlacement;
+            }
+
             // set initial position of frames and nodes placed in from pocket
             // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
             // 2. otherwise float in unconstrained slightly in front of the editor camera
@@ -1868,10 +1874,8 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
 
     if (pocketContainer.type === 'ui') {
-        // for frames, regardless of whether the tap is still down, move the frame to the correct location under the tap in front of the camera
+        // for frames, regardless of whether the tap is still down, set the matrix to be in front of the camera
         realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeFrameKey);
-        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, touchPosition.x, touchPosition.y, false);
         
         if (typeof pocketContainer.vehicle.startPositionOffset !== 'undefined') {
             pocketContainer.vehicle.ar.x += pocketContainer.vehicle.startPositionOffset.x;
@@ -1888,6 +1892,17 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
+
+        // Several steps to translate it exactly to be centered on the touch when it gets added
+        // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
+        let defaultScreenCenter = realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
+        let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        // 2. calculate the correct touch offset as if you placed it at the default position (doesn't actually set x and y)
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
+        // 3. actually move it to the touch position (sets x and y), now that it knows the relative offset from the default
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
+        // 4. add a flag so that we can finalize its position the next time drawTransformed is called
+        pocketContainer.vehicle.isPendingInitialPlacement = true;
 
         var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 

@@ -140,7 +140,7 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
         if (savedValue !== null) {
             realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = savedValue;
         } else {
-            realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = placeholderText || '';
+            realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = '';
         }
         
         // anytime a new character is typed into the text box, this will trigger
