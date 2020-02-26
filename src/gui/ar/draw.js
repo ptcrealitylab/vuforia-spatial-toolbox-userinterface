@@ -1870,8 +1870,20 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     if (pocketContainer.type === 'ui') {
         // for frames, regardless of whether the tap is still down, move the frame to the correct location under the tap in front of the camera
         realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeFrameKey);
-        var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(pocketContainer.vehicle, touchPosition.x, touchPosition.y, false);
+
+        // calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
+        let defaultScreenCenter = realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
+
+        let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+
+        // "moves" it to the default position, to calculate the correct touch offset (doesn't actually set x and y)
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
+        // actually moves it to the touch position (sets x and y), now that it knows the relative offset from the default
+        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
+        setTimeout(function() {
+            // move it one more time, after it's been rendered, to ensure it snaps to correct new position
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
+        }, 50);
         
         if (typeof pocketContainer.vehicle.startPositionOffset !== 'undefined') {
             pocketContainer.vehicle.ar.x += pocketContainer.vehicle.startPositionOffset.x;
