@@ -179,7 +179,6 @@ realityEditor.device.onload = function () {
     // disabled services
     realityEditor.device.speechPerformer.initService(); // service is internally disabled
     realityEditor.device.security.initService(); // service is internally disabled
-    realityEditor.gui.search.initService(); // service is internally disabled
     
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {
