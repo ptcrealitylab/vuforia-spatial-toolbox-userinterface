@@ -111,11 +111,6 @@ realityEditor.device.onload = function () {
         }
     });
 
-    realityEditor.gui.settings.addToggle('Holo-Mode', 'adjusts UI for HMD viewer (desktop only)', 'hololensModeEnabled',  '../../../svg/holo.svg', false, function(newValue) {
-        console.log('hololens mode was set to ' + newValue);
-        realityEditor.device.hololensAdapter.toggleHololensMode(newValue);
-    });
-
     realityEditor.gui.settings.addToggle('Instant Connect', 'if available with prepared objects', 'instantState',  '../../../svg/instantLink.svg', false, function(newValue) {
         console.log('instant connect was set to ' + newValue);
     });
@@ -174,7 +169,6 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.grouping.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.realtime.initService();
-    realityEditor.device.hololensAdapter.initService(); // TODO: disable this
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();
     realityEditor.device.distanceScaling.initService();
