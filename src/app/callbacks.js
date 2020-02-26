@@ -51,8 +51,7 @@ createNameSpace('realityEditor.app.callbacks');
 
     // these determine if visible object matrices are sent in alone or with status property (status needed for extended tracking)
     let matrixFormatCalculated = false;
-    let isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
-    let tempMatrix = [];
+    let isMatrixFormatNew; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
 
     // debug variable to speed up app by completely disabling possibility for extended tracking
     let DISABLE_ALL_EXTENDED_TRACKING = false;
@@ -152,6 +151,7 @@ createNameSpace('realityEditor.app.callbacks');
     function getDeviceReady(deviceName) {
         globalStates.device = deviceName;
         console.log('The Reality Editor is loaded on a ' + globalStates.device);
+        realityEditor.device.layout.adjustForDevice(deviceName);
     }
 
     /**
@@ -204,6 +204,7 @@ createNameSpace('realityEditor.app.callbacks');
                 // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
                 var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
                 if (origin) {
+                    let tempMatrix = [];
                     realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, tempMatrix);
                     visibleObjects[worldObjectKey] = tempMatrix;
                 }
@@ -283,6 +284,7 @@ createNameSpace('realityEditor.app.callbacks');
             } else {
                 // this part is entered if we have re-localized by looking at the world origin marker
                 console.warn('Should never get here until we fix worldCorrection');
+                let tempMatrix = [];
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, tempMatrix);
                 realityEditor.gui.ar.utilities.multiplyMatrix(tempMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             }

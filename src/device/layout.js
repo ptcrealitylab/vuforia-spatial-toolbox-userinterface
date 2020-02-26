@@ -68,6 +68,8 @@ createNameSpace('realityEditor.device.layout');
     // keep track of orientation from onOrientationChanged, e.g. 'landscapeLeft' vs 'landscapeRight'
     let currentOrientation;
 
+    let knownDeviceName;
+
     /**
      * Center the menu buttons vertically on screens taller than MENU_HEIGHT.
      * Adjusts the CSS of various UI elements (buttons, pocket, settings menu, crafting board)
@@ -125,7 +127,7 @@ createNameSpace('realityEditor.device.layout');
         }
         edgeDiv.style.left = document.body.offsetWidth - rightEdgeOffset + 'px';
         edgeDiv.style.width = rightEdgeOffset + 'px';
-        edgeDiv.style.top = '0';
+        edgeDiv.style.top = 0;
         edgeDiv.style.height = document.body.offsetHeight;
 
         // crafting
@@ -133,21 +135,37 @@ createNameSpace('realityEditor.device.layout');
     }
 
     /**
-     * (globalStates.device === 'iPhone10,3') may not be set yet, so use other method to set up screen size adjustments
+     * Use either the device identifier, or the screen size as a proxy to determine the margin on the right edge
      * These need to be hard-coded / updated whenever a new device is released with a unique screen size and edge-offset
      * @return {number}
      */
     function calculateRightEdgeOffset() {
-        // if divet is flipped to the left side of screen, right edge offset is always 0
-        if (currentOrientation === 'landscapeLeft') { return 0; }
-
-        // otherwise, certain devices have specific offsets
-        if (window.innerWidth === 856 && window.innerHeight === 375) {
-            return 74;
-        } else if (window.innerWidth >= 812 && window.innerHeight >= 375) {
-            return 37;
+        // if weird shape is flipped to the left side of screen, right edge offset is always 0
+        if (currentOrientation === 'landscapeLeft') {
+            // TODO: create a leftEdgeOffset that gets applied instead
+            return 0;
         }
-        return 0;
+
+        // if we have access to the device name, calculate edge based on this info
+        if (knownDeviceName) {
+            // TODO: test on each of these 9 devices to ensure that these offsets are correct
+            if (knownDeviceName === 'iPhone10,3' || knownDeviceName === 'iPhone10,6' || knownDeviceName === 'iPhone10,6' ||
+                knownDeviceName === 'iPhone11,8' || knownDeviceName === 'iPhone12,1' || knownDeviceName === 'iPhone12,3') {
+                return 74;
+            } else if (knownDeviceName === 'iPhone11,4' || knownDeviceName === 'iPhone11,6' || knownDeviceName === 'iPhone12,5') {
+                return 37;
+            }
+            return 0;
+
+        } else {
+            // otherwise, we can be fairly accurate by looking at  have specific offsets
+            if (window.innerWidth === 856 && window.innerHeight === 375) {
+                return 74; // iPhoneX has the most widest aspect ratio
+            } else if (window.innerWidth >= 812 && window.innerHeight >= 375) {
+                return 37; // the "Max" phones have half the inset
+            }
+            return 0;
+        }
     }
 
     /**
@@ -178,8 +196,18 @@ createNameSpace('realityEditor.device.layout');
         adjustRightEdgeIfNeeded(); // see if we need to update the right edge offset
     }
 
+    /**
+     * Update the layout again once we know which device we have
+     * @param {string} deviceName - a machine ID / mobile device code e.g. 'iPhone8,1' (iPhone 6s) 'iPhone10,1' (iPhone 8)
+     */
+    function adjustForDevice(deviceName) {
+        knownDeviceName = deviceName;
+        adjustRightEdgeIfNeeded();
+    }
+
     exports.adjustForScreenSize = adjustForScreenSize;
     exports.getTrashThresholdX = getTrashThresholdX;
     exports.onOrientationChanged = onOrientationChanged;
+    exports.adjustForDevice = adjustForDevice;
 
 })(realityEditor.device.layout);
