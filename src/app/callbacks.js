@@ -36,7 +36,7 @@
  * Created by Ben Reynolds on 7/17/18.
  */
 
-createNameSpace("realityEditor.app.callbacks");
+createNameSpace('realityEditor.app.callbacks');
 
 /**
  * @fileOverview realityEditor.app.callbacks.js
@@ -67,8 +67,6 @@ createNameSpace("realityEditor.app.callbacks");
      * Also starts the object discovery and download process.
      */
     function vuforiaIsReady() {
-        console.log("Vuforia is ready");
-
         // projection matrix only needs to be retrieved once
         realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
 
@@ -153,7 +151,7 @@ createNameSpace("realityEditor.app.callbacks");
      */
     function getDeviceReady(deviceName) {
         globalStates.device = deviceName;
-        console.log("The Reality Editor is loaded on a " + globalStates.device);
+        console.log('The Reality Editor is loaded on a ' + globalStates.device);
     }
 
     /**
@@ -191,8 +189,8 @@ createNameSpace("realityEditor.app.callbacks");
         });
 
         // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
-        if (visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
-            delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
+        if (visibleObjects.hasOwnProperty('WorldReferenceXXXXXXXXXXXX')) {
+            delete visibleObjects['WorldReferenceXXXXXXXXXXXX'];
         }
 
         // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
