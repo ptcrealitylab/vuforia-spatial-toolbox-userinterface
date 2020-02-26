@@ -47,7 +47,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-createNameSpace("realityEditor.device.layout");
+createNameSpace('realityEditor.device.layout');
 
 /**
  * @fileOverview realityEditor.device.layout.js
@@ -55,34 +55,57 @@ createNameSpace("realityEditor.device.layout");
  * @todo currently just adjusts for iPhoneX shape, but eventually all screen changes should be moved here
  */
 
-/**
- * Adjusts the CSS of various UI elements (buttons, pocket, settings menu, crafting board) to fit the iPhoneX screen.
- */
-realityEditor.device.layout.adjustForScreenSize = function() {
+(function(exports) {
 
-    // center the menu vertically if the screen is taller than 320 px
-    var MENU_HEIGHT = 320;
-    var menuHeightDifference = globalStates.width - MENU_HEIGHT;
-    document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
-    CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+    // layout constants, regardless of screen size
+    let MENU_HEIGHT = 320;
+    let TRASH_WIDTH = 60;
+    let CRAFTING_MENU_BAR_WIDTH = 62;
 
-    // in onLoad.js, (globalStates.device === 'iPhone10,3') is not set yet, so use other method to set up screen
-    if (globalStates.rightEdgeOffset) { 
+    // can be used to offset the right edge of the screen to fit non-rectangular screen shapes.
+    let rightEdgeOffset = 0;
 
-        console.log('adjust right edge of interface for iPhone X');
+    // keep track of orientation from onOrientationChanged, e.g. 'landscapeLeft' vs 'landscapeRight'
+    let currentOrientation;
 
-        var scaleFactor = (window.innerWidth - globalStates.rightEdgeOffset) / window.innerWidth;
+    /**
+     * Center the menu buttons vertically on screens taller than MENU_HEIGHT.
+     * Adjusts the CSS of various UI elements (buttons, pocket, settings menu, crafting board)
+     *  to fit awkward, non-rectangular screens (looking at you, iPhone X).
+     */
+    function adjustForScreenSize() {
+        var menuHeightDifference = globalStates.width - MENU_HEIGHT;
+
+        // vertically center the menu if the screen is taller than 320 px
+        document.getElementById('UIButtons').style.top = menuHeightDifference / 2 + 'px';
+
+        // vertically center the crafting board by updating the global variable it uses
+        CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
+
+        adjustRightEdgeIfNeeded();
+    }
+
+    /**
+     * Adjust the UI to look good on all screens, including iPhone 10, 11, etc with a non-rectangular right side.
+     */
+    function adjustRightEdgeIfNeeded() {
+        rightEdgeOffset = calculateRightEdgeOffset();
+        if (rightEdgeOffset > 0) {
+            console.log('adjust right edge of interface for iPhone X');
+        }
+
+        let scaleFactor = (window.innerWidth - rightEdgeOffset) / window.innerWidth;
 
         // menu buttons
-        document.querySelector('#UIButtons').style.width = window.innerWidth - globalStates.rightEdgeOffset + 'px';
-        document.querySelector('#UIButtons').style.right = globalStates.rightEdgeOffset + 'px';
+        document.querySelector('#UIButtons').style.width = window.innerWidth - rightEdgeOffset + 'px';
+        document.querySelector('#UIButtons').style.right = rightEdgeOffset + 'px';
 
         // pocket
         if (!TEMP_DISABLE_MEMORIES) {
             document.querySelector('.memoryBar').style.transformOrigin = 'left top';
             document.querySelector('.memoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')'; // 0.99 factor makes sure it fits
         }
-        document.querySelector('#pocketScrollBar').style.right = 75 + globalStates.rightEdgeOffset + 'px';
+        document.querySelector('#pocketScrollBar').style.right = 75 + rightEdgeOffset + 'px';
         document.querySelector('.palette').style.width = '100%';
         document.querySelector('.palette').style.transformOrigin = 'left top';
         document.querySelector('.palette').style.transform = 'scale(' + scaleFactor * 0.99 + ')';
@@ -90,44 +113,73 @@ realityEditor.device.layout.adjustForScreenSize = function() {
         document.querySelector('.nodeMemoryBar').style.transform = 'scale(' + scaleFactor * 0.99 + ')';
 
         // settings
-        document.querySelector('#settingsIframe').style.width = document.body.offsetWidth - globalStates.rightEdgeOffset + 'px';
-        var edgeDiv = document.createElement('div');
-        edgeDiv.id = 'settingsEdgeDiv';
-        edgeDiv.style.backgroundColor = 'rgb(34, 34, 34)';
-        edgeDiv.style.position = 'absolute';
-        edgeDiv.style.left = document.body.offsetWidth - globalStates.rightEdgeOffset + 'px';
-        edgeDiv.style.width = globalStates.rightEdgeOffset + 'px';
+        document.querySelector('#settingsIframe').style.width = document.body.offsetWidth - rightEdgeOffset + 'px';
+        let edgeDiv = document.getElementById('settingsEdgeDiv');
+        if (!edgeDiv) {
+            edgeDiv = document.createElement('div');
+            edgeDiv.id = 'settingsEdgeDiv';
+            edgeDiv.style.backgroundColor = 'rgb(34, 34, 34)';
+            edgeDiv.style.position = 'absolute';
+            edgeDiv.style.display = 'none';
+            document.body.appendChild(edgeDiv);
+        }
+        edgeDiv.style.left = document.body.offsetWidth - rightEdgeOffset + 'px';
+        edgeDiv.style.width = rightEdgeOffset + 'px';
         edgeDiv.style.top = '0';
         edgeDiv.style.height = document.body.offsetHeight;
-        edgeDiv.style.display = 'none';
-        document.body.appendChild(edgeDiv);
 
         // crafting
-        realityEditor.gui.crafting.menuBarWidth += globalStates.rightEdgeOffset;
+        realityEditor.gui.crafting.menuBarWidth = CRAFTING_MENU_BAR_WIDTH + rightEdgeOffset;
     }
-};
 
-/**
- * Returns the x-coordinate of the edge of the trash drop-zone, adjusted for different screen sizes.
- * @return {number}
- */
-realityEditor.device.layout.getTrashThresholdX = function() {
-    return (globalStates.height - 60 - globalStates.rightEdgeOffset);
-};
+    /**
+     * (globalStates.device === 'iPhone10,3') may not be set yet, so use other method to set up screen size adjustments
+     * These need to be hard-coded / updated whenever a new device is released with a unique screen size and edge-offset
+     * @return {number}
+     */
+    function calculateRightEdgeOffset() {
+        // if divet is flipped to the left side of screen, right edge offset is always 0
+        if (currentOrientation === 'landscapeLeft') { return 0; }
 
-/**
- * Because we flip the entire webview with native code, the UI is correct, but we just need to fix the projection matrix
- * because the camera view relative to the webview is rotated 180 degrees.
- * The default UI was built for "landscapeRight" mode (left-handed).
- * @param {string} orientationString - "landscapeLeft", "landscapeRight", "portrait", "portraitUpsideDown", or "unknown"
- * @todo - on portrait mode detected, make big changes to pocket, menus, button rotations, crafting, etc
- */
-realityEditor.device.layout.onOrientationChanged = function(orientationString) {
-    console.log('device orientation changed to ' + orientationString);
-
-    if (orientationString === 'landscapeRight') { // default
-        realityEditor.gui.ar.updateProjectionMatrix(false);
-    } else if (orientationString === 'landscapeLeft') { // flipped
-        realityEditor.gui.ar.updateProjectionMatrix(true);
+        // otherwise, certain devices have specific offsets
+        if (window.innerWidth === 856 && window.innerHeight === 375) {
+            return 74;
+        } else if (window.innerWidth >= 812 && window.innerHeight >= 375) {
+            return 37;
+        }
+        return 0;
     }
-};
+
+    /**
+     * Returns the x-coordinate of the edge of the trash drop-zone, adjusted for different screen sizes.
+     * @return {number}
+     */
+    function getTrashThresholdX() {
+        return (globalStates.height - TRASH_WIDTH - rightEdgeOffset);
+    }
+
+    /**
+     * Because we flip the entire webview with native code, the UI is correct, but we just need to fix the projection matrix
+     * because the camera view relative to the webview is rotated 180 degrees.
+     * The default UI was built for "landscapeRight" mode (left-handed).
+     * @param {string} orientationString - "landscapeLeft", "landscapeRight", "portrait", "portraitUpsideDown", or "unknown"
+     * @todo - on portrait mode detected, make big changes to pocket, menus, button rotations, crafting, etc
+     */
+    function onOrientationChanged(orientationString) {
+        console.log('device orientation changed to ' + orientationString);
+
+        if (orientationString === 'landscapeRight') { // default
+            realityEditor.gui.ar.updateProjectionMatrix(false);
+        } else if (orientationString === 'landscapeLeft') { // flipped
+            realityEditor.gui.ar.updateProjectionMatrix(true);
+        }
+
+        currentOrientation = orientationString;
+        adjustRightEdgeIfNeeded(); // see if we need to update the right edge offset
+    }
+
+    exports.adjustForScreenSize = adjustForScreenSize;
+    exports.getTrashThresholdX = getTrashThresholdX;
+    exports.onOrientationChanged = onOrientationChanged;
+
+})(realityEditor.device.layout);
