@@ -169,7 +169,6 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.grouping.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.realtime.initService();
-    realityEditor.device.hololensAdapter.initService(); // TODO: disable this
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();
     realityEditor.device.distanceScaling.initService();
