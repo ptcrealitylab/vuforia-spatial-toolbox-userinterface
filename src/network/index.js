@@ -2529,14 +2529,16 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     
     // adjust move-ability corner UI to match true width and height of frame contents
     if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
-        var trueSize = {
-            width: globalDOMCache['iframe' + activeKey].clientWidth,
-            height: globalDOMCache['iframe' + activeKey].clientHeight
-        };
+        setTimeout(function() {
+            var trueSize = {
+                width: globalDOMCache['iframe' + activeKey].clientWidth,
+                height: globalDOMCache['iframe' + activeKey].clientHeight
+            };
 
-        var cornerPadding = 24;
-        globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
-        globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+            var cornerPadding = 24;
+            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
+            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+        }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 
     // show the blue corners as soon as the frame loads
