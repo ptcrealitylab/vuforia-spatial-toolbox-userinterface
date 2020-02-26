@@ -111,7 +111,6 @@ var realityEditor = realityEditor || {
         moveabilityCorners: {},
         pocket: {},
         screenExtension : {},
-        search:{},
         utilities: {}
     },
     network: {
