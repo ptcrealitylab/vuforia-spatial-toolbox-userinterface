@@ -36,259 +36,268 @@
  * Created by Ben Reynolds on 7/17/18.
  */
 
-createNameSpace("realityEditor.app.callbacks");
+createNameSpace('realityEditor.app.callbacks');
 
 /**
  * @fileOverview realityEditor.app.callbacks.js
  * The central location where all functions triggered from within the native iOS code should reside.
+ * Includes processing detected matrices from the Vuforia Engine, and processing UDP messages.
  * These can just be simple routing functions that trigger the appropriate function in other files,
  * but this acts to organize all API calls in a single place.
  * Note: callbacks related to target downloading are located in the targetDownloader module.
  */
 
-/**
- * Callback for realityEditor.app.getVuforiaReady
- * Retrieves the projection matrix and starts streaming the model matrices, camera matrix, and groundplane matrix
- * Also starts the object discovery and download process
- */
-realityEditor.app.callbacks.vuforiaIsReady = function() {
-    console.log("Vuforia is ready");
+(function(exports) {
 
-    // projection matrix only needs to be retrieved once
-    realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
+    // these determine if visible object matrices are sent in alone or with status property (status needed for extended tracking)
+    let matrixFormatCalculated = false;
+    let isMatrixFormatNew; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
 
-    // subscribe to the model matrices from each recognized image or object target
-    realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
-    
-    // subscribe to the camera matrix from the positional device tracker
-    realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
+    // debug variable to speed up app by completely disabling possibility for extended tracking
+    let DISABLE_ALL_EXTENDED_TRACKING = false;
 
-    // subscribe to the ground plane matrix stream that starts returning results when it has been detected and an anchor added
-    realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
+    // save this matrix in a local scope for faster retrieval
+    realityEditor.app.callbacks.rotationXMatrix = rotationXMatrix;
 
-    // add heartbeat listener for UDP object discovery
-    realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
-    
-    // send three action UDP pings to start object discovery
-    for (var i = 0; i < 3; i++) {
-        setTimeout(function() {
-            realityEditor.app.sendUDPMessage({action: 'ping'});
-        }, 500 * i); // space out each message by 500ms
-    }
-};
+    /**
+     * Callback for realityEditor.app.getVuforiaReady
+     * Triggered when Vuforia Engine finishes initializing.
+     * Retrieves the projection matrix and starts streaming the model matrices, camera matrix, and groundplane matrix.
+     * Also starts the object discovery and download process.
+     */
+    function vuforiaIsReady() {
+        // projection matrix only needs to be retrieved once
+        realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
 
-/**
- * Callback for realityEditor.app.getProjectionMatrix
- * Sets the projection matrix once using the value from the AR engine
- * @param {Array.<number>} matrix
- */
-realityEditor.app.callbacks.receivedProjectionMatrix = function(matrix) {
-    console.log('got projection matrix!', matrix);
-    realityEditor.gui.ar.setProjectionMatrix(matrix);
-};
+        // subscribe to the model matrices from each recognized image or object target
+        realityEditor.app.getMatrixStream('realityEditor.app.callbacks.receiveMatricesFromAR');
 
-/**
- * Callback for realityEditor.app.getUDPMessages
- * Handles any UDP messages received by the app.
- * Currently supports object discovery messages ("ip"/"id" pairs) and state synchronization ("action") messages
- * Additional UDP messages can be listened for by using realityEditor.network.addUDPMessageHandler
- * @param {string|object} message
- */
-realityEditor.app.callbacks.receivedUDPMessage = function(message) {
-    if (typeof message !== 'object') {
-        try {
-            message = JSON.parse(message);
-        } catch (e) {
-            // string doesn't need to be parsed... continue executing the function
+        // subscribe to the camera matrix from the positional device tracker
+        realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
+
+        // subscribe to the ground plane matrix stream that starts returning results when it has been detected and an anchor added
+        realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
+
+        // add heartbeat listener for UDP object discovery
+        realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
+
+        // send three action UDP pings to start object discovery
+        for (var i = 0; i < 3; i++) {
+            setTimeout(function () {
+                realityEditor.app.sendUDPMessage({action: 'ping'});
+            }, 500 * i); // space out each message by 500ms
         }
     }
-    
-    // upon a new object discovery message, add the object and download its target files
-    if (typeof message.id !== 'undefined' &&
-        typeof message.ip !== 'undefined') {
-        
-        if (typeof message.zone !== 'undefined' && message.zone !== '') {
-            if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
-                // console.log('Added object from zone=' + message.zone);
+
+    /**
+     * Callback for realityEditor.app.getProjectionMatrix
+     * Sets the projection matrix once using the value from the AR engine
+     * @param {Array.<number>} matrix
+     */
+    function receivedProjectionMatrix(matrix) {
+        console.log('got projection matrix!', matrix);
+        realityEditor.gui.ar.setProjectionMatrix(matrix);
+    }
+
+    /**
+     * Callback for realityEditor.app.getUDPMessages
+     * Handles any UDP messages received by the app.
+     * Currently supports object discovery messages ("ip"/"id" pairs) and state synchronization ("action") messages
+     * Additional UDP messages can be listened for by using realityEditor.network.addUDPMessageHandler
+     * @param {string|object} message
+     */
+    function receivedUDPMessage(message) {
+        if (typeof message !== 'object') {
+            try {
+                message = JSON.parse(message);
+            } catch (e) {
+                // string doesn't need to be parsed... continue executing the function
+            }
+        }
+
+        // upon a new object discovery message, add the object and download its target files
+        if (typeof message.id !== 'undefined' &&
+            typeof message.ip !== 'undefined') {
+
+            if (typeof message.zone !== 'undefined' && message.zone !== '') {
+                if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
+                    // console.log('Added object from zone=' + message.zone);
+                    realityEditor.network.addHeartbeatObject(message);
+                }
+
+            } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
+                // console.log('Added object without zone');
                 realityEditor.network.addHeartbeatObject(message);
             }
-        
-        } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
-            // console.log('Added object without zone');
-            realityEditor.network.addHeartbeatObject(message);
+
+
+            // forward the action message to the network module, to synchronize state across multiple clients
+        } else if (typeof message.action !== 'undefined') {
+            realityEditor.network.onAction(message.action);
         }
-        
 
-        // forward the action message to the network module, to synchronize state across multiple clients
-    } else if (typeof message.action !== 'undefined') {
-        realityEditor.network.onAction(message.action);
+        // forward the message to a generic message handler that various modules use to subscribe to different messages
+        realityEditor.network.onUDPMessage(message);
     }
-    
-    // forward the message to a generic message handler that various modules use to subscribe to different messages
-    realityEditor.network.onUDPMessage(message);
-};
 
-/**
- * Callback for realityEditor.app.getDeviceReady
- * Returns the native device name, which can be used to adjust the UI based on the phone/device type
- * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
- * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
- * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
- * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
- */
-realityEditor.app.callbacks.getDeviceReady = function(deviceName) {
-    console.log(deviceName);
-    globalStates.device = deviceName;
-    console.log("The Reality Editor is loaded on a " + globalStates.device);
-    cout("setDeviceName");
-};
+    /**
+     * Callback for realityEditor.app.getDeviceReady
+     * Returns the native device name, which can be used to adjust the UI based on the phone/device type
+     * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
+     * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
+     * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
+     * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
+     */
+    function getDeviceReady(deviceName) {
+        globalStates.device = deviceName;
+        console.log('The Reality Editor is loaded on a ' + globalStates.device);
+        realityEditor.device.layout.adjustForDevice(deviceName);
+    }
 
-//this is speeding things up always! Because the scope for searching this variable becomes smaller.
-realityEditor.app.callbacks.matrixFormatCalculated = false;
-realityEditor.app.callbacks.isMatrixFormatNew = undefined; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
+    /**
+     * Callback for realityEditor.app.getMatrixStream
+     * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
+     * Stores those matrices in the draw module to be rendered in the next draw frame
+     * @param {Object.<string, Array.<number>>} visibleObjects
+     */
+    function receiveMatricesFromAR(visibleObjects) {
+        if (!realityEditor.worldObjects) {
+            return;
+        } // prevents tons of error messages while app is loading but Vuforia has started
 
-var DISABLE_ALL_EXTENDED_TRACKING = false;
-/**
- * Callback for realityEditor.app.getMatrixStream
- * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
- * Stores those matrices in the draw module to be rendered in the next draw frame
- * @param {Object.<string, Array.<number>>} visibleObjects
- */
-realityEditor.app.callbacks.receiveMatricesFromAR = function(visibleObjects) {
-    if (!realityEditor.worldObjects) { return; } // prevents tons of error messages while app is loading but Vuforia has started
-    
-    // this first section makes the app work with extended or non-extended tracking while being backwards compatible
+        // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 
-    // These should be uncommented if we switch to the EXTENDED_TRACKING version
-    // if (TEMP_ENABLE_EXTENDED_TRACKING) {
-        if (!realityEditor.app.callbacks.matrixFormatCalculated) {
+        if (!matrixFormatCalculated) {
             // for speed, only calculates this one time
-            realityEditor.app.callbacks.calculateMatrixFormat(visibleObjects);
+            calculateMatrixFormat(visibleObjects);
         }
 
         // ignore this step if using old app version that ignores EXTENDED_TRACKED objects entirely
-        if (realityEditor.app.callbacks.isMatrixFormatNew) {
+        if (isMatrixFormatNew) {
             // extract status into separate data structure and and format matrices into a backwards-compatible object
             // if extended tracking is turned off, discard EXTENDED_TRACKED objects
-            realityEditor.app.callbacks.convertNewMatrixFormatToOld(visibleObjects);
+            convertNewMatrixFormatToOld(visibleObjects);
         }
-    // }
-    
-    // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
-    realityEditor.worldObjects.getWorldObjectKeys().forEach( function(worldObjectKey) {
-        if (visibleObjects.hasOwnProperty(worldObjectKey)) {
-            console.log('world object ' + worldObjectKey + ' detected... relocalize');
-            realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
-            delete visibleObjects[worldObjectKey];
-        }
-    });
 
-    // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
-    if (visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
-        delete visibleObjects["WorldReferenceXXXXXXXXXXXX"];
-    }
-    
-    // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
-    
-    // easiest way to implement freeze button is just to not update the new matrices
-    if (!globalStates.freezeButtonState) {
-
-        realityEditor.worldObjects.getWorldObjectKeys().forEach(function(worldObjectKey) {
-            // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
-            
-            // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
-            var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
-            if (origin) {
-                this.matrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, this.matrix);
-                visibleObjects[worldObjectKey] = this.matrix;
+        // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
+        realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
+            if (visibleObjects.hasOwnProperty(worldObjectKey)) {
+                console.log('world object ' + worldObjectKey + ' detected... relocalize');
+                realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
+                delete visibleObjects[worldObjectKey];
             }
-
         });
-        
-        realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
-    }
-    
-    // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
-    //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
-        
-    // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
+
+        // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
+        if (visibleObjects.hasOwnProperty('WorldReferenceXXXXXXXXXXXX')) {
+            delete visibleObjects['WorldReferenceXXXXXXXXXXXX'];
+        }
+
+        // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
+
+        // easiest way to implement freeze button is just to not update the new matrices
+        if (!globalStates.freezeButtonState) {
+
+            realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
+                // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
+
+                // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+                var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
+                if (origin) {
+                    let tempMatrix = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, tempMatrix);
+                    visibleObjects[worldObjectKey] = tempMatrix;
+                }
+
+            });
+
+            realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
+        }
+
+        // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
+        //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
+
+        // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
         realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
-    // }
-};
-
-/**
- * Callback for realityEditor.app.getCameraMatrixStream
- * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
- * @param {Array.<number>} cameraMatrix
- */
-realityEditor.app.callbacks.receiveCameraMatricesFromAR = function(cameraMatrix) {
-    // easiest way to implement freeze button is just to not update the new matrices
-    if (!globalStates.freezeButtonState) {
-        realityEditor.worldObjects.checkIfFirstLocalization();
-        realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
+        // }
     }
-};
 
-/**
- * Looks at the visibleObjects and sees if it uses the old format or the new, so that we can convert to backwards-compatible
- * New format of visibleObject  = {objectKey: {matrix:[], status:""}} 
- * Old format of visibleObjects = {objectKey: []}
- * @param visibleObjects
- */
-realityEditor.app.callbacks.calculateMatrixFormat = function(visibleObjects) {
-    if (typeof realityEditor.app.callbacks.isMatrixFormatNew === 'undefined') {
-        for (var key in visibleObjects) {
-            realityEditor.app.callbacks.isMatrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
-            realityEditor.app.callbacks.matrixFormatCalculated = true;
-            break; // only needs to look at one object to determine format that this vuforia app uses
+    /**
+     * Callback for realityEditor.app.getCameraMatrixStream
+     * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
+     * @param {Array.<number>} cameraMatrix
+     */
+    function receiveCameraMatricesFromAR(cameraMatrix) {
+        // easiest way to implement freeze button is just to not update the new matrices
+        if (!globalStates.freezeButtonState) {
+            realityEditor.worldObjects.checkIfFirstLocalization();
+            realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
     }
-};
 
-/**
- * Takes new matrix format and extracts each object's tracking status into visibleObjectsStatus
- * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
- * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
- * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}}>} visibleObjects
- */
-realityEditor.app.callbacks.convertNewMatrixFormatToOld = function(visibleObjects) {
-    realityEditor.gui.ar.draw.visibleObjectsStatus = {};
-    for (var key in visibleObjects) {
-        realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-        if ( (!DISABLE_ALL_EXTENDED_TRACKING && realityEditor.gui.settings.toggleStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
-            visibleObjects[key] = visibleObjects[key].matrix;
-        } else {
-            if (visibleObjects[key].status === 'EXTENDED_TRACKED') {
-                delete visibleObjects[key];
+    /**
+     * Looks at the visibleObjects and sees if it uses the old format or the new, so that we can convert to backwards-compatible
+     * New format of visibleObject  = {objectKey: {matrix:[], status:""}}
+     * Old format of visibleObjects = {objectKey: []}
+     * @param visibleObjects
+     */
+    function calculateMatrixFormat(visibleObjects) {
+        if (typeof isMatrixFormatNew === 'undefined') {
+            for (var key in visibleObjects) {
+                isMatrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
+                matrixFormatCalculated = true;
+                break; // only needs to look at one object to determine format that this vuforia app uses
             }
         }
     }
-};
 
-realityEditor.app.callbacks.rotationXMatrix = rotationXMatrix;
-realityEditor.app.callbacks.matrix = [];
+    /**
+     * Takes new matrix format and extracts each object's tracking status into visibleObjectsStatus
+     * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
+     * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
+     * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}}>} visibleObjects
+     */
+    function convertNewMatrixFormatToOld(visibleObjects) {
+        realityEditor.gui.ar.draw.visibleObjectsStatus = {};
+        for (var key in visibleObjects) {
+            realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
+            if ((!DISABLE_ALL_EXTENDED_TRACKING && realityEditor.gui.settings.toggleStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
+                visibleObjects[key] = visibleObjects[key].matrix;
+            } else {
+                if (visibleObjects[key].status === 'EXTENDED_TRACKED') {
+                    delete visibleObjects[key];
+                }
+            }
+        }
+    }
 
-/**
- * Callback for realityEditor.app.getGroundPlaneMatrixStream
- * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
- * @param {Array.<number>} groundPlaneMatrix
- */
-realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR = function(groundPlaneMatrix) {
-
-    // completely ignore this if nothing is using ground plane right now
-    if (globalStates.useGroundPlane) {
-
-        if (!globalStates.freezeButtonState) {
-            if(realityEditor.gui.ar.draw.worldCorrection === null) { // TODO: figure out how ground plane works if there are multiple world origins with different planes
+    /**
+     * Callback for realityEditor.app.getGroundPlaneMatrixStream
+     * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
+     * @param {Array.<number>} groundPlaneMatrix
+     */
+    function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
+        // only update groundplane if unfrozen and at least one thing is has requested groundplane usage
+        if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
+            if (realityEditor.gui.ar.draw.worldCorrection === null) { // TODO: figure out how ground plane works if there are multiple world origins with different planes
                 realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             } else {
+                // this part is entered if we have re-localized by looking at the world origin marker
                 console.warn('Should never get here until we fix worldCorrection');
-                this.matrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, this.matrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+                let tempMatrix = [];
+                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, tempMatrix);
+                realityEditor.gui.ar.utilities.multiplyMatrix(tempMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
             }
         }
-        
     }
-};
+
+    // public methods (anything triggered by a native app callback needs to be public
+    exports.vuforiaIsReady = vuforiaIsReady;
+    exports.receivedProjectionMatrix = receivedProjectionMatrix;
+    exports.receivedUDPMessage = receivedUDPMessage;
+    exports.getDeviceReady = getDeviceReady;
+    exports.receiveGroundPlaneMatricesFromAR = receiveGroundPlaneMatricesFromAR;
+    exports.receiveMatricesFromAR = receiveMatricesFromAR;
+    exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
+
+})(realityEditor.app.callbacks);
