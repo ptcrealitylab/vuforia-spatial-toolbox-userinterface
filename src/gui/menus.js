@@ -215,9 +215,6 @@ createNameSpace("realityEditor.gui.menus");
                 realityEditor.gui.buttons[buttonName + 'ButtonUp'](mutableEvent);
 
                 sendInterfaces(mutableEvent.button);
-                if(realityEditor.gui.search.getVisibility() && mutableEvent.button !== "realitySearch"){
-                    realityEditor.gui.search.remove();
-                }
 
             }, false);
 
@@ -460,19 +457,6 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('realitySearch', function(params) {
-            if (params.newButtonState === 'up') {
-                buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
-                switchToMenu("reality", ["realitySearch"], null);
-
-                if (realityEditor.gui.search.getVisibility()) {
-                    realityEditor.gui.search.remove();
-                } else {
-                    realityEditor.gui.search.add();
-                }
-            }
-        }.bind(this));
-
         realityEditor.gui.buttons.registerCallbackForButton('realityWork', function(params) {
             if (params.newButtonState === 'up') {
                 buttonOff(["realityGui", "realityInfo", "realityTag", "realitySearch", "realityWork"]);
@@ -630,11 +614,6 @@ createNameSpace("realityEditor.gui.menus");
 
         // send active user interfaceName status in to the AR-UI
         var msg = { interface: globalStates.interface };
-
-        // include the search state in the message if we are in realitySearch mode
-        if (interfaceName === "realitySearch") {
-            msg.search = realityEditor.gui.search.getSearch();
-        }
 
         realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
 

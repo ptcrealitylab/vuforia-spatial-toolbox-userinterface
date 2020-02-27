@@ -59,6 +59,23 @@ createNameSpace("realityEditor.gui.ar.lines");
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
+
+/**
+ * Any modules can add a function that receives a pending link action
+ * (objectKey, frameKey, linkKey, "delete")
+ * abd, if it returns false, prevents the link action from occurring
+ * @type {Array}
+ */
+realityEditor.gui.ar.lines.linkActionFilters = [];
+
+/**
+ * returns true if allowed, false if not allowed, given (objectKey, frameKey, linkKey, "delete")
+ * @param {function} filterFunction
+ */
+realityEditor.gui.ar.lines.registerLinkActionFilter = function(filterFunction) {
+    this.linkActionFilters.push(filterFunction);
+};
+
 /**
  * Deletes ("cuts") any links who cross the line between (x1, y1) and (x2, y2)
  * @param {number} x1 
@@ -104,7 +121,14 @@ realityEditor.gui.ar.lines.deleteLines = function(x1, y1, x2, y2) {
 
                 if (this.realityEditor.gui.utilities.checkLineCross(nodeA.screenX, nodeA.screenY, nodeB.screenX, nodeB.screenY, x1, y1, x2, y2, globalCanvas.canvas.width, globalCanvas.canvas.height)) {
                     
-                    if (realityEditor.device.security.isLinkActionAllowed(objectKey, frameKey, linkKey, "delete")) {
+                    let isActionAllowed = true;
+                    this.linkActionFilters.forEach(function(filterFunction) {
+                        if (!filterFunction(objectKey, frameKey, linkKey, "delete")) {
+                            isActionAllowed = false;
+                        }
+                    });
+
+                    if (isActionAllowed) {
                         delete thisFrame.links[linkKey];
                         this.cout("iam executing link deletion");
                         //todo this is a work around to not crash the server. only temporarly for testing
