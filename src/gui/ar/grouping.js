@@ -8,6 +8,17 @@ createNameSpace("realityEditor.gui.ar.grouping");
  */
 
 (function(exports) {
+
+    /**
+     * Maps each groupID to its set of group members (frameKeys)
+     * @type {Object.<string, Set.<string>>}
+     */
+    var groupStruct = {};
+
+    /**
+     * @type {Object.<string, string>}
+     */
+    var frameToObj = {};
     
     /**
      * Keeps track of where the line starts
@@ -176,24 +187,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
                     });
                 }
             }
-        });
-        
-        // todo: decide if this can be removed entirely or if it should still be implemented
-        realityEditor.device.registerCallback('beginTouchEditing', function(params) {
-            
-            console.log('TODO: set move overlays on for other nodes in group', params);
-            // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
-            // document.getElementById('svg' + (nodeKey || frameKey)).style.pointerEvents = 'all';
-            //
-            // // set move overlays on for other nodes in group
-            // if (activeVehicle.groupID !== null) {
-            //     console.log("BEGIN GROUP EDITING");
-            //     let groupMembers = realityEditor.gui.ar.grouping.getGroupMembers(activeVehicle.groupID);
-            //     for (let member of groupMembers) {
-            //         document.getElementById('svg' + member.frame).style.display = 'inline';
-            //         document.getElementById('svg' + member.frame).style.pointerEvents = 'all';
-            //     }
-            // }
         });
 
         // when you stop moving around a frame, clear some state and post the new positions of all grouped frames to the server
@@ -669,27 +662,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
     }
 
     /**
-     * gets bounding box corners of frame - just the rectangle on the screen, doesn't rotate to fit tightly with CSS transformations
-     * note - currently not used because getFrameCornersScreenCoordinates does it better, but might be useful in the future for rough approximations
-     * @param {string} frameKey
-     * @param {number} buffer - extra padding to extend frame's bounding rect by
-     * @returns {{upperLeft: {x: number, y: number}, upperRight: {x: number, y: number}, lowerLeft: {x: number, y: number}, lowerRight: {x: number, y: number}}}
-     */
-    // function getFrameBoundingRectScreenCoordinates(frameKey, buffer) {
-    //     if (typeof buffer === 'undefined') buffer = 0;
-    //     
-    //     if (globalDOMCache["iframe" + frameKey]) {
-    //         var boundingRect = globalDOMCache["iframe" + frameKey].getClientRects()[0];
-    //         return {
-    //             upperLeft: {x: boundingRect.left - buffer, y: boundingRect.top - buffer},
-    //             upperRight: {x: boundingRect.right + buffer, y: boundingRect.top - buffer},
-    //             lowerLeft: {x: boundingRect.left - buffer, y: boundingRect.bottom + buffer},
-    //             lowerRight: {x: boundingRect.right + buffer, y: boundingRect.bottom + buffer}
-    //         }
-    //     }
-    // }
-
-    /**
      * Accurately calculates the screen coordinates of the corners of a frame element
      * This can be used to draw outlines around a frame, e.g. the outline around the group of frames
      * @param {string} objectKey
@@ -748,7 +720,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
      */
     function drawGroupHulls() {
         var svg = document.getElementById("groupSVG");
-        // svg.classList.remove('groupOutlineFadeOut');
 
         clearHulls(svg);
 
@@ -770,11 +741,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 // make sure there is an object and frame
                 if (!frame || frame.visualization !== 'ar') continue;
 
-                // var x = frame.screenX;
-                // var y = frame.screenY;
-                
-                // var bb = getFrameBoundingRectScreenCoordinates(frameKey, 10);
-                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 50);
+                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 10);
                 
                 // points.push([x, y]); // pushing center point
                 // pushing corner points
