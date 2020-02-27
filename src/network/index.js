@@ -995,54 +995,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
     
     tempThisObject = tempThisObject || {};
-
-    // TODO: bring this pack to make pocketItem part work
-
-    /*
-if (thisFrame) {
-    if (msgContent.node && (msgContent.node in thisFrame.nodes)) {
-        tempThisObject = thisFrame.nodes[msgContent.node];
-    } else {
-        tempThisObject = thisFrame;
-    }
-
-
-} else if (msgContent.frame in pocketItem) {
-    if (msgContent.node === msgContent.object) {
-        tempThisObject = pocketItem[msgContent.frame];
-    } else {
-        if (msgContent.node in pocketItem[msgContent.frame].nodes) {
-            tempThisObject = pocketItem[msgContent.frame].nodes[msgContent.node];
-        } else return;
-    }
-
-} else return;
-*/
-
-    // if (msgContent.node && msgContent.width && msgContent.height) {
-    //     var thisMsgNode = document.getElementById(msgContent.node);
-    //     var top = ((globalStates.width - msgContent.height) / 2);
-    //     var left = ((globalStates.height - msgContent.width) / 2);
-    //     thisMsgNode.style.width = msgContent.width;
-    //     thisMsgNode.style.height = msgContent.height;
-    //     thisMsgNode.style.top = top;
-    //     thisMsgNode.style.left = left;
-    //
-    //     thisMsgNode = document.getElementById("iframe" + msgContent.node);
-    //     thisMsgNode.style.width = msgContent.width;
-    //     thisMsgNode.style.height = msgContent.height;
-    //     thisMsgNode.style.top = top;
-    //     thisMsgNode.style.left = left;
-    //
-    //     if (tempThisObject.frameTouchSynthesizer) {
-    //         var cover = tempThisObject.frameTouchSynthesizer.cover;
-    //         cover.style.width = msgContent.width;
-    //         cover.style.height = msgContent.height;
-    //         cover.style.top = top;
-    //         cover.style.left = left;
-    //     }
-    //
-    // } 
     
     if (msgContent.width && msgContent.height) {
         let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
@@ -1081,14 +1033,6 @@ if (thisFrame) {
             overlay.querySelector('.corners').style.visibility = 'hidden';
 
         }
-
-        // if (tempThisObject.frameTouchSynthesizer) {
-        //     var cover = tempThisObject.frameTouchSynthesizer.cover;
-        //     cover.style.width = msgContent.width;
-        //     cover.style.height = msgContent.height;
-        //     cover.style.top = top;
-        //     cover.style.left = left;
-        // }
     }
 
     // Forward the touch events from the nodes to the overall touch event collector
