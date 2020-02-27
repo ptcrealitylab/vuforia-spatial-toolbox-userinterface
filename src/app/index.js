@@ -48,7 +48,7 @@ createNameSpace("realityEditor.app");
 /**
  * @typedef {string|function} FunctionName
  * @desc The name of a function, in string form, with a path that can be reached from this file,
- * e.g. "realityEditor.device.speechProcessor.speechRecordingCallback"
+ * e.g. "realityEditor.app.callbacks.vuforiaIsReady"
  * Optional: if the function signature doesn't have any parameters, the entire function can be used instead of a string,
  * e.g. function(){console.log("pong")})
  */
