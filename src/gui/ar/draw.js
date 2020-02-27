@@ -79,9 +79,6 @@ realityEditor.gui.ar.draw.activeObjectMatrix = [];
 realityEditor.gui.ar.draw.finalMatrix = [];
 realityEditor.gui.ar.draw.rotateX = rotateX;
 realityEditor.gui.ar.draw.nodeCalculations = {
-    size: 0, // TODO: only rectPoints is used, we can get rid of other properties in here
-    x: 0,
-    y: 0,
     rectPoints: []
 };
 
@@ -1584,26 +1581,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                         [x - (0.42 * size), y - (-1 * size)],
                         [x - (-0.42 * size), y - (-1 * size)]
                     ];
-                    /* var context = globalCanvas.context;
-                     context.setLineDash([]);
-                     // context.restore();
-                     context.beginPath();
-                     context.moveTo(nodeCalculations.rectPoints[0][0], nodeCalculations.rectPoints[0][1]);
-                     context.lineTo(nodeCalculations.rectPoints[1][0], nodeCalculations.rectPoints[1][1]);
-                     context.lineTo(nodeCalculations.rectPoints[2][0], nodeCalculations.rectPoints[2][1]);
-                     context.lineTo(nodeCalculations.rectPoints[3][0], nodeCalculations.rectPoints[3][1]);
-                     context.lineTo(nodeCalculations.rectPoints[4][0], nodeCalculations.rectPoints[4][1]);
-                     context.lineTo(nodeCalculations.rectPoints[5][0], nodeCalculations.rectPoints[5][1]);
-                     context.lineTo(nodeCalculations.rectPoints[6][0], nodeCalculations.rectPoints[6][1]);
-                     context.lineTo(nodeCalculations.rectPoints[7][0], nodeCalculations.rectPoints[7][1]);
-                     context.closePath();
-
-                     if (nodeCalculations.farFrontElement === activeKey) {
-                     context.strokeStyle = "#ff0000";
-                     } else {
-                     context.strokeStyle = "#f0f0f0";
-                     }*/
-                    
                     
                     // don't show the logic ports if you are dragging anything around, or if this logic is locked
                     if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword && !editingVehicle) {
