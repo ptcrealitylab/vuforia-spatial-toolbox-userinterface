@@ -93,7 +93,7 @@ var globalStates = {
     lockPassword: null,
     
     // setting this to FALSE speeds up rendering while in node view by NOT also rendering the frames (semi-transparently)
-    renderFrameGhostsInNodeViewEnabled: false,
+    renderFrameGhostsInNodeViewEnabled: true,
     
     pocketButtonState: false,
 

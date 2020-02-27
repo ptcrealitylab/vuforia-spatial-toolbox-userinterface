@@ -85,8 +85,13 @@ realityEditor.device.onload = function () {
             console.log('zone text was set to ' + newValue);
         }
     );
+
+    realityEditor.gui.settings.addToggle('Power-Save Mode', 'turns off some effects for faster performance', 'powerSaveMode',  '../../../svg/powerSave.svg', false, function(newValue) {
+        // only draw frame ghosts while in programming mode if we're not in power-save mode
+        globalStates.renderFrameGhostsInNodeViewEnabled = !newValue;
+    });
     
-    realityEditor.gui.settings.addToggle('Extended Tracking', '', 'extendedTracking', '../../../svg/extended.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Extended Tracking', 'further track image and object targets', 'extendedTracking', '../../../svg/extended.svg', false, function(newValue) {
         console.log('extended tracking was set to ' + newValue);
         realityEditor.app.enableExtendedTracking(newValue);
     });
