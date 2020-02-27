@@ -68,8 +68,6 @@ var realityEditor = realityEditor || {
         keyboardEvents: {},
         layout: {},
         onLoad: {},
-        speechPerformer: {},
-        speechProcessor: {},
         touchInputs: {},
         touchPropagation: {},
         utilities: {},
@@ -104,7 +102,6 @@ var realityEditor = realityEditor || {
         buttons: {},
         dropdown: {},
         frames: {},
-        instantConnect: {}, // todo: rename file to be consistent with internal module name
         menus:{},
         modal: {},
         moveabilityCorners: {},

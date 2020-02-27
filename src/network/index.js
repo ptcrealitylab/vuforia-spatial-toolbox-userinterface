@@ -787,12 +787,6 @@ realityEditor.network.onAction = function (action) {
         }
     }
     
-    if (typeof thisAction.advertiseConnection !== "undefined") {
-        if (realityEditor.gui.settings.toggleStates.instantState) {
-            realityEditor.gui.instantConnect.logic(thisAction.advertiseConnection);
-        }
-    }
-    
     if (thisAction.loadMemory) {
         var id = thisAction.loadMemory.object;
         let urlEndpoint = 'http://' + thisAction.loadMemory.ip + ':' + httpPort + '/object/' + id;

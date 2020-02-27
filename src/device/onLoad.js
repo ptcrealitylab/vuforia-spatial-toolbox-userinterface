@@ -111,10 +111,6 @@ realityEditor.device.onload = function () {
         }
     });
 
-    realityEditor.gui.settings.addToggle('Instant Connect', 'if available with prepared objects', 'instantState',  '../../../svg/instantLink.svg', false, function(newValue) {
-        console.log('instant connect was set to ' + newValue);
-    });
-
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
     });
@@ -176,8 +172,6 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
-    // disabled services
-    realityEditor.device.speechPerformer.initService(); // service is internally disabled
     
     // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
     // if (!realityEditor.device.utilities.isDesktop()) {
