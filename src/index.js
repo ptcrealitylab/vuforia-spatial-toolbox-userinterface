@@ -68,7 +68,6 @@ var realityEditor = realityEditor || {
         keyboardEvents: {},
         layout: {},
         onLoad: {},
-        security: {},
         speechPerformer: {},
         speechProcessor: {},
         touchInputs: {},
