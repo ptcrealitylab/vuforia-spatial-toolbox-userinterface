@@ -7,7 +7,6 @@ createNameSpace("realityEditor.device.videoRecording");
  * Shows visual feedback while recording.
  */
 
-
 (function(exports) {
 
     //TODO: no need to keep in privateState object - can be independent local variables

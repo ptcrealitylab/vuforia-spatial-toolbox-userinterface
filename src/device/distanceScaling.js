@@ -15,7 +15,6 @@ createNameSpace("realityEditor.device.distanceScaling");
     };
     
     var defaultDistance = 4000;
-    exports.defaultDistance = defaultDistance;
     
     var isScalingDistance = false;
     
@@ -25,7 +24,6 @@ createNameSpace("realityEditor.device.distanceScaling");
     };
     
     var groundPlaneRotation = [];
-    // var groundPlaneQuaternion = null;
 
     /**
      * @type {CallbackHandler}
@@ -37,12 +35,16 @@ createNameSpace("realityEditor.device.distanceScaling");
      * @param {string} functionName
      * @param {function} callback
      */
-    exports.registerCallback = function(functionName, callback) {
+    function registerCallback(functionName, callback) {
         if (!callbackHandler) {
             callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/distanceScaling');
         }
         callbackHandler.registerCallback(functionName, callback);
-    };
+    }
+
+    function getDefaultDistance() {
+        return defaultDistance;
+    }
     
     function initService() {
         realityEditor.gui.ar.draw.addUpdateListener(loop);
@@ -56,7 +58,6 @@ createNameSpace("realityEditor.device.distanceScaling");
         if (realityEditor.device.utilities.isDesktop()) {
             console.log('adjusted default distance from ' + defaultDistance + ' (for desktop)');
             defaultDistance = defaultDistance * 10;
-            exports.defaultDistance = defaultDistance;
         }
     }
     
@@ -464,6 +465,7 @@ createNameSpace("realityEditor.device.distanceScaling");
     }
     
     exports.initService = initService;
-    exports.defaultDistance = defaultDistance;
+    exports.getDefaultDistance = getDefaultDistance;
+    exports.registerCallback = registerCallback;
 
 })(realityEditor.device.distanceScaling);
