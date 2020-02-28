@@ -139,7 +139,6 @@ realityEditor.device.initService = function() {
             realityEditor.device.resetEditingState();
         }
     }
-    
 };
 
 /**

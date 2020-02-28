@@ -27,7 +27,6 @@ createNameSpace("realityEditor.device.touchPropagation");
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
         
-        
         // handle touch events that hit realityInteraction divs within frames
         realityEditor.network.addPostMessageHandler('pointerDownResult', handlePointerDownResult);
     }
