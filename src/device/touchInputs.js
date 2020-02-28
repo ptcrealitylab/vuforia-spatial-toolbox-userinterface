@@ -20,7 +20,6 @@ createNameSpace("realityEditor.device.touchInputs");
      * @param {TouchEvent} eventObject
      */
     function screenTouchStart(eventObject){
-        // console.log("start", eventObject);
         realityEditor.gui.screenExtension.touchStart(eventObject)
     }
 
@@ -29,7 +28,6 @@ createNameSpace("realityEditor.device.touchInputs");
      * @param {TouchEvent} eventObject
      */
     function screenTouchEnd(eventObject){
-        // console.log("end", eventObject);
         realityEditor.gui.screenExtension.touchEnd(eventObject);
     }
 
@@ -38,7 +36,6 @@ createNameSpace("realityEditor.device.touchInputs");
      * @param {TouchEvent} eventObject
      */
     function screenTouchMove(eventObject){
-        //  console.log("move", eventObject);
         realityEditor.gui.screenExtension.touchMove(eventObject);
     }
 
