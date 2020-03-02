@@ -26,6 +26,8 @@ createNameSpace("realityEditor.worldObjects");
     var worldObjectId = '_WORLD_';
     var localWorldObjectKey = '_WORLD_local';
 
+    var SEE_ALL_WORLD_OBJECTS_WITHOUT_TARGETS = true;
+
     /**
      * Init world object module
      */
@@ -57,7 +59,7 @@ createNameSpace("realityEditor.worldObjects");
                 }
                 
                 // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
-                if (object.objectId === getLocalWorldId()) {
+                if (object.objectId === getLocalWorldId() || SEE_ALL_WORLD_OBJECTS_WITHOUT_TARGETS) {
                     initializeWorldObject(object);
                 }
             }
@@ -159,7 +161,7 @@ createNameSpace("realityEditor.worldObjects");
             realityEditor.network.onNewObjectAdded(object.objectId);
         }
 
-        if (object.objectId === localWorldObjectKey) {
+        if (object.objectId === localWorldObjectKey || SEE_ALL_WORLD_OBJECTS_WITHOUT_TARGETS) {
             realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
         }
         console.log('successfully initialized world object: ' + object.objectId);
