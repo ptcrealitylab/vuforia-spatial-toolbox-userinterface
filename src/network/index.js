@@ -1603,6 +1603,48 @@ realityEditor.network.onInternalPostMessage = function (e) {
         overlay.querySelector('.corners').style.width = width + cornerPadding + 'px';
         overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
     }
+
+    if (typeof msgContent.initNode !== 'undefined') {
+        let nodeData = msgContent.initNode.nodeData;
+        let nodeKey = msgContent.frame + nodeData.name;
+
+        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+
+        // this function can be called multiple times... only set up the new node if it doesnt already exist
+        if (frame && typeof frame.nodes[nodeKey] === 'undefined') {
+            console.log('creating node ' + nodeKey);
+            var newNode = new Node();
+            frame.nodes[nodeKey] = newNode;
+            newNode.objectId = msgContent.object;
+            newNode.frameId = msgContent.frame;
+            newNode.name = nodeData.name;
+
+            if (typeof nodeData.type !== 'undefined') {
+                newNode.type = nodeData.type;
+            }
+            if (typeof nodeData.x !== 'undefined') {
+                newNode.x = nodeData.x;
+            } else {
+                newNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100; // nodes are given a random position if not specified
+            }
+            if (typeof nodeData.y !== 'undefined') {
+                newNode.y = nodeData.y;
+            } else {
+                newNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+            }
+            if (typeof nodeData.scaleFactor !== 'undefined') {
+                newNode.scale = nodeData.scaleFactor;
+            }
+            newNode.scale *= newNodeScaleFactor;
+            if (typeof nodeData.defaultValue !== 'undefined') {
+                newNode.data.value = nodeData.defaultValue;
+            }
+
+            // post node to server
+            let object = realityEditor.getObject(msgContent.object);
+            realityEditor.network.postNewNode(object.ip, msgContent.object, msgContent.frame, nodeKey, newNode);
+        }
+    }
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
@@ -2180,7 +2222,7 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
  */
 realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, thisNode) {
     thisNode.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode/', thisNode, function (err) {
+    this.postData('http://' + ip + ':' + httpPort + '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode', thisNode, function (err) {
         if (err) {
             console.log('postNewNode error:', err);
         }
