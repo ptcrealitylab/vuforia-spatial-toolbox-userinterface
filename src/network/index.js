@@ -1604,6 +1604,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
     }
 
+    // this is the API that frames can use to define which nodes they should have
     if (typeof msgContent.initNode !== 'undefined') {
         let nodeData = msgContent.initNode.nodeData;
         let nodeKey = msgContent.frame + nodeData.name;

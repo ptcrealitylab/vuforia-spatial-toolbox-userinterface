@@ -765,14 +765,13 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             globalDOMCache['iframe' + newNodeKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + newNodeKey + '")');
             try {
                 let reloadSrc = globalDOMCache['iframe' + newNodeKey].src;
-                globalDOMCache['iframe' + newNodeKey].src = reloadSrc;
+                globalDOMCache['iframe' + newNodeKey].src = reloadSrc; // this is intentionally the same src
             } catch (e) {
                 console.warn('error reloading node src for ' + newNodeKey);
             }
         } else {
             node.loaded = false;
         }
-        
     }
 
     frame.nodes = newNodes;
