@@ -727,7 +727,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     // rename nodes and give new keys
     var newNodes = {};
     for (var oldNodeKey in frame.nodes) {
-       // if (!frame.nodes.hasOwnProperty(oldNodeKey)) continue;
         var node = frame.nodes[oldNodeKey];
         var newNodeKey = newFrameKey + node.name;
         node.objectId = newObjectKey;
@@ -764,7 +763,12 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             globalDOMCache['iframe' + newNodeKey].setAttribute("data-node-key", newNodeKey);
 
             globalDOMCache['iframe' + newNodeKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + newNodeKey + '")');
-            globalDOMCache['iframe' + newNodeKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+            try {
+                let reloadSrc = globalDOMCache['iframe' + newNodeKey].src;
+                globalDOMCache['iframe' + newNodeKey].src = reloadSrc;
+            } catch (e) {
+                console.warn('error reloading node src for ' + newNodeKey);
+            }
         } else {
             node.loaded = false;
         }
@@ -797,10 +801,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + oldFrameKey];
         globalDOMCache[newFrameKey] = globalDOMCache[oldFrameKey];
         globalDOMCache['svg' + newFrameKey] = globalDOMCache['svg' + oldFrameKey];
-        delete globalDOMCache['object' + oldFrameKey];
-        delete globalDOMCache['iframe' + oldFrameKey];
-        delete globalDOMCache[oldFrameKey];
-        delete globalDOMCache['svg' + oldFrameKey];
 
         // re-assign ids to DOM elements
         globalDOMCache['object' + newFrameKey].id = 'object' + newFrameKey;
@@ -816,14 +816,11 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
         globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
         
-        var oldSrc = globalDOMCache['iframe' + newFrameKey].src;
         var newSrc = realityEditor.network.availableFrames.getFrameSrc(newObjectKey, frame.src);
-        if (oldSrc === newSrc) {
-            globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
-        } else {
-            // load frame from new server IP if it moves to another object's server
-            console.log('iframe src: (' + oldSrc + ' -> ' + newSrc + ')');
-            globalDOMCache['iframe' + newFrameKey].src = realityEditor.network.availableFrames.getFrameSrc(newObjectKey, frame.src);
+        try {
+            globalDOMCache['iframe' + newFrameKey].src = newSrc;
+        } catch (e) {
+            console.warn('error reloading frame src for ' + newFrameKey);
         }
     } else {
         frame.loaded = false;
