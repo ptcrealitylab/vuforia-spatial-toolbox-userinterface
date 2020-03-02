@@ -1870,16 +1870,18 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
-        // Several steps to translate it exactly to be centered on the touch when it gets added
-        // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
-        let defaultScreenCenter = realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
-        let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        // 2. calculate the correct touch offset as if you placed it at the default position (doesn't actually set x and y)
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
-        // 3. actually move it to the touch position (sets x and y), now that it knows the relative offset from the default
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
-        // 4. add a flag so that we can finalize its position the next time drawTransformed is called
-        pocketContainer.vehicle.isPendingInitialPlacement = true;
+        if (realityEditor.getObject(pocketContainer.vehicle.objectId).isWorldObject) {
+            // Several steps to translate it exactly to be centered on the touch when it gets added
+            // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
+            let defaultScreenCenter = realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
+            let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+            // 2. calculate the correct touch offset as if you placed it at the default position (doesn't actually set x and y)
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
+            // 3. actually move it to the touch position (sets x and y), now that it knows the relative offset from the default
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
+            // 4. add a flag so that we can finalize its position the next time drawTransformed is called
+            pocketContainer.vehicle.isPendingInitialPlacement = true;
+        }
 
         var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
