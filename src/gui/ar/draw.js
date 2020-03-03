@@ -873,7 +873,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
                     // add link to new frame (locally and on the server -- post link to server adds it locally too)
                     realityEditor.network.postLinkToServer(link, linkKey);
                 }
-
             }
         });
         
@@ -1556,46 +1555,39 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
             //}
 
-
+            // Animate and show the 4 colored quadrants of the logic node if we touch near it
             if (activeType === "logic" && objectKey !== "pocket") {
+                let currentTouchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                let logicNodeBounds = globalDOMCache[activeKey].getClientRects()[0];
+                let estimatedCenter = {
+                    x: logicNodeBounds.left + logicNodeBounds.width/2,
+                    y: logicNodeBounds.top + logicNodeBounds.height/2
+                };
 
-                if (globalStates.pointerPosition[0] > -1 && globalProgram.objectA) {
+                let distanceVector = {
+                    x: currentTouchPosition.x - estimatedCenter.x,
+                    y: currentTouchPosition.y - estimatedCenter.y
+                };
+                let distanceMoved = Math.sqrt(distanceVector.x * distanceVector.x + distanceVector.y * distanceVector.y);
 
-                    var size = (activeVehicle.screenLinearZ * 40) * (activeVehicle.scale);
-                    var x = activeVehicle.screenX;
-                    var y = activeVehicle.screenY;
+                // if we're too close to its center, dont expand. instead, let us hold to drag it around.
+                let minExpansionThreshold = 30;
+                let maxExpansionThreshold = 30 + logicNodeBounds.width;
+                let isTouchCloseButNotTooClose = distanceMoved > minExpansionThreshold && distanceMoved < maxExpansionThreshold;
 
+                // don't show the logic ports if you are dragging anything around, or if this logic is locked
+                if (globalProgram.objectA && isTouchCloseButNotTooClose && !activeVehicle.lockPassword && !editingVehicle) {
                     globalCanvas.hasContent = true;
 
-                    nodeCalculations.rectPoints = [
-                        [x - (-1 * size), y - (-0.42 * size)],
-                        [x - (-1 * size), y - (0.42 * size)],
-                        [x - (-0.42 * size), y - (size)],
-                        [x - (0.42 * size), y - (size)],
-                        [x - (size), y - (0.42 * size)],
-                        [x - (size), y - (-0.42 * size)],
-                        [x - (0.42 * size), y - (-1 * size)],
-                        [x - (-0.42 * size), y - (-1 * size)]
-                    ];
-                    
-                    // don't show the logic ports if you are dragging anything around, or if this logic is locked
-                    if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword && !editingVehicle) {
-                        if (activeVehicle.animationScale === 0 && !globalStates.editingMode)
-                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
-                        activeVehicle.animationScale = 1;
+                    if (activeVehicle.animationScale === 0 && !globalStates.editingMode) {
+                        globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
                     }
-                    else {
-                        if (activeVehicle.animationScale === 1)
-                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
-                        activeVehicle.animationScale = 0;
-                    }
-
-                    // context.stroke();
+                    activeVehicle.animationScale = 1;
                 } else {
                     if (activeVehicle.animationScale === 1) {
                         globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
-                        activeVehicle.animationScale = 0;
                     }
+                    activeVehicle.animationScale = 0;
                 }
             }
             
@@ -1618,9 +1610,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         }
     
     } else if (activeType === "ui" && activeVehicle.visualization === "screen") {
-        // if (shouldRenderFramesInNodeView) {
         this.hideScreenFrame(activeKey);
-        // }
     }
     
     if (shouldRenderFramesInNodeView && !globalStates.renderFrameGhostsInNodeViewEnabled) {
@@ -1645,8 +1635,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         }
     }
     
-    return true;
-
+    return true; // true to continueUpdate... returning false would skip the rest of the rendering for this frame/node
 };
 
 /**
