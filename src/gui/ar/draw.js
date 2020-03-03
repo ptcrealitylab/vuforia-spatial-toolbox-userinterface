@@ -78,9 +78,6 @@ realityEditor.gui.ar.draw.activeVehicle = {};
 realityEditor.gui.ar.draw.activeObjectMatrix = [];
 realityEditor.gui.ar.draw.finalMatrix = [];
 realityEditor.gui.ar.draw.rotateX = rotateX;
-realityEditor.gui.ar.draw.nodeCalculations = {
-    rectPoints: []
-};
 
 var desktopFrameTransform = [
     1, 0, 0, 0,
@@ -436,8 +433,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // perform all the 3D calculations and CSS updates to actually show the frame and render in the correct position
                 continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                     this.globalDOMCache, this.globalStates, this.globalCanvas,
-                    this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                    this.nodeCalculations, this.cout);
+                    this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
                 // currently there is no way that this will trigger, but it may be used in future
                 if (globalStates.guiState === 'ui' && !continueUpdate) { return; }
@@ -469,8 +465,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         // perform all the 3D calculations and CSS updates to actually show the node and render in the correct position
                         continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                             this.globalDOMCache, this.globalStates, this.globalCanvas,
-                            this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                            this.nodeCalculations, this.cout);
+                            this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
                         // currently there is no way that this will trigger, but it may be used in future
                         if (!continueUpdate) { return; }
@@ -619,7 +614,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.activeKey = frameKey;
             this.activeObjectMatrix = this.activeFrame.temp;
             
-            continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
+            continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
             if (!continueUpdate) { return; }
         }
@@ -1029,12 +1024,11 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
  *      includes matrix.temp, matrix.begin, matrix.end, matrix.r, matrix.r2, and matrix.r3
  * @param finalMatrix - stores the resulting final CSS3D matrix for the vehicle @todo this doesnt seem to be used anywhere?
  * @param utilities - reference to realityEditor.gui.ar.utilities
- * @param nodeCalculations - reference to realityEditor.gui.ar.draw.nodeCalculations
  * @param _cout - reference to debug logging function (unused)
  * @return {boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
  * @todo finish documenting function
  */
-realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, _cout) {
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
 
     // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
@@ -2608,13 +2602,12 @@ realityEditor.gui.ar.draw.removeFrameMatrixFromFinalMatrix = function(activeVehi
  * @param matrix
  * @param finalMatrix
  * @param utilities
- * @param {any} _nodeCalculations - unused
  * @param {function} _cout - unused
  * @return {*}
  * @todo: simplify this! there shouldnt be a need for so much duplicate code. might even be a simple matrix multiplication to take
  * @todo:       mostRecentFinalMatrix * translation^-1    which would give the same result as this function for the use cases I'm doing
  */
-realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _nodeCalculations, _cout) {
+realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
     
     // return activeVehicle.mostRecentFinalMatrix;
     
