@@ -933,8 +933,8 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
  */
 realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
     
-    var oldObjectTargetWidth = realityEditor.getObject(oldObjectKey).targetSize.width;
-    var newObjectTargetWidth = realityEditor.getObject(newObjectKey).targetSize.width;
+    var oldObjectTargetWidth = realityEditor.gui.utilities.getTargetSize(oldObjectKey).width;
+    var newObjectTargetWidth = realityEditor.gui.utilities.getTargetSize(newObjectKey).width;
     
     console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of ' +
         'size ' + newObjectTargetWidth);
@@ -951,7 +951,9 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
     var scaleFactor = 1;
     if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
         scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
-        frame.ar.scale *= scaleFactor;
+        if (!isNaN(scaleFactor)) {
+            frame.ar.scale *= scaleFactor;
+        }
     }
     
     // TODO: bugfix this
@@ -980,8 +982,8 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         // frame.ar.y = 0;
         
         // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
-        var oldTargetSize = realityEditor.getObject(oldObjectKey).targetSize;
-        var newTargetSize = realityEditor.getObject(newObjectKey).targetSize;
+        var oldTargetSize = realityEditor.gui.utilities.getTargetSize(oldObjectKey);
+        var newTargetSize = realityEditor.gui.utilities.getTargetSize(newObjectKey);
         scaleFactor = oldTargetSize.width / newTargetSize.width;
 
         realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
@@ -1553,35 +1555,37 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             if (activeType === "logic" && objectKey !== "pocket") {
                 let currentTouchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
                 let logicNodeBounds = globalDOMCache[activeKey].getClientRects()[0];
-                let estimatedCenter = {
-                    x: logicNodeBounds.left + logicNodeBounds.width/2,
-                    y: logicNodeBounds.top + logicNodeBounds.height/2
-                };
+                if (logicNodeBounds) { // only calculate if the node has a valid element on screen
+                    let estimatedCenter = {
+                        x: logicNodeBounds.left + logicNodeBounds.width/2,
+                        y: logicNodeBounds.top + logicNodeBounds.height/2
+                    };
 
-                let distanceVector = {
-                    x: currentTouchPosition.x - estimatedCenter.x,
-                    y: currentTouchPosition.y - estimatedCenter.y
-                };
-                let distanceMoved = Math.sqrt(distanceVector.x * distanceVector.x + distanceVector.y * distanceVector.y);
+                    let distanceVector = {
+                        x: currentTouchPosition.x - estimatedCenter.x,
+                        y: currentTouchPosition.y - estimatedCenter.y
+                    };
+                    let distanceMoved = Math.sqrt(distanceVector.x * distanceVector.x + distanceVector.y * distanceVector.y);
 
-                // if we're too close to its center, dont expand. instead, let us hold to drag it around.
-                let minExpansionThreshold = 30;
-                let maxExpansionThreshold = 30 + logicNodeBounds.width;
-                let isTouchCloseButNotTooClose = distanceMoved > minExpansionThreshold && distanceMoved < maxExpansionThreshold;
+                    // if we're too close to its center, dont expand. instead, let us hold to drag it around.
+                    let minExpansionThreshold = 30;
+                    let maxExpansionThreshold = 30 + logicNodeBounds.width;
+                    let isTouchCloseButNotTooClose = distanceMoved > minExpansionThreshold && distanceMoved < maxExpansionThreshold;
 
-                // don't show the logic ports if you are dragging anything around, or if this logic is locked
-                if (globalProgram.objectA && isTouchCloseButNotTooClose && !activeVehicle.lockPassword && !editingVehicle) {
-                    globalCanvas.hasContent = true;
+                    // don't show the logic ports if you are dragging anything around, or if this logic is locked
+                    if (globalProgram.objectA && isTouchCloseButNotTooClose && !activeVehicle.lockPassword && !editingVehicle) {
+                        globalCanvas.hasContent = true;
 
-                    if (activeVehicle.animationScale === 0 && !globalStates.editingMode) {
-                        globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
+                        if (activeVehicle.animationScale === 0 && !globalStates.editingMode) {
+                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
+                        }
+                        activeVehicle.animationScale = 1;
+                    } else {
+                        if (activeVehicle.animationScale === 1) {
+                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
+                        }
+                        activeVehicle.animationScale = 0;
                     }
-                    activeVehicle.animationScale = 1;
-                } else {
-                    if (activeVehicle.animationScale === 1) {
-                        globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
-                    }
-                    activeVehicle.animationScale = 0;
                 }
             }
             

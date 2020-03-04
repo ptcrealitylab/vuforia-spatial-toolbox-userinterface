@@ -176,14 +176,12 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
-            var object = realityEditor.getObject(objectID);
-
             console.log('successfully downloaded file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
-            console.log('attempting to add target via JPG of width ' + object.targetSize.width);
-            realityEditor.app.addNewMarkerJPG(fileName, objectID, (object.targetSize.width || 0.3), moduleName + '.onMarkerAdded');
+            let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
+            console.log('attempting to add target via JPG of width ' + targetWidth);
+            realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
-
         } else {
             console.log('failed to download file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.FAILED;

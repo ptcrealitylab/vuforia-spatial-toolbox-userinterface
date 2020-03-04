@@ -34,6 +34,7 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
     }
     
     function wrapDivInOutline(div, padding, exclusive, additionalStyling, sizeAdjustment, borderWidth) {
+        if (!div) { return; }
         if (!sizeAdjustment) { sizeAdjustment = 0; }
         if (!borderWidth) { borderWidth = 2; }
         if (exclusive) {

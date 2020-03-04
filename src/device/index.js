@@ -1248,10 +1248,9 @@ realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY)
         // visibleScreenObject.x = point.x;
         // visibleScreenObject.y = point.y;
         
-        var object = realityEditor.getObject(visibleScreenObject.object);
-        
-        var isWithinWidth = Math.abs(point.x) < (object.targetSize.width * 1000)/2;
-        var isWithinHeight = Math.abs(point.y) < (object.targetSize.height * 1000)/2;
+        let targetSize = realityEditor.gui.utilities.getTargetSize(visibleScreenObject.object);
+        var isWithinWidth = Math.abs(point.x) < (targetSize.width * 1000)/2;
+        var isWithinHeight = Math.abs(point.y) < (targetSize.height * 1000)/2;
 
         console.log(point, isWithinWidth, isWithinHeight);
         
