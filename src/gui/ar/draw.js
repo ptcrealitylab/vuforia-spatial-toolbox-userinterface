@@ -78,12 +78,6 @@ realityEditor.gui.ar.draw.activeVehicle = {};
 realityEditor.gui.ar.draw.activeObjectMatrix = [];
 realityEditor.gui.ar.draw.finalMatrix = [];
 realityEditor.gui.ar.draw.rotateX = rotateX;
-realityEditor.gui.ar.draw.nodeCalculations = {
-    size: 0, // TODO: only rectPoints is used, we can get rid of other properties in here
-    x: 0,
-    y: 0,
-    rectPoints: []
-};
 
 var desktopFrameTransform = [
     1, 0, 0, 0,
@@ -439,8 +433,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // perform all the 3D calculations and CSS updates to actually show the frame and render in the correct position
                 continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                     this.globalDOMCache, this.globalStates, this.globalCanvas,
-                    this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                    this.nodeCalculations, this.cout);
+                    this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
                 // currently there is no way that this will trigger, but it may be used in future
                 if (globalStates.guiState === 'ui' && !continueUpdate) { return; }
@@ -472,8 +465,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         // perform all the 3D calculations and CSS updates to actually show the node and render in the correct position
                         continueUpdate = this.drawTransformed(this.visibleObjects, objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
                             this.globalDOMCache, this.globalStates, this.globalCanvas,
-                            this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities,
-                            this.nodeCalculations, this.cout);
+                            this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
                         // currently there is no way that this will trigger, but it may be used in future
                         if (!continueUpdate) { return; }
@@ -622,7 +614,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.activeKey = frameKey;
             this.activeObjectMatrix = this.activeFrame.temp;
             
-            continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.nodeCalculations, this.cout);
+            continueUpdate = this.drawTransformed(this.modelViewMatrices, objectKey, this.activeKey, this.activeType, this.activeFrame, this.notLoading, this.globalDOMCache, this.globalStates, this.globalCanvas, this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
             if (!continueUpdate) { return; }
         }
@@ -730,7 +722,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     // rename nodes and give new keys
     var newNodes = {};
     for (var oldNodeKey in frame.nodes) {
-       // if (!frame.nodes.hasOwnProperty(oldNodeKey)) continue;
         var node = frame.nodes[oldNodeKey];
         var newNodeKey = newFrameKey + node.name;
         node.objectId = newObjectKey;
@@ -767,11 +758,15 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             globalDOMCache['iframe' + newNodeKey].setAttribute("data-node-key", newNodeKey);
 
             globalDOMCache['iframe' + newNodeKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + newNodeKey + '")');
-            globalDOMCache['iframe' + newNodeKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
+            try {
+                let reloadSrc = globalDOMCache['iframe' + newNodeKey].src;
+                globalDOMCache['iframe' + newNodeKey].src = reloadSrc; // this is intentionally the same src
+            } catch (e) {
+                console.warn('error reloading node src for ' + newNodeKey);
+            }
         } else {
             node.loaded = false;
         }
-        
     }
 
     frame.nodes = newNodes;
@@ -800,10 +795,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         globalDOMCache['iframe' + newFrameKey] = globalDOMCache['iframe' + oldFrameKey];
         globalDOMCache[newFrameKey] = globalDOMCache[oldFrameKey];
         globalDOMCache['svg' + newFrameKey] = globalDOMCache['svg' + oldFrameKey];
-        delete globalDOMCache['object' + oldFrameKey];
-        delete globalDOMCache['iframe' + oldFrameKey];
-        delete globalDOMCache[oldFrameKey];
-        delete globalDOMCache['svg' + oldFrameKey];
 
         // re-assign ids to DOM elements
         globalDOMCache['object' + newFrameKey].id = 'object' + newFrameKey;
@@ -819,14 +810,11 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
         globalDOMCache['iframe' + newFrameKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + null + '")');
         
-        var oldSrc = globalDOMCache['iframe' + newFrameKey].src;
         var newSrc = realityEditor.network.availableFrames.getFrameSrc(newObjectKey, frame.src);
-        if (oldSrc === newSrc) {
-            globalDOMCache['iframe' + newFrameKey].contentWindow.location.reload(); // TODO: is there a way to update realityInterface of the frame without reloading?
-        } else {
-            // load frame from new server IP if it moves to another object's server
-            console.log('iframe src: (' + oldSrc + ' -> ' + newSrc + ')');
-            globalDOMCache['iframe' + newFrameKey].src = realityEditor.network.availableFrames.getFrameSrc(newObjectKey, frame.src);
+        try {
+            globalDOMCache['iframe' + newFrameKey].src = newSrc;
+        } catch (e) {
+            console.warn('error reloading frame src for ' + newFrameKey);
         }
     } else {
         frame.loaded = false;
@@ -880,7 +868,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
                     // add link to new frame (locally and on the server -- post link to server adds it locally too)
                     realityEditor.network.postLinkToServer(link, linkKey);
                 }
-
             }
         });
         
@@ -1037,12 +1024,11 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
  *      includes matrix.temp, matrix.begin, matrix.end, matrix.r, matrix.r2, and matrix.r3
  * @param finalMatrix - stores the resulting final CSS3D matrix for the vehicle @todo this doesnt seem to be used anywhere?
  * @param utilities - reference to realityEditor.gui.ar.utilities
- * @param nodeCalculations - reference to realityEditor.gui.ar.draw.nodeCalculations
  * @param _cout - reference to debug logging function (unused)
  * @return {boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
  * @todo finish documenting function
  */
-realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, nodeCalculations, _cout) {
+realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
 
     // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
@@ -1563,66 +1549,39 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 
             //}
 
-
+            // Animate and show the 4 colored quadrants of the logic node if we touch near it
             if (activeType === "logic" && objectKey !== "pocket") {
+                let currentTouchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                let logicNodeBounds = globalDOMCache[activeKey].getClientRects()[0];
+                let estimatedCenter = {
+                    x: logicNodeBounds.left + logicNodeBounds.width/2,
+                    y: logicNodeBounds.top + logicNodeBounds.height/2
+                };
 
-                if (globalStates.pointerPosition[0] > -1 && globalProgram.objectA) {
+                let distanceVector = {
+                    x: currentTouchPosition.x - estimatedCenter.x,
+                    y: currentTouchPosition.y - estimatedCenter.y
+                };
+                let distanceMoved = Math.sqrt(distanceVector.x * distanceVector.x + distanceVector.y * distanceVector.y);
 
-                    var size = (activeVehicle.screenLinearZ * 40) * (activeVehicle.scale);
-                    var x = activeVehicle.screenX;
-                    var y = activeVehicle.screenY;
+                // if we're too close to its center, dont expand. instead, let us hold to drag it around.
+                let minExpansionThreshold = 30;
+                let maxExpansionThreshold = 30 + logicNodeBounds.width;
+                let isTouchCloseButNotTooClose = distanceMoved > minExpansionThreshold && distanceMoved < maxExpansionThreshold;
 
+                // don't show the logic ports if you are dragging anything around, or if this logic is locked
+                if (globalProgram.objectA && isTouchCloseButNotTooClose && !activeVehicle.lockPassword && !editingVehicle) {
                     globalCanvas.hasContent = true;
 
-                    nodeCalculations.rectPoints = [
-                        [x - (-1 * size), y - (-0.42 * size)],
-                        [x - (-1 * size), y - (0.42 * size)],
-                        [x - (-0.42 * size), y - (size)],
-                        [x - (0.42 * size), y - (size)],
-                        [x - (size), y - (0.42 * size)],
-                        [x - (size), y - (-0.42 * size)],
-                        [x - (0.42 * size), y - (-1 * size)],
-                        [x - (-0.42 * size), y - (-1 * size)]
-                    ];
-                    /* var context = globalCanvas.context;
-                     context.setLineDash([]);
-                     // context.restore();
-                     context.beginPath();
-                     context.moveTo(nodeCalculations.rectPoints[0][0], nodeCalculations.rectPoints[0][1]);
-                     context.lineTo(nodeCalculations.rectPoints[1][0], nodeCalculations.rectPoints[1][1]);
-                     context.lineTo(nodeCalculations.rectPoints[2][0], nodeCalculations.rectPoints[2][1]);
-                     context.lineTo(nodeCalculations.rectPoints[3][0], nodeCalculations.rectPoints[3][1]);
-                     context.lineTo(nodeCalculations.rectPoints[4][0], nodeCalculations.rectPoints[4][1]);
-                     context.lineTo(nodeCalculations.rectPoints[5][0], nodeCalculations.rectPoints[5][1]);
-                     context.lineTo(nodeCalculations.rectPoints[6][0], nodeCalculations.rectPoints[6][1]);
-                     context.lineTo(nodeCalculations.rectPoints[7][0], nodeCalculations.rectPoints[7][1]);
-                     context.closePath();
-
-                     if (nodeCalculations.farFrontElement === activeKey) {
-                     context.strokeStyle = "#ff0000";
-                     } else {
-                     context.strokeStyle = "#f0f0f0";
-                     }*/
-                    
-                    
-                    // don't show the logic ports if you are dragging anything around, or if this logic is locked
-                    if (utilities.insidePoly(globalStates.pointerPosition, nodeCalculations.rectPoints) && !activeVehicle.lockPassword && !editingVehicle) {
-                        if (activeVehicle.animationScale === 0 && !globalStates.editingMode)
-                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
-                        activeVehicle.animationScale = 1;
+                    if (activeVehicle.animationScale === 0 && !globalStates.editingMode) {
+                        globalDOMCache["logic" + activeKey].className = "mainEditing scaleIn";
                     }
-                    else {
-                        if (activeVehicle.animationScale === 1)
-                            globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
-                        activeVehicle.animationScale = 0;
-                    }
-
-                    // context.stroke();
+                    activeVehicle.animationScale = 1;
                 } else {
                     if (activeVehicle.animationScale === 1) {
                         globalDOMCache["logic" + activeKey].className = "mainEditing scaleOut";
-                        activeVehicle.animationScale = 0;
                     }
+                    activeVehicle.animationScale = 0;
                 }
             }
             
@@ -1645,9 +1604,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         }
     
     } else if (activeType === "ui" && activeVehicle.visualization === "screen") {
-        // if (shouldRenderFramesInNodeView) {
         this.hideScreenFrame(activeKey);
-        // }
     }
     
     if (shouldRenderFramesInNodeView && !globalStates.renderFrameGhostsInNodeViewEnabled) {
@@ -1672,8 +1629,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
         }
     }
     
-    return true;
-
+    return true; // true to continueUpdate... returning false would skip the rest of the rendering for this frame/node
 };
 
 /**
@@ -1893,16 +1849,18 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
-        // Several steps to translate it exactly to be centered on the touch when it gets added
-        // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
-        let defaultScreenCenter = realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
-        let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        // 2. calculate the correct touch offset as if you placed it at the default position (doesn't actually set x and y)
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
-        // 3. actually move it to the touch position (sets x and y), now that it knows the relative offset from the default
-        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
-        // 4. add a flag so that we can finalize its position the next time drawTransformed is called
-        pocketContainer.vehicle.isPendingInitialPlacement = true;
+        if (realityEditor.getObject(pocketContainer.vehicle.objectId).isWorldObject) {
+            // Several steps to translate it exactly to be centered on the touch when it gets added
+            // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
+            let defaultScreenCenter = realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
+            let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+            // 2. calculate the correct touch offset as if you placed it at the default position (doesn't actually set x and y)
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
+            // 3. actually move it to the touch position (sets x and y), now that it knows the relative offset from the default
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
+            // 4. add a flag so that we can finalize its position the next time drawTransformed is called
+            pocketContainer.vehicle.isPendingInitialPlacement = true;
+        }
 
         var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
@@ -2644,13 +2602,12 @@ realityEditor.gui.ar.draw.removeFrameMatrixFromFinalMatrix = function(activeVehi
  * @param matrix
  * @param finalMatrix
  * @param utilities
- * @param {any} _nodeCalculations - unused
  * @param {function} _cout - unused
  * @return {*}
  * @todo: simplify this! there shouldnt be a need for so much duplicate code. might even be a simple matrix multiplication to take
  * @todo:       mostRecentFinalMatrix * translation^-1    which would give the same result as this function for the use cases I'm doing
  */
-realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _nodeCalculations, _cout) {
+realityEditor.gui.ar.draw.recomputeTransformMatrix = function (visibleObjects, objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
     
     // return activeVehicle.mostRecentFinalMatrix;
     

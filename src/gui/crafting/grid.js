@@ -49,13 +49,6 @@
 
 createNameSpace("realityEditor.gui.crafting.grid");
 
-/**
- * The Pocket button. Turns into a larger version or a delete button when
- * the user is creating memories or when the user is dragging saved
- * memories/programming blocks, respectively.
- *
- * Functions expected to be invoked globally are prefixed with "pocket"
- */
 (function(exports) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -114,7 +114,12 @@ createNameSpace("realityEditor.gui.buttons");
      * @type {Object.<string, string>}
      */
     var buttonStates = {};
-    
+
+    /**
+     * Getter returns whether the button is 'up', 'down', or 'entered'
+     * @param {string} buttonName
+     * @return {string}
+     */
     var getButtonState = function(buttonName) {
         return buttonStates[buttonName];
     };

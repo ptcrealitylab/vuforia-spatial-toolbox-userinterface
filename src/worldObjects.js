@@ -57,7 +57,7 @@ createNameSpace("realityEditor.worldObjects");
                 }
                 
                 // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
-                if (object.objectId === getLocalWorldId()) {
+                if (object.objectId === getLocalWorldId() || !realityEditor.gui.settings.toggleStates.requireWorldLocalization) {
                     initializeWorldObject(object);
                 }
             }
@@ -100,7 +100,12 @@ createNameSpace("realityEditor.worldObjects");
                 handleServerDiscovered(message.worldObject.ip)
             }
         });
-        
+
+        // Add a toggle for how world objects behave. If turned off, all detected world objects will be immediately visible.
+        // If turned on, detected world objects will be invisible until their image target has been scanned at least once.
+        realityEditor.gui.settings.addToggle('Require World Localization', 'world objects unavailable until target scanned', 'requireWorldLocalization',  '../../../svg/localization.svg', false, function(newValue) {
+            console.log('requireWorldLocalization was set to ' + newValue);
+        });
     }
 
     /**
@@ -159,7 +164,7 @@ createNameSpace("realityEditor.worldObjects");
             realityEditor.network.onNewObjectAdded(object.objectId);
         }
 
-        if (object.objectId === localWorldObjectKey) {
+        if (object.objectId === localWorldObjectKey || !realityEditor.gui.settings.toggleStates.requireWorldLocalization) {
             realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
         }
         console.log('successfully initialized world object: ' + object.objectId);

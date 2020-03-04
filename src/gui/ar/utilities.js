@@ -850,7 +850,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
                 positionData.scale = 1;
                 var draw = realityEditor.gui.ar.draw;
                 var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
-                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, cout);
                 // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
                 // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
                 // console.log(updatedCssMatrix, newUpdatedCssMatrix);
