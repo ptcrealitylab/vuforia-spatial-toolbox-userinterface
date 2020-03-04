@@ -792,7 +792,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     this.changeDatacraftingDisplayForMenu('none');
     
     var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
-    var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.name + "/index.html";
+    var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.type + "/index.html";
     var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     var blockSettingsContainer = document.createElement('iframe');
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');

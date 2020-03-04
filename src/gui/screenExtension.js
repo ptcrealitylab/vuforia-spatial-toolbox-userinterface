@@ -359,7 +359,6 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             // console.log(distanceThreshold);
 
             // is frame within screen bounds... don't push it in if you aren't located on top of a screen
-            var object = realityEditor.getObject(this.screenObject.object);
 
             var resultMatrix = [];
             if (screenFrame.ar.matrix.length === 16) {
@@ -372,8 +371,10 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             // var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
             // var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
 
-            var isWithinWidth = Math.abs(projectedPoint[0]) < (object.targetSize.width * 1000)/2;
-            var isWithinHeight = Math.abs(projectedPoint[1]) < (object.targetSize.height * 1000)/2;
+            let targetSize = realityEditor.gui.utilities.getTargetSize(this.screenObject.object);
+
+            var isWithinWidth = Math.abs(projectedPoint[0]) < (targetSize.width * 1000)/2;
+            var isWithinHeight = Math.abs(projectedPoint[1]) < (targetSize.height * 1000)/2;
             
             var didPushIn = false;
 
