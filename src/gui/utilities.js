@@ -199,3 +199,34 @@ realityEditor.gui.utilities.convertPointFromPageToNode = function(elt, pageX, pa
         y: nodeY
     }
 };
+
+/**
+ * Tries to retrieve the target size from the given object.
+ * Defaults to 0.3 if any errors or can't find it, to avoid divide-by-zero errors
+ * @param {string} objectKey
+ * @return {{width: number, height: number}}
+ */
+realityEditor.gui.utilities.getTargetSize = function(objectKey) {
+    let targetSize = {
+        width: 0.3,
+        height: 0.3
+    };
+
+    let object = realityEditor.getObject(objectKey);
+    if (object) {
+        if (typeof object.targetSize !== 'undefined') {
+            if (typeof object.targetSize.width !== 'undefined') {
+                targetSize.width = object.targetSize.width;
+            } else if (typeof object.targetSize.x !== 'undefined') {
+                targetSize.width = object.targetSize.x;
+            }
+            if (typeof object.targetSize.height !== 'undefined') {
+                targetSize.height = object.targetSize.height;
+            } else if (typeof object.targetSize.y !== 'undefined') {
+                targetSize.height = object.targetSize.y;
+            }
+        }
+    }
+
+    return targetSize;
+};
