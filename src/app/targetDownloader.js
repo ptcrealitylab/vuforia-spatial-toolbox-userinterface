@@ -124,7 +124,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             console.log('failed to download XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.FAILED;
-            // TODO: error handle... kick out this object or provide some feedback
         }
     }
 
@@ -150,7 +149,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             console.log('failed to download DAT file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.FAILED;
-            // TODO: error handle... kick out this object or provide some feedback
 
             console.log('try to download JPG file instead');
 
@@ -195,7 +193,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     /**
      * Callback for realityEditor.app.addNewMarker
      * Updates the download state for that object to mark it as fully initialized in the AR engine
-     * @todo: include some form of error handling / retry if success=false
+     * Marks the object as SUCCEEDED only if its target is added, so we can later provide visual feedback
      * @param {boolean} success
      * @param {string} fileName
      */

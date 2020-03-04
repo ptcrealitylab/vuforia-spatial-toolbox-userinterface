@@ -23,7 +23,11 @@ createNameSpace("realityEditor.device.keyboardEvents");
             }, 100); 
         });
     }
-    
+
+    /**
+     * Corrects any buggy scrolling that may have occurred when typing in a frame
+     * @deprecated - shouldn't be needed if frames use the new openKeyboard/closeKeyboard API
+     */
     function resetScroll() {
         if (window.scrollX !== 0 || window.scrollY !== 0) {
             window.scrollTo(0,0);

@@ -314,7 +314,10 @@ createNameSpace("realityEditor.gui.dropdown");
             this.collapse();
         }
     };
-    
+
+    /**
+     * De-selects whichever element is selected, if any
+     */
     Dropdown.prototype.resetSelection = function() {
         if (this.selected && this.selected.element) {
             // remove style from previously selected dom

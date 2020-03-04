@@ -174,7 +174,6 @@ realityEditor.app.setResume = function() {
  */
 realityEditor.app.tap = function() {
     this.appFunctionCall('tap', null, null);
-
 };
 
 /**
