@@ -253,6 +253,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     var SHOW_IP_LABELS = true;
     var SIMPLE_IP_LABELS = true;
 
+    // stores the JSON.stringified realityElements rendered the last time the pocket was built
+    let previousPocketChecksum = null;
+
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
@@ -519,7 +522,19 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             palette.appendChild(container);
         }
-        
+
+        // save this so we can avoid re-building the pocket the next time, if nothing changes between now and then
+        previousPocketChecksum = getChecksumForPocketElements(realityElements);
+    }
+
+    /**
+     * Converts the full structure of all the frames/icons/etc that the pocket is built of into a literal
+     * that can be compared later to see if it has changed. Currently just using JSON.stringify.
+     * @param {Array.<{actualIP: string, proxyIP: string, properties: {name: string, ...}, metadata: {enabled: boolean, ...}, icon: Image}>} pocketElements
+     * @return {string}
+     */
+    function getChecksumForPocketElements(pocketElements) {
+        return JSON.stringify(pocketElements);
     }
 
     /**
@@ -1065,8 +1080,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         isPocketTapped = false;
         realityEditor.gui.memory.nodeMemories.resetEventHandlers();
         
-        console.warn('pocket show', document.querySelector('.palette'));
-        
         var allPocketElements = Array.from(document.querySelector('.palette').children);
         allPocketElements.forEach(function(pocketElement) {
             pocketElement.classList.remove('highlightedPocketElement');
@@ -1087,14 +1100,23 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             });
         }
-        // remove all old icons
-        Array.from(document.querySelector('.palette').children).forEach(function(child) {
-            child.parentElement.removeChild(child);
-        });
-        // create all new icons
-        createPocketUIPaletteForAggregateFrames();
-        
-        createPocketScrollbar();
+
+        // don't render the pocket again if nothing has changed
+        let currentPocketChecksum = getChecksumForPocketElements(getRealityElements());
+        let shouldRebuildPocketUI = currentPocketChecksum !== previousPocketChecksum;
+
+        if (shouldRebuildPocketUI) {
+            // remove all old icons
+            Array.from(document.querySelector('.palette').children).forEach(function(child) {
+                child.parentElement.removeChild(child);
+            });
+            // create all new icons
+            createPocketUIPaletteForAggregateFrames();
+
+            createPocketScrollbar();
+        } else {
+            console.log('pocket hasnt changed... dont re-render it');
+        }
 
         finishStylingPocket();
     }
