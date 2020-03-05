@@ -351,6 +351,7 @@ realityEditor.device.resetEditingState = function() {
     
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
+    pocketFrame.vehicle = null;
 };
 
 /**
@@ -993,6 +994,20 @@ realityEditor.device.onDocumentPointerUp = function(event) {
             realityEditor.gui.ar.lines.deleteLines(globalStates.drawDotLineX, globalStates.drawDotLineY, event.clientX, event.clientY);
             globalStates.drawDotLine = false;
         }
+    }
+
+    // if over the trash icon we need to delete it, but this is handled in onElementTouchUp
+    //  which wont naturally trigger if we just added the element from the pocket
+    if (pocketFrame.vehicle) {
+        var syntheticPointerEvent = {
+            pageX: event.pageX || 0,
+            pageY: event.pageY || 0,
+            type: 'pointerup',
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            currentTarget: globalDOMCache[pocketFrame.vehicle.uuid]
+        };
+        realityEditor.device.onElementTouchUp(syntheticPointerEvent);
     }
 
     // clear state that may have been set during a touchdown or touchmove event
