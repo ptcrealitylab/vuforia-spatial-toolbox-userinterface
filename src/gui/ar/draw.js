@@ -1459,6 +1459,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                             if (iframe && iframe.dataset.src) {
                                 iframe.src = iframe.dataset.src;
                                 delete iframe.dataset.src;
+                                // can detect in onElementLoad whether loaded for first time or reloaded
+                                iframe.dataset.isReloading = true;
                             }
                         }
                     }
