@@ -99,6 +99,23 @@ realityEditor.network.addObjectDiscoveredCallback = function(callback) {
 };
 
 /**
+ * @type {CallbackHandler}
+ */
+realityEditor.network.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('network/index');
+
+/**
+ * Adds a callback function that will be invoked when the specified function is called
+ * @param {string} functionName
+ * @param {function} callback
+ */
+realityEditor.network.registerCallback = function(functionName, callback) {
+    if (!this.callbackHandler) {
+        this.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('network/index');
+    }
+    this.callbackHandler.registerCallback(functionName, callback);
+};
+
+/**
  * Converts an object with version < 1.7.0 to the new format:
  * Objects now have frames, which can have nodes, but in the old version there were no frames
  *  and the nodes just existed on the object itself
@@ -2526,6 +2543,11 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     if (realityEditor.device.editingState.frame === frameKey && realityEditor.device.editingState.node === nodeKey) {
         document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
         globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
+    }
+
+    if (globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading) {
+        delete globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading;
+        realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     }
 
     this.cout("on_load");
