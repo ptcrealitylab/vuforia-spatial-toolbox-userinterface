@@ -33,6 +33,7 @@ createNameSpace("realityEditor.envelopeManager");
 
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.network.registerCallback('elementReloaded', onElementReloaded);
         // realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected); // this is handled already in network/frameContentAPI the same way as it is for any exclusiveFullScreen frame, so no need to listen/handle the event here
 
         realityEditor.gui.pocket.addElementHighlightFilter(function(pocketFrameNames) {
@@ -266,6 +267,25 @@ createNameSpace("realityEditor.envelopeManager");
                 });
             }
         }
+    }
+
+    /**
+     * Programmatically re-close an envelope if its child frame reloads, otherwise the child can get stranded as visible
+     * @param {{objectKey: string, frameKey: string, nodeKey: string}} params
+     */
+    function onElementReloaded(params) {
+        if (params.nodeKey) { return; } // for now only frames can be in envelopes
+
+        // see if it belongs to a closed envelope
+        Object.values(knownEnvelopes).filter(function(envelope) {
+            return !envelope.isOpen;
+        }).filter(function(envelope) {
+            return envelope.containedFrameIds.includes(params.frameKey);
+        }).forEach(function(envelope) {
+            // should belong to at most 1 envelope at a time.. but we'll do for each just in case that changes
+            closeEnvelope(envelope.frame);
+            console.log('closing parent envelope: ' + envelope.frame);
+        });
     }
 
     /**
