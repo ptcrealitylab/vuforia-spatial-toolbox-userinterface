@@ -375,12 +375,9 @@ createNameSpace("realityEditor.gui.menus");
                     if (!globalStates.editingMode) {
                         realityEditor.device.setEditingMode(true);
                         switchToMenu("editing", null, null);
-                        realityEditor.app.saveDeveloperState(true);
-
                     } else {
                         realityEditor.device.setEditingMode(false);
                         switchToMenu("main", null, null);
-                        realityEditor.app.saveDeveloperState(false);
                     }
 
                 }, 200);
