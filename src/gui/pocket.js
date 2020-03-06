@@ -260,7 +260,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
-        
+
+        const pocketScrollContainer = document.getElementById('pocketScrollContainer');
+        pocketScrollContainer.addEventListener('touchmove', function(event) {
+            // Prevent normal scrolling since we have the scroll touch bar
+            event.preventDefault();
+        });
+
         addMenuButtonActions();
 
         pocket.addEventListener('pointerup', function() {
