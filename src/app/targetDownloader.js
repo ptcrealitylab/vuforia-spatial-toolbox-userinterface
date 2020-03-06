@@ -137,10 +137,21 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
         var object = realityEditor.getObject(objectID);
 
+        const jpgAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.jpg';
+
         if (success) {
 
             console.log('successfully downloaded DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
+
+            // Because isAlreadyDownloaded doesn't differentiate between a
+            // successful DAT download and a successful JPG download, mark the
+            // potential cached JPG as successful too
+            if (isAlreadyDownloaded(objectID)) {
+                console.log('skip downloading JPG for', objectID);
+                onTargetJPGDownloaded(true, jpgAddress);
+                return;
+            }
 
             var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
@@ -152,15 +163,14 @@ createNameSpace("realityEditor.app.targetDownloader");
 
             console.log('try to download JPG file instead');
 
-            var jpgAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.jpg';
-
             if (isAlreadyDownloaded(objectID)) {
-                console.log('skip downloading JPG for ' + objectID);
+                console.log('skip downloading JPG for', objectID);
                 onTargetJPGDownloaded(true, jpgAddress); // just directly trigger onTargetXMLDownloaded
                 return;
             }
 
-            // try to download DAT
+            // try to download JPG, marking XML as incomplete until we get the
+            // extra information from the JPG
             realityEditor.app.downloadFile(jpgAddress, moduleName + '.onTargetJPGDownloaded');
             targetDownloadStates[objectID].XML = DownloadState.STARTED;
         }
