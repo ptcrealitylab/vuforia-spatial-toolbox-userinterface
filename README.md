@@ -1,6 +1,6 @@
 # vuforia-spatial-toolbox-userinterface
 
-The vuforia-spatial-toolbox-userinterface contains the large majority of the code for rendering the user interface and for client user interactions. It is a web application that is built to run in a WebView in the [vuforia-spatial-toolbox-ios](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-ios) application, which provides device-specific APIs such as AR tracking. All content rendering, user interactions, and most communication with [Vuforia Spatial Edge Servers](https://github.com/ptcrealitylab/vuforia-spatial-edge-server) takes place in the userinterface repository.
+The vuforia-spatial-toolbox-userinterface contains the large majority of the code for rendering the user interface and for client-user interactions. It is a web application that is built to run in a WebView in the [vuforia-spatial-toolbox-ios](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-ios) application, which provides device-specific APIs such as AR tracking. All content rendering, user interactions, and most communication with [Vuforia Spatial Edge Servers](https://github.com/ptcrealitylab/vuforia-spatial-edge-server) takes place in the userinterface repository.
 
 ## Installation
 
