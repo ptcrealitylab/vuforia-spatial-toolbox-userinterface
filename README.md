@@ -9,8 +9,8 @@ The vuforia-spatial-toolbox-userinterface contains the large majority of the cod
 
 ## Installation
 
-Installation instructions for iOS can be found in the [Vuforia Toolbox iOS](https://github.com
-/ptcrealitylab/vuforia-spatial-toolbox-ios) repository.
+Installation instructions for iOS can be found in the [Vuforia Toolbox iOS](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-ios)
+ repository.
 
 Installation instructions for Android, when available, will be found in the [Vuforia Toolbox
  Android](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-android) repository.
@@ -23,8 +23,8 @@ If you just want to compile and run the app as it is currently implemented, that
 If, however, you want to understand and contribute to the codebase, the following sections will
  give you an overview of what you need to know.
 
-Beyond this README, please refer to our [Spatial Toolbox Forum](https://forum.spatialtoolbox
-.vuforia.com) for additional questions and answers.
+Beyond this README, please refer to our [Spatial Toolbox Forum](https://forum.spatialtoolbox.vuforia.com)
+ for additional questions and answers.
 
 ### Navigating the Code
 
@@ -60,8 +60,8 @@ It contains the following tree:
     - scripts related to REST or websocket-based networking with Vuforia Spatial Edge Servers
     , and for messages passed between different iframes
 
-Outside of the `src` directory, we also have directories for additional resources including: `css
-` styles, `svg` and `png` images (for menu and button icons, etc), `nodes` (the HTML for how to
+Outside of the `src` directory, we also have directories for additional resources including: `css`
+styles, `svg` and `png` images (for menu and button icons, etc), `nodes` (the HTML for how to
  render each node type), and `thirdPartyCode`, which contains additional libraries used by the
   userinterface.
 
@@ -91,14 +91,14 @@ To understand how the userinterface works, you should start with a handful of co
   `Tools`), and `Nodes`. Refer to additional documentation about the role each of these entities
    plays in the sytem.
 - Public functions from each module are defined and addressable using scoped namespaces e.g. the
- `src/addons/index.js` function named `onInit` can be accessed at `realityEditor.addons.onInit
- `, and and the  `src/app/targetDownloader.js` function named `onTargetFileDownloaded` can be
+ `src/addons/index.js` function named `onInit` can be accessed at `realityEditor.addons.onInit`,
+ and and the  `src/app/targetDownloader.js` function named `onTargetFileDownloaded` can be
   accessed with `realityEditor.app.targetDownloader.onTargetFileDownloaded`.
 - The `src/gui/ar/draw.js` file contains the main `update` function, which iterates over the
  current set of `visibleObjects` detected by Vuforia every frame, and renders all AR content
   relative to the objects. The `visibleObjects` will always contain the set of objects Vuforia
-   can see right now, as a set of their unique IDs (referred to as a `uuid` or `objectKey
-   `) mapped to a 4x4 transformation matrix (its model matrix relative to some origin point in
+   can see right now, as a set of their unique IDs (referred to as a `uuid` or `objectKey`)
+   mapped to a 4x4 transformation matrix (its model matrix relative to some origin point in
     the world).
 - We store each 4x4 transformation matrix in a length-16 array of floats, in column-major order
 . We have some custom implementations in `src/gui/ar/utilities.js` for efficiently manipulating
@@ -110,8 +110,8 @@ To understand how the userinterface works, you should start with a handful of co
  application, including initializing any core or addon modules, building out the menus and 2D UI
   elements, and asking the native app to initialize the Vuforia Engine.
 - The app auto-discovers objects hosted by edge-servers in the local WiFi network by listening to
- UDP messages in the network using the `receivedUDPMessage` function in `src/app/callbacks.js
- `. When edge-servers periodically broadcast heartbeat messages for each object they contain, the
+ UDP messages in the network using the `receivedUDPMessage` function in `src/app/callbacks.js`.
+ When edge-servers periodically broadcast heartbeat messages for each object they contain, the
   userinterface will call `realityEditor.network.addHeartbeatObject` to download all data from
    that object, add its target data to the Vuforia tracker, and add it to the global `objects`.
 - The `src/device/index.js` file contains most of the touch event listeners for interacting with
@@ -119,13 +119,13 @@ To understand how the userinterface works, you should start with a handful of co
 - Some extendable components that you might expect to reside in the userinterface repository are
  actually provided to the userinterface by connected edge servers. There is always at least one
   connected edge server, because the app itself spins up a local edge server when it launches
-  . That server contains, by default, the [core-addon](https://github.com/ptcrealitylab/vuforia
-  -spatial-core-addon), which has the set of frames (tools) that will load into the pocket, and
+  . That server contains, by default, the [core-addon](https://github.com/ptcrealitylab/vuforia-spatial-core-addon)
+  , which has the set of frames (tools) that will load into the pocket, and
    the sets of nodes and logic blocks you can use for programming.
 - The pocket, defined in `src/gui/pocket.js` will load the set of frames (tools) from all the
  connected edge servers (including the aforementioned local edge server). Thus, to create a new
-  type of frame (tool) that you can drop into the world, you should create an addon with a `tools
-  ` directory rather than edit the userinterface.
+  type of frame (tool) that you can drop into the world, you should create an addon with a `tools`
+  directory rather than edit the userinterface.
 
 ### Notable DOM Elements
 
