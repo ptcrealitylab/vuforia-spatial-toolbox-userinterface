@@ -93,6 +93,21 @@ If you are debugging the userinterface and need to inspect the HTML Elements, yo
 - `<div id="overlay">` is a small circular icon that gives visual feedback when you touch the screen.
 - `<iframe id="settingsIframe">` contains the settings menu and all of its sub-menus.
 
+### Object Data Model
+
+You should learn several key vocabulary terms, which correspond to classes or other data structures that compose the system's data model.
+
+1. Object
+2. Frame (Tool)
+3. Node
+4. Link
+5. Data
+6. Logic Node
+7. Block
+8. Block Link
+
+In-depth explanations of each of these concepts are available in the [Data Model documentation](https://github.com/ptcrealitylab/vuforia-spatial-documentation/blob/master/understandSystem/dataModel.md).
+
 ### Code Documentation
 
 Most code is documented using JSDoc comments, which can be compiled into human-readable pages of documentation using [documentation.js](http://documentation.js.org).
