@@ -1402,7 +1402,6 @@ Logic Interface CSS
 .corners {
     position: absolute;
     width: 100px; /* for demo purposes */
-    padding: 10px;
 }
 
 .cornersTop, .cornersBottom {

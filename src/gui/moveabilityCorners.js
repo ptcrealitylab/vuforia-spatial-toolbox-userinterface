@@ -11,10 +11,16 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
                 return;
             }
         }
-        var rect = div.getClientRects()[0];
-        var divWidth = rect ? rect.width : 100;
-        var divHeight = rect ? rect.height : 100;
-        var corners = createMoveabilityCorners(div.id+'corners', divWidth + sizeAdjustment, divHeight + sizeAdjustment, padding, borderWidth, extraLength);
+        let divWidth = 100;
+        let divHeight = 100;
+        try {
+            const divStyle = window.getComputedStyle(div);
+            divWidth = parseFloat(divStyle.width);
+            divHeight = parseFloat(divStyle.height);
+        } catch (e) {
+            console.warn('Unable to retrieve div style', e);
+        }
+        let corners = createMoveabilityCorners(div.id+'corners', divWidth + sizeAdjustment, divHeight + sizeAdjustment, padding, borderWidth, extraLength);
         corners.style.left = (-padding) + 'px';
         corners.style.top = (-padding) + 'px';
 
@@ -25,14 +31,14 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
         div.appendChild(corners);
         return corners;
     }
-    
+
     function removeCornersFromDiv(div) {
         var cornersFound = div.querySelector('.corners');
         if (cornersFound) {
             div.removeChild(cornersFound);
         }
     }
-    
+
     function wrapDivInOutline(div, padding, exclusive, additionalStyling, sizeAdjustment, borderWidth) {
         if (!div) { return; }
         if (!sizeAdjustment) { sizeAdjustment = 0; }
@@ -91,8 +97,8 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
                 corner.style.height = (parseInt(corner.style.height) || 0) + extraLength + 'px';
             });
         }
-        corners.style.width = (width-20+padding*2) + 'px';
-        corners.style.height = (height-20+padding*2) + 'px';
+        corners.style.width = (width + padding * 2) + 'px';
+        corners.style.height = (height + padding * 2) + 'px';
         return corners;
     }
 
