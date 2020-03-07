@@ -2,6 +2,12 @@
 
 The vuforia-spatial-toolbox-userinterface contains the large majority of the code for rendering the user interface and for client-user interactions. It is a web application that is built to run in a WebView in the [vuforia-spatial-toolbox-ios](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-ios) application, which provides device-specific APIs such as AR tracking. All content rendering, user interactions, and most communication with [Vuforia Spatial Edge Servers](https://github.com/ptcrealitylab/vuforia-spatial-edge-server) takes place in the userinterface repository.
 
+## Read First
+
+The Vuforia Spatial Toolbox and Vuforia Spatial Edge Server make up a shared research platform for exploring spatial computing as a community. This research platform is not an out of the box production-ready enterprise solution. Please read the [MPL 2.0 license](LICENSE) before use.
+
+Join the conversations in our [discourse forum](https://forum.spatialtoolbox.vuforia.com) if you have questions, ideas want to collaborate or just say hi.
+
 ## Installation
 
 Installation instructions for iOS can be found in the [Vuforia Toolbox iOS](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-ios) repository.
