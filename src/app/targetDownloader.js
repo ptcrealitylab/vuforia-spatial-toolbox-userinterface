@@ -149,8 +149,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             // potential cached JPG as successful too
             if (isAlreadyDownloaded(objectID)) {
                 console.log('skip downloading JPG for', objectID);
-                onTargetJPGDownloaded(true, jpgAddress);
-                return;
+                targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
             }
 
             var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
