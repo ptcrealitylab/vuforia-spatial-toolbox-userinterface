@@ -1436,7 +1436,32 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     var right = frameScreenPosition.lowerRight.x;
                     var top = frameScreenPosition.upperLeft.y;
                     var bottom = frameScreenPosition.lowerRight.y;
-                    var isNowOutsideViewport = bottom < 0 || top > globalStates.width || right < 0 || left > globalStates.height;
+
+                    // usually (in powerSave mode) remove if frame is slightly outside screen bounds
+                    let viewportBounds = {
+                        left: 0,
+                        right: globalStates.height,
+                        top: 0,
+                        bottom: globalStates.width
+                    };
+
+                    // if not in powerSave mode, be more generous about keeping frames loaded
+                    // adds a buffer on each side of the viewport equal to the size of the screen
+                    if (!realityEditor.gui.settings.toggleStates.powerSaveMode) {
+                        let additionalBuffer = {
+                            x: globalStates.height,
+                            y: globalStates.width
+                        };
+                        viewportBounds.left -= additionalBuffer.x;
+                        viewportBounds.right += additionalBuffer.x;
+                        viewportBounds.top -= additionalBuffer.y;
+                        viewportBounds.bottom += additionalBuffer.y;
+                    }
+
+                    // we compare e.g. bottom to viewport.top because we want to see if
+                    // it is *fully* outside the viewport on that side
+                    var isNowOutsideViewport = bottom < viewportBounds.top || top > viewportBounds.bottom ||
+                                               right < viewportBounds.left || left > viewportBounds.right;
 
                     if (isNowOutsideViewport) {
                         if (!activeVehicle.isOutsideViewport || !activeElt.classList.contains('outsideOfViewport')) {
