@@ -78,7 +78,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
 
         // don't download again if already stored the same checksum version - effectively a way to cache the targets
-        if (isAlreadyDownloaded(objectID)) {
+        if (isAlreadyDownloaded(objectID, 'XML')) {
             console.log('skip downloading XML for ' + objectID);
             onTargetXMLDownloaded(true, xmlAddress); // just directly trigger onTargetXMLDownloaded
             return;
@@ -111,7 +111,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             var datAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.dat';
 
             // don't download again if already stored the same checksum version
-            if (isAlreadyDownloaded(objectID)) {
+            if (isAlreadyDownloaded(objectID, 'DAT')) {
                 console.log('skip downloading DAT for ' + objectID);
                 onTargetDATDownloaded(true, datAddress); // just directly trigger onTargetXMLDownloaded
                 return;
@@ -144,14 +144,6 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully downloaded DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
 
-            // Because isAlreadyDownloaded doesn't differentiate between a
-            // successful DAT download and a successful JPG download, mark the
-            // potential cached JPG as successful too
-            if (isAlreadyDownloaded(objectID)) {
-                console.log('skip downloading JPG for', objectID);
-                targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
-            }
-
             var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
@@ -162,7 +154,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
             console.log('try to download JPG file instead');
 
-            if (isAlreadyDownloaded(objectID)) {
+            if (isAlreadyDownloaded(objectID, 'JPG')) {
                 console.log('skip downloading JPG for', objectID);
                 onTargetJPGDownloaded(true, jpgAddress); // just directly trigger onTargetXMLDownloaded
                 return;
@@ -211,7 +203,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         if (success) {
             console.log('successfully added marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.SUCCEEDED;
-            saveChecksum(objectID); // only caches the target images after we confirm that they work
+            saveDownloadInfo(objectID); // only caches the target images after we confirm that they work
         } else {
             console.log('failed to add marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
@@ -228,14 +220,39 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
 
     /**
-     * Checks if the new checksum from the object's heartbeat matches one possibly stored from a previous time the app was run
+     * Checks if the provided file was previously downloaded for this object
+     * If found, it verifies that the checksum from the previous download matches
+     * the current object checksum, so it doesn't cache stale data
      * @param {string} objectID
-     * @return {string|boolean}
+     * @param {string} fileType - (XML, DAT, or JPG)
+     * @return {boolean}
      */
-    function isAlreadyDownloaded(objectID) {
-        var storedChecksum = getStoredChecksum(objectID);
+    function isAlreadyDownloaded(objectID, fileType) {
+        var previousDownloadInfo = getPreviousDownloadInfo(objectID);
+        let xmlPreviouslyDownloaded = false;
+        let jpgPreviouslyDownloaded = false;
+        let datPreviouslyDownloaded = false;
+        let previousChecksum = null;
+        if (previousDownloadInfo) {
+            try {
+                let parsed = JSON.parse(previousDownloadInfo);
+                xmlPreviouslyDownloaded = parsed.xmlDownloaded === DownloadState.SUCCEEDED;
+                jpgPreviouslyDownloaded = parsed.jpgDownloaded === DownloadState.SUCCEEDED;
+                datPreviouslyDownloaded = parsed.datDownloaded === DownloadState.SUCCEEDED;
+                previousChecksum = parsed.checksum;
+            } catch (e) {
+                console.warn('error parsing previousDownloadInfo');
+            }
+        }
+        if (fileType === 'XML' && !xmlPreviouslyDownloaded) {
+            return false;
+        } else if (fileType === 'DAT' && !datPreviouslyDownloaded) {
+            return false;
+        } else if (fileType === 'JPG' && !jpgPreviouslyDownloaded) {
+            return false;
+        }
         var newChecksum = temporaryChecksumMap[objectID];
-        return storedChecksum && (storedChecksum === newChecksum);
+        return previousChecksum && (previousChecksum === newChecksum);
     }
 
     /**
@@ -243,17 +260,23 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {string} objectID
      * @return {string} - the checksum at time of downloading. null if never downloaded before.
      */
-    function getStoredChecksum(objectID) {
-        return window.localStorage.getItem('realityEditor.objectChecksums.'+objectID);
+    function getPreviousDownloadInfo(objectID) {
+        return window.localStorage.getItem('realityEditor.previousDownloadInfo.'+objectID);
     }
 
     /**
      * On successful downloading of all necessary targets, store the new checksum into persistent localStorage.
      * @param {string} objectID
      */
-    function saveChecksum(objectID) {
+    function saveDownloadInfo(objectID) {
         if (temporaryChecksumMap[objectID]) {
-            window.localStorage.setItem('realityEditor.objectChecksums.'+objectID, temporaryChecksumMap[objectID]);
+            window.localStorage.setItem('realityEditor.previousDownloadInfo.'+objectID, JSON.stringify({
+                checksum: temporaryChecksumMap[objectID],
+                xmlDownloaded: targetDownloadStates[objectID].XML,
+                datDownloaded: targetDownloadStates[objectID].DAT,
+                jpgDownloaded: targetDownloadStates[objectID].JPG,
+                markerSuccessful: targetDownloadStates[objectID].MARKER_ADDED
+            }));
         }
     }
     
