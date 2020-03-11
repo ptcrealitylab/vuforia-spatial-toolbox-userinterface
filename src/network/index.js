@@ -1771,9 +1771,11 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 
         for (let objectKey in realityEditor.objects) {
             var thisObject = realityEditor.getObject(objectKey);
+
             var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(objectKey) || // either target downloaded
                                 objectKey === realityEditor.worldObjects.getLocalWorldId() || // or it's the _WORLD_local
-                                (thisObject.isWorldObject && !realityEditor.gui.settings.toggleStates.requireWorldLocalization); // or its a world and we dont require targets
+                                (thisObject.isWorldObject && !realityEditor.gui.settings.toggleStates.requireWorldLocalization); // or it's a world and we dont require targets
+
             thisObjects[objectKey] = {
                 name: thisObject.name,
                 ip: thisObject.ip,

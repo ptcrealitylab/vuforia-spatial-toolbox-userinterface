@@ -274,8 +274,7 @@ createNameSpace("realityEditor.app.targetDownloader");
                 checksum: temporaryChecksumMap[objectID],
                 xmlDownloaded: targetDownloadStates[objectID].XML,
                 datDownloaded: targetDownloadStates[objectID].DAT,
-                jpgDownloaded: targetDownloadStates[objectID].JPG,
-                markerSuccessful: targetDownloadStates[objectID].MARKER_ADDED
+                jpgDownloaded: targetDownloadStates[objectID].JPG
             }));
         }
     }
