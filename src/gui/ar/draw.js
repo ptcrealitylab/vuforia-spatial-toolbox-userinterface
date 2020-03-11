@@ -1428,40 +1428,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 }
 
                 if (this.isLowFrequencyUpdateFrame) {
-                    // TODO: this was slowing things down A LOT - figure out a better way to ignore frames outside of viewport
-                    // check if rough estimation of screen position overlaps with viewport. if not, don't render the frame
-                    var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
-
-                    var left = frameScreenPosition.upperLeft.x;
-                    var right = frameScreenPosition.lowerRight.x;
-                    var top = frameScreenPosition.upperLeft.y;
-                    var bottom = frameScreenPosition.lowerRight.y;
-
-                    // usually (in powerSave mode) remove if frame is slightly outside screen bounds
-                    let viewportBounds = {
-                        left: 0,
-                        right: globalStates.height,
-                        top: 0,
-                        bottom: globalStates.width
-                    };
-
-                    // if not in powerSave mode, be more generous about keeping frames loaded
-                    // adds a buffer on each side of the viewport equal to the size of the screen
-                    if (!realityEditor.gui.settings.toggleStates.powerSaveMode) {
-                        let additionalBuffer = {
-                            x: globalStates.height,
-                            y: globalStates.width
-                        };
-                        viewportBounds.left -= additionalBuffer.x;
-                        viewportBounds.right += additionalBuffer.x;
-                        viewportBounds.top -= additionalBuffer.y;
-                        viewportBounds.bottom += additionalBuffer.y;
-                    }
-
-                    // we compare e.g. bottom to viewport.top because we want to see if
-                    // it is *fully* outside the viewport on that side
-                    var isNowOutsideViewport = bottom < viewportBounds.top || top > viewportBounds.bottom ||
-                                               right < viewportBounds.left || left > viewportBounds.right;
+                    var isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
 
                     if (isNowOutsideViewport) {
                         if (!activeVehicle.isOutsideViewport || !activeElt.classList.contains('outsideOfViewport')) {
