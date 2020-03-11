@@ -568,4 +568,47 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
     // reset frame.begin
     frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
 
-}
+};
+
+/**
+ * Given the final transform3d matrix representing where a frame or node is rendered on the screen,
+ * determines if it is sufficiently outside the viewport to be able to entirely unloaded from view.
+ * The size of the viewport can depend on various factors, e.g. powerSave mode.
+ * @param {Array.<number>} finalMatrix - the CSS transform3d matrix
+ * @param {number} vehicleHalfWidth - get from frameSizeX (scale is already stored separately in the matrix)
+ * @param {number} vehicleHalfHeight - get from frameSizeY
+ * @return {boolean}
+ */
+realityEditor.gui.ar.positioning.canUnload = function(finalMatrix, vehicleHalfWidth, vehicleHalfHeight) {
+    // get a rough estimation of screen position so we can see if it overlaps with viewport
+    var frameScreenPosition = this.getVehicleBoundingBoxFast(finalMatrix, vehicleHalfWidth, vehicleHalfHeight);
+    var left = frameScreenPosition.upperLeft.x;
+    var right = frameScreenPosition.lowerRight.x;
+    var top = frameScreenPosition.upperLeft.y;
+    var bottom = frameScreenPosition.lowerRight.y;
+
+    // usually (in powerSave mode) remove if frame is slightly outside screen bounds
+    let viewportBounds = {
+        left: 0,
+        right: globalStates.height,
+        top: 0,
+        bottom: globalStates.width
+    };
+
+    // if not in powerSave mode, be more generous about keeping frames loaded
+    // adds a buffer on each side of the viewport equal to the size of the screen
+    if (!realityEditor.gui.settings.toggleStates.powerSaveMode) {
+        let additionalBuffer = {
+            x: globalStates.height,
+            y: globalStates.width
+        };
+        viewportBounds.left -= additionalBuffer.x;
+        viewportBounds.right += additionalBuffer.x;
+        viewportBounds.top -= additionalBuffer.y;
+        viewportBounds.bottom += additionalBuffer.y;
+    }
+
+    // if it is fully beyond any edge of the viewport, it can be unloaded
+    return bottom < viewportBounds.top || top > viewportBounds.bottom ||
+        right < viewportBounds.left || left > viewportBounds.right;
+};
