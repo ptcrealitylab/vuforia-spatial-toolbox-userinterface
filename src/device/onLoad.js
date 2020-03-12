@@ -162,6 +162,7 @@ realityEditor.device.onload = function () {
 
     }).moveToDevelopMenu();
 
+    // Add a debug toggle to the develop menu that forces the targetDownloader to re-download each time instead of using the cache
     realityEditor.gui.settings.addToggle('Reset Target Cache', 'clear cache of downloaded target data', 'resetTargetCache',  '../../../svg/object.svg', false, function(newValue) {
         if (newValue) {
             realityEditor.app.targetDownloader.resetTargetDownloadCache();
