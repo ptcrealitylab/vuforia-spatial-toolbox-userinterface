@@ -39,6 +39,32 @@ createNameSpace("realityEditor.app.targetDownloader");
     var temporaryHeartbeatMap = {};
 
     /**
+     * We will attempt to download up to this many times if it keeps failing
+     * @type {number}
+     */
+    const MAXIMUM_RETRY_ATTEMPTS = 10;
+
+    /**
+     * Wait this much time between each failed re-download attempt
+     * @type {number}
+     */
+    const MIN_MILLISECONDS_BETWEEN_ATTEMPTS = 10000;
+
+    /**
+     * Keeps track of how many download attempts we've tried for each objectId
+     * Also stores the checksum that last failed, so we can reset number of attempts if checksum changes
+     * And stores timestamp of last download attempt so we can wait enough time in between
+     *{Object.<string, {attemptsLeft: number, previousChecksum: string, previousTimestamp: number}>}
+     */
+    let retryMap = {};
+
+    /**
+     * Flag to keep track of whether we've scheduled a re-download ping, so we don't spam
+     * @type {boolean}
+     */
+    let isPingPending = false;
+
+    /**
      * @type DownloadState
      * enum defining whether a particular download has started, failed, or succeeded
      */
@@ -60,6 +86,11 @@ createNameSpace("realityEditor.app.targetDownloader");
      * zone: the name of the zone this object is in, so we can ignore objects outside this editor's zone if we have previously specified one
      */
     function downloadAvailableTargetFiles(objectHeartbeat) {
+        if (!shouldStartDownloadingFiles(objectHeartbeat)) {
+            onDownloadFailed(objectID);
+            return;
+        }
+
         var objectID = objectHeartbeat.id;
         var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
         temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
@@ -67,6 +98,25 @@ createNameSpace("realityEditor.app.targetDownloader");
         var newChecksum = objectHeartbeat.tcs;
         if (newChecksum === 'null') { newChecksum = null; }
         temporaryChecksumMap[objectHeartbeat.id] = newChecksum;
+
+        // store info about this download attempt
+        if (typeof retryMap[objectHeartbeat.id] === 'undefined' ||
+            newChecksum !== retryMap[objectHeartbeat.id].previousChecksum) {
+            retryMap[objectHeartbeat.id] = {
+                previousChecksum: newChecksum,
+                attemptsLeft: MAXIMUM_RETRY_ATTEMPTS
+            };
+        } else {
+            // count down the number of re-download attempts
+            retryMap[objectHeartbeat.id].attemptsLeft -= 1;
+            console.log(objectName + ' has ' + retryMap[objectID].attemptsLeft + ' redownload attempts left');
+        }
+        retryMap[objectHeartbeat.id].previousTimestamp = Date.now();
+
+        // mark all downloads as not started
+        // first we will download the XML
+        // then we will download DAT, but resort to JPG if no DAT available
+        // lastly we will try to add the downloaded data to Vuforia
 
         targetDownloadStates[objectID] = {
             XML: DownloadState.NOT_STARTED,
@@ -77,7 +127,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
 
-        // don't download again if already stored the same checksum version - effectively a way to cache the targets
+        // don't download XML again if already stored the same checksum version - effectively a way to cache the targets
         if (isAlreadyDownloaded(objectID, 'XML')) {
             console.log('skip downloading XML for ' + objectID);
             onTargetXMLDownloaded(true, xmlAddress); // just directly trigger onTargetXMLDownloaded
@@ -87,6 +137,36 @@ createNameSpace("realityEditor.app.targetDownloader");
         // downloads the vuforia target.xml file if it doesn't have it yet
         realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetXMLDownloaded');
         targetDownloadStates[objectID].XML = DownloadState.STARTED;
+    }
+
+    /**
+     * Prevents re-downloading if this object already in the middle of a download or was too recently attempted
+     * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} objectHeartbeat
+     * @return {boolean}
+     */
+    function shouldStartDownloadingFiles(objectHeartbeat) {
+        var objectID = objectHeartbeat.id;
+
+        // first ensure that this object isn't already mid-download
+        if (typeof targetDownloadStates[objectID] !== 'undefined') {
+            if (targetDownloadStates[objectID].XML === DownloadState.STARTED ||
+                targetDownloadStates[objectID].DAT === DownloadState.STARTED ||
+                targetDownloadStates[objectID].JPG === DownloadState.STARTED ||
+                targetDownloadStates[objectID].MARKER_ADDED === DownloadState.STARTED) {
+                return false;
+            }
+        }
+
+        // next ensure enough time has passed since the failed attempt
+        if (typeof retryMap[objectID] !== 'undefined' &&
+            objectHeartbeat.tcs === retryMap[objectID].previousChecksum) {
+            let timeSinceLastAttempt = Date.now() - retryMap[objectID].previousTimestamp;
+            if (timeSinceLastAttempt < MIN_MILLISECONDS_BETWEEN_ATTEMPTS) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -119,11 +199,12 @@ createNameSpace("realityEditor.app.targetDownloader");
 
             // try to download DAT
             realityEditor.app.downloadFile(datAddress, moduleName + '.onTargetDATDownloaded');
-            targetDownloadStates[objectID].XML = DownloadState.STARTED;
+            targetDownloadStates[objectID].DAT = DownloadState.STARTED;
 
         } else {
             console.log('failed to download XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.FAILED;
+            onDownloadFailed(objectID);
         }
     }
 
@@ -150,7 +231,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         } else {
             console.log('failed to download DAT file: ' + fileName);
-            targetDownloadStates[objectID].XML = DownloadState.FAILED;
+            targetDownloadStates[objectID].DAT = DownloadState.FAILED;
 
             console.log('try to download JPG file instead');
 
@@ -163,7 +244,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             // try to download JPG, marking XML as incomplete until we get the
             // extra information from the JPG
             realityEditor.app.downloadFile(jpgAddress, moduleName + '.onTargetJPGDownloaded');
-            targetDownloadStates[objectID].XML = DownloadState.STARTED;
+            targetDownloadStates[objectID].JPG = DownloadState.STARTED;
         }
     }
 
@@ -186,6 +267,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             console.log('failed to download file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.FAILED;
+            onDownloadFailed(objectID);
         }
     }
 
@@ -207,6 +289,26 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             console.log('failed to add marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
+            onDownloadFailed(objectID);
+        }
+    }
+
+    /**
+     * Respond to a failed download by trying to re-download after a delay
+     * Sends a UDP ping to start object discovery again.
+     * Only schedules one at a time because a single ping has the potential
+     * to re-download every object that still needs a target.
+     * Also clears the cache for that object so it freshly downloads next time
+     */
+    function onDownloadFailed(objectId) {
+        window.localStorage.removeItem('realityEditor.previousDownloadInfo.' + objectId);
+
+        if (!isPingPending) {
+            setTimeout(function () {
+                realityEditor.app.sendUDPMessage({action: 'ping'});
+                isPingPending = false;
+            }, MIN_MILLISECONDS_BETWEEN_ATTEMPTS);
+            isPingPending = true;
         }
     }
 
@@ -216,7 +318,26 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @return {boolean}
      */
     function isObjectTargetInitialized(objectID) {
-        return targetDownloadStates[objectID].MARKER_ADDED === DownloadState.SUCCEEDED;
+        return targetDownloadStates[objectID] && targetDownloadStates[objectID].MARKER_ADDED === DownloadState.SUCCEEDED;
+    }
+
+    /**
+     * True if the marker failed to add given a successful download,
+     * or the XML failed to download, or both the JPG and the DAT failed.
+     * @param {string} objectID
+     * @param {string} beatChecksum
+     * @return {boolean}
+     */
+    function isObjectReadyToRetryDownload(objectID, beatChecksum) {
+        let hasAttemptsLeft = retryMap[objectID].attemptsLeft > 0;
+        let isNewChecksum = beatChecksum && beatChecksum !== retryMap[objectID].previousChecksum;
+        let didMarkerAddFail = targetDownloadStates[objectID].MARKER_ADDED === DownloadState.FAILED;
+        let didXmlFail = targetDownloadStates[objectID].XML === DownloadState.FAILED;
+        let didDatFail = targetDownloadStates[objectID].DAT === DownloadState.FAILED ||
+                         targetDownloadStates[objectID].DAT === DownloadState.NOT_STARTED; // dat isn't guaranteed to start
+        let didJpgFail = targetDownloadStates[objectID].JPG === DownloadState.FAILED ||
+                         targetDownloadStates[objectID].JPG === DownloadState.NOT_STARTED; // jpg isn't guaranteed to start
+        return (hasAttemptsLeft || isNewChecksum) && (didMarkerAddFail || didXmlFail || (didDatFail && didJpgFail));
     }
 
     /**
@@ -277,6 +398,18 @@ createNameSpace("realityEditor.app.targetDownloader");
                 jpgDownloaded: targetDownloadStates[objectID].JPG
             }));
         }
+    }
+
+    /**
+     * Removes all download info from localStorage, so that the app re-downloads
+     * all targets instead of using a cached version
+     */
+    function resetTargetDownloadCache() {
+        Object.keys(window.localStorage).filter(function(key) {
+            return key.includes('realityEditor.previousDownloadInfo');
+        }).forEach(function(key) {
+            window.localStorage.removeItem(key);
+        });
     }
     
     /**
@@ -478,6 +611,8 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.downloadAvailableTargetFiles = downloadAvailableTargetFiles;
     exports.downloadTargetFilesForDiscoveredObject = downloadTargetFilesForDiscoveredObject;
     exports.isObjectTargetInitialized = isObjectTargetInitialized;
+    exports.isObjectReadyToRetryDownload = isObjectReadyToRetryDownload;
+    exports.resetTargetDownloadCache = resetTargetDownloadCache;
     
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;
