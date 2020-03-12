@@ -343,6 +343,16 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
                 }
             });
+        } else {
+            var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(beat.id) || // either target downloaded
+                beat.id === realityEditor.worldObjects.getLocalWorldId() || // or it's the _WORLD_local
+                (objects[beat.id].isWorldObject && !realityEditor.gui.settings.toggleStates.requireWorldLocalization); // or it's a world and we dont require targets
+
+            if (!isInitialized && realityEditor.app.targetDownloader.isObjectReadyToRetryDownload(beat.id, beat.tcs)) {
+                setTimeout(function() {
+                    realityEditor.app.targetDownloader.downloadAvailableTargetFiles(beat);
+                }, 1000);
+            }
         }
     }
 };
