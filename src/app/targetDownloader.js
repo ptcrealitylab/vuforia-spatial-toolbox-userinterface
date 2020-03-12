@@ -331,14 +331,18 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @return {boolean}
      */
     function isObjectReadyToRetryDownload(objectID, beatChecksum) {
+        // if we ran out of attempts for this checksum, don't retry download
         let hasAttemptsLeft = retryMap[objectID].attemptsLeft > 0;
         let isNewChecksum = beatChecksum && beatChecksum !== retryMap[objectID].previousChecksum;
+
+        // if xml or marker adding failed, or (jpg AND dat) failed, don't rery download
         let didMarkerAddFail = targetDownloadStates[objectID].MARKER_ADDED === DownloadState.FAILED;
         let didXmlFail = targetDownloadStates[objectID].XML === DownloadState.FAILED;
         let didDatFail = targetDownloadStates[objectID].DAT === DownloadState.FAILED ||
                          targetDownloadStates[objectID].DAT === DownloadState.NOT_STARTED; // dat isn't guaranteed to start
         let didJpgFail = targetDownloadStates[objectID].JPG === DownloadState.FAILED ||
                          targetDownloadStates[objectID].JPG === DownloadState.NOT_STARTED; // jpg isn't guaranteed to start
+
         return (hasAttemptsLeft || isNewChecksum) && (didMarkerAddFail || didXmlFail || (didDatFail && didJpgFail));
     }
 
@@ -367,6 +371,8 @@ createNameSpace("realityEditor.app.targetDownloader");
                 console.warn('error parsing previousDownloadInfo');
             }
         }
+
+        // check if the specified fileType successfully downloaded to the cache
         if (fileType === 'XML' && !xmlPreviouslyDownloaded) {
             return false;
         } else if (fileType === 'DAT' && !datPreviouslyDownloaded) {
@@ -374,6 +380,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else if (fileType === 'JPG' && !jpgPreviouslyDownloaded) {
             return false;
         }
+
+        // if the file succeeded, also check that the checksum hasn't changed so we don't use stale data
         var newChecksum = temporaryChecksumMap[objectID];
         return previousChecksum && (previousChecksum === newChecksum);
     }
@@ -384,16 +392,17 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @return {string} - the checksum at time of downloading. null if never downloaded before.
      */
     function getPreviousDownloadInfo(objectID) {
-        return window.localStorage.getItem('realityEditor.previousDownloadInfo.'+objectID);
+        return window.localStorage.getItem('realityEditor.previousDownloadInfo.' + objectID);
     }
 
     /**
-     * On successful downloading of all necessary targets, store the new checksum into persistent localStorage.
+     * Store the object's checksum into persistent localStorage.
+     * Also stores the success/fail state of the xml, dat, and jpg downloads individually
      * @param {string} objectID
      */
     function saveDownloadInfo(objectID) {
         if (temporaryChecksumMap[objectID]) {
-            window.localStorage.setItem('realityEditor.previousDownloadInfo.'+objectID, JSON.stringify({
+            window.localStorage.setItem('realityEditor.previousDownloadInfo.' + objectID, JSON.stringify({
                 checksum: temporaryChecksumMap[objectID],
                 xmlDownloaded: targetDownloadStates[objectID].XML,
                 datDownloaded: targetDownloadStates[objectID].DAT,
