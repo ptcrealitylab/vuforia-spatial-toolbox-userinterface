@@ -344,6 +344,8 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 }
             });
         } else {
+            // if we receive a heartbeat of an object that has been created but it still needs targets
+            // try to re-download its target data if possible/necessary
             var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(beat.id) || // either target downloaded
                 beat.id === realityEditor.worldObjects.getLocalWorldId() || // or it's the _WORLD_local
                 (objects[beat.id].isWorldObject && !realityEditor.gui.settings.toggleStates.requireWorldLocalization); // or it's a world and we dont require targets
