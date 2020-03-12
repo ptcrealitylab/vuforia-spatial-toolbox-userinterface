@@ -87,7 +87,7 @@ createNameSpace("realityEditor.app.targetDownloader");
      */
     function downloadAvailableTargetFiles(objectHeartbeat) {
         if (!shouldStartDownloadingFiles(objectHeartbeat)) {
-            onDownloadFailed(objectID);
+            onDownloadFailed(); // reschedule this attempt for later
             return;
         }
 
@@ -109,7 +109,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             // count down the number of re-download attempts
             retryMap[objectHeartbeat.id].attemptsLeft -= 1;
-            console.log(objectName + ' has ' + retryMap[objectID].attemptsLeft + ' redownload attempts left');
+            console.log(objectName + ' has ' + retryMap[objectID].attemptsLeft + ' download attempts left');
         }
         retryMap[objectHeartbeat.id].previousTimestamp = Date.now();
 
@@ -295,13 +295,15 @@ createNameSpace("realityEditor.app.targetDownloader");
 
     /**
      * Respond to a failed download by trying to re-download after a delay
-     * Sends a UDP ping to start object discovery again.
      * Only schedules one at a time because a single ping has the potential
      * to re-download every object that still needs a target.
-     * Also clears the cache for that object so it freshly downloads next time
+     * Also clears the cache for the failed object so it freshly downloads next time
+     * @param {string?} objectId
      */
     function onDownloadFailed(objectId) {
-        window.localStorage.removeItem('realityEditor.previousDownloadInfo.' + objectId);
+        if (objectId) {
+            window.localStorage.removeItem('realityEditor.previousDownloadInfo.' + objectId);
+        }
 
         if (!isPingPending) {
             setTimeout(function () {
