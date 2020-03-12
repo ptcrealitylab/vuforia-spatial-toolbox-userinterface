@@ -112,7 +112,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         for (let key in dynamicSettings) {
 
             var settingInfo = dynamicSettings[key];
-            console.log(key, settingInfo);
 
             // add HTML element for this toggle if it doesn't exist already
             var existingElement = container.querySelector('#' + key);

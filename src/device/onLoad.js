@@ -162,6 +162,12 @@ realityEditor.device.onload = function () {
 
     }).moveToDevelopMenu();
 
+    realityEditor.gui.settings.addToggle('Reset Target Cache', 'clear cache of downloaded target data', 'resetTargetCache',  '../../../svg/object.svg', false, function(newValue) {
+        if (newValue) {
+            realityEditor.app.targetDownloader.resetTargetDownloadCache();
+        }
+    }).moveToDevelopMenu();
+
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
