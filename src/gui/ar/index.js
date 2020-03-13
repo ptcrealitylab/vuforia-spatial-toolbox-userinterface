@@ -228,10 +228,17 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     
     var r = [];
 
+    var shouldMatrixBeFlipped = globalStates.realProjectionMatrix[0] !== globalStates.unflippedRealProjectionMatrix[0];
+
     globalStates.unflippedRealProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
     globalStates.realProjectionMatrix = realityEditor.gui.ar.utilities.copyMatrix(matrix);
     this.utilities.multiplyMatrix(scaleZ, matrix, r);
     this.utilities.multiplyMatrix(r, viewportScaling, globalStates.projectionMatrix);
+
+    // if setProjectionMatrix happens after onOrientationChanged, flip it if necessary
+    if (shouldMatrixBeFlipped) {
+        realityEditor.gui.ar.updateProjectionMatrix(true);
+    }
 };
 
 /**
