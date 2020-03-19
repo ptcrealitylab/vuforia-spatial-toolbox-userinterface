@@ -364,7 +364,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
             forEachGroupedFrame(params.frame, function(groupedFrame) {
                 // groupedFrame.distanceScale = params.frame.distanceScale;
-                groupedFrame.distanceScale = (groupedFrame.screenZ / realityEditor.device.distanceScaling.defaultDistance) / 0.85;
+                groupedFrame.distanceScale = (groupedFrame.screenZ / realityEditor.device.distanceScaling.getDefaultDistance()) / 0.85;
             }, true);
         });
         

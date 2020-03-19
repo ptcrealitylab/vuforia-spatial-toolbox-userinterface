@@ -1165,7 +1165,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                 var distance = activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
                 // multiply the default min distance by the amount this frame distance has been scaled up
-                var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.defaultDistance);
+                var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.getDefaultDistance());
                 var isDistantVehicle = distance > distanceThreshold;
                 var isAlmostDistantVehicle = distance > (distanceThreshold * 0.8);
 
