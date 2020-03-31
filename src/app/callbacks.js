@@ -211,6 +211,31 @@ createNameSpace('realityEditor.app.callbacks');
 
             });
 
+            realityEditor.forEachObject(function(object, objectKey) {
+                if (typeof visibleObjects[objectKey] !== 'undefined') {
+                    // if it's a JPG instant target, correct the size so it matches as if it were DAT
+                    if (object.isJpgTarget) {
+                        // this fixes the scale, but the tracker still thinks it is further away
+                        // than it is, because the z translation is off by a factor
+                        let jpgTargetScaleFactor = 3;
+                        let scaleMatrix = [jpgTargetScaleFactor, 0, 0, 0,
+                            0, jpgTargetScaleFactor, 0, 0,
+                            0, 0, jpgTargetScaleFactor, 0,
+                            0, 0, 0, 1];
+                        let tempScaled = [];
+                        realityEditor.gui.ar.draw.utilities.multiplyMatrix(scaleMatrix, visibleObjects[objectKey], tempScaled);
+                        visibleObjects[objectKey] = tempScaled;
+
+                        // this fixes it if the image target is at the world origin, but drifts
+                        // towards the origin as you move the object further away
+                        // let jpgTargetScaleFactor2 = 0.333;
+                        // visibleObjects[objectKey][12] *= jpgTargetScaleFactor2;
+                        // visibleObjects[objectKey][13] *= jpgTargetScaleFactor2;
+                        // visibleObjects[objectKey][14] *= jpgTargetScaleFactor2;
+                    }
+                }
+            });
+
             realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
         }
 

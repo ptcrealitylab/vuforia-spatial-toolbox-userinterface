@@ -228,6 +228,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            realityEditor.getObject(objectID).isJpgTarget = false;
 
         } else {
             console.log('failed to download DAT file: ' + fileName);
@@ -264,6 +265,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('attempting to add target via JPG of width ' + targetWidth);
             realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            realityEditor.getObject(objectID).isJpgTarget = true;
         } else {
             console.log('failed to download file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.FAILED;
