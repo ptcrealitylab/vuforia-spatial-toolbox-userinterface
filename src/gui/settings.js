@@ -176,6 +176,8 @@ SettingsToggle.prototype.moveToDevelopMenu = function() {
  */
 SettingsToggle.prototype.setValue = function(newValue) {
     realityEditor.gui.settings.toggleStates[this.propertyName] = newValue;
+    let persistentStorageId = 'SETTINGS:' + this.propertyName;
+    window.localStorage.setItem(persistentStorageId, newValue);
     return this;
 };
 

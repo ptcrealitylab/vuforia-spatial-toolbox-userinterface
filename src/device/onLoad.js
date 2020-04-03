@@ -119,6 +119,12 @@ realityEditor.device.onload = function () {
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
     });
+
+    let introToggle = realityEditor.gui.settings.addToggle('Show Intro Page', 'shows tips on app start', 'introTipsState',  '../../../svg/tutorial.svg', false, function(newValue) {
+        if (newValue) {
+            window.localStorage.removeItem('neverAgainShowIntroTips');
+        }
+    });
     
     // add settings toggles for the Develop sub-menu
 
@@ -291,6 +297,27 @@ realityEditor.device.onload = function () {
                 }, 500);
             }
         }
+    }
+
+    // see if we should open the modal
+    let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
+
+    if (shouldShowIntroModal) {
+        let modalBody = "The Vuforia Spatial Toolbox is an open source research platform for exploring Augmented Reality and Spatial Computing.<br>" +
+            "<ul>" +
+            "</li>1. <a class='modalLink' href='https://spatialtoolbox.vuforia.com/docs/use/using-the-app'>Learn how to use the Spatial Toolbox</a><br><br></li>" +
+            "</li>2. <a class='modalLink' href='https://spatialtoolbox.vuforia.com/docs/use/connect-to-the-physical-world/startSystem'> Learn how to connect the Physical World</a><br><br></li>" +
+            "</li>3. <a class='modalLink' href='https://forum.spatialtoolbox.vuforia.com'> Join the conversation with your questions, ideas and collaboration</a><br><br></li>" +
+            "</li>4. <a class='modalLink' href='https://github.com/ptcrealitylab'> Browse the Open Source Code on Github</a><br><br></li>" +
+            "</ul>";
+
+        realityEditor.gui.modal.openClassicModal('Welcome to the Vuforia Spatial Toolbox!', modalBody, 'Close', 'Close and Don\'t Show Again', function() {
+            console.log('Closed');
+        }, function() {
+            console.log('Closed and Don\'t Show Again!');
+            window.localStorage.setItem('neverAgainShowIntroTips', 'true');
+            introToggle.setValue(false);
+        });
     }
 
     this.cout("onload");
