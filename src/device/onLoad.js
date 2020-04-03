@@ -303,12 +303,12 @@ realityEditor.device.onload = function () {
     let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
 
     if (shouldShowIntroModal) {
-        let modalBody = "The Vuforia Spatial Toolbox is an open source research platform for exploring Augmented Reality and Spatial Computing as a community.<br>" +
+        let modalBody = "The Vuforia Spatial Toolbox is an open source research platform for exploring Augmented Reality and Spatial Computing.<br>" +
             "<ul>" +
-            "</li>1. <a href='https://spatialtoolbox.vuforia.com/docs/use/using-the-app'>Learn how to use the Spatial Toolbox</a><br><br></li>" +
-            "</li>2. <a href='https://spatialtoolbox.vuforia.com/docs/use/connect-to-the-physical-world/startSystem'> Learn how to connect the Physical World</a><br><br></li>" +
-            "</li>3. <a href='https://forum.spatialtoolbox.vuforia.com'> Join the conversation with your questions, ideas and collaboration</a><br><br></li>" +
-            "</li>4. <a href='https://github.com/ptcrealitylab/vuforia-spatial-toolbox-ios'> Browse the Open Source Code on Github</a><br><br></li>" +
+            "</li>1. <a class='modalLink' href='https://spatialtoolbox.vuforia.com/docs/use/using-the-app'>Learn how to use the Spatial Toolbox</a><br><br></li>" +
+            "</li>2. <a class='modalLink' href='https://spatialtoolbox.vuforia.com/docs/use/connect-to-the-physical-world/startSystem'> Learn how to connect the Physical World</a><br><br></li>" +
+            "</li>3. <a class='modalLink' href='https://forum.spatialtoolbox.vuforia.com'> Join the conversation with your questions, ideas and collaboration</a><br><br></li>" +
+            "</li>4. <a class='modalLink' href='https://github.com/ptcrealitylab'> Browse the Open Source Code on Github</a><br><br></li>" +
             "</ul>";
 
         realityEditor.gui.modal.openClassicModal('Welcome to the Vuforia Spatial Toolbox!', modalBody, 'Close', 'Close and Don\'t Show Again', function() {
