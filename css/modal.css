@@ -154,67 +154,77 @@
     -webkit-animation-timing-function: ease-out;
 }
 
+/* Styles for 2D modal with grey background, header, description, and buttons */
+/* blurs the background behind the modal */
 #modalFadeClassic {
     position: absolute;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0,0,0,0.5);
-    -webkit-backdrop-filter: blur(2px);
+    background-color: rgba(0,0,0,0.2);
+    -webkit-backdrop-filter: blur(40px);
     -webkit-transform: translateZ(9000px)
 }
+/* container for the modal */
 #modalContainerClassic {
     position: absolute;
-    width: 60vw;
-    height: 60vh;
-    left: 20vw;
-    top: 20vh;
-    /*border: 3px solid cyan;*/
-    text-align: center;
+    width: calc(100vw - 80px);
+    left: 10px;
+    top: 5vh;
+    height: 90vh;
+    text-align: left;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     border-radius: 5px;
-    background-color: rgba(255,255,255,0.8);
-    -webkit-transform: translateZ(9001px)
+    background-color: rgba(255,255,255,0.7);
+    -webkit-transform: translateZ(9001px);
+    color: black;
+}
+#modalHeaderClassic {
+    position: relative;
+    text-align: left;
+    padding-left: 30px;
+    width: 100%;
+    height: 10vh;
+    top: 5vh;
+    font-size: 3vw;
 }
 #modalDescriptionClassic {
-    position: absolute;
-    width: 50vw;
-    height: 30vh;
-    left: 5vw;
+    position: relative;
+    width: 90%;
+    height: 25vh;
+    left: 5%;
     top: 5vh;
-    /*border: 1px solid cyan;*/
     display: table;
+    font-size: 2vw;
 }
-#modalDescriptionClassic p {
-    display: table-cell;
-    vertical-align: middle;
-    text-align: center;
-}
+/* Buttons for the modal */
 .modalButtonClassic {
     position: absolute;
-    /*border: 1px solid cyan;*/
-    width: 15vw;
-    height: 7vh;
-    line-height: 7vh;
+    width: 25vw;
+    height: 5vh;
+    line-height: 5vh;
     padding: 3vh;
-    top: 40vh;
+    bottom: 5vh;
     border-radius: 5px;
-
+    background-color: white;
+    color: rgb(80,80,80);
+    font-size: 2vw;
+    text-align: center;
+}
+.modalButtonClassic:active {
+    background-color: rgba(0, 0, 0, 0.5);
 }
 #modalCancelClassic {
     left: 5vw;
-    background-color: rgba(0, 0, 0, 0.2);
-    color: rgb(80,80,80);
-}
-#modalCancelClassic:active {
-    background-color: rgba(0, 0, 0, 0.5);
 }
 #modalSubmitClassic {
     right: 5vw;
-    background-color: rgba(255, 1, 159, 1);
-    color: white;
+    width: 30vw;
 }
-#modalSubmitClassic:active {
-    background-color: rgba(255, 1, 159, 0.5);
-}
+
+
+a.modalLink:link { color:#494a4b;}
+a.modalLink:visited { color: #494a4b; }
+a.modalLink:hover { color: #686869; }
+a.modalLink:active { color: #757575; }

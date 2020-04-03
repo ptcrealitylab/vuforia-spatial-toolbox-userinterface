@@ -67,17 +67,19 @@ createNameSpace("realityEditor.gui.modal");
 
     /**
      * Creates and presents a modal interface with a description, cancel, and submit button, with a flat/material UI.
+     * @param {string} headerText
      * @param {string} descriptionText
      * @param {string} cancelButtonText
      * @param {string} submitButtonText
      * @param {function} onCancelCallback
      * @param {function} onSubmitCallback
      */
-    function openClassicModal(descriptionText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback) {
+    function openClassicModal(headerText, descriptionText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback) {
         // create the instance of the modal
         // instantiate / modify the DOM elements
         var domElements = createClassicModalDOM();
-        domElements.description.innerHTML = '<p>' + descriptionText + '</p>';
+        domElements.header.innerHTML = headerText;
+        domElements.description.innerHTML = descriptionText;
         domElements.cancelButton.innerHTML = cancelButtonText || 'Cancel';
         domElements.submitButton.innerHTML = submitButtonText || 'Submit';
 
@@ -140,19 +142,22 @@ createNameSpace("realityEditor.gui.modal");
     function createClassicModalDOM() {
         var fade = document.createElement('div'); // darkens/blurs the background
         var container = document.createElement('div'); // panel holding all the modal elements
-        var description = document.createElement('div'); 
+        var header = document.createElement('div');
+        var description = document.createElement('div');
         var cancelButton = document.createElement('div');
         var submitButton = document.createElement('div');
         
         fade.id = 'modalFadeClassic';
         container.id = 'modalContainerClassic';
+        header.id = 'modalHeaderClassic';
         description.id = 'modalDescriptionClassic';
         cancelButton.id = 'modalCancelClassic';
         submitButton.id = 'modalSubmitClassic';
         
         cancelButton.classList.add('modalButtonClassic');
         submitButton.classList.add('modalButtonClassic');
-        
+
+        container.appendChild(header);
         container.appendChild(description);
         container.appendChild(cancelButton);
         container.appendChild(submitButton);
@@ -160,6 +165,7 @@ createNameSpace("realityEditor.gui.modal");
         return {
             fade: fade,
             container: container,
+            header: header,
             description: description,
             cancelButton: cancelButton,
             submitButton: submitButton
