@@ -166,55 +166,82 @@
 }
 #modalContainerClassic {
     position: absolute;
-    width: 60vw;
-    height: 60vh;
-    left: 20vw;
-    top: 20vh;
+    width: 80vw;
+    /*width: 84vw;*/
+    /*left: 8vw;*/
+    /*width: calc(100vw - 134px);*/
+    /*width: calc(100vw - 61px);*/
+    /*width: calc(100vw - 80px);*/
+    /*left: 10px;*/
+    height: 90vh;
+    left: 10vw;
+    top: 5vh;
+    /*top: 0;*/
+    /*height: 100vh;*/
     /*border: 3px solid cyan;*/
     text-align: center;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.8);
-    -webkit-transform: translateZ(9001px)
+    -webkit-transform: translateZ(9001px);
+    color: black;
 }
-#modalDescriptionClassic {
+#modalHeaderClassic {
     position: absolute;
-    width: 50vw;
-    height: 30vh;
+    width: 70vw;
+    height: 10vh;
     left: 5vw;
     top: 5vh;
     /*border: 1px solid cyan;*/
     display: table;
 }
+#modalDescriptionClassic {
+    position: absolute;
+    width: 70vw;
+    height: 25vh;
+    left: 5vw;
+    top: 15vh;
+    /*border: 1px solid cyan;*/
+    display: table;
+    /*font-size: 14px;*/
+    font-size: 2vw;
+}
 #modalDescriptionClassic p {
-    display: table-cell;
-    vertical-align: middle;
+    /*display: table-cell;*/
+    /*vertical-align: middle;*/
+    /*font-size: 16px;*/
     text-align: center;
+}
+#modalDescriptionClassic ul {
+    text-align: left;
 }
 .modalButtonClassic {
     position: absolute;
     /*border: 1px solid cyan;*/
-    width: 15vw;
-    height: 7vh;
-    line-height: 7vh;
+    width: 25vw;
+    height: 5vh;
+    line-height: 5vh;
     padding: 3vh;
-    top: 40vh;
+    bottom: 5vh;
     border-radius: 5px;
-
+    /*background-color: rgba(0, 0, 0, 0.2);*/
+    background-color: white;
+    color: rgb(80,80,80);
+    font-size: 2vw;
 }
 #modalCancelClassic {
     left: 5vw;
-    background-color: rgba(0, 0, 0, 0.2);
-    color: rgb(80,80,80);
 }
 #modalCancelClassic:active {
     background-color: rgba(0, 0, 0, 0.5);
 }
 #modalSubmitClassic {
     right: 5vw;
-    background-color: rgba(255, 1, 159, 1);
-    color: white;
+    /*background-color: rgba(255, 1, 159, 1);*/
+    width: 30vw;
+    /*color: white;*/
 }
 #modalSubmitClassic:active {
-    background-color: rgba(255, 1, 159, 0.5);
+    /*background-color: rgba(255, 1, 159, 0.5);*/
+    background-color: rgba(0, 0, 0, 0.5);
 }
