@@ -229,7 +229,6 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         var keys = this.crafting.eventHelper.getServerObjectLogicKeys(globalStates.currentLogic); // TODO: move to realityEditor.network module
         
         var urlEndpoint = 'http://' + keys.ip + ':' + keys.port + '/availableLogicBlocks';
-        console.log("++++++++++++++++++++++++++",urlEndpoint);
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, req) {
             console.log("did get available blocks", req);
             callback(req);
