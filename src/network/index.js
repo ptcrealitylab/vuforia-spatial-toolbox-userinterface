@@ -351,7 +351,6 @@ realityEditor.network.addHeartbeatObject = function (beat) {
     if (beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
-            
             this.getData(beat.id, null, null, 'http://' + beat.ip + ':' + realityEditor.network.getPort(beat) + '/object/' + beat.id, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey) {
                     // add the object
@@ -762,7 +761,6 @@ realityEditor.network.onAction = function (action) {
         if (thisFrame) {
 
             let urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + realityEditor.network.getPort(objects[thisAction.reloadFrame.object]) + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
-            
             this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
                 console.log('got frame');
                 
@@ -848,7 +846,6 @@ realityEditor.network.onAction = function (action) {
     if (thisAction.loadMemory) {
         var id = thisAction.loadMemory.object;
         let urlEndpoint = 'http://' + thisAction.loadMemory.ip + ':' + realityEditor.network.getPort(objects[id]) + '/object/' + id;
-
         this.getData(id, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
             // this.getData(url, id, function (req, thisKey) {
@@ -1878,7 +1875,6 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
 realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
     var prefix = (serverUrl.indexOf('http://') === -1) ? ('http://') : ('');
     var url = prefix + serverUrl + '/allObjects/';
-    console.log("++++++++++++++++++++++++++",url);
     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
         console.log('got all objects');
         console.log(msg);
@@ -2100,7 +2096,6 @@ realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, fra
  * @param {function<string, string, string, object>} callback
  */
 realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback) {
-    console.log("++++++++++++++++++++++++++",url);
     if (!nodeKey) nodeKey = null;
     if (!frameKey) frameKey = null;
     var _this = this;

@@ -46,7 +46,6 @@ createNameSpace("realityEditor.network.availableFrames");
     function onNewServerDetected(serverIP) {
         console.log('availableFrames discovered server: ' + serverIP);
         var urlEndpoint = 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/availableFrames/';
-        console.log("++++++++++++++++++++++++++",urlEndpoint);
         realityEditor.network.getData(null, null, null, urlEndpoint, function (_nullObj, _nullFrame, _nullNode, response) {
             framesPerServer[serverIP] = response;
             console.log(framesPerServer);
