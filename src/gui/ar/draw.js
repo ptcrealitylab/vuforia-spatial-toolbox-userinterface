@@ -439,7 +439,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 if (globalStates.guiState === 'ui' && !continueUpdate) { return; }
 
                 // if a DOM element hasn't been added for this frame yet, add it and load the correct src into an iframe
-                var frameUrl = "http://" + this.activeObject.ip + ":" + httpPort + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
+                var frameUrl = "http://" + this.activeObject.ip + ":" + realityEditor.network.getPortByIp(this.activeObject.ip) + "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/";
                 this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
                 
                 // if we're not viewing frames (e.g. should be viewing nodes instead), hide the frame
