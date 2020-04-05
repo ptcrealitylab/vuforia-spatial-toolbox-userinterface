@@ -71,7 +71,7 @@ realityEditor.network.getPort = function(object) {
     let serverPort = defaultPort;
     if (object.hasOwnProperty("port")) {
         serverPort = object.port;
-    };
+    }
     return serverPort;
 };
 realityEditor.network.getPortByIp = function(ip) {
@@ -87,8 +87,8 @@ realityEditor.network.getPortByIp = function(ip) {
     if(thisObject !== null) {
         if (thisObject.hasOwnProperty("port")) {
             serverPort = thisObject.port;
-        };
-    };
+        }
+    }
     return serverPort;
 };
 
