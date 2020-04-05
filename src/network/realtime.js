@@ -151,7 +151,6 @@ createNameSpace("realityEditor.network.realtime");
      * connection with, adds a new 'realityServers' socket connection
      */
     function setupServerSockets() {
-        var serverPort = 8080;
         var ipList = [];
         realityEditor.forEachObject(function(object, _objectKey) {
             if (ipList.indexOf(object.ip) === -1) {
