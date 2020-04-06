@@ -300,9 +300,10 @@ realityEditor.device.onload = function () {
     }
 
     // see if we should open the modal
-    let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
+    // let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
 
-    if (shouldShowIntroModal) {
+    // if (shouldShowIntroModal) {
+    if (false) { // eslint-disable-line
         let modalBody = "The Vuforia Spatial Toolbox is an open source research platform for exploring Augmented Reality and Spatial Computing.<br>" +
             "<ul>" +
             "</li>1. <a class='modalLink' href='https://spatialtoolbox.vuforia.com/docs/use/using-the-app'>Learn how to use the Spatial Toolbox</a><br><br></li>" +

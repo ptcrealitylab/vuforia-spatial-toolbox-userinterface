@@ -244,11 +244,11 @@ realityEditor.gui.crafting.getBlockIcon = function(logic, blockName, labelSwitch
     // download icon to cache if not already there
     if (realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName] === undefined) {
         var icon = new Image();
-        icon.src = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + blockName + "/icon.svg";
+        icon.src = 'http://' + keys.ip + ':' + keys.port + '/logicBlock/' + blockName + "/icon.svg";
         realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName] = icon;
 
         var label = new Image();
-        label.src = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + blockName + "/label.svg";
+        label.src = 'http://' + keys.ip + ':' + keys.port + '/logicBlock/' + blockName + "/label.svg";
         realityEditor.gui.crafting.blockIconCache[keys.logicKey][blockName+"label"] = label;
     }
 
@@ -268,7 +268,7 @@ realityEditor.gui.crafting.getSrcForCustomIcon = function(logic) {
     }
     var keys = realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys(logic);
     if (keys) {
-        return 'http://' + keys.ip + ':' + httpPort + '/logicNodeIcon/' + realityEditor.getObject(keys.objectKey).name + "/" + keys.logicKey + ".jpg";
+        return 'http://' + keys.ip + ':' + keys.port + '/logicNodeIcon/' + realityEditor.getObject(keys.objectKey).name + "/" + keys.logicKey + ".jpg";
 
     }
 };

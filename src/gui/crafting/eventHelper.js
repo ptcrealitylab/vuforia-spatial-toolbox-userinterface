@@ -380,6 +380,7 @@ realityEditor.gui.crafting.eventHelper.getServerObjectLogicKeys = function(logic
             if (objects[objectKey].frames[frameKey].nodes.hasOwnProperty(logic.uuid)) {
                 var keys = {
                     ip: objects[objectKey].ip,
+                    port: realityEditor.network.getPort(objects[objectKey]),
                     objectKey: objectKey,
                     frameKey: frameKey,
                     logicKey: logic.uuid
@@ -792,7 +793,7 @@ realityEditor.gui.crafting.eventHelper.openBlockSettings = function(block) {
     this.changeDatacraftingDisplayForMenu('none');
     
     var keys = this.getServerObjectLogicKeys(globalStates.currentLogic, block);
-    var settingsUrl = 'http://' + keys.ip + ':' + httpPort + '/logicBlock/' + block.type + "/index.html";
+    var settingsUrl = 'http://' + keys.ip + ':' + keys.port + '/logicBlock/' + block.type + "/index.html";
     var craftingMenusContainer = document.getElementById('craftingMenusContainer');
     var blockSettingsContainer = document.createElement('iframe');
     blockSettingsContainer.setAttribute('id', 'blockSettingsContainer');
@@ -867,7 +868,8 @@ realityEditor.gui.crafting.eventHelper.openNodeSettings = function() {
             
             version: realityEditor.getObject(keys.objectKey).integerVersion,
             ip: keys.ip,
-            httpPort: httpPort,
+            httpPort: keys.port,
+            port:keys.port,
             
             objectKey: keys.objectKey,
             frameKey: keys.frameKey,

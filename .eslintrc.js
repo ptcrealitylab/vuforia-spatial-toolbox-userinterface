@@ -34,6 +34,7 @@ module.exports = {
         "globalScaleAdjustment": "writable",
         "globalStates": "writable",
         "httpPort": "writable",
+        "defaultHttpPort": "writable",
         "hull": "writable",
         "io": "writable",
         "newNodeScaleFactor": "writable",
