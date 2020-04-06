@@ -68,14 +68,14 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
 };
 
 realityEditor.network.getPort = function(object) {
-    let serverPort = defaultPort;
+    let serverPort = defaultHttpPort;
     if (object.hasOwnProperty("port")) {
         serverPort = object.port;
     }
     return serverPort;
 };
 realityEditor.network.getPortByIp = function(ip) {
-    let serverPort = defaultPort;
+    let serverPort = defaultHttpPort;
     
     let thisObject = null
     for(let key in objects){
