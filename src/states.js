@@ -47,13 +47,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-/* exported httpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalScaleAdjustment, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING */
+/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalScaleAdjustment, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING */
 
 /**********************************************************************************************************************
  ******************************************** constant settings *******************************************************
  **********************************************************************************************************************/
 
 var httpPort = 8080;
+var defaultHttpPort = '8080';
 var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording mode for video recording
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};

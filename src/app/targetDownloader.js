@@ -124,8 +124,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             JPG: DownloadState.NOT_STARTED,
             MARKER_ADDED: DownloadState.NOT_STARTED
         };
-
-        var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
+        var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
 
         // don't download XML again if already stored the same checksum version - effectively a way to cache the targets
         if (isAlreadyDownloaded(objectID, 'XML')) {
@@ -188,7 +187,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully downloaded XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
 
-            var datAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.dat';
+            var datAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.dat';
 
             // don't download again if already stored the same checksum version
             if (isAlreadyDownloaded(objectID, 'DAT')) {
@@ -218,14 +217,14 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
         var object = realityEditor.getObject(objectID);
 
-        const jpgAddress = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.jpg';
+      const jpgAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.jpg';
 
         if (success) {
 
             console.log('successfully downloaded DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
 
-            var xmlFileName = 'http://' + object.ip + ':' + httpPort + '/obj/' + object.name + '/target/target.xml';
+            var xmlFileName = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.xml';
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             realityEditor.getObject(objectID).isJpgTarget = false;
@@ -475,8 +474,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('new checksum is ' + newChecksum);
             if (newChecksum === storedChecksum) {
                 // check that the files still exist in the app's temporary storage
-                var xmlFileName = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
-                var datFileName = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
+   var xmlFileName = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
+                var datFileName = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.dat';
 
                 realityEditor.app.getFilesExist([xmlFileName, datFileName], moduleName + '.doTargetFilesExist');
                 return;
@@ -506,14 +505,14 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         // downloads the vuforia target.xml file if it doesn't have it yet
         if (needsXML) {
-            var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.xml';
+            var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
             realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetFileDownloaded');
             targetDownloadStates[objectID].XML = DownloadState.STARTED;
         }
 
         // downloads the vuforia target.dat file it it doesn't have it yet
         if (needsDAT) {
-            var datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat';
+            var datAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.dat';
             realityEditor.app.downloadFile(datAddress, moduleName + '.onTargetFileDownloaded');
             targetDownloadStates[objectID].DAT = DownloadState.STARTED;
         }

@@ -60,8 +60,7 @@ createNameSpace("realityEditor.network.realtime");
         
         if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
 
-        var serverPort = 8080;
-        var serverAddress = 'http://' + object.ip + ':' + serverPort;
+        var serverAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object);
         var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
         if (socketsIps.indexOf(serverAddress) < 0) {
             // if we haven't already created a socket connection to that IP, create a new one,
@@ -152,7 +151,6 @@ createNameSpace("realityEditor.network.realtime");
      * connection with, adds a new 'realityServers' socket connection
      */
     function setupServerSockets() {
-        var serverPort = 8080;
         var ipList = [];
         realityEditor.forEachObject(function(object, _objectKey) {
             if (ipList.indexOf(object.ip) === -1) {
@@ -160,7 +158,7 @@ createNameSpace("realityEditor.network.realtime");
             }
         });
         ipList.forEach(function(ip) {
-            var serverAddress = 'http://' + ip + ':' + serverPort;
+            var serverAddress = 'http://' + ip + ':' + realityEditor.network.getPortByIp(ip);
             var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
             if (socketsIps.indexOf(serverAddress) < 0) {
                 // if we haven't already created a socket connection to that IP, create a new one,

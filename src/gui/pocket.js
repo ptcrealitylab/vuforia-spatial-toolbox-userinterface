@@ -482,9 +482,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 container.dataset.src = '_PLACEHOLDER_';
             } else {
                 // var thisUrl = 'frames/' + element.name + '.html';
-                var thisUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/' + element.name + '/index.html';
+                var thisUrl = 'http://' + realityElements[i].proxyIP + ':' + realityEditor.network.getPortByIp(realityElements[i].proxyIP) + '/frames/' + element.name + '/index.html';
                 // var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
-                var gifUrl = 'http://' + realityElements[i].proxyIP + ':' + httpPort + '/frames/' + element.name + '/icon.gif';
+                var gifUrl = 'http://' + realityElements[i].proxyIP + ':' + realityEditor.network.getPortByIp(realityElements[i].proxyIP) + '/frames/' + element.name + '/icon.gif';
                 container.dataset.src = thisUrl;
 
                 container.dataset.name = element.name;

@@ -69,6 +69,7 @@ createNameSpace("realityEditor.worldObjects");
         // this is a way to manually detect and create a world object from the local Node.js server running on the phone
         var worldObject = { id: '_WORLD_local',
             ip: "127.0.0.1", //'127.0.0.1',
+            port: 49369,
             vn: 320,
             pr: 'R2',
             tcs: null,
@@ -132,7 +133,7 @@ createNameSpace("realityEditor.worldObjects");
         }
         
         // REST endpoint for for downloading the world object for that server
-        var urlEndpoint = 'http://' + serverIP + ':' + httpPort + '/worldObject/';
+        var urlEndpoint = 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/worldObject/';
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, msg) {
             console.log("did get world object for server: " + serverIP);
 
