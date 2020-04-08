@@ -307,10 +307,11 @@ realityEditor.app.addSpeechListener = function (callBack) {
  * Need to pass in an object id/ip pair so it can upload the resulting video to that object's server
  * @param {string} objectKey
  * @param {string} objectIP
+ * @param {number} objectPort
  */
-realityEditor.app.startVideoRecording = function (objectKey, objectIP) {
+realityEditor.app.startVideoRecording = function (objectKey, objectIP, objectPort) {
     console.log("startVideoRecording");
-    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectIP: objectIP}, null);
+    this.appFunctionCall('startVideoRecording', {objectKey: objectKey, objectIP: objectIP, objectPort: objectPort}, null);
 };
 
 /**
