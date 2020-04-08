@@ -254,8 +254,8 @@ createNameSpace("realityEditor.device.videoRecording");
         // var startingMatrix = privateState.visibleObjects[objectKey] || realityEditor.gui.ar.utilities.newIdentityMatrix();
 
         // realityEditor.app.startVideoRecording(objectKey, startingMatrix); // TODO: don't need to send in starting matrix anymore
-        realityEditor.app.startVideoRecording(objectKey, realityEditor.getObject(objectKey).ip);
-
+        let object = realityEditor.getObject(objectKey);
+        realityEditor.app.startVideoRecording(objectKey, object.ip, realityEditor.network.getPort(object));
     }
 
     /**
