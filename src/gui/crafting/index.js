@@ -173,6 +173,7 @@ realityEditor.gui.crafting.addDomElementForBlock = function(block, grid, isTempB
     var blockContents = document.createElement('div');
     blockContents.setAttribute('class', 'menuBlockContents');
     blockContents.setAttribute("touch-action", "none");
+    blockContents.style.touchAction = 'none';
     blockDomElement.appendChild(blockContents);
 
     var iconImage = null;
@@ -806,6 +807,7 @@ realityEditor.gui.crafting.initializeDataCraftingGrid = function(logic) {
     var datacraftingEventDiv = document.createElement('div');
     datacraftingEventDiv.setAttribute('id', 'datacraftingEventDiv');
     datacraftingEventDiv.setAttribute("touch-action", "none");
+    datacraftingEventDiv.style.touchAction = 'none';
     container.appendChild(datacraftingEventDiv);
     
     var craftingMenusContainer = document.createElement('div');

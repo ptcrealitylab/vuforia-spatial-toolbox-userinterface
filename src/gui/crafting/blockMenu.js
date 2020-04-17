@@ -140,12 +140,14 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             menuTab.setAttribute('class', 'menuTab');
             menuTab.setAttribute('tabIndex', i);
             menuTab.setAttribute('touch-action', 'none');
+            menuTab.style.touchAction = 'none';
             menuTab.addEventListener('pointerdown', onMenuTabSelected.bind(exports));
     
             var menuTabIcon = document.createElement('img');
             menuTabIcon.setAttribute('class', 'menuTabIcon');
             menuTabIcon.setAttribute('src', blockTabImage[i].src);
             menuTabIcon.setAttribute('touch-action', 'none');
+            menuTabIcon.style.touchAction = 'none';
             menuTab.appendChild(menuTabIcon);
     
             logic.guiState.menuTabDivs.push(menuTab);
@@ -190,6 +192,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                     var blockContents = document.createElement('div');
                     blockContents.setAttribute('class', 'menuBlockContents');
                     blockContents.setAttribute("touch-action", "none");
+                    blockContents.style.touchAction = 'none';
                     blockContents.addEventListener('pointerdown', onBlockMenuPointerDown.bind(exports));
                     blockContents.addEventListener('pointerup', onBlockMenuPointerUp.bind(exports));
                     blockContents.addEventListener('pointerleave', onBlockMenuPointerLeave.bind(exports));

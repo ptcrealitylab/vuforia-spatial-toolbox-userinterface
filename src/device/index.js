@@ -375,17 +375,18 @@ realityEditor.device.addDocumentTouchListeners = function() {
     document.addEventListener('pointerdown', this.onDocumentPointerDown.bind(this));
     document.addEventListener('pointermove', this.onDocumentPointerMove.bind(this));
     document.addEventListener('pointerup', this.onDocumentPointerUp.bind(this));
-    
+    document.body.style.touchAction = 'none';
+
     if (realityEditor.device.environment.requiresMouseEvents()) {
         document.addEventListener('mousedown', this.onDocumentMultiTouchStart.bind(this));
         document.addEventListener('mousemove', this.onDocumentMultiTouchMove.bind(this));
         document.addEventListener('mouseup', this.onDocumentMultiTouchEnd.bind(this));
         // document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
     } else {
-        document.addEventListener('touchstart', this.onDocumentMultiTouchStart.bind(this));
-        document.addEventListener('touchmove', this.onDocumentMultiTouchMove.bind(this));
-        document.addEventListener('touchend', this.onDocumentMultiTouchEnd.bind(this));
-        document.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
+        document.body.addEventListener('touchstart', this.onDocumentMultiTouchStart.bind(this));
+        document.body.addEventListener('touchmove', this.onDocumentMultiTouchMove.bind(this));
+        document.body.addEventListener('touchend', this.onDocumentMultiTouchEnd.bind(this));
+        document.body.addEventListener('touchcancel', this.onDocumentMultiTouchEnd.bind(this));
     }
 };
 

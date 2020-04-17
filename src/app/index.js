@@ -440,16 +440,44 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
     var messageBody = {
         functionName: functionName
     };
-    
+
     if (functionArguments) {
         messageBody.arguments = functionArguments;
     }
-    
+
     if (callbackString) {
         messageBody.callback = callbackString;
     }
-    
-    window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+
+    if (window.webkit && window.webkit.messageHandlers) {
+        window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    } else if (navigator.RealityEditorPlugin) {
+        console.log('appFunctionCall', JSON.stringify(messageBody));
+        navigator.RealityEditorPlugin.exec(function() {
+            let args = Array.from(arguments);
+            if (Array.isArray(args[0])) {
+                args = args[0];
+            }
+            let callback = messageBody.callback;
+            if (!callback) {
+                return;
+            }
+            if (callback.includes('__ARG')) {
+                for (let i = 0; i < args.length; i++) {
+                    if (args[i][0] === "[") {
+                        args[i] = JSON.parse(args[i]);
+                    }
+                    callback = callback.replace(new RegExp(`__ARG${i + 1}__`, 'g'), JSON.stringify(args[i]));
+                }
+            }
+            if (functionName !== 'getMatrixStream' && functionName !== 'getUDPMessages' && functionName !== 'getCameraMatrixStream') {
+                console.log('cordova success', functionName, callback);
+            }
+            eval(callback);
+        }, function() {
+            console.error('cordova error', functionName, JSON.stringify(Array.from(arguments)));
+        }, messageBody.functionName, [messageBody.arguments]);
+    }
 };
 
 /**

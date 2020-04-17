@@ -67,6 +67,7 @@ realityEditor.gui.memory.nodeMemories.initMemoryBar = function() {
         memoryContainer.classList.add('memoryContainer');
         memoryContainer.classList.add('nodeMemoryContainer');
         memoryContainer.setAttribute('touch-action', 'none');
+        memoryContainer.style.touchAction = 'none';
         memoryContainer.style.position = 'relative';
 
         var memoryNode = document.createElement('div');

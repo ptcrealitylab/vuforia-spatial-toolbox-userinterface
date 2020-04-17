@@ -108,6 +108,7 @@ MemoryContainer.prototype.set = function(obj) {
     this.backgroundImage = document.createElement('img');
     this.backgroundImage.classList.add('memoryBackgroundImage');
     this.backgroundImage.setAttribute('touch-action', 'none');
+    this.backgroundImage.style.touchAction = 'none';
     
     var that = this;
     this.backgroundImage.onload = function() {
@@ -449,6 +450,7 @@ MemoryContainer.prototype.createImage = function() {
         this.element.appendChild(this.image);
     }
     this.image.setAttribute('touch-action', 'none');
+    this.image.style.touchAction = 'none';
     this.image.classList.add('memory');
     this.image.addEventListener('touchstart', this.onTouchStart);
     this.image.addEventListener('touchmove', this.onTouchMove);
@@ -487,6 +489,7 @@ function initMemoryBar() {
         var memoryContainer = document.createElement('div');
         memoryContainer.classList.add('memoryContainer');
         memoryContainer.setAttribute('touch-action', 'none');
+        memoryContainer.style.touchAction = 'none';
         memoryBar.appendChild(memoryContainer);
 
         var container = new MemoryContainer(memoryContainer);

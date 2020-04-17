@@ -750,7 +750,7 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (typeof thisAction.reloadObject !== "undefined") {
-        console.log("gotdata");
+        // console.log("gotdata");
 
         if (thisAction.reloadObject.object in objects) {
 

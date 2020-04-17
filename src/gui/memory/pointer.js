@@ -92,6 +92,7 @@ function MemoryPointer(link, isObjectA) {
     this.element.classList.add('memoryContainer');
     this.element.classList.add('memoryPointer');
     this.element.setAttribute('touch-action', 'none');
+    this.element.style.touchAction = 'none';
 
     document.querySelector('.memoryPointerContainer').appendChild(this.element);
 

@@ -173,11 +173,11 @@ realityEditor.device.onload = function () {
 
     // adds touch handlers for each of the menu buttons
     realityEditor.gui.menus.init();
-    
+
     // set active buttons and preload some images
     realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
     realityEditor.gui.buttons.initButtons();
-    
+
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -207,13 +207,17 @@ realityEditor.device.onload = function () {
 
     // assign global pointers to frequently used UI elements
     overlayDiv = document.getElementById('overlay');
-    
+
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;
     var menuHeightDifference = globalStates.width - MENU_HEIGHT;
     document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
     CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
-	
+
+    // set active buttons and preload some images
+    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
+	realityEditor.gui.buttons.initButtons();
+
 	// set up the pocket and memory bars
     if (!TEMP_DISABLE_MEMORIES) {
         realityEditor.gui.memory.initMemoryBar();
@@ -226,10 +230,10 @@ realityEditor.device.onload = function () {
 
     // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
-		
+
 	// adds all the event handlers for setting up the editor
     realityEditor.device.addDocumentTouchListeners();
-    
+
     // adjust for iPhoneX size if needed
     realityEditor.device.layout.adjustForScreenSize();
 
@@ -252,13 +256,13 @@ realityEditor.device.onload = function () {
         stats = new Stats();
         document.body.appendChild(stats.dom);
     }
-    
+
     // start TWEEN library for animations
     (function animate(time) {
         realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
         if (globalStates.freezeButtonState && !realityEditor.device.environment.providesOwnUpdateLoop()) {
-            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
@@ -267,7 +271,7 @@ realityEditor.device.onload = function () {
             stats.update();
         }
     })();
-    
+
     // start the AR framework in native iOS
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
 
@@ -291,7 +295,69 @@ realityEditor.device.onload = function () {
         });
     }
 
+    realityEditor.device.initCordova();
+
     this.cout("onload");
+};
+
+realityEditor.device.initCordova = function() {
+
+  var options = {
+    databaseXmlFile: 'PluginTest.xml',
+    targetList: [ 'logo', 'iceland', 'canterbury-grass', 'brick-lane', 'cordovaVuforiaTarget' ],
+    overlayMessage: 'Point your camera at a test image...',
+    vuforiaLicense: 'AXR4Ej//////AAAAAPE7JB2yU0Ftj7q+fCtgyOYbNN+oOTHpHDx3irmM97K+NKsH15AYRO//0Emx7h6EegBcQTV98aRp64/112oqHAZkiV4eQBg+rPI+DWPk2QygpJLCleWRPspX/nKqY9UJOM6ujGMyF3CyGhwU29rkrE5OMIuU27ZE7brguEv+J7Iq4Zqcdur2eRzJl/Y8MogmwxKmciGZ45idEemnwl158jxZwiJY0NnPJeAcFgcB3ME4jwZ9ET1wobSCF3Z/kxft5W91AXQdUPUjRoyFYxuV09QXtXS2Vwe8IjkG51sEgo7hcKeghH0xMx1yMXGQC0+JaEC+dyBEUFafc4cnAnsmWMIqfF+/9bObJuhHQdBw4FJK',
+    autostopOnImageFound: false
+  };
+
+  navigator.VuforiaPlugin.startVuforia(
+    options,
+    function(data) {
+      // To see exactly what `data` can return, see 'Success callback `data` API' within the plugin's documentation.
+
+      if (data.markersFound) {
+        realityEditor.device.processDetectedMarkers(data);
+
+      } else if(data.status.markersFound) {
+        realityEditor.device.processDetectedMarkers(data.result);
+
+      } else if(data.status.imageFound) {
+        alert("Image name: "+ data.result.imageName +"\n Image mat:  " + data.result.modelViewMatrix);
+
+      } else if (data.status.manuallyClosed) {
+        alert("User manually closed Vuforia by pressing back!");
+      }
+    },
+    function(data) {
+      alert("Error: " + data);
+    }
+  );
+
+  window.screen.orientation.lock('landscape-primary');
+
+  if (typeof window.webkitConvertPointFromPageToNode === 'undefined') {
+      realityEditor.device.utilities.polyfillWebkitConvertPointFromPageToNode();
+  }
+}
+
+realityEditor.device.processDetectedMarkers = function(jsonObject) {
+  if (JSON.stringify(globalStates.realProjectionMatrix) === "[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]") {
+    console.log("update projection matrix");
+    var parsedProjectionMatrix = JSON.parse(jsonObject.projectionMatrix);
+    realityEditor.gui.ar.setProjectionMatrix(parsedProjectionMatrix);
+    console.log(globalStates.realProjectionMatrix);
+    console.log(globalStates.projectionMatrix);
+  }
+
+  /*
+  Plugin method for transformations
+  */
+  var objectForTransform = {};
+  jsonObject.markersFound.forEach(function(elt) {
+    objectForTransform[elt.name] = JSON.parse(elt.modelViewMatrix);
+  });
+
+  realityEditor.gui.ar.draw.update(objectForTransform);
 };
 
 window.onload = realityEditor.device.onload;

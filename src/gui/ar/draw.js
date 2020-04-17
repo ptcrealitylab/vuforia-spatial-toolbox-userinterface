@@ -1919,7 +1919,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.visibility = "hidden";
     addOverlay.style.zIndex = "3";
     if (activeVehicle.developer) {
-        addOverlay.style["touch-action"] = "none";
+        addOverlay.setAttribute('touch-action', 'none');
+        addOverlay.style.touchAction = 'none';
     }
     addOverlay.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 

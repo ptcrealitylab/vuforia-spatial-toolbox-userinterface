@@ -1,6 +1,7 @@
 # idea editing tools
 .idea
 .editorconfig
+*.swp
 
 # osx directory files
 .DS_Store
