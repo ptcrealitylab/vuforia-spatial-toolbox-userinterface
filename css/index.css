@@ -1489,3 +1489,21 @@ Logic Interface CSS
     transition: opacity 1s ease-out;
     -webkit-transition: opacity 1s ease-out;
 }
+
+.anchorContainer {
+    /*border: 1px dashed rgba(0, 255, 255, 0.9);*/
+    /*opacity: 0.9;*/
+    /*width: 736px;*/
+    /*height: 414px;*/
+}
+
+.anchorContents {
+    border: 5px dashed rgba(0, 255, 255, 0.9);
+    background-color: rgba(0, 255, 255, 0.5);
+    opacity: 0.75;
+    width: 300px;
+    height: 300px;
+    position: absolute;
+    /*left: calc(736px/2 - 300px/2);*/
+    /*top: calc(414px/2 - 300px/2);*/
+}

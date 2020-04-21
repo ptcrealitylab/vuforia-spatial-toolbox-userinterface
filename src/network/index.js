@@ -355,6 +355,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 if (msg && objectKey) {
                     // add the object
                     objects[objectKey] = msg;
+                    objects[objectKey].ip = beat.ip;
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
                     
@@ -375,8 +376,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
             // if we receive a heartbeat of an object that has been created but it still needs targets
             // try to re-download its target data if possible/necessary
             var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(beat.id) || // either target downloaded
-                beat.id === realityEditor.worldObjects.getLocalWorldId() || // or it's the _WORLD_local
-                (objects[beat.id].isWorldObject && !realityEditor.gui.settings.toggleStates.requireWorldLocalization); // or it's a world and we dont require targets
+                beat.id === realityEditor.worldObjects.getLocalWorldId(); // or it's the _WORLD_local
 
             if (!isInitialized && realityEditor.app.targetDownloader.isObjectReadyToRetryDownload(beat.id, beat.tcs)) {
                 setTimeout(function() {
@@ -1811,8 +1811,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             var thisObject = realityEditor.getObject(objectKey);
 
             var isInitialized = realityEditor.app.targetDownloader.isObjectTargetInitialized(objectKey) || // either target downloaded
-                                objectKey === realityEditor.worldObjects.getLocalWorldId() || // or it's the _WORLD_local
-                                (thisObject.isWorldObject && !realityEditor.gui.settings.toggleStates.requireWorldLocalization); // or it's a world and we dont require targets
+                                objectKey === realityEditor.worldObjects.getLocalWorldId(); // or it's the _WORLD_local
 
             thisObjects[objectKey] = {
                 name: thisObject.name,
