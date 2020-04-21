@@ -83,28 +83,27 @@ createNameSpace("realityEditor.gui.ar.anchors");
                     '0, 0, ' + zIndex + ', 1)';
                 return;
             }
+            
+            // let activeObjectMatrix = [];
 
-            let temp1 = [];
-            let temp2 = [];
-            let temp3 = [];
-            let activeObjectMatrix = [];
-            let finalMatrix = [];
-
-            let worldMatrix = realityEditor.worldObjects.getOrigin(worldId);
+            // let worldMatrix = realityEditor.worldObjects.getOrigin(worldId);
             // utilities.multiplyMatrix(rotateX, worldMatrix, temp1);
             // utilities.multiplyMatrix(temp1, realityEditor.gui.ar.draw.correctedCameraMatrix, temp2);
 
-            utilities.multiplyMatrix(worldMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, temp2);
-            utilities.multiplyMatrix(temp2, globalStates.projectionMatrix, temp3);
+            // utilities.multiplyMatrix(worldMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, temp2);
 
-            let scale = [
-                3, 0, 0, 0,
-                0, 3, 0, 0,
-                0, 0, 3, 0,
-                0, 0, 0, 1
-            ];
+            let worldModelView = getWorldModelViewMatrix();
+            let worldModelViewProjection = [];
+            utilities.multiplyMatrix(worldModelView, globalStates.projectionMatrix, worldModelViewProjection);
+            
+            // let scale = [
+            //     3, 0, 0, 0,
+            //     0, 3, 0, 0,
+            //     0, 0, 3, 0,
+            //     0, 0, 0, 1
+            // ];
 
-            utilities.multiplyMatrix(scale, temp3, activeObjectMatrix);
+            // utilities.multiplyMatrix(transform, worldModelViewProjection, activeObjectMatrix);
             
             // let positionData = {
             //     x: -3.1,
@@ -122,7 +121,13 @@ createNameSpace("realityEditor.gui.ar.anchors");
             //
             // let r = [];
             let anchorObject = realityEditor.getObject(objectKey);
-            utilities.multiplyMatrix(anchorObject.matrix, activeObjectMatrix, finalMatrix);
+            let transformedAnchorMatrix = [];
+            let transform = utilities.newIdentityMatrix();
+            utilities.multiplyMatrix(transform, anchorObject.matrix, transformedAnchorMatrix);
+
+            let finalMatrix = [];
+            utilities.multiplyMatrix(transformedAnchorMatrix, worldModelViewProjection, finalMatrix);
+            
             // utilities.multiplyMatrix(r3, r, finalMatrix);
             //
             // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix);
@@ -293,20 +298,57 @@ createNameSpace("realityEditor.gui.ar.anchors");
             if (fullscreenAnchor === objectKey) {
                 console.log('drop anchor here');
 
-                // compute new object.matrix for this object based on the camera matrix
-                let cameraMatrix = utilities.invertMatrix(realityEditor.gui.ar.draw.correctedCameraMatrix);
+                // let closestWorld = realityEditor.worldObjects.getBestWorldObject();
 
-                let closestWorld = realityEditor.worldObjects.getBestWorldObject();
-                let worldId = closestWorld.uuid;
-                let worldMatrix = realityEditor.worldObjects.getOrigin(worldId);
+                /*     this sorta almost doesnt work     */
+                /* ------------------------------------- */
+                // // compute new object.matrix for this object based on the camera matrix
+                // let cameraMatrix = utilities.invertMatrix(realityEditor.gui.ar.draw.correctedCameraMatrix);
+                //
+                // let closestWorld = realityEditor.worldObjects.getBestWorldObject();
+                // let worldId = closestWorld.uuid;
+                // let worldMatrix = realityEditor.worldObjects.getOrigin(worldId);
+                //
+                // let cameraRelativeToWorld = [];
+                // // utilities.multiplyMatrix(utilities.invertMatrix(worldMatrix), cameraMatrix, cameraRelativeToWorld);
+                // utilities.multiplyMatrix(worldMatrix, cameraMatrix, cameraRelativeToWorld);
+                //
+                // let anchorObject = realityEditor.getObject(objectKey);
+                // // anchorObject.matrix = cameraMatrix;
+                // anchorObject.matrix = cameraRelativeToWorld;
+                /* ------------------------------------- */
+
+                // get the world relative to the camera
+                // invert it - that will give the camera relative to the world
+                // placing the element at that position, when multiplied relative to the world
+                // position, should yield an identity matrix -> what we want
                 
-                let cameraRelativeToWorld = [];
-                // utilities.multiplyMatrix(utilities.invertMatrix(worldMatrix), cameraMatrix, cameraRelativeToWorld);
-                utilities.multiplyMatrix(worldMatrix, cameraMatrix, cameraRelativeToWorld);
+                let worldModelView = getWorldModelViewMatrix();
+                // let worldModelViewProjection = [];
+                // utilities.multiplyMatrix(worldModelView, globalStates.projectionMatrix, worldModelViewProjection);
+
+                let inverseWorld = utilities.invertMatrix(worldModelView);
+                // let inverseWorld = utilities.invertMatrix(worldModelViewProjection);
 
                 let anchorObject = realityEditor.getObject(objectKey);
-                // anchorObject.matrix = cameraMatrix;
-                anchorObject.matrix = cameraRelativeToWorld;
+                anchorObject.matrix = inverseWorld;
+
+                // let anchorMatrix = getMatrixForAnchor(objectKey, closestWorld.uuid);
+                
+                // // compute new object.matrix for this object based on the camera matrix
+                // let cameraMatrix = utilities.invertMatrix(realityEditor.gui.ar.draw.correctedCameraMatrix);
+                //
+                // let closestWorld = realityEditor.worldObjects.getBestWorldObject();
+                // let worldId = closestWorld.uuid;
+                // let worldMatrix = realityEditor.worldObjects.getOrigin(worldId);
+                //
+                // let cameraRelativeToWorld = [];
+                // // utilities.multiplyMatrix(utilities.invertMatrix(worldMatrix), cameraMatrix, cameraRelativeToWorld);
+                // utilities.multiplyMatrix(worldMatrix, cameraMatrix, cameraRelativeToWorld);
+                //
+                // let anchorObject = realityEditor.getObject(objectKey);
+                // // anchorObject.matrix = cameraMatrix;
+                // anchorObject.matrix = cameraRelativeToWorld;
 
                 fullscreenAnchor = null;
             }
@@ -317,6 +359,26 @@ createNameSpace("realityEditor.gui.ar.anchors");
             //     fullscreenAnchor = null;
             // }
         }
+    }
+    
+    function getWorldModelViewMatrix() {
+        let closestWorld = realityEditor.worldObjects.getBestWorldObject();
+        let worldModelMatrix = realityEditor.worldObjects.getOrigin(closestWorld.uuid);
+        let modelViewMatrix = [];
+        utilities.multiplyMatrix(worldModelMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, modelViewMatrix);
+        return modelViewMatrix;
+    }
+    
+    function getMatrixForAnchor(objectKey, worldKey) {
+        let worldMatrix = realityEditor.worldObjects.getOrigin(worldKey);
+        let temp1 = [];
+        utilities.multiplyMatrix(worldMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, temp1);
+        let activeObjectMatrix = [];
+        utilities.multiplyMatrix(temp1, globalStates.projectionMatrix, activeObjectMatrix);
+        let anchorObject = realityEditor.getObject(objectKey);
+        let finalMatrix = [];
+        utilities.multiplyMatrix(anchorObject.matrix, activeObjectMatrix, finalMatrix);
+        return finalMatrix;
     }
 
     exports.initService = initService;
