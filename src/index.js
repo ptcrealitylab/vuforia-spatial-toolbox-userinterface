@@ -62,8 +62,6 @@ var realityEditor = realityEditor || {
         targetDownloader: {}
     },
     device: {
-        desktopAdapter: {},
-        desktopCamera: {},
         distanceScaling: {},
         keyboardEvents: {},
         layout: {},
@@ -75,7 +73,7 @@ var realityEditor = realityEditor || {
     },
     gui: {
         ar: {
-            desktopRenderer: {},
+            anchors: {},
             draw: {},
             frameHistoryRenderer: {},
             grouping: {},
