@@ -87,7 +87,11 @@ createNameSpace("realityEditor.app.targetDownloader");
      */
     function downloadAvailableTargetFiles(objectHeartbeat) {
         if (!shouldStartDownloadingFiles(objectHeartbeat)) {
-            onDownloadFailed(); // reschedule this attempt for later
+            if (realityEditor.gui.ar.anchors.isAnchorHeartbeat(objectHeartbeat)) {
+                realityEditor.gui.ar.anchors.createAnchorFromHeartbeat(objectHeartbeat);
+            } else {
+                onDownloadFailed(); // reschedule this attempt for later
+            }
             return;
         }
 
