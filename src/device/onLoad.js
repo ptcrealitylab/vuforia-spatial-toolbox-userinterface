@@ -91,10 +91,11 @@ realityEditor.device.onload = function () {
         globalStates.renderFrameGhostsInNodeViewEnabled = !newValue;
     });
     
-    realityEditor.gui.settings.addToggle('Extended Tracking', 'further track image and object targets', 'extendedTracking', '../../../svg/extended.svg', false, function(newValue) {
-        console.log('extended tracking was set to ' + newValue);
-        realityEditor.app.enableExtendedTracking(newValue);
-    });
+    // temporarily remove this because it isn't used right now
+    // realityEditor.gui.settings.addToggle('Extended Tracking', 'further track image and object targets', 'extendedTracking', '../../../svg/extended.svg', false, function(newValue) {
+    //     console.log('extended tracking was set to ' + newValue);
+    //     realityEditor.app.enableExtendedTracking(newValue);
+    // });
 
     realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled',  '../../../svg/grouping.svg', false, function(newValue) {
         console.log('grouping was set to ' + newValue);
@@ -109,12 +110,13 @@ realityEditor.device.onload = function () {
         // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
     });
 
-    realityEditor.gui.settings.addToggle('Video Recording', 'show recording button to create video frames', 'videoRecordingEnabled',  '../../../svg/video.svg', false, function(newValue) {
-        console.log('video recording was set to ' + newValue);
-        if (!newValue) {
-            realityEditor.device.videoRecording.stopRecording(); // ensure recording is stopped when mode is turned off
-        }
-    });
+    // temporarily remove this way of recording videos because the corresponding frame isn't defined
+    // realityEditor.gui.settings.addToggle('Video Recording', 'show recording button to create video frames', 'videoRecordingEnabled',  '../../../svg/video.svg', false, function(newValue) {
+    //     console.log('video recording was set to ' + newValue);
+    //     if (!newValue) {
+    //         realityEditor.device.videoRecording.stopRecording(); // ensure recording is stopped when mode is turned off
+    //     }
+    // });
 
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
@@ -123,6 +125,8 @@ realityEditor.device.onload = function () {
     let introToggle = realityEditor.gui.settings.addToggle('Show Intro Page', 'shows tips on app start', 'introTipsState',  '../../../svg/tutorial.svg', false, function(newValue) {
         if (newValue) {
             window.localStorage.removeItem('neverAgainShowIntroTips');
+        } else {
+            window.localStorage.setItem('neverAgainShowIntroTips', 'true');
         }
     });
     
@@ -181,6 +185,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.videoRecording.initService();
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
+    realityEditor.gui.ar.anchors.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.realtime.initService();
     realityEditor.gui.crafting.initService();
@@ -300,10 +305,9 @@ realityEditor.device.onload = function () {
     }
 
     // see if we should open the modal
-    // let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
+    let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
 
-    // if (shouldShowIntroModal) {
-    if (false) { // eslint-disable-line
+    if (shouldShowIntroModal) {
         let modalBody = "The Vuforia Spatial Toolbox is an open source research platform for exploring Augmented Reality and Spatial Computing.<br>" +
             "<ul>" +
             "</li>1. <a class='modalLink' href='https://spatialtoolbox.vuforia.com/docs/use/using-the-app'>Learn how to use the Spatial Toolbox</a><br><br></li>" +
@@ -316,7 +320,6 @@ realityEditor.device.onload = function () {
             console.log('Closed');
         }, function() {
             console.log('Closed and Don\'t Show Again!');
-            window.localStorage.setItem('neverAgainShowIntroTips', 'true');
             introToggle.setValue(false);
         });
     }

@@ -57,7 +57,7 @@ createNameSpace("realityEditor.worldObjects");
                 }
                 
                 // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
-                if (object.objectId === getLocalWorldId() || !realityEditor.gui.settings.toggleStates.requireWorldLocalization) {
+                if (object.objectId === getLocalWorldId()) {
                     initializeWorldObject(object);
                 }
             }
@@ -100,12 +100,6 @@ createNameSpace("realityEditor.worldObjects");
             if (typeof message.worldObject.ip !== 'undefined') {
                 handleServerDiscovered(message.worldObject.ip)
             }
-        });
-
-        // Add a toggle for how world objects behave. If turned off, all detected world objects will be immediately visible.
-        // If turned on, detected world objects will be invisible until their image target has been scanned at least once.
-        realityEditor.gui.settings.addToggle('Require World Localization', 'world objects unavailable until target scanned', 'requireWorldLocalization',  '../../../svg/localization.svg', false, function(newValue) {
-            console.log('requireWorldLocalization was set to ' + newValue);
         });
     }
 
@@ -165,29 +159,36 @@ createNameSpace("realityEditor.worldObjects");
             realityEditor.network.onNewObjectAdded(object.objectId);
         }
 
-        if (object.objectId === localWorldObjectKey || !realityEditor.gui.settings.toggleStates.requireWorldLocalization) {
+        if (object.objectId === localWorldObjectKey) {
             realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
         }
         console.log('successfully initialized world object: ' + object.objectId);
     }
 
     /**
-     * Chooses a world object. Tries to find a global one, but defaults to local one if necessary.
+     * Chooses a world object.
+     * Prioritizes a visible world object with target data that has been seen, whose origin is closest to the camera right now.
+     * If it can't find any, defaults to the local world object.
      * @return {Object}
      */
     function getBestWorldObject() {
         
         // if there are any global world objects, add to those first
-        var globalWorldObjectKeys = getGlobalWorldObjectKeys();
-        if (globalWorldObjectKeys.length > 0) {
+        let visibleGlobalWorldObjectKeys = getGlobalWorldObjectKeys().filter(function(objectKey) {
+            return (typeof realityEditor.gui.ar.draw.visibleObjects[objectKey] !== 'undefined');
+        });
+        
+        let distances = getDistanceToEachWorld();
+        
+        if (visibleGlobalWorldObjectKeys.length > 0) {
             // todo: should there be a better way to see which server's world object you'd be accessing?
             
-            // sort them by newest timestamp if available
-            globalWorldObjectKeys.sort(function(a, b) {
-                return (realityEditor.getObject(b).timestamp || 0) - (realityEditor.getObject(a).timestamp || 0);
+            // sort them by distance
+            visibleGlobalWorldObjectKeys.sort(function(a, b) {
+                return distances[a] - distances[b];
             });
             
-            return objects[globalWorldObjectKeys[0]]; // right now it arbitrarily chooses the first non-local world object
+            return realityEditor.getObject(visibleGlobalWorldObjectKeys[0]); // chooses the closest visible non-local world
         }
         
         // otherwise add to the local one. there should always be one of these so it should never return null

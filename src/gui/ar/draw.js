@@ -164,6 +164,7 @@ realityEditor.gui.ar.draw.hiddenNodeTypes = [
  * @type {Array}
  */
 realityEditor.gui.ar.draw.updateListeners = [];
+realityEditor.gui.ar.draw.visibleObjectModifiers = [];
 
 /**
  * Registers a callback from an external module to be updated every frame with the visibleObjects matrices
@@ -171,6 +172,10 @@ realityEditor.gui.ar.draw.updateListeners = [];
  */
 realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
+};
+
+realityEditor.gui.ar.draw.addVisibleObjectModifier = function (callback) {
+    this.visibleObjectModifiers.push(callback);
 };
 
 /**
@@ -298,7 +303,14 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // if (realityEditor.gui.settings.toggleStates.extendedTracking) {
     //     this.updateExtendedTrackingVisibility(visibleObjects);
     // }
-    
+
+    // allow other modules to modify the set of objects currently seen (except while frozen)
+    if (!globalStates.freezeButtonState) {
+        this.visibleObjectModifiers.forEach(function(callback) {
+            callback(visibleObjects);
+        });
+    }
+
     this.visibleObjects = visibleObjects;
     // So that we can call this function multiple times without mutating the original set of visibleObjects,
     // we create a separate set of matrices called modelViewMatrices where all the computation/mutation happens.
@@ -664,6 +676,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
     }
     
+    // todo: only do this if there are any closestObjectListeners
     var newClosestObject = realityEditor.gui.ar.getClosestObject()[0];
     if (newClosestObject !== this.currentClosestObject) {
         this.closestObjectListeners.forEach(function(callback) {
