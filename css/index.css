@@ -1484,12 +1484,37 @@ Logic Interface CSS
 }
 
 .anchorContents {
-    border: 5px dashed rgba(0, 255, 255, 0.9);
-    background-color: rgba(0, 255, 255, 0.5);
-    opacity: 0.75;
+    /*border: 5px dashed rgba(0, 255, 255, 0.9);*/
+    /*background-color: rgba(0, 255, 255, 0.5);*/
+    /*opacity: 0.75;*/
     width: 300px;
     height: 300px;
-    position: absolute;
+    position: relative;
     /*left: calc(736px/2 - 300px/2);*/
     /*top: calc(414px/2 - 300px/2);*/
+}
+
+.anchorContentsFullscreen {
+    /*background-color: rgba(0, 0, 0, 0.3);*/
+    width: 100vw;
+    height: 100vh;
+}
+
+.anchorContentsPlaced {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.anchorCorner {
+    position: absolute;
+    height: 20vh;
+    width: 20vh;
+}
+
+.hiddenButtons {
+    display: none;
+    pointer-events: none;
 }
