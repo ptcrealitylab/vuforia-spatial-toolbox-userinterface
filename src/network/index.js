@@ -2775,3 +2775,26 @@ realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix
         realityEditor.network.postData(urlEndpoint, content);
     }
 };
+
+/**
+ * Upload the current position of an object (via its transformation matrix) relative to the
+ * closest world object origin
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {Array.<number>} matrix
+ */
+realityEditor.network.postObjectPosition = function(ip, objectKey, matrix) {
+    let port = realityEditor.network.getPort(objects[objectKey]);
+    var urlEndpoint = 'http://' + ip + ':' + port + '/object/' + objectKey + "/matrix";
+    let content = {
+        matrix: matrix,
+        lastEditor: globalStates.tempUuid
+    };
+    this.postData(urlEndpoint, content, function(err, _response) {
+        if (err) {
+            console.warn('error posting to ' + urlEndpoint, err);
+        } else {
+            console.log('successfully posted to ' + urlEndpoint);
+        }
+    })
+};
