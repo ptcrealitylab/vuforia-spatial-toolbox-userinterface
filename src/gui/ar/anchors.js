@@ -122,7 +122,14 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // let r = [];
             let anchorObject = realityEditor.getObject(objectKey);
             let transformedAnchorMatrix = [];
-            let transform = utilities.newIdentityMatrix();
+
+            let scale = 0.25;
+            let transform = [
+                scale, 0, 0, 0,
+                0, scale, 0, 0,
+                0, 0, scale, 0,
+                0, 0, 0, 1
+            ];
             utilities.multiplyMatrix(transform, anchorObject.matrix, transformedAnchorMatrix);
 
             let finalMatrix = [];
@@ -278,6 +285,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
         document.getElementById('GUI').appendChild(anchorContainer);
         
         globalDOMCache['anchor' + objectKey] = anchorContainer;
+        globalDOMCache['anchorContents' + objectKey] = anchorContents;
+
+        updateAnchorGraphics(objectKey, true);
 
         // maintain a list so that we can remove them all on demand
         objectsWithAnchorElements[objectKey] = true;
@@ -291,7 +301,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
     function onAnchorTapped(objectKey) {
         console.log('anchor tapped for object ' + objectKey);
         console.log(realityEditor.gui.ar.draw.visibleObjects[realityEditor.worldObjects.getBestWorldObject().uuid]);
-
+        
         if (!fullscreenAnchor) {
             fullscreenAnchor = objectKey;
         } else {
@@ -361,6 +371,80 @@ createNameSpace("realityEditor.gui.ar.anchors");
             //     fullscreenAnchor = null;
             // }
         }
+
+        updateAnchorGraphics(objectKey);
+    }
+    
+    function updateAnchorGraphics(objectKey, forceCreation) {
+        let element = globalDOMCache['anchorContents' + objectKey];
+        if (fullscreenAnchor === objectKey) {
+            if (!element.classList.contains('anchorContentsFullscreen') || forceCreation) {
+                
+                // first, hide the sidebar buttons
+                document.querySelector('#UIButtons').classList.add('hiddenButtons');
+                
+                element.classList.add('anchorContentsFullscreen');
+
+                element.style.left = 0;
+                element.style.top = 0;
+
+                element.innerHTML = '';
+
+                let topLeft = document.createElement('img');
+                topLeft.src = '../../../svg/anchorTopLeft.svg';
+                topLeft.classList.add('anchorCorner');
+                topLeft.style.left = 0;
+                topLeft.style.top = 0;
+
+                let topRight = document.createElement('img');
+                topRight.src = '../../../svg/anchorTopRight.svg';
+                topRight.classList.add('anchorCorner');
+                topRight.style.right = 0;
+                topRight.style.top = 0;
+
+                let bottomLeft = document.createElement('img');
+                bottomLeft.src = '../../../svg/anchorBottomLeft.svg';
+                bottomLeft.classList.add('anchorCorner');
+                bottomLeft.style.left = 0;
+                bottomLeft.style.bottom = 0;
+
+                let bottomRight = document.createElement('img');
+                bottomRight.src = '../../../svg/anchorBottomRight.svg';
+                bottomRight.classList.add('anchorCorner');
+                bottomRight.style.right = 0;
+                bottomRight.style.bottom = 0;
+
+                let center = document.createElement('img');
+                center.src = '../../../svg/anchorCenter.svg';
+                center.classList.add('anchorCorner');
+                let size = (.2 * globalStates.width);
+                center.style.left = (globalStates.height/2 - size/2) + 'px';
+                center.style.top = (globalStates.width/2 - size/2) + 'px';
+                
+                element.appendChild(topLeft);
+                element.appendChild(topRight);
+                element.appendChild(bottomLeft);
+                element.appendChild(bottomRight);
+                element.appendChild(center);
+            }
+        } else {
+            if (element.classList.contains('anchorContentsFullscreen') || forceCreation) {
+                
+                // first show the sidebar buttons
+                document.querySelector('#UIButtons').classList.remove('hiddenButtons');
+
+                element.classList.remove('anchorContentsFullscreen');
+
+                element.style.left = (globalStates.height/2 - 300/2) + 'px';
+                element.style.top = (globalStates.width/2 - 300/2) + 'px';
+
+                element.innerHTML = '';
+                let anchorContentsPlaced = document.createElement('img');
+                anchorContentsPlaced.src = '../../../svg/anchor.svg';
+                anchorContentsPlaced.classList.add('anchorContentsPlaced');
+                element.appendChild(anchorContentsPlaced);
+            }
+        }
     }
     
     function getWorldModelViewMatrix() {
@@ -371,17 +455,17 @@ createNameSpace("realityEditor.gui.ar.anchors");
         return modelViewMatrix;
     }
     
-    function getMatrixForAnchor(objectKey, worldKey) {
-        let worldMatrix = realityEditor.worldObjects.getOrigin(worldKey);
-        let temp1 = [];
-        utilities.multiplyMatrix(worldMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, temp1);
-        let activeObjectMatrix = [];
-        utilities.multiplyMatrix(temp1, globalStates.projectionMatrix, activeObjectMatrix);
-        let anchorObject = realityEditor.getObject(objectKey);
-        let finalMatrix = [];
-        utilities.multiplyMatrix(anchorObject.matrix, activeObjectMatrix, finalMatrix);
-        return finalMatrix;
-    }
+    // function getMatrixForAnchor(objectKey, worldKey) {
+    //     let worldMatrix = realityEditor.worldObjects.getOrigin(worldKey);
+    //     let temp1 = [];
+    //     utilities.multiplyMatrix(worldMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, temp1);
+    //     let activeObjectMatrix = [];
+    //     utilities.multiplyMatrix(temp1, globalStates.projectionMatrix, activeObjectMatrix);
+    //     let anchorObject = realityEditor.getObject(objectKey);
+    //     let finalMatrix = [];
+    //     utilities.multiplyMatrix(anchorObject.matrix, activeObjectMatrix, finalMatrix);
+    //     return finalMatrix;
+    // }
 
     exports.initService = initService;
     exports.isAnchorHeartbeat = isAnchorHeartbeat;
