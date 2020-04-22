@@ -350,6 +350,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 // // anchorObject.matrix = cameraMatrix;
                 // anchorObject.matrix = cameraRelativeToWorld;
 
+                realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix);
+
                 fullscreenAnchor = null;
             }
 
