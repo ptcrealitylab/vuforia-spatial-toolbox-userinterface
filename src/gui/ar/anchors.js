@@ -339,9 +339,16 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
                 let inverseWorld = utilities.invertMatrix(worldModelView);
                 // let inverseWorld = utilities.invertMatrix(worldModelViewProjection);
+                
+                // flip it so it faces towards the camera instead of away from the camera
+                let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(0, Math.PI, Math.PI);
+                let rotationMatrix = utilities.getMatrixFromQuaternion(q);
+                
+                let finalMatrix = [];
+                utilities.multiplyMatrix(rotationMatrix, inverseWorld, finalMatrix);
 
                 let anchorObject = realityEditor.getObject(objectKey);
-                anchorObject.matrix = inverseWorld;
+                anchorObject.matrix = finalMatrix;
 
                 // let anchorMatrix = getMatrixForAnchor(objectKey, closestWorld.uuid);
                 
@@ -389,43 +396,55 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 element.style.top = 0;
 
                 element.innerHTML = '';
+                
+                let margin = 5;
 
                 let topLeft = document.createElement('img');
                 topLeft.src = '../../../svg/anchorTopLeft.svg';
                 topLeft.classList.add('anchorCorner');
-                topLeft.style.left = 0;
-                topLeft.style.top = 0;
+                topLeft.style.left = margin + 'px';
+                topLeft.style.top = margin + 'px';
 
                 let topRight = document.createElement('img');
                 topRight.src = '../../../svg/anchorTopRight.svg';
                 topRight.classList.add('anchorCorner');
-                topRight.style.right = 0;
-                topRight.style.top = 0;
+                topRight.style.right = margin + 'px';
+                topRight.style.top = margin + 'px';
 
                 let bottomLeft = document.createElement('img');
                 bottomLeft.src = '../../../svg/anchorBottomLeft.svg';
                 bottomLeft.classList.add('anchorCorner');
-                bottomLeft.style.left = 0;
-                bottomLeft.style.bottom = 0;
+                bottomLeft.style.left = margin + 'px';
+                bottomLeft.style.bottom = margin + 'px';
 
                 let bottomRight = document.createElement('img');
                 bottomRight.src = '../../../svg/anchorBottomRight.svg';
                 bottomRight.classList.add('anchorCorner');
-                bottomRight.style.right = 0;
-                bottomRight.style.bottom = 0;
+                bottomRight.style.right = margin + 'px';
+                bottomRight.style.bottom = margin + 'px';
 
-                let center = document.createElement('img');
-                center.src = '../../../svg/anchorCenter.svg';
-                center.classList.add('anchorCorner');
-                let size = (.2 * globalStates.width);
-                center.style.left = (globalStates.height/2 - size/2) + 'px';
-                center.style.top = (globalStates.width/2 - size/2) + 'px';
-                
+                let centerContainer = document.createElement('div');
+                centerContainer.classList.add('anchorCenter');
+                let size = (0.6 * globalStates.width);
+                centerContainer.style.left = (globalStates.height/2 - size/2) + 'px';
+                centerContainer.style.top = (globalStates.width/2 - size/2) + 'px';
+
+                let centerSvg = document.createElement('img');
+                centerSvg.src = '../../../svg/anchorCenter.svg';
+                centerContainer.appendChild(centerSvg);
+
+                let textfield = document.createElement('div');
+                textfield.classList.add('anchorTextField');
+                textfield.innerText = realityEditor.getObject(objectKey).name;
+                // textfield.style.right = (globalStates.height/2 - size/2) + 'px';
+                centerContainer.appendChild(textfield);
+
                 element.appendChild(topLeft);
                 element.appendChild(topRight);
                 element.appendChild(bottomLeft);
                 element.appendChild(bottomRight);
-                element.appendChild(center);
+                element.appendChild(centerContainer);
+
             }
         } else {
             if (element.classList.contains('anchorContentsFullscreen') || forceCreation) {
@@ -443,6 +462,11 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 anchorContentsPlaced.src = '../../../svg/anchor.svg';
                 anchorContentsPlaced.classList.add('anchorContentsPlaced');
                 element.appendChild(anchorContentsPlaced);
+
+                let textfield = document.createElement('div');
+                textfield.classList.add('anchorTextField');
+                textfield.innerText = realityEditor.getObject(objectKey).name;
+                element.appendChild(textfield);
             }
         }
     }
