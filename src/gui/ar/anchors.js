@@ -34,7 +34,27 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
         // console.log('need to render', anchorObjectIds);
         anchorObjectIds.forEach(function(objectKey) {
-            visibleObjects[objectKey] = realityEditor.getObject(objectKey).matrix || utilities.newIdentityMatrix();
+            // visibleObjects[objectKey] = realityEditor.getObject(objectKey).matrix || utilities.newIdentityMatrix();
+            
+            let objectMatrix = realityEditor.getObject(objectKey).matrix || utilities.newIdentityMatrix();
+            
+            // object.matrix is its position relative to the world.. put that relative to screen
+            // e.g. if object.matrix is identity, its visibleObjects matrix should be equal to
+            // the visibleObjects matrix of its world
+            
+            let visibleObjectMatrix = [];
+            // let worldModelViewMatrix = getWorldModelViewMatrix();
+            // utilities.multiplyMatrix(objectMatrix, worldModelViewMatrix, visibleObjectMatrix);
+
+            // let closestWorld = realityEditor.worldObjects.getBestWorldObject();
+            // let worldMatrix = visibleObjects[closestWorld.uuid];
+
+            let closestWorld = realityEditor.worldObjects.getBestWorldObject();
+            let worldModelMatrix = realityEditor.worldObjects.getOrigin(closestWorld.uuid);
+
+            utilities.multiplyMatrix(objectMatrix, worldModelMatrix, visibleObjectMatrix);
+
+            visibleObjects[objectKey] = visibleObjectMatrix;
         });
     }
 
