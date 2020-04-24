@@ -67,6 +67,10 @@ var TEMP_DISABLE_MEMORIES = false;
  **********************************************************************************************************************/
 
 var globalStates = {
+    whereIs : { locator :{
+        objectID :"", toolID :"", nodeID:"", locateMe : false
+        }
+    },
     craftingMoveDelay : 400,
     tempUuid : "0000",
     debug: false,

@@ -82,6 +82,9 @@ var realityEditor = realityEditor || {
             positioning: {},
             utilities: {}
         },
+        spatial:{
+            where :{}
+        },
         crafting: {
             blockMenu: {},
             eventHandlers: {},
