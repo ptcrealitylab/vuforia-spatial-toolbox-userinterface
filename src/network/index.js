@@ -861,6 +861,21 @@ realityEditor.network.onAction = function (action) {
     if (thisAction.loadLogicIcon) {
         this.loadLogicIcon(thisAction.loadLogicIcon);
     }
+
+    // Set states to locate object in space
+    if (thisAction.whereIs) {
+       
+        
+        if(thisAction.whereIs.locator){
+            let otn = globalStates.whereIs.locator;
+            let al = thisAction.whereIs.locator;
+            if(al.objectID) otn.objectID =  al.objectID; else otn.objectID = "";
+            if(al.toolID) otn.toolID =  al.toolID; else otn.toolID = "";
+            if(al.nodeID) otn.nodeID =  al.nodeID; else otn.nodeID = "";
+            if(al.locateMe === "true") otn.locateMe = true; else  otn.locateMe = false;
+        }
+    }
+    
     
     if (thisAction.addFrame) {
         console.log("addFrame");
