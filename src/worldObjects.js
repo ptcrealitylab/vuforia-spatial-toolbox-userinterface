@@ -336,7 +336,7 @@ createNameSpace("realityEditor.worldObjects");
         for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
             var object = realityEditor.getObject(objectKey);
             if (object.isWorldObject) {
-                var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+                var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
                 distances[objectKey] = thisDistance;
             }
         }
