@@ -9,7 +9,6 @@ createNameSpace("realityEditor.gui.ar.anchors");
     let anchorObjects = {};
     let objectsWithAnchorElements = {};
     let utilities = realityEditor.gui.ar.utilities;
-
     let fullscreenAnchor = null;
 
     function initService() {
@@ -101,7 +100,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
                     '0, 1, 0, 0,' +
                     '0, 0, 1, 0,' +
                     '0, 0, ' + zIndex + ', 1)';
-                return;
+                continue;
             }
             
             // let activeObjectMatrix = [];
@@ -456,7 +455,6 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 let textfield = document.createElement('div');
                 textfield.classList.add('anchorTextField');
                 textfield.innerText = realityEditor.getObject(objectKey).name;
-                // textfield.style.right = (globalStates.height/2 - size/2) + 'px';
                 centerContainer.appendChild(textfield);
 
                 element.appendChild(topLeft);
@@ -465,6 +463,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 element.appendChild(bottomRight);
                 element.appendChild(centerContainer);
 
+                resizeAnchorText(objectKey);
             }
         } else {
             if (element.classList.contains('anchorContentsFullscreen') || forceCreation) {
@@ -487,8 +486,44 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 textfield.classList.add('anchorTextField');
                 textfield.innerText = realityEditor.getObject(objectKey).name;
                 element.appendChild(textfield);
+
+                resizeAnchorText(objectKey);
             }
         }
+    }
+
+    /**
+     * Re-sizes the object name inside the anchor to fit the text box background
+     * @param {string} objectKey
+     */
+    function resizeAnchorText(objectKey) {
+        let anchorElement = globalDOMCache['anchorContents' + objectKey];
+        let textfield = anchorElement.querySelector('.anchorTextField');
+
+        const maxFontSize = 18;
+
+        // prep by resetting so we can compute size with default params
+        textfield.style.width = '';
+        textfield.style.fontSize = maxFontSize + 'px';
+
+        // resize text to fit after it renders once
+        requestAnimationFrame(function() {
+            let desiredWidth = anchorElement.clientWidth * 0.35;
+            let anchorCenter = anchorElement.querySelector('.anchorCenter');
+            if (anchorCenter) {
+                desiredWidth = anchorCenter.clientWidth * 0.35;
+            }
+            let realWidth = parseFloat(getComputedStyle(textfield).width);
+
+            let percent = desiredWidth / realWidth;
+            let newFontSize = Math.min(maxFontSize, maxFontSize * percent);
+            textfield.style.fontSize = newFontSize + 'px';
+
+            // update with set width/height after calculating so text is centered
+            textfield.style.width = desiredWidth + 'px';
+            let realHeight = parseFloat(getComputedStyle(textfield).height);
+            textfield.style.lineHeight = realHeight + 'px';
+        });
     }
     
     function getWorldModelViewMatrix() {
