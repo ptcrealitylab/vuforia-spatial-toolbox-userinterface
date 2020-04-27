@@ -142,7 +142,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             let anchorObject = realityEditor.getObject(objectKey);
             let transformedAnchorMatrix = [];
 
-            let scale = 0.25;
+            let scale = 0.5;
             let transform = [
                 scale, 0, 0, 0,
                 0, scale, 0, 0,
