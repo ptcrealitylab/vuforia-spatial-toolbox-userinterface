@@ -863,17 +863,21 @@ realityEditor.network.onAction = function (action) {
     }
 
     // Set states to locate object in space
-    if (thisAction.whereIs) {
-       
-        
-        if(thisAction.whereIs.locator){
-            let otn = globalStates.whereIs.locator;
-            let al = thisAction.whereIs.locator;
-            if(al.objectID) otn.objectID =  al.objectID; else otn.objectID = "";
-            if(al.toolID) otn.toolID =  al.toolID; else otn.toolID = "";
-            if(al.nodeID) otn.nodeID =  al.nodeID; else otn.nodeID = "";
-            if(al.locateMe === "true") otn.locateMe = true; else  otn.locateMe = false;
+    if (thisAction.spatial) {
+        if(thisAction.spatial.locator){
+
+            let spatial = globalStates.spatial;
+            let action = thisAction.spatial.locator;
+            
+            if(action.whereIs){
+                spatial.whereIs = JSON.parse(JSON.stringify(action.whereIs));
+            }
+            if(action.howFarIs){
+                spatial.howFarIs = JSON.parse(JSON.stringify(action.howFarIs));
+            }
         }
+        
+        console.log(globalStates.spatial);
     }
     
     

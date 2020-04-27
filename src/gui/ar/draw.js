@@ -417,8 +417,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             }
 
             // realityEditor.worldObjects.getBestWorldObject().uuid
-
-            realityEditor.gui.spatial.where.is(this.activeObjectMatrix,objectKey, null,null);
+            
+            realityEditor.gui.spatial.whereIs(this.activeObjectMatrix,objectKey, null,null);
             
             // extract its projected (x,y) screen coordinates from the matrix
             //TODO THIS GETS OVERWRITTEN FURTHER DOWN Is this used for anything?
@@ -500,7 +500,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         
                     }
                 }
-                realityEditor.gui.spatial.where.is(this.activeObjectMatrix,objectKey, frameKey,null);
+                realityEditor.gui.spatial.whereIs(this.activeObjectMatrix,objectKey, frameKey,null);
             }
         
         // if this object was NOT detected by the AR engine, hide its nodes and frames or perform edge-case functionality
