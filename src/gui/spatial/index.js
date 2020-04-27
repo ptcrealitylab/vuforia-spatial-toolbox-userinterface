@@ -17,7 +17,7 @@ realityEditor.gui.spatial.screenLocation = {x:-1,y:-1};
 realityEditor.gui.spatial.utilities = realityEditor.gui.ar.utilities;
 realityEditor.gui.spatial.draw = {};
 
-realityEditor.gui.spatial.whereIs = function(matrix, objectID,toolID,nodeID){
+realityEditor.gui.spatial.whereIs = function(matrix, objectID,toolID,_nodeID){
  
     if(objectID in globalStates.spatial.whereIs){
         this.draw.whereIs(matrix);
