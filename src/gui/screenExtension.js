@@ -346,7 +346,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
             // calculate distance to frame
             // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
             // var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
-            var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]);
+            var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[this.screenObject.object]);
 
             // console.log('distance to object, frame: ' + distanceToObject + ', ' + distanceToFrame);
             // console.log('distance to object: ' + distanceToFrame);

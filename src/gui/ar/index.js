@@ -401,7 +401,7 @@ realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
             }
         }
 
-        distance = this.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[objectKey]);
+        distance = this.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
 
         if (distance < closest) {
             object = objectKey;
@@ -435,10 +435,10 @@ realityEditor.gui.ar.utilities.getAllObjectDistances = function(isDesktop) {
         });
 
     } else {
-        return Object.keys(realityEditor.gui.ar.draw.visibleObjects).map(function (key) {
+        return Object.keys(realityEditor.gui.ar.draw.modelViewMatrices).map(function (key) {
             return {
                 key: key,
-                dist: realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[key])
+                dist: realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[key])
             }
         });
 
@@ -466,7 +466,7 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
                 if (!filterFunction(this.objects[objectKey].frames[frameKey])) continue;
             }
             
-            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey]));
+            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], this.objects[objectKey].frames[frameKey]));
             if (distance < closest) {
                 object = objectKey;
                 frame = frameKey;
@@ -499,7 +499,7 @@ realityEditor.gui.ar.getClosestNode = function () {
                     break;
                 }
                 
-                distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey].nodes[nodeKey]));
+                distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], this.objects[objectKey].frames[frameKey].nodes[nodeKey]));
                 if (distance < closest) {
                     object = objectKey;
                     frame = frameKey;
@@ -527,7 +527,7 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
-            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[objectKey], this.objects[objectKey].frames[frameKey]));
+            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], this.objects[objectKey].frames[frameKey]));
             
             var thisFrame = realityEditor.getFrame(objectKey, frameKey);
             var dx = screenX - thisFrame.screenX;
