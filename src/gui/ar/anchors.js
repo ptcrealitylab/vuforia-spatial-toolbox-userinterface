@@ -10,6 +10,10 @@ createNameSpace("realityEditor.gui.ar.anchors");
     let utilities = realityEditor.gui.ar.utilities;
     let fullscreenAnchor = null;
     const anchorContentSize = 300;
+    const anchorDistanceThreshold = 2000; // disappear if further away than 2 meters
+    let anchorsOutsideOfViewport = {};
+    let modelViewMatrices = {};
+    let finalAnchorMatrices = {};
 
     function initService() {
         realityEditor.gui.ar.draw.addVisibleObjectModifier(modifyVisibleObjects);
@@ -47,7 +51,6 @@ createNameSpace("realityEditor.gui.ar.anchors");
         return anchorObjects.hasOwnProperty(objectId);
     }
 
-
     /**
      * This gets triggered at the beginning of gui.ar.draw.update
      * We use this function to inject anchor objects' model matrices into the visibleObjects in the
@@ -82,8 +85,85 @@ createNameSpace("realityEditor.gui.ar.anchors");
             let worldModelMatrix = realityEditor.worldObjects.getOrigin(closestWorld.uuid);
             utilities.multiplyMatrix(objectMatrix, worldModelMatrix, visibleObjectMatrix);
 
-            visibleObjects[objectKey] = visibleObjectMatrix;
+            // pre-compute matrices that will be used in multiple places per update
+
+            // modelViewMatrix multiples visibleObjectMatrix (the model matrix) by the camera
+            // (view) matrix. This gets used to calculate the distance from camera to object
+            modelViewMatrices[objectKey] = calculateModelViewMatrix(visibleObjectMatrix);
+
+            // finalMatrix multiplies the world modelViewProjection matrix by the object matrix
+            // (relative to the world) to get the final position to render the anchor at
+            finalAnchorMatrices[objectKey] = calculateFinalMatrix(objectKey);
+
+            // only adds this object to visibleObjects if the position is within the camera's
+            // cone of view and close enough to the camera
+            if (shouldAddToVisibleObjects(objectKey)) {
+                visibleObjects[objectKey] = visibleObjectMatrix;
+            } else {
+                hideAnchorElementIfNeeded(objectKey);
+            }
         });
+    }
+
+    /**
+     * hide and remove object from visibleObjects if it is outside the viewport or too far away
+     * only exception is if it's fullscreen - then automatically visible
+     * @param {string} objectKey
+     * @return {boolean}
+     */
+    function shouldAddToVisibleObjects(objectKey) {
+        let isOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalAnchorMatrices[objectKey], anchorContentSize/2, anchorContentSize/2);
+        let distanceToCamera = realityEditor.gui.ar.utilities.distance(modelViewMatrices[objectKey]);
+
+        if (fullscreenAnchor === objectKey) {
+            return true;
+        }
+
+        return !isOutsideViewport && (distanceToCamera < getAnchorDistanceThreshold(objectKey));
+    }
+
+    /**
+     * Multiplies the visibleObject (model) matrix by the camera (view) matrix
+     * @param visibleObjectMatrix
+     * @return {Array.<number>}
+     */
+    function calculateModelViewMatrix(visibleObjectMatrix) {
+        let activeObjectMatrix = [];
+        let modelViewMatrix = [];
+        utilities.multiplyMatrix(rotateX, visibleObjectMatrix, activeObjectMatrix);
+        utilities.multiplyMatrix(activeObjectMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, modelViewMatrix);
+        return modelViewMatrix;
+    }
+
+    /**
+     * Multiplies the world's modelViewProjection matrix by the object.matrix to get the
+     * modelViewProjection matrix of the object, which can be given to its CSS 3D transform
+     * @param objectKey
+     * @return {Array.<number>}
+     */
+    function calculateFinalMatrix(objectKey) {
+        let worldModelView = getWorldModelViewMatrix();
+        let worldModelViewProjection = [];
+        utilities.multiplyMatrix(worldModelView, globalStates.projectionMatrix, worldModelViewProjection);
+
+        let anchorObject = realityEditor.getObject(objectKey);
+        let transformedAnchorMatrix = [];
+
+        let scale = 0.5; // we can adjust how big it looks using this. empirically determined.
+        let transform = [
+            scale, 0, 0, 0,
+            0, scale, 0, 0,
+            0, 0, scale, 0,
+            0, 0, 0, 1
+        ];
+        utilities.multiplyMatrix(transform, anchorObject.matrix, transformedAnchorMatrix);
+
+        // multiply the final position of the world by the position of the anchor relative
+        // to the world to calculate its final 3d transformation
+        let finalMatrix = [];
+        utilities.multiplyMatrix(transformedAnchorMatrix, worldModelViewProjection, finalMatrix);
+
+        return finalMatrix;
     }
 
     /**
@@ -111,28 +191,64 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 continue;
             }
 
-            let worldModelView = getWorldModelViewMatrix();
-            let worldModelViewProjection = [];
-            utilities.multiplyMatrix(worldModelView, globalStates.projectionMatrix, worldModelViewProjection);
+            // retrieve final value computed in pre-processing step
+            let finalMatrix = finalAnchorMatrices[objectKey];
 
-            let anchorObject = realityEditor.getObject(objectKey);
-            let transformedAnchorMatrix = [];
+            let activeElt = globalDOMCache['anchor' + objectKey];
 
-            let scale = 0.5; // we can adjust how big it looks using this. empirically determined.
-            let transform = [
-                scale, 0, 0, 0,
-                0, scale, 0, 0,
-                0, 0, scale, 0,
-                0, 0, 0, 1
-            ];
-            utilities.multiplyMatrix(transform, anchorObject.matrix, transformedAnchorMatrix);
+            if (!anchorsOutsideOfViewport[objectKey]) {
+                activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+            } else {
+                hideAnchorElementIfNeeded(objectKey); // hide if it was outside last frame
+            }
 
-            // multiply the final position of the world by the position of the anchor relative
-            // to the world to calculate its final 3d transformation
-            let finalMatrix = [];
-            utilities.multiplyMatrix(transformedAnchorMatrix, worldModelViewProjection, finalMatrix);
+            // hide if it is outside the viewport or too far away
+            let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalMatrix, anchorContentSize/2, anchorContentSize/2);
+            let distanceToCamera = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+            isNowOutsideViewport = isNowOutsideViewport || (distanceToCamera > getAnchorDistanceThreshold(objectKey));
 
-            globalDOMCache['anchor' + objectKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+            if (isNowOutsideViewport) {
+                hideAnchorElementIfNeeded(objectKey); // hide if newly outside this frame
+            } else {
+                // show anchor if it was outside viewport but now it isn't
+                if (anchorsOutsideOfViewport[objectKey]) {
+                    delete anchorsOutsideOfViewport[objectKey];
+                    activeElt.classList.remove('outsideOfViewport');
+                }
+            }
+        }
+    }
+
+    /**
+     * anchorDistanceThreshold is the default, but expands to stay visible if its tools have a
+     * visibility distance that is larger than the default anchor threshold
+     * @param objectKey
+     * @return {number}
+     */
+    function getAnchorDistanceThreshold(objectKey) {
+        let maxFrameDistanceThreshold = 0;
+        realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
+            let frame = realityEditor.getFrame(objectKey, frameKey);
+            let distanceScale = realityEditor.gui.ar.getDistanceScale(frame);
+            // multiply the default min distance by the amount this frame distance has been scaled up
+            let scaleFactor = 0.8; // discount the distance of frames compared to the anchor threshold
+            let distanceThreshold = scaleFactor * (distanceScale * realityEditor.device.distanceScaling.getDefaultDistance());
+            if (distanceThreshold > maxFrameDistanceThreshold) {
+                maxFrameDistanceThreshold = distanceThreshold;
+            }
+        });
+        return Math.max(anchorDistanceThreshold, maxFrameDistanceThreshold);
+    }
+
+    /**
+     * Helper function to ensure the HTML element for an anchor gets removed properly
+     * @param {string} objectKey
+     */
+    function hideAnchorElementIfNeeded(objectKey) {
+        let activeElt = globalDOMCache['anchor' + objectKey];
+        if (activeElt && (!anchorsOutsideOfViewport[objectKey] || !activeElt.classList.contains('outsideOfViewport'))) {
+            anchorsOutsideOfViewport[objectKey] = true; // make sure to keep track of this property
+            activeElt.classList.add('outsideOfViewport');
         }
     }
 
