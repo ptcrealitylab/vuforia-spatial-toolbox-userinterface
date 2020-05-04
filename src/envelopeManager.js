@@ -259,11 +259,11 @@ createNameSpace("realityEditor.envelopeManager");
                 var deletedEnvelope = knownEnvelopes[params.frameKey];
                 if (typeof deletedEnvelope.containedFrameIds === 'undefined') { return; }
                     
-                deletedEnvelope.containedFrameIds.forEach(function(frameKey) {
-                    var frameToDelete = realityEditor.getFrame(params.objectKey, params.frameKey);
+                deletedEnvelope.containedFrameIds.forEach(function(containedFrameKey) {
+                    // contained frame always belongs to same object as envelope, so ok to use params.objectKey
+                    var frameToDelete = realityEditor.getFrame(params.objectKey, containedFrameKey);
                     if (!frameToDelete) { return; }
-                    realityEditor.device.deleteFrame(frameToDelete, frameToDelete.objectId, frameKey);
-                    console.warn('deleted frame ' + frameKey + ' because its envelope was deleted');
+                    realityEditor.device.deleteFrame(frameToDelete, params.objectKey, containedFrameKey);
                 });
             }
         }
