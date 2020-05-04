@@ -21,6 +21,26 @@
     <!-- Include the compiled Ratchet JS -->
     <script src="../../../thirdPartyCode/js/ratchet.min.js"></script>
     <script src="states.js"></script>
+
+    <style>
+        #foundObjectsTitle {
+            display: flex;
+            flex-direction: row;
+            left: 70px;
+            width: calc(100% - 100px);
+        }
+        .flexItem {
+            flex-grow: 1;
+        }
+        .flexItemWide {
+            flex-grow: 2;
+        }
+        .infoRow {
+            display: flex;
+            flex-direction: 1;
+            width: 100%;
+        }
+    </style>
 </head>
 <body style="background-color: #efeff4;">
 <div style="position: absolute; right: 0; width: 65px; top:0; bottom: 0; background-color: #222222"></div>
@@ -32,13 +52,20 @@
                 <span class="icon icon-left-nav"></span>
                 Back
             </button></a>
-            <h1 class="title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Object
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Version&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                IP
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Nodes &nbsp;&nbsp;&nbsp;Links&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h1>
+        <div id="foundObjectsTitle" class="title">
+            <div class="flexItemWide">Object</div>
+            <div class="flexItem">Version</div>
+            <div class="flexItem">IP</div>
+            <div class="flexItem">Nodes</div>
+            <div class="flexItem">Links</div>
+        </div>
+<!--            <h1 class="title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+<!--                Object-->
+<!--                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+<!--                Version&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+<!--                IP-->
+<!--                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+<!--                Nodes &nbsp;&nbsp;&nbsp;Links&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h1>-->
     </header>
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
@@ -54,19 +81,19 @@
 
     <template id="row">
         <div>
-            <div class="infoRow" style="width: 500px; height: 30px; display: inline-block">
-                <img class="media-object pull-left" src="../../../svg/object.svg" style="width: 26px; height: 26px; margin-top: -2px; margin-bottom: -5px">
-                <div class="rowName" style="display: inline-block; width: 130px; overflow: hidden; font-size: large"></div>
-                <div style="display: inline-block; width: 70px; text-align: center">
+            <div class="infoRow" style="height: 30px;">
+                <img class="flexItem media-object pull-left" src="../../../svg/object.svg" style="width: 26px; height: 26px; margin-top: -2px; margin-bottom: -5px">
+                <div class="flexItemWide rowName" style="width: 130px; overflow: hidden; font-size: large"></div>
+                <div style="width: 70px; text-align: center">
                     <span class="badge rowVersion" style="font-size: large"></span>
                 </div>
-                <div style="display: inline-block; width: 140px; text-align: center">
+                <div class="flexItem" style="width: 140px; text-align: center">
                     <span class="badge rowIP" style="font-size: large"></span>
                 </div>
-                <div style="display: inline-block; width: 40px; text-align: center">
+                <div class="flexItem" style="width: 40px; text-align: center">
                     <span class="badge rowNodes" style="font-size: large"></span>
                 </div>
-                <div style="display: inline-block; width: 40px; text-align: center">
+                <div class="flexItem" style="width: 40px; text-align: center">
                     <span class="badge rowLinks" style="font-size: large"></span>
                 </div>
             </div>
@@ -120,6 +147,11 @@
 
         // add a row for the object with the object name, version, and IP
         var objectRow = document.getElementsByTagName('template')['row'].content.cloneNode(true);
+
+        if (objectInfo.isAnchor) { // different icon for anchor
+            objectRow.querySelector('.media-object').src = '../../../svg/foundObjectAnchor.svg';
+        }
+
         objectRow.querySelector('.rowName').innerText = objectInfo.name;
         objectRow.querySelector('.rowVersion').innerText = objectInfo.version;
         objectRow.querySelector('.rowIP').innerText = objectInfo.ip;
@@ -136,7 +168,7 @@
         }
 
         // give visual feedback if an object's Vuforia target was not initialized correctly
-        if (!objectInfo.initialized) {
+        if (!objectInfo.initialized && !objectInfo.isAnchor) {
             tableEntry.querySelector('.table-view-cell').style.opacity = 0.5;
             tableEntry.querySelector('.table-view-cell').style.color = 'rgb(255,0,124)';
         }
@@ -152,8 +184,15 @@
      */
     function createFrameRow(frameKey, frameInfo) {
         var frameRow = document.getElementsByTagName('template')['row'].content.cloneNode(true);
+
+        // indent frames underneath their objects
+        frameRow.querySelector('.infoRow').style.marginLeft = '10px'; // dont hide overflow for frames, just objects
+        frameRow.querySelector('.infoRow').style.widthc = 'calc(100% - 20px)';
+        // dont hide overflow for frames, just objects
+
         frameRow.querySelector('.media-object').src = '../../../svg/foundObjectFrame.svg'; // different icon for frame
         frameRow.querySelector('.rowName').innerText = frameInfo.name;
+        frameRow.querySelector('.rowName').style.overflow = ''; // dont hide overflow for frames, just objects
         frameRow.querySelector('.rowVersion').style.visibility = 'hidden';
         frameRow.querySelector('.rowIP').style.visibility = 'hidden';
         frameRow.querySelector('.rowNodes').innerText = frameInfo.nodes; // number of nodes on this frame

@@ -1838,7 +1838,8 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 port: realityEditor.network.getPort(thisObject),
                 version: thisObject.version,
                 frames: {},
-                initialized: isInitialized
+                initialized: isInitialized,
+                isAnchor: realityEditor.gui.ar.anchors.isAnchorObject(objectKey)
             };
 
             for (let frameKey in thisObject.frames) {
