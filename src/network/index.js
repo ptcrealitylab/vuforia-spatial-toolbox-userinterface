@@ -1022,6 +1022,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
         realityEditor.network.onSettingPostMessage(msgContent);
         return;
     }
+
+    if (typeof msgContent.foundObjectsButton !== 'undefined') {
+        realityEditor.network.onFoundObjectButtonMessage(msgContent);
+        return;
+    }
     
     if (msgContent.resendOnElementLoad) {
         var elt = document.getElementById('iframe' + msgContent.nodeKey);
@@ -1881,6 +1886,29 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     // can directly trigger native app APIs with message of correct format @todo: figure out if this is currently used?
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
+    }
+};
+
+/**
+ * function calls triggered by buttons in the settings' Found Objects menu
+ * @param {object} msgContent
+ */
+realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
+
+    if (msgContent.foundObjectsButton.hideSettings) {
+        realityEditor.gui.settings.hideSettings();
+    }
+
+    // the "Locate" button renders the whereIs navigation arrow to that object
+    if (msgContent.foundObjectsButton.locateObject) {
+        let objectKey = msgContent.foundObjectsButton.locateObject;
+        console.log('locate object ' + objectKey);
+        globalStates.spatial.whereIs = {};
+        globalStates.spatial.whereIs[objectKey] = {
+            objectID: objectKey,
+            toolID: '',
+            nodeID: ''
+        };
     }
 };
 
