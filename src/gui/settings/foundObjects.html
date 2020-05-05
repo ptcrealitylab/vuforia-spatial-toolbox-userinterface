@@ -20,6 +20,7 @@
 
     <!-- Include the compiled Ratchet JS -->
     <script src="../../../thirdPartyCode/js/ratchet.min.js"></script>
+    <script src="../../../thirdPartyCode/pep.min.js"></script>
     <script src="states.js"></script>
 
     <style>
@@ -40,6 +41,20 @@
             flex-direction: 1;
             width: 100%;
         }
+        .selectedItem {
+            background-color: rgba(0,255,255,0.15);
+        }
+        .badge {
+            font-size: large;
+        }
+        .objectButton {
+            padding: 5px;
+            padding-left: 10px;
+            padding-right: 10px;
+            border: 2px solid black;
+            border-radius: 7px;
+            margin-right: 20px;
+        }
     </style>
 </head>
 <body style="background-color: #efeff4;">
@@ -53,19 +68,12 @@
                 Back
             </button></a>
         <div id="foundObjectsTitle" class="title">
-            <div class="flexItemWide">Object</div>
+            <div class="flexItemWide">Name</div>
             <div class="flexItem">Version</div>
             <div class="flexItem">IP</div>
             <div class="flexItem">Nodes</div>
             <div class="flexItem">Links</div>
         </div>
-<!--            <h1 class="title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
-<!--                Object-->
-<!--                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
-<!--                Version&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
-<!--                IP-->
-<!--                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
-<!--                Nodes &nbsp;&nbsp;&nbsp;Links&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h1>-->
     </header>
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
@@ -81,20 +89,33 @@
 
     <template id="row">
         <div>
-            <div class="infoRow" style="height: 30px;">
+            <div class="infoRow" style="height: 30px; font-size: large">
                 <img class="flexItem media-object pull-left" src="../../../svg/object.svg" style="width: 26px; height: 26px; margin-top: -2px; margin-bottom: -5px">
-                <div class="flexItemWide rowName" style="width: 130px; overflow: hidden; font-size: large"></div>
+                <div class="flexItemWide rowName" style="width: 130px; overflow: hidden;"></div>
                 <div style="width: 70px; text-align: center">
-                    <span class="badge rowVersion" style="font-size: large"></span>
+                    <span class="badge rowVersion"></span>
                 </div>
                 <div class="flexItem" style="width: 140px; text-align: center">
-                    <span class="badge rowIP" style="font-size: large"></span>
+                    <span class="badge rowIP"></span>
                 </div>
                 <div class="flexItem" style="width: 40px; text-align: center">
-                    <span class="badge rowNodes" style="font-size: large"></span>
+                    <span class="badge rowNodes"></span>
                 </div>
                 <div class="flexItem" style="width: 40px; text-align: center">
-                    <span class="badge rowLinks" style="font-size: large"></span>
+                    <span class="badge rowLinks"></span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="buttonRow">
+        <div class="buttons">
+            <div class="infoRow" style="height: 40px; font-size: large; justify-content: start; align-items: center; text-align: center">
+                <div>
+                    <span class="objectButton locateButton">Locate</span>
+                </div>
+                <div>
+                    <span class="objectButton anchorButton">Snap Anchor to Screen</span>
                 </div>
             </div>
         </div>
@@ -121,7 +142,7 @@
      */
     realityEditor.gui.settings.getObjectsFunction = function (msg) {
         // don't re-render if nothing has changed
-        if (previousFoundObjects && previousFoundObjects === JSON.stringify(msg)) {
+        if (previousFoundObjects && JSON.stringify(previousFoundObjects) === JSON.stringify(msg)) {
             return;
         }
 
@@ -130,8 +151,73 @@
             createObjectEntry(objectKey, msg[objectKey]);
         }
 
-        previousFoundObjects = JSON.stringify(msg);
+        // add event listeners - show possible actions/interactions when tap on table-view-cell
+        addEventListeners();
+
+        previousFoundObjects = msg; //JSON.stringify(msg);
     };
+
+    function addEventListeners() {
+        let objectList = document.getElementById('objectList');
+        Array.from(objectList.children).forEach(function(entry) {
+            // tapping the first row (the object name) opens/closes the details
+            entry.querySelector('.infoRow').addEventListener('pointerup', function(_e) {
+                let needsSelection = !entry.classList.contains('selectedItem');
+                resetSelection();
+
+                if (needsSelection) {
+                    selectItem(entry);
+                }
+            });
+        });
+    }
+
+    function selectItem(entry) {
+        entry.classList.add('selectedItem');
+
+        let objectKey = entry.dataset.objectKey;
+        console.log('selected ' + objectKey);
+
+        let isAnchor = previousFoundObjects[objectKey].isAnchor;
+
+        // add a child element that contains buttons
+        let buttonRow = entry.querySelector('.buttons');
+        if (!buttonRow) {
+            buttonRow = document.getElementsByTagName('template')['buttonRow'].content.cloneNode(true);
+            if (!isAnchor) {
+                buttonRow.querySelector('.anchorButton').remove();
+            }
+            buttonRow.querySelector('.locateButton').addEventListener('pointerup', function() {
+                console.log('hide settings');
+                parent.postMessage(
+                    JSON.stringify({
+                        foundObjectsButton: {
+                            hideSettings: true,
+                            locateObject: objectKey
+                        }
+                    }), "*")
+            });
+            entry.appendChild(buttonRow);
+        }
+    }
+
+    function deselectItem(entry) {
+        entry.classList.remove('selectedItem');
+
+        // remove child element with buttons
+        let buttonRow = entry.querySelector('.buttons');
+        if (buttonRow) {
+            buttonRow.remove();
+        }
+    }
+
+    function resetSelection() {
+        Array.from(document.querySelectorAll('.table-view-cell')).forEach(function(elt) {
+            if (elt.classList.contains('selectedItem')) {
+                deselectItem(elt);
+            }
+        })
+    }
 
     /**
      * Builds an HTML element displaying all information for this object and its frames, and adds it to the table.
@@ -139,11 +225,10 @@
      * @param {{name: string, version: string, ip: string, initialized: boolean, frames: Object}} objectInfo
      */
     function createObjectEntry(objectKey, objectInfo) {
-        var entry = document.createElement('li');
-        entry.className = 'table-view-cell';
-        entry.id = 'foundObject' + objectKey;
-
         var tableEntry = document.getElementsByTagName('template')['tableEntry'].content.cloneNode(true);
+        let tableEntryContents = tableEntry.querySelector('.table-view-cell');
+        tableEntryContents.id = 'foundObject' + objectKey;
+        tableEntryContents.dataset.objectKey = objectKey;
 
         // add a row for the object with the object name, version, and IP
         var objectRow = document.getElementsByTagName('template')['row'].content.cloneNode(true);
@@ -153,24 +238,26 @@
         }
 
         objectRow.querySelector('.rowName').innerText = objectInfo.name;
+        objectRow.querySelector('.rowName').style.fontWeight = '600';
+
         objectRow.querySelector('.rowVersion').innerText = objectInfo.version;
         objectRow.querySelector('.rowIP').innerText = objectInfo.ip;
         objectRow.querySelector('.rowNodes').style.visibility = 'hidden';
         objectRow.querySelector('.rowLinks').style.visibility = 'hidden';
 
-        tableEntry.querySelector('.table-view-cell').appendChild(objectRow);
+        tableEntryContents.appendChild(objectRow);
 
         // add additional rows in this table entry for each of this object's frames
         for (var frameKey in objectInfo.frames) {
             var frameInfo = objectInfo.frames[frameKey];
             var frameRow = createFrameRow(frameKey, frameInfo);
-            tableEntry.querySelector('.table-view-cell').appendChild(frameRow);
+            tableEntryContents.appendChild(frameRow);
         }
 
         // give visual feedback if an object's Vuforia target was not initialized correctly
         if (!objectInfo.initialized && !objectInfo.isAnchor) {
-            tableEntry.querySelector('.table-view-cell').style.opacity = 0.5;
-            tableEntry.querySelector('.table-view-cell').style.color = 'rgb(255,0,124)';
+            tableEntryContents.style.opacity = 0.5;
+            tableEntryContents.style.color = 'rgb(255,0,124)';
         }
 
         document.getElementById("objectList").appendChild(tableEntry);
