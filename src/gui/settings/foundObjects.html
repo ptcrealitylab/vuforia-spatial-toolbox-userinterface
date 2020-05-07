@@ -42,6 +42,9 @@
             width: 100%;
         }
         .selectedItem {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .whereIsItem {
             background-color: rgba(0,255,255,0.15);
         }
         .badge {
@@ -112,7 +115,7 @@
         <div class="buttons">
             <div class="infoRow" style="height: 40px; font-size: large; justify-content: start; align-items: center; text-align: center">
                 <div>
-                    <span class="objectButton locateButton">Locate</span>
+                    <span class="objectButton locateButton">Start Locating</span>
                 </div>
                 <div>
                     <span class="objectButton anchorButton">Snap Anchor to Screen</span>
@@ -125,6 +128,7 @@
 
 <script>
     var previousFoundObjects = null; // stores stringified foundObjects so that we can detect changes over time
+    let whereIs = {};
 
     // because this is a self-contained iframe, only way to receive data about found objects is using a message listener
     window.addEventListener("message", function (e) {
@@ -172,6 +176,40 @@
         });
     }
 
+    function toggleWhereIs(objectKey) {
+        if (typeof whereIs[objectKey] !== 'undefined') {
+            delete whereIs[objectKey];
+        } else {
+            whereIs[objectKey] = {
+                objectID: objectKey,
+                toolID: '',
+                nodeID: ''
+            }
+        }
+
+        updateVisualsForWhereIs(objectKey);
+    }
+
+    function updateVisualsForWhereIs(objectKey) {
+        let tableEntry = document.getElementById('foundObject' + objectKey);
+        if (!tableEntry) { return; }
+
+        if (whereIs[objectKey]) {
+            tableEntry.classList.add('whereIsItem');
+        } else {
+            tableEntry.classList.remove('whereIsItem');
+        }
+
+        let buttonRow = tableEntry.querySelector('.buttons');
+        if (!buttonRow) { return; }
+
+        if (whereIs[objectKey]) {
+            buttonRow.querySelector('.locateButton').innerText = 'Stop Locating';
+        } else {
+            buttonRow.querySelector('.locateButton').innerText = 'Start Locating';
+        }
+    }
+
     function selectItem(entry) {
         entry.classList.add('selectedItem');
 
@@ -184,21 +222,41 @@
         let buttonRow = entry.querySelector('.buttons');
         if (!buttonRow) {
             buttonRow = document.getElementsByTagName('template')['buttonRow'].content.cloneNode(true);
-            if (!isAnchor) {
-                buttonRow.querySelector('.anchorButton').remove();
-            }
+
+            updateVisualsForWhereIs(objectKey);
+
+            // all objects get a locate button to navigate to it
             buttonRow.querySelector('.locateButton').addEventListener('pointerup', function() {
-                console.log('hide settings');
-                parent.postMessage(
-                    JSON.stringify({
-                        foundObjectsButton: {
-                            hideSettings: true,
-                            locateObject: objectKey
-                        }
-                    }), "*")
+                toggleWhereIs(objectKey);
+                let message = {
+                    // hideSettings: true,
+                    locateObjects: whereIs
+                };
+                sendButtonMessage(message);
             });
+
+            // anchor objects get button to snap to screen
+            if (isAnchor) {
+                buttonRow.querySelector('.anchorButton').addEventListener('pointerup', function() {
+                    let message = {
+                        hideSettings: true,
+                        snapAnchorToScreen: objectKey
+                    };
+                    sendButtonMessage(message);
+                });
+            } else {
+                buttonRow.querySelector('.anchorButton').remove(); // hide for normal objects
+            }
+
             entry.appendChild(buttonRow);
         }
+    }
+
+    function sendButtonMessage(msgContent) {
+        parent.postMessage(
+            JSON.stringify({
+                foundObjectsButton: msgContent
+            }), "*")
     }
 
     function deselectItem(entry) {
