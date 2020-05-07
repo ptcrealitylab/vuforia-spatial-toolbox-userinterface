@@ -474,9 +474,16 @@ createNameSpace("realityEditor.gui.ar.anchors");
         });
     }
 
+    function snapAnchorToScreen(objectKey) {
+        fullscreenAnchor = objectKey;
+        // update the HTML of the anchor based on whether it is now fullscreen or not
+        updateAnchorGraphics(objectKey);
+    }
+
     exports.initService = initService;
     exports.isAnchorHeartbeat = isAnchorHeartbeat;
     exports.createAnchorFromHeartbeat = createAnchorFromHeartbeat;
     exports.isAnchorObject = isAnchorObject;
+    exports.snapAnchorToScreen = snapAnchorToScreen;
 
 })(realityEditor.gui.ar.anchors);
