@@ -1844,8 +1844,14 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 version: thisObject.version,
                 frames: {},
                 initialized: isInitialized,
-                isAnchor: realityEditor.gui.ar.anchors.isAnchorObject(objectKey)
+                isAnchor: realityEditor.gui.ar.anchors.isAnchorObject(objectKey),
+                isWorld: thisObject.isWorldObject
             };
+
+            if (thisObject.isWorldObject) {
+                // getOrigin returns null if not seen yet, matrix if has been seen
+                thisObjects[objectKey].isLocalized = !!realityEditor.worldObjects.getOrigin(objectKey);
+            }
 
             for (let frameKey in thisObject.frames) {
                var thisFrame = realityEditor.getFrame(objectKey, frameKey);
