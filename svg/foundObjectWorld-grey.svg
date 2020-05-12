@@ -1,0 +1,32 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 27.2 27.2">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #010101;
+      }
+
+      .cls-2 {
+        fill: #c4c6c8;
+        stroke-width: 1.5px;
+      }
+
+      .cls-2, .cls-3 {
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-3 {
+        fill: none;
+        stroke-width: 0.75px;
+      }
+    </style>
+  </defs>
+  <path class="cls-1" d="M21.3,1.5a4.44,4.44,0,0,1,4.4,4.4V21.2a4.44,4.44,0,0,1-4.4,4.4H5.9a4.44,4.44,0,0,1-4.4-4.4V5.9A4.44,4.44,0,0,1,5.9,1.5H21.3m0-1.5H5.9A6,6,0,0,0,0,5.9V21.2a5.91,5.91,0,0,0,5.9,5.9H21.2a5.91,5.91,0,0,0,5.9-5.9V5.9A5.76,5.76,0,0,0,21.3,0Z"/>
+  <circle class="cls-2" cx="13.8" cy="14" r="9"/>
+  <path class="cls-3" d="M13.9,5.5c6,3,6,14,0,17"/>
+  <line class="cls-3" x1="4.9" y1="14.5" x2="22.9" y2="14.5"/>
+  <path class="cls-3" d="M7.9,7.5c0,3,12,3,12,0"/>
+  <path class="cls-3" d="M7.9,20.5c0-2,12-2,12,0"/>
+  <path class="cls-3" d="M13.9,5.5c-6,3-6,14,0,17"/>
+  <line class="cls-3" x1="13.9" y1="5.5" x2="13.9" y2="22.5"/>
+</svg>
