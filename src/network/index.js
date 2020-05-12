@@ -1851,6 +1851,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
             if (thisObject.isWorldObject) {
                 // getOrigin returns null if not seen yet, matrix if has been seen
                 thisObjects[objectKey].isLocalized = !!realityEditor.worldObjects.getOrigin(objectKey);
+            } else if (thisObject.isAnchor) {
+                // anchors are localized if their world object has been seen
+                thisObjects[objectKey].isLocalized = realityEditor.gui.ar.anchors.isAnchorObjectDetected(objectKey);
             }
 
             for (let frameKey in thisObject.frames) {
