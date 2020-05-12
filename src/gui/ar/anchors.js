@@ -480,10 +480,17 @@ createNameSpace("realityEditor.gui.ar.anchors");
         updateAnchorGraphics(objectKey);
     }
 
+    // TODO: associate each anchor with a world, and only return true if that particular world has been seen
+    // for now, returns true if any world other than world_local has been seen
+    function isAnchorObjectDetected(_objectKey) {
+        return realityEditor.worldObjects.getBestWorldObject().objectId !== realityEditor.worldObjects.getLocalWorldId();
+    }
+
     exports.initService = initService;
     exports.isAnchorHeartbeat = isAnchorHeartbeat;
     exports.createAnchorFromHeartbeat = createAnchorFromHeartbeat;
     exports.isAnchorObject = isAnchorObject;
     exports.snapAnchorToScreen = snapAnchorToScreen;
+    exports.isAnchorObjectDetected = isAnchorObjectDetected;
 
 })(realityEditor.gui.ar.anchors);
