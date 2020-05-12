@@ -228,6 +228,7 @@
         console.log('selected ' + objectKey);
 
         let isAnchor = previousFoundObjects[objectKey].isAnchor;
+        let isLocalized = previousFoundObjects[objectKey].isLocalized;
 
         // add a child element that contains buttons
         let buttonRow = entry.querySelector('.buttons');
@@ -245,7 +246,7 @@
             });
 
             // anchor objects get button to snap to screen
-            if (isAnchor) {
+            if (isAnchor && isLocalized) {
                 buttonRow.querySelector('.anchorButton').addEventListener('pointerup', function() {
                     let message = {
                         hideSettings: true,
@@ -306,11 +307,14 @@
         // tag object rows with a different class than frame rows, for css:active
         objectRow.querySelector('.infoRow').classList.add('objectInfoRow');
 
-        // different icon for anchors and world objects
+        // different icon for anchors and world objects, and show whether they've been seen (localized) yet
         if (objectInfo.isAnchor) {
-            objectRow.querySelector('.media-object').src = '../../../svg/foundObjectAnchor.svg';
+            if (objectInfo.isLocalized) {
+                objectRow.querySelector('.media-object').src = '../../../svg/foundObjectAnchor.svg'
+            } else {
+                objectRow.querySelector('.media-object').src = '../../../svg/foundObjectAnchor-grey.svg'
+            }
         } else if (objectInfo.isWorld) {
-            // also check if it's localized
             if (objectInfo.isLocalized) {
                 objectRow.querySelector('.media-object').src = '../../../svg/foundObjectWorld-green.svg';
             } else {
