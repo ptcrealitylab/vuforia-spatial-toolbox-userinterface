@@ -4,14 +4,25 @@ createNameSpace("realityEditor.gui.settings");
 const InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
-    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT'
+    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
+    SLIDER: 'SLIDER'
 });
+
+let sliderDown = null;
 
 realityEditor.gui.settings.setSettings = function (id, state) {
     if (!document.getElementById(id)) return;
 
     // updates the toggle switch to display the current value
     if (id) {
+        
+        let isSlider = document.getElementById(id).classList.contains('slider');
+        if (isSlider) {
+            setSliderValue(id, state);
+            return;
+        }
+
+        // if not slider, always has a toggle
         if (state) {
             document.getElementById(id).classList.add('active');
         } else {
@@ -25,6 +36,15 @@ realityEditor.gui.settings.setSettings = function (id, state) {
         }
     }
 };
+
+function setSliderValue(id, value) {
+    let slider = document.getElementById(id);
+    let sliderHandle = slider.querySelector('.slider-handle');
+    let sliderFill = slider.querySelector('.slider-fill');
+
+    sliderHandle.style.left = value * parseFloat(slider.getClientRects()[0].width) + 'px';
+    sliderFill.style.width = value * parseFloat(slider.getClientRects()[0].width) + 'px';
+}
 
 realityEditor.gui.settings.loadSettingsPost = function () {
     console.log('settings/index loaded');
@@ -160,15 +180,40 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
                     newElement.appendChild(textField);
                 }
+                
+                if (settingInfo.settingType === InterfaceType.TOGGLE ||
+                    settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT ||
+                    settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
 
-                let toggle = document.createElement('div');
-                toggle.classList.add('toggle');
-                toggle.id = key;
-                newElement.appendChild(toggle);
+                    let toggle = document.createElement('div');
+                    toggle.classList.add('toggle');
+                    toggle.id = key;
+                    newElement.appendChild(toggle);
 
-                let toggleHandle = document.createElement('div');
-                toggleHandle.classList.add('toggle-handle');
-                toggle.appendChild(toggleHandle);
+                    let toggleHandle = document.createElement('div');
+                    toggleHandle.classList.add('toggle-handle');
+                    toggle.appendChild(toggleHandle);
+
+                } else if (settingInfo.settingType === InterfaceType.SLIDER) {
+
+                    let slider = document.createElement('div');
+                    slider.classList.add('slider');
+                    slider.id = key;
+                    newElement.appendChild(slider);
+
+                    // fills the part of the slider to the left of the handle with blue color
+                    let sliderFill = document.createElement('div');
+                    sliderFill.classList.add('slider-fill');
+                    slider.appendChild(sliderFill);
+                    
+                    let sliderHandle = document.createElement('div');
+                    sliderHandle.classList.add('slider-handle');
+                    slider.appendChild(sliderHandle);
+
+                    sliderHandle.addEventListener('pointerdown', function(_event) {
+                        sliderDown = slider;
+                    });
+                }
 
                 container.appendChild(newElement);
             }
@@ -184,6 +229,27 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         if (textfield && textfield.classList.contains('frozen')) {
             textfield.disabled = e.target.classList.contains('active');
         }
+    });
+
+    document.addEventListener('pointermove', function(event) {
+        if (sliderDown) {
+            let sliderHandle = sliderDown.querySelector('.slider-handle');
+            let sliderFill = sliderDown.querySelector('.slider-fill');
+            let parentLeft = sliderDown.getClientRects()[0].left;
+            let dx = Math.max(0, Math.min(sliderDown.getClientRects()[0].width, event.pageX - parentLeft));
+            sliderHandle.style.left = dx - sliderHandle.getClientRects()[0].width/2 + 'px';
+            sliderFill.style.width = dx - sliderHandle.getClientRects()[0].width/2 + 'px';
+        }
+    });
+    
+    document.addEventListener('pointerup', function(_event) {
+        if (sliderDown) {
+            let sliderHandle = sliderDown.querySelector('.slider-handle');
+            let value = parseFloat(sliderHandle.style.left) / parseFloat(sliderDown.getClientRects()[0].width);
+            console.log('set slider ' + sliderDown.id + ' to ' + value);
+            uploadSettingsForToggle(sliderDown.id, value);
+        }
+        sliderDown = null;
     });
 
     function uploadSettingsForToggle(elementId, isActive) {
