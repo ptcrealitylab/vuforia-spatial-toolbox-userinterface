@@ -877,6 +877,19 @@ body {
     display: none;
 }
 
+#settingsIframe {
+    background-color: #222222;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    width: 100%;
+    -webkit-transform: translateZ(9000px);
+    z-index: 900; /* always appear on top */
+}
+
 /*
 *
 *
