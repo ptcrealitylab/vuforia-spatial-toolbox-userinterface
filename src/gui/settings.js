@@ -71,7 +71,8 @@ realityEditor.gui.settings.toggleStates = {};
 realityEditor.gui.settings.InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
-    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT'
+    TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
+    SLIDER: 'SLIDER'
 });
 
 /**
@@ -84,6 +85,7 @@ realityEditor.gui.settings.MenuPages = Object.freeze({
 });
 
 /**
+ * @TODO: rename "toggle" to something more general
  * @constructor
  * An object that defines a particular setting in the settings menu that is dynamically added.
  *
@@ -235,6 +237,25 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
  */
 realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, ignoreOnload) {
     let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, undefined, ignoreOnload);
+    realityEditor.gui.settings.addedToggles.push(newToggle);
+    return newToggle;
+};
+
+/**
+ * Creates a new entry that will added to the settings menu, including the associated property and persistent storage.
+ * This type of entry has a toggle switch UI, and a text box UI.
+ * The toggle can only turn on if there is text. While active, the text cannot be edited
+ * @param {string} title
+ * @param {string} description
+ * @param {string} propertyName
+ * @param {string} iconSrc
+ * @param {number} defaultValue - (float between 0 and 1)
+ * @param {function<number>} onToggleCallback - gets triggered when the slider is moved
+ * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the slider is added
+ * @return {SettingsToggle}
+ */
+realityEditor.gui.settings.addSlider = function(title, description, propertyName, iconSrc, defaultValue, onToggleCallback, ignoreOnload) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.SLIDER, propertyName, iconSrc, defaultValue, undefined, onToggleCallback, undefined, ignoreOnload);
     realityEditor.gui.settings.addedToggles.push(newToggle);
     return newToggle;
 };
