@@ -266,13 +266,13 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = fu
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
 
     // frames use their AR data
-    
+
     if (activeVehicle.hasOwnProperty('visualization')) {
         return activeVehicle.ar;
     }
 
     // nodes on global frames use their x, y, scale and their parent frame's matrix
-    
+
     if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
         var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
         if (frame) {
