@@ -304,15 +304,22 @@ createNameSpace('realityEditor.app.callbacks');
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
         // only update groundplane if unfrozen and at least one thing is has requested groundplane usage
         if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
-            if (realityEditor.gui.ar.draw.worldCorrection === null) { // TODO: figure out how ground plane works if there are multiple world origins with different planes
-                realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
-            } else {
-                // this part is entered if we have re-localized by looking at the world origin marker
-                console.warn('Should never get here until we fix worldCorrection');
-                let tempMatrix = [];
-                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, realityEditor.gui.ar.draw.worldCorrection, tempMatrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(tempMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
-            }
+            
+            let worldObject = realityEditor.worldObjects.getBestWorldObject();
+
+            // snap groundplane to world origin, if available
+            if (worldObject) {
+                let origin = realityEditor.worldObjects.getOrigin(worldObject.uuid);
+                if (origin) {
+                    let tempMatrix = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, origin, tempMatrix);
+                    realityEditor.gui.ar.utilities.multiplyMatrix(tempMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
+                    return;
+                }
+            } 
+            
+            // otherwise use groundplane from vuforia
+            realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix)
         }
     }
 
