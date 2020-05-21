@@ -41,9 +41,11 @@ function setSliderValue(id, value) {
     let slider = document.getElementById(id);
     let sliderHandle = slider.querySelector('.slider-handle');
     let sliderFill = slider.querySelector('.slider-fill');
-
-    sliderHandle.style.left = value * parseFloat(slider.getClientRects()[0].width) + 'px';
-    sliderFill.style.width = value * parseFloat(slider.getClientRects()[0].width) + 'px';
+    
+    if (slider.getClientRects()[0]) { // avoids error if slider isn't on screen
+        sliderHandle.style.left = value * parseFloat(slider.getClientRects()[0].width) + 'px';
+        sliderFill.style.width = value * parseFloat(slider.getClientRects()[0].width) + 'px';
+    }
 }
 
 realityEditor.gui.settings.loadSettingsPost = function () {
