@@ -367,15 +367,29 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             
             // TODO: check if this needs to be fixed for desktop, now that we have a different method for worldCorrection / world origins
             if (!realityEditor.device.utilities.isDesktop()) {
-                if (realityEditor.gui.ar.draw.worldCorrection !== null) {
-                    console.warn('Should never get here until we fix worldCorrection');
-                    if (!this.activeObject.isWorldObject) {
-                        // properly accounts for world correction
-                        realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.worldCorrection), this.activeObject.matrix);
-                        // this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]); // old version didn't include worldCorrection
-                        realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
+
+                let worldObject = realityEditor.worldObjects.getBestWorldObject();
+                // fix groundplane snapping to world object transformation
+                if (worldObject) {
+                    let origin = realityEditor.worldObjects.getOrigin(worldObject.uuid);
+                    if (origin) {
+                        if (!this.activeObject.isWorldObject) {
+                            // properly accounts for world correction
+                            realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.utilities.invertMatrix(origin), this.activeObject.matrix);
+                            realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
+                        }
                     }
                 }
+
+                // if (realityEditor.gui.ar.draw.worldCorrection !== null) {
+                //     console.warn('Should never get here until we fix worldCorrection');
+                //     if (!this.activeObject.isWorldObject) {
+                //         // properly accounts for world correction
+                //         realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.worldCorrection), this.activeObject.matrix);
+                //         // this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]); // old version didn't include worldCorrection
+                //         realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
+                //     }
+                // }
             }
             
             if (this.activeObject.isWorldObject) {
