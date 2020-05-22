@@ -886,6 +886,7 @@ body {
     right: 0;
     height: 100%;
     width: 100%;
+    transform: translateZ(9000px);
     -webkit-transform: translateZ(9000px);
     z-index: 900; /* always appear on top */
 }
