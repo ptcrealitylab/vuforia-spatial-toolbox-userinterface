@@ -19,4 +19,16 @@ createNameSpace("realityEditor.device.environment");
         return 1; // 5 if desktop
     };
 
+    exports.shouldBroadcastUpdateObjectMatrix = function() {
+        return false; // true if desktop
+    };
+
+    exports.doWorldObjectsRequireCameraTransform = function() {
+        return false; // true if desktop
+    };
+
+    exports.requiresMouseEvents = function() {
+        return false; // true if desktop
+    };
+
 }(realityEditor.device.environment));

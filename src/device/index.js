@@ -363,7 +363,7 @@ realityEditor.device.addDocumentTouchListeners = function() {
     document.addEventListener('pointermove', this.onDocumentPointerMove.bind(this));
     document.addEventListener('pointerup', this.onDocumentPointerUp.bind(this));
     
-    if (realityEditor.device.utilities.isDesktop()) {
+    if (realityEditor.device.environment.requiresMouseEvents()) {
         document.addEventListener('mousedown', this.onDocumentMultiTouchStart.bind(this));
         document.addEventListener('mousemove', this.onDocumentMultiTouchMove.bind(this));
         document.addEventListener('mouseup', this.onDocumentMultiTouchEnd.bind(this));
@@ -391,7 +391,7 @@ realityEditor.device.addTouchListenersForElement = function(overlayDomElement, a
         evt.target.releasePointerCapture(evt.pointerId);
     });
 
-    if (realityEditor.device.utilities.isDesktop()) {
+    if (realityEditor.device.environment.requiresMouseEvents()) {
         // use TouchEvents for dragging because it keeps its original target even if you leave the bounds of the target
         overlayDomElement.addEventListener('mouseup', this.onElementMultiTouchEnd.bind(this));
         // overlayDomElement.addEventListener('touchcancel', this.onElementMultiTouchEnd.bind(this));
@@ -547,7 +547,7 @@ realityEditor.device.disablePinchToScale = function() {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchDown = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     var target = event.currentTarget;
     var activeVehicle = realityEditor.getVehicle(target.objectId, target.frameId, target.nodeId);
@@ -615,7 +615,7 @@ realityEditor.device.onElementTouchDown = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchMove = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     var target = event.currentTarget;
     
@@ -644,7 +644,7 @@ realityEditor.device.onElementTouchMove = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchEnter = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     var target = event.currentTarget;
     
@@ -686,7 +686,7 @@ realityEditor.device.onElementTouchEnter = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchOut = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     var target = event.currentTarget;
     if (target.type !== "ui") {
@@ -724,7 +724,7 @@ realityEditor.device.onElementTouchOut = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchUp = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     var target = event.currentTarget;
     var activeVehicle = this.getEditingVehicle();
@@ -926,7 +926,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerDown = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
     
     globalStates.pointerPosition = [event.clientX, event.clientY];
 
@@ -962,7 +962,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerMove = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     event.preventDefault(); //TODO: why is this here but not in other document events?
 
@@ -986,7 +986,7 @@ realityEditor.device.onDocumentPointerMove = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerUp = function(event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
 
     // add the pocket node to the closest frame
     if (realityEditor.gui.buttons.getButtonState('pocket') === 'down') {
@@ -1063,7 +1063,7 @@ realityEditor.device.onDocumentPointerUp = function(event) {
  * @param {MouseEvent} event
  */
 function modifyTouchEventIfDesktop(event) {
-    if (realityEditor.device.utilities.isDesktop()) {
+    if (realityEditor.device.environment.requiresMouseEvents()) {
         event.touches = [];
         event.touches[0] = {
             altitudeAngle: 0,
@@ -1092,7 +1092,7 @@ function modifyTouchEventIfDesktop(event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
@@ -1149,7 +1149,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchMove = function (event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
@@ -1371,7 +1371,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchEnd = function (event) {
-    if (realityEditor.device.utilities.isDesktop() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchend", realityEditor.device.touchInputs.screenTouchEnd);

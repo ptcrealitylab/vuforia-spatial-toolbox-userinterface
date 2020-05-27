@@ -387,7 +387,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // }
       
             // TODO: check if this needs to be fixed for desktop, now that we have a different method for worldCorrection / world origins
-            if (!realityEditor.device.utilities.isDesktop()) {
+            if (realityEditor.device.environment.shouldBroadcastUpdateObjectMatrix()) {
                 if (realityEditor.gui.ar.draw.worldCorrection !== null) {
                     console.warn('Should never get here until we fix worldCorrection');
                     if (!this.activeObject.isWorldObject) {
@@ -405,7 +405,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     continue;
                 }
                 // on desktop, model matrix for a world object will be origin instead of camera position, so update with camera view matrix
-                if (realityEditor.device.utilities.isDesktop()) {
+                if (realityEditor.device.environment.doWorldObjectsRequireCameraTransform()) {
                     this.activeObjectMatrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]);
                     // use rotateX?
                     var tempM = [];
