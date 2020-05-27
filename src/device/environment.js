@@ -31,4 +31,8 @@ createNameSpace("realityEditor.device.environment");
         return false; // true if desktop
     };
 
+    exports.supportsDistanceFading = function() {
+        return true; // false for desktop?
+    }
+
 }(realityEditor.device.environment));

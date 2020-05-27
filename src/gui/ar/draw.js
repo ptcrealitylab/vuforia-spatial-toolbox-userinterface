@@ -1193,9 +1193,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             }
             */
 
-            // frames don't fade out with distance on desktop remote renderer, but they do on the phone
-            var ENABLE_DISTANCE_FADING_ON_DESKTOP = false;
-            if ((!realityEditor.device.utilities.isDesktop() || ENABLE_DISTANCE_FADING_ON_DESKTOP) && !globalStates.freezeButtonState) { // can't change while frozen so don't recalculate
+            // can't change while frozen so don't recalculate
+            if (realityEditor.device.environment.supportsDistanceFading() && !globalStates.freezeButtonState) {
                 // fade out frames and nodes when they move beyond a certain distance
                 var distance = activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
@@ -1377,13 +1376,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
                     utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
                     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
                 }
-            }
-
-            // todo: this code was thrown together in a pretty haphazard way for desktop rendering. needs some cleanup and documentation.
-            // fixes rotation too late
-            if (realityEditor.device.utilities.isDesktop()) {
-                var finalMatCopy = realityEditor.gui.ar.utilities.copyMatrix(finalMatrix);
-                realityEditor.gui.ar.utilities.multiplyMatrix(desktopFrameTransform, finalMatCopy, finalMatrix);
             }
 
             if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
