@@ -63,6 +63,7 @@ var realityEditor = realityEditor || {
     },
     device: {
         distanceScaling: {},
+        environment: {},
         keyboardEvents: {},
         layout: {},
         onLoad: {},
