@@ -11,4 +11,12 @@ createNameSpace("realityEditor.device.environment");
 
     exports.initService = initService;
 
+    exports.providesOwnUpdateLoop = function() {
+        return false; // true if desktop
+    };
+
+    exports.getLineWidthMultiplier = function() {
+        return 1; // 5 if desktop
+    };
+
 }(realityEditor.device.environment));

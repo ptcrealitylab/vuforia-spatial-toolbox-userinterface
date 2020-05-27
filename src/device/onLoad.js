@@ -245,7 +245,7 @@ realityEditor.device.onload = function () {
     (function animate(time) {
         realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
-        if (globalStates.freezeButtonState && !realityEditor.device.utilities.isDesktop()) {
+        if (globalStates.freezeButtonState && !realityEditor.device.environment.providesOwnUpdateLoop()) {
             realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
         }
         requestAnimationFrame(animate);
@@ -258,33 +258,6 @@ realityEditor.device.onload = function () {
     
     // start the AR framework in native iOS
     realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
-    
-    // window.addEventListener('resize', function(event) {
-    //     console.log(window.innerWidth, window.innerHeight);
-    // });
-    
-    // this is purely for debugging purposes, can be removed in production.
-    // re-purposes the speechConsole from an old experiment into an on-screen message display for debug messages
-    // TODO: implement a clean system for logging info or debug messages to an on-screen display
-    if (!realityEditor.device.utilities.isDesktop()) {
-        if (globalStates.debugSpeechConsole) {
-            document.getElementById('speechConsole').style.display = 'inline';
-            
-            var DEBUG_SHOW_CLOSEST_OBJECT = false;
-            if (DEBUG_SHOW_CLOSEST_OBJECT) {
-                setInterval(function() {
-                    var closestObjectKey = realityEditor.gui.ar.getClosestObject()[0];
-                    if (closestObjectKey) {
-                        var mat = realityEditor.getObject(closestObjectKey).matrix; //realityEditor.gui.ar.draw.visibleObjects[closestObjectKey];
-                        if (realityEditor.gui.ar.draw.worldCorrection !== null) {
-                            console.warn('Should never get here until we fix worldCorrection');
-                            document.getElementById('speechConsole').innerText = 'object ' + closestObjectKey + ' is at (' + mat[12]/mat[15] + ', ' + mat[13]/mat[15] + ', ' + mat[14]/mat[15] + ')';
-                        }
-                    }
-                }, 500);
-            }
-        }
-    }
 
     // see if we should open the modal - defaults hidden but can be turned on from menu
     let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
