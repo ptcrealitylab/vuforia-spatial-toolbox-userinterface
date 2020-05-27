@@ -181,11 +181,6 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
-    
-    // on desktop, the desktopAdapter adds a different update loop, but on mobile we set up the default one here
-    // if (!realityEditor.device.utilities.isDesktop()) {
-    //     realityEditor.gui.ar.draw.updateLoop();
-    // }
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
