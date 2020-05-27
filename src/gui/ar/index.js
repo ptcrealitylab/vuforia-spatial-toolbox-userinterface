@@ -65,25 +65,6 @@ createNameSpace("realityEditor.gui.ar");
  * @param {Array.<number>} matrix - a 4x4 projection matrix
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
-    
-    // matrix[0] *= -1;
-
-    // if (realityEditor.device.utilities.isDesktop()) {
-    //     globalStates.realProjectionMatrix = matrix;
-    //     globalStates.projectionMatrix = matrix;
-    //     return;
-    // }
-    //
-    // if (realityEditor.device.utilities.isDesktop()) {
-    //     var scaleFactor = window.innerWidth/568;
-    //     matrix[0] *= scaleFactor;
-    //     matrix[5] *= scaleFactor;
-    //     matrix[10] *= scaleFactor;
-    //     globalStates.realProjectionMatrix = matrix;
-    //     globalStates.projectionMatrix = matrix;
-    //     return;
-    // }
-    //
 
     if (realityEditor.device.utilities.isDesktop()) {
         matrix[5] *= -1;
@@ -205,10 +186,6 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
     ];
     
     var multiplier = -1;
-
-    // if (realityEditor.device.utilities.isDesktop()) {
-    //     multiplier = 1;
-    // }
 
     var viewportScaling = [
         globalStates.height, 0, 0, 0,
