@@ -65,11 +65,6 @@ createNameSpace("realityEditor.gui.ar");
  * @param {Array.<number>} matrix - a 4x4 projection matrix
  */
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
-
-    if (realityEditor.device.utilities.isDesktop()) {
-        matrix[5] *= -1;
-        matrix[0] *= -1;
-    }
     
     var corX = 0;
     var corY = 0;
@@ -391,36 +386,6 @@ realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
     return {
         objectKey: object,
         distance: distance
-    }
-};
-
-/**
- * @note: currently not used, but may be useful
- * Returns a list of every object and the distance from that to the camera 
- * @param {boolean} isDesktop
- * @return {{dist: *, key: *}[]}
- */
-realityEditor.gui.ar.utilities.getAllObjectDistances = function(isDesktop) {
-    
-    if (isDesktop) {
-        // camera behavior is different on desktop
-        return Object.keys(realityEditor.gui.ar.draw.visibleObjects).map(function(key) {
-            var mat = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.visibleObjects[key], realityEditor.gui.ar.draw.correctedCameraMatrix, mat);
-            return {
-                key: key,
-                dist: realityEditor.gui.ar.utilities.distance(mat)
-            }
-        });
-
-    } else {
-        return Object.keys(realityEditor.gui.ar.draw.modelViewMatrices).map(function (key) {
-            return {
-                key: key,
-                dist: realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[key])
-            }
-        });
-
     }
 };
 

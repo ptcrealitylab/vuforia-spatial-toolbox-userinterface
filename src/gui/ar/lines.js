@@ -413,10 +413,8 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         lineStartWeight = lineEndWeight;
     }
     
-    if (realityEditor.device.utilities.isDesktop()) {
-        lineStartWeight *= 5;
-        lineEndWeight *= 5;
-    }
+    lineStartWeight *= realityEditor.device.environment.getLineWidthMultiplier();
+    lineEndWeight *= realityEditor.device.environment.getLineWidthMultiplier();
     
     if (typeof lineAlphaStart === 'undefined') lineAlphaStart = 1.0;
     if (typeof lineAlphaEnd === 'undefined') lineAlphaEnd = 1.0;
