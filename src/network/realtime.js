@@ -19,15 +19,19 @@ createNameSpace("realityEditor.network.realtime");
      */
     function initService() {
         // TODO Is this redundant code? It seems to generate the error that pops up
-        
-        if (realityEditor.device.utilities.isDesktop()) { realityEditor.gui.settings.toggleStates.realtimeEnabled = true; } // realtime is necessary for desktop to work
+
+        // realtime is necessary for some environments to work
+        if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
+            realityEditor.gui.settings.toggleStates.realtimeEnabled = true;
+        }
         console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, realityEditor.gui.settings.toggleStates.realtimeEnabled);
 
+        // don't initialize multiple times or if this feature is specifically turned off
         if (hasBeenInitialized || !realityEditor.gui.settings.toggleStates.realtimeEnabled) return;
         
         console.log('actually initializing realtime services');
 
-        if (realityEditor.device.utilities.isDesktop()) {
+        if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
             desktopSocket = io.connect();
         }
         setupVehicleUpdateSockets();

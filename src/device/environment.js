@@ -33,6 +33,14 @@ createNameSpace("realityEditor.device.environment");
 
     exports.supportsDistanceFading = function() {
         return true; // false for desktop?
-    }
+    };
+
+    exports.getDistanceScaleFactor = function() {
+        return 1; // 10 for desktop?
+    };
+
+    exports.shouldCreateDesktopSocket = function() {
+        return false; // true for desktop
+    };
 
 }(realityEditor.device.environment));
