@@ -875,7 +875,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     if (globalStates.guiState === "node") {
                         
                         // we're using the same method as when we add a node from a memory, instead of using old pocket method. // TODO: make less hack of a solution
-                        let addedElement = realityEditor.gui.pocket.createLogicNode();
+                        let addedElement = null;
+                        try {
+                            addedElement = realityEditor.gui.pocket.createLogicNode();
+                        } catch (e) {
+                            console.warn('Unable to create new logic node', e);
+                            return;
+                        }
 
                         // set the name of the node by counting how many logic nodes the frame already has
                         var closestFrame = realityEditor.getFrame(addedElement.objectKey, addedElement.frameKey);
