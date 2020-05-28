@@ -79,13 +79,6 @@ realityEditor.gui.ar.draw.activeObjectMatrix = [];
 realityEditor.gui.ar.draw.finalMatrix = [];
 realityEditor.gui.ar.draw.rotateX = rotateX;
 
-var desktopFrameTransform = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-
 /**
  * @type {{temp: number[], begin: number[], end: number[], r: number[], r2: number[], r3: number[]}}
  */
