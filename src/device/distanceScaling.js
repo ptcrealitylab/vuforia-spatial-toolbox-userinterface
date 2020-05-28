@@ -43,7 +43,7 @@ createNameSpace("realityEditor.device.distanceScaling");
     }
 
     function getDefaultDistance() {
-        return defaultDistance;
+        return defaultDistance * realityEditor.device.environment.getDistanceScaleFactor();
     }
     
     function initService() {
@@ -54,11 +54,6 @@ createNameSpace("realityEditor.device.distanceScaling");
         
         realityEditor.gui.buttons.registerCallbackForButton('distance', onDistanceEditingModeChanged);
         realityEditor.gui.buttons.registerCallbackForButton('distanceGreen', onDistanceGreenPressed);
-        
-        if (realityEditor.device.utilities.isDesktop()) {
-            console.log('adjusted default distance from ' + defaultDistance + ' (for desktop)');
-            defaultDistance = defaultDistance * 10;
-        }
     }
     
     function loop() {
