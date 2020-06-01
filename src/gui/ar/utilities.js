@@ -1463,7 +1463,7 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
 
 /**
  * @desc Uses Pythagorean theorem to return the 3D distance to the origin of the transformation matrix.
- * @param {Array} matrix of the point - should be provided in the format taken from realityEditor.gui.ar.draw.visibleObjects
+ * @param {Array} matrix of the point - should be provided in the format taken from gui.ar.draw.modelViewMatrices
  * @return {number} distance
  */
 realityEditor.gui.ar.utilities.distance = function (matrix) {
