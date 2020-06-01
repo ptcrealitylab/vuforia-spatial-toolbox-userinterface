@@ -144,7 +144,11 @@
 </div>
 
 <script>
-    var previousFoundObjects = null; // stores stringified foundObjects so that we can detect changes over time
+    /**
+     * The most recently rendered set of objects discovered by the app
+     * @type {Object.<string, {name: string, version: string, ip: string, initialized: boolean, frames: Object, isAnchor: boolean, isWorld: boolean}>}
+     */
+    var previousFoundObjects = null;
 
     // stores which objects currently have navigation toggled on. gets sent to app to trigger navigation for those objs
     let whereIs = {};
@@ -161,7 +165,7 @@
      * This gets triggered by a POST message coming into this iframe from the parent window.
      * It receives a set of information for each discovered object, and renders a table displaying the information.
      * This should get called on a (infrequent) loop as long as the iframe is open, so that it doesn't keep stale data.
-     * @param {Object.<string, {name: string, version: string, ip: string, initialized: boolean, frames: Object}>} msg
+     * @param {Object.<string, {name: string, version: string, ip: string, initialized: boolean, frames: Object, isAnchor: boolean, isWorld: boolean}>} msg
      */
     realityEditor.gui.settings.getObjectsFunction = function (msg) {
         // don't re-render if nothing has changed
