@@ -2846,7 +2846,7 @@ realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix
 
 /**
  * Upload the current position of an object (via its transformation matrix) relative to the
- * closest world object origin
+ * closest world object origin. Used for anchors.
  * @param {string} ip
  * @param {string} objectKey
  * @param {Array.<number>} matrix

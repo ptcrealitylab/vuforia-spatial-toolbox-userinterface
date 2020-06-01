@@ -174,6 +174,12 @@ realityEditor.gui.ar.draw.addUpdateListener = function (callback) {
     this.updateListeners.push(callback);
 };
 
+/**
+ * Registers a callback for other modules to modify the list of visible objects before rendering takes place
+ * Passes in a mutable set of objectId:matrix pairs that can be added to (or removed), e.g. anchors can use this to
+ * be rendered by the regular update loop even though they aren't detected by Vuforia
+ * @param {function} callback
+ */
 realityEditor.gui.ar.draw.addVisibleObjectModifier = function (callback) {
     this.visibleObjectModifiers.push(callback);
 };
@@ -416,8 +422,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             }
 
-            // realityEditor.worldObjects.getBestWorldObject().uuid
-            
             realityEditor.gui.spatial.whereIs(this.activeObjectMatrix,objectKey, null,null);
             
             // extract its projected (x,y) screen coordinates from the matrix
