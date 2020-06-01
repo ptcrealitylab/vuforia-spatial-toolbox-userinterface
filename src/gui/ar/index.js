@@ -401,6 +401,8 @@ realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
             }
         }
 
+        // distance is computed from modelViewMatrices rather than un-modified visibleObject matrices to be compatible
+        // with both regular objects and anchor objects
         distance = this.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
 
         if (distance < closest) {

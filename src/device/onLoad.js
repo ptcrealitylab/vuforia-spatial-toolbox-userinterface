@@ -90,12 +90,6 @@ realityEditor.device.onload = function () {
         // only draw frame ghosts while in programming mode if we're not in power-save mode
         globalStates.renderFrameGhostsInNodeViewEnabled = !newValue;
     });
-    
-    // temporarily remove this because it isn't used right now
-    // realityEditor.gui.settings.addToggle('Extended Tracking', 'further track image and object targets', 'extendedTracking', '../../../svg/extended.svg', false, function(newValue) {
-    //     console.log('extended tracking was set to ' + newValue);
-    //     realityEditor.app.enableExtendedTracking(newValue);
-    // });
 
     realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled',  '../../../svg/grouping.svg', false, function(newValue) {
         console.log('grouping was set to ' + newValue);
@@ -109,14 +103,6 @@ realityEditor.device.onload = function () {
         }
         // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
     });
-
-    // temporarily remove this way of recording videos because the corresponding frame isn't defined
-    // realityEditor.gui.settings.addToggle('Video Recording', 'show recording button to create video frames', 'videoRecordingEnabled',  '../../../svg/video.svg', false, function(newValue) {
-    //     console.log('video recording was set to ' + newValue);
-    //     if (!newValue) {
-    //         realityEditor.device.videoRecording.stopRecording(); // ensure recording is stopped when mode is turned off
-    //     }
-    // });
 
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
         console.log('tutorial mode was set to ' + newValue);
@@ -304,7 +290,7 @@ realityEditor.device.onload = function () {
         }
     }
 
-    // see if we should open the modal
+    // see if we should open the modal - defaults hidden but can be turned on from menu
     let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';
 
     if (shouldShowIntroModal) {
