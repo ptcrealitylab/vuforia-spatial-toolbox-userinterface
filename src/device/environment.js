@@ -28,6 +28,9 @@ createNameSpace("realityEditor.device.environment");
         requiresMouseEvents: false,
         supportsDistanceFading: true,
         shouldCreateDesktopSocket: false,
+        distanceRequiresCameraTransform: false,
+        ignoresFreezeButton: false,
+        shouldDisplayLogicMenuModally: false,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1 // 10
@@ -89,6 +92,33 @@ createNameSpace("realityEditor.device.environment");
      */
     exports.shouldCreateDesktopSocket = function() {
         return variables.shouldCreateDesktopSocket;
+    };
+
+    /**
+     * Whether features such as unconstrained repositioning or distance scaling should continue even if the freeze
+     * button is activated.
+     * @return {boolean} - default false
+     */
+    exports.ignoresFreezeButton = function() {
+        return variables.ignoresFreezeButton;
+    };
+
+    /**
+     * Whether the logic block menu should be rendered as a popup along the right edge of the screen, rather than
+     * expanding to be fullscreen and centered.
+     * @return {boolean} - default false
+     */
+    exports.shouldDisplayLogicMenuModally = function() {
+        return variables.shouldDisplayLogicMenuModally;
+    };
+
+    /**
+     * Set to true if calculating distance of visibleObjects matrix should implicitly multiply by camera position
+     * Necessary for some camera systems.
+     * @return {boolean} - default false
+     */
+    exports.distanceRequiresCameraTransform = function() {
+        return variables.distanceRequiresCameraTransform;
     };
 
     /**

@@ -1469,7 +1469,7 @@ realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
 realityEditor.gui.ar.utilities.distance = function (matrix) {
     var distance = 1000; // for now give a valid value as a fallback
     try {
-        if (realityEditor.device.utilities.isDesktop()) {
+        if (realityEditor.device.environment.distanceRequiresCameraTransform()) {
             // calculate distance to camera
             var matrixToCamera = [];
             realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, matrixToCamera);

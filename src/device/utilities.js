@@ -291,15 +291,6 @@ realityEditor.device.utilities.diffArrays = function(oldArray, newArray) {
 };
 
 /**
- * Utility function to determine if the editor is loaded on a desktop browser or within the full mobile app.
- * @todo: make more robust so that loading on a mobile safari browser is distinguisable from within the Reality Editor app
- * @return {boolean}
- */
-realityEditor.device.utilities.isDesktop = function() {
-    return false;
-};
-
-/**
  * Helper function tells if tapped the background (and excludes edge-case: multi-touch gesture while selecting a vehicle)
  * @param {PointerEvent} event
  * @return {boolean}

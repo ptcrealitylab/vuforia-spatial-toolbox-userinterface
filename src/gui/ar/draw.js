@@ -1187,7 +1187,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             */
 
             // can't change while frozen so don't recalculate
-            if (realityEditor.device.environment.supportsDistanceFading() && !globalStates.freezeButtonState) {
+            if (realityEditor.device.environment.supportsDistanceFading() &&
+                (!globalStates.freezeButtonState || realityEditor.device.environment.ignoresFreezeButton())) {
                 // fade out frames and nodes when they move beyond a certain distance
                 var distance = activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);

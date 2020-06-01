@@ -1305,7 +1305,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
 
     // many conditions to check to see if it has this feature enabled
     var ableToBePulled = !(this.editingState.unconstrained || globalStates.unconstrainedPositioning) && 
-                            (!globalStates.freezeButtonState || realityEditor.device.utilities.isDesktop()) &&
+                            (!globalStates.freezeButtonState || realityEditor.device.environment.ignoresFreezeButton()) &&
                             realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle);
     
     if (ableToBePulled) {
