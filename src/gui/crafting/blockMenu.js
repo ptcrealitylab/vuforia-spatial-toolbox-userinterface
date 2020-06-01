@@ -99,9 +99,8 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         container.style.width = '506px';
         container.style.height = '320px';
         
-        // TODO: move into desktop module
         // change display for desktop programming
-        if (realityEditor.device.utilities.isDesktop()) {
+        if (realityEditor.device.environment.shouldDisplayLogicMenuModally()) {
             container.style.left = 'unset';
             craftingMenusContainer.style.background = 'rgba(0, 0, 0, 0.5)';
             craftingMenusContainer.style.backdropFilter = 'blur(3px)';
@@ -110,6 +109,8 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             var scaleMultiplier = Math.max(logic.grid.containerHeight / logic.grid.gridHeight, logic.grid.containerWidth / logic.grid.gridWidth);
             container.style.transformOrigin = '100% 50%';
             container.style.transform = 'scale(' + scaleMultiplier + ')';
+
+            // TODO: needs some additional styling to look good on modal environments, e.g. to blockIcon
         }
 
         craftingMenusContainer.appendChild(container);
@@ -255,7 +256,7 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
     function redisplayTabSelection() {
 
         // TODO: move into desktop adapter module
-        if (realityEditor.device.utilities.isDesktop()) {
+        if (realityEditor.device.environment.shouldDisplayLogicMenuModally()) {
             document.getElementById("datacraftingCanvas").style.display = '';
             document.getElementById("blockPlaceholders").style.display = '';
             document.getElementById("blocks").style.display = '';
