@@ -775,6 +775,17 @@ body {
     pointer-events: none;
 }
 
+
+#p5jsCanvas {
+    visibility: visible;
+    -webkit-transform-style: preserve-3d;
+    margin: 0;
+    padding: 0;
+    z-index: 0;
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -20, 1);
+    pointer-events: none;
+}
+
 .ignorePointerEvents {
     pointer-events: none;
 }
