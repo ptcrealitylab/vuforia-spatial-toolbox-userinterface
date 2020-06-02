@@ -342,6 +342,12 @@ realityEditor.gui.spatial.sketch = function(p) {
 
 realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
 
+// creating the p5 canvas somehow sets display: none on the globalCanvas
+for (let time = 100; time < 10000; time *= 2) {
+    setTimeout(function() {
+        globalCanvas.canvas.style.display = ''; // unhide the canvas getting auto-hidden by p5
+    }, time);
+}
 
 realityEditor.gui.spatial.draw.nodesP5 = function (object,p){
     
