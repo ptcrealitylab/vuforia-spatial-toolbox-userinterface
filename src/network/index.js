@@ -1920,22 +1920,21 @@ realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
         realityEditor.gui.settings.hideSettings();
     }
 
-    // TODO: needs a way to be turned off via the API, too
-    // the "Locate" button renders the whereIs navigation arrow to that object
-    if (msgContent.foundObjectsButton.locateObject) {
-        let objectKey = msgContent.foundObjectsButton.locateObject;
-        console.log('locate object ' + objectKey);
-        globalStates.spatial.whereIs = {};
-        globalStates.spatial.whereIs[objectKey] = {
-            objectID: objectKey,
-            toolID: '',
-            nodeID: ''
-        };
-    }
-
     if (msgContent.foundObjectsButton.locateObjects) {
         console.log('locate objects ' + msgContent.foundObjectsButton.locateObjects);
-        globalStates.spatial.whereIs = msgContent.foundObjectsButton.locateObjects;
+
+        // split up objectKeys by ip to correctly format the whereIs information
+        globalStates.spatial.whereIs = {};
+        for (let objectKey in msgContent.foundObjectsButton.locateObjects) {
+            let object = realityEditor.getObject(objectKey);
+            if (object) {
+                let ip = object.ip;
+                if (typeof globalStates.spatial.whereIs[ip] === 'undefined') {
+                    globalStates.spatial.whereIs[ip] = {};
+                }
+                globalStates.spatial.whereIs[ip][objectKey] = msgContent.foundObjectsButton.locateObjects[objectKey];
+            }
+        }
     }
 
     if (msgContent.foundObjectsButton.snapAnchorToScreen) {
