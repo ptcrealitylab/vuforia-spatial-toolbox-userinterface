@@ -246,6 +246,11 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function hideAnchorElementIfNeeded(objectKey) {
         let activeElt = globalDOMCache['anchor' + objectKey];
+
+        if (fullscreenAnchor === objectKey) {
+            return; // don't hide the fullscreen anchor otherwise no way to go back
+        }
+
         if (activeElt && (!anchorsOutsideOfViewport[objectKey] || !activeElt.classList.contains('outsideOfViewport'))) {
             anchorsOutsideOfViewport[objectKey] = true; // make sure to keep track of this property
             activeElt.classList.add('outsideOfViewport');
