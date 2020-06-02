@@ -99,7 +99,7 @@ realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix
     
 };
 
-realityEditor.gui.spatial.collectNodeList = function(objMatrix, objectID, nodeID){
+realityEditor.gui.spatial.collectNodeList = function(_objMatrix, _objectID, _nodeID){
   // console.log(objectID, objects[objectID].internalMatrix.object);
    /*
    for(let key in  objects[objectID].frames){
@@ -174,7 +174,7 @@ realityEditor.gui.spatial.transformTools = function ( thisItem, referenceObject,
         } else {
             this.utilities.multiplyMatrix(ar.matrix, referenceObject.internalMatrix.object, m1);
             this.utilities.multiplyMatrix(m3, m1, m5);
-        };
+        }
         this.utilities.multiplyMatrix(m5, referenceObject.internalMatrix.world, m4);
 
     }
@@ -195,7 +195,7 @@ realityEditor.gui.spatial.transformTools = function ( thisItem, referenceObject,
       //  this.utilities.multiplyMatrix(m0, referenceObject.internalMatrix.world, m4);
 
         //  this.utilities.multiplyMatrix(m0, referenceObject.internalMatrix.world, m4);
-    };
+    }
     //  this.ar.utilities.multiplyMatrix(this.rotateX, this.activeObjectMatrix, tempM);
     //  this.ar.utilities.multiplyMatrix(tempM, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
     thisItem.internalMatrix = {
@@ -261,7 +261,7 @@ realityEditor.gui.spatial.myFont = null;
 realityEditor.gui.spatial.canvasThis = null;
 realityEditor.gui.spatial.saveOldMatrix = null;
 
-let canvasTexture = null;
+let _canvasTexture = null;
 
 realityEditor.gui.spatial.sketch = function(p) {
     p.preload = function() {
@@ -272,9 +272,9 @@ realityEditor.gui.spatial.sketch = function(p) {
         p.setAttributes('antialias', true);
         this.canvasThis = p.createCanvas(globalStates.height,globalStates.width, p.WEBGL);
         this.canvasThis .id('p5jsCanvas');
-        gl = document.getElementById('p5jsCanvas').getContext('webgl');
+        let gl = document.getElementById('p5jsCanvas').getContext('webgl');
         gl.disable(gl.DEPTH_TEST);
-        canvasTexture = p.createGraphics(globalStates.height, globalStates.width,null, globalCanvas.canvas);
+        _canvasTexture = p.createGraphics(globalStates.height, globalStates.width,null, globalCanvas.canvas);
      
      //  p.frameRate(5);
     }.bind(this);
@@ -477,10 +477,10 @@ realityEditor.gui.spatial.draw.whereIsP5 = function (workObject,p){
     p.pop();
 
 };
-let angle = 0;
+let _angle = 0;
 realityEditor.gui.spatial.draw.howFarIsP5 = function (obj,p){
     let m1 = obj.matrix;
-    let worldAngle = Math.atan2(m1[13], m1[12]);
+    let _worldAngle = Math.atan2(m1[13], m1[12]);
     let color;
     color = [0,255,255, 0.8];
  
@@ -637,7 +637,7 @@ realityEditor.gui.spatial.dL = {
     step:realityEditor.gui.spatial.lineAnimationList, spacer:null,lineVectorLength:null, angle:null, angleZ:null, vX:null, vY:null, vZ:null, stepLength:null,counter:null
 };
 
-realityEditor.gui.spatial.drawLine = function(p, obj, m1, m2, startWeight, endWeight, startColor, endColor, speed, startAplha, endAlpha) {
+realityEditor.gui.spatial.drawLine = function(p, obj, m1, m2, startWeight, endWeight, startColor, endColor, speed, _startAplha, _endAlpha) {
     let that = realityEditor.gui.spatial;
   startWeight = 20;
     that.spacer = 5;

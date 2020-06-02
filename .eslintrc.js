@@ -40,6 +40,7 @@ module.exports = {
         "newNodeScaleFactor": "writable",
         "objects": "writable",
         "overlayDiv": "writable",
+        "p5": "writable",
         "pocketBegin": "writable",
         "pocketDropAnimation": "writable",
         "pocketFrame": "writable",
