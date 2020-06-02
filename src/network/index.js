@@ -864,17 +864,29 @@ realityEditor.network.onAction = function (action) {
 
     // Set states to locate object in space
     if (thisAction.spatial) {
+
         if(thisAction.spatial.locator){
 
+        
             let spatial = globalStates.spatial;
             let action = thisAction.spatial.locator;
-            
+            if(!thisAction.spatial.ip) return;
             if(action.whereIs){
-                spatial.whereIs = JSON.parse(JSON.stringify(action.whereIs));
+                spatial.whereIs[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.whereIs));
             }
+
+            if(action.whereWas){
+                spatial.whereWas[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.whereWas));
+            }
+            
             if(action.howFarIs){
-                spatial.howFarIs = JSON.parse(JSON.stringify(action.howFarIs));
+                spatial.howFarIs[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.howFarIs));
             }
+            
+            if(action.velocityOf){
+                spatial.velocityOf[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.velocityOf));
+            }
+            
         }
         
         console.log(globalStates.spatial);

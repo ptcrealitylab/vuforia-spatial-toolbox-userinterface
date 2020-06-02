@@ -67,10 +67,12 @@ var TEMP_DISABLE_MEMORIES = false;
  **********************************************************************************************************************/
 
 var globalStates = {
-    spatial: {
-        whereIs: {},
-        howFarIs: {}
-    },
+    spatial : { 
+        whereIs :{},
+        howFarIs : {},
+        whereWas : {},
+        velocityOf : {}
+        },
     craftingMoveDelay : 400,
     tempUuid : "0000",
     debug: false,
@@ -102,6 +104,8 @@ var globalStates = {
     
     pocketButtonState: false,
 
+    deviceOrientationRight: null,
+    
     freezeButtonState: false,
     logButtonState: false,
     editingMode: false,

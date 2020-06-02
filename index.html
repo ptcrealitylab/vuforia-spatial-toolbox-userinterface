@@ -68,6 +68,7 @@
     <!-- Javascript -->
     <script src="thirdPartyCode/pep.min.js"></script>
     <script src="thirdPartyCode/d3.min.js"></script>
+    <script src="thirdPartyCode/p5.js"></script>
     <script src="thirdPartyCode/Tween.min.js"></script>
     <script src="thirdPartyCode/socket.io.js"></script>
     <script src="thirdPartyCode/hull.js"></script>
@@ -122,6 +123,7 @@
     <script src="src/gui/ar/anchors.js"></script>
 
     <script src="src/gui/spatial/index.js"></script>
+    <script src="src/gui/spatial/timeRecorder.js"></script>
 
     <script src="src/gui/crafting/index.js"></script>
     <script src="src/gui/crafting/utilities.js"></script>
@@ -497,6 +499,7 @@
 </div>
 
 <canvas class="Canvas" id="canvas"></canvas> <!--touch-action="none"-->
+<div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div> <!--touch-action="none"-->
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink" class="groupSVGElement">
     <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>

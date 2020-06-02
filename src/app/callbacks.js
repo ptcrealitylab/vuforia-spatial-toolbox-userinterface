@@ -255,6 +255,7 @@ createNameSpace('realityEditor.app.callbacks');
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
+            realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
             realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
     }

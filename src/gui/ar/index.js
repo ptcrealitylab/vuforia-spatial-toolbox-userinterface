@@ -214,7 +214,7 @@ realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
         globalStates.height, 0, 0, 0,
         0,  multiplier * globalStates.width, 0, 0,
         0, 0, 1, 0,
-        corX, corY, 0, 1
+        corX-5, corY+10, 0, 1
     ];
  
     // changes for iPhoneX
