@@ -252,7 +252,7 @@ realityEditor.gui.spatial.sketch = function(p) {
     p.setup = function() {
         p.setAttributes('antialias', true);
         this.canvasThis = p.createCanvas(globalStates.height,globalStates.width, p.WEBGL);
-        this.canvasThis .id('p5jsCanvas');
+        this.canvasThis.id('p5jsCanvas');
         let gl = document.getElementById('p5jsCanvas').getContext('webgl');
         gl.disable(gl.DEPTH_TEST);
         _canvasTexture = p.createGraphics(globalStates.height, globalStates.width,null, globalCanvas.canvas);
