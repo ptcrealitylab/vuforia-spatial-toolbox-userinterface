@@ -129,6 +129,7 @@ MemoryContainer.prototype.set = function(obj) {
         image: image,
         thumbnail: thumbnail,
         matrix: objectMatrix, //obj.memory.matrix
+        // todo should this not be a copy of the matrix? 
         cameraMatrix: realityEditor.gui.ar.draw.correctedCameraMatrix,
         projectionMatrix: globalStates.projectionMatrix
     };

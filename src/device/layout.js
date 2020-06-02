@@ -187,9 +187,13 @@ createNameSpace('realityEditor.device.layout');
         console.log('device orientation changed to ' + orientationString);
 
         if (orientationString === 'landscapeRight') { // default
+            globalStates.deviceOrientationRight = true;
             realityEditor.gui.ar.updateProjectionMatrix(false);
+          
         } else if (orientationString === 'landscapeLeft') { // flipped
+            globalStates.deviceOrientationRight = false;
             realityEditor.gui.ar.updateProjectionMatrix(true);
+  
         }
 
         currentOrientation = orientationString;

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="thirdPartyCode/p5.js"></script>
+</head>
+<body style="background-color: #2ac845">
+<script>
+    function setup() {
+        smooth();
+        createCanvas(400, 400, WEBGL);
+        // Make a <p> element and put it behind the canvas
+        let p = createP('I am a dom element');
+        p.center();
+        p.style('font-size', '20px');
+        p.style('text-align', 'center');
+        p.style('z-index', '-9999');
+    }
+
+    function draw() {
+
+        background(250, 250, 150);
+        fill(15, 195, 185);
+        noStroke();
+        sphere(30);        
+        erase();
+        rotateY(frameCount * 0.02);
+        translate(0, 0, 40);
+        torus(15, 5);
+        noErase();
+        blendMode(ADD);
+ 
+    }
+</script>
+
+</body>
+</html>

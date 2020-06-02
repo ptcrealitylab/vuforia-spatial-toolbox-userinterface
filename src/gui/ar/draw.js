@@ -328,6 +328,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.globalCanvas.hasContent = false;
     }
     
+    // make sure that all Spatial Questions are empty
+    realityEditor.gui.spatial.clearSpatialList();
+    
     // this is a quick hack but maybe needs to move somewhere else. 
     // I dont know if this is the right spot. //TODO: what is this actually doing?
     for (objectKey in objects) {
@@ -382,7 +385,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             // if (this.activeObject.isWorldObject) {
             //     this.activeObject.matrix = this.utilities.newIdentityMatrix();
             // }
-            
+      
             // TODO: check if this needs to be fixed for desktop, now that we have a different method for worldCorrection / world origins
             if (!realityEditor.device.utilities.isDesktop()) {
                 if (realityEditor.gui.ar.draw.worldCorrection !== null) {
@@ -395,7 +398,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     }
                 }
             }
-            
+          
             if (this.activeObject.isWorldObject) {
                 // don't start rendering world frames until we've received a valid camera matrix
                 if (this.correctedCameraMatrix.length === 0) {
@@ -412,6 +415,19 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             } else {
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.visibleObjects[objectKey], this.activeObjectMatrix); // TODO: to really optimize, could inline/simplify the rotateX multiplication
                 realityEditor.gui.ar.utilities.multiplyMatrix(this.activeObjectMatrix, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
+
+                
+                // make the matrices always accessable by every part of the toolbox
+                
+                objects[objectKey].internalMatrix = {
+                    world : this.correctedCameraMatrix,
+                    object: this.activeObjectMatrix,
+                    modelView: this.modelViewMatrices[objectKey]
+                };
+                
+                // spatial UI
+                realityEditor.gui.spatial.collectSpatialList(this.correctedCameraMatrix, this.modelViewMatrices[objectKey], this.activeObjectMatrix, objectKey);
+
             }
 
             // compute its ModelViewProjection matrix
@@ -421,8 +437,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             if (isNaN(this.activeObjectMatrix[0])) {
                 this.activeObjectMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
             }
-
-            realityEditor.gui.spatial.whereIs(this.activeObjectMatrix,objectKey, null,null);
             
             // extract its projected (x,y) screen coordinates from the matrix
             //TODO THIS GETS OVERWRITTEN FURTHER DOWN Is this used for anything?
@@ -504,7 +518,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         
                     }
                 }
-                realityEditor.gui.spatial.whereIs(this.activeObjectMatrix,objectKey, frameKey,null);
             }
         
         // if this object was NOT detected by the AR engine, hide its nodes and frames or perform edge-case functionality
@@ -1438,6 +1451,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
             
             activeVehicle.mostRecentFinalMatrix = finalMatrix;
             activeVehicle.originMatrix = activeObjectMatrix;
+
+            if(globalStates.guiState === 'node')
+            realityEditor.gui.spatial.collectNodeList(finalMatrix, activeVehicle.objectId, activeKey);
             
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
@@ -2453,10 +2469,11 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     if(!activeVehicle.visibleCounter) {
         return;
     }
-
-    if (realityEditor.getObject(activeVehicle.objectId).containsStickyFrame) {
-        console.log('dont kill object with sticky frame');
-        return;
+    if (realityEditor.getObject(activeVehicle.objectId)) {
+        if (realityEditor.getObject(activeVehicle.objectId).containsStickyFrame) {
+            console.log('dont kill object with sticky frame');
+            return;
+        }
     }
 
     if (activeVehicle.visibleCounter > 1) {
