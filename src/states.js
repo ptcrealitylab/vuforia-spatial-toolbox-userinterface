@@ -67,14 +67,14 @@ var TEMP_DISABLE_MEMORIES = false;
  **********************************************************************************************************************/
 
 var globalStates = {
-    spatial : { 
-        whereIs :{},
-        howFarIs : {},
-        whereWas : {},
-        velocityOf : {}
-        },
-    craftingMoveDelay : 400,
-    tempUuid : "0000",
+    spatial: {
+        whereIs: {},
+        howFarIs: {},
+        whereWas: {},
+        velocityOf: {}
+    },
+    craftingMoveDelay: 400,
+    tempUuid: "0000",
     debug: false,
     debugSpeechConsole: false,
     device: "",
