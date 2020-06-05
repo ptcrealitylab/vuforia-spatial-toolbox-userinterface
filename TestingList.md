@@ -15,7 +15,7 @@ Test:
 10. all logic blocks
 11. all logic block settings
 12. all tools work and have the right frame size
-13. all tools have the right UI behavior -> video recording crashes 
+13. all tools have the right UI behavior
 14. Link tools with A hardware interface values and see that they have the right values when you close and open the toolbox
 15. that all tools show the right nodes when dropped on objects and world
 16. check that all tool nodes for each tool are working 
