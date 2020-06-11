@@ -308,7 +308,7 @@ createNameSpace('realityEditor.app.callbacks');
             let worldObject = realityEditor.worldObjects.getBestWorldObject();
 
             // snap groundplane to world origin, if available
-            if (worldObject) {
+            if (worldObject && worldObject.uuid !== realityEditor.worldObjects.getLocalWorldId()) {
                 let origin = realityEditor.worldObjects.getOrigin(worldObject.uuid);
                 if (origin) {
                     let tempMatrix = [];
