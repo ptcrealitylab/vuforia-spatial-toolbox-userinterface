@@ -1505,11 +1505,13 @@ Logic Interface CSS
     width: 300px;
     height: 300px;
     position: relative;
+    transform: scaleY(-1);
 }
 
 .anchorContentsFullscreen {
     width: 100vw;
     height: 100vh;
+    transform: scaleY(1) !important; /* override scaleY(-1) when fullscreen */
 }
 
 .anchorContentsPlaced {
