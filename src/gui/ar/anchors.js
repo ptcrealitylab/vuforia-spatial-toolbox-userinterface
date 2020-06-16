@@ -322,7 +322,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 let inverseWorld = utilities.invertMatrix(worldModelView);
                 
                 // flip it so it faces towards the camera instead of away from the camera
-                let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(0, Math.PI, Math.PI);
+                let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(Math.PI, Math.PI, 0);
                 let rotationMatrix = utilities.getMatrixFromQuaternion(q);
                 let finalMatrix = [];
                 utilities.multiplyMatrix(rotationMatrix, inverseWorld, finalMatrix);
@@ -454,6 +454,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
         let textfield = anchorElement.querySelector('.anchorTextField');
 
         const maxFontSize = 18;
+        const minTextWidth = 105;
 
         // prep by resetting so we can compute size with default params
         textfield.style.width = '';
@@ -473,6 +474,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
             textfield.style.fontSize = newFontSize + 'px';
 
             // update with set width/height after calculating so text is centered
+            if (desiredWidth < minTextWidth || isNaN(desiredWidth)) {
+                desiredWidth = minTextWidth;
+            }
             textfield.style.width = desiredWidth + 'px';
             let realHeight = parseFloat(getComputedStyle(textfield).height);
             textfield.style.lineHeight = realHeight + 'px';
