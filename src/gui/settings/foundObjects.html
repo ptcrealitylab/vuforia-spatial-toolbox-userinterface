@@ -377,6 +377,7 @@
               // File(s) uploaded.
               console.log('successful upload');
               button.innerText = "Success!";
+<<<<<<< HEAD
               document.querySelector('.reload-notice').removeAttribute('hidden');
               setTimeout(function() {
                   button.innerText = "Upload Target";
@@ -390,6 +391,13 @@
                   notice.setAttribute('hidden', '');
                   notice.querySelector('p').innerText = '';
               }, 3000);
+=======
+              setTimeout(function() {
+                button.innerText = "Upload Target";
+              }, 3000);
+          } else {
+              console.log('error uploading');
+>>>>>>> added target upload functionality
           }
       };
 
