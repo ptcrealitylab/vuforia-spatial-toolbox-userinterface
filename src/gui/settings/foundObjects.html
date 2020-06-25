@@ -105,6 +105,9 @@
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
     <div class="content" style="right:65px;">
+        <div class="card reload-notice" hidden>
+            <p class="content-padded">Please reload the app after you have finished uploading targets.</p>
+        </div>
         <div class="card">
             <ul class="table-view" id="objectList"></ul>
         </div>
@@ -368,6 +371,7 @@
               // File(s) uploaded.
               console.log('successful upload');
               button.innerText = "Success!";
+              document.querySelector('.reload-notice').removeAttribute('hidden');
               setTimeout(function() {
                 button.innerText = "Upload Target";
               }, 3000);
