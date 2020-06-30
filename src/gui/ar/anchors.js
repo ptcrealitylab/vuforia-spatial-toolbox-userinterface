@@ -62,7 +62,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function modifyVisibleObjects(visibleObjects) {
         // if there's no visible world object other than the world_local, ignore all this code
-        if (realityEditor.worldObjects.getBestWorldObject().objectId === realityEditor.worldObjects.getLocalWorldId()) {
+        if (!realityEditor.worldObjects.getBestWorldObject() ||
+            realityEditor.worldObjects.getBestWorldObject().objectId === realityEditor.worldObjects.getLocalWorldId()) {
             return;
         }
 

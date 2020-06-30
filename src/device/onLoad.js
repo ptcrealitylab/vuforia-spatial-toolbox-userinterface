@@ -165,6 +165,12 @@ realityEditor.device.onload = function () {
         }
     }).moveToDevelopMenu();
 
+    // set up the global canvas for drawing the links
+    globalCanvas.canvas = document.getElementById('canvas');
+    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
+    globalCanvas.canvas.height = globalStates.width;
+    globalCanvas.context = globalCanvas.canvas.getContext('2d');
+
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -182,6 +188,8 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
+    // realityEditor.gui.spatial.initService();
+    realityEditor.gui.glRenderer.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
@@ -213,12 +221,6 @@ realityEditor.device.onload = function () {
     }
 	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
-
-	// set up the global canvas for drawing the links
-	globalCanvas.canvas = document.getElementById('canvas');
-    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
-    globalCanvas.canvas.height = globalStates.width;
-	globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
     // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);
