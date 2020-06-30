@@ -108,6 +108,9 @@
         <div class="card reload-notice" hidden>
             <p class="content-padded">Please reload the app after you have finished uploading targets.</p>
         </div>
+        <div class="card error-notice" hidden>
+            <p class="content-padded">Please reload the app after you have finished uploading targets.</p>
+        </div>
         <div class="card">
             <ul class="table-view" id="objectList"></ul>
         </div>
@@ -192,6 +195,9 @@
             return;
         }
         
+        // Currently, there's a bug where adding an image target to an anchor replaces the id of the object, meaning
+        // that the UI can't tell that the new object it detected after upload is the same as the anchor. ignoredAnchors
+        // detects 'outdated' anchors and makes sure not to display them.
         var ignoredAnchors = [];
         var msgIds = Object.keys(msg);
         for (var i = 0; i < msgIds.length - 1; i++) {
@@ -373,10 +379,17 @@
               button.innerText = "Success!";
               document.querySelector('.reload-notice').removeAttribute('hidden');
               setTimeout(function() {
-                button.innerText = "Upload Target";
+                  button.innerText = "Upload Target";
               }, 3000);
           } else {
               console.log('error uploading');
+              var notice = document.querySelector('.error-notice');
+              notice.removeAttribute('hidden');
+              notice.querySelector('p').innerText = `Failed to upload image: ${xhr.status}`;
+              setTimeout(function() {
+                  notice.setAttribute('hidden', '');
+                  notice.querySelector('p').innerText = '';
+              }, 3000);
           }
       };
 
