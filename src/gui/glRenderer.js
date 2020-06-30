@@ -178,7 +178,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         let end = performance.now();
         // console.log(end - start);
         
-        console.log('rendered ' + proxies.length + ' proxies');
+        // console.log('rendered ' + proxies.length + ' proxies');
         
         requestAnimationFrame(renderFrame);
     }
