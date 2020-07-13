@@ -325,6 +325,8 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                 blockTitle.setAttribute('class', 'blockTitle');
                 blockTitle.innerHTML = thisBlockData.name;
                 blockDiv.appendChild(blockTitle);
+            } else {
+              blockDiv.querySelector('.blockTitle').innerHTML = thisBlockData.name;
             }
         }
     
