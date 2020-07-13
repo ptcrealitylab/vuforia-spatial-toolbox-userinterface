@@ -127,7 +127,6 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
         container.appendChild(menuSideContainer);
     
         var menuCols = 4;
-        var menuRows = 6;
         var menuNumTabs = 5;
         logic.guiState.menuSelectedTab = 0;
         logic.guiState.menuTabDivs = [];
@@ -153,8 +152,15 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
             menuSideContainer.appendChild(menuTab);
         }
         
+        // we use "call" syntax because need to pass "exports" as "this" to the event listeners in callback
         menuLoadBlocks.call(exports, function(blockData) {
-    
+
+            // when the menu first initializes, create enough rows of placeholder blocks for the menu
+            // to contain all the blocks that exist. when we switch tabs, we'll hide any extras that
+            // aren't needed for the visible category (happens in redisplayBlockSelection)
+            let totalBlockCount = Object.keys(blockData).length;
+            let menuRows = Math.ceil(totalBlockCount / menuCols);
+
             // load each block from the downloaded json and add it to the appropriate category
             for (var key in blockData) {
                 if (!blockData.hasOwnProperty(key)) continue;
