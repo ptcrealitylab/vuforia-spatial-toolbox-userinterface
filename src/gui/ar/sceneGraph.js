@@ -67,6 +67,15 @@
             childNode.updateWorldMatrix(this.worldMatrix);
         }.bind(this));
     };
+    
+    SceneNode.prototype.getMatrixRelativeTo = function(otherNode) {
+        //  TODO: call updateWorldMatrix on the root to ensure everything is up to date
+        let thisWorldMatrix = this.worldMatrix;
+        let thatWorldMatrix = otherNode.worldMatrix;
+        
+        // if they're the same, we should get identity matrix
+        
+    };
 
     exports.SceneNode = SceneNode;
 })(realityEditor.gui.ar.sceneGraph);

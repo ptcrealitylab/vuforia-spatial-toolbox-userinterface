@@ -316,7 +316,7 @@ createNameSpace('realityEditor.app.callbacks');
                     realityEditor.gui.ar.utilities.multiplyMatrix(tempMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix);
                     return;
                 }
-            } 
+            }
             
             // otherwise use groundplane from vuforia
             realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, realityEditor.gui.ar.draw.groundPlaneMatrix)
