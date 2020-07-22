@@ -787,6 +787,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             closestObject.frames[frameID] = frame;
 
+            realityEditor.gui.ar.sceneGraph.addFrame(frame.objectId, frameID, frame.ar.matrix);
+
             console.log(frame);
             // send it to the server
             // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);

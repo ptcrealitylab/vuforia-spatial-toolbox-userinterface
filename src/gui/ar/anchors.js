@@ -332,6 +332,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 let anchorObject = realityEditor.getObject(objectKey);
                 anchorObject.matrix = finalMatrix;
 
+                realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey).setLocalMatrix(finalMatrix);
+
                 // upload to the server for persistence
                 realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix);
 
