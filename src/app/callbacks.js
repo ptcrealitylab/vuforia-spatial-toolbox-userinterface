@@ -232,6 +232,7 @@ createNameSpace('realityEditor.app.callbacks');
                         // visibleObjects[objectKey][13] *= jpgTargetScaleFactor2;
                         // visibleObjects[objectKey][14] *= jpgTargetScaleFactor2;
                     }
+                    realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey).setLocalMatrix(visibleObjects[objectKey]);
                 }
             });
 
@@ -256,6 +257,7 @@ createNameSpace('realityEditor.app.callbacks');
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
             realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
+            realityEditor.gui.ar.sceneGraph.setCameraPosition(cameraMatrix);
             realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
     }

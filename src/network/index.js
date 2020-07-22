@@ -253,6 +253,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisObject.matrix = [];
     }
 
+    realityEditor.gui.ar.sceneGraph.addObject(objectKey, thisObject.matrix);
+
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
@@ -282,6 +284,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             positionData.matrix = [];
         }
 
+        realityEditor.gui.ar.sceneGraph.addFrame(objectKey, frameKey, positionData.matrix);
+
         for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
@@ -307,6 +311,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                 thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
+
+            realityEditor.gui.ar.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode.matrix);
         }
         
         // TODO: invert dependency
@@ -1731,6 +1737,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (typeof nodeData.defaultValue !== 'undefined') {
                 newNode.data.value = nodeData.defaultValue;
             }
+
+            realityEditor.gui.ar.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey);
 
             // post node to server
             let object = realityEditor.getObject(msgContent.object);
