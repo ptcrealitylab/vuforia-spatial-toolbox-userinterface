@@ -339,6 +339,14 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
         var keys = realityEditor.getKeysFromVehicle(activeVehicle);
         var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
         realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
+        
+        // also update scene graph
+        let updatedPositionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        let activeKey = keys.nodeKey || keys.frameKey;
+        let sceneGraphNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey);
+        if (sceneGraphNode) {
+            sceneGraphNode.setLocalMatrix(updatedPositionData.matrix);
+        }
     }
 };
 

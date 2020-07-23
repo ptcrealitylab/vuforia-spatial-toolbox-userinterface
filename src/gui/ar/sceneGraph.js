@@ -19,13 +19,23 @@
     let sceneGraph = {};
     let rootNode;
     let cameraNode;
+    let relativeToCamera = {};
+    let finalCSSMatrices = {};
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
         rootNode = new SceneNode('ROOT');
+        // rootNode.setLocalMatrix([ // transform coordinate system by rotateX
+        //     1, 0, 0, 0,
+        //     0, -1, 0, 0,
+        //     0, 0, 1, 0,
+        //     0, 0, 0, 1
+        // ]);
+        sceneGraph['ROOT'] = rootNode;
 
         // create node for camera outside the tree of the main scene
         cameraNode = new SceneNode('CAMERA');
+        sceneGraph['CAMERA'] = cameraNode;
     }
 
     /**
@@ -91,6 +101,8 @@
         if (!matrix || matrix.length !== 16) { return; } // ignore malformed/empty input
         utils.copyMatrixInPlace(matrix, this.localMatrix);
 
+        console.log('set local matrix of ' + this.id + ' to ' + realityEditor.gui.ar.utilities.prettyPrintMatrix(matrix, 2, false));
+
         this.dirty = true; // requires updateWorldMatrix on sub-tree
     };
     
@@ -104,6 +116,10 @@
         utils.multiplyMatrix(thisWorldMatrix, utils.invertMatrix(thatWorldMatrix), relativeMatrix);
 
         return relativeMatrix;
+    };
+
+    SceneNode.prototype.getDistanceTo = function(otherNode) {
+        return realityEditor.gui.ar.utilities.distance(this.getMatrixRelativeTo(otherNode));
     };
 
     exports.addObject = function(objectId, initialLocalMatrix) {
@@ -170,23 +186,81 @@
     };
 
     exports.setCameraPosition = function(cameraMatrix) {
-        cameraNode.localMatrix = cameraMatrix;
+        cameraNode.setLocalMatrix(cameraMatrix);
     };
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
 
-    exports.getSceneNodeById = function(id) {
+    const getSceneNodeById = function(id) {
         return sceneGraph[id];
     };
-
-    exports.recomputeScene = function() {
+    exports.getSceneNodeById = getSceneNodeById;
+    
+    const recomputeScene = function() {
         rootNode.updateWorldMatrix();
         cameraNode.updateWorldMatrix();
     };
-
-    exports.getDirtyNodes = function() {
-        return Object.keys(sceneGraph).filter(function(id) {
+    exports.recomputeScene = recomputeScene;
+    
+    const getDirtyNodes = function() {
+        return Object.keys(sceneGraph).filter( function(id) {
             return sceneGraph[id].dirty;
+        });
+    };
+    exports.getDirtyNodes = getDirtyNodes;
+    
+    exports.calculateFinalMatrices = function(visibleObjectIds) {
+        if (getDirtyNodes().length > 0) {
+            recomputeScene(); // ensure all worldMatrix reflects latest localMatrix
+        }
+
+        // for each visible object
+        
+        // .. calculate and store where it is relative to camera
+        // .. get the scene node of each of its frames
+        
+        // .. for each frame
+        
+        // .... calculate and store where it is relative to camera
+        // .... multiply by projection matrix etc to get CSS matrix
+        // .... get the scene node of each of its nodes
+        
+        // .... for each node
+        
+        // ...... calculate and store where it is relative to camera
+        // ...... multiply by projection matrix etc to get CSS matrix
+        
+        visibleObjectIds.forEach( function(objectKey) {
+            let object = realityEditor.getObject(objectKey);
+            let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
+            relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+
+            Object.keys(object.frames).forEach( function(frameKey) {
+                let frame = realityEditor.getFrame(objectKey, frameKey);
+                let frameSceneNode = getSceneNodeById(frameKey);
+                relativeToCamera[frameKey] = frameSceneNode.getMatrixRelativeTo(cameraNode);
+
+                let modelViewProjection = [];
+                let scale = frame.ar.scale * globalScaleAdjustment;
+                let transform = [
+                    scale, 0, 0, 0,
+                    0, scale, 0, 0,
+                    0, 0, scale, 0,
+                    frame.ar.x, frame.ar.y, 0, 1];
+                let transformedFrameMat = [];
+                utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
+                utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
+                finalCSSMatrices[frameKey] = modelViewProjection;
+
+                Object.keys(frame.nodes).forEach( function(nodeKey) {
+                   let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                   let nodeSceneNode = getSceneNodeById(nodeKey);
+                   relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
+
+                   utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, modelViewProjection);
+                   finalCSSMatrices[nodeKey] = modelViewProjection;
+                });
+            });
         });
     };
 
