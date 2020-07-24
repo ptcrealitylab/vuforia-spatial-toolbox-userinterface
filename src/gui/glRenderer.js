@@ -148,6 +148,8 @@ createNameSpace("realityEditor.gui.glRenderer");
             // worker2.postMessage({name: 'bootstrap', functions, constants}, '*');
             setTimeout(renderFrame, 500);
         // }, 200);
+
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
     }
 
     /**
@@ -247,13 +249,21 @@ createNameSpace("realityEditor.gui.glRenderer");
     }
 
     function removeWebGlProxy(toolId) {
-        let proxy = toolIdToProxy(toolId);
+        let proxy = toolIdToProxy[toolId];
         let index = proxies.indexOf(proxy);
         if (index !== -1) {
             proxies.splice(index, 1);
         }
         delete workerIds[toolId];
         delete toolIdToProxy[toolId];
+    }
+
+    function onVehicleDeleted(params) {
+        if (params.objectKey && params.frameKey && !params.nodeKey) { // only react to frames, not nodes
+            if (typeof toolIdToProxy[params.frameKey] !== 'undefined') {
+                removeWebGlProxy(params.frameKey);
+            }
+        }
     }
 
     exports.initService = initService;
