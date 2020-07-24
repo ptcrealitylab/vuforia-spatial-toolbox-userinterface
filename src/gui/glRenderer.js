@@ -6,6 +6,8 @@ createNameSpace("realityEditor.gui.glRenderer");
     let toolIdToProxy = {};
     let proxies = [];
 
+    const MAX_PROXIES = 10; // maximum number that can be safely rendered each frame
+
     /**
      * Mediator between the worker iframe and the gl implementation
      */
@@ -148,15 +150,50 @@ createNameSpace("realityEditor.gui.glRenderer");
         // }, 200);
     }
 
+    /**
+     * Returns n random elements from the array. Fast and non-destructive.
+     * @author https://stackoverflow.com/a/19270021
+     * @param {Array} arr
+     * @param {number} n
+     * @return {Array}
+     */
+    function getRandom(arr, n) {
+        var result = new Array(n),
+            len = arr.length,
+            taken = new Array(len);
+        if (n > len)
+            throw new RangeError("getRandom: more elements taken than available");
+        while (n--) {
+            var x = Math.floor(Math.random() * len);
+            result[n] = arr[x in taken ? taken[x] : x];
+            taken[x] = --len in taken ? taken[len] : len;
+        }
+        return result;
+    }
+
+    /**
+     * If there are too many proxies, chooses a random subset of them
+     * @return {Array}
+     */
+    function getSafeProxySubset() {
+        if (proxies.length < MAX_PROXIES) {
+            return proxies;
+        } else {
+            // choose 10 random elements from the proxies array
+            return getRandom(proxies, MAX_PROXIES);
+        }
+    }
+
     async function renderFrame() {
-        let start = performance.now();
+        // let start = performance.now();
+        let proxiesToBeRenderedThisFrame = getSafeProxySubset();
 
         // Get all the commands from the worker iframes
         // await Promise.all([
         //     proxy.getFrameCommands(),
         //     proxy2.getFrameCommands(),
         // ]);
-        await Promise.all(proxies.map(proxy => proxy.getFrameCommands()));
+        await Promise.all(proxiesToBeRenderedThisFrame.map(proxy => proxy.getFrameCommands()));
 
         gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
         gl.clearDepth(1.0);                 // Clear everything
@@ -171,11 +208,11 @@ createNameSpace("realityEditor.gui.glRenderer");
         // proxy.executeFrameCommands();
         // proxy2.executeFrameCommands();
 
-        proxies.forEach(function(proxy) {
+        proxiesToBeRenderedThisFrame.forEach(function(proxy) {
             proxy.executeFrameCommands();
         });
 
-        let end = performance.now();
+        // let end = performance.now();
         // console.log(end - start);
         
         // console.log('rendered ' + proxies.length + ' proxies');
