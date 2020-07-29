@@ -209,7 +209,7 @@
     };
     exports.getDirtyNodes = getDirtyNodes;
     
-    exports.calculateFinalMatrices = function(visibleObjectIds) {
+    const calculateFinalMatrices = function(visibleObjectIds) {
         if (getDirtyNodes().length > 0) {
             recomputeScene(); // ensure all worldMatrix reflects latest localMatrix
         }
@@ -250,7 +250,7 @@
                 let transformedFrameMat = [];
                 utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
                 utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
-                finalCSSMatrices[frameKey] = modelViewProjection;
+                finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
 
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
                    let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
@@ -258,10 +258,18 @@
                    relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
 
                    utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, modelViewProjection);
-                   finalCSSMatrices[nodeKey] = modelViewProjection;
+                   finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
                 });
             });
         });
+    };
+    exports.calculateFinalMatrices = calculateFinalMatrices;
+    
+    exports.getCSSMatrix = function(activeKey) {
+        if (typeof finalCSSMatrices[activeKey] === 'undefined') {
+            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+        }
+        return finalCSSMatrices[activeKey];
     };
 
     exports.SceneNode = SceneNode;
