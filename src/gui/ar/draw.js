@@ -357,6 +357,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.isObjectWithNoFramesVisible = true;
     }
     
+    realityEditor.gui.ar.sceneGraph.calculateFinalMatrices(Object.keys(visibleObjects));
+    
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
        // if (!objects.hasOwnProperty(objectKey)) { continue; }
@@ -1453,7 +1455,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (visibleObjects, objectKey,
 
                 let activeElt = globalDOMCache["object" + activeKey];
                 if (!activeVehicle.isOutsideViewport) {
-                    activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                    // activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')'; TODO: re-enable
+                    activeElt.style.transform = 'matrix3d(' + realityEditor.gui.ar.sceneGraph.getCSSMatrix(activeKey).toString() + ')';
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }
