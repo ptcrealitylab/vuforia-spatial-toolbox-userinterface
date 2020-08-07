@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="cache-control" content="max-age=0"/>
+    <meta http-equiv="cache-control" content="no-cache"/>
+    <meta http-equiv="expires" content="0"/>
+    <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+    <meta http-equiv="pragma" content="no-cache"/>
+    <title>Spatial Toolbox - Found Servers</title>
+
+    <!-- Sets initial viewport load and disables zooming  -->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <script src="../../index.js"></script>
+
+    <!-- Include the compiled Ratchet CSS -->
+    <link href="../../../thirdPartyCode/css/ratchet.css" rel="stylesheet">
+    <link href="../../../thirdPartyCode/css/ratchet-theme-ios.css" rel="stylesheet">
+
+    <!-- Include the compiled Ratchet JS -->
+    <script src="../../../thirdPartyCode/js/ratchet.min.js"></script>
+    <script src="../../../thirdPartyCode/pep.min.js"></script>
+    <script src="states.js"></script>
+
+    <style>
+        #foundServersTitle {
+            display: flex;
+            flex-direction: row;
+            left: 70px;
+            width: calc(100% - 100px);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .flexItem {
+            flex-grow: 1;
+        }
+        .flexItemWide {
+            flex-grow: 2;
+        }
+        .infoRow {
+            display: flex;
+            flex-direction: 1;
+            width: 100%;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .serverInfoRow:active {
+            background-color: rgba(0,0,0,0.2);
+        }
+        .selectedItem {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .whereIsItem {
+            background-color: rgba(0,255,255,0.15);
+        }
+        .badge {
+            font-size: large;
+        }
+        .serverButton {
+            padding: 5px;
+            padding-left: 10px;
+            padding-right: 10px;
+            border: 2px solid black;
+            border-radius: 7px;
+            margin-right: 20px;
+        }
+        .serverButton:active {
+            background-color: rgba(0,0,0,0.2);
+        }
+        .buttonGreyedOut {
+            border: 2px solid rgba(0,0,0,0.2);
+            color: rgba(0,0,0,0.2);
+        }
+        
+        .rowName {
+            font-weight: 600;
+        }
+        
+        .objectNameInput {
+            display: inline-block;
+            margin-top: 20px;
+            width: 50% !important;
+        }
+        
+        .addObjectButton {
+            display: inline-block;
+        }
+        
+    </style>
+</head>
+<body style="background-color: #efeff4;">
+<div style="position: absolute; right: 0; width: 65px; top:0; bottom: 0; background-color: #222222"></div>
+<div>
+
+    <header class="bar bar-nav" style="right:65px; left:0">
+        <a class="" href="index.html" data-ignore="push">
+            <button class="btn btn-link btn-nav pull-left" style="user-select: none; -webkit-user-select: none">
+                <span class="icon icon-left-nav"></span>
+                Back
+            </button></a>
+        <div id="foundServersTitle" class="title">
+            <div class="flexItemWide">Name</div>
+            <div class="flexItem">Version</div>
+            <div class="flexItem">Address</div>
+        </div>
+    </header>
+
+    <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
+    <div class="content" style="right:65px;">
+        <div class="card">
+            <ul class="table-view" id="serverList"></ul>
+        </div>
+    </div>
+
+    <template id="tableEntry">
+            <li class="table-view-cell table-view-cell"></li>
+    </template>
+
+    <!-- Template for a single row that either contains server info -->
+    <template id="row">
+        <div>
+            <div class="infoRow serverInfoRow" style="height: 30px; font-size: large">
+                <img class="flexItem media-object pull-left" src="../../../svg/discovery.svg" style="width: 26px;
+                height: 26px; margin-top: -2px; margin-bottom: -5px; pointer-events: none">
+                <div class="flexItemWide rowName" style="width: 130px; overflow: hidden;"></div>
+                <div style="width: 70px; text-align: center">
+                    <span class="badge rowVersion"></span>
+                </div>
+                <div class="flexItem" style="width: 140px; text-align: center">
+                    <span class="badge rowIP"></span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Template for a row of buttons that can be added underneath a server row by tapping on it -->
+    <template id="buttonRow">
+        <div class="buttons">
+            <div class="infoRow" style="height: 40px; font-size: large; justify-content: start; align-items: center; text-align: center">
+                <div style="width: 100%;">
+                    <form class="addObjectForm">
+                      <input type="text" name="name" pattern="[A-Za-z]+" class="objectNameInput"/>
+                      <button class="serverButton addObjectButton">Add Object</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<script>
+    /**
+     * The most recently rendered set of servers discovered by the app
+     */
+    var previousFoundServers = null;
+
+    // because this is a self-contained iframe, only way to receive data about found objects is using a message listener
+    window.addEventListener("message", function (e) {
+        var msg = JSON.parse(e.data);
+        if (msg.getObjects) {
+            realityEditor.gui.settings.getObjectsFunction(msg.getObjects);
+        }
+    });
+    
+    function objectToServer(obj) {
+        return {ip: obj.ip, port: obj.port.toString(), version: obj.version};
+    }
+    
+    function removeServerDuplicates(servers) {
+      var output = [];
+      for (var index in servers) {
+        var server = servers[index];
+        if (output.some(s => s.ip === server.ip && s.port === server.port)) {
+          continue;
+        }
+        output.push(server);
+      }
+      return output;
+    }
+
+    /**
+     * This gets triggered by a POST message coming into this iframe from the parent window.
+     * It receives a set of information for each discovered object, and renders a table displaying the information.
+     * This should get called on a (infrequent) loop as long as the iframe is open, so that it doesn't keep stale data.
+     * @param {Object.<string, {name: string, version: string, ip: string, port: string, initialized: boolean, frames: Object, isAnchor: boolean, isWorld: boolean}>} msg
+     */
+    realityEditor.gui.settings.getObjectsFunction = function (msg) {
+        // don't re-render if nothing has changed
+        var msgServers = Object.keys(msg).map(objKey => objectToServer(msg[objKey]));
+        msgServers = removeServerDuplicates(msgServers);
+        if (previousFoundServers && JSON.stringify(previousFoundServers) === JSON.stringify(msgServers)) {
+            return;
+        }
+
+        document.getElementById("serverList").innerHTML = '';
+        for (var index in msgServers) {
+            createServerEntry(msgServers[index]);
+        }
+
+        // add event listeners - show possible actions/interactions when tap on table-view-cell
+        addEventListeners();
+
+        previousFoundServers = msgServers;
+    };
+
+    /**
+     * Adds listeners so that tapping on a server entry toggles the visibility of its details
+     */
+    function addEventListeners() {
+        let serverList = document.getElementById('serverList');
+        Array.from(serverList.children).forEach(function(entry) {
+            // tapping the first row (the server name) opens/closes the details
+            entry.querySelector('.infoRow').addEventListener('pointerup', function(_e) {
+                let needsSelection = !entry.classList.contains('selectedItem');
+                resetSelection(); // only one entry's buttons can be viewed at a time
+
+                if (needsSelection) {
+                    selectItem(entry);
+                }
+            });
+        });
+    }
+
+    /**
+     * Selects a server row and shows its buttons ("Add Object")
+     */
+    function selectItem(entry) {
+        entry.classList.add('selectedItem');
+        let serverIP = entry.dataset.ip;
+        let serverPort = entry.dataset.port;
+        console.log('selected ' + serverIP + ':' + serverPort);
+
+        let serverInfo = previousFoundServers.find(s => s.ip === serverIP && s.port === serverPort);
+
+        // add a child element that contains buttons
+        let buttonRow = entry.querySelector('.buttons');
+        if (!buttonRow) {
+            buttonRow = document.getElementsByTagName('template')['buttonRow'].content.cloneNode(true);
+            var form = buttonRow.querySelector('form');
+            form.dataset.ip = serverInfo.ip;
+            form.dataset.port = serverInfo.port;
+            form.addEventListener('submit', addObject);
+            entry.appendChild(buttonRow);
+        }
+    }
+
+    function addObject(e) {
+      e.preventDefault();
+      var node = e.target;
+      var textInput = node.parentElement.querySelector('.objectNameInput');
+      var objectName = textInput.value;
+      textInput.value = "";
+      textInput.blur(); // Remove focus
+      var button = node.parentElement.querySelector('.addObjectButton');
+      button.innerText = "Adding Object...";
+
+      var postUrl = 'http://' + node.dataset.ip + ':' + node.dataset.port + '/';
+      var params = new URLSearchParams({action: 'new', name: objectName, isWorld: null});
+      fetch(postUrl, {
+          method: 'POST',
+          body: params
+      }).then((response) => {
+          console.log('added new object');
+          button.innerText = "Success!";
+          setTimeout(function() {
+              button.innerText = "Add Object";
+          }, 3000);
+      });
+      return false;
+    }
+
+    /**
+     * Ensures buttons are removed from the provided object entry
+     */
+    function deselectItem(entry) {
+        entry.classList.remove('selectedItem');
+
+        // remove child element with buttons
+        let buttonRow = entry.querySelector('.buttons');
+        if (buttonRow) {
+            buttonRow.remove();
+        }
+    }
+
+    /**
+     * Tries to remove buttons from all server entries, to make sure none are visible
+     * Calling this before "selectItem" ensures that only a single one is selected at a time
+     */
+    function resetSelection() {
+        Array.from(document.querySelectorAll('.table-view-cell')).forEach(function(elt) {
+            if (elt.classList.contains('selectedItem')) {
+                deselectItem(elt);
+            }
+        })
+    }
+
+    /**
+     * Builds an HTML element displaying all information for this server, and adds it to the table.
+     * @param {string} objectKey
+     * @param {{name: string, version: string, ip: string, initialized: boolean, frames: Object}} objectInfo
+     */
+    function createServerEntry(server) {
+        var tableEntry = document.getElementsByTagName('template')['tableEntry'].content.cloneNode(true);
+        let tableEntryContents = tableEntry.querySelector('.table-view-cell');
+        tableEntryContents.dataset.ip = server.ip;
+        tableEntryContents.dataset.port = server.port;
+        tableEntryContents.id = 'foundServer' + server.ip + '-' + server.port;
+
+        // add a row for the server with the server name, version, and IP
+        var serverRow = document.getElementsByTagName('template')['row'].content.cloneNode(true);
+
+        serverRow.querySelector('.rowName').innerText = server.ip;
+        serverRow.querySelector('.rowVersion').innerText = server.version;
+        serverRow.querySelector('.rowIP').innerText = server.ip + ':' + server.port;
+
+        tableEntryContents.appendChild(serverRow);
+
+        document.getElementById("serverList").appendChild(tableEntry);
+    }
+
+    // this is triggered on a 1 second interval by the included script, ./index.js, to ask for updated object data
+    realityEditor.gui.settings.callObjects = function () {
+        parent.postMessage(
+            JSON.stringify({
+                settings: {
+                    getObjects: true
+                }
+            }), "*")
+    };
+    realityEditor.gui.settings.callObjects(); // also get the data immediately when the iframe loads
+
+</script>
+<script src="index.js"></script>
+</body>
+</html>
