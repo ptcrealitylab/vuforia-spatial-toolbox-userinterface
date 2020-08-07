@@ -435,11 +435,11 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
  * Draws a blue dashed animated line along the route specified in the linkObject
  * @param {CanvasRenderingContext2D} context
  * @param {BlockLink} linkObject - contains route with points, and ballAnimationCount for animating
- * @param {number?} numSharingThis - optional param makes animation work at correct speed if the same
+ * @param {number?} numSharingLinkObject - optional param makes animation work at correct speed if the same
  *                                   ballAnimationCount is being shared by multiple links being rendered
  */
-realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkObject, numSharingThis) {
-    if (typeof numSharingThis === 'undefined') { numSharingThis = 1; }
+realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkObject, numSharingLinkObject) {
+    if (typeof numSharingLinkObject === 'undefined') { numSharingLinkObject = 1; }
 
     // context.save();
     // start a dashed line
@@ -452,7 +452,7 @@ realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkOb
     context.lineWidth = 3;
 
     // animate the line
-    var numFramesForAnimationLoop = 30 * numSharingThis;
+    var numFramesForAnimationLoop = 30 * numSharingLinkObject;
     linkObject.ballAnimationCount += totalLength / numFramesForAnimationLoop;
     if (linkObject.ballAnimationCount >= totalLength) {
         linkObject.ballAnimationCount = 0;
