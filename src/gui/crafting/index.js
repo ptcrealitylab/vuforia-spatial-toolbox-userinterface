@@ -52,6 +52,31 @@ createNameSpace("realityEditor.gui.crafting");
 realityEditor.gui.crafting.blockIconCache = {};
 realityEditor.gui.crafting.menuBarWidth = 62;
 realityEditor.gui.crafting.blockColorMap = ["#00FFFF", "#00FF00", "#FFFF00", "#FF007C"];
+realityEditor.gui.crafting.reusableLinkObject = {
+    ballAnimationCount: 0,
+    route: {
+        pointData: {  // list of [{screenX, screenY}]
+            points: []
+        }
+    }
+};
+
+realityEditor.gui.crafting.recalculateConnectedColors = function(logic) {
+    let connectedLinks = realityEditor.getLinksToAndFromNode(logic.uuid);
+
+    let connectedInputs = connectedLinks.linksToNode.map(function(link) {
+        return link.logicB; // the port number of the end of the link
+    });
+    let connectedOutputs = connectedLinks.linksFromNode.map(function(link) {
+        return link.logicA; // the port number of the start of the link
+    });
+
+    // 0 = blue, 1 = green, 2 = yellow, 3 = red
+    [0, 1, 2, 3].forEach(function(index) {
+        logic.guiState.connectedInputColors[index] = connectedInputs.includes(index);
+        logic.guiState.connectedOutputColors[index] = connectedOutputs.includes(index);
+    });
+};
 
 realityEditor.gui.crafting.initService = function() {
     realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
@@ -77,6 +102,8 @@ realityEditor.gui.crafting.updateGrid = function(grid) {
         // *** this does all the backend work ***
         grid.recalculateAllRoutes();
 
+        // this could just happen on open/close but we'll update each time in case another user updates the links
+        realityEditor.gui.crafting.recalculateConnectedColors(logic);
 
         // UPDATE THE UI IF OPEN
         var blockContainer = document.getElementById('blocks');
@@ -351,6 +378,35 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
         this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, lineColor, 3);
     }
 
+    // draw links from top of screen for any of the connected input colors
+    let connectedInputColors = globalStates.currentLogic.guiState.connectedInputColors;
+    let connectedOutputColors = globalStates.currentLogic.guiState.connectedOutputColors;
+
+    let numReusableUpdates = connectedInputColors.filter(function(value) { return value; }).length +
+        connectedOutputColors.filter(function(value) { return value; }).length;
+
+    connectedInputColors.forEach(function(isConnected, index) {
+        if (!isConnected) { return; } // only draw connected lines
+        // draw dashed line from (blue-x, top) to (blue-x, blue-input-y)
+        let linkX = grid.getColumnCenterX(index * 2);
+        let endY = grid.getRowCenterY(0);
+        _this.reusableLinkObject.route.pointData.points = [{screenX: linkX, screenY: 0}, {screenX: linkX, screenY: endY}];
+        _this.drawDataCraftingLineDashed(ctx, realityEditor.gui.crafting.reusableLinkObject, numReusableUpdates);
+    });
+
+    // draw links from top of screen for any of the connected input colors
+    connectedOutputColors.forEach(function(isConnected, index) {
+        if (!isConnected) { return; } // only draw connected lines
+        // draw dashed line from (blue-x, top) to (blue-x, blue-input-y)
+        let linkX = grid.getColumnCenterX(index * 2);
+        let startY = grid.getRowCenterY(6);
+        _this.reusableLinkObject.route.pointData.points = [{screenX: linkX, screenY: startY}, {screenX: linkX, screenY: window.innerHeight}];
+        _this.drawDataCraftingLineDashed(ctx, realityEditor.gui.crafting.reusableLinkObject, numReusableUpdates);
+    });
+
+    // draw links to bottom of screen for any of the connected output colors
+    // let connectedOutputColors = globalStates.currentLogic.guiState.connectedOutputColors;
+
     var tappedContents = globalStates.currentLogic.guiState.tappedContents;
     if (tappedContents) {
         var domElement = this.eventHelper.getDomElementForBlock(tappedContents.block);
@@ -398,7 +454,16 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
     }
 };
 
-realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkObject) {
+/**
+ * Draws a blue dashed animated line along the route specified in the linkObject
+ * @param {CanvasRenderingContext2D} context
+ * @param {BlockLink} linkObject - contains route with points, and ballAnimationCount for animating
+ * @param {number?} numSharingThis - optional param makes animation work at correct speed if the same
+ *                                   ballAnimationCount is being shared by multiple links being rendered
+ */
+realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkObject, numSharingThis) {
+    if (typeof numSharingThis === 'undefined') { numSharingThis = 1; }
+
     // context.save();
     // start a dashed line
     var lineLength = 6;
@@ -410,7 +475,7 @@ realityEditor.gui.crafting.drawDataCraftingLineDashed = function(context, linkOb
     context.lineWidth = 3;
 
     // animate the line
-    var numFramesForAnimationLoop = 30;
+    var numFramesForAnimationLoop = 30 * numSharingThis;
     linkObject.ballAnimationCount += totalLength / numFramesForAnimationLoop;
     if (linkObject.ballAnimationCount >= totalLength) {
         linkObject.ballAnimationCount = 0;
