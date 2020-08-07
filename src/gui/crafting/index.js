@@ -52,11 +52,13 @@ createNameSpace("realityEditor.gui.crafting");
 realityEditor.gui.crafting.blockIconCache = {};
 realityEditor.gui.crafting.menuBarWidth = 62;
 realityEditor.gui.crafting.blockColorMap = ["#00FFFF", "#00FF00", "#FFFF00", "#FF007C"];
+
+// since all the connectedColors links have the same shape, we can animate them with the same object
 realityEditor.gui.crafting.reusableLinkObject = {
     ballAnimationCount: 0,
     route: {
-        pointData: {  // list of [{screenX, screenY}]
-            points: []
+        pointData: {
+            points: [] // list of [{screenX, screenY}] will get populated in render function
         }
     }
 };
