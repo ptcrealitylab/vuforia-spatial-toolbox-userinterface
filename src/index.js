@@ -453,6 +453,11 @@ realityEditor.isVehicleAFrame = function(vehicle) {
     return (vehicle.type === 'ui' || typeof vehicle.type === 'undefined');
 };
 
+/**
+ * Helper function loops over all links on all objects to find ones starting or ending at this node
+ * @param {string} nodeKey
+ * @return {{linksToNode: Array.<Link>, linksFromNode: Array.<Link>}}
+ */
 realityEditor.getLinksToAndFromNode = function(nodeKey) {
     let linksToNode = [];
     let linksFromNode = [];

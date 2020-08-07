@@ -61,23 +61,6 @@ realityEditor.gui.crafting.reusableLinkObject = {
     }
 };
 
-realityEditor.gui.crafting.recalculateConnectedColors = function(logic) {
-    let connectedLinks = realityEditor.getLinksToAndFromNode(logic.uuid);
-
-    let connectedInputs = connectedLinks.linksToNode.map(function(link) {
-        return link.logicB; // the port number of the end of the link
-    });
-    let connectedOutputs = connectedLinks.linksFromNode.map(function(link) {
-        return link.logicA; // the port number of the start of the link
-    });
-
-    // 0 = blue, 1 = green, 2 = yellow, 3 = red
-    [0, 1, 2, 3].forEach(function(index) {
-        logic.guiState.connectedInputColors[index] = connectedInputs.includes(index);
-        logic.guiState.connectedOutputColors[index] = connectedOutputs.includes(index);
-    });
-};
-
 realityEditor.gui.crafting.initService = function() {
     realityEditor.gui.buttons.registerCallbackForButton('gui', hideCraftingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', hideCraftingOnButtonUp);
@@ -378,34 +361,28 @@ realityEditor.gui.crafting.redrawDataCrafting = function() {
         this.realityEditor.gui.ar.lines.drawSimpleLine(ctx, tempLine.start.x, tempLine.start.y, tempLine.end.x, tempLine.end.y, lineColor, 3);
     }
 
-    // draw links from top of screen for any of the connected input colors
     let connectedInputColors = globalStates.currentLogic.guiState.connectedInputColors;
     let connectedOutputColors = globalStates.currentLogic.guiState.connectedOutputColors;
-
     let numReusableUpdates = connectedInputColors.filter(function(value) { return value; }).length +
         connectedOutputColors.filter(function(value) { return value; }).length;
 
+    // draw links from top of screen for any of the connected input colors
     connectedInputColors.forEach(function(isConnected, index) {
         if (!isConnected) { return; } // only draw connected lines
-        // draw dashed line from (blue-x, top) to (blue-x, blue-input-y)
         let linkX = grid.getColumnCenterX(index * 2);
         let endY = grid.getRowCenterY(0);
         _this.reusableLinkObject.route.pointData.points = [{screenX: linkX, screenY: 0}, {screenX: linkX, screenY: endY}];
         _this.drawDataCraftingLineDashed(ctx, realityEditor.gui.crafting.reusableLinkObject, numReusableUpdates);
     });
 
-    // draw links from top of screen for any of the connected input colors
+    // draw links to bottom of screen for any of the connected input colors
     connectedOutputColors.forEach(function(isConnected, index) {
         if (!isConnected) { return; } // only draw connected lines
-        // draw dashed line from (blue-x, top) to (blue-x, blue-input-y)
         let linkX = grid.getColumnCenterX(index * 2);
         let startY = grid.getRowCenterY(6);
         _this.reusableLinkObject.route.pointData.points = [{screenX: linkX, screenY: startY}, {screenX: linkX, screenY: window.innerHeight}];
         _this.drawDataCraftingLineDashed(ctx, realityEditor.gui.crafting.reusableLinkObject, numReusableUpdates);
     });
-
-    // draw links to bottom of screen for any of the connected output colors
-    // let connectedOutputColors = globalStates.currentLogic.guiState.connectedOutputColors;
 
     var tappedContents = globalStates.currentLogic.guiState.tappedContents;
     if (tappedContents) {
@@ -857,4 +834,27 @@ realityEditor.gui.crafting.initLogicInOutBlocks = function() {
             this.grid.addBlock(x, y, blockJSON, globalId, true);
         }
     }
+};
+
+/**
+ * Updates this logic node's connectedInputColors and connectedOutputColors by looking at all links on all objects
+ * that either start or end at this logic node and seeing which color they are connected to.
+ * Resulting format is something like [true, false, false, true] - meaning blue and red are connected on outside
+ * @param {Logic} logic
+ */
+realityEditor.gui.crafting.recalculateConnectedColors = function(logic) {
+    let connectedLinks = realityEditor.getLinksToAndFromNode(logic.uuid);
+
+    let connectedInputs = connectedLinks.linksToNode.map(function(link) {
+        return link.logicB; // the port number of the end of the link
+    });
+    let connectedOutputs = connectedLinks.linksFromNode.map(function(link) {
+        return link.logicA; // the port number of the start of the link
+    });
+
+    // 0 = blue, 1 = green, 2 = yellow, 3 = red
+    [0, 1, 2, 3].forEach(function(index) {
+        logic.guiState.connectedInputColors[index] = connectedInputs.includes(index);
+        logic.guiState.connectedOutputColors[index] = connectedOutputs.includes(index);
+    });
 };
