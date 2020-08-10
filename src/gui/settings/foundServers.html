@@ -108,6 +108,14 @@
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
     <div class="content" style="right:65px;">
+        <div class="card no-servers-notice">
+            <p class="content-padded">
+                No servers with objects have been found on your network.
+                <br>
+                Make sure your Vuforia Spatial Edge Server is running and has at
+                least one object set up.
+            </p>
+        </div>
         <div class="card">
             <ul class="table-view" id="serverList"></ul>
         </div>
@@ -192,6 +200,13 @@
         msgServers = removeServerDuplicates(msgServers);
         if (previousFoundServers && JSON.stringify(previousFoundServers) === JSON.stringify(msgServers)) {
             return;
+        }
+        
+        var notice = document.querySelector('.no-servers-notice');
+        if (Object.keys(msgServers).length === 0) {
+            notice.removeAttribute('hidden');
+        } else {
+            notice.setAttribute('hidden', '');
         }
 
         document.getElementById("serverList").innerHTML = '';
