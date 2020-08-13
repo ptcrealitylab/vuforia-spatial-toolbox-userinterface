@@ -170,7 +170,9 @@ createNameSpace("realityEditor.gui.crafting.blockMenu");
                 if (block.category) {
                     categoryIndex = block.category - 1;
                 }
+                var defaultMenu = logic.guiState.menuBlockData[0];
                 var categoryMenu = logic.guiState.menuBlockData[categoryIndex];
+                defaultMenu[key] = block;
                 categoryMenu[key] = block;
             }
     
