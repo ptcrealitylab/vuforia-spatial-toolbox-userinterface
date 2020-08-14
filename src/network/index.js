@@ -253,7 +253,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisObject.matrix = [];
     }
 
-    realityEditor.gui.ar.sceneGraph.addObject(objectKey, thisObject.matrix);
+    let isImageTarget = !thisObject.isWorldObject;
+    realityEditor.gui.ar.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
 
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);

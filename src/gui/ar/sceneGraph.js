@@ -122,7 +122,7 @@
         return realityEditor.gui.ar.utilities.distance(this.getMatrixRelativeTo(otherNode));
     };
 
-    exports.addObject = function(objectId, initialLocalMatrix) {
+    exports.addObject = function(objectId, initialLocalMatrix, needsRotateX) {
         let sceneNodeObject;
         if (typeof sceneGraph[objectId] !== 'undefined') {
             console.warn('trying to add duplicate object to scene graph');
@@ -141,7 +141,35 @@
         if (typeof initialLocalMatrix !== 'undefined') {
             sceneNodeObject.setLocalMatrix(initialLocalMatrix);
         }
+
+        if (needsRotateX) {
+            sceneNodeObject.needsRotateX = true;
+            addRotateX(sceneNodeObject, objectId);
+        }
     };
+
+    function addRotateX(sceneNodeObject, objectId) {
+        let sceneNodeRotateX;
+        let thisNodeId = objectId + 'rotateX';
+        if (typeof sceneGraph[thisNodeId] !== 'undefined') {
+            console.warn('trying to add duplicate rotateX to scene graph');
+            sceneNodeRotateX = sceneGraph[thisNodeId];
+        } else {
+            sceneNodeRotateX = new SceneNode(thisNodeId);
+            // let _object = realityEditor.getObject(objectId);
+            sceneGraph[thisNodeId] = sceneNodeRotateX;
+        }
+
+        sceneNodeRotateX.setParent(sceneNodeObject);
+        console.log('SceneGraph: added rotateX to object ' + objectId);
+
+        sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
+            1, 0, 0, 0,
+            0, -1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+    }
 
     exports.addFrame = function(objectId, frameId, initialLocalMatrix) {
         let sceneNodeFrame;
@@ -155,8 +183,13 @@
         }
 
         if (typeof sceneGraph[objectId] !== 'undefined') {
-            sceneNodeFrame.setParent(sceneGraph[objectId]);
-            console.log('SceneGraph: added frame ' + frameId + ' to object ' + objectId);
+            if (sceneGraph[objectId].needsRotateX) {
+                sceneNodeFrame.setParent(sceneGraph[objectId + 'rotateX']);
+                console.log('SceneGraph: added frame ' + frameId + ' to rotateX of object ' + objectId);
+            } else {
+                sceneNodeFrame.setParent(sceneGraph[objectId]);
+                console.log('SceneGraph: added frame ' + frameId + ' to object ' + objectId);
+            }
         }
 
         if (typeof initialLocalMatrix !== 'undefined') {
