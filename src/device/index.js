@@ -109,6 +109,12 @@ realityEditor.device.editingState = {
 };
 
 /**
+ * Used to prevent duplicate pointermove events from triggering if the touch position didn't actually change
+ * @type {{x: number, y: number}|null}
+ */
+realityEditor.device.previousPointerMove = null;
+
+/**
  * @type {CallbackHandler}
  */
 realityEditor.device.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/index');
@@ -348,7 +354,9 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
-    
+
+    this.previousPointerMove = null;
+
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     pocketFrame.vehicle = null;
@@ -601,10 +609,12 @@ realityEditor.device.onElementTouchDown = function(event) {
     this.touchEditingTimer = {
         startX: event.pageX,
         startY: event.pageY,
-        moveToleranceSquared: 100,
+        moveToleranceSquared: (activeVehicle.type === "logic" ? 900 : 100), // make logic nodes easier to move
         timeoutFunction: timeoutFunction
     };
-    
+
+    this.previousPointerMove = {x: event.pageX, y: event.pageY};
+
     cout("onElementTouchDown");
 };
 
@@ -616,6 +626,10 @@ realityEditor.device.onElementTouchDown = function(event) {
  */
 realityEditor.device.onElementTouchMove = function(event) {
     if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+
+    if (this.previousPointerMove && this.previousPointerMove.x === event.pageX && this.previousPointerMove.y === event.pageY) {
+        return; // ensure that we ignore supposed "move" events if position didn't change
+    }
 
     var target = event.currentTarget;
     
@@ -633,6 +647,8 @@ realityEditor.device.onElementTouchMove = function(event) {
     if (this.shouldPostEventsIntoIframe()) {
         this.postEventIntoIframe(event, target.frameId, target.nodeId);
     }
+
+    this.previousPointerMove = {x: event.pageX, y: event.pageY};
 
     cout("onElementTouchMove");
 };
