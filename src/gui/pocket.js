@@ -457,6 +457,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 if (noMetadata) {
                     return true; // older versions without metadata should show up (backwards-compatible)
                 }
+                if (!frameInfo.metadata.hasOwnProperty('enabled')) {
+                    return true;
+                }
                 return frameInfo.metadata.enabled; // newer versions only show up if enabled
             });
         }
