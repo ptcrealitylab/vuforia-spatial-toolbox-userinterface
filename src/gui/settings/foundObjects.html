@@ -378,9 +378,6 @@
               console.log('successful upload');
               button.innerText = "Success!";
               document.querySelector('.reload-notice').removeAttribute('hidden');
-              setTimeout(function() {
-                  button.innerText = "Upload Target";
-              }, 3000);
           } else {
               console.log('error uploading');
               var notice = document.querySelector('.error-notice');
@@ -391,6 +388,9 @@
                   notice.querySelector('p').innerText = '';
               }, 3000);
           }
+          setTimeout(function() {
+            button.innerText = "Upload Target";
+          }, 3000);
       };
 
       xhr.setRequestHeader('type', 'targetUpload');
