@@ -1227,6 +1227,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
 
         globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane();
+        realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
     }
 
     if (msgContent.sendScreenPosition === true) {
