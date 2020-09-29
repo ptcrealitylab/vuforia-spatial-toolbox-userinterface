@@ -175,7 +175,7 @@ var globalStates = {
     reality: false,
     interface: "gui",
 
-    useGroundPlane: true,
+    useGroundPlane: false,
     numFunctionCalls: {
         multiplyMatrix: 0,
         invertMatrix: 0,

@@ -59,6 +59,8 @@ createNameSpace('realityEditor.app.callbacks');
     // save this matrix in a local scope for faster retrieval
     realityEditor.app.callbacks.rotationXMatrix = rotationXMatrix;
 
+    let hasActiveGroundPlaneStream = false;
+
     /**
      * Callback for realityEditor.app.getVuforiaReady
      * Triggered when Vuforia Engine finishes initializing.
@@ -75,9 +77,6 @@ createNameSpace('realityEditor.app.callbacks');
         // subscribe to the camera matrix from the positional device tracker
         realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
-        // subscribe to the ground plane matrix stream that starts returning results when it has been detected and an anchor added
-        realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
-
         // add heartbeat listener for UDP object discovery
         realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
 
@@ -87,6 +86,18 @@ createNameSpace('realityEditor.app.callbacks');
                 realityEditor.app.sendUDPMessage({action: 'ping'});
             }, 500 * i); // space out each message by 500ms
         }
+    }
+
+    /**
+     * Subscribe to the ground plane matrix stream that starts returning results when it has been detected and an
+     * anchor gets added to the ground. This only starts the tracker long enough to place an anchor on the ground -
+     * after that the tracker stops for performance optimization.
+     */
+    function startGroundPlaneTrackerIfNeeded() {
+        if (hasActiveGroundPlaneStream) { return; } // don't do this unnecessarily because it takes a lot of resources
+        if (!globalStates.useGroundPlane) { return; }
+
+        realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
     }
 
     /**
@@ -345,5 +356,7 @@ createNameSpace('realityEditor.app.callbacks');
     exports.receiveGroundPlaneMatricesFromAR = receiveGroundPlaneMatricesFromAR;
     exports.receiveMatricesFromAR = receiveMatricesFromAR;
     exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
+
+    exports.startGroundPlaneTrackerIfNeeded = startGroundPlaneTrackerIfNeeded;
 
 })(realityEditor.app.callbacks);
