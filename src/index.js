@@ -82,6 +82,7 @@ var realityEditor = realityEditor || {
             moveabilityOverlay: {},
             positioning: {},
             sceneGraph: {},
+            sceneRenderer: {},
             utilities: {}
         },
         spatial: {
