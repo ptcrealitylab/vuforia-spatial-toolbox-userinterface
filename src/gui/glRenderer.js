@@ -60,7 +60,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         executeCommand(message) {
             for (let i = 0; i < message.args.length; i++) {
                 let arg = message.args[i];
-                if (arg.fakeClone) {
+                if (arg && arg.fakeClone) {
                     message.args[i] = this.uncloneables[arg.index];
                 }
             }
