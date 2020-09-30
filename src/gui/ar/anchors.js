@@ -62,8 +62,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function modifyVisibleObjects(visibleObjects) {
         // if there's no visible world object other than the world_local, ignore all this code
-        if (!realityEditor.worldObjects.getBestWorldObject() ||
-            realityEditor.worldObjects.getBestWorldObject().objectId === realityEditor.worldObjects.getLocalWorldId()) {
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
             return;
         }
 
@@ -82,8 +82,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // the visibleObjects matrix of its world
             let objectMatrix = realityEditor.getObject(objectKey).matrix || utilities.newIdentityMatrix();
             let visibleObjectMatrix = [];
-            let closestWorld = realityEditor.worldObjects.getBestWorldObject();
-            let worldModelMatrix = realityEditor.worldObjects.getOrigin(closestWorld.uuid);
+            let worldModelMatrix = realityEditor.worldObjects.getOrigin(bestWorldObject.uuid); // closest world
             utilities.multiplyMatrix(objectMatrix, worldModelMatrix, visibleObjectMatrix);
 
             // pre-compute matrices that will be used in multiple places per update
@@ -264,6 +263,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function getWorldModelViewMatrix() {
         let closestWorld = realityEditor.worldObjects.getBestWorldObject();
+        if (!closestWorld) { return realityEditor.gui.ar.utilities.newIdentityMatrix(); }
         let worldModelMatrix = realityEditor.worldObjects.getOrigin(closestWorld.uuid);
         let modelViewMatrix = [];
         utilities.multiplyMatrix(worldModelMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, modelViewMatrix);
@@ -493,7 +493,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
     // TODO: associate each anchor with a world, and only return true if that particular world has been seen
     // for now, returns true if any world other than world_local has been seen
     function isAnchorObjectDetected(_objectKey) {
-        return realityEditor.worldObjects.getBestWorldObject().objectId !== realityEditor.worldObjects.getLocalWorldId();
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!bestWorldObject) { return false; }
+        return bestWorldObject.objectId !== realityEditor.worldObjects.getLocalWorldId();
     }
 
     exports.initService = initService;

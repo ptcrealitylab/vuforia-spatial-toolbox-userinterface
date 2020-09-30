@@ -498,7 +498,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         if (!continueUpdate) { return; }
 
                         // if a DOM element hasn't been added for this node yet, add it and load the correct src into an iframe
-                        var nodeUrl = "nodes/" + this.activeType + "/index.html";
+                        var nodeUrl = "http://" + this.activeObject.ip + ":" + realityEditor.network.getPortByIp(this.activeObject.ip) + "/nodes/" + this.activeType + "/index.html";
                         this.addElement(nodeUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeVehicle);
 
                     } else {

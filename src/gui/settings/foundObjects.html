@@ -72,6 +72,16 @@
             border: 2px solid rgba(0,0,0,0.2);
             color: rgba(0,0,0,0.2);
         }
+        .uploadTargetInput {
+          /* needs to be hidden to use custom styling through label
+          source: https://tympanus.net/codrops/2015/09/15/styling-customizing-file-inputs-smart-way/ */
+          width: 0.1px;
+        	height: 0.1px;
+        	opacity: 0;
+        	overflow: hidden;
+        	position: absolute;
+        	z-index: -1;
+        }
     </style>
 </head>
 <body style="background-color: #efeff4;">
@@ -95,6 +105,12 @@
 
     <!-- Wrap all non-bar HTML in the .content div (this is actually what scrolls) -->
     <div class="content" style="right:65px;">
+        <div class="card reload-notice" hidden>
+            <p class="content-padded">Please reload the app after you have finished uploading targets.</p>
+        </div>
+        <div class="card error-notice" hidden>
+            <p class="content-padded">Please reload the app after you have finished uploading targets.</p>
+        </div>
         <div class="card">
             <ul class="table-view" id="objectList"></ul>
         </div>
@@ -137,6 +153,12 @@
                 <div>
                     <span class="objectButton anchorButton">Snap Anchor to Screen</span>
                 </div>
+                <div>
+                    <form class="uploadTargetForm" enctype="multipart/form-data">
+                      <input type="file" name="file" accept="image/*" class="uploadTargetInput" onchange="uploadTarget(this)"/>
+                      <label class="objectButton uploadTargetButton">Upload Target</label>
+                    </form>
+                </div>
             </div>
         </div>
     </template>
@@ -165,16 +187,37 @@
      * This gets triggered by a POST message coming into this iframe from the parent window.
      * It receives a set of information for each discovered object, and renders a table displaying the information.
      * This should get called on a (infrequent) loop as long as the iframe is open, so that it doesn't keep stale data.
-     * @param {Object.<string, {name: string, version: string, ip: string, initialized: boolean, frames: Object, isAnchor: boolean, isWorld: boolean}>} msg
+     * @param {Object.<string, {name: string, version: string, ip: string, port: string, initialized: boolean, frames: Object, isAnchor: boolean, isWorld: boolean}>} msg
      */
     realityEditor.gui.settings.getObjectsFunction = function (msg) {
         // don't re-render if nothing has changed
         if (previousFoundObjects && JSON.stringify(previousFoundObjects) === JSON.stringify(msg)) {
             return;
         }
+        
+        // Currently, there's a bug where adding an image target to an anchor replaces the id of the object, meaning
+        // that the UI can't tell that the new object it detected after upload is the same as the anchor. ignoredAnchors
+        // detects 'outdated' anchors and makes sure not to display them.
+        var ignoredAnchors = [];
+        var msgIds = Object.keys(msg);
+        for (var i = 0; i < msgIds.length - 1; i++) {
+          for (var j = i + 1; j < msgIds.length; j++) {
+            if (msg[msgIds[i]].name === msg[msgIds[j]].name && msg[msgIds[i]].ip === msg[msgIds[j]].ip) {
+              if (msg[msgIds[i]].isAnchor) {
+                ignoredAnchors.push(msgIds[i]);
+              }
+              if (msg[msgIds[j]].isAnchor) {
+                ignoredAnchors.push(msgIds[j]);
+              }
+            }
+          }
+        }
 
         document.getElementById("objectList").innerHTML = '';
         for (var objectKey in msg) {
+            if (ignoredAnchors.includes(objectKey)) {
+              continue;
+            }
             createObjectEntry(objectKey, msg[objectKey]);
         }
 
@@ -248,7 +291,7 @@
     }
 
     /**
-     * Selects an object row and shows its buttons ("Start Location" and/or "Snap Anchor")
+     * Selects an object row and shows its buttons ("Start Location" and/or "Snap Anchor" and "Upload Target")
      */
     function selectItem(entry) {
         entry.classList.add('selectedItem');
@@ -256,8 +299,10 @@
         let objectKey = entry.dataset.objectKey;
         console.log('selected ' + objectKey);
 
-        let isAnchor = previousFoundObjects[objectKey].isAnchor;
-        let isLocalized = previousFoundObjects[objectKey].isLocalized;
+        let objectInfo = previousFoundObjects[objectKey];
+
+        let isAnchor = objectInfo.isAnchor;
+        let isLocalized = objectInfo.isLocalized;
 
         // add a child element that contains buttons
         let buttonRow = entry.querySelector('.buttons');
@@ -294,12 +339,65 @@
             } else {
                 buttonRow.querySelector('.anchorButton').remove(); // hide for normal objects
             }
+            
+            if (!isAnchor) {
+              buttonRow.querySelector('.uploadTargetForm').remove(); // Only anchors support uploading targets
+            } else {
+              let uploadInput = buttonRow.querySelector('.uploadTargetInput');
+              let uploadButton = buttonRow.querySelector('.uploadTargetButton');
+              uploadInput.id = "uploadTarget" + objectInfo.name;
+              uploadButton.htmlFor = uploadInput.id;
+              uploadInput.dataset.ip = objectInfo.ip;
+              uploadInput.dataset.port = objectInfo.port;
+              uploadInput.dataset.name = objectInfo.name;
+            }
 
             entry.appendChild(buttonRow);
 
             // needs to happen after buttons are appended to entry
             updateVisualsForWhereIs(objectKey);
         }
+    }
+
+    function uploadTarget(node) {
+      var button = node.parentElement.querySelector('.uploadTargetButton');
+      button.innerText = "Uploading...";
+
+      // Set up the request.
+      var xhr = new XMLHttpRequest();
+
+      var postUrl = 'http://' + node.dataset.ip + ':' + node.dataset.port + '/content/' + node.dataset.name; // set to target upload endpoint on server
+
+      // Open the connection.
+      xhr.open('POST', postUrl, true);
+
+      // Set up a handler for when the request finishes.
+      xhr.onload = function () {
+          if (xhr.status === 200) {
+              // File(s) uploaded.
+              console.log('successful upload');
+              button.innerText = "Success!";
+              document.querySelector('.reload-notice').removeAttribute('hidden');
+          } else {
+              console.log('error uploading');
+              var notice = document.querySelector('.error-notice');
+              notice.removeAttribute('hidden');
+              notice.querySelector('p').innerText = `Failed to upload image: ${xhr.status}`;
+              setTimeout(function() {
+                  notice.setAttribute('hidden', '');
+                  notice.querySelector('p').innerText = '';
+              }, 3000);
+          }
+          setTimeout(function() {
+            button.innerText = "Upload Target";
+          }, 3000);
+      };
+
+      xhr.setRequestHeader('type', 'targetUpload');
+
+      // Send the Data.
+      var formData = new FormData(node.parentElement);
+      xhr.send(formData);
     }
 
     /**

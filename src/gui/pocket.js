@@ -200,8 +200,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             closestFrame.nodes[logicKey] = addedLogic;
 
             // render it
-            var nodeUrl = "nodes/logic/index.html";
-
+            var nodeUrl = "http://" + closestObject.ip + ":" + realityEditor.network.getPortByIp(closestObject.ip) + "/nodes/logic/index.html";
             realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', addedLogic);
 
             var _thisNode = document.getElementById("iframe" + logicKey);

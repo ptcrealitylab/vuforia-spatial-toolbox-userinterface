@@ -23,8 +23,8 @@ createNameSpace("realityEditor.worldObjects");
     var worldCorrections = {};
 
     // a string that all world object's uuids are built from
-    var worldObjectId = '_WORLD_';
-    var localWorldObjectKey = '_WORLD_local';
+    const worldObjectId = '_WORLD_';
+    const localWorldObjectKey = '_WORLD_local';
 
     /**
      * Init world object module
@@ -66,34 +66,8 @@ createNameSpace("realityEditor.worldObjects");
             handleServerDiscovered(object.ip);
         });
 
-        // this is a way to manually detect and create a world object from the local Node.js server running on the phone
-        var worldObject = { id: '_WORLD_local',
-            ip: "127.0.0.1", //'127.0.0.1',
-            port: 49369,
-            vn: 320,
-            pr: 'R2',
-            tcs: null,
-            zone: '' };
+        tryLoadingLocalWorldObject();
 
-        var localWorldBeat = function(worldObject) {
-            realityEditor.network.addHeartbeatObject(worldObject);
-            console.log(worldObject);
-        };
-
-        // send it a few times, just in case the server hasn't finished initializing by the time this first runs
-        setTimeout(function() {
-            localWorldBeat(worldObject);
-        }, 1000);
-        setTimeout(function() {
-            localWorldBeat(worldObject);
-        }, 2000);
-        setTimeout(function() {
-            localWorldBeat(worldObject);
-        }, 3000);
-        setTimeout(function() {
-            localWorldBeat(worldObject);
-        }, 5000);
-        
         // when an explicit worldObject message is detected, check if we still need to add that world object
         realityEditor.network.addUDPMessageHandler('worldObject', function(message) {
             console.log('interface discovered world object:', message);
@@ -101,6 +75,29 @@ createNameSpace("realityEditor.worldObjects");
                 handleServerDiscovered(message.worldObject.ip)
             }
         });
+    }
+
+    /**
+     * "Detects" a hard-coded "heartbeat" for the local world object and attempts to load its data
+     * Tries again repeatedly every 1 second until it succeeds, in case server takes awhile to initialize
+     */
+    function tryLoadingLocalWorldObject() {
+        console.log('try loading local world object...');
+        let worldObjectBeat = { id: localWorldObjectKey,
+            ip: '127.0.0.1',
+            port: 49369,
+            vn: 320,
+            pr: 'R2',
+            tcs: null,
+            zone: '' };
+
+        realityEditor.network.addHeartbeatObject(worldObjectBeat);
+
+        setTimeout(function() {
+            if (!realityEditor.worldObjects.getWorldObjectKeys().includes(localWorldObjectKey)) {
+                tryLoadingLocalWorldObject(); // keep repeating until we load it successfully
+            }
+        }, 1000);
     }
 
     /**
