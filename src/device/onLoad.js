@@ -246,9 +246,9 @@ realityEditor.device.onload = function () {
     (function animate(time) {
         realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
         // TODO This is a hack to keep the crafting board running
-        if (globalStates.freezeButtonState && !realityEditor.device.environment.providesOwnUpdateLoop()) {
-            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
-        }
+        // if (globalStates.freezeButtonState && !realityEditor.device.environment.providesOwnUpdateLoop()) {
+        //     realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy); 
+        // }
         requestAnimationFrame(animate);
         TWEEN.update(time);
         // stats.update();

@@ -251,8 +251,10 @@ createNameSpace('realityEditor.app.callbacks');
         //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
 
         // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
-        realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+        // realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
         // }
+        
+        realityEditor.gui.ar.sceneRenderer.update_pseudocode(visibleObjects);
     }
 
     /**

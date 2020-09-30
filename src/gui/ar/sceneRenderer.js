@@ -24,6 +24,27 @@ createNameSpace("realityEditor.gui.ar.sceneRenderer");
         // update the scene graph
         realityEditor.gui.ar.sceneGraph.calculateFinalMatrices(Object.keys(visibleObjects));
 
+        // add or remove DOM elements if visibleObjects changed since last time
+        let diff = realityEditor.device.utilities.diffArrays(previousVisibleObjects, Object.keys(visibleObjects));
+        // if (!diff.isEqual) {
+        //     diff.additions.forEach(function(objectKey) {
+        //         let object = realityEditor.getObject(objectKey);
+        //         if (object) {
+        //             Object.keys(object.frames).forEach(function(frameKey) {
+        //                 addElement(objectKey, frameKey);
+        //             });
+        //         }
+        //     });
+        //     diff.subtractions.forEach(function(objectKey) {
+        //         let object = realityEditor.getObject(objectKey);
+        //         if (object) {
+        //             Object.keys(object.frames).forEach(function(frameKey) {
+        //                 removeElement(objectKey, frameKey);
+        //             });
+        //         }
+        //     });
+        // }
+        
         // this will recursively update each frame in the object
         // and each node in each frame
         forEachVisibleObject(visibleObjects, function(objectKey, object) {
@@ -37,6 +58,8 @@ createNameSpace("realityEditor.gui.ar.sceneRenderer");
         });
         
         post_update(visibleObjects);
+
+        previousVisibleObjects = Object.keys(visibleObjects);
     }
     
     function pre_update(visibleObjects) {
