@@ -45,18 +45,21 @@ realityEditor.gui.spatial.checkState = function() {
     let counter2 = 0;
     for (let ip in globalStates.spatial.whereIs) {
         for (let key in globalStates.spatial.whereIs[ip]) {
+            let dump = key;
             counter++;
         }
     }
 
     for (let ip in globalStates.spatial.whereIs) {
         for (let key in globalStates.spatial.howFarIs[ip]) {
+            let dump = key;
             counter++;
         }
     }
 
     for (let ip in globalStates.spatial.whereIs) {
         for (let key in globalStates.spatial.whereWas[ip]) {
+            let dump = key;
             counter++;
             counter2++;
         }
@@ -64,6 +67,7 @@ realityEditor.gui.spatial.checkState = function() {
 
     for (let ip in globalStates.spatial.whereIs) {
         for (let key in globalStates.spatial.velocityOf[ip]) {
+            let dump = key;
             counter++;
             counter2++;
         }
