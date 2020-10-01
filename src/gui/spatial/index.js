@@ -44,33 +44,21 @@ realityEditor.gui.spatial.checkState = function() {
     let counter = 0;
     let counter2 = 0;
     for (let ip in globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.whereIs[ip]) {
-            let dump = key;
-            counter++;
-        }
+        counter += Object.keys(globalStates.spatial.whereIs[ip]).length;
     }
 
-    for (let ip in globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.howFarIs[ip]) {
-            let dump = key;
-            counter++;
-        }
+    for (let ip in globalStates.spatial.howFarIs) {
+        counter += Object.keys(globalStates.spatial.howFarIs[ip]).length;
     }
 
-    for (let ip in globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.whereWas[ip]) {
-            let dump = key;
-            counter++;
-            counter2++;
-        }
+    for (let ip in globalStates.spatial.whereWas) {
+        counter += Object.keys(globalStates.spatial.whereWas[ip]).length;
+        counter2 += Object.keys(globalStates.spatial.whereWas[ip]).length;
     }
 
-    for (let ip in globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.velocityOf[ip]) {
-            let dump = key;
-            counter++;
-            counter2++;
-        }
+    for (let ip in globalStates.spatial.velocityOf) {
+        counter += Object.keys(globalStates.spatial.velocityOf[ip]).length;
+        counter2 += Object.keys(globalStates.spatial.velocityOf[ip]).length;
     }
 
     if (counter2 > 0) {
@@ -104,19 +92,19 @@ realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix
         }
     }
 
-    for(let ip in  globalStates.spatial.whereIs) {
+    for(let ip in  globalStates.spatial.howFarIs) {
         for (let key in globalStates.spatial.howFarIs[ip]) {
             this.loadObjectAndTool(this, globalStates.spatial.howFarIs[ip][key], this.howFarIsList, key, modelMatrix, objectID)
         }
     }
 
-    for(let ip in  globalStates.spatial.whereIs) {
+    for(let ip in  globalStates.spatial.whereWas) {
         for (let key in globalStates.spatial.whereWas[ip]) {
             this.loadObjectAndTool(this, globalStates.spatial.whereWas[ip][key], this.whereWasList, key, null, objectID);
         }
     }
 
-    for(let ip in  globalStates.spatial.whereIs) {
+    for(let ip in  globalStates.spatial.velocityOf) {
         for (let key in globalStates.spatial.velocityOf[ip]) {
             this.loadObjectAndTool(this, globalStates.spatial.velocityOf[ip][key], this.velocityOfList, key, modelMatrix, objectID);
         }
