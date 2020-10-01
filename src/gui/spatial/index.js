@@ -333,7 +333,7 @@ realityEditor.gui.spatial.sketch = function(p) {
 
         for(let key in this.whereWasList) {
             this.draw.whereWasP5(this.whereWasList[key],p);
-            length++;
+            counter++;
         }
 
         p.pop();
