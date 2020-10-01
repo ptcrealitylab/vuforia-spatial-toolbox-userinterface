@@ -24,7 +24,7 @@ realityEditor.gui.spatial.howFarIsList = {};
 realityEditor.gui.spatial.whereWasList = {};
 realityEditor.gui.spatial.velocityOfList = {};
 realityEditor.gui.spatial.nodeList = {};
-
+realityEditor.gui.spatial.myp5 = null;
 realityEditor.gui.spatial.draw = {};
 realityEditor.gui.spatial.clearSpatialList = function (){
     realityEditor.gui.spatial.whereIsList = {};
@@ -36,9 +36,47 @@ realityEditor.gui.spatial.clearSpatialList = function (){
 realityEditor.gui.spatial.lineAnimationList = {};
 
 realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix, objMatrix, objectID){
+    let counter = 0; 
+    let counter2 = 0;
+    
     this.worldOrigin = worldOrigin;
+    
+    // console.log(objMatrix[12],objMatrix[13],objMatrix[14]);
+    for(let ip in  globalStates.spatial.whereIs) {
+        for(let key in  globalStates.spatial.whereIs[ip]) {
+            counter++;
+            this.loadObjectAndTool(this, globalStates.spatial.whereIs[ip][key], this.whereIsList, key, modelMatrix,objectID)
+        }
+    }
 
-    if (globalStates.spatial.whereWas || globalStates.spatial.velocityOf) {
+    for(let ip in  globalStates.spatial.whereIs) {
+        for (let key in globalStates.spatial.howFarIs[ip]) {
+            counter++;
+            this.loadObjectAndTool(this, globalStates.spatial.howFarIs[ip][key], this.howFarIsList, key, modelMatrix, objectID)
+        }
+    }
+
+    for(let ip in  globalStates.spatial.whereIs) {
+        for (let key in globalStates.spatial.whereWas[ip]) {
+            counter++;
+            counter2++;
+            this.loadObjectAndTool(this, globalStates.spatial.whereWas[ip][key], this.whereWasList, key, null, objectID);
+        }
+    }
+
+    for(let ip in  globalStates.spatial.whereIs) {
+        for (let key in globalStates.spatial.velocityOf[ip]) {
+            counter++;
+            counter2++;
+            this.loadObjectAndTool(this, globalStates.spatial.velocityOf[ip][key], this.velocityOfList, key, modelMatrix, objectID);
+        }
+    }
+
+    if (realityEditor.gui.spatial.myp5 === null && counter>0) {
+        realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
+    }
+
+    if (counter2>0) {
         this.timeRecorder.initSequence(objectID, objectID, '', '');
         this.timeRecorder.addMatrix(objMatrix, objectID);
 
@@ -66,31 +104,8 @@ realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix
             }
         }
     }
-
-    // console.log(objMatrix[12],objMatrix[13],objMatrix[14]);
-    for(let ip in  globalStates.spatial.whereIs) {
-        for(let key in  globalStates.spatial.whereIs[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.whereIs[ip][key], this.whereIsList, key, modelMatrix,objectID)
-        }
-    }
-
-    for(let ip in  globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.howFarIs[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.howFarIs[ip][key], this.howFarIsList, key, modelMatrix, objectID)
-        }
-    }
-
-    for(let ip in  globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.whereWas[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.whereWas[ip][key], this.whereWasList, key, null, objectID);
-        }
-    }
-
-    for(let ip in  globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.velocityOf[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.velocityOf[ip][key], this.velocityOfList, key, modelMatrix, objectID);
-        }
-    }
+    
+    
 };
 
 realityEditor.gui.spatial.collectNodeList = function(_objMatrix, _objectID, _nodeID){
@@ -261,7 +276,6 @@ realityEditor.gui.spatial.sketch = function(p) {
     }.bind(this);
 
     p.draw = function() {
-
         p.clear();
 
         // copy normal ball connection context
@@ -292,16 +306,20 @@ realityEditor.gui.spatial.sketch = function(p) {
               this.draw.nodesP5(this.nodeList[key],p);
           }*/
 
+        let counter = 0;
         for(let key in this.whereIsList) {
             this.draw.whereIsP5(this.whereIsList[key],p);
+            counter++;
         }
 
         for(let key in this.howFarIsList) {
             this.draw.howFarIsP5(this.howFarIsList[key],p);
+            counter++;
         }
 
         for(let key in this.velocityOfList) {
             this.draw.velocityOfP5(this.velocityOfList[key],p);
+            counter++;
         }
 
         this.canvasThis.uMVMatrix.apply(this.worldOrigin);
@@ -315,13 +333,19 @@ realityEditor.gui.spatial.sketch = function(p) {
 
         for(let key in this.whereWasList) {
             this.draw.whereWasP5(this.whereWasList[key],p);
+            length++;
         }
 
         p.pop();
+
+        if(counter === 0){
+            p.remove();
+            console.log("removed p5js")
+            realityEditor.gui.spatial.myp5 = null;
+        }
+      
     }.bind(this);
 };
-
-realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
 
 // creating the p5 canvas somehow sets display:none on the globalCanvas
 // for now, fix it by repeatedly setting it back to un-hidden a few times
