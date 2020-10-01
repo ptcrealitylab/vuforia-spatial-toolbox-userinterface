@@ -866,8 +866,6 @@ realityEditor.network.onAction = function (action) {
     if (thisAction.spatial) {
 
         if(thisAction.spatial.locator){
-
-        
             let spatial = globalStates.spatial;
             let action = thisAction.spatial.locator;
             if(!thisAction.spatial.ip) return;
@@ -889,7 +887,7 @@ realityEditor.network.onAction = function (action) {
             
         }
         
-        console.log(globalStates.spatial);
+      //  console.log(globalStates.spatial);
     }
     
     
