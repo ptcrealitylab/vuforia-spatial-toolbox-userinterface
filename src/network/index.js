@@ -886,8 +886,8 @@ realityEditor.network.onAction = function (action) {
             }
             
         }
-        
-      //  console.log(globalStates.spatial);
+        realityEditor.gui.spatial.checkState()
+        //  console.log(globalStates.spatial);
     }
     
     
