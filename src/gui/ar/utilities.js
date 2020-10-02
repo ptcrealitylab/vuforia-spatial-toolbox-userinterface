@@ -1841,3 +1841,64 @@ Matrix.prototype.clone = function() {
 Matrix.prototype.unflattened = function() {
     return this.mat;
 };
+
+/**
+ * Based off of https://gist.github.com/Yaffle/1145197 with modifications to
+ * support more complex matrices
+ */
+realityEditor.device.utilities.polyfillWebkitConvertPointFromPageToNode = function() {
+    const identity = new DOMMatrix([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
+    if (!window.WebKitPoint) {
+        window.WebKitPoint = DOMPoint;
+    }
+    function getTransformationMatrix(element) {
+        var transformationMatrix = identity;
+        var x = element;
+        while (x != undefined && x !== x.ownerDocument.documentElement) {
+            var computedStyle = window.getComputedStyle(x);
+            var transform = computedStyle.transform || "none";
+            var c = transform === "none" ? identity : new DOMMatrix(transform);
+            transformationMatrix = c.multiply(transformationMatrix);
+            x = x.parentNode;
+        }
+        // Normalize current matrix to have m44=1 (w = 1). Math does not work
+        // otherwise because nothing knows how to scale based on w
+        let baseArr = transformationMatrix.toFloat64Array();
+        baseArr = baseArr.map(b => b / baseArr[15]);
+        transformationMatrix = new DOMMatrix(baseArr);
+        var w = element.offsetWidth;
+        var h = element.offsetHeight;
+        var i = 4;
+        var left = +Infinity;
+        var top = +Infinity;
+        while (--i >= 0) {
+            var p = transformationMatrix.transformPoint(new DOMPoint(i === 0 || i === 1 ? 0 : w, i === 0 || i === 3 ? 0 : h, 0));
+            if (p.x < left) {
+                left = p.x;
+            }
+            if (p.y < top) {
+                top = p.y;
+            }
+        }
+        var rect = element.getBoundingClientRect();
+        transformationMatrix = identity.translate(window.pageXOffset + rect.left - left, window.pageYOffset + rect.top - top, 0).multiply(transformationMatrix);
+        return transformationMatrix;
+    }
+    window.convertPointFromPageToNode = window.webkitConvertPointFromPageToNode = function (element, point) {
+        let mati = getTransformationMatrix(element).inverse();
+        // This involves a lot of math, sorry.
+        // Given $v = M^{-1}p$ we have p.x, p.y, p.w, M^{-1}, and know that v.z
+        // should be equal to 0.
+        // Solving for p.z we get the following:
+        let projectedZ = -(mati.m13 * point.x + mati.m23 * point.y + mati.m43) / mati.m33;
+        return mati.transformPoint(new DOMPoint(point.x, point.y, projectedZ));
+    };
+    window.convertPointFromNodeToPage = function (element, point) {
+        return getTransformationMatrix(element).transformPoint(point);
+    };
+};
