@@ -37,48 +37,44 @@ realityEditor.gui.spatial.clearSpatialList = function (){
 };
 realityEditor.gui.spatial.lineAnimationList = {};
 
-
-
-
 realityEditor.gui.spatial.checkState = function() {
-    let counter = 0;
-    let counter2 = 0;
+    realityEditor.gui.spatial.historianOn = false;
+    realityEditor.gui.spatial.spatialOn = false;
+    
     for (let ip in globalStates.spatial.whereIs) {
-        counter += Object.keys(globalStates.spatial.whereIs[ip]).length;
+        if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
+            realityEditor.gui.spatial.spatialOn = true;
+            break;
+        }
     }
 
     for (let ip in globalStates.spatial.howFarIs) {
-        counter += Object.keys(globalStates.spatial.howFarIs[ip]).length;
+        if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
+            realityEditor.gui.spatial.spatialOn = true;
+            break;
+        }
     }
 
     for (let ip in globalStates.spatial.whereWas) {
-        counter += Object.keys(globalStates.spatial.whereWas[ip]).length;
-        counter2 += Object.keys(globalStates.spatial.whereWas[ip]).length;
+        if (Object.keys(globalStates.spatial.whereWas[ip]).length > 0) {
+            realityEditor.gui.spatial.spatialOn = true;
+            realityEditor.gui.spatial.historianOn = true;
+            break;
+        }
     }
 
     for (let ip in globalStates.spatial.velocityOf) {
-        counter += Object.keys(globalStates.spatial.velocityOf[ip]).length;
-        counter2 += Object.keys(globalStates.spatial.velocityOf[ip]).length;
+        if (Object.keys(globalStates.spatial.velocityOf[ip]).length > 0) {
+            realityEditor.gui.spatial.spatialOn = true;
+            realityEditor.gui.spatial.historianOn = true;
+            break;
+        }
     }
-
-    if (counter2 > 0) {
-        realityEditor.gui.spatial.historianOn = true;
-    } else {
-        realityEditor.gui.spatial.historianOn = false;
-    }
-
-    if (counter > 0) {
-        realityEditor.gui.spatial.spatialOn = true;
-    } else {
-        realityEditor.gui.spatial.spatialOn = false;
-    }
-
+    
     if (realityEditor.gui.spatial.myp5 === null && realityEditor.gui.spatial.spatialOn) {
         realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
     }
-    
 }
-
 
 realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix, objMatrix, objectID){
     if(!realityEditor.gui.spatial.spatialOn) return;
