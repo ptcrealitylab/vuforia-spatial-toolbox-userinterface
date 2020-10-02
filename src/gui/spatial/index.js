@@ -335,7 +335,7 @@ realityEditor.gui.spatial.sketch = function(p) {
         /*  for(let key in this.nodeList) {
               this.draw.nodesP5(this.nodeList[key],p);
           }*/
-        
+
         for(let key in this.whereIsList) {
             this.draw.whereIsP5(this.whereIsList[key],p);
         }
