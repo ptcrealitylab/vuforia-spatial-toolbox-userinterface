@@ -136,6 +136,47 @@
         return relativeMatrix;
     };
 
+    /**
+     * Moves the node in the scene graph to be located relative to a new parent
+     * @param {string} newParentId - sceneNode ID that this should become a child of
+     * @param {boolean} preserveWorldPosition - if true, will recompute a new localMatrix so that its worldMatrix will
+     * stay the same. if false, will keep the same localMatrix and compute a new worldMatrix
+     */
+    SceneNode.prototype.changeParent = function(newParentId, preserveWorldPosition) {
+        let parentNode = getSceneNodeById(newParentId);
+        if (!parentNode) {
+            console.warn('can\'t find the parent SceneNode to add this to');
+        }
+        // check if the parent needs all of its children to be added to a rotateX node inside of it instead
+        parentNode = getNodeOrRotateXChild(parentNode);
+        this.setParent(parentNode);
+
+        if (preserveWorldPosition) {
+            let desiredWorldMatrix = this.worldMatrix;
+            let newParentWorldMatrix = this.parent.worldMatrix;
+            let requiredLocalMatrix = [];
+            // utils.multiplyMatrix(utils.invertMatrix(newParentWorldMatrix), desiredWorldMatrix, requiredLocalMatrix);
+            utils.multiplyMatrix(desiredWorldMatrix, utils.invertMatrix(newParentWorldMatrix), requiredLocalMatrix);
+            this.setLocalMatrix(requiredLocalMatrix);
+        }
+        
+        this.dirty = true;
+    };
+    
+    SceneNode.prototype.changeId = function(newId) {
+        let oldId = this.id;
+        this.id = newId;
+
+        sceneGraph[this.id] = this;
+        delete sceneGraph[oldId];
+
+        delete relativeToCamera[oldId];
+        delete finalCSSMatrices[oldId];
+        delete finalCSSMatricesWithoutTransform[oldId];
+        
+        this.dirty = true;
+    };
+
     exports.addObject = function(objectId, initialLocalMatrix, needsRotateX) {
         let sceneNodeObject;
         if (typeof sceneGraph[objectId] !== 'undefined') {
@@ -183,6 +224,14 @@
             0, 0, 1, 0,
             0, 0, 0, 1
         ]);
+    }
+    
+    function getNodeOrRotateXChild(sceneNode) {
+        if (sceneNode.needsRotateX) {
+            let childRotateXId = sceneNode.id + 'rotateX';
+            return getSceneNodeById(childRotateXId);
+        }
+        return sceneNode;
     }
 
     exports.addFrame = function(objectId, frameId, initialLocalMatrix) {
