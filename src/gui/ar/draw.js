@@ -756,6 +756,11 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         return;
     }
 
+    let frameSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldFrameKey);
+    // this will recompute a new position for it so it stays in same place relative to camera/world
+    frameSceneNode.changeParent(newObjectKey, true);
+    frameSceneNode.changeId(newFrameKey);
+
     // rename nodes and give new keys
     var newNodes = {};
     for (var oldNodeKey in frame.nodes) {
@@ -766,6 +771,10 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         node.uuid = newNodeKey;
         newNodes[node.uuid] = node;
         delete frame.nodes[oldNodeKey];
+        
+        // update the scene graph
+        let nodeSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldNodeKey);
+        nodeSceneNode.changeId(newNodeKey);
 
         // update the DOM elements for each node
         // (only if node has been loaded to DOM already - doesn't happen if haven't ever switched to node view)
@@ -1015,28 +1024,50 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         
         // try to calculate the matrix that preserves the frame's visual location relative to the camera,
         // but placed on the new object rather than its old object
-        // frame.ar.x = 0; // commenting this out fixed position when dropping to new object
-        // frame.ar.y = 0;
-        
-        // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
-        var oldTargetSize = realityEditor.gui.utilities.getTargetSize(oldObjectKey);
-        var newTargetSize = realityEditor.gui.utilities.getTargetSize(newObjectKey);
-        scaleFactor = oldTargetSize.width / newTargetSize.width;
 
-        realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
-
-        // recompute frame.temp for the new object
-        this.ar.utilities.multiplyMatrix(this.modelViewMatrices[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
-
-        // compute frame.matrix based on new object
-        var resultMatrix = [];
-        this.utilities.multiplyMatrix(frame.begin, this.utilities.invertMatrix(frame.temp), resultMatrix);
-        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+        // get the frame's worldMatrix
+        // get the new object's worldMatrix
         
-        // reset frame.begin
-        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        // compute a new localMatrix for the frame which will preserve its current worldMatrix
         
-        // realityEditor.device.videoRecording.moveFrameToCamera(newObjectKey, newFrameKey);
+        // currentWorldMat = localMat * parentWorldMat
+        // currentWorldMat * parentWorldMat^inv = localMat
+        
+        // let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldFrameKey);
+        // sceneNode.changeParent(newObjectKey, true);
+        // sceneNode.changeId(newFrameKey);
+        
+        // let requiredWorldMatrix = [];
+        // utilities.multiplyMatrix(activeVehicle.begin, cameraNode.worldMatrix, requiredWorldMatrix);
+        // let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
+        // sceneNode.setLocalMatrix(requiredLocalMatrix);
+        //
+        
+        
+        // // frame.ar.x = 0; // commenting this out fixed position when dropping to new object
+        // // frame.ar.y = 0;
+        //
+        // // calculate new scale based on the difference between the frame's old object marker and the new one, so the distance is preserved
+        // var oldTargetSize = realityEditor.gui.utilities.getTargetSize(oldObjectKey);
+        // var newTargetSize = realityEditor.gui.utilities.getTargetSize(newObjectKey);
+        // scaleFactor = oldTargetSize.width / newTargetSize.width;
+        //
+        // realityEditor.gui.ar.positioning.getPositionData(frame).scale *= scaleFactor;
+        //
+        //
+        //
+        // // recompute frame.temp for the new object
+        // this.ar.utilities.multiplyMatrix(this.modelViewMatrices[newObjectKey], this.globalStates.projectionMatrix, frame.temp);
+        //
+        // // compute frame.matrix based on new object
+        // var resultMatrix = [];
+        // this.utilities.multiplyMatrix(frame.begin, this.utilities.invertMatrix(frame.temp), resultMatrix);
+        // realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
+        //
+        // // reset frame.begin
+        // frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        //
+        // // realityEditor.device.videoRecording.moveFrameToCamera(newObjectKey, newFrameKey);
         
     }
     
