@@ -299,7 +299,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         // 1. move it so it is centered on the pointer, ignoring touchOffset
                         // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
                         var touchPosition = realityEditor.device.currentScreenTouches[0].position;
-                        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(groupedFrame, touchPosition.x, touchPosition.y, false);
+                        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(groupedFrame, touchPosition.x, touchPosition.y, false);
 
                         /*
                         // 2. convert touch offset from percent scale to actual scale of the frame

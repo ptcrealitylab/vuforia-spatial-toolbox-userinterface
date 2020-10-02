@@ -585,7 +585,7 @@ realityEditor.device.onElementTouchDown = function(event) {
     if (this.shouldPostEventsIntoIframe()) {
         this.postEventIntoIframe(event, target.frameId, target.nodeId);
     }
-    
+
     // after a certain amount of time, start editing this element
     if (moveDelay >= 0) {
         var timeoutFunction = setTimeout(function () {

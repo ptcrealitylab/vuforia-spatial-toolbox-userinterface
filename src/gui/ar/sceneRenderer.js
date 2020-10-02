@@ -564,9 +564,9 @@ createNameSpace("realityEditor.gui.ar.sceneRenderer");
     }
     
     function getVisibleObjects() {
-        return visibleObjectsCopy;
+        return realityEditor.gui.ar.draw.visibleObjects; //visibleObjectsCopy;
     }
-
+    
     exports.draw = draw;
     
     exports.update_pseudocode = update_pseudocode;

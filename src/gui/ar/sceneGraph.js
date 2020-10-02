@@ -21,6 +21,7 @@
     let cameraNode;
     let relativeToCamera = {};
     let finalCSSMatrices = {};
+    let finalCSSMatricesWithoutTransform = {};
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
@@ -306,6 +307,9 @@
                 utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
                 finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
 
+                finalCSSMatricesWithoutTransform[frameKey] = [];
+                utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
+
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
                    let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                    let nodeSceneNode = getSceneNodeById(nodeKey);
@@ -313,6 +317,7 @@
 
                    utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, modelViewProjection);
                    finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
+                   finalCSSMatricesWithoutTransform[nodeKey] = finalCSSMatrices[nodeKey];
                 });
             });
         });
@@ -324,6 +329,31 @@
             return realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
         return finalCSSMatrices[activeKey];
+    };
+
+    exports.moveSceneNodeToCamera = function(activeKey, faceTowardsCamera) {
+        let sceneNode = getSceneNodeById(activeKey);
+        let requiredWorldMatrix = cameraNode.worldMatrix;
+        let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
+
+        if (faceTowardsCamera) {
+            // flip it so it faces towards the camera instead of away from the camera
+            let unflippedLocalMatrix = realityEditor.gui.ar.utilities.copyMatrix(requiredLocalMatrix);
+            // let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(Math.PI, Math.PI, 0);
+            let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(0, Math.PI, Math.PI);
+            let rotationMatrix = realityEditor.gui.ar.utilities.getMatrixFromQuaternion(q);
+            realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, unflippedLocalMatrix, requiredLocalMatrix);
+        }
+        
+        sceneNode.setLocalMatrix(requiredLocalMatrix);
+    };
+    
+    // TODO: actively compute when needed, not every single frame
+    exports.getCSSMatrixWithoutTranslation = function(activeKey) {
+        if (typeof finalCSSMatricesWithoutTransform[activeKey] === 'undefined') {
+            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+        }
+        return finalCSSMatricesWithoutTransform[activeKey];
     };
 
     exports.SceneNode = SceneNode;

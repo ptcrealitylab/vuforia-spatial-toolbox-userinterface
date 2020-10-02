@@ -129,6 +129,28 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
 };
 
+realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(activeKey) {
+    let matrixComputationDiv = document.getElementById('matrixComputationDiv');
+    if (!matrixComputationDiv) {
+        // create it if needed
+        matrixComputationDiv = document.createElement('div');
+        matrixComputationDiv.id = 'matrixComputationDiv';
+        matrixComputationDiv.classList.add('main');
+        matrixComputationDiv.classList.add('ignorePointerEvents');
+        matrixComputationDiv.style.visibility = 'visible';
+        matrixComputationDiv.style.backgroundColor = 'rgba(255,0,0,0.2)';
+        document.getElementById('GUI').appendChild(matrixComputationDiv);
+    }
+    let vehicleContainer = globalDOMCache['object' + activeKey];
+    matrixComputationDiv.style.width = vehicleContainer.style.width;
+    matrixComputationDiv.style.height = vehicleContainer.style.height;
+
+    let untransformedMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrixWithoutTranslation(activeKey);
+    matrixComputationDiv.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
+    
+    return matrixComputationDiv;
+};
+
 /**
  * Primary method to move a transformed frame or node to the (x,y) point on its plane where the (screenX,screenY) ray cast intersects
  * @param {Frame|Node} activeVehicle
@@ -142,7 +164,13 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     
     var results;
     try {
-        results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+        // set dummy div transform to iframe without x,y,scale
+        let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle.uuid);
+        results = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
+
+        // let dummyMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid);
+        // document.getElementById('dummyDiv').style.transform = 'matrix3d(' + dummyMatrix.toString() + ')';
+        // results = webkitConvertPointFromPageToNode(document.getElementById('dummyDiv'), new WebKitPoint(screenX, screenY));
     } catch (e) {
         console.warn('coudnt compute screenCoordinatesToMatrixXY so cant move vehicle', e);
         return;
@@ -155,8 +183,8 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     var positionData = this.getPositionData(activeVehicle);
 
     var newPosition = {
-        x: results.point.x - results.offsetLeft,
-        y: results.point.y - results.offsetTop
+        x: results.x,
+        y: results.y
     };
 
     if (useTouchOffset) {
