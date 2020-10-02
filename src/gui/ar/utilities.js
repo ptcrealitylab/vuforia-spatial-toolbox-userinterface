@@ -90,6 +90,8 @@ realityEditor.gui.ar.utilities.map = function(x, in_min, in_max, out_min, out_ma
  * @return {Array.<number>} m16 matrix result of the multiplication
  */
 realityEditor.gui.ar.utilities.multiplyMatrix = function(m2, m1, r) {
+    globalStates.numFunctionCalls.multiplyMatrix++;
+    
 	// var r = [];
 	// Cm1che only the current line of the second mm1trix
 	r[0] = m2[0] * m1[0] + m2[1] * m1[4] + m2[2] * m1[8] + m2[3] * m1[12];
@@ -163,6 +165,8 @@ realityEditor.gui.ar.utilities.multiplyMatrix4 = function(m1, m2) {
  * @return {Array.<number>} resulting copy of the matrix
  */
 realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
+    globalStates.numFunctionCalls.copyMatrix++;
+
     if (matrix.length === 0) return [];
 
     var r = []; //new Array(16);
@@ -192,6 +196,8 @@ realityEditor.gui.ar.utilities.copyMatrix = function(matrix) {
  * @param {Array.<number>} m2 - resulting copy of the matrix
  */
 realityEditor.gui.ar.utilities.copyMatrixInPlace = function(m1, m2) {
+    globalStates.numFunctionCalls.copyMatrix++;
+
     m2[0] = m1[0];
     m2[1] = m1[1];
     m2[2] = m1[2];
@@ -253,7 +259,9 @@ realityEditor.gui.ar.utilities.lerpMatrices = function(existingMatrix, newMatrix
  * @return {Array.<number>} a inverted copy of the origin matrix
  */
 realityEditor.gui.ar.utilities.invertMatrix = function (a) {
-	var b = [];
+    globalStates.numFunctionCalls.invertMatrix++;
+
+    var b = [];
 	var c = a[0], d = a[1], e = a[2], g = a[3], f = a[4], h = a[5], i = a[6], j = a[7], k = a[8], l = a[9], o = a[10], m = a[11], n = a[12], p = a[13], r = a[14], s = a[15], A = c * h - d * f, B = c * i - e * f, t = c * j - g * f, u = d * i - e * h, v = d * j - g * h, w = e * j - g * i, x = k * p - l * n, y = k * r - o * n, z = k * s - m * n, C = l * r - o * p, D = l * s - m * p, E = o * s - m * r, q = 1 / (A * E - B * D + t * C + u * z - v * y + w * x);
 	b[0] = (h * E - i * D + j * C) * q;
 	b[1] = ( -d * E + e * D - g * C) * q;
