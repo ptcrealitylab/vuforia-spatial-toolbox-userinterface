@@ -99,7 +99,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
                     if (activeVehicle && isSingleTouch) {
                         // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
                         var touchPosition = realityEditor.device.currentScreenTouches[0].position; // need to retrieve this way instead of CSS of overlayDiv to support multitouch
-                        // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
                         moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x, touchPosition.y);
                     }
                 }
@@ -812,24 +811,26 @@ createNameSpace("realityEditor.gui.ar.grouping");
      * @param {number} screenY
      */
     function moveGroupVehicleToScreenCoordinate(activeVehicle, screenX, screenY) {
-        var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
-
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        var newPosition = {
-            x: results.point.x - results.offsetLeft,
-            y: results.point.y - results.offsetTop
-        };
-
-        var changeInPosition = {
-            x: newPosition.x - positionData.x,
-            y: newPosition.y - positionData.y
-        };
-        if (activeVehicle.groupTouchOffset === undefined) {
-            activeVehicle.groupTouchOffset = changeInPosition;
-        } else {
-            positionData.x = newPosition.x - activeVehicle.groupTouchOffset.x;
-            positionData.y = newPosition.y - activeVehicle.groupTouchOffset.y;
-        }
+        // TODO ben: fix this to preserve relative worldMatrix between vehicles
+        
+        // var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
+        //
+        // var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        // var newPosition = {
+        //     x: results.point.x - results.offsetLeft,
+        //     y: results.point.y - results.offsetTop
+        // };
+        //
+        // var changeInPosition = {
+        //     x: newPosition.x - positionData.x,
+        //     y: newPosition.y - positionData.y
+        // };
+        // if (activeVehicle.groupTouchOffset === undefined) {
+        //     activeVehicle.groupTouchOffset = changeInPosition;
+        // } else {
+        //     positionData.x = newPosition.x - activeVehicle.groupTouchOffset.x;
+        //     positionData.y = newPosition.y - activeVehicle.groupTouchOffset.y;
+        // }
     }
 
     /**

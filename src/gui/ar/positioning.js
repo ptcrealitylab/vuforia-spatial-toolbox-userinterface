@@ -129,6 +129,11 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
 };
 
+/**
+ * Creates and returns a div with the same CSS3D transform as the provided vehicle, but with all x/y/scale removed
+ * @param {string} activeKey
+ * @return {HTMLElement}
+ */
 realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(activeKey) {
     let matrixComputationDiv = document.getElementById('matrixComputationDiv');
     if (!matrixComputationDiv) {
@@ -137,10 +142,18 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
         matrixComputationDiv.id = 'matrixComputationDiv';
         matrixComputationDiv.classList.add('main');
         matrixComputationDiv.classList.add('ignorePointerEvents');
-        matrixComputationDiv.style.visibility = 'visible';
-        matrixComputationDiv.style.backgroundColor = 'rgba(255,0,0,0.2)';
+        // matrixComputationDiv.style.visibility = 'visible';
+        // matrixComputationDiv.style.backgroundColor = 'rgba(255,0,0,0.2)';
+        
+        // 3D transforms only apply correctly if it's a child of the GUI container (like the rest of the tools/nodes)
         document.getElementById('GUI').appendChild(matrixComputationDiv);
     }
+    
+    if (matrixComputationDiv.style.display === 'none') {
+        matrixComputationDiv.style.display = '';
+    }
+    
+    // the computation is only correct if it has the same width/height as the vehicle's transformed element
     let vehicleContainer = globalDOMCache['object' + activeKey];
     matrixComputationDiv.style.width = vehicleContainer.style.width;
     matrixComputationDiv.style.height = vehicleContainer.style.height;
@@ -162,30 +175,19 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
  */
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
     
-    var results;
+    var newPosition;
     try {
         // set dummy div transform to iframe without x,y,scale
         let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle.uuid);
-        results = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
-
-        // let dummyMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid);
-        // document.getElementById('dummyDiv').style.transform = 'matrix3d(' + dummyMatrix.toString() + ')';
-        // results = webkitConvertPointFromPageToNode(document.getElementById('dummyDiv'), new WebKitPoint(screenX, screenY));
+        newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
+        matrixComputationDiv.style.display = 'none'; // hide it after use so it doesn't consume resources
     } catch (e) {
-        console.warn('coudnt compute screenCoordinatesToMatrixXY so cant move vehicle', e);
+        console.warn('Error computing untransformed matrix or in webkitConvertPointFromPageToNode while trying to' +
+            ' move vehicle', e);
         return;
     }
-    // var efficientResults = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_Efficient(activeVehicle, screenX, screenY, true);
-    // console.log(results.point.x - efficientResults.point.x, results.point.y - efficientResults.point.y);
-    
-    // this.applyParentScaleToDragPosition(activeVehicle, results.point);
 
     var positionData = this.getPositionData(activeVehicle);
-
-    var newPosition = {
-        x: results.x,
-        y: results.y
-    };
 
     if (useTouchOffset) {
 
@@ -209,12 +211,14 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
 
     }
 
+    // broadcasts this to the realtime system if it's enabled
+    if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+
     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
     var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.x' : 'x';
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.x);
     propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.y' : 'y';
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
-    
 };
 
 /**
@@ -235,52 +239,6 @@ realityEditor.gui.ar.positioning.applyParentScaleToDragPosition = function(activ
         }
     }
     
-};
-
-/**
- * Similar to moveVehicleToScreenCoordinate, but instead of using the frame/node's matrix, uses visibleObject matrix of
- *      the marker plane as the basis for the computation. Simpler computation but doesn't work for unconstrained repositioning (I think?)
- * @param {Frame|Node} activeVehicle
- * @param {number} screenX
- * @param {number} screenY
- * @param {boolean} useTouchOffset - see moveVehicleToScreenCoordinate documentation for usage
- */
-realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker = function(activeVehicle, screenX, screenY, useTouchOffset) {
-
-    var positionData = this.getPositionData(activeVehicle);
-    var hasBeenUnconstrainedEdited = positionData.matrix.length > 0;
-
-    var unconstrainedMatrix = undefined;
-    if (hasBeenUnconstrainedEdited) {
-        unconstrainedMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, unconstrainedMatrix);
-    }
-
-    var objectKey = activeVehicle.objectId;
-    var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix);
-    // this.applyParentScaleToDragPosition(activeVehicle, point);
-
-    if (useTouchOffset) {
-
-        var changeInPosition = {
-            x: point.x - positionData.x,
-            y: point.y - positionData.y
-        };
-
-        if (!realityEditor.device.editingState.touchOffset) {
-            realityEditor.device.editingState.touchOffset = changeInPosition;
-        } else {
-            positionData.x = point.x - realityEditor.device.editingState.touchOffset.x;
-            positionData.y = point.y - realityEditor.device.editingState.touchOffset.y;
-        }
-
-    } else {
-
-        realityEditor.device.editingState.touchOffset = null;
-        positionData.x = point.x;
-        positionData.y = point.y;
-
-    }
 };
 
 /**
