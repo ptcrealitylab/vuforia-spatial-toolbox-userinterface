@@ -539,7 +539,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
             // 1. move it so it is centered on the pointer, ignoring touchOffset
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+            // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisFrame, touchPosition.x, touchPosition.y, false);
 
             // 2. convert touch offset from percent scale to actual scale of the frame
             var convertedTouchOffsetX = (this.screenObject.touchOffsetX) * parseFloat(thisFrame.width);
