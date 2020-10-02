@@ -338,7 +338,7 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
     if (!screenFrame) return;
 
-    var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
+    var isScreenObjectVisible = !!realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[this.screenObject.object]; // can only push in frames to visible objects
     if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
         
         if (screenFrame.location === 'global') { // only able to push global frames into the screen

@@ -79,6 +79,7 @@
     /**
      * Compute where this node is relative to the scene origin
      * @param {Array.<number>} parentWorldMatrix
+     * @todo - only update dirty subtrees of this
      */
     SceneNode.prototype.updateWorldMatrix = function(parentWorldMatrix) {
         if (parentWorldMatrix) {
@@ -101,7 +102,7 @@
         if (!matrix || matrix.length !== 16) { return; } // ignore malformed/empty input
         utils.copyMatrixInPlace(matrix, this.localMatrix);
 
-        console.log('set local matrix of ' + this.id + ' to ' + realityEditor.gui.ar.utilities.prettyPrintMatrix(matrix, 2, false));
+        // console.log('set local matrix of ' + this.id + ' to ' + realityEditor.gui.ar.utilities.prettyPrintMatrix(matrix, 2, false));
 
         this.dirty = true; // requires updateWorldMatrix on sub-tree
     };
@@ -120,6 +121,18 @@
 
     SceneNode.prototype.getDistanceTo = function(otherNode) {
         return realityEditor.gui.ar.utilities.distance(this.getMatrixRelativeTo(otherNode));
+    };
+    
+    // figures out what local matrix this node would need to position it globally at the provided world matrix
+    SceneNode.prototype.calculateLocalMatrix = function(worldMatrix) {
+        // get the world matrix of the node's parent = parentWorldMatrix
+        let parentWorldMatrix = this.parent.worldMatrix;
+        // compute the difference between desired worldMatrix and parentWorldMatrix
+        let relativeMatrix = [];
+        utils.multiplyMatrix(worldMatrix, utils.invertMatrix(parentWorldMatrix), relativeMatrix);
+        // return that difference
+        
+        return relativeMatrix;
     };
 
     exports.addObject = function(objectId, initialLocalMatrix, needsRotateX) {
@@ -223,6 +236,14 @@
     };
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
+    
+    exports.getDistanceToCamera = function(id) {
+        let sceneNode = getSceneNodeById(id);
+        if (sceneNode && cameraNode) {
+            return sceneNode.getDistanceTo(cameraNode);
+        }
+        return realityEditor.gui.ar.MAX_DISTANCE;
+    };
 
     const getSceneNodeById = function(id) {
         return sceneGraph[id];
@@ -230,7 +251,7 @@
     exports.getSceneNodeById = getSceneNodeById;
     
     const recomputeScene = function() {
-        rootNode.updateWorldMatrix();
+        rootNode.updateWorldMatrix(); // todo: if only camera is dirty, don't recompute this
         cameraNode.updateWorldMatrix();
     };
     exports.recomputeScene = recomputeScene;

@@ -483,7 +483,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
 
     // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
-    document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
+    // document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
     globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
 
     this.sendEditingStateToFrameContents(frameKey, true);
@@ -1456,7 +1456,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
 
             if (activeVehicle && !globalStates.editingMode) {
                 // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
-                document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).classList.remove('visibleEditingSVG');
+                // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).classList.remove('visibleEditingSVG');
                 globalDOMCache[(this.editingState.node || this.editingState.frame)].querySelector('.corners').style.visibility = 'hidden';
 
             }

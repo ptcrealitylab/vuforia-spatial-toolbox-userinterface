@@ -113,7 +113,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function shouldAddToVisibleObjects(objectKey) {
         let isOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalAnchorMatrices[objectKey], anchorContentSize/2, anchorContentSize/2);
-        let distanceToCamera = realityEditor.gui.ar.utilities.distance(modelViewMatrices[objectKey]);
+        let distanceToCamera = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
 
         if (fullscreenAnchor === objectKey) {
             return true;
@@ -204,7 +204,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
             // hide if it is outside the viewport or too far away
             let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalMatrix, anchorContentSize/2, anchorContentSize/2);
-            let distanceToCamera = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+            let distanceToCamera =  realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
             isNowOutsideViewport = isNowOutsideViewport || (distanceToCamera > getAnchorDistanceThreshold(objectKey));
 
             if (isNowOutsideViewport) {

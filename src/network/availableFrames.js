@@ -150,7 +150,7 @@ createNameSpace("realityEditor.network.availableFrames");
         });
         
         return validObjectKeys.map( function(objectKey) {
-            var distance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+            var distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey); //realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
             var isWorldObject = false;
             var object = realityEditor.getObject(objectKey);
             if (object && object.isWorldObject) {
@@ -208,7 +208,7 @@ createNameSpace("realityEditor.network.availableFrames");
         
         var compatibleObjects = [];
         
-        Object.keys(realityEditor.gui.ar.draw.visibleObjects).filter(function(objectKey) {
+        Object.keys(realityEditor.gui.ar.sceneRenderer.getVisibleObjects()).filter(function(objectKey) {
             return typeof objects[objectKey] !== 'undefined';
         }).forEach(function(objectKey) {
             var proxyIP = getServerIPForObjectFrames(objectKey);

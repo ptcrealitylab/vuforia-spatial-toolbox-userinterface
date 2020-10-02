@@ -492,7 +492,7 @@ realityEditor.gui.ar.utilities.getAllVisibleFramesFast = function() {
     
     var visibleFrameKeys = [];
 
-    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
+    var visibleObjects = realityEditor.gui.ar.sceneRenderer.getVisibleObjects();
     for (var objectKey in visibleObjects) {
         if (objects[objectKey]) {
             for (var frameKey in objects[objectKey].frames) {
@@ -523,7 +523,7 @@ realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
     
     var visibleFrames = [];
     
-    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
+    var visibleObjects = realityEditor.gui.ar.sceneRenderer.getVisibleObjects();
     for (var objectKey in visibleObjects) {
         if (!visibleObjects.hasOwnProperty(objectKey)) continue;
         realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
@@ -686,7 +686,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
     function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
         
-        var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
+        var visibleObjectMatrix = realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[objectKey];
         if (visibleObjectMatrix) {
             
             var point = {
