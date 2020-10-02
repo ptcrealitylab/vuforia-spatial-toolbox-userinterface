@@ -208,8 +208,11 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
         realityEditor.device.editingState.touchOffset = null;
         positionData.x = newPosition.x;
         positionData.y = newPosition.y;
-
+        
     }
+
+    // flags the sceneNode as dirty so it gets rendered again with the new x/y position
+    realityEditor.gui.ar.sceneGraph.updatePositionData(activeVehicle.uuid); 
 
     // broadcasts this to the realtime system if it's enabled
     if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }

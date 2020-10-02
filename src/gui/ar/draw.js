@@ -344,9 +344,17 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // this.isLowFrequencyUpdateFrame = true;
     
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
-    if (Object.keys(visibleObjects).length > 0) {
-        if(this.isLowFrequencyUpdateFrame) {
-            
+    
+    let visibleNonWorldObjects = [];
+    let worldObjectKeys = realityEditor.worldObjects.getWorldObjectKeys();
+    Object.keys(visibleObjects).forEach(function(tempObjectKey) {
+        if (!worldObjectKeys.includes(tempObjectKey)) {
+            visibleNonWorldObjects.push(tempObjectKey);
+        }
+    });
+    
+    if (visibleNonWorldObjects.length > 0) {
+        if (this.isLowFrequencyUpdateFrame) {
             if (realityEditor.gui.ar.utilities.getAllVisibleFramesFast().length === 0) {
                 this.isObjectWithNoFramesVisible = true;
             } else {
@@ -354,7 +362,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             }
         }
     } else {
-        this.isObjectWithNoFramesVisible = true;
+        this.isObjectWithNoFramesVisible = false;
     }
     
     // each sceneGraphNode's local matrix gets updated with the visibleObjectMatrix in app/callbacks.js
@@ -701,12 +709,14 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     }
     
     // todo ben: only do this if there are any closestObjectListeners
-    var newClosestObject = realityEditor.gui.ar.getClosestObject()[0];
-    if (newClosestObject !== this.currentClosestObject) {
-        this.closestObjectListeners.forEach(function(callback) {
-            callback(this.currentClosestObject, newClosestObject); 
-        }.bind(this));
-        this.currentClosestObject = newClosestObject;
+    if (this.closestObjectListeners.length > 0 && this.isLowFrequencyUpdateFrame) {
+        var newClosestObject = realityEditor.gui.ar.getClosestObject()[0];
+        if (newClosestObject !== this.currentClosestObject) {
+            this.closestObjectListeners.forEach(function(callback) {
+                callback(this.currentClosestObject, newClosestObject);
+            }.bind(this));
+            this.currentClosestObject = newClosestObject;
+        }
     }
 
     // TODO: push more edge-case functionality from this function into extensible callbacks
