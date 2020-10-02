@@ -1111,20 +1111,23 @@ realityEditor.network.onInternalPostMessage = function (e) {
         iFrame.style.top = top;
         iFrame.style.left = left;
 
-        svg.style.width = msgContent.width;
-        svg.style.height = msgContent.height;
+        if (svg) {
+            svg.style.width = msgContent.width;
+            svg.style.height = msgContent.height;
 
-        realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+            realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+        }
+
         
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
             // svg.style.display = 'inline';
-            svg.classList.add('visibleEditingSVG');
+            // svg.classList.add('visibleEditingSVG');
 
             overlay.querySelector('.corners').style.visibility = 'visible';
             
         } else {
             // svg.style.display = 'none';
-            svg.classList.remove('visibleEditingSVG');
+            // svg.classList.remove('visibleEditingSVG');
 
             overlay.querySelector('.corners').style.visibility = 'hidden';
 
@@ -2672,7 +2675,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
 
     // show the blue corners as soon as the frame loads
     if (realityEditor.device.editingState.frame === frameKey && realityEditor.device.editingState.node === nodeKey) {
-        document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
+        // document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
         globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
     }
 

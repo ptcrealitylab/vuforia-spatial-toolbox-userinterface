@@ -69,8 +69,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
      * @param {*} msgContent
      */
     function sendMessageToAllVisibleFrames(msgContent) {
-        for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
+        for (var visibleObjectKey in realityEditor.gui.ar.sceneRenderer.getVisibleObjects()) {
+            if (!realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(visibleObjectKey)) continue;
 
             realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
                 realityEditor.network.postMessageIntoFrame(frameKey, msgContent);

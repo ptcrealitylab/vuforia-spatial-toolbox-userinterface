@@ -2325,7 +2325,7 @@ realityEditor.gui.ar.draw.doesAnythingUseGroundPlane = function() {
  */
 realityEditor.gui.ar.draw.forEachVisibleFrame = function(callback) {
     realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
-        if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
+        if (realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
             callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
         }
     });

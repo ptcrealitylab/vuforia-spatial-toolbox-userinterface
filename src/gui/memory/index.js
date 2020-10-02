@@ -403,16 +403,16 @@ MemoryContainer.prototype.remember = function() {
     globalStates.freezeButtonState = true;
     
     // TODO: unload visible objects (besides WORLD_OBJECTs) first?
-    Object.keys(realityEditor.gui.ar.draw.visibleObjectsCopy).filter(function(objectKey) {
+    Object.keys(realityEditor.gui.ar.sceneRenderer.getVisibleObjects()).filter(function(objectKey) {
         return objectKey.indexOf('WORLD_OBJECT') === -1;
     }).forEach(function(nonWorldObjectKey) {
         delete realityEditor.gui.ar.draw.visibleObjectsCopy[nonWorldObjectKey];
-        delete realityEditor.gui.ar.draw.visibleObjects[nonWorldObjectKey];
+        delete realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[nonWorldObjectKey];
     });
     
     realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
     realityEditor.gui.ar.draw.visibleObjectsCopy[this.memory.id] = this.memory.matrix;
-    realityEditor.gui.ar.draw.visibleObjects[this.memory.id] = this.memory.matrix;
+    realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[this.memory.id] = this.memory.matrix;
     // TODO: load in temporary projection matrix too?
 };
 
@@ -493,7 +493,7 @@ function createMemory() {
     realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
     
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
-    currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
+    currentMemory.matrix = realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[currentMemory.id];
     currentMemory.cameraMatrix = realityEditor.gui.ar.draw.correctedCameraMatrix;
     currentMemory.projectionMatrix = globalStates.projectionMatrix;
     
@@ -586,7 +586,7 @@ function getMemoryWithId(id) {
 function memoryCanCreate() {
     // Exactly one visible object
     
-    var visibleObjectKeys = Object.keys(realityEditor.gui.ar.draw.visibleObjects);
+    var visibleObjectKeys = Object.keys(realityEditor.gui.ar.sceneRenderer.getVisibleObjects());
     visibleObjectKeys.splice(visibleObjectKeys.indexOf(realityEditor.worldObjects.getLocalWorldId()), 1); // remove the local world object, its server cant support memories
     
     // For now, also remove all world objects, regardless of which server they come from
