@@ -19,6 +19,7 @@
     let sceneGraph = {};
     let rootNode;
     let cameraNode;
+    // TODO: use these cached values when possible instead of recomputing
     let relativeToCamera = {};
     let finalCSSMatrices = {};
     let finalCSSMatricesWithoutTransform = {};
