@@ -1240,7 +1240,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (realityEditor.device.environment.supportsDistanceFading() &&
                 (!globalStates.freezeButtonState || realityEditor.device.environment.ignoresFreezeButton())) {
                 // fade out frames and nodes when they move beyond a certain distance
-                var distance = activeVehicle.screenZ;
+                var distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(activeKey); //activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
                 // multiply the default min distance by the amount this frame distance has been scaled up
                 var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.getDefaultDistance());

@@ -498,19 +498,12 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
  */
 realityEditor.gui.ar.getDistanceScale = function(activeVehicle) {
     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-    // check if the object is a jpgTarget and scale the distance from which it can be seen
-    // (compensates for bug in instant tracking that hasn't been fixed yet)
-    let objectTypeScale = 1;
-    let object = realityEditor.getObject(keys.objectKey);
-    if (object.isJpgTarget) {
-        objectTypeScale = 3; // TODO: this should always be 1
-    }
     if (keys.nodeKey) {
         // it's a node, return its parent frame's value
         var parentFrame = realityEditor.getFrame(keys.objectKey, keys.frameKey);
-        return (parentFrame.distanceScale * objectTypeScale) || objectTypeScale;
+        return parentFrame.distanceScale || 1;
     } else {
         // it's a frame, return its own value
-        return (activeVehicle.distanceScale * objectTypeScale) || objectTypeScale;
+        return activeVehicle.distanceScale || 1;
     }
 };
