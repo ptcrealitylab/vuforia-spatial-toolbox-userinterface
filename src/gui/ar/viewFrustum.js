@@ -32,6 +32,8 @@
         
         this.farH = farD * this.tang;
         this.farW = this.farH * ratio;
+        
+        this.planes = [];
     }
 
     // each time the camera position or orientation changes, this function should
@@ -62,7 +64,7 @@
         // project the point onto the Z axis of the frustum and see if it lies between near and far
         pcz = dotProduct(v, negate(this.Z)); // v.innerProduct(-Z);
         // pcz = dotProduct(v, this.Z); // v.innerProduct(-Z);
-        console.log('\npcz= ' + pcz + ' > 2 && < 2000 ?');
+        // console.log('\npcz= ' + pcz + ' > 2 && < 2000 ?');
         if (pcz > this.farD || pcz < this.nearD) {
             return false;
         }
@@ -70,7 +72,7 @@
         // compute and test the Y coordinate
         pcy = dotProduct(v, this.Y); // v.innerProduct(Y);
         aux = pcz * this.tang;
-        console.log('pcy= ' + pcy + ' |<| ' + aux + ' ?');
+        // console.log('pcy= ' + pcy + ' |<| ' + aux + ' ?');
         if (pcy > aux || pcy < -aux) {
             return false;
         }
@@ -78,7 +80,7 @@
         // compute and test the X coordinate
         pcx = dotProduct(v, this.X); // v.innerProduct(X);
         aux = aux * this.ratio;
-        console.log('pcx= ' + pcx + ' |<| ' + aux + ' ?');
+        // console.log('pcx= ' + pcx + ' |<| ' + aux + ' ?');
         if (pcx > aux || pcx < -aux) {
             return false;
         }
@@ -145,5 +147,81 @@
     exports.isPointInside = function(x, y, z) {
         return frustum.isPointInside([x, y, z]);
     }
+
+    // attempt at plane method
+    // (http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-extracting-the-planes/)
+    // pulled from https://stackoverflow.com/questions/12836967/extracting-view-frustum-planes-gribb-hartmann-method
+    // and https://www.rastertek.com/dx10tut16.html
+    // Frustum.prototype.constructFrustum = function(screenDepth, projectionMatrix, viewMatrix) {
+    //     let zMinimum, r;
+    //     let mat = [];
+    //
+    //     // Calculate the minimum Z distance in the frustum.
+    //     zMinimum = -1 * getElt(projectionMatrix, 4, 3) / getElt(projectionMatrix, 3, 3);
+    //     r = screenDepth / (screenDepth - zMinimum);
+    //     projectionMatrix._33 = r;
+    //     projectionMatrix._43 = -r * zMinimum;
+    //
+    //     // Create the frustum matrix from the view matrix and updated projection matrix.
+    //     utils.multiplyMatrix(viewMatrix, projectionMatrix, mat);
+    //    
+    //     let left, right, bottom, top, near, far = [];
+    //
+    //     for (let i = 4; i--; ) left[i]      = getElt(mat, i, 3) + getElt(mat, i, 0);
+    //     for (let i = 4; i--; ) right[i]     = getElt(mat, i, 3) - getElt(mat, i, 0);
+    //     for (let i = 4; i--; ) bottom[i]    = getElt(mat, i, 3) + getElt(mat, i, 1);
+    //     for (let i = 4; i--; ) top[i]       = getElt(mat, i, 3) - getElt(mat, i, 1);
+    //     for (let i = 4; i--; ) { near[i]    = getElt(mat, i, 3) + getElt(mat, i, 2);
+    //     for (let i = 4; i--; ) far[i]       = getElt(mat, i, 3) - getElt(mat, i, 2);
+    //
+    //     // Calculate near plane of frustum.
+    //     m_planes[0].a = matrix._14 + matrix._13;
+    //     m_planes[0].b = matrix._24 + matrix._23;
+    //     m_planes[0].c = matrix._34 + matrix._33;
+    //     m_planes[0].d = matrix._44 + matrix._43;
+    //     D3DXPlaneNormalize(&m_planes[0], &m_planes[0]);
+    //
+    //     // Calculate far plane of frustum.
+    //     m_planes[1].a = matrix._14 - matrix._13;
+    //     m_planes[1].b = matrix._24 - matrix._23;
+    //     m_planes[1].c = matrix._34 - matrix._33;
+    //     m_planes[1].d = matrix._44 - matrix._43;
+    //     D3DXPlaneNormalize(&m_planes[1], &m_planes[1]);
+    //
+    //     // Calculate left plane of frustum.
+    //     m_planes[2].a = matrix._14 + matrix._11;
+    //     m_planes[2].b = matrix._24 + matrix._21;
+    //     m_planes[2].c = matrix._34 + matrix._31;
+    //     m_planes[2].d = matrix._44 + matrix._41;
+    //     D3DXPlaneNormalize(&m_planes[2], &m_planes[2]);
+    //
+    //     // Calculate right plane of frustum.
+    //     m_planes[3].a = matrix._14 - matrix._11;
+    //     m_planes[3].b = matrix._24 - matrix._21;
+    //     m_planes[3].c = matrix._34 - matrix._31;
+    //     m_planes[3].d = matrix._44 - matrix._41;
+    //     D3DXPlaneNormalize(&m_planes[3], &m_planes[3]);
+    //
+    //     // Calculate top plane of frustum.
+    //     m_planes[4].a = matrix._14 - matrix._12;
+    //     m_planes[4].b = matrix._24 - matrix._22;
+    //     m_planes[4].c = matrix._34 - matrix._32;
+    //     m_planes[4].d = matrix._44 - matrix._42;
+    //     D3DXPlaneNormalize(&m_planes[4], &m_planes[4]);
+    //
+    //     // Calculate bottom plane of frustum.
+    //     m_planes[5].a = matrix._14 + matrix._12;
+    //     m_planes[5].b = matrix._24 + matrix._22;
+    //     m_planes[5].c = matrix._34 + matrix._32;
+    //     m_planes[5].d = matrix._44 + matrix._42;
+    //     D3DXPlaneNormalize(&m_planes[5], &m_planes[5]);
+    //
+    //     return;
+    // };
+    // 
+    // // a is row, b is col (in prettyPrint matrix)
+    // function getElt(m, a, b) {
+    //     return m[(a-1)*4+(b-1)];
+    // }
     
 })(realityEditor.gui.ar.viewFrustum);
