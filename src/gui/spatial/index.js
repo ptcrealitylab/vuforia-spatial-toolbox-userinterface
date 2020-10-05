@@ -40,7 +40,7 @@ realityEditor.gui.spatial.lineAnimationList = {};
 realityEditor.gui.spatial.checkState = function() {
     realityEditor.gui.spatial.historianOn = false;
     realityEditor.gui.spatial.spatialOn = false;
-    
+
     for (let ip in globalStates.spatial.whereIs) {
         if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
             realityEditor.gui.spatial.spatialOn = true;
@@ -48,10 +48,12 @@ realityEditor.gui.spatial.checkState = function() {
         }
     }
 
-    for (let ip in globalStates.spatial.howFarIs) {
-        if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
-            realityEditor.gui.spatial.spatialOn = true;
-            break;
+    if (!realityEditor.gui.spatial.spatialOn) {
+        for (let ip in globalStates.spatial.howFarIs) {
+            if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
+                realityEditor.gui.spatial.spatialOn = true;
+                break;
+            }
         }
     }
 
@@ -63,14 +65,17 @@ realityEditor.gui.spatial.checkState = function() {
         }
     }
 
-    for (let ip in globalStates.spatial.velocityOf) {
-        if (Object.keys(globalStates.spatial.velocityOf[ip]).length > 0) {
-            realityEditor.gui.spatial.spatialOn = true;
-            realityEditor.gui.spatial.historianOn = true;
-            break;
+    if (!realityEditor.gui.spatial.spatialOn ||
+        !realityEditor.gui.spatial.historianOn) {
+        for (let ip in globalStates.spatial.velocityOf) {
+            if (Object.keys(globalStates.spatial.velocityOf[ip]).length > 0) {
+                realityEditor.gui.spatial.spatialOn = true;
+                realityEditor.gui.spatial.historianOn = true;
+                break;
+            }
         }
     }
-    
+
     if (realityEditor.gui.spatial.myp5 === null && realityEditor.gui.spatial.spatialOn) {
         realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
     }
