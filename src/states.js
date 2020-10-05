@@ -196,9 +196,9 @@ function printNumFunctionCalls() {
     calls.copyMatrix = 0;
 }
 
-setInterval(function() {
-    printNumFunctionCalls();
-}, 1000);
+// setInterval(function() {
+//     printNumFunctionCalls();
+// }, 1000);
 
 var globalCanvas = {};
 

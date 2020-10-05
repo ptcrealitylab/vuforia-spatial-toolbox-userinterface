@@ -1930,7 +1930,18 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer, matrix) {
         // for frames, regardless of whether the tap is still down, set the matrix to be in front of the camera
         // realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeFrameKey);
         
+        // places it at the camera
         realityEditor.gui.ar.sceneGraph.moveSceneNodeToCamera(activeFrameKey, true);
+
+        // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
+        let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeFrameKey);
+        let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+        sceneNode.setPositionRelativeTo(cameraNode, [
+            -1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, -1, 0,
+            0, 0, -200, 1
+        ]);
         
         if (typeof pocketContainer.vehicle.startPositionOffset !== 'undefined') {
             pocketContainer.vehicle.ar.x += pocketContainer.vehicle.startPositionOffset.x;

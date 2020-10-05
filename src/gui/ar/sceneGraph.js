@@ -30,7 +30,7 @@
     let numFrameCSSComputations = 0;
     let numNodeCSSComputations = 0;
     
-    exports.printInfo = true;
+    exports.printInfo = false;
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
@@ -344,6 +344,10 @@
         return realityEditor.gui.ar.MAX_DISTANCE;
     };
 
+    /**
+     * @param {string} id
+     * @return {SceneNode}
+     */
     const getSceneNodeById = function(id) {
         return sceneGraph[id];
     };
@@ -465,6 +469,25 @@
         }
         
         sceneNode.setLocalMatrix(requiredLocalMatrix);
+    };
+    
+    SceneNode.prototype.setPositionRelativeTo = function(otherSceneNode, relativeMatrix) {
+        if (typeof relativeMatrix === 'undefined') { relativeMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix(); }
+        
+        // get worldMatrix of otherSceneNode
+        // get worldMatrix of this.parentNode
+        
+        // compute new localMatrix so that
+        // this.localMatrix * parentNode.worldMatrix = relativeMatrix * otherSceneNode.worldMatrix
+        
+        // this.localMatrix = relativeMatrix * otherSceneNode.worldMatrix * inv(parentNode.worldMatrix)
+        
+        let temp = [];
+        let result = [];
+        utils.multiplyMatrix(otherSceneNode.worldMatrix, utils.invertMatrix(this.parent.worldMatrix), temp);
+        utils.multiplyMatrix(relativeMatrix, temp, result);
+        
+        this.setLocalMatrix(result);
     };
     
     // TODO: actively compute when needed, not every single frame
