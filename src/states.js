@@ -210,10 +210,6 @@ var pocketItemId = "";
 
 var globalScaleAdjustment = 0.5;
 
-// reduces size of nodes on new frames compared to how they were rendered on old frames, to make rendering backwards compatible
-// eslint-disable-next-line no-unused-vars
-var newNodeScaleFactor = 0.5;
-
 /**
  * @typedef {Object} PocketContainer
  * @desc A data structure holding the frame or node to be dropped in from the pocket, with additional state.

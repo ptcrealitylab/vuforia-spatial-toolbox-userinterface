@@ -772,7 +772,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     if (typeof node.scaleFactor !== 'undefined') {
                         scaleFactor = node.scaleFactor;
                     }
-                    addedNode.scale = globalStates.defaultScale * scaleFactor * newNodeScaleFactor;
+                    addedNode.scale = globalStates.defaultScale * scaleFactor;
 
                     if (typeof node.defaultValue !== 'undefined') {
                         addedNode.data.value = node.defaultValue;

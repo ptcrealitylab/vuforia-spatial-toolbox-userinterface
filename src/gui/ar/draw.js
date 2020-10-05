@@ -1221,20 +1221,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 globalDOMCache['object' + activeKey].classList.remove('displayNone');
                 console.warn('removing displayNone in drawTransformed, should happen before this');
             }
-            
-            /*
-            if (shouldRenderFramesInNodeView) {
-                globalDOMCache["object" + activeKey].classList.remove('displayNone');
-            }*/
-            
-            // permanently changing classes in the doom kills performance. This has to be implemented in a better way only writing the dom once when it actually occures.
-            /*
-            if (activeKey === globalStates.inTransitionFrame) {
-                globalDOMCache["iframe" + activeKey].classList.add('inTransitionFrame');
-            } else {
-                globalDOMCache["iframe" + activeKey].classList.remove('inTransitionFrame');
-            }
-            */
 
             // can't change while frozen so don't recalculate
             if (realityEditor.device.environment.supportsDistanceFading() &&
@@ -1294,18 +1280,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 this.addPocketVehicle(pocketFrame, matrix);
             }
             
-            // var finalOffsetX = positionData.x;
-            // var finalOffsetY = positionData.y;
-
-            // var nodeScaleMultiplier = 1.0; // default to normal scale
-            // if (activeType !== 'ui') {
-            //     nodeScaleMultiplier = 2.0; // fixes most nodes being too small relative to tools
-            //     if (this.activeObject.isAnchor) {
-            //         nodeScaleMultiplier *= 0.3; // nodes on anchors should have 1/3 scale
-            //     }
-            // }
-            // var finalScale = positionData.scale * globalScaleAdjustment * nodeScaleMultiplier;
-
             // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
             
             // TODO ben: make children sceneNodes inhering parent sceneNodes' x,y,scale?
