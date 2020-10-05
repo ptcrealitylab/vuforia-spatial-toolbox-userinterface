@@ -1508,6 +1508,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 }
 
                 if (this.isLowFrequencyUpdateFrame) {
+                    
+                    // get world matrix of this vehicle
+                    let worldMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey).worldMatrix;
+                    let newCanUnload = realityEditor.gui.ar.viewFrustum.isPointInside(worldMatrix[12], worldMatrix[13], worldMatrix[14]);
+                    console.log('new canUnload: ' + newCanUnload);
+                    
                     var isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
 
                     if (isNowOutsideViewport) {

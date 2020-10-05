@@ -31,7 +31,7 @@
     let numFrameCSSComputations = 0;
     let numNodeCSSComputations = 0;
     
-    exports.printInfo = true;
+    exports.printInfo = false;
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
