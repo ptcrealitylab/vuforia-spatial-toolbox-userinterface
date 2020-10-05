@@ -31,7 +31,7 @@
     let numFrameCSSComputations = 0;
     let numNodeCSSComputations = 0;
     
-    exports.printInfo = false;
+    exports.printInfo = true;
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
@@ -80,7 +80,11 @@
         // this.associatedObject = null;
         this.id = id; // mostly attached for debugging
         this.parent = null;
-        this.dirty = true; // if true, triggers recompute on sub-tree
+        
+        this.needsRecompute = true; // if true, triggers recompute on sub-tree
+        this.needsRerender = true;
+        this.anythingInSubtreeNeedsRerender = true;
+        this.anythingInSubtreeNeedsRecompute = true;
     }
 
     /**
@@ -113,24 +117,29 @@
      * @todo - only update dirty subtrees of this
      */
     SceneNode.prototype.updateWorldMatrix = function(parentWorldMatrix) {
-        if (!this.dirty) { return; } 
-        
-        if (parentWorldMatrix) {
-            // this.worldMatrix stores fully-multiplied position relative to origin
-            utils.multiplyMatrix(this.localMatrix, parentWorldMatrix, this.worldMatrix);
-        } else {
-            // if no parent, localMatrix is worldMatrix
-            utils.copyMatrixInPlace(this.localMatrix, this.worldMatrix);
+        if (this.needsRecompute) {
+            if (parentWorldMatrix) {
+                // this.worldMatrix stores fully-multiplied position relative to origin
+                utils.multiplyMatrix(this.localMatrix, parentWorldMatrix, this.worldMatrix);
+            } else {
+                // if no parent, localMatrix is worldMatrix
+                utils.copyMatrixInPlace(this.localMatrix, this.worldMatrix);
+            }
+
+            this.needsRecompute = false; // reset dirty flag so we don't repeat this redundantly
+            this.flagForRerender();
+            numWorldComputations++;
         }
 
-        this.dirty = false; // reset dirty flag so we don't repeat this redundantly
-
         // process all of its children to update entire subtree
-        this.children.forEach(function(childNode) {
-            childNode.updateWorldMatrix(this.worldMatrix);
-        }.bind(this));
+        if (this.anythingInSubtreeNeedsRecompute) {
+            this.children.forEach(function(childNode) {
+                childNode.updateWorldMatrix(this.worldMatrix);
+            }.bind(this));
+        }
+        
+        this.anythingInSubtreeNeedsRecompute = false;
 
-        numWorldComputations++;
     };
 
     SceneNode.prototype.setLocalMatrix = function(matrix) {
@@ -140,15 +149,60 @@
         // console.log('set local matrix of ' + this.id + ' to ' + realityEditor.gui.ar.utilities.prettyPrintMatrix(matrix, 2, false));
 
         // this.dirty = true; // requires updateWorldMatrix on sub-tree
-        this.flagAsDirty();
+        // this.flagAsDirty();
+        // this.needsRecompute = true;
+        // this.needsRerender = true;
+        
+        this.flagForRecompute();
+        // this.flagForRerender();
 
         numLocalComputations++;
     };
     
-    SceneNode.prototype.flagAsDirty = function() {
-        this.dirty = true;
+    // SceneNode.prototype.flagAsDirty = function() {
+    //     this.dirty = true;
+    //     // if (this.parent) {
+    //     //     this.parent.flagAsDirty();
+    //     // }
+    //     // mark children as dirty because their positions are relative to this
+    //     this.children.forEach(function(childNode) {
+    //         childNode.flagAsDirty();
+    //     }.bind(this));
+    // };
+    
+    SceneNode.prototype.flagForRerender = function() {
+        this.needsRerender = true;
+        this.flagContainingSubtreeForRerender();
+        // if (this.parent) {
+        //     this.parent.flagForRerender();
+        // }
+        // this.children.forEach(function(childNode) {
+        //     childNode.flagForRerender();
+        // }.bind(this));
+    };
+    
+    SceneNode.prototype.flagContainingSubtreeForRerender = function() {
+        this.anythingInSubtreeNeedsRerender = true;
         if (this.parent) {
-            this.parent.flagAsDirty();
+            this.parent.flagContainingSubtreeForRerender();
+        }
+    };
+    
+    SceneNode.prototype.flagForRecompute = function() {
+        this.needsRecompute = true;
+        this.flagContainingSubtreeForRecompute();
+        // if (this.parent) {
+        //     this.parent.flagForRecompute();
+        // }
+        // this.children.forEach(function(childNode) {
+        //     childNode.flagForRecompute();
+        // }.bind(this));
+    };
+
+    SceneNode.prototype.flagContainingSubtreeForRecompute = function() {
+        this.anythingInSubtreeNeedsRecompute = true;
+        if (this.parent) {
+            this.parent.flagContainingSubtreeForRecompute();
         }
     };
     
@@ -209,7 +263,9 @@
         }
         
         // this.dirty = true;
-        this.flagAsDirty();
+        // this.flagAsDirty();
+        
+        this.flagForRecompute();
     };
     
     SceneNode.prototype.changeId = function(newId) {
@@ -224,7 +280,8 @@
         delete finalCSSMatricesWithoutTransform[oldId];
         
         // this.dirty = true;
-        this.flagAsDirty(); // this will make sure computations get computed/cached with new ID
+        // this.flagAsDirty(); // this will make sure computations get computed/cached with new ID
+        this.flagForRecompute(); // TODO: might not be necessary? just say e.g. data[new] = data[old]; delete data[old];
     };
 
     exports.addObject = function(objectId, initialLocalMatrix, needsRotateX) {
@@ -368,15 +425,17 @@
     exports.getDirtyNodes = getDirtyNodes;
     
     const calculateFinalMatrices = function(visibleObjectIds) {
-        let dirtyNodeList = getDirtyNodes();
-        if (dirtyNodeList.length > 0) {
+        // let dirtyNodeList = getDirtyNodes();
+        // if (dirtyNodeList.length > 0) {
             recomputeScene(); // ensure all worldMatrix reflects latest localMatrix
-        }
+        // }
         
-        let dirtyNodes = {};
-        dirtyNodeList.forEach(function(key) {
-            dirtyNodes[key] = true;
-        });
+        const didCameraUpdate = cameraNode.needsRerender;
+        
+        // let dirtyNodes = {};
+        // dirtyNodeList.forEach(function(key) {
+        //     dirtyNodes[key] = true;
+        // });
 
         // for each visible object
         
@@ -399,52 +458,81 @@
             let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
             
             // skip this object if neither it or the camera have changed
-            if (!(dirtyNodes[objectKey] || dirtyNodes['CAMERA'])) { return; }
+            // if (!(dirtyNodes[objectKey] || dirtyNodes['CAMERA'])) { return; }
             
-            relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+            if (didCameraUpdate || objectSceneNode.needsRerender) {
+                relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+                objectSceneNode.needsRerender = false;
+            }
+
+            // skip this object if neither it or the camera have changed
+            if (!didCameraUpdate && !objectSceneNode.anythingInSubtreeNeedsRerender) { return; }
 
             Object.keys(object.frames).forEach( function(frameKey) {
                 let frame = realityEditor.getFrame(objectKey, frameKey);
+                let frameSceneNode = getSceneNodeById(frameKey);
+
+                if (didCameraUpdate || frameSceneNode.needsRerender) {
+                    relativeToCamera[frameKey] = frameSceneNode.getMatrixRelativeTo(cameraNode);
+                    let modelViewProjection = [];
+                    let scale = frame.ar.scale * globalScaleAdjustment;
+                    let transform = [
+                        scale, 0, 0, 0,
+                        0, scale, 0, 0,
+                        0, 0, scale, 0,
+                        frame.ar.x, frame.ar.y, 0, 1];
+                    let transformedFrameMat = [];
+                    utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
+                    utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
+                    finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
+
+                    finalCSSMatricesWithoutTransform[frameKey] = [];
+                    utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
+
+                    numFrameCSSComputations++;
+                    frameSceneNode.needsRerender = false;
+                }
 
                 // skip this frame if neither it or the camera have changed
-                if (!(dirtyNodes[frameKey] || dirtyNodes['CAMERA'])) { return; }
-
-                let frameSceneNode = getSceneNodeById(frameKey);
-                relativeToCamera[frameKey] = frameSceneNode.getMatrixRelativeTo(cameraNode);
-                let modelViewProjection = [];
-                let scale = frame.ar.scale * globalScaleAdjustment;
-                let transform = [
-                    scale, 0, 0, 0,
-                    0, scale, 0, 0,
-                    0, 0, scale, 0,
-                    frame.ar.x, frame.ar.y, 0, 1];
-                let transformedFrameMat = [];
-                utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
-                utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
-                finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
-
-                finalCSSMatricesWithoutTransform[frameKey] = [];
-                utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
-
-                numFrameCSSComputations++;
+                if (!didCameraUpdate && !frameSceneNode.anythingInSubtreeNeedsRerender) { return; }
 
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
-                   // let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
-
-                    // skip this node if neither it or the camera have changed
-                    if (!(dirtyNodes[nodeKey] || dirtyNodes['CAMERA'])) { return; }
-                    
+                    let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
-                   relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
 
-                   utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, modelViewProjection);
-                   finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
-                   finalCSSMatricesWithoutTransform[nodeKey] = finalCSSMatrices[nodeKey];
+                    if (didCameraUpdate || nodeSceneNode.needsRerender) {
+                        relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
+                        let modelViewProjection = [];
+                        let nodeScale = node.scale * globalScaleAdjustment * (frame.ar.scale / globalStates.defaultScale);
+                        let transform = [
+                            nodeScale, 0, 0, 0,
+                            0, nodeScale, 0, 0,
+                            0, 0, nodeScale, 0,
+                            frame.ar.x + node.x, frame.ar.y + node.y, 0, 1];
+                        let transformedNodeMat = [];
+                        utils.multiplyMatrix(transform, relativeToCamera[nodeKey], transformedNodeMat);
+                        utils.multiplyMatrix(transformedNodeMat, globalStates.projectionMatrix, modelViewProjection);
+                        finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
 
-                   numNodeCSSComputations++;
+                        finalCSSMatricesWithoutTransform[nodeKey] = [];
+                        // TODO: this multiplication can be removed if the previous two are done in different order and
+                        //  intermediate result is preserved
+                        utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[nodeKey]);
+
+                        numNodeCSSComputations++;
+                        nodeSceneNode.needsRerender = false;
+                    }
+                    
+                    nodeSceneNode.anythingInSubtreeNeedsRerender = false;
                 });
+
+                frameSceneNode.anythingInSubtreeNeedsRerender = false;
             });
+
+            objectSceneNode.anythingInSubtreeNeedsRerender = false;
         });
+        
+        cameraNode.needsRerender = false;
     };
     exports.calculateFinalMatrices = calculateFinalMatrices;
     
@@ -502,7 +590,8 @@
     exports.updatePositionData = function(activeKey) {
         let sceneNode = getSceneNodeById(activeKey);
         if (sceneNode) {
-            sceneNode.flagAsDirty();
+            // sceneNode.flagAsDirty();
+            sceneNode.flagForRerender();
         }
     };
 

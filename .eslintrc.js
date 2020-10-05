@@ -37,7 +37,6 @@ module.exports = {
         "defaultHttpPort": "writable",
         "hull": "writable",
         "io": "writable",
-        "newNodeScaleFactor": "writable",
         "objects": "writable",
         "overlayDiv": "writable",
         "p5": "writable",
