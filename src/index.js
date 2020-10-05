@@ -83,6 +83,7 @@ var realityEditor = realityEditor || {
             positioning: {},
             sceneGraph: {},
             sceneRenderer: {},
+            viewFrustum: {},
             utilities: {}
         },
         spatial: {

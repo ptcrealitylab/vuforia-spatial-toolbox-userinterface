@@ -268,6 +268,7 @@ createNameSpace('realityEditor.app.callbacks');
             realityEditor.worldObjects.checkIfFirstLocalization();
             // realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
             realityEditor.gui.ar.sceneGraph.setCameraPosition(cameraMatrix);
+            realityEditor.gui.ar.viewFrustum.updateCameraMatrix(cameraMatrix);
             // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
     }
