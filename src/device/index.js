@@ -87,7 +87,7 @@ realityEditor.device.currentScreenTouches = [];
  * @property {string|null} node - nodeIf of the selected node (null if vehicle is a frame, not a node)
  * @property {{x: number, y: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
  * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
- * @property {number|null} unconstrainedOffset - initial z distance to the repositioned vehicle, used for calculating popping into unconstrained
+ * @property {number|null} unconstrainedOffset - initial camera position used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
  * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
  * @property {boolean} preDisabledUnconstrained - the unconstrained state before we disabled, so that we can go back to that when we're done
@@ -1326,58 +1326,42 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
                             (!globalStates.freezeButtonState || realityEditor.device.environment.ignoresFreezeButton()) &&
                             realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle);
     
-    if (ableToBePulled) {
-
-        // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId], activeVehicle);
-        // var distanceToFrame = screenFrameMatrix[14];
+    if (!ableToBePulled) { return; }
         
-        // TODO: this doesn't work for 
-        //var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.visibleObjects[activeVehicle.objectId]);
-        var distanceToObject = activeVehicle.screenZ; // TODO: needs to factor in dot product of x,y translation // TODO: or directly look at camera matrix vs this frame matrix
+    if (!this.editingState.unconstrainedOffset) {
+        this.editingState.unconstrainedOffset = realityEditor.gui.ar.sceneGraph.getWorldPosition('CAMERA');
+    
+    } else {
+        let camPos = realityEditor.gui.ar.sceneGraph.getWorldPosition('CAMERA');
+        let dx = camPos.x - this.editingState.unconstrainedOffset.x;
+        let dy = camPos.y - this.editingState.unconstrainedOffset.y;
+        let dz = camPos.z - this.editingState.unconstrainedOffset.z;
 
-        // the first time, detect how far you are from the element and use that as a baseline
-        if (!this.editingState.unconstrainedOffset) {
-            this.editingState.unconstrainedOffset = distanceToObject;
+        let cameraMoveDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        console.log('cameraMoveDistance = ' + cameraMoveDistance.toFixed(2));
+        
+        // TODO ben: for frames on screen object, if direction is towards screen then push into screen instead
+        
+        if (cameraMoveDistance > globalStates.framePullThreshold) {
+            console.log('pop into unconstrained editing mode');
 
-        } else {
+            realityEditor.app.tap();
 
-            // after that, if you pull out more than 100 in the z direction, turn on unconstrained
-            // var zPullThreshold = 50;
-            var amountPulled = Math.abs(distanceToObject - this.editingState.unconstrainedOffset);
-            
-            // if frame is on a registered screen object, only pulling towards you can pop into unconstrained (pushing sends into screen)
-            var isOnScreenObject = false;
-            for (var screenObjectKey in realityEditor.gui.screenExtension.registeredScreenObjects) {
-                var screenObjectData = realityEditor.gui.screenExtension.registeredScreenObjects[screenObjectKey];
-                if (screenObjectData.object === this.editingState.object) {
-                    isOnScreenObject = true;
-                }
+            // create copy of static frame when it gets pulled out
+            if (activeVehicle.staticCopy) {
+                realityEditor.network.createCopyOfFrame(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
+                activeVehicle.staticCopy = false;
             }
-            if (isOnScreenObject) {
-                amountPulled = distanceToObject - this.editingState.unconstrainedOffset;
-            }
-            
-            // console.log(amountPulled);
-            if (amountPulled > globalStates.framePullThreshold) {
-                console.log('pop into unconstrained editing mode');
 
-                realityEditor.app.tap();
+            this.editingState.unconstrained = true;
+            this.editingState.unconstrainedOffset = null;
 
-                // create copy of static frame when it gets pulled out
-                if (activeVehicle.staticCopy) {
-                    realityEditor.network.createCopyOfFrame(objects[this.editingState.object].ip, this.editingState.object, this.editingState.frame);
-                    activeVehicle.staticCopy = false;
-                }
-                
-                this.editingState.unconstrained = true;
-                this.editingState.unconstrainedOffset = null;
+            // tell the renderer to freeze the current matrix as the unconstrained position on the screen
+            realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+            // store this so we can undo the move if needed (e.g. image target disappears)
+            realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
 
-                // tell the renderer to freeze the current matrix as the unconstrained position on the screen
-                realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
-                realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
-
-                this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
-            }
+            this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
         }
     }
 };
