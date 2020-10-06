@@ -156,8 +156,8 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
     }
     
     // optimize dragging same element around while frozen by not recomputing matrix
-    let matrixCantChange = !realityEditor.device.isEditingUnconstrained(activeVehicle) || globalStates.freezeButtonState;
-    if (matrixCantChange && isContinuous && globalStates.lastRepositionedUuid === activeKey) {
+    // let matrixCantChange = !realityEditor.device.isEditingUnconstrained(activeVehicle) || globalStates.freezeButtonState;
+    if (/*matrixCantChange &&*/ isContinuous && globalStates.lastRepositionedUuid === activeKey) {
         console.log('optimized reposition');
         return matrixComputationDiv;
     }

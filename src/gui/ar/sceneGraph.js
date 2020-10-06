@@ -473,6 +473,8 @@
             Object.keys(object.frames).forEach( function(frameKey) {
                 let frame = realityEditor.getFrame(objectKey, frameKey);
                 let frameSceneNode = getSceneNodeById(frameKey);
+                
+                if (!frameSceneNode) { return; }
 
                 if (didCameraUpdate || frameSceneNode.needsRerender) {
                     relativeToCamera[frameKey] = frameSceneNode.getMatrixRelativeTo(cameraNode);
@@ -513,6 +515,8 @@
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
                     let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
+                    
+                    if (!nodeSceneNode) { return; } // skip nodes without sceneNodes (true for hiddenNodeTypes)
 
                     if (didCameraUpdate || nodeSceneNode.needsRerender) {
                         relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
@@ -611,7 +615,24 @@
     
     // look at implementation of realityEditor.gui.ar.positioning.getScreenPosition to get other coordinates
     exports.getScreenPosition = function(activeKey) {
-        return realityEditor.gui.ar.positioning.getProjectedCoordinates([0,0,0,1], finalCSSMatrices[activeKey]);
+        if (finalCSSMatrices[activeKey]) {
+            return realityEditor.gui.ar.positioning.getProjectedCoordinates([0,0,0,1], finalCSSMatrices[activeKey]);
+        }
+        console.warn(activeKey + ' hasn\'t been processed in the sceneGraph yet in order to get correct screen position');
+        return {
+            x: window.innerWidth/2,
+            y: window.innerHeight/2
+        }
+    };
+    
+    exports.getWorldPosition = function(activeKey) {
+        let sceneNode = getSceneNodeById(activeKey);
+        return {
+            // TODO: should we normalize all of these by default?
+            x: sceneNode.worldMatrix[12]/sceneNode.worldMatrix[15],
+            y: sceneNode.worldMatrix[13]/sceneNode.worldMatrix[15],
+            z: sceneNode.worldMatrix[14]/sceneNode.worldMatrix[15]
+        }
     };
 
     exports.SceneNode = SceneNode;

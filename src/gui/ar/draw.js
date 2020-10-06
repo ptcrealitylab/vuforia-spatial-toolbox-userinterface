@@ -1571,7 +1571,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     var thisMsg = {};
 
                     if (activeVehicle.sendMatrix === true) {
-                        let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+                        let _positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
                         // TODO ben: send in matrices from sceneGraph
                         thisMsg.modelViewMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]; //this.getFinalMatrixForFrame(this.modelViewMatrices[objectKey],
                         // positionData.matrix, positionData.x, positionData.y, positionData.scale);
@@ -1900,9 +1900,6 @@ realityEditor.gui.ar.draw.showARFrame = function(activeKey) {
 realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
 
     // drop frames in from pocket, floating in front of screen in unconstrained mode, aligned with the touch position
-
-    // immediately start placing the pocket frame in unconstrained mode
-    realityEditor.device.editingState.unconstrained = true;
     
     let activeKey = pocketContainer.vehicle.uuid;
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
@@ -1922,6 +1919,9 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {
 
+        // immediately start placing the pocket frame in unconstrained mode
+        realityEditor.device.editingState.unconstrained = true;
+        
         // Several steps to translate it exactly to be centered on the touch when it gets added
         // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
         let defaultScreenCenter = realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey);
