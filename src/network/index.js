@@ -664,9 +664,9 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (thisAction.lastEditor === globalStates.tempUuid) {
-        console.log(thisAction.lastEditor);
-        console.log(globalStates.tempUuid);
-        console.log("------------------------------------- its my self");
+        // console.log(thisAction.lastEditor);
+        // console.log(globalStates.tempUuid);
+        // console.log("------------------------------------- its my self");
         return;
     }
 
