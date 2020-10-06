@@ -486,13 +486,23 @@
                     let transformedFrameMat = [];
                     utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
                     utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
+
+                    // TODO: find better place for these animations to fit into sceneGraph
+                    if (realityEditor.device.isEditingUnconstrained(frame) && pocketDropAnimation) {
+                        var animatedFinalMatrix = [];
+                        utils.multiplyMatrix(modelViewProjection, editingAnimationsMatrix, animatedFinalMatrix);
+                        utils.copyMatrixInPlace(animatedFinalMatrix, modelViewProjection);
+                        frameSceneNode.needsRerender = true;
+                    } else {
+                        frameSceneNode.needsRerender = false;
+                    }
+                    
                     finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
 
                     finalCSSMatricesWithoutTransform[frameKey] = [];
                     utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
 
                     numFrameCSSComputations++;
-                    frameSceneNode.needsRerender = false;
                 }
 
                 // skip this frame if neither it or the camera have changed

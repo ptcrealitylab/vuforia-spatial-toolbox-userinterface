@@ -1911,11 +1911,12 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
     let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey);
     let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+    let distanceInFrontOfCamera = 300; // 0.3 meters
     sceneNode.setPositionRelativeTo(cameraNode, [
         -1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, -1, 0,
-        0, 0, -200, 1
+        0, 0, -1 * distanceInFrontOfCamera, 1
     ]);
     
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
@@ -1936,7 +1937,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
         realityEditor.device.beginTouchEditing(pocketContainer.vehicle.objectId, activeFrameKey, activeNodeKey);
         // TODO ben: re-enable animation
         // animate it as flowing out of the pocket
-        // this.startPocketDropAnimation(250, 0.7, 1.0);
+        this.startPocketDropAnimation(250, 0.7, 1.0);
     }
 
     // clear some flags so it gets rendered after this occurs

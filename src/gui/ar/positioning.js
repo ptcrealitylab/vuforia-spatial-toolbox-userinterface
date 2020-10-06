@@ -94,21 +94,24 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     var newScale = this.initialScaleData.scale + (radius - this.initialScaleData.radius) / 300;
     if (typeof newScale !== 'number') return;
 
+    // TODO ben: low priority: re-implement scaling gesture to preserve touch location rather than scaling center 
     // TODO: this only works for frames right now, not nodes (at least not after scaling nodes twice in one gesture)
     // manually calculate positionData.x and y to keep centerTouch in the same place relative to the vehicle
-    var overlayDiv = document.getElementById(activeVehicle.uuid);
-    var touchOffset = realityEditor.device.editingState.touchOffset;
-    if (overlayDiv && touchOffset) {
-        var touchOffsetFromCenter = {
-            x: overlayDiv.clientWidth/2 - touchOffset.x,
-            y: overlayDiv.clientHeight/2 - touchOffset.y
-        };
-        var scaleDifference = Math.max(0.2, newScale) - positionData.scale;
-        positionData.x += touchOffsetFromCenter.x * scaleDifference;
-        positionData.y += touchOffsetFromCenter.y * scaleDifference;
-    }
+    // var overlayDiv = document.getElementById(activeVehicle.uuid);
+    // var touchOffset = realityEditor.device.editingState.touchOffset;
+    // if (overlayDiv && touchOffset) {
+    //     var touchOffsetFromCenter = {
+    //         x: overlayDiv.clientWidth/2 - touchOffset.x,
+    //         y: overlayDiv.clientHeight/2 - touchOffset.y
+    //     };
+    //     var scaleDifference = Math.max(0.2, newScale) - positionData.scale;
+    //     positionData.x += touchOffsetFromCenter.x * scaleDifference;
+    //     positionData.y += touchOffsetFromCenter.y * scaleDifference;
+    // }
     
     positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
+    
+    realityEditor.gui.ar.sceneGraph.updatePositionData(activeVehicle.uuid);
 
     // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
@@ -131,11 +134,13 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 
 /**
  * Creates and returns a div with the same CSS3D transform as the provided vehicle, but with all x/y/scale removed
- * @param {string} activeKey
+ * @param {Frame|Node} activeVehicle
  * @return {HTMLElement}
  */
-realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(activeKey) {
-    let matrixComputationDiv = document.getElementById('matrixComputationDiv');
+realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(activeVehicle, isContinuous) {
+    let activeKey = activeVehicle.uuid;
+    
+    let matrixComputationDiv = globalDOMCache['matrixComputationDiv'];
     if (!matrixComputationDiv) {
         // create it if needed
         matrixComputationDiv = document.createElement('div');
@@ -147,6 +152,14 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
         
         // 3D transforms only apply correctly if it's a child of the GUI container (like the rest of the tools/nodes)
         document.getElementById('GUI').appendChild(matrixComputationDiv);
+        globalDOMCache['matrixComputationDiv'] = matrixComputationDiv;
+    }
+    
+    // optimize dragging same element around while frozen by not recomputing matrix
+    let matrixCantChange = !realityEditor.device.isEditingUnconstrained(activeVehicle) || globalStates.freezeButtonState;
+    if (matrixCantChange && isContinuous && globalStates.lastRepositionedUuid === activeKey) {
+        console.log('optimized reposition');
+        return matrixComputationDiv;
     }
     
     if (matrixComputationDiv.style.display === 'none') {
@@ -164,6 +177,13 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
     return matrixComputationDiv;
 };
 
+realityEditor.gui.ar.positioning.stopRepositioning = function() {
+    if (globalDOMCache['matrixComputationDiv']) {
+        globalDOMCache['matrixComputationDiv'].style.display = 'none'; // hide it after use so it doesn't consume resources
+        globalStates.lastRepositionedUuid = null;
+    }
+};
+
 /**
  * Primary method to move a transformed frame or node to the (x,y) point on its plane where the (screenX,screenY) ray cast intersects
  * @param {Frame|Node} activeVehicle
@@ -172,15 +192,21 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
  * @param {boolean} useTouchOffset - if false, puts (0,0) coordinate of frame/node at the resulting point.
  *                                   if true, the first time you call it, it determines the x,y offset to drag the frame/node
  *                                   from the ray cast without it jumping, and subsequently drags it from that point
+ * @param {boolean} isContinuous - true to optimize calculations for this being triggered multiple times in a row
+ *                                 if true, you are expected to manually call stopRepositioning when done
  */
-realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
+realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset, isContinuous) {
     
     var newPosition;
     try {
         // set dummy div transform to iframe without x,y,scale
-        let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle.uuid);
+        let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle, isContinuous);
         newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
-        matrixComputationDiv.style.display = 'none'; // hide it after use so it doesn't consume resources
+        if (!isContinuous) {
+            realityEditor.gui.ar.positioning.stopRepositioning();
+        } else {
+            globalStates.lastRepositionedUuid = activeVehicle.uuid;
+        }
     } catch (e) {
         console.warn('Error computing untransformed matrix or in webkitConvertPointFromPageToNode while trying to' +
             ' move vehicle', e);
