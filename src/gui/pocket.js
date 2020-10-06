@@ -211,6 +211,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // send it to the server
             realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
 
+            realityEditor.gui.ar.sceneGraph.addNode(closestObjectKey, closestFrameKey, logicKey);
+
             realityEditor.gui.pocket.setPocketNode(addedLogic, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
 
             console.log("successfully added logic from pocket to object (" + closestObject.name + ", " + closestFrame.name + ")");
@@ -894,16 +896,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                         // upload new name to server when you change it
                         var object = realityEditor.getObject(addedElement.objectKey);
                         realityEditor.network.postNewNodeName(object.ip, addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid, addedElement.logicNode.name);
-
-                        var logicNodeSize = 220; // TODO: dont hard-code this - it is set within the iframe
-
-                        realityEditor.device.editingState.touchOffset = {
-                            x: logicNodeSize/2,
-                            y: logicNodeSize/2
-                        };
-
-                        realityEditor.device.beginTouchEditing(addedElement.objectKey, addedElement.frameKey, addedElement.logicNode.uuid);
-
+                        
                         realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
                     
                     } else if (globalStates.guiState === 'ui') {

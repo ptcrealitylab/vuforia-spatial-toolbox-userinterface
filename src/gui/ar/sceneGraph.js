@@ -194,14 +194,16 @@
         // if (this.parent) {
         //     this.parent.flagForRecompute();
         // }
-        // this.children.forEach(function(childNode) {
-        //     childNode.flagForRecompute();
-        // }.bind(this));
+        
+        // make sure all children get recomputed too, because they are relative to this
+        this.children.forEach(function(childNode) {
+            childNode.flagForRecompute();
+        }.bind(this));
     };
 
     SceneNode.prototype.flagContainingSubtreeForRecompute = function() {
         this.anythingInSubtreeNeedsRecompute = true;
-        if (this.parent) {
+        if (this.parent && !this.parent.anythingInSubtreeNeedsRecompute) {
             this.parent.flagContainingSubtreeForRecompute();
         }
     };
@@ -496,6 +498,8 @@
                 // skip this frame if neither it or the camera have changed
                 if (!didCameraUpdate && !frameSceneNode.anythingInSubtreeNeedsRerender) { return; }
 
+                // TODO: only compute nodes when not in UI mode!
+                // TODO: set all flags to dirty when switch to node view to ensure they update if needed?
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
                     let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
@@ -593,6 +597,11 @@
             // sceneNode.flagAsDirty();
             sceneNode.flagForRerender();
         }
+    };
+    
+    // look at implementation of realityEditor.gui.ar.positioning.getScreenPosition to get other coordinates
+    exports.getScreenPosition = function(activeKey) {
+        return realityEditor.gui.ar.positioning.getProjectedCoordinates([0,0,0,1], finalCSSMatrices[activeKey]);
     };
 
     exports.SceneNode = SceneNode;
