@@ -482,7 +482,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 
-    realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
+    realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
 
     // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     // document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
@@ -1338,7 +1338,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
         let dz = camPos.z - this.editingState.unconstrainedOffset.z;
 
         let cameraMoveDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        console.log('cameraMoveDistance = ' + cameraMoveDistance.toFixed(2));
+        // console.log('cameraMoveDistance = ' + cameraMoveDistance.toFixed(2));
         
         // TODO ben: for frames on screen object, if direction is towards screen then push into screen instead
         
@@ -1359,8 +1359,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
             // tell the renderer to freeze the current matrix as the unconstrained position on the screen
             realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
             // store this so we can undo the move if needed (e.g. image target disappears)
-            realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix);
-
+            realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
+            
             this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
         }
     }

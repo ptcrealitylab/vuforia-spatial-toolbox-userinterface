@@ -285,7 +285,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             positionData.matrix = [];
         }
 
-        realityEditor.gui.ar.sceneGraph.addFrame(objectKey, frameKey, positionData.matrix);
+        realityEditor.gui.ar.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
 
         for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
@@ -313,7 +313,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
 
-            realityEditor.gui.ar.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode.matrix);
+            realityEditor.gui.ar.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
         }
         
         // TODO: invert dependency
@@ -1110,6 +1110,14 @@ realityEditor.network.onInternalPostMessage = function (e) {
         iFrame.style.height = msgContent.height;
         iFrame.style.top = top;
         iFrame.style.left = left;
+        
+        let vehicle = realityEditor.getVehicle(msgContent.object, msgContent.frame, msgContent.node);
+        if (vehicle) {
+            vehicle.frameSizeX = msgContent.width;
+            vehicle.frameSizeY = msgContent.height;
+            vehicle.width = msgContent.width;
+            vehicle.height = msgContent.height;
+        }
 
         if (svg) {
             svg.style.width = msgContent.width;
@@ -1504,7 +1512,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         
         thisFrame.nodes[nodeKey] = node;
 
-        realityEditor.gui.ar.sceneGraph.addNode(node.objectId, node.frameId, nodeKey);
+        realityEditor.gui.ar.sceneGraph.addNode(node.objectId, node.frameId, node, nodeKey);
         
         //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
@@ -1742,7 +1750,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 newNode.data.value = nodeData.defaultValue;
             }
 
-            realityEditor.gui.ar.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey);
+            realityEditor.gui.ar.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey, newNode);
 
             // post node to server
             let object = realityEditor.getObject(msgContent.object);

@@ -16,6 +16,12 @@ createNameSpace("realityEditor.gui.ar.grouping");
     var groupStruct = {};
 
     /**
+     * Maps each frameKey to its relativeWorldPosition to the selected frame
+     * @type {Object.<string, Set.<string>>}
+     */
+    var groupRelativePositions = {};
+
+    /**
      * @type {Object.<string, string>}
      */
     var frameToObj = {};
@@ -86,21 +92,16 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
                 drawGroupHulls();
 
+                // TODO ben: update with new sceneGraph 
                 if (isUnconstrainedEditingGroup && !realityEditor.device.editingState.unconstrainedDisabled) {
-                    var activeVehicle = realityEditor.device.getEditingVehicle();
-                    var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
-                    forEachGroupedFrame(activeVehicle, function(frame) {
-                        var newMatrix = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicleMatrix, frame.startingMatrixOffset, newMatrix);
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
-                    }, true);
 
-                    var isSingleTouch = realityEditor.device.currentScreenTouches.length === 1;
-                    if (activeVehicle && isSingleTouch) {
-                        // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                        var touchPosition = realityEditor.device.currentScreenTouches[0].position; // need to retrieve this way instead of CSS of overlayDiv to support multitouch
-                        moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x, touchPosition.y);
-                    }
+                    let activeVehicle = realityEditor.device.getEditingVehicle();
+                    let selectedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                    forEachGroupedFrame(activeVehicle, function(groupedFrame) {
+                        let groupedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                        let relativePosition = groupRelativePositions[groupedFrame.uuid];
+                        groupedSceneNode.setPositionRelativeTo(selectedSceneNode, relativePosition);
+                    }, true);
                 }
             }
         });
@@ -132,6 +133,17 @@ createNameSpace("realityEditor.gui.ar.grouping");
                             startLasso(params.event.pageX, params.event.pageY);
                         }
                     }
+                } else {
+                    // else if hitting a grouped frame, preserve relative locations between it and its groupies
+                    var activeVehicle = realityEditor.device.getEditingVehicle();
+                    if (activeVehicle) {
+                        let selectedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+
+                        forEachGroupedFrame(activeVehicle, function(groupedFrame) {
+                            let groupedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                            groupRelativePositions[groupedFrame.uuid] = groupedSceneNode.getMatrixRelativeTo(selectedSceneNode);
+                        }, true);
+                    }
                 }
 
             }
@@ -152,9 +164,18 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 
                 if (activeVehicle && isSingleTouch) {
                     // also move group objects too
-                    var touchPosition = realityEditor.device.currentScreenTouches[0].position;
-                    moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x,touchPosition.y);
+                    // var touchPosition = realityEditor.device.currentScreenTouches[0].position;
+                    // moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x,touchPosition.y);
                     // moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
+
+                    // new method?
+                    let selectedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                    forEachGroupedFrame(activeVehicle, function(groupedFrame) {
+                        let groupedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                        let relativePosition = groupRelativePositions[groupedFrame.uuid];
+                        groupedSceneNode.setPositionRelativeTo(selectedSceneNode, relativePosition);
+                    }, true);
+                    
                 }
 
             }
@@ -670,23 +691,17 @@ createNameSpace("realityEditor.gui.ar.grouping");
      */
     function getFrameCornersScreenCoordinates(objectKey, frameKey, buffer) {
         if (typeof buffer === 'undefined') buffer = 0;
-        var screenPosition = realityEditor.gui.ar.positioning.getScreenPosition(objectKey, frameKey, false, true, true, true, true, buffer);
+        // new method
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        var halfWidth = parseInt(frame.frameSizeX)/2 + buffer;
+        var halfHeight = parseInt(frame.frameSizeY)/2 + buffer;
         
-        // if (typeof screenPosition.upperLeft.x === 'number' && !isNaN(screenPosition.upperLeft.x) &&
-        //     typeof screenPosition.upperRight.x === 'number' && !isNaN(screenPosition.upperRight.x) &&
-        //     typeof screenPosition.lowerLeft.x === 'number' && !isNaN(screenPosition.lowerLeft.x) &&
-        //     typeof screenPosition.lowerRight.x === 'number' && !isNaN(screenPosition.lowerRight.x)) {
-
-            return {
-                upperLeft: screenPosition.upperLeft,
-                upperRight: screenPosition.upperRight,
-                lowerLeft: screenPosition.lowerLeft,
-                lowerRight: screenPosition.lowerRight
-            };
-        //    
-        // } else {
-        //     return null;
-        // }
+        return {
+            upperLeft: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [-halfWidth, -halfHeight, 0, 1]),
+            upperRight: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [halfWidth, -halfHeight, 0, 1]),
+            lowerLeft: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [-halfWidth, halfHeight, 0, 1]),
+            lowerRight: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [halfWidth, halfHeight, 0, 1]),
+        };
     }
 
     /**
@@ -740,7 +755,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 // make sure there is an object and frame
                 if (!frame || frame.visualization !== 'ar') continue;
 
-                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 10);
+                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 50);
                 
                 // points.push([x, y]); // pushing center point
                 // pushing corner points
@@ -812,6 +827,10 @@ createNameSpace("realityEditor.gui.ar.grouping");
      */
     function moveGroupVehicleToScreenCoordinate(activeVehicle, screenX, screenY) {
         // TODO ben: fix this to preserve relative worldMatrix between vehicles
+        
+        // get the required relative world position between the activeVehicle and the selected vehicle
+        
+        // set the local matrix of this activeVehicle to preserve that relative world position
         
         // var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
         //

@@ -85,6 +85,9 @@
         this.needsRerender = true;
         this.anythingInSubtreeNeedsRerender = true;
         this.anythingInSubtreeNeedsRecompute = true;
+
+        // if a vehicle is linked, updating the sceneNode position will set the linkedVehicle position?
+        this.linkedVehicle = null;
     }
 
     /**
@@ -147,6 +150,10 @@
     SceneNode.prototype.setLocalMatrix = function(matrix) {
         if (!matrix || matrix.length !== 16) { return; } // ignore malformed/empty input
         utils.copyMatrixInPlace(matrix, this.localMatrix);
+        
+        if (this.linkedVehicle) {
+            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.linkedVehicle, matrix);
+        }
 
         // console.log('set local matrix of ' + this.id + ' to ' + realityEditor.gui.ar.utilities.prettyPrintMatrix(matrix, 2, false));
 
@@ -345,7 +352,7 @@
         return sceneNode;
     }
 
-    exports.addFrame = function(objectId, frameId, initialLocalMatrix) {
+    exports.addFrame = function(objectId, frameId, linkedFrame, initialLocalMatrix) {
         let sceneNodeFrame;
         if (typeof sceneGraph[frameId] !== 'undefined') {
             console.warn('trying to add duplicate frame to scene graph');
@@ -365,13 +372,17 @@
                 console.log('SceneGraph: added frame ' + frameId + ' to object ' + objectId);
             }
         }
+        
+        if (typeof linkedFrame !== 'undefined') {
+            sceneNodeFrame.linkedVehicle = linkedFrame;
+        }
 
         if (typeof initialLocalMatrix !== 'undefined') {
             sceneNodeFrame.setLocalMatrix(initialLocalMatrix);
         }
     };
 
-    exports.addNode = function(objectId, frameId, nodeId, initialLocalMatrix) {
+    exports.addNode = function(objectId, frameId, nodeId, linkedNode, initialLocalMatrix) {
         let sceneNodeNode;
         if (typeof sceneGraph[nodeId] !== 'undefined') {
             console.warn('trying to add duplicate node to scene graph');
@@ -385,6 +396,10 @@
         if (typeof sceneGraph[frameId] !== 'undefined') {
             sceneNodeNode.setParent(sceneGraph[frameId]);
             console.log('SceneGraph: added node ' + nodeId + ' to frame ' + frameId);
+        }
+
+        if (typeof linkedNode !== 'undefined') {
+            sceneNodeNode.linkedVehicle = linkedNode;
         }
 
         if (typeof initialLocalMatrix !== 'undefined') {
@@ -601,9 +616,12 @@
     };
     
     // look at implementation of realityEditor.gui.ar.positioning.getScreenPosition to get other coordinates
-    exports.getScreenPosition = function(activeKey) {
+    exports.getScreenPosition = function(activeKey, frameCoordinateVector) {
+        if (typeof frameCoordinateVector === 'undefined') {
+            frameCoordinateVector = [0,0,0,1]; // defaults to center. [-halfWidth, -halfHeight, 0, 1] is upperLeft
+        }
         if (finalCSSMatrices[activeKey]) {
-            return realityEditor.gui.ar.positioning.getProjectedCoordinates([0,0,0,1], finalCSSMatrices[activeKey]);
+            return realityEditor.gui.ar.positioning.getProjectedCoordinates(frameCoordinateVector, finalCSSMatrices[activeKey]);
         }
         console.warn(activeKey + ' hasn\'t been processed in the sceneGraph yet in order to get correct screen position');
         return {
