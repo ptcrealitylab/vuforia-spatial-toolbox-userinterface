@@ -609,7 +609,8 @@
         let sceneNode = getSceneNodeById(activeKey);
         if (sceneNode) {
             // sceneNode.flagAsDirty();
-            sceneNode.flagForRerender();
+            // sceneNode.flagForRerender();
+            sceneNode.flagForRecompute();
         }
     };
     
@@ -633,6 +634,23 @@
             y: sceneNode.worldMatrix[13]/sceneNode.worldMatrix[15],
             z: sceneNode.worldMatrix[14]/sceneNode.worldMatrix[15]
         }
+    };
+    
+    exports.getPositionRelativeToCamera = function(activeKey) {
+        let relativePosition = relativeToCamera[activeKey];
+        return {
+            x: relativePosition[12]/relativePosition[15],
+            y: relativePosition[13]/relativePosition[15],
+            z: relativePosition[14]/relativePosition[15]
+        }
+    };
+    
+    exports.isInFrontOfCamera = function(activeKey) {
+        // TODO: also unload if distance is too far? (e.g. 2x distance fade threshold)
+        let positionRelativeToCamera = realityEditor.gui.ar.sceneGraph.getPositionRelativeToCamera(activeKey);
+
+        // z axis faces opposite direction as expected so this distance is negative if in front, positive if behind
+        return positionRelativeToCamera.z < 0;
     };
 
     exports.SceneNode = SceneNode;

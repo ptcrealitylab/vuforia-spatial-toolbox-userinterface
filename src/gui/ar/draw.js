@@ -1506,6 +1506,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }
+                
+                // draw a placeholder for unloaded vehicles to provide better visual feedback while they're loading
+                let iframe = globalDOMCache['iframe' + activeKey];
+                if (!iframe.dataset.doneLoading || activeVehicle.isOutsideViewport) {
+                    if (realityEditor.gui.ar.sceneGraph.isInFrontOfCamera(activeKey)) {
+                        this.debugDrawVehicle(activeVehicle, finalMatrix);
+                    }
+                }
 
                 if (this.isLowFrequencyUpdateFrame) {
                     
@@ -1513,8 +1521,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     // let worldMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey).worldMatrix;
                     // let newCanUnload = realityEditor.gui.ar.viewFrustum.isPointInside(worldMatrix[12], worldMatrix[13], worldMatrix[14]);
                     // console.log('new canUnload: ' + newCanUnload);
+
+                    // if too far beyond visibility threshold, unload and render a little dot instead
+                    let distanceThreshold = 1.2 * realityEditor.gui.ar.getDistanceScale(activeVehicle) * realityEditor.device.distanceScaling.getDefaultDistance();
                     
-                    var isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+                    var isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(activeKey, finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2, distanceThreshold);
 
                     if (isNowOutsideViewport) {
                         if (!activeVehicle.isOutsideViewport || !activeElt.classList.contains('outsideOfViewport')) {
@@ -1525,6 +1536,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                             if (iframe) {
                                 iframe.dataset.src = iframe.src;
                                 delete iframe.src;
+                                delete iframe.data.doneLoading;
                             }
                         }
                     } else {
@@ -1717,6 +1729,18 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
     }
     
     return true; // true to continueUpdate... returning false would skip the rest of the rendering for this frame/node
+};
+
+realityEditor.gui.ar.draw.debugDrawVehicle = function(activeVehicle, finalMatrix) {
+    let bbox = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+    let thisColor = 'rgba(0,255,255,0.3)';
+    // 72 is a magic number that seems to work so that this had a pseudo-3d radius of frameSizeX/2
+    let thisSize = (parseInt(activeVehicle.frameSizeX)/2) / realityEditor.gui.ar.sceneGraph.getDistanceToCamera(activeVehicle.uuid) * 72;
+    this.globalCanvas.context.beginPath();
+    this.globalCanvas.context.fillStyle = thisColor;
+    this.globalCanvas.context.arc(bbox.center.x, bbox.center.y, thisSize, 0, Math.PI * 2);
+    this.globalCanvas.context.fill();
+    this.globalCanvas.hasContent = true;
 };
 
 /**
@@ -2132,6 +2156,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         activeVehicle.animationScale = 0;
         activeVehicle.loaded = true;
         activeVehicle.visibleEditing = false;
+        activeVehicle.isIframeLoading = true;
         
         // determine if the frame should be loaded locally or from the server (by default thisUrl points to server)
         if (isFrameElement && activeVehicle.location === 'global') {

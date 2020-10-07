@@ -1503,6 +1503,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
         
         thisFrame.nodes[nodeKey] = node;
+
+        realityEditor.gui.ar.sceneGraph.addNode(node.objectId, node.frameId, nodeKey);
+        
         //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
     }
@@ -2645,7 +2648,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // if (globalDOMCache['svg' + activeKey]) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
-    
+
     globalDOMCache["iframe" + activeKey].setAttribute('loaded', true);
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
 
@@ -2680,6 +2683,9 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         delete globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading;
         realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     }
+
+    // this is used so we can render a placeholder until it loads
+    globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.doneLoading = true;
 
     this.cout("on_load");
 };
