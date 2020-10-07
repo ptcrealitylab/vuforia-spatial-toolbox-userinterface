@@ -590,19 +590,32 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
 
     // reset frame.begin
     frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-
 };
 
 /**
  * Given the final transform3d matrix representing where a frame or node is rendered on the screen,
  * determines if it is sufficiently outside the viewport to be able to entirely unloaded from view.
  * The size of the viewport can depend on various factors, e.g. powerSave mode.
+ * @param {string} activeKey - frame/node key to lookup sceneGraph information
  * @param {Array.<number>} finalMatrix - the CSS transform3d matrix
  * @param {number} vehicleHalfWidth - get from frameSizeX (scale is already stored separately in the matrix)
  * @param {number} vehicleHalfHeight - get from frameSizeY
+ * @param {number?} maxDistance - if further away than this, unload. (unit scale: 1000=1meter)
  * @return {boolean}
  */
-realityEditor.gui.ar.positioning.canUnload = function(finalMatrix, vehicleHalfWidth, vehicleHalfHeight) {
+realityEditor.gui.ar.positioning.canUnload = function(activeKey, finalMatrix, vehicleHalfWidth, vehicleHalfHeight, maxDistance) {
+    // // if it's fully behind the viewport, it can be unloaded
+    if (!realityEditor.gui.ar.sceneGraph.isInFrontOfCamera(activeKey)) {
+        return true;
+    }
+    
+    // if a distance threshold is provided, unload if it is too far away
+    if (typeof maxDistance !== 'undefined') {
+        if (realityEditor.gui.ar.sceneGraph.getDistanceToCamera(activeKey) > maxDistance) {
+            return true;
+        }
+    }
+    
     // get a rough estimation of screen position so we can see if it overlaps with viewport
     var frameScreenPosition = this.getVehicleBoundingBoxFast(finalMatrix, vehicleHalfWidth, vehicleHalfHeight);
     var left = frameScreenPosition.upperLeft.x;
