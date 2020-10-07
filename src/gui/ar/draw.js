@@ -556,13 +556,11 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // if not unconstrained editing a global frame, hide it
                 } else {
                     
-                    var startingMatrix;
+                    var startingMatrix = realityEditor.device.editingState.startingMatrix;
                 
                     // unconstrained editing local frame - can't transition to global, but reset its matrix to what it was before starting to edit
-                    if (realityEditor.device.isEditingUnconstrained(this.activeVehicle)) {
-                        startingMatrix = realityEditor.device.editingState.startingMatrix || [];
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeVehicle, startingMatrix);
-                        // TODO ben: set the localMatrix of the tool based on this data
+                    if (realityEditor.device.isEditingUnconstrained(this.activeVehicle) && startingMatrix) {
+                        realityEditor.gui.ar.sceneGraph.getSceneNodeById(frameKey).setLocalMatrix(startingMatrix);
                     }
 
                     // hide the frame
@@ -578,10 +576,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         this.activeType = this.activeNode.type;
 
                         // unconstrained editing local node - can't transition to global, but reset its matrix to what it was before starting to edit
-                        if (realityEditor.device.isEditingUnconstrained(this.activeNode)) {
-                            startingMatrix = realityEditor.device.editingState.startingMatrix || [];
-                            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.activeNode, startingMatrix);
-                            // TODO ben: set the localMatrix of the tool based on this data
+                        if (realityEditor.device.isEditingUnconstrained(this.activeNode) && startingMatrix) {
+                            realityEditor.gui.ar.sceneGraph.getSceneNodeById(nodeKey).setLocalMatrix(startingMatrix);
                         }
                         
                         // hide the node
@@ -958,8 +954,13 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     var frameInMotion = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
     realityEditor.gui.ar.draw.hideTransformed(globalStates.inTransitionFrame, frameInMotion, globalDOMCache, cout);
 
-    var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
-    realityEditor.gui.ar.positioning.setPositionDataMatrix(frameInMotion, startingMatrix);
+    // var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
+    // realityEditor.gui.ar.positioning.setPositionDataMatrix(frameInMotion, startingMatrix);
+    
+    if (realityEditor.device.editingState.startingMatrix) {
+        // realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
+        realityEditor.gui.ar.sceneGraph.getSceneNodeById(globalStates.inTransitionFrame).setLocalMatrix(realityEditor.device.editingState.startingMatrix);
+    }
     
     // var positionData = realityEditor.gui.ar.positioning.getPositionData(frameInMotion);
     // positionData.matrix = [];
@@ -1364,6 +1365,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         // realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), resultMatrix);
                         // realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, resultMatrix);
                         
+                        // TODO: decide whether to do this the mathematical way, or fake it like before for performance
                         // multiply camera's worldMatrix by the activeVehicle.begin to get activeVehicle's
                         // worldMatrix... then convert to local
                         let requiredWorldMatrix = [];

@@ -135,6 +135,7 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 /**
  * Creates and returns a div with the same CSS3D transform as the provided vehicle, but with all x/y/scale removed
  * @param {Frame|Node} activeVehicle
+ * @param {boolean} isContinuous
  * @return {HTMLElement}
  */
 realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(activeVehicle, isContinuous) {
@@ -158,7 +159,7 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
     // optimize dragging same element around while frozen by not recomputing matrix
     // let matrixCantChange = !realityEditor.device.isEditingUnconstrained(activeVehicle) || globalStates.freezeButtonState;
     if (/*matrixCantChange &&*/ isContinuous && globalStates.lastRepositionedUuid === activeKey) {
-        console.log('optimized reposition');
+        // console.log('optimized reposition');
         return matrixComputationDiv;
     }
     
@@ -309,60 +310,18 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
  * @todo: ensure fully implemented
  */
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
-    
-    var shouldBroadcastUpdate = false;
-    
-    if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
-        console.warn('trying to set position data matrix for something other than a frame or logic');
-    }
 
-    if (!newMatrixValue || newMatrixValue.constructor !== Array) {
-        console.warn('trying to set matrix to a non-array value');
-        return;
-    }
-
-    // TODO: uncomment to debug if we start to get matrices looking like [null, null, null, null, ... , null]
-    if (newMatrixValue.some(function(elt) { return (typeof elt !== 'number' || isNaN(elt)); })) {
-        console.warn('trying to set matrix elements to null or NaN');
-        return;
-    }
-    
-    // nodes on local frames set their own matrix
-    
-    if (activeVehicle.type === 'node') { // TODO: work for other node types, e.g. delay
-        var parentFrame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
-        if (parentFrame.location === 'local') {
-            realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
-            shouldBroadcastUpdate = true;
-        }
-    }
-    
-    // logic nodes set their own matrix
-    
-    if (activeVehicle.type === 'logic') {
-        realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
-        shouldBroadcastUpdate = true;
-        
-    // frames set their AR matrix
-        
-    } else if (activeVehicle.type === 'ui' || typeof activeVehicle.type === 'undefined') {
+    if (realityEditor.isVehicleAFrame(activeVehicle)) {
         realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.ar.matrix);
-        shouldBroadcastUpdate = true;
+    } else {
+        realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
     }
 
-    if (shouldBroadcastUpdate) {
-        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-        var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
-        realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
-        
-        // also update scene graph
-        let updatedPositionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        let activeKey = keys.nodeKey || keys.frameKey;
-        let sceneGraphNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey);
-        if (sceneGraphNode) {
-            sceneGraphNode.setLocalMatrix(updatedPositionData.matrix);
-        }
-    }
+    // if (shouldBroadcastUpdate) {
+    //     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    //     var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
+    //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
+    // }
 };
 
 /**
