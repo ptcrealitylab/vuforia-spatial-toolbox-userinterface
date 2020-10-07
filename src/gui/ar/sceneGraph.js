@@ -109,12 +109,14 @@
             parent.children.push(this);
         }
         this.parent = parent;
+        
+        // recompute now that we're part of a new parent subtree
+        this.flagForRecompute();
     };
 
     /**
      * Compute where this node is relative to the scene origin
      * @param {Array.<number>} parentWorldMatrix
-     * @todo - only update dirty subtrees of this
      */
     SceneNode.prototype.updateWorldMatrix = function(parentWorldMatrix) {
         if (this.needsRecompute) {
@@ -210,8 +212,8 @@
     
     SceneNode.prototype.getMatrixRelativeTo = function(otherNode) {
         numRelativeComputations++;
-
-        //  TODO: call updateWorldMatrix on the root to ensure everything is up to date
+        
+        // note that this could be one frame out-of-date if this is flaggedForRecompute
         let thisWorldMatrix = this.worldMatrix;
         let thatWorldMatrix = otherNode.worldMatrix;
 
@@ -427,17 +429,10 @@
     exports.getDirtyNodes = getDirtyNodes;
     
     const calculateFinalMatrices = function(visibleObjectIds) {
-        // let dirtyNodeList = getDirtyNodes();
-        // if (dirtyNodeList.length > 0) {
-            recomputeScene(); // ensure all worldMatrix reflects latest localMatrix
-        // }
+        // ensure all worldMatrix reflects latest localMatrix
+        recomputeScene(); 
         
         const didCameraUpdate = cameraNode.needsRerender;
-        
-        // let dirtyNodes = {};
-        // dirtyNodeList.forEach(function(key) {
-        //     dirtyNodes[key] = true;
-        // });
 
         // for each visible object
         
@@ -458,9 +453,6 @@
         visibleObjectIds.forEach( function(objectKey) {
             let object = realityEditor.getObject(objectKey);
             let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
-            
-            // skip this object if neither it or the camera have changed
-            // if (!(dirtyNodes[objectKey] || dirtyNodes['CAMERA'])) { return; }
             
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
@@ -510,8 +502,7 @@
                 // skip this frame if neither it or the camera have changed
                 if (!didCameraUpdate && !frameSceneNode.anythingInSubtreeNeedsRerender) { return; }
 
-                // TODO: only compute nodes when not in UI mode!
-                // TODO: set all flags to dirty when switch to node view to ensure they update if needed?
+                // TODO: only compute nodes when not in UI mode? if so we need to be sure to compute when switch mode
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
                     let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
@@ -581,12 +572,9 @@
     SceneNode.prototype.setPositionRelativeTo = function(otherSceneNode, relativeMatrix) {
         if (typeof relativeMatrix === 'undefined') { relativeMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix(); }
         
-        // get worldMatrix of otherSceneNode
-        // get worldMatrix of this.parentNode
-        
         // compute new localMatrix so that
         // this.localMatrix * parentNode.worldMatrix = relativeMatrix * otherSceneNode.worldMatrix
-        
+        // solving for localMatrix yields:
         // this.localMatrix = relativeMatrix * otherSceneNode.worldMatrix * inv(parentNode.worldMatrix)
         
         let temp = [];
@@ -597,7 +585,7 @@
         this.setLocalMatrix(result);
     };
     
-    // TODO: actively compute when needed, not every single frame
+    // TODO: actively compute here when needed, not in the main update loop
     exports.getCSSMatrixWithoutTranslation = function(activeKey) {
         if (typeof finalCSSMatricesWithoutTransform[activeKey] === 'undefined') {
             return realityEditor.gui.ar.utilities.newIdentityMatrix();
@@ -608,8 +596,6 @@
     exports.updatePositionData = function(activeKey) {
         let sceneNode = getSceneNodeById(activeKey);
         if (sceneNode) {
-            // sceneNode.flagAsDirty();
-            // sceneNode.flagForRerender();
             sceneNode.flagForRecompute();
         }
     };
@@ -646,9 +632,7 @@
     };
     
     exports.isInFrontOfCamera = function(activeKey) {
-        // TODO: also unload if distance is too far? (e.g. 2x distance fade threshold)
         let positionRelativeToCamera = realityEditor.gui.ar.sceneGraph.getPositionRelativeToCamera(activeKey);
-
         // z axis faces opposite direction as expected so this distance is negative if in front, positive if behind
         return positionRelativeToCamera.z < 0;
     };
