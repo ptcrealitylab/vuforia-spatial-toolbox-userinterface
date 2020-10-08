@@ -1570,7 +1570,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
-                        thisMsg.modelViewMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(activeVehicle.uuid, true, false);
+                        thisMsg.modelViewMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(activeVehicle.uuid, true, true);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
@@ -1600,21 +1600,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
                     
                     if (activeVehicle.sendScreenPosition === true) {
-                        // also try sending screen position if asking for matrix... // TODO: in the future create another switch like sendMatrix and sendAcceleration
-                        // TODO: check if this still works with new coordinate system
-                        // var frameScreenPosition = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(objectKey, activeKey);
-
-                        // computes {center: {x: number, y: number}} of the frame to be sent into a fullscreen frame
-                        // var frameScreenPosition = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+                        var halfWidth = parseInt(activeVehicle.frameSizeX)/2;
+                        var halfHeight = parseInt(activeVehicle.frameSizeY)/2;
                         
-                        // TODO ben: get from sceneGraph?
-                        var realScreenCoordinates = realityEditor.gui.ar.positioning.getFrameScreenCoordinates(activeVehicle.objectId, activeKey);
-
-                        // console.log(frameScreenPosition, realScreenCoordinates);
-                        
-                        thisMsg.frameScreenPosition = realScreenCoordinates; //frameScreenPosition;
+                        thisMsg.frameScreenPosition = {
+                            upperLeft: realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey, [-halfWidth, -halfHeight, 0, 1]),
+                            center: realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey, [0, 0, 0, 1]),
+                            lowerRight: realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey, [halfWidth, halfHeight, 0, 1])
+                        };
                     }
-
                     
                     // cout(thisMsg);
                     if (activeType === 'ui') {
