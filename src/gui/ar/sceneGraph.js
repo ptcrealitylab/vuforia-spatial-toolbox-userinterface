@@ -673,7 +673,7 @@
     };
     
     function transformFrameModelView(frame, untransformedModelView, includeScale, includeTranslation) {
-        let scale = includeScale ? (frame.ar.scale * globalScaleAdjustment) : 1.0;
+        let scale = includeScale ? (frame.ar.scale /* * globalScaleAdjustment */) : 1.0;
         let x = includeTranslation ? frame.ar.x : 0;
         let y = includeTranslation ? frame.ar.y : 0;
         let transform = [
