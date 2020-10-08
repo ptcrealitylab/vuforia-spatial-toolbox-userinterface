@@ -238,9 +238,9 @@ realityEditor.device.onload = function () {
         e.preventDefault();
     });
 
-    // var stats=new Stats();
-    // // stats.showPanel( 2 );
-    // document.body.appendChild(stats.dom);
+    var stats = new Stats();
+    // stats.showPanel( 2 );
+    document.body.appendChild(stats.dom);
     
     // start TWEEN library for animations
     (function animate(time) {
@@ -251,7 +251,7 @@ realityEditor.device.onload = function () {
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
-        // stats.update();
+        stats.update();
         
         // TODO: implement separated render and recalculate functions for the rendering engine
         // realityEditor.gui.ar.draw.render();

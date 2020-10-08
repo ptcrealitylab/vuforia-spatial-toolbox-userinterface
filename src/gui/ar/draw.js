@@ -1522,7 +1522,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                             if (iframe) {
                                 iframe.dataset.src = iframe.src;
                                 delete iframe.src;
-                                delete iframe.data.doneLoading;
+                                delete iframe.dataset.doneLoading;
                             }
                         }
                     } else {
