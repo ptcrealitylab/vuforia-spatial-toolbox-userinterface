@@ -194,6 +194,10 @@ createNameSpace('realityEditor.app.callbacks');
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
             if (visibleObjects.hasOwnProperty(worldObjectKey)) {
                 realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
+                let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(worldObjectKey);
+                if (sceneNode) {
+                    sceneNode.setLocalMatrix(visibleObjects[worldObjectKey]);
+                }
                 delete visibleObjects[worldObjectKey];
             }
         });
