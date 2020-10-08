@@ -32,7 +32,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 for (var objectKey in objects) {
                     if (!objects.hasOwnProperty(objectKey)) continue;
                     // only reset currently visible objects to their last commit, not everything
-                    if (!realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) continue;
+                    if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
                     
                     realityEditor.network.sendResetToLastCommit(objectKey);
                 }
@@ -47,7 +47,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 for (var objectKey in objects) {
                     if (!objects.hasOwnProperty(objectKey)) continue;
                     // only commit currently visible objects, not everything
-                    if (!realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) continue;
+                    if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue;
                     objectKeysToDelete.push(objectKey);
                 }
                 

@@ -172,7 +172,7 @@ createNameSpace("realityEditor.worldObjects");
         
         // if there are any global world objects, add to those first
         let visibleGlobalWorldObjectKeys = getGlobalWorldObjectKeys().filter(function(objectKey) {
-            return (typeof realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[objectKey] !== 'undefined');
+            return (typeof realityEditor.gui.ar.draw.visibleObjects[objectKey] !== 'undefined');
         });
         
         let distances = getDistanceToEachWorld();
@@ -330,7 +330,7 @@ createNameSpace("realityEditor.worldObjects");
      */
     function getDistanceToEachWorld() {
         var distances = {};
-        for (var objectKey in realityEditor.gui.ar.sceneRenderer.getVisibleObjects()) {
+        for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
             var object = realityEditor.getObject(objectKey);
             if (object.isWorldObject) {
                 // var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
@@ -345,7 +345,7 @@ createNameSpace("realityEditor.worldObjects");
     function checkIfFirstLocalization() {
         if (isFirstTimeSettingWorldPosition) {
             if (getWorldObjectKeys().length > 0) {
-                if (typeof realityEditor.gui.ar.sceneRenderer.getVisibleObjects()[getLocalWorldId()] !== 'undefined') {
+                if (typeof realityEditor.gui.ar.draw.visibleObjects[getLocalWorldId()] !== 'undefined') {
                     isFirstTimeSettingWorldPosition = false;
                     setTimeout(function() {
                         if (realityEditor.gui.settings.toggleStates.tutorialState) {

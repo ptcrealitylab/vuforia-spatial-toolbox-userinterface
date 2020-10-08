@@ -1508,11 +1508,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 if (this.isLowFrequencyUpdateFrame) {
                     
-                    // get world matrix of this vehicle
-                    // let worldMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey).worldMatrix;
-                    // let newCanUnload = realityEditor.gui.ar.viewFrustum.isPointInside(worldMatrix[12], worldMatrix[13], worldMatrix[14]);
-                    // console.log('new canUnload: ' + newCanUnload);
-
                     // if too far beyond visibility threshold, unload and render a little dot instead
                     let distanceThreshold = 1.2 * realityEditor.gui.ar.getDistanceScale(activeVehicle) * realityEditor.device.distanceScaling.getDefaultDistance();
                     
@@ -2383,7 +2378,7 @@ realityEditor.gui.ar.draw.doesAnythingUseGroundPlane = function() {
  */
 realityEditor.gui.ar.draw.forEachVisibleFrame = function(callback) {
     realityEditor.forEachFrameInAllObjects( function(objectKey, frameKey) {
-        if (realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
+        if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // only do this for visible objects (and the world object, of course)
             callback(objectKey, frameKey); // populates allDistanceUIs with new distanceUIs if they don't exist yet
         }
     });

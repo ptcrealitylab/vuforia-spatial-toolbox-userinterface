@@ -240,7 +240,7 @@ realityEditor.gui.ar.getVisibleNodes = function() {
         for (var frameKey in objects[objectKey].frames) {
             var thisFrame = realityEditor.getFrame(objectKey, frameKey);
             if (!thisFrame) continue;
-            if (realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) { // this is a way to check which objects are currently visible
+            if (realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) { // this is a way to check which objects are currently visible
                // var thisObject = objects[objectKey];
 
                 for (var nodeKey in thisFrame.nodes) {
@@ -366,7 +366,7 @@ realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
     var closest = this.MAX_DISTANCE;
     var distance = this.MAX_DISTANCE;
     
-    for (var objectKey in realityEditor.gui.ar.sceneRenderer.getVisibleObjects()) {
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         if (typeof optionalFilter !== 'undefined') {
             if (!optionalFilter(objectKey)) {
                 continue;
@@ -402,7 +402,7 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
     var closest = 10000000000;
     var distance = 10000000000;
 
-    for (var objectKey in realityEditor.gui.ar.sceneRenderer.getVisibleObjects()) {
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
             
             // apply an additional filter, e.g.
@@ -434,7 +434,7 @@ realityEditor.gui.ar.getClosestNode = function () {
     var closest = 10000000000;
     var distance = 10000000000;
 
-    for (var objectKey in realityEditor.gui.ar.sceneRenderer.getVisibleObjects()) {
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
             for(var nodeKey in this.objects[objectKey].frames[frameKey].nodes) {
 
@@ -469,7 +469,7 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
     var closest = 10000000000;
     var distance = 10000000000;
 
-    for (var objectKey in realityEditor.gui.ar.sceneRenderer.getVisibleObjects()) {
+    for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
             distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(frameKey);
             
