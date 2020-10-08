@@ -318,7 +318,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      */
     function rebuildAggregateFrames() {
         // see which frames this closest object supports
-        var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.sceneRenderer.getVisibleObjects()));
+        var availablePocketFrames = realityEditor.network.availableFrames.getFramesForAllVisibleObjects(Object.keys(realityEditor.gui.ar.draw.visibleObjects));
         // this is an array of [{actualIP: string, proxyIP: string, frames: {}}, ...], sorted by priority (distance)
 
         // we want to generate a set of frame info, with the frame name as each key

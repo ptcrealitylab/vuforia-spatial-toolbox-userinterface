@@ -500,7 +500,7 @@ realityEditor.gui.ar.utilities.getAllVisibleFramesFast = function() {
     
     var visibleFrameKeys = [];
 
-    var visibleObjects = realityEditor.gui.ar.sceneRenderer.getVisibleObjects();
+    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
     for (var objectKey in visibleObjects) {
         if (objects[objectKey]) {
             for (var frameKey in objects[objectKey].frames) {
@@ -531,7 +531,7 @@ realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
     
     var visibleFrames = [];
     
-    var visibleObjects = realityEditor.gui.ar.sceneRenderer.getVisibleObjects();
+    var visibleObjects = realityEditor.gui.ar.draw.visibleObjects;
     for (var objectKey in visibleObjects) {
         if (!visibleObjects.hasOwnProperty(objectKey)) continue;
         realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {

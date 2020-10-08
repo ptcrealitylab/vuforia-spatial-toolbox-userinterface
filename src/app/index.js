@@ -378,7 +378,7 @@ cc = realityEditor.app.clearCache.bind(realityEditor.app);
  */
 rr = function() {
     for (var objectKey in objects) {
-        if (!realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) {
+        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
             continue;
         }
 

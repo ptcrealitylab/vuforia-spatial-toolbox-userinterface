@@ -749,7 +749,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
             // get the corners of frames
             for (var frameKey of group) { // iterate over the Set
                 var objectKey = frameToObj[frameKey];
-                if (!realityEditor.gui.ar.sceneRenderer.getVisibleObjects().hasOwnProperty(objectKey)) continue; // only draw hulls for frames on visible objects
+                if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) continue; // only draw hulls for frames on visible objects
                 var frame = realityEditor.getFrame(objectKey, frameKey);
 
                 // make sure there is an object and frame
