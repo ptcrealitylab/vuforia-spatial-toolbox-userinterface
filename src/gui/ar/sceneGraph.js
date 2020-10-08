@@ -19,6 +19,7 @@
     let sceneGraph = {};
     let rootNode;
     let cameraNode;
+    let groundPlaneNode;
     // TODO: use these cached values when possible instead of recomputing
     let relativeToCamera = {};
     let finalCSSMatrices = {};
@@ -31,22 +32,28 @@
     let numFrameCSSComputations = 0;
     let numNodeCSSComputations = 0;
     
+    // TODO ben: use this enum in other modules instead of having any string names
+    const NAMES = Object.freeze({
+        ROOT: 'ROOT',
+        CAMERA: 'CAMERA',
+        GROUNDPLANE: 'GROUNDPLANE'
+    });
+    exports.NAMES = NAMES;
+    
     exports.printInfo = false;
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
-        rootNode = new SceneNode('ROOT');
-        // rootNode.setLocalMatrix([ // transform coordinate system by rotateX
-        //     1, 0, 0, 0,
-        //     0, -1, 0, 0,
-        //     0, 0, 1, 0,
-        //     0, 0, 0, 1
-        // ]);
-        sceneGraph['ROOT'] = rootNode;
+        rootNode = new SceneNode(NAMES.ROOT);
+        sceneGraph[NAMES.ROOT] = rootNode;
 
         // create node for camera outside the tree of the main scene
-        cameraNode = new SceneNode('CAMERA');
-        sceneGraph['CAMERA'] = cameraNode;
+        cameraNode = new SceneNode(NAMES.CAMERA);
+        sceneGraph[NAMES.CAMERA] = cameraNode;
+        
+        // create a node representing the ground plane coordinate system
+        groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
+        sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
         
         setInterval(function() {
             if (exports.printInfo) {
@@ -410,6 +417,10 @@
     exports.setCameraPosition = function(cameraMatrix) {
         cameraNode.setLocalMatrix(cameraMatrix);
     };
+    
+    exports.setGroundPlanePosition = function(groundPlaneMatrix) {
+        groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
+    };
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
     
@@ -433,6 +444,11 @@
     const recomputeScene = function() {
         rootNode.updateWorldMatrix(); // todo: if only camera is dirty, don't recompute this
         cameraNode.updateWorldMatrix();
+        
+        // update separately unless it has become a child of a world object
+        if (groundPlaneNode && !groundPlaneNode.parent) {
+            groundPlaneNode.updateWorldMatrix();
+        }
     };
     exports.recomputeScene = recomputeScene;
     
@@ -448,6 +464,13 @@
         recomputeScene(); 
         
         const didCameraUpdate = cameraNode.needsRerender;
+
+        // update ground plane
+        if (didCameraUpdate || groundPlaneNode.needsRerender) {
+            relativeToCamera[NAMES.GROUNDPLANE] = groundPlaneNode.getMatrixRelativeTo(cameraNode);
+            groundPlaneNode.needsRerender = false;
+            // TODO: if anything can become a child of the groundPlane then we'll need to process its subtree correctly
+        }
 
         // for each visible object
         
@@ -647,6 +670,45 @@
             y: relativePosition[13]/relativePosition[15],
             z: relativePosition[14]/relativePosition[15]
         }
+    };
+    
+    function transformFrameModelView(frame, untransformedModelView, includeScale, includeTranslation) {
+        let scale = includeScale ? (frame.ar.scale * globalScaleAdjustment) : 1.0;
+        let x = includeTranslation ? frame.ar.x : 0;
+        let y = includeTranslation ? frame.ar.y : 0;
+        let transform = [
+            scale, 0, 0, 0,
+            0, scale, 0, 0,
+            0, 0, scale, 0,
+            x, y, 0, 1];
+        let transformedFrameMat = [];
+        utils.multiplyMatrix(transform, untransformedModelView, transformedFrameMat);
+        return transformedFrameMat;
+    }
+    
+    // function transformNodeModelView(node, untransformedModelView) {
+    //     let nodeScale = node.scale * globalScaleAdjustment * (frame.ar.scale / globalStates.defaultScale);
+    //     let transform = [
+    //         nodeScale, 0, 0, 0,
+    //         0, nodeScale, 0, 0,
+    //         0, 0, nodeScale, 0,
+    //         frame.ar.x + node.x, frame.ar.y + node.y, 0, 1];
+    //     let transformedNodeMat = [];
+    //     utils.multiplyMatrix(transform, relativeToCamera[nodeKey], transformedNodeMat);
+    // }
+    
+    exports.getModelViewMatrix = function(activeKey, includeScale, includeTranslation) {
+        if (includeScale || includeTranslation) {
+            let sceneNode = getSceneNodeById(activeKey);
+            if (sceneNode && sceneNode.linkedVehicle && realityEditor.isVehicleAFrame(sceneNode.linkedVehicle)) {
+                return transformFrameModelView(sceneNode.linkedVehicle, relativeToCamera[activeKey], includeScale, includeTranslation);
+            }
+        }
+        return relativeToCamera[activeKey];
+    };
+    
+    exports.getGroundPlaneModelViewMatrix = function() {
+        return relativeToCamera[NAMES.GROUNDPLANE];
     };
     
     exports.isInFrontOfCamera = function(activeKey) {
