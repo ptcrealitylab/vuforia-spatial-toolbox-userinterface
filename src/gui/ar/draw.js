@@ -226,17 +226,6 @@ realityEditor.gui.ar.draw.m1 = [
     0, 0, 0, 1
 ];
 
-/**
- * The most recently received camera matrix
- * @type {Array.<number>}
- */
-realityEditor.gui.ar.draw.groundPlaneMatrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-];
-
 realityEditor.gui.ar.draw.worldCorrection = null;
 
 realityEditor.gui.ar.draw.currentClosestObject = null;
@@ -1585,18 +1574,16 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     var thisMsg = {};
 
                     if (activeVehicle.sendMatrix === true) {
-                        let _positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-                        // TODO ben: send in matrices from sceneGraph
-                        thisMsg.modelViewMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]; //this.getFinalMatrixForFrame(this.modelViewMatrices[objectKey],
-                        // positionData.matrix, positionData.x, positionData.y, positionData.scale);
+                        // TODO ben: send translation iff not three.js fullscreen
+                        thisMsg.modelViewMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(activeVehicle.uuid, true, false);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
-                        thisMsg.devicePose = this.correctedCameraMatrix;
+                        thisMsg.devicePose = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA').worldMatrix; //this.correctedCameraMatrix;
                     }
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
-                        thisMsg.groundPlaneMatrix = this.groundPlaneMatrix;
+                        thisMsg.groundPlaneMatrix = realityEditor.gui.ar.sceneGraph.getGroundPlaneModelViewMatrix();
                         
                       /*  if(this.visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
                             this.matrix.worldReference = this.visibleObjects["WorldReferenceXXXXXXXXXXXX"];
@@ -1610,7 +1597,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
-                        thisMsg.allObjects = this.modelViewMatrices;
+                        thisMsg.allObjects = this.visibleObjects; // this.modelViewMatrices; // TODO ben: fix this
                     }
 
                     if (activeVehicle.sendAcceleration === true) {
