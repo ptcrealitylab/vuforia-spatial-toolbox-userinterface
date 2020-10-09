@@ -1557,3 +1557,11 @@ Logic Interface CSS
     background-color: rgba(0, 255, 255, 0.5);
     border: 10px solid rgb(0, 255, 255);
 }
+
+.groundPlaneOrigin {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 10px solid rgb(0, 255, 255);
+}
