@@ -53,6 +53,8 @@
         
         // create a node representing the ground plane coordinate system
         groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
+        groundPlaneNode.needsRotateX = true;
+        addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
         
         setInterval(function() {
@@ -84,9 +86,11 @@
         this.localMatrix = utils.newIdentityMatrix();
         this.worldMatrix = utils.newIdentityMatrix();
         this.children = [];
-        // this.associatedObject = null;
         this.id = id; // mostly attached for debugging
         this.parent = null;
+        
+        // if true, any nodes added to this will instead be added to a child of this rotating 90deg
+        this.needsRotateX = false;
         
         this.needsRecompute = true; // if true, triggers recompute on sub-tree
         this.needsRerender = true;
@@ -161,40 +165,16 @@
         if (this.linkedVehicle) {
             realityEditor.gui.ar.positioning.setPositionDataMatrix(this.linkedVehicle, matrix);
         }
-
-        // console.log('set local matrix of ' + this.id + ' to ' + realityEditor.gui.ar.utilities.prettyPrintMatrix(matrix, 2, false));
-
-        // this.dirty = true; // requires updateWorldMatrix on sub-tree
-        // this.flagAsDirty();
-        // this.needsRecompute = true;
-        // this.needsRerender = true;
         
+        // flagging this will eventually set the other necessary flags for this and parent/children nodes
         this.flagForRecompute();
-        // this.flagForRerender();
 
         numLocalComputations++;
     };
     
-    // SceneNode.prototype.flagAsDirty = function() {
-    //     this.dirty = true;
-    //     // if (this.parent) {
-    //     //     this.parent.flagAsDirty();
-    //     // }
-    //     // mark children as dirty because their positions are relative to this
-    //     this.children.forEach(function(childNode) {
-    //         childNode.flagAsDirty();
-    //     }.bind(this));
-    // };
-    
     SceneNode.prototype.flagForRerender = function() {
         this.needsRerender = true;
         this.flagContainingSubtreeForRerender();
-        // if (this.parent) {
-        //     this.parent.flagForRerender();
-        // }
-        // this.children.forEach(function(childNode) {
-        //     childNode.flagForRerender();
-        // }.bind(this));
     };
     
     SceneNode.prototype.flagContainingSubtreeForRerender = function() {
@@ -207,9 +187,6 @@
     SceneNode.prototype.flagForRecompute = function() {
         this.needsRecompute = true;
         this.flagContainingSubtreeForRecompute();
-        // if (this.parent) {
-        //     this.parent.flagForRecompute();
-        // }
         
         // make sure all children get recomputed too, because they are relative to this
         this.children.forEach(function(childNode) {
@@ -279,10 +256,7 @@
             utils.multiplyMatrix(desiredWorldMatrix, utils.invertMatrix(newParentWorldMatrix), requiredLocalMatrix);
             this.setLocalMatrix(requiredLocalMatrix);
         }
-        
-        // this.dirty = true;
-        // this.flagAsDirty();
-        
+
         this.flagForRecompute();
     };
     
@@ -328,7 +302,15 @@
         }
     };
 
-    function addRotateX(sceneNodeObject, objectId) {
+    var makeGroundPlaneRotationX =  function ( theta ) {
+        var c = Math.cos( theta ), s = Math.sin( theta );
+        return [  1, 0, 0, 0,
+            0, c, - s, 0,
+            0, s, c, 0,
+            0, 0, 0, 1];
+    };
+    
+    function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
         let sceneNodeRotateX;
         let thisNodeId = objectId + 'rotateX';
         if (typeof sceneGraph[thisNodeId] !== 'undefined') {
@@ -343,12 +325,19 @@
         sceneNodeRotateX.setParent(sceneNodeObject);
         console.log('SceneGraph: added rotateX to object ' + objectId);
 
-        sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
-            1, 0, 0, 0,
-            0, -1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ]);
+        // image target objects require one coordinate system rotation. ground plane requires another.
+        if (groundPlaneVariation) {
+            sceneNodeRotateX.setLocalMatrix( makeGroundPlaneRotationX(-(Math.PI/2)) );
+        } else {
+            sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
+                1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ]);
+        }
+        
+        return sceneNodeRotateX;
     }
     
     function getNodeOrRotateXChild(sceneNode) {
@@ -715,6 +704,18 @@
         let positionRelativeToCamera = realityEditor.gui.ar.sceneGraph.getPositionRelativeToCamera(activeKey);
         // z axis faces opposite direction as expected so this distance is negative if in front, positive if behind
         return positionRelativeToCamera.z < 0;
+    };
+    
+    exports.attachToGroundPlane = function(objectKey, frameKey, nodeKey) {
+        let vehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
+        if (vehicle) {
+            vehicle.attachToGroundPlane = true;
+            let vehicleSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(vehicle.uuid);
+            if (groundPlaneNode && vehicleSceneNode) {
+                // using changeParent instead of setParent automatically adds to rotateX node inside groundPlane
+                vehicleSceneNode.changeParent(NAMES.GROUNDPLANE, false);
+            }
+        }
     };
 
     exports.SceneNode = SceneNode;
