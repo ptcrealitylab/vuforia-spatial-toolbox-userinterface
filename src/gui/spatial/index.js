@@ -144,6 +144,7 @@ realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix
 };
 
 realityEditor.gui.spatial.collectNodeList = function(_objMatrix, _objectID, _nodeID){
+    // TODO ben: re-implement with sceneGraph
     // console.log(objectID, objects[objectID].internalMatrix.object);
     /*
     for(let key in  objects[objectID].frames){

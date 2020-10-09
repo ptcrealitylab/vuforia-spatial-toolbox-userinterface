@@ -1366,56 +1366,11 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 }
                 
-                // if (typeof positionData.matrix !== "undefined" && positionData.matrix.length > 0) {
-                //     if (realityEditor.device.isEditingUnconstrained(activeVehicle) && !(activeVehicle === pocketFrame.vehicle || activeVehicle === pocketNode.vehicle)) {
-                //         utilities.multiplyMatrix(positionData.matrix, activeVehicle.temp, activeVehicle.begin);
-                //     }
-                //    
-                //     utilities.multiplyMatrix(activeVehicle.begin, utilities.invertMatrix(activeVehicle.temp), matrix.r);
-                //     utilities.multiplyMatrix(matrix.r3, matrix.r, matrix.r2);
-                //     utilities.drawMarkerPlaneIntersection(activeKey, matrix.r2, activeVehicle);
-                //    
-                //     // // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-                //     // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([activeVehicle.ar.x, activeVehicle.ar.y, 0, 1], matrix.r);
-                //     // activeVehicle.originCoordinates = {
-                //     //     x: projectedPoint[0],
-                //     //     y: projectedPoint[1],
-                //     //     z: projectedPoint[2]
-                //     // }
-                //    
-                // } else {
-                //     utilities.drawMarkerPlaneIntersection(activeKey, null, activeVehicle);
-                // }
-                
             }
-
-            // if (typeof positionData.matrix !== "undefined") {
-            //
-            //     if (isNaN(positionData.matrix[0])) {
-            //         positionData.matrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            //         console.warn('fixed NaN positionData matrix in drawTransformed');
-            //     }
-            //    
-            //     if (positionData.matrix.length < 13) {
-            //         // utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-            //
-            //         // if (parentFramePositionData && parentFramePositionData.matrix.length === 16) {
-            //         //     // This is a node - position relative to parent frame unconstrained editing
-            //         //     utilities.multiplyMatrix(parentFramePositionData.matrix, activeObjectMatrix, matrix.r);
-            //         //     utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-            //         // } else {
-            //             utilities.multiplyMatrix(matrix.r3, activeObjectMatrix, finalMatrix);
-            //         // }
-            //
-            //     } else {
-            //         utilities.multiplyMatrix(positionData.matrix, activeObjectMatrix, matrix.r);
-            //         utilities.multiplyMatrix(matrix.r3, matrix.r, finalMatrix);
-            //     }
-            // }
 
             // TODO ben: fix ground plane loyalty
             // if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
-            //    
+            //
             //     var rotatedGroundPlaneMatrix = [];
             //     var rotation3d = [
             //         1, 0, 0, 0,
@@ -1428,14 +1383,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             //     var translatedGroundPlaneMatrix = [];
             //     // utilities.multiplyMatrix(matrix.r3, realityEditor.gui.ar.draw.groundPlaneMatrix, translatedGroundPlaneMatrix);
             //     utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
-            //    
+            //
             //     var finalWithoutProjection = [];
             //     if (typeof positionData.matrix !== "undefined" && positionData.matrix.length === 16 && !isNaN(positionData.matrix[0])) {
             //         utilities.multiplyMatrix(positionData.matrix, translatedGroundPlaneMatrix, finalWithoutProjection);
             //     } else {
             //         finalWithoutProjection = translatedGroundPlaneMatrix;
             //     }
-            //    
+            //
             //     utilities.multiplyMatrix(finalWithoutProjection, this.globalStates.projectionMatrix, finalMatrix);
             // }
             
@@ -1579,16 +1534,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
                         thisMsg.groundPlaneMatrix = realityEditor.gui.ar.sceneGraph.getGroundPlaneModelViewMatrix();
-                        
-                      /*  if(this.visibleObjects.hasOwnProperty("WorldReferenceXXXXXXXXXXXX")) {
-                            this.matrix.worldReference = this.visibleObjects["WorldReferenceXXXXXXXXXXXX"];
-                            this.tempMatrix.grndpln =[];
-                            realityEditor.gui.ar.utilities.multiplyMatrix(this.rotateX, this.matrix.worldReference, this.tempMatrix.grndpln);
-                            realityEditor.gui.ar.utilities.multiplyMatrix( this.tempMatrix.grndpln, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
-
-                        } else {*/
-                           // realityEditor.gui.ar.utilities.multiplyMatrix(this.groundPlaneMatrix, this.correctedCameraMatrix, thisMsg.groundPlaneMatrix);
-                        //}
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
@@ -2359,6 +2304,15 @@ realityEditor.gui.ar.draw.doesAnythingUseGroundPlane = function() {
         var frame = realityEditor.getFrame(objectKey, frameKey);
         if (typeof frame.sendMatrices !== 'undefined') {
             if (frame.sendMatrices.groundPlane) {
+                isAnyFrameSubscribedToGroundPlane = true;
+            }
+        }
+        if (frame.attachToGroundPlane) { // future-proofing in case we use attachToGroundPlane on frames in the future
+            isAnyFrameSubscribedToGroundPlane = true;
+        }
+        for (let nodeKey in frame.nodes) {
+            let node = frame.nodes[nodeKey];
+            if (node.attachToGroundPlane) {
                 isAnyFrameSubscribedToGroundPlane = true;
             }
         }
