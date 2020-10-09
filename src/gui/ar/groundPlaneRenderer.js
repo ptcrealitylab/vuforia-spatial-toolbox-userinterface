@@ -38,6 +38,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             shouldVisualize = newValue;
             
             if (newValue) {
+                globalStates.useGroundPlane = true; // makes sure the groundPlane position gets recalculated
                 startVisualization();
             } else {
                 stopVisualization();
@@ -80,8 +81,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         }
         
         // create the DOM element that should visualize it and add it to the scene
-        let _element = getVisualizerElement();
-        document.getElementById('GUI').appendChild(globalDOMCache['offset' + elementId]);
+        let element = getVisualizerElement();
+        document.getElementById('GUI').appendChild(element);
         
         let origin = getOriginElement();
         document.getElementById('GUI').appendChild(origin);
@@ -141,9 +142,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             // create if it doesn't exist
             // first create a container with the width and height of the screen. then add to that
 
-            let offsetContainer = document.createElement('div');
-            offsetContainer.classList.add('main');
-            offsetContainer.id = 'offset' + elementId;
+            // let offsetContainer = document.createElement('div');
+            // offsetContainer.classList.add('main');
+            // offsetContainer.id = 'offset' + elementId;
             
             let anchorContainer = document.createElement('div');
             anchorContainer.id = elementId;
@@ -161,12 +162,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
             anchorContents.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
 
-            offsetContainer.appendChild(anchorContainer);
+            // offsetContainer.appendChild(anchorContainer);
             anchorContainer.appendChild(anchorContents);
 
             globalDOMCache[elementId] = anchorContainer;
             globalDOMCache['anchorContents' + elementId] = anchorContents;
-            globalDOMCache['offset' + elementId] = offsetContainer;
+            // globalDOMCache['offset' + elementId] = offsetContainer;
         }
 
         return globalDOMCache[elementId];
