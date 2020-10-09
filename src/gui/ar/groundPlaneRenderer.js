@@ -18,10 +18,15 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     let elementName = 'groundPlaneVisualization';
     let elementId = null;
     
+    let originName = 'groundPlaneOrigin';
+    let originId = originName;
+    
     let elementPositionData = {
         x: 0,
         y: 0
     };
+    
+    let centerPoint = new WebKitPoint(globalStates.height/2, globalStates.width/2);
     
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -39,30 +44,30 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             }
         });
 
-        // register callbacks to various buttons to perform commits
-        realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
-            if (params.newButtonState === 'up') {
-                // Do something when button pressed
-            }
-        });
-        
-
-        // only adds the render update listener for frame history ghosts after you enter editing mode for the first time
-        // saves resources when we don't use the service
-        realityEditor.device.registerCallback('setEditingMode', function(params) {
-            if (!isUpdateListenerRegistered && params.newEditingMode) {
-
-
-
-            }
-        });
+        // // register callbacks to various buttons to perform commits
+        // realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
+        //     if (params.newButtonState === 'up') {
+        //         // Do something when button pressed
+        //     }
+        // });
+        //
+        //
+        // // only adds the render update listener for frame history ghosts after you enter editing mode for the first time
+        // // saves resources when we don't use the service
+        // realityEditor.device.registerCallback('setEditingMode', function(params) {
+        //     if (!isUpdateListenerRegistered && params.newEditingMode) {
+        //
+        //
+        //
+        //     }
+        // });
     }
     
     function startVisualization() {
         // add a scene node to the groundPlane's rotateX sceneGraph node
         if (!realityEditor.gui.ar.sceneGraph.getVisualElement(elementName)) {
             let groundPlaneSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('GROUNDPLANE');
-            
+
             // Ground plane must exist.. if it doesn't reschedule this to happen later
             if (!groundPlaneSceneNode) {
                 setTimeout(function() {
@@ -75,8 +80,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         }
         
         // create the DOM element that should visualize it and add it to the scene
-        let element = getVisualizerElement();
-        document.getElementById('GUI').appendChild(element);
+        let _element = getVisualizerElement();
+        document.getElementById('GUI').appendChild(globalDOMCache['offset' + elementId]);
+        
+        let origin = getOriginElement();
+        document.getElementById('GUI').appendChild(origin);
         
         // add/activate the update loop
         if (!isUpdateListenerRegistered) {
@@ -101,8 +109,27 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         
         // move the visualizer element to the resulting (x,y)
         
-        let finalMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(elementId);
-        finalMatrix[14] = 10; // send to back
+        // this gets used for the origin and the moving visualizer
+        let untransformedMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(elementId);
+        
+        let origin = getOriginElement();
+        untransformedMatrix[14] = 10;
+        origin.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
+        
+        // use the origin DOM element to convert the screen coordinate to the coordinate system of the plane
+        elementPositionData = webkitConvertPointFromPageToNode(origin, centerPoint);
+
+        let transform = [1, 0, 0, 0,
+                         0, 1, 0, 0,
+                         0, 0, 1, 0,
+                         elementPositionData.x, elementPositionData.y, 0, 1];
+        
+        let finalMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(transform, untransformedMatrix, finalMatrix);
+        
+        // finalMatrix[14] = 10; // send to back
+        
+        
         let element = getVisualizerElement();
         element.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
     }
@@ -114,6 +141,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             // create if it doesn't exist
             // first create a container with the width and height of the screen. then add to that
 
+            let offsetContainer = document.createElement('div');
+            offsetContainer.classList.add('main');
+            offsetContainer.id = 'offset' + elementId;
+            
             let anchorContainer = document.createElement('div');
             anchorContainer.id = elementId;
             anchorContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
@@ -130,13 +161,45 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
             anchorContents.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
 
+            offsetContainer.appendChild(anchorContainer);
             anchorContainer.appendChild(anchorContents);
 
             globalDOMCache[elementId] = anchorContainer;
             globalDOMCache['anchorContents' + elementId] = anchorContents;
+            globalDOMCache['offset' + elementId] = offsetContainer;
         }
-        
+
         return globalDOMCache[elementId];
+    }
+
+    function getOriginElement() {
+        if (!globalDOMCache[originId]) {
+            // create if it doesn't exist
+            // first create a container with the width and height of the screen. then add to that
+
+            let anchorContainer = document.createElement('div');
+            anchorContainer.id = originId;
+            anchorContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
+            // IMPORTANT NOTE: the container size MUST be the size of the screen for the 3d math to work
+            // This is the same size as the containers that frames get added to.
+            // If size differs, rendering will be inconsistent between frames and anchors.
+            anchorContainer.style.width = globalStates.height + 'px';
+            anchorContainer.style.height = globalStates.width + 'px';
+
+            // the contents are a different size than the screen, so we add another div and center it
+            let anchorContents = document.createElement('div');
+            anchorContents.id = 'anchorContents' + elementId;
+            anchorContents.classList.add('groundPlaneOrigin', 'usePointerEvents');
+            anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
+            anchorContents.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
+
+            anchorContainer.appendChild(anchorContents);
+
+            globalDOMCache[originId] = anchorContainer;
+            globalDOMCache['anchorContents' + originId] = anchorContents;
+        }
+
+        return globalDOMCache[originId];
     }
 
     exports.initService = initService;
