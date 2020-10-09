@@ -77,6 +77,7 @@ var realityEditor = realityEditor || {
             anchors: {},
             draw: {},
             frameHistoryRenderer: {},
+            groundPlaneRenderer: {},
             grouping: {},
             lines: {},
             moveabilityOverlay: {},
