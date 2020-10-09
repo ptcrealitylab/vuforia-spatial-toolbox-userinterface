@@ -1270,8 +1270,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 this.addPocketVehicle(pocketFrame);
             }
             
-            // TODO: move this around to other location so that translations get applied in different order as compared to parent frame matrix composition
-            
             // TODO ben: make children sceneNodes inhering parent sceneNodes' x,y,scale?
             // add node's position to its frame's position to gets its actual offset
             // if (activeType !== "ui" && activeType !== "logic") {
@@ -1367,32 +1365,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 }
                 
             }
-
-            // TODO ben: fix ground plane loyalty
-            // if (typeof activeVehicle.attachToGroundPlane !== 'undefined') {
-            //
-            //     var rotatedGroundPlaneMatrix = [];
-            //     var rotation3d = [
-            //         1, 0, 0, 0,
-            //         0, 0, 1, 0,
-            //         0, 1, 0, 0,
-            //         0, 0, 0, 1
-            //     ];
-            //     realityEditor.gui.ar.utilities.multiplyMatrix(rotation3d, realityEditor.gui.ar.draw.groundPlaneMatrix, rotatedGroundPlaneMatrix);
-            //
-            //     var translatedGroundPlaneMatrix = [];
-            //     // utilities.multiplyMatrix(matrix.r3, realityEditor.gui.ar.draw.groundPlaneMatrix, translatedGroundPlaneMatrix);
-            //     utilities.multiplyMatrix(matrix.r3, rotatedGroundPlaneMatrix, translatedGroundPlaneMatrix);
-            //
-            //     var finalWithoutProjection = [];
-            //     if (typeof positionData.matrix !== "undefined" && positionData.matrix.length === 16 && !isNaN(positionData.matrix[0])) {
-            //         utilities.multiplyMatrix(positionData.matrix, translatedGroundPlaneMatrix, finalWithoutProjection);
-            //     } else {
-            //         finalWithoutProjection = translatedGroundPlaneMatrix;
-            //     }
-            //
-            //     utilities.multiplyMatrix(finalWithoutProjection, this.globalStates.projectionMatrix, finalMatrix);
-            // }
             
             // TODO ben: add in animation matrix
             // multiply in the animation matrix if you are editing this frame in unconstrained mode.
