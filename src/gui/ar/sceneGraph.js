@@ -32,6 +32,8 @@
     let numFrameCSSComputations = 0;
     let numNodeCSSComputations = 0;
     
+    let visualElements = {};
+    
     // TODO ben: use this enum in other modules instead of having any string names
     const NAMES = Object.freeze({
         ROOT: 'ROOT',
@@ -155,7 +157,6 @@
         }
         
         this.anythingInSubtreeNeedsRecompute = false;
-
     };
 
     SceneNode.prototype.setLocalMatrix = function(matrix) {
@@ -404,6 +405,7 @@
     };
 
     exports.setCameraPosition = function(cameraMatrix) {
+        if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix);
     };
     
@@ -431,12 +433,23 @@
     exports.getSceneNodeById = getSceneNodeById;
     
     const recomputeScene = function() {
-        rootNode.updateWorldMatrix(); // todo: if only camera is dirty, don't recompute this
-        cameraNode.updateWorldMatrix();
+        if (rootNode) {
+            rootNode.updateWorldMatrix();
+        }
+        if (cameraNode) {
+            cameraNode.updateWorldMatrix();
+        }
         
-        // update separately unless it has become a child of a world object
-        if (groundPlaneNode && !groundPlaneNode.parent) {
+        // this might become a child of a world object but still safe to call update multiple times
+        if (groundPlaneNode) {
             groundPlaneNode.updateWorldMatrix();
+        }
+        
+        // just in case, iterate over all miscellaneous visual elements (they are ignored if they've already been
+        // processed by one of the recursive calls above because .needsRecompute gets reset
+        for (let elementId in visualElements) {
+            let visualElementNode = visualElements[elementId];
+            visualElementNode.updateWorldMatrix();
         }
     };
     exports.recomputeScene = recomputeScene;
@@ -454,7 +467,7 @@
         
         const didCameraUpdate = cameraNode.needsRerender;
 
-        // update ground plane
+        // update ground plane first, in case frames/nodes/etc are relative to it
         if (didCameraUpdate || groundPlaneNode.needsRerender) {
             relativeToCamera[NAMES.GROUNDPLANE] = groundPlaneNode.getMatrixRelativeTo(cameraNode);
             groundPlaneNode.needsRerender = false;
@@ -567,6 +580,17 @@
 
             objectSceneNode.anythingInSubtreeNeedsRerender = false;
         });
+
+        // process additional visual elements at the end, in case they are relative to groundPlane/frames/nodes
+        for (let elementId in visualElements) {
+            let miscellaneousElementNode = visualElements[elementId];
+            if (didCameraUpdate || miscellaneousElementNode.needsRerender) {
+                relativeToCamera[elementId] = miscellaneousElementNode.getMatrixRelativeTo(cameraNode);
+                finalCSSMatrices[elementId] = [];
+                utils.multiplyMatrix(relativeToCamera[elementId], globalStates.projectionMatrix, finalCSSMatrices[elementId]);
+                miscellaneousElementNode.needsRerender = false;
+            }
+        }
         
         cameraNode.needsRerender = false;
     };
@@ -716,6 +740,41 @@
                 vehicleSceneNode.changeParent(NAMES.GROUNDPLANE, false);
             }
         }
+    };
+    
+    // a helper function for adding generic/miscellaneous elements to the sceneGraph that will be used for 3D UI
+    exports.addVisualElement = function(elementName, optionalParent, linkedDataObject, initialLocalMatrix) {
+        let nodeId = elementName + '_VISUAL_ELEMENT'; // help prevent naming collisions
+        
+        let sceneNode;
+        if (typeof sceneGraph[nodeId] !== 'undefined') {
+            console.warn('trying to add duplicate visual element to scene graph');
+            sceneNode = sceneGraph[nodeId];
+        } else {
+            sceneNode = new SceneNode(nodeId);
+            sceneGraph[nodeId] = sceneNode;
+            visualElements[nodeId] = sceneNode;
+        }
+        
+        if (typeof optionalParent !== 'undefined') {
+            // sceneNode.setParent(optionalParent);
+            sceneNode.changeParent(optionalParent.id);
+        }
+
+        if (typeof initialLocalMatrix !== 'undefined') {
+            sceneNode.setLocalMatrix(initialLocalMatrix);
+        }
+        
+        if (typeof linkedObject !== 'undefined') {
+            sceneNode.linkedVehicle = linkedDataObject;
+        }
+        
+        return nodeId;
+    };
+    
+    exports.getVisualElement = function(elementName) {
+        let nodeId = elementName + '_VISUAL_ELEMENT';
+        return getSceneNodeById(nodeId);
     };
 
     exports.SceneNode = SceneNode;
