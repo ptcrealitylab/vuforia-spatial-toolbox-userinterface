@@ -1226,7 +1226,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }
 
-        globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane();
+        let isGroundPlaneVisualizerEnabled = realityEditor.gui.settings.toggleStates.visualizeGroundPlane;
+        globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane() || isGroundPlaneVisualizerEnabled;
         realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
     }
 
