@@ -89,6 +89,7 @@ createNameSpace("realityEditor.gui.menus");
         halflock:{},
         unlock:{},
         record: {},
+        groundPlaneReset: {},
         // reality UI
         realityGui : {},
         realityInfo : {},
@@ -107,6 +108,7 @@ createNameSpace("realityEditor.gui.menus");
         logic: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
         gui: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
         setting: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
+        groundPlane: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", groundPlaneReset: "blue"},
         editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", commit: "blue", reset: "blue", unconstrained: "blue", distance: "blue"},
         crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
         bigTrash: {bigTrash: "red", distanceGreen: "green"},
@@ -378,6 +380,7 @@ createNameSpace("realityEditor.gui.menus");
                     } else {
                         realityEditor.device.setEditingMode(false);
                         switchToMenu("main", null, null);
+                        // TODO: ben switch to groundplane if necessary
                     }
 
                 }, 200);
@@ -420,6 +423,8 @@ createNameSpace("realityEditor.gui.menus");
                     if (globalStates.editingMode) {
                         switchToMenu("editing", null, null);
                     }
+                    // TODO: ben switch to groundplane if necessary
+
                 }
                 else {
                     realityEditor.gui.settings.showSettings();

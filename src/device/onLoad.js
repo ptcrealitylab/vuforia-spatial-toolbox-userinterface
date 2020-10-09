@@ -165,6 +165,19 @@ realityEditor.device.onload = function () {
         }
     }).moveToDevelopMenu();
 
+    // set up the global canvas for drawing the links
+    globalCanvas.canvas = document.getElementById('canvas');
+    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
+    globalCanvas.canvas.height = globalStates.width;
+    globalCanvas.context = globalCanvas.canvas.getContext('2d');
+
+    // adds touch handlers for each of the menu buttons
+    realityEditor.gui.menus.init();
+    
+    // set active buttons and preload some images
+    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
+    realityEditor.gui.buttons.initButtons();
+    
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -192,19 +205,12 @@ realityEditor.device.onload = function () {
 
     // assign global pointers to frequently used UI elements
     overlayDiv = document.getElementById('overlay');
-
-    // adds touch handlers for each of the menu buttons
-    realityEditor.gui.menus.init();
     
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;
     var menuHeightDifference = globalStates.width - MENU_HEIGHT;
     document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
     CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
-
-    // set active buttons and preload some images
-    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
-	realityEditor.gui.buttons.initButtons();
 	
 	// set up the pocket and memory bars
     if (!TEMP_DISABLE_MEMORIES) {
@@ -215,12 +221,6 @@ realityEditor.device.onload = function () {
     }
 	realityEditor.gui.memory.nodeMemories.initMemoryBar();
 	realityEditor.gui.pocket.pocketInit();
-
-	// set up the global canvas for drawing the links
-	globalCanvas.canvas = document.getElementById('canvas');
-    globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
-    globalCanvas.canvas.height = globalStates.width;
-	globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
     // add a callback for messages posted up to the application from children iframes
 	window.addEventListener("message", realityEditor.network.onInternalPostMessage.bind(realityEditor.network), false);

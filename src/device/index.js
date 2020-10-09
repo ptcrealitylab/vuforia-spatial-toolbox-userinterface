@@ -1063,7 +1063,12 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     
     // if not in crafting board, reset menu back to main
     if (globalStates.guiState !== "logic" && this.currentScreenTouches.length === 1) {
-        realityEditor.gui.menus.switchToMenu("main");
+        var didDisplayGroundplane = realityEditor.gui.settings.toggleStates.visualizeGroundPlane;
+        if (didDisplayGroundplane) {
+            realityEditor.gui.menus.switchToMenu('groundPlane');
+        } else {
+            realityEditor.gui.menus.switchToMenu('main');
+        }
     }
 
     // clear the memory being saved in the touch overlay
@@ -1410,7 +1415,12 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         // realityEditor.gui.menus.buttonOn([]);
         var didDisplayCrafting = globalStates.currentLogic; // proxy to determine if crafting board is open / we shouldn't reset the menu
         if (!didDisplayCrafting) {
-            realityEditor.gui.menus.switchToMenu("main");
+            var didDisplayGroundplane = realityEditor.gui.settings.toggleStates.visualizeGroundPlane;
+            if (didDisplayGroundplane) {
+                realityEditor.gui.menus.switchToMenu('groundPlane');
+            } else {
+                realityEditor.gui.menus.switchToMenu('main');
+            }
         }
     }
     

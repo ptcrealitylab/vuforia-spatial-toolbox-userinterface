@@ -297,6 +297,23 @@
     visibility: hidden;
     z-index: 20;
 }
+#groundPlaneResetButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 130px;
+    top: 0px;
+    visibility: hidden;
+}
+#groundPlaneResetButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 130px;
+    top: 0px;
+    visibility: hidden;
+    z-index: 20;
+}
 
 #bigTrashButton {
     position: fixed;
