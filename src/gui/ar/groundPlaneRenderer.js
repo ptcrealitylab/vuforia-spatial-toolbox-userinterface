@@ -40,8 +40,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             if (newValue) {
                 globalStates.useGroundPlane = true; // makes sure the groundPlane position gets recalculated
                 startVisualization();
+                realityEditor.gui.menus.switchToMenu('groundPlane');
             } else {
                 stopVisualization();
+                realityEditor.gui.menus.switchToMenu('main');
             }
         });
 
@@ -135,7 +137,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         element.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
     }
 
-    const anchorContentSize = 300;
+    const anchorContentSize = 100;
 
     function getVisualizerElement() {
         if (!globalDOMCache[elementId]) {
@@ -156,7 +158,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             anchorContainer.style.height = globalStates.width + 'px';
 
             // the contents are a different size than the screen, so we add another div and center it
-            let anchorContents = document.createElement('div');
+            let anchorContents = document.createElement('img');
+            anchorContents.src = '../../../svg/groundplane-corners.svg';
             anchorContents.id = 'anchorContents' + elementId;
             anchorContents.classList.add('groundPlaneVisualizer', 'usePointerEvents');
             anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
@@ -188,7 +191,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             anchorContainer.style.height = globalStates.width + 'px';
 
             // the contents are a different size than the screen, so we add another div and center it
-            let anchorContents = document.createElement('div');
+            let anchorContents = document.createElement('img');
+            anchorContents.src = '../../../svg/groundplane-crosshair.svg';
             anchorContents.id = 'anchorContents' + elementId;
             anchorContents.classList.add('groundPlaneOrigin', 'usePointerEvents');
             anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
