@@ -97,7 +97,13 @@ createNameSpace('realityEditor.app.callbacks');
         if (hasActiveGroundPlaneStream) { return; } // don't do this unnecessarily because it takes a lot of resources
         if (!globalStates.useGroundPlane) { return; }
 
+        console.log('getGroundPlaneMatrixStream');
         realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
+        
+        // automatically stop after 1 second
+        setTimeout(function() {
+            realityEditor.app.acceptGroundPlaneAndStop();
+        }, 1000);
     }
 
     /**
@@ -347,6 +353,8 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} groundPlaneMatrix
      */
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
+        console.log('receiveGroundPlaneMatricesFromAR');
+        
         // only update groundPlane if unfrozen and at least one thing is has requested groundPlane usage
         if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
             
