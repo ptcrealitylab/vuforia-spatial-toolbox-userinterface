@@ -48,22 +48,18 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         });
 
         // // register callbacks to various buttons to perform commits
-        // realityEditor.gui.buttons.registerCallbackForButton('reset', function(params) {
-        //     if (params.newButtonState === 'up') {
-        //         // Do something when button pressed
-        //     }
-        // });
-        //
-        //
-        // // only adds the render update listener for frame history ghosts after you enter editing mode for the first time
-        // // saves resources when we don't use the service
-        // realityEditor.device.registerCallback('setEditingMode', function(params) {
-        //     if (!isUpdateListenerRegistered && params.newEditingMode) {
-        //
-        //
-        //
-        //     }
-        // });
+        realityEditor.gui.buttons.registerCallbackForButton('groundPlaneReset', function(params) {
+            if (params.newButtonState === 'down') {
+                // search for groundplane when button is pressed
+                realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
+            }
+        });
+        
+        // when the app loads, check once if it needs groundPlane and start up the tracker if so
+        // TODO: wait until camera moves enough before trying to detect groundplane or it goes to origin
+        setTimeout(function() {
+            realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
+        }, 1000);
     }
     
     function startVisualization() {
@@ -99,6 +95,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     
     function stopVisualization() {
         let element = getVisualizerElement();
+        if (element && element.parentNode) {
+            element.parentNode.removeChild(element);
+        }
+        element = getOriginElement();
         if (element && element.parentNode) {
             element.parentNode.removeChild(element);
         }

@@ -131,6 +131,15 @@ realityEditor.app.getGroundPlaneMatrixStream = function(callBack) {
 };
 
 /**
+ * Call this some time after getGroundPlaneMatrixStream to stop actively searching for new ground planes, and use
+ * the most recently detected ground plane location as a static anchor that will represent ground plane (until
+ * getGroundPlaneMatrixStream is called again)
+ */
+realityEditor.app.acceptGroundPlaneAndStop = function() {
+    this.appFunctionCall('acceptGroundPlaneAndStop', null, null);
+};
+
+/**
  * Gets a screenshot image of the camera background.
  * The callback will have a screenshot with base64. Size can be S,M,L
  * @param {string} size - 'S' (25%), 'M' (50%), or 'L' (full size)
