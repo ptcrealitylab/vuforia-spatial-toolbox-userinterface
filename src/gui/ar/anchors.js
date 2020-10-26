@@ -95,6 +95,13 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // (relative to the world) to get the final position to render the anchor at
             finalAnchorMatrices[objectKey] = calculateFinalMatrix(objectKey);
 
+            let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+            if (sceneNode) {
+                let worldObjectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(bestWorldObject.objectId);
+                sceneNode.setParent(worldObjectSceneNode);
+                sceneNode.setLocalMatrix(objectMatrix);
+            }
+
             // only adds this object to visibleObjects if the position is within the camera's
             // cone of view and close enough to the camera
             if (shouldAddToVisibleObjects(objectKey)) {
@@ -112,7 +119,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
      * @return {boolean}
      */
     function shouldAddToVisibleObjects(objectKey) {
-        let isOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalAnchorMatrices[objectKey], anchorContentSize/2, anchorContentSize/2);
+        let isOutsideViewport = false; //realityEditor.gui.ar.positioning.canUnload(objectKey,
+            // finalAnchorMatrices[objectKey], anchorContentSize/2, anchorContentSize/2);
         let distanceToCamera = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
 
         if (fullscreenAnchor === objectKey) {
@@ -177,7 +185,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
             // create the DOM element and render with the correct transformation
             if (!globalDOMCache['anchor' + objectKey]) {
-                createAnchorElement(objectKey);
+                createAnchorElement(objectKey); // creates DOM and adds to sceneGraph
             }
 
             // render it fullscreen and skip 3d rendering early if it is being "carried"
@@ -192,16 +200,21 @@ createNameSpace("realityEditor.gui.ar.anchors");
             }
 
             // retrieve final value computed in pre-processing step
-            let finalMatrix = finalAnchorMatrices[objectKey];
+            // let finalMatrix = finalAnchorMatrices[objectKey];
+            
+            let visualElementNode = realityEditor.gui.ar.sceneGraph.getVisualElement('anchor' + objectKey);
+            let finalMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(visualElementNode.id);
 
             let activeElt = globalDOMCache['anchor' + objectKey];
 
-            if (!anchorsOutsideOfViewport[objectKey]) {
+            // TODO ben: re-enable showing/hiding based on distance and isOutsideViewport
+            // if (!anchorsOutsideOfViewport[objectKey]) {
                 activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
-            } else {
-                hideAnchorElementIfNeeded(objectKey); // hide if it was outside last frame
-            }
+            // } else {
+            //     hideAnchorElementIfNeeded(objectKey); // hide if it was outside last frame
+            // }
 
+            /*
             // hide if it is outside the viewport or too far away
             let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
             let distanceToCamera =  realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
@@ -216,6 +229,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
                     activeElt.classList.remove('outsideOfViewport');
                 }
             }
+            */
         }
     }
 
@@ -304,7 +318,19 @@ createNameSpace("realityEditor.gui.ar.anchors");
         anchorContents.addEventListener('pointerup', function(_e) {
             onAnchorTapped(objectKey);
         });
+
+        // add a scene node to the groundPlane's rotateX sceneGraph node
+        let objectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+        realityEditor.gui.ar.sceneGraph.addVisualElement(anchorContainer.id, objectSceneNode, undefined, makeGroundPlaneRotationZ(Math.PI));
     }
+
+    var makeGroundPlaneRotationZ =  function ( theta ) {
+        var c = Math.cos( theta ), s = Math.sin( theta );
+        return [  c, -s, 0, 0,
+            s, c, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1];
+    };
 
     /**
      * Toggle between fullscreen and 3d modes when an anchor is tapped
@@ -319,20 +345,21 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // tapping on the fullscreen anchor requires more calculations to drop the anchor at the
             // phone's exact position, because we need to calculate that position relative to world
             if (fullscreenAnchor === objectKey) {
-                let worldModelView = getWorldModelViewMatrix();
-                let inverseWorld = utilities.invertMatrix(worldModelView);
+                // let worldModelView = getWorldModelViewMatrix();
+                // let inverseWorld = utilities.invertMatrix(worldModelView);
+                //
+                // // flip it so it faces towards the camera instead of away from the camera
+                // let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(Math.PI, Math.PI, 0);
+                // let rotationMatrix = utilities.getMatrixFromQuaternion(q);
+                // let finalMatrix = [];
+                // utilities.multiplyMatrix(rotationMatrix, inverseWorld, finalMatrix);
                 
-                // flip it so it faces towards the camera instead of away from the camera
-                let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(Math.PI, Math.PI, 0);
-                let rotationMatrix = utilities.getMatrixFromQuaternion(q);
-                let finalMatrix = [];
-                utilities.multiplyMatrix(rotationMatrix, inverseWorld, finalMatrix);
+                // let anchorObjectNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+                realityEditor.gui.ar.sceneGraph.moveSceneNodeToCamera(objectKey, false);
 
                 // store the new relative position of the anchor to the world
                 let anchorObject = realityEditor.getObject(objectKey);
-                anchorObject.matrix = finalMatrix;
-
-                realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey).setLocalMatrix(finalMatrix);
+                anchorObject.matrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey).localMatrix;
 
                 // upload to the server for persistence
                 realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix);
