@@ -81,6 +81,29 @@ realityEditor.gui.spatial.checkState = function() {
     }
 }
 
+realityEditor.gui.spatial.compileSpatialLists = function() {
+    if(!realityEditor.gui.spatial.spatialOn) return;
+
+    let cameraSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+    
+    for (let ip in globalStates.spatial.whereIs) {
+        for (let key in globalStates.spatial.whereIs[ip]) {
+            // this.loadObjectAndTool(this, globalStates.spatial.whereIs[ip][key], this.whereIsList, key, modelMatrix,objectID)
+            
+            // try to get the ModelView matrix of this entity
+            let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(key);
+            if (sceneNode) {
+                this.whereIsList[key] = {
+                    'key': key,
+                    'matrix': sceneNode.getMatrixRelativeTo(cameraSceneNode)
+                };
+            }
+            
+        }
+    }
+
+};
+
 realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix, objMatrix, objectID){
     if(!realityEditor.gui.spatial.spatialOn) return;
     
