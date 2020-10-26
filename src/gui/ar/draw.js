@@ -358,6 +358,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // so each frame, we just need to recompute everything's worldMatrix if their localMatrix changed
     realityEditor.gui.ar.sceneGraph.calculateFinalMatrices(Object.keys(visibleObjects));
     
+    realityEditor.gui.spatial.compileSpatialLists();
+    
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
        // if (!objects.hasOwnProperty(objectKey)) { continue; }
@@ -1411,8 +1413,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             activeVehicle.mostRecentFinalMatrix = finalMatrix;
             activeVehicle.originMatrix = activeObjectMatrix;
 
-            if(globalStates.guiState === 'node')
-            realityEditor.gui.spatial.collectNodeList(finalMatrix, activeVehicle.objectId, activeKey);
+            // if(globalStates.guiState === 'node')
+            // realityEditor.gui.spatial.collectNodeList(finalMatrix, activeVehicle.objectId, activeKey);
             
             // draw transformed
             if (activeVehicle.fullScreen !== true && activeVehicle.fullScreen !== 'sticky') {
