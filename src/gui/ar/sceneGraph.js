@@ -306,9 +306,9 @@
     var makeGroundPlaneRotationX =  function ( theta ) {
         var c = Math.cos( theta ), s = Math.sin( theta );
         return [  1, 0, 0, 0,
-            0, c, - s, 0,
-            0, s, c, 0,
-            0, 0, 0, 1];
+                  0, c, -s, 0,
+                  0, s, c, 0,
+                  0, 0, 0, 1];
     };
     
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
@@ -678,6 +678,11 @@
     
     exports.getPositionRelativeToCamera = function(activeKey) {
         let relativePosition = relativeToCamera[activeKey];
+        if (!relativePosition) {
+            let objectSceneNode = getSceneNodeById(activeKey); // todo: error handle
+            relativeToCamera[activeKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+            relativePosition = relativeToCamera[activeKey];
+        }
         return {
             x: relativePosition[12]/relativePosition[15],
             y: relativePosition[13]/relativePosition[15],
