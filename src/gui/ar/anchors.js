@@ -12,8 +12,6 @@ createNameSpace("realityEditor.gui.ar.anchors");
     const anchorContentSize = 300;
     const anchorDistanceThreshold = 2000; // disappear if further away than 2 meters
     let anchorsOutsideOfViewport = {};
-    let modelViewMatrices = {};
-    let finalAnchorMatrices = {};
 
     function initService() {
         realityEditor.gui.ar.draw.addVisibleObjectModifier(modifyVisibleObjects);
@@ -81,19 +79,6 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // e.g. if object.matrix is identity, its visibleObjects matrix should be equal to
             // the visibleObjects matrix of its world
             let objectMatrix = realityEditor.getObject(objectKey).matrix || utilities.newIdentityMatrix();
-            let visibleObjectMatrix = [];
-            let worldModelMatrix = realityEditor.worldObjects.getOrigin(bestWorldObject.uuid); // closest world
-            utilities.multiplyMatrix(objectMatrix, worldModelMatrix, visibleObjectMatrix);
-
-            // pre-compute matrices that will be used in multiple places per update
-
-            // modelViewMatrix multiples visibleObjectMatrix (the model matrix) by the camera
-            // (view) matrix. This gets used to calculate the distance from camera to object
-            modelViewMatrices[objectKey] = calculateModelViewMatrix(visibleObjectMatrix);
-
-            // finalMatrix multiplies the world modelViewProjection matrix by the object matrix
-            // (relative to the world) to get the final position to render the anchor at
-            finalAnchorMatrices[objectKey] = calculateFinalMatrix(objectKey);
 
             let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
             if (sceneNode) {
@@ -105,7 +90,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // only adds this object to visibleObjects if the position is within the camera's
             // cone of view and close enough to the camera
             if (shouldAddToVisibleObjects(objectKey)) {
-                visibleObjects[objectKey] = visibleObjectMatrix;
+                visibleObjects[objectKey] = objectMatrix;
             } else {
                 hideAnchorElementIfNeeded(objectKey);
             }
@@ -119,6 +104,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
      * @return {boolean}
      */
     function shouldAddToVisibleObjects(objectKey) {
+        // TODO ben: reimplement with canUnload
         let isOutsideViewport = false; //realityEditor.gui.ar.positioning.canUnload(objectKey,
             // finalAnchorMatrices[objectKey], anchorContentSize/2, anchorContentSize/2);
         let distanceToCamera = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
@@ -128,50 +114,6 @@ createNameSpace("realityEditor.gui.ar.anchors");
         }
 
         return !isOutsideViewport && (distanceToCamera < getAnchorDistanceThreshold(objectKey));
-    }
-
-    /**
-     * Multiplies the visibleObject (model) matrix by the camera (view) matrix
-     * @param visibleObjectMatrix
-     * @return {Array.<number>}
-     */
-    function calculateModelViewMatrix(visibleObjectMatrix) {
-        let activeObjectMatrix = [];
-        let modelViewMatrix = [];
-        utilities.multiplyMatrix(rotateX, visibleObjectMatrix, activeObjectMatrix);
-        utilities.multiplyMatrix(activeObjectMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, modelViewMatrix);
-        return modelViewMatrix;
-    }
-
-    /**
-     * Multiplies the world's modelViewProjection matrix by the object.matrix to get the
-     * modelViewProjection matrix of the object, which can be given to its CSS 3D transform
-     * @param objectKey
-     * @return {Array.<number>}
-     */
-    function calculateFinalMatrix(objectKey) {
-        let worldModelView = getWorldModelViewMatrix();
-        let worldModelViewProjection = [];
-        utilities.multiplyMatrix(worldModelView, globalStates.projectionMatrix, worldModelViewProjection);
-
-        let anchorObject = realityEditor.getObject(objectKey);
-        let transformedAnchorMatrix = [];
-
-        let scale = 0.5; // we can adjust how big it looks using this. empirically determined.
-        let transform = [
-            scale, 0, 0, 0,
-            0, scale, 0, 0,
-            0, 0, scale, 0,
-            0, 0, 0, 1
-        ];
-        utilities.multiplyMatrix(transform, anchorObject.matrix, transformedAnchorMatrix);
-
-        // multiply the final position of the world by the position of the anchor relative
-        // to the world to calculate its final 3d transformation
-        let finalMatrix = [];
-        utilities.multiplyMatrix(transformedAnchorMatrix, worldModelViewProjection, finalMatrix);
-
-        return finalMatrix;
     }
 
     /**
@@ -208,17 +150,17 @@ createNameSpace("realityEditor.gui.ar.anchors");
             let activeElt = globalDOMCache['anchor' + objectKey];
 
             // TODO ben: re-enable showing/hiding based on distance and isOutsideViewport
-            // if (!anchorsOutsideOfViewport[objectKey]) {
+            if (!anchorsOutsideOfViewport[objectKey]) {
                 activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
-            // } else {
-            //     hideAnchorElementIfNeeded(objectKey); // hide if it was outside last frame
-            // }
+            } else {
+                hideAnchorElementIfNeeded(objectKey); // hide if it was outside last frame
+            }
 
-            /*
+            
             // hide if it is outside the viewport or too far away
-            let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
+            // let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
             let distanceToCamera =  realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
-            isNowOutsideViewport = isNowOutsideViewport || (distanceToCamera > getAnchorDistanceThreshold(objectKey));
+            let isNowOutsideViewport = /*isNowOutsideViewport ||*/ (distanceToCamera > getAnchorDistanceThreshold(objectKey));
 
             if (isNowOutsideViewport) {
                 hideAnchorElementIfNeeded(objectKey); // hide if newly outside this frame
@@ -229,7 +171,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
                     activeElt.classList.remove('outsideOfViewport');
                 }
             }
-            */
+            
         }
     }
 
@@ -270,20 +212,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             activeElt.classList.add('outsideOfViewport');
         }
     }
-
-    /**
-     * Gets the model view matrix of the closest world by multiplying its origin by the camera view
-     * @return {Array.<number>}
-     */
-    function getWorldModelViewMatrix() {
-        let closestWorld = realityEditor.worldObjects.getBestWorldObject();
-        if (!closestWorld) { return realityEditor.gui.ar.utilities.newIdentityMatrix(); }
-        let worldModelMatrix = realityEditor.worldObjects.getOrigin(closestWorld.uuid);
-        let modelViewMatrix = [];
-        utilities.multiplyMatrix(worldModelMatrix, realityEditor.gui.ar.draw.correctedCameraMatrix, modelViewMatrix);
-        return modelViewMatrix;
-    }
-
+    
     /**
      * Creates a DOM element for the given object.
      * Element must be constructed in a certain way to render correctly in 3d space.
@@ -321,7 +250,16 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
         // add a scene node to the groundPlane's rotateX sceneGraph node
         let objectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
-        realityEditor.gui.ar.sceneGraph.addVisualElement(anchorContainer.id, objectSceneNode, undefined, makeGroundPlaneRotationZ(Math.PI));
+        let elementMatrix = [];
+        let scale = 0.5;
+        let transform = [
+            scale, 0, 0, 0,
+            0, scale, 0, 0,
+            0, 0, scale, 0,
+            0, 0, 0, 1
+        ];
+        utilities.multiplyMatrix(transform, makeGroundPlaneRotationZ(Math.PI), elementMatrix);
+        realityEditor.gui.ar.sceneGraph.addVisualElement(anchorContainer.id, objectSceneNode, undefined, elementMatrix);
     }
 
     var makeGroundPlaneRotationZ =  function ( theta ) {
@@ -382,7 +320,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
      *  least onc
      */
     function updateAnchorGraphics(objectKey, forceCreation) {
-        let element = globalDOMCache['anchorContents' + objectKey];
+        let element = globalDOMCache['anchorContents' + objectKey]; // TODO ben: why is this sometimes null?
         if (fullscreenAnchor === objectKey && (!element.classList.contains('anchorContentsFullscreen') || forceCreation)) {
 
             // first, hide the sidebar buttons
@@ -517,6 +455,12 @@ createNameSpace("realityEditor.gui.ar.anchors");
         fullscreenAnchor = objectKey;
         // update the HTML of the anchor based on whether it is now fullscreen or not
         updateAnchorGraphics(objectKey);
+        
+        // make sure it doesn't get stuck with isOutsideViewport invisibility
+        if (anchorsOutsideOfViewport[objectKey]) {
+            delete anchorsOutsideOfViewport[objectKey];
+            globalDOMCache['anchor' + objectKey].classList.remove('outsideOfViewport');
+        }
     }
 
     // TODO: associate each anchor with a world, and only return true if that particular world has been seen
