@@ -358,7 +358,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // so each frame, we just need to recompute everything's worldMatrix if their localMatrix changed
     realityEditor.gui.ar.sceneGraph.calculateFinalMatrices(Object.keys(visibleObjects));
     
-    realityEditor.gui.spatial.compileSpatialLists();
+    realityEditor.gui.spatial.collectSpatialLists();
     
     // iterate over every object and decide whether or not to render it based on what the AR engine has detected
     for (objectKey in objects) {
