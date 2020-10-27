@@ -195,7 +195,18 @@ createNameSpace('realityEditor.app.callbacks');
             // if extended tracking is turned off, discard EXTENDED_TRACKED objects
             convertNewMatrixFormatToOld(visibleObjects);
         }
-        
+
+        // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
+        if (visibleObjects.hasOwnProperty('WorldReferenceXXXXXXXXXXXX')) {
+            delete visibleObjects['WorldReferenceXXXXXXXXXXXX'];
+        }
+
+        // easiest way to implement freeze button is just to not use the new matrices when we render
+        if (globalStates.freezeButtonState) {
+            realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
+            return;
+        }
+
         // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
             if (visibleObjects.hasOwnProperty(worldObjectKey)) {
@@ -227,11 +238,6 @@ createNameSpace('realityEditor.app.callbacks');
             }
         });
 
-        // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
-        if (visibleObjects.hasOwnProperty('WorldReferenceXXXXXXXXXXXX')) {
-            delete visibleObjects['WorldReferenceXXXXXXXXXXXX'];
-        }
-
         // this next section populates the visibleObjects matrices based on the model and view (camera) matrices
 
         // visibleObjects contains the raw modelMatrices -> send them to the scene graph
@@ -242,50 +248,22 @@ createNameSpace('realityEditor.app.callbacks');
             }
         }
 
-        // easiest way to implement freeze button is just to not update the new matrices
-        if (!globalStates.freezeButtonState) {
+        realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
+            // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
 
-            realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
-                // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
+            // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
+            var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
+            if (origin) {
+                // let tempMatrix = [];
+                // realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, tempMatrix);
+                // visibleObjects[worldObjectKey] = tempMatrix;
+                
+                visibleObjects[worldObjectKey] = origin; // always add all worldObjects that have been localized
+            }
 
-                // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
-                var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
-                if (origin) {
-                    let tempMatrix = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, tempMatrix);
-                    visibleObjects[worldObjectKey] = tempMatrix;
-                }
+        });
 
-            });
-
-            // realityEditor.forEachObject(function(object, objectKey) {
-            //     if (typeof visibleObjects[objectKey] !== 'undefined') {
-            //         // if it's a JPG instant target, correct the size so it matches as if it were DAT
-            //         // if (object.isJpgTarget) {
-            //         //     // this fixes the scale, but the tracker still thinks it is further away
-            //         //     // than it is, because the z translation is off by a factor
-            //         //     let jpgTargetScaleFactor = 3;
-            //         //     let scaleMatrix = [jpgTargetScaleFactor, 0, 0, 0,
-            //         //         0, jpgTargetScaleFactor, 0, 0,
-            //         //         0, 0, jpgTargetScaleFactor, 0,
-            //         //         0, 0, 0, 1];
-            //         //     let tempScaled = [];
-            //         //     realityEditor.gui.ar.draw.utilities.multiplyMatrix(scaleMatrix, visibleObjects[objectKey], tempScaled);
-            //         //     visibleObjects[objectKey] = tempScaled;
-            //         //
-            //         //     // this fixes it if the image target is at the world origin, but drifts
-            //         //     // towards the origin as you move the object further away
-            //         //     // let jpgTargetScaleFactor2 = 0.333;
-            //         //     // visibleObjects[objectKey][12] *= jpgTargetScaleFactor2;
-            //         //     // visibleObjects[objectKey][13] *= jpgTargetScaleFactor2;
-            //         //     // visibleObjects[objectKey][14] *= jpgTargetScaleFactor2;
-            //         // }
-            //         // realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey).setLocalMatrix(visibleObjects[objectKey]);
-            //     }
-            // });
-
-            realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
-        }
+        realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
 
         // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
         //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
@@ -305,7 +283,6 @@ createNameSpace('realityEditor.app.callbacks');
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
-            // realityEditor.gui.ar.draw.cameraMatrix = cameraMatrix;
             realityEditor.gui.ar.sceneGraph.setCameraPosition(cameraMatrix);
             // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
