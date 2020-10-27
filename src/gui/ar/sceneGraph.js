@@ -781,6 +781,10 @@
         let nodeId = elementName + '_VISUAL_ELEMENT';
         return getSceneNodeById(nodeId);
     };
+    
+    exports.getViewMatrix = function() {
+        return utils.invertMatrix(cameraNode.localMatrix);
+    };
 
     exports.SceneNode = SceneNode;
     exports.initService = initService;
