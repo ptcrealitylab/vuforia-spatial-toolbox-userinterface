@@ -463,10 +463,18 @@ createNameSpace("realityEditor.gui.ar.grouping");
      * @param {boolean} isEnabled
      */
     function toggleGroupingMode(isEnabled) {
+        let svg = document.getElementById('groupSVG');
+        let lassoSvg = document.getElementById('groupLassoSVG');
+
         if (!isEnabled) {
-            var svg = document.getElementById("groupSVG");
             clearHulls(svg);
             closeLasso();
+            
+            svg.style.display = 'none';
+            lassoSvg.style.display = 'none';
+        } else {
+            svg.style.display = '';
+            lassoSvg.style.display = '';
         }
     }
 

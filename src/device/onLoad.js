@@ -239,6 +239,11 @@ realityEditor.device.onload = function () {
         e.preventDefault();
     });
 
+    // release pointerevents that hit the background so that they can trigger pointerenter events on other elements
+    document.body.addEventListener('gotpointercapture', function(evt) {
+        evt.target.releasePointerCapture(evt.pointerId);
+    });
+
     var stats = new Stats();
     // stats.showPanel( 2 );
     document.body.appendChild(stats.dom);

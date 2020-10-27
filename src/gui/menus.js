@@ -221,6 +221,8 @@ createNameSpace("realityEditor.gui.menus");
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerenter", function (event) {
+                // console.log(buttonName + ' enter');
+
                 var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
 
                 mutableEvent.button = this.button;
@@ -231,6 +233,8 @@ createNameSpace("realityEditor.gui.menus");
             }, false);
 
             buttons[buttonName].overlay.addEventListener("pointerleave", function (event) {
+                // console.log(buttonName + ' leave');
+
                 var mutableEvent = realityEditor.network.frameContentAPI.getMutablePointerEventCopy(event);
 
                 mutableEvent.button = this.button;
