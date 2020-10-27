@@ -301,7 +301,8 @@
     position: fixed;
     width: 60px;
     height: 60px;
-    right: 130px;
+    /*right: 130px;*/
+    right: 65px;
     top: 0;
     visibility: hidden;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -10000, 1); /* render behind settings */
@@ -310,8 +311,9 @@
     position: fixed;
     width: 60px;
     height: 60px;
-    right: 130px;
-    top: 0px;
+    /*right: 130px;*/
+    right: 65px;
+    top: 0;
     visibility: hidden;
     z-index: 20;
 }
@@ -494,7 +496,11 @@
 .active{opacity:0.3; touch-action: none}
 .touched{opacity:0.6; touch-action: none}
 
-
+.blue-stroked {
+    fill: none;
+    stroke: #00FFFF;
+    stroke-miterlimit: 10;
+}
 
 .searchCell {
     margin-top: 5px; margin-left: 5px;
