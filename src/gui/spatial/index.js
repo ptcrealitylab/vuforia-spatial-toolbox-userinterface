@@ -50,7 +50,7 @@ realityEditor.gui.spatial.checkState = function() {
 
     if (!realityEditor.gui.spatial.spatialOn) {
         for (let ip in globalStates.spatial.howFarIs) {
-            if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
+            if (Object.keys(globalStates.spatial.howFarIs[ip]).length > 0) {
                 realityEditor.gui.spatial.spatialOn = true;
                 break;
             }
@@ -79,30 +79,111 @@ realityEditor.gui.spatial.checkState = function() {
     if (realityEditor.gui.spatial.myp5 === null && realityEditor.gui.spatial.spatialOn) {
         realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
     }
-}
+};
 
 realityEditor.gui.spatial.compileSpatialLists = function() {
     if(!realityEditor.gui.spatial.spatialOn) return;
-
-    let cameraSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
     
-    for (let ip in globalStates.spatial.whereIs) {
-        for (let key in globalStates.spatial.whereIs[ip]) {
-            // this.loadObjectAndTool(this, globalStates.spatial.whereIs[ip][key], this.whereIsList, key, modelMatrix,objectID)
+    let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+    this.worldOrigin = realityEditor.gui.ar.sceneGraph.getViewMatrix();
+
+    collectList(globalStates.spatial.whereIs, this.whereIsList);
+    collectList(globalStates.spatial.howFarIs, this.howFarIsList);
+    collectList(globalStates.spatial.whereWas, this.whereWasList);
+    collectList(globalStates.spatial.velocityOf, this.velocityOfList);
+
+    // for (let ip in globalStates.spatial.whereIs) {
+    //     for (let key in globalStates.spatial.whereIs[ip]) {
+    //         // try to get the ModelView matrix of this entity
+    //         let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(key);
+    //         if (sceneNode) {
+    //             this.whereIsList[key] = {
+    //                 'key': key,
+    //                 'matrix': realityEditor.gui.ar.sceneGraph.getModelViewMatrix(key, true, true)
+    //             };
+    //         }
+    //     }
+    // }
+
+    // if the historian is on, store the matrix of each visible object at each timestep
+    if (realityEditor.gui.spatial.historianOn) {
+        Object.keys(realityEditor.gui.ar.draw.visibleObjects).forEach(function (objectKey) {
+            this.timeRecorder.initSequence(objectKey, objectKey, '', '');
             
+            // TODO: needs rotateX?
+            // let objectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+            let objMatrix = []; //objectSceneNode.worldMatrix; //
+            
+            let objMVMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(objectKey, true, true);
+            // need to remove viewMatrix
+            this.utilities.multiplyMatrix(objMVMatrix, cameraNode.localMatrix, objMatrix);
+            
+            this.timeRecorder.addMatrix(objMatrix, objectKey);
+            
+            let thisObject = realityEditor.getObject(objectKey);
+            if (thisObject) {
+                Object.keys(thisObject.frames).forEach(function(frameKey) {
+                    this.timeRecorder.initSequence(frameKey, objectKey, frameKey, '');
+
+                    // let frameSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(frameKey);
+                    let frameMatrix = []; //frameSceneNode.worldMatrix;
+                    
+                    let frameMVMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(frameKey, true, true);
+
+                    // need to remove viewMatrix
+                    this.utilities.multiplyMatrix(frameMVMatrix, cameraNode.localMatrix, frameMatrix);
+
+                    this.timeRecorder.addMatrix(frameMatrix, frameKey);
+                }.bind(this));
+            }
+        }.bind(this));
+    }
+
+    // if (realityEditor.gui.spatial.historianOn) {
+    //     this.timeRecorder.initSequence(objectID, objectID, '', '');
+    //     this.timeRecorder.addMatrix(objMatrix, objectID);
+    //
+    //     if (this.objects[objectID]) {
+    //         for (let key in this.objects[objectID].frames) {
+    //             let thisTool = this.objects[objectID].frames[key];
+    //             let m3 = [
+    //                 thisTool.ar.scale, 0, 0, 0,
+    //                 0, thisTool.ar.scale, 0, 0,
+    //                 0, 0, thisTool.ar.scale, 0,
+    //                 thisTool.ar.x, thisTool.ar.y, 0, 1
+    //             ];
+    //             let m0 = [];
+    //             let m1 = [];
+    //
+    //             if (thisTool.ar.matrix.length < 13) {
+    //                 this.utilities.multiplyMatrix(m3, objMatrix, m0);
+    //             } else {
+    //                 this.utilities.multiplyMatrix(thisTool.ar.matrix, objMatrix, m1);
+    //                 this.utilities.multiplyMatrix(m3, m1, m0);
+    //             }
+    //
+    //             this.timeRecorder.initSequence(objectID+key, objectID, key, '');
+    //             this.timeRecorder.addMatrix(m0, objectID+key);
+    //         }
+    //     }
+    // }
+
+};
+
+function collectList(selectionList, resultsList) {
+    for (let ip in selectionList) {
+        for (let key in selectionList[ip]) {
             // try to get the ModelView matrix of this entity
             let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(key);
             if (sceneNode) {
-                this.whereIsList[key] = {
+                resultsList[key] = {
                     'key': key,
-                    'matrix': sceneNode.getMatrixRelativeTo(cameraSceneNode)
+                    'matrix': realityEditor.gui.ar.sceneGraph.getModelViewMatrix(key, true, true)
                 };
             }
-            
         }
     }
-
-};
+}
 
 realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix, objMatrix, objectID){
     if(!realityEditor.gui.spatial.spatialOn) return;
@@ -378,6 +459,7 @@ realityEditor.gui.spatial.sketch = function(p) {
         }
 
         this.canvasThis.uMVMatrix.apply(this.worldOrigin);
+
         //  p.translate( this.worldOrigin[12], this.worldOrigin[13], this.worldOrigin[14]);
         /*
                 p.fill('rgba(0,255,255, 1)');
