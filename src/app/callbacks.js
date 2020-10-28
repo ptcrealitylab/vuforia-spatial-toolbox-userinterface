@@ -330,7 +330,7 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} groundPlaneMatrix
      */
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
-        console.log('receiveGroundPlaneMatricesFromAR');
+        // console.log('receiveGroundPlaneMatricesFromAR'); // TODO: uncomment and fix so this doesn't keep happening
         
         // only update groundPlane if unfrozen and at least one thing is has requested groundPlane usage
         if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {

@@ -208,7 +208,7 @@ var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
-var globalScaleAdjustment = 0.5;
+var globalScaleAdjustment = 1.0; // 0.5;
 
 /**
  * @typedef {Object} PocketContainer
