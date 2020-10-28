@@ -17,6 +17,10 @@
 
     let utils = realityEditor.gui.ar.utilities;
     let sceneGraph = {};
+    const DEBUG_SCENE_GRAPH = true;
+    if (DEBUG_SCENE_GRAPH) {
+        window.globalSceneGraph = sceneGraph;
+    }
     let rootNode;
     let cameraNode;
     let groundPlaneNode;

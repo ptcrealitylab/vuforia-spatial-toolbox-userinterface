@@ -118,7 +118,9 @@ MemoryContainer.prototype.set = function(obj) {
     
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
     
+    // load matrices into thumbnail from the memory stored in the object
     var objectMatrix = obj.memory || realityEditor.gui.ar.utilities.newIdentityMatrix();
+    var cameraMatrix = obj.memoryCameraMatrix || realityEditor.gui.ar.utilities.newIdentityMatrix();
     
     // if (obj.memory && obj.memory.matrix) {
     //     objectMatrix = obj.memory.matrix;
@@ -129,8 +131,7 @@ MemoryContainer.prototype.set = function(obj) {
         image: image,
         thumbnail: thumbnail,
         matrix: objectMatrix, //obj.memory.matrix
-        // todo should this not be a copy of the matrix? 
-        cameraMatrix: realityEditor.gui.ar.draw.correctedCameraMatrix,
+        cameraMatrix: cameraMatrix,
         projectionMatrix: globalStates.projectionMatrix
     };
     this.element.dataset.objectId = this.memory.id;
@@ -409,10 +410,19 @@ MemoryContainer.prototype.remember = function() {
         delete realityEditor.gui.ar.draw.visibleObjectsCopy[nonWorldObjectKey];
         delete realityEditor.gui.ar.draw.visibleObjects[nonWorldObjectKey];
     });
+
+    realityEditor.gui.ar.sceneGraph.setCameraPosition(this.memory.cameraMatrix);
     
-    realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
+    // realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
     realityEditor.gui.ar.draw.visibleObjectsCopy[this.memory.id] = this.memory.matrix;
     realityEditor.gui.ar.draw.visibleObjects[this.memory.id] = this.memory.matrix;
+    
+    // also set sceneGraph localMatrix
+    let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(this.memory.id);
+    if (sceneNode) {
+        sceneNode.setLocalMatrix(this.memory.matrix);
+    }
+    
     // TODO: load in temporary projection matrix too?
 };
 
@@ -493,10 +503,16 @@ function createMemory() {
     realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
     
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
-    currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
-    currentMemory.cameraMatrix = realityEditor.gui.ar.draw.correctedCameraMatrix;
+    let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(currentMemory.id);
+    if (sceneNode) {
+        currentMemory.matrix = realityEditor.gui.ar.utilities.copyMatrix(sceneNode.localMatrix);
+    } else {
+        currentMemory.matrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.draw.visibleObjects[currentMemory.id]);
+    }
+    let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+    currentMemory.cameraMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraNode.localMatrix);
     currentMemory.projectionMatrix = globalStates.projectionMatrix;
-    
+
     addKnownObject(currentMemory.id);
 
     realityEditor.gui.menus.switchToMenu("bigPocket");
