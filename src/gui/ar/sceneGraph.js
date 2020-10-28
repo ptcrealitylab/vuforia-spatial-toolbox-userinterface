@@ -156,18 +156,22 @@
         return 0;
     };
 
-    SceneNode.prototype.getVehicleScale = function(ignoreParentScale) {
+    SceneNode.prototype.getVehicleScale = function(includeParentScale) {
         if (!this.linkedVehicle) { return 1; }
-        // parentScale = accumulate all the scales of parents with linkedVehicles
+
+        // parent scale is multiplied in by default - keep this at 1 to include it
+        let parentScaleRemoval = 1;
+        if (!includeParentScale) {
+            // accumulate all the scales of parents with linkedVehicles so that it doesnt shrink exponentially based
+            // on parent scale
+            parentScaleRemoval = this.getAccumulatedParentScale();
+        }
+        
         if (typeof this.linkedVehicle.ar !== 'undefined') {
-            return this.linkedVehicle.ar.scale;
+            return this.linkedVehicle.ar.scale / parentScaleRemoval;
         }
         if (typeof this.linkedVehicle.scale !== 'undefined') {
-            let parentScale = 1;
-            if (!ignoreParentScale) {
-                parentScale = this.getAccumulatedParentScale();
-            }
-            return this.linkedVehicle.scale / parentScale;
+            return this.linkedVehicle.scale / parentScaleRemoval;
         }
         return 1;
     };
@@ -176,7 +180,7 @@
         let totalParentScale = 1;
         let parentPointer = this.parent;
         while (parentPointer) {
-            let thisParentScale = parentPointer.getVehicleScale(true); // avoid infinite loop with "true"
+            let thisParentScale = parentPointer.getVehicleScale(true); // important: avoid infinite loop with "true"
             totalParentScale *= thisParentScale;
             parentPointer = parentPointer.parent;
         }
