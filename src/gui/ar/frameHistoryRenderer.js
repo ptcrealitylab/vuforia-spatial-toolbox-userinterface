@@ -80,6 +80,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         // saves resources when we don't use the service
         realityEditor.device.registerCallback('setEditingMode', function(params) {
             if (!isUpdateListenerRegistered && params.newEditingMode) {
+                isUpdateListenerRegistered = true;
 
                 // registers a callback to the gui.ar.draw.update loop so that this module can manage its own rendering
                 realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
@@ -485,9 +486,27 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             createGhostElement(objectKey, activeKey, wasFrameDeleted);
         }
         
+        // add to sceneGraph if needed
+        let elementName = 'ghost' + activeKey;
+        let ghostElementId = null;
         // compute CSS matrix from ghost ar.x, ar.y, ar.scale, ar.matrix
+        let ghostPosition = realityEditor.gui.ar.positioning.getPositionData(ghostVehicle);
+        if (!realityEditor.gui.ar.sceneGraph.getVisualElement(elementName)) {
+            let parentSceneNode = null;
+            if (isNode) {
+                parentSceneNode = realityEditor.gui.ar.sceneGraph.getVisualElement('ghost' + frameKey);
+            } else {
+                parentSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+            }
 
-        var ghostPosition = realityEditor.gui.ar.positioning.getPositionData(ghostVehicle);
+            // elementName, optionalParent, linkedDataObject, initialLocalMatrix
+            ghostElementId = realityEditor.gui.ar.sceneGraph.addVisualElement(elementName, parentSceneNode, ghostVehicle, ghostPosition.matrix);
+        
+        } else {
+            let ghostSceneNode = realityEditor.gui.ar.sceneGraph.getVisualElement(elementName);
+            ghostSceneNode.setLocalMatrix(ghostPosition.matrix);
+            ghostElementId = ghostSceneNode.id;
+        }
         
         var containingPosition = {
             x: 0,
@@ -495,6 +514,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
             scale: 1
         };
         
+        /*
         // nodes have a nested position within their containing frame
         if (isNode && ghostNode.type !== 'logic') {
             // var containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(ghostFrame); // TODO: decide if this or the other.. using ghost frame shows actually where it will reset to, but using the realFrame better shows the movement you've done
@@ -536,6 +556,10 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         // calculate center Z of frame to know if it is mostly in front or behind the marker plane
         var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix);
         finalMatrix[14] = 1000000 / Math.max(10, projectedPoint[2]); // (don't add extra 200) so it goes behind real
+        */
+        
+        // TODO: include x, y, scale
+        let finalMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(ghostElementId);
 
         // actually adjust the CSS to draw it with the correct transformation
         globalDOMCache['ghost' + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
