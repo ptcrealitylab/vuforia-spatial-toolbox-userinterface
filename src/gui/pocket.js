@@ -1125,6 +1125,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
 
         finishStylingPocket();
+        
+        // scroll to top if holding memory
+        if (overlayDiv.classList.contains('overlayMemory')) {
+            var scrollContainer = document.getElementById('pocketScrollContainer');
+            scrollContainer.scrollTop = 0;
+        }
     }
 
     function pocketHide() {
@@ -1202,6 +1208,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
 
         function scrollPocketForTouch(e) {
+            // don't scroll if holding a memory
+            if (overlayDiv.classList.contains('overlayMemory')) { return; }
+            
             var index = parseInt(e.currentTarget.dataset.index);
             var segmentTop = e.currentTarget.getClientRects()[0].top;
             var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
@@ -1216,6 +1225,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
         document.addEventListener('pointerup', function(_e) {
             pocketPointerDown = false;
+            highlightAvailableMemoryContainers(false); // always un-highlight when release pointer
         });
 
         for (var i = 0; i < numChapters; i++) {
@@ -1287,7 +1297,32 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // add new corners to each icon container
             realityEditor.gui.moveabilityCorners.wrapDivWithCorners(paletteElement, 0, true, null, null, 1);
         });
+
+        // style the memory containers if needed
+        if (overlayDiv.classList.contains('overlayMemory')) {
+            highlightAvailableMemoryContainers(true);
+        } else {
+            highlightAvailableMemoryContainers(false);
+        }
+
     }
+    
+    function highlightAvailableMemoryContainers(shouldHighlight) {
+        let pocketDiv = document.querySelector('.pocket');
+        
+        if (shouldHighlight) {
+            Array.from(pocketDiv.querySelectorAll('.memoryContainer')).filter(function(element) {
+                return !(element.classList.contains('nodeMemoryContainer') || element.dataset.objectId);
+            }).forEach(function(element) {
+                element.classList.add('availableContainer');
+            });
+        } else {
+            Array.from(pocketDiv.querySelectorAll('.memoryContainer')).forEach(function(element) {
+                element.classList.remove('availableContainer');
+            });
+        }
+    }
+    exports.highlightAvailableMemoryContainers = highlightAvailableMemoryContainers;
 
     exports.pocketInit = pocketInit;
     exports.pocketShown = pocketShown;

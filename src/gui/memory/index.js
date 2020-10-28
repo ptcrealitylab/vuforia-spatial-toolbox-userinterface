@@ -284,6 +284,9 @@ MemoryContainer.prototype.stopDragging = function() {
 };
 
 MemoryContainer.prototype.onPointerUp = function() {
+    this.element.classList.remove('selectedContainer');
+    realityEditor.gui.pocket.highlightAvailableMemoryContainers(false);
+
     this.cancelRemember();
 
     if (this.dragTimer) {
@@ -330,6 +333,10 @@ MemoryContainer.prototype.onPointerUp = function() {
 
 MemoryContainer.prototype.onPointerEnter = function() {
     if (overlayDiv.classList.contains('overlayMemory')) {
+        // highlight if it's empty and this memory can be placed
+        if (!this.element.dataset.objectId) {
+            this.element.classList.add('selectedContainer');
+        }
         return;
     }
     if (this.dragTimer) {
@@ -339,6 +346,7 @@ MemoryContainer.prototype.onPointerEnter = function() {
 };
 
 MemoryContainer.prototype.onPointerLeave = function() {
+    this.element.classList.remove('selectedContainer');
     if (overlayDiv.classList.contains('overlayMemory')) {
         return;
     }
