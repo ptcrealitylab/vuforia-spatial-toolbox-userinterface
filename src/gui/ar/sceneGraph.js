@@ -134,6 +134,66 @@
         this.flagForRecompute();
     };
 
+    SceneNode.prototype.getVehicleX = function() {
+        if (!this.linkedVehicle) { return 0; }
+        if (typeof this.linkedVehicle.ar !== 'undefined') {
+            return this.linkedVehicle.ar.x || 0;
+        }
+        if (typeof this.linkedVehicle.x !== 'undefined') {
+            return this.linkedVehicle.x || 0;
+        }
+        return 0;
+    };
+
+    SceneNode.prototype.getVehicleY = function() {
+        if (!this.linkedVehicle) { return 0; }
+        if (typeof this.linkedVehicle.ar !== 'undefined') {
+            return this.linkedVehicle.ar.y || 0;
+        }
+        if (typeof this.linkedVehicle.y !== 'undefined') {
+            return this.linkedVehicle.y || 0;
+        }
+        return 0;
+    };
+
+    SceneNode.prototype.getVehicleScale = function(ignoreParentScale) {
+        if (!this.linkedVehicle) { return 1; }
+        // parentScale = accumulate all the scales of parents with linkedVehicles
+        if (typeof this.linkedVehicle.ar !== 'undefined') {
+            return this.linkedVehicle.ar.scale;
+        }
+        if (typeof this.linkedVehicle.scale !== 'undefined') {
+            let parentScale = 1;
+            if (!ignoreParentScale) {
+                parentScale = this.getAccumulatedParentScale();
+            }
+            return this.linkedVehicle.scale / parentScale;
+        }
+        return 1;
+    };
+    
+    SceneNode.prototype.getAccumulatedParentScale = function() {
+        let totalParentScale = 1;
+        let parentPointer = this.parent;
+        while (parentPointer) {
+            let thisParentScale = parentPointer.getVehicleScale(true); // avoid infinite loop with "true"
+            totalParentScale *= thisParentScale;
+            parentPointer = parentPointer.parent;
+        }
+        return totalParentScale;
+    };
+    
+    SceneNode.prototype.getTransformMatrix = function() {
+        // extracts correctly for frames or nodes
+        let x = this.getVehicleX();
+        let y = this.getVehicleY();
+        let scale = this.getVehicleScale();
+        return [scale, 0, 0, 0,
+                0, scale, 0, 0,
+                0, 0, scale, 0,
+                x, y, 0, 1];
+    };
+
     /**
      * Compute where this node is relative to the scene origin
      * @param {Array.<number>} parentWorldMatrix
@@ -146,6 +206,13 @@
             } else {
                 // if no parent, localMatrix is worldMatrix
                 utils.copyMatrixInPlace(this.localMatrix, this.worldMatrix);
+            }
+            
+            // if this has a linkedVehicle, multiply the positionData (x,y,scale) into the worldMatrix
+            if (this.linkedVehicle) {
+                let temp = [];
+                utils.multiplyMatrix(this.getTransformMatrix(), this.worldMatrix, temp);
+                this.worldMatrix = temp;
             }
 
             this.needsRecompute = false; // reset dirty flag so we don't repeat this redundantly
@@ -514,33 +581,41 @@
 
                 if (didCameraUpdate || frameSceneNode.needsRerender) {
                     relativeToCamera[frameKey] = frameSceneNode.getMatrixRelativeTo(cameraNode);
-                    let modelViewProjection = [];
-                    let scale = frame.ar.scale * globalScaleAdjustment;
-                    let transform = [
-                        scale, 0, 0, 0,
-                        0, scale, 0, 0,
-                        0, 0, scale, 0,
-                        frame.ar.x, frame.ar.y, 0, 1];
-                    let transformedFrameMat = [];
-                    utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
-                    utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
+                    // let modelViewProjection = [];
+                    // let scale = frame.ar.scale * globalScaleAdjustment;
+                    // let transform = [
+                    //     scale, 0, 0, 0,
+                    //     0, scale, 0, 0,
+                    //     0, 0, scale, 0,
+                    //     frame.ar.x, frame.ar.y, 0, 1];
+                    // let transformedFrameMat = [];
+                    // utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
+                    // utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
+                    //
+                    // TODO ben: re-enable animations for pocket-drop
+                    // // TODO: find better place for these animations to fit into sceneGraph
+                    // if (realityEditor.device.isEditingUnconstrained(frame) && pocketDropAnimation) {
+                    //     var animatedFinalMatrix = [];
+                    //     utils.multiplyMatrix(modelViewProjection, editingAnimationsMatrix, animatedFinalMatrix);
+                    //     utils.copyMatrixInPlace(animatedFinalMatrix, modelViewProjection);
+                    //     frameSceneNode.needsRerender = true;
+                    // } else {
+                    //     frameSceneNode.needsRerender = false;
+                    // }
+                    //
+                    // finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
+                    //
+                    // finalCSSMatricesWithoutTransform[frameKey] = [];
+                    // utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
 
-                    // TODO: find better place for these animations to fit into sceneGraph
-                    if (realityEditor.device.isEditingUnconstrained(frame) && pocketDropAnimation) {
-                        var animatedFinalMatrix = [];
-                        utils.multiplyMatrix(modelViewProjection, editingAnimationsMatrix, animatedFinalMatrix);
-                        utils.copyMatrixInPlace(animatedFinalMatrix, modelViewProjection);
-                        frameSceneNode.needsRerender = true;
-                    } else {
-                        frameSceneNode.needsRerender = false;
-                    }
+                    finalCSSMatrices[frameKey] = [];
+                    utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatrices[frameKey]);
                     
-                    finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
-
-                    finalCSSMatricesWithoutTransform[frameKey] = [];
-                    utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
+                    // TODO: what to do about this? is this really needed? maybe only compute when needed
+                    finalCSSMatricesWithoutTransform[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[frameKey]);
 
                     numFrameCSSComputations++;
+                    frameSceneNode.needsRerender = false; 
                 }
 
                 // skip this frame if neither it or the camera have changed
@@ -555,22 +630,28 @@
 
                     if (didCameraUpdate || nodeSceneNode.needsRerender) {
                         relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
-                        let modelViewProjection = [];
-                        let nodeScale = node.scale * globalScaleAdjustment * (frame.ar.scale / globalStates.defaultScale);
-                        let transform = [
-                            nodeScale, 0, 0, 0,
-                            0, nodeScale, 0, 0,
-                            0, 0, nodeScale, 0,
-                            frame.ar.x + node.x, frame.ar.y + node.y, 0, 1];
-                        let transformedNodeMat = [];
-                        utils.multiplyMatrix(transform, relativeToCamera[nodeKey], transformedNodeMat);
-                        utils.multiplyMatrix(transformedNodeMat, globalStates.projectionMatrix, modelViewProjection);
-                        finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
+                        // let modelViewProjection = [];
+                        // let nodeScale = node.scale * globalScaleAdjustment * (frame.ar.scale / globalStates.defaultScale);
+                        // let transform = [
+                        //     nodeScale, 0, 0, 0,
+                        //     0, nodeScale, 0, 0,
+                        //     0, 0, nodeScale, 0,
+                        //     frame.ar.x + node.x, frame.ar.y + node.y, 0, 1];
+                        // let transformedNodeMat = [];
+                        // utils.multiplyMatrix(transform, relativeToCamera[nodeKey], transformedNodeMat);
+                        // utils.multiplyMatrix(transformedNodeMat, globalStates.projectionMatrix, modelViewProjection);
+                        // finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
+                        //
+                        // finalCSSMatricesWithoutTransform[nodeKey] = [];
+                        // // TODO: this multiplication can be removed if the previous two are done in different order and
+                        // //  intermediate result is preserved
+                        // utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[nodeKey]);
 
-                        finalCSSMatricesWithoutTransform[nodeKey] = [];
-                        // TODO: this multiplication can be removed if the previous two are done in different order and
-                        //  intermediate result is preserved
-                        utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[nodeKey]);
+                        finalCSSMatrices[nodeKey] = [];
+                        utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatrices[nodeKey]);
+
+                        // TODO: what to do about this? is this really needed? maybe only compute when needed
+                        finalCSSMatricesWithoutTransform[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[nodeKey]);
 
                         numNodeCSSComputations++;
                         nodeSceneNode.needsRerender = false;
