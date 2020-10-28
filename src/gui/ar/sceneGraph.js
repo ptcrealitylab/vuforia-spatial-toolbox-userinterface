@@ -591,7 +591,15 @@
             if (didCameraUpdate || miscellaneousElementNode.needsRerender) {
                 relativeToCamera[elementId] = miscellaneousElementNode.getMatrixRelativeTo(cameraNode);
                 finalCSSMatrices[elementId] = [];
-                utils.multiplyMatrix(relativeToCamera[elementId], globalStates.projectionMatrix, finalCSSMatrices[elementId]);
+                
+                // include scale, x, y if included in linked vehicle // TODO: support nodes
+                if (miscellaneousElementNode.linkedVehicle  && realityEditor.isVehicleAFrame(miscellaneousElementNode.linkedVehicle)) {
+                    let transformedModelView = transformFrameModelView(miscellaneousElementNode.linkedVehicle, relativeToCamera[elementId], true, true);
+                    utils.multiplyMatrix(transformedModelView, globalStates.projectionMatrix, finalCSSMatrices[elementId]);
+                } else {
+                    utils.multiplyMatrix(relativeToCamera[elementId], globalStates.projectionMatrix, finalCSSMatrices[elementId]);
+                }
+
                 miscellaneousElementNode.needsRerender = false;
             }
         }
@@ -695,7 +703,7 @@
     };
     
     function transformFrameModelView(frame, untransformedModelView, includeScale, includeTranslation) {
-        let scale = includeScale ? (frame.ar.scale /* * globalScaleAdjustment */) : 1.0;
+        let scale = includeScale ? (frame.ar.scale * globalScaleAdjustment) : 1.0;
         let x = includeTranslation ? frame.ar.x : 0;
         let y = includeTranslation ? frame.ar.y : 0;
         let transform = [
@@ -774,7 +782,7 @@
             sceneNode.setLocalMatrix(initialLocalMatrix);
         }
         
-        if (typeof linkedObject !== 'undefined') {
+        if (typeof linkedDataObject !== 'undefined') {
             sceneNode.linkedVehicle = linkedDataObject;
         }
         
