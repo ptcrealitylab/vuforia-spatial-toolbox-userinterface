@@ -504,61 +504,11 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         
         } else {
             let ghostSceneNode = realityEditor.gui.ar.sceneGraph.getVisualElement(elementName);
+            ghostSceneNode.linkedVehicle = ghostVehicle; // make sure this points to up-to-date vehicle for x,y,scale
             ghostSceneNode.setLocalMatrix(ghostPosition.matrix);
             ghostElementId = ghostSceneNode.id;
         }
         
-        var containingPosition = {
-            x: 0,
-            y: 0,
-            scale: 1
-        };
-        
-        /*
-        // nodes have a nested position within their containing frame
-        if (isNode && ghostNode.type !== 'logic') {
-            // var containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(ghostFrame); // TODO: decide if this or the other.. using ghost frame shows actually where it will reset to, but using the realFrame better shows the movement you've done
-            var containingFramePosition;
-            if (!wasFrameDeleted) {
-                var realFrame = realityEditor.getFrame(objectKey, frameKey);
-                containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(realFrame);
-            } else {
-                containingFramePosition = realityEditor.gui.ar.positioning.getPositionData(ghostFrame);
-            }
-            containingPosition.x += containingFramePosition.x;
-            containingPosition.y += containingFramePosition.y;
-            containingPosition.scale *= (containingFramePosition.scale/globalStates.defaultScale);
-        
-        } else {
-            containingPosition.scale *= globalScaleAdjustment; // frames (but not nodes) are now affected by globalScaleAdjustment, so that we can easily adjust the size of all frames
-        }
-        
-        var transformationMatrix = [
-            ghostPosition.scale * containingPosition.scale , 0, 0, 0,
-            0, ghostPosition.scale * containingPosition.scale, 0, 0,
-            0, 0, 1, 0,
-            ghostPosition.x + containingPosition.x, ghostPosition.y + containingPosition.y, 0, 1
-        ];
-
-        // multiply (marker modelview) * (projection) * (screen rotation) * (vehicle.matrix) * (transformation)
-
-        utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, activeObjectMatrix);
-        
-        var finalMatrix = [];
-        if (typeof ghostPosition.matrix !== 'undefined' && ghostPosition.matrix.length === 16) {
-            utilities.multiplyMatrix(ghostPosition.matrix, activeObjectMatrix, tempResMatrix);
-            utilities.multiplyMatrix(transformationMatrix, tempResMatrix, finalMatrix);
-        } else {
-            utilities.multiplyMatrix(transformationMatrix, activeObjectMatrix, finalMatrix);
-        }
-        
-        // adjust Z-index so it gets rendered behind all the real frames/nodes
-        // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-        var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([0, 0, 0, 1], activeObjectMatrix);
-        finalMatrix[14] = 1000000 / Math.max(10, projectedPoint[2]); // (don't add extra 200) so it goes behind real
-        */
-        
-        // TODO: include x, y, scale
         let finalMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(ghostElementId);
 
         // actually adjust the CSS to draw it with the correct transformation

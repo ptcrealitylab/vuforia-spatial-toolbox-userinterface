@@ -634,23 +634,6 @@
 
                     if (didCameraUpdate || nodeSceneNode.needsRerender) {
                         relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
-                        // let modelViewProjection = [];
-                        // let nodeScale = node.scale * globalScaleAdjustment * (frame.ar.scale / globalStates.defaultScale);
-                        // let transform = [
-                        //     nodeScale, 0, 0, 0,
-                        //     0, nodeScale, 0, 0,
-                        //     0, 0, nodeScale, 0,
-                        //     frame.ar.x + node.x, frame.ar.y + node.y, 0, 1];
-                        // let transformedNodeMat = [];
-                        // utils.multiplyMatrix(transform, relativeToCamera[nodeKey], transformedNodeMat);
-                        // utils.multiplyMatrix(transformedNodeMat, globalStates.projectionMatrix, modelViewProjection);
-                        // finalCSSMatrices[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
-                        //
-                        // finalCSSMatricesWithoutTransform[nodeKey] = [];
-                        // // TODO: this multiplication can be removed if the previous two are done in different order and
-                        // //  intermediate result is preserved
-                        // utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[nodeKey]);
-
                         finalCSSMatrices[nodeKey] = [];
                         utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatrices[nodeKey]);
 
@@ -676,15 +659,7 @@
             if (didCameraUpdate || miscellaneousElementNode.needsRerender) {
                 relativeToCamera[elementId] = miscellaneousElementNode.getMatrixRelativeTo(cameraNode);
                 finalCSSMatrices[elementId] = [];
-                
-                // include scale, x, y if included in linked vehicle // TODO: support nodes
-                if (miscellaneousElementNode.linkedVehicle  && realityEditor.isVehicleAFrame(miscellaneousElementNode.linkedVehicle)) {
-                    let transformedModelView = transformFrameModelView(miscellaneousElementNode.linkedVehicle, relativeToCamera[elementId], true, true);
-                    utils.multiplyMatrix(transformedModelView, globalStates.projectionMatrix, finalCSSMatrices[elementId]);
-                } else {
-                    utils.multiplyMatrix(relativeToCamera[elementId], globalStates.projectionMatrix, finalCSSMatrices[elementId]);
-                }
-
+                utils.multiplyMatrix(relativeToCamera[elementId], globalStates.projectionMatrix, finalCSSMatrices[elementId]);
                 miscellaneousElementNode.needsRerender = false;
             }
         }
