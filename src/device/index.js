@@ -89,6 +89,7 @@ realityEditor.device.currentScreenTouches = [];
  * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
  * @property {number|null} unconstrainedOffset - initial camera position used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
+ * @property {Array.<number>|null} startingTransform - stores the matrix encoding (x,y,scale) at time of startingMatrix
  * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
  * @property {boolean} preDisabledUnconstrained - the unconstrained state before we disabled, so that we can go back to that when we're done
  * @property {boolean} pinchToScaleDisabled - iff pinch to scale is temporarily disabled (e.g. if changing distance threshold)
@@ -105,6 +106,7 @@ realityEditor.device.editingState = {
     unconstrained: false,
     unconstrainedOffset: null,
     startingMatrix: null,
+    startingTransform: null,
     unconstrainedDisabled: false
 };
 
@@ -354,6 +356,7 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.unconstrained = false;
     this.editingState.unconstrainedOffset = null;
     this.editingState.startingMatrix = null;
+    this.editingState.startingTransform = null;
 
     this.previousPointerMove = null;
 
@@ -483,6 +486,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 
     realityEditor.device.editingState.startingMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
+    realityEditor.device.editingState.startingTransform = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).getTransformMatrix();
 
     // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     // document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
@@ -1365,7 +1369,8 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
             realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
             // store this so we can undo the move if needed (e.g. image target disappears)
             realityEditor.device.editingState.startingMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
-            
+            realityEditor.device.editingState.startingTransform = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).getTransformMatrix();
+
             this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
         }
     }
