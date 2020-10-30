@@ -352,7 +352,7 @@ createNameSpace("realityEditor.sceneGraph");
                     utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatrices[frameKey]);
 
                     // TODO: what to do about this? is this really needed? maybe only compute when needed
-                    finalCSSMatricesWithoutTransform[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[frameKey]);
+                    // finalCSSMatricesWithoutTransform[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[frameKey]);
 
                     numFrameCSSComputations++;
                     frameSceneNode.needsRerender = false;
@@ -374,7 +374,7 @@ createNameSpace("realityEditor.sceneGraph");
                         utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatrices[nodeKey]);
 
                         // TODO: what to do about this? is this really needed? maybe only compute when needed
-                        finalCSSMatricesWithoutTransform[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[nodeKey]);
+                        // finalCSSMatricesWithoutTransform[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[nodeKey]);
 
                         numNodeCSSComputations++;
                         nodeSceneNode.needsRerender = false;
@@ -428,11 +428,18 @@ createNameSpace("realityEditor.sceneGraph");
         sceneNode.setLocalMatrix(requiredLocalMatrix);
     };
 
-    // TODO: actively compute here when needed, not in the main update loop
+    // TODO: cache after calculating, invalidate if finalCSSMatrices[activeKey] changes
     exports.getCSSMatrixWithoutTranslation = function(activeKey) {
         if (typeof finalCSSMatricesWithoutTransform[activeKey] === 'undefined') {
-            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+            finalCSSMatricesWithoutTransform[activeKey] = [];
         }
+        
+        let sceneNode = getSceneNodeById(activeKey);
+        let transform = sceneNode.getTransformMatrix();
+        let inverseTransform = utils.invertMatrix(transform);
+        
+        utils.multiplyMatrix(inverseTransform, finalCSSMatrices[activeKey], finalCSSMatricesWithoutTransform[activeKey]);
+
         return finalCSSMatricesWithoutTransform[activeKey];
     };
 
@@ -481,39 +488,8 @@ createNameSpace("realityEditor.sceneGraph");
             z: relativePosition[14]/relativePosition[15]
         }
     };
-
-    function transformFrameModelView(frame, untransformedModelView, includeScale, includeTranslation) {
-        let scale = includeScale ? (frame.ar.scale * globalScaleAdjustment) : 1.0;
-        let x = includeTranslation ? frame.ar.x : 0;
-        let y = includeTranslation ? frame.ar.y : 0;
-        let transform = [
-            scale, 0, 0, 0,
-            0, scale, 0, 0,
-            0, 0, scale, 0,
-            x, y, 0, 1];
-        let transformedFrameMat = [];
-        utils.multiplyMatrix(transform, untransformedModelView, transformedFrameMat);
-        return transformedFrameMat;
-    }
-
-    // function transformNodeModelView(node, untransformedModelView) {
-    //     let nodeScale = node.scale * globalScaleAdjustment * (frame.ar.scale / globalStates.defaultScale);
-    //     let transform = [
-    //         nodeScale, 0, 0, 0,
-    //         0, nodeScale, 0, 0,
-    //         0, 0, nodeScale, 0,
-    //         frame.ar.x + node.x, frame.ar.y + node.y, 0, 1];
-    //     let transformedNodeMat = [];
-    //     utils.multiplyMatrix(transform, relativeToCamera[nodeKey], transformedNodeMat);
-    // }
-
-    exports.getModelViewMatrix = function(activeKey, includeScale, includeTranslation) {
-        if (includeScale || includeTranslation) {
-            let sceneNode = getSceneNodeById(activeKey);
-            if (sceneNode && sceneNode.linkedVehicle && realityEditor.isVehicleAFrame(sceneNode.linkedVehicle)) {
-                return transformFrameModelView(sceneNode.linkedVehicle, relativeToCamera[activeKey], includeScale, includeTranslation);
-            }
-        }
+    
+    exports.getModelViewMatrix = function(activeKey) {
         return relativeToCamera[activeKey];
     };
 

@@ -1499,7 +1499,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
-                        thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid, true, true);
+                        thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
