@@ -755,8 +755,8 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
 
     let frameSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldFrameKey);
     // this will recompute a new position for it so it stays in same place relative to camera/world
-    frameSceneNode.changeParent(newObjectKey, true);
-    frameSceneNode.changeId(newFrameKey);
+    realityEditor.gui.ar.sceneGraph.changeParent(frameSceneNode, newObjectKey, true);
+    realityEditor.gui.ar.sceneGraph.changeId(frameSceneNode, newFrameKey);
 
     // rename nodes and give new keys
     var newNodes = {};
@@ -771,7 +771,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         
         // update the scene graph
         let nodeSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldNodeKey);
-        nodeSceneNode.changeId(newNodeKey);
+        realityEditor.gui.ar.sceneGraph.changeId(nodeSceneNode, newNodeKey);
 
         // update the DOM elements for each node
         // (only if node has been loaded to DOM already - doesn't happen if haven't ever switched to node view)
