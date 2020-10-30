@@ -375,7 +375,7 @@ realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
 
         // distance is computed from modelViewMatrices rather than un-modified visibleObject matrices to be compatible
         // with both regular objects and anchor objects
-        distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
+        distance = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
 
         if (distance < closest) {
             object = objectKey;
@@ -410,7 +410,7 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
                 if (!filterFunction(this.objects[objectKey].frames[frameKey])) continue;
             }
             
-            distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(frameKey);
+            distance = realityEditor.sceneGraph.getDistanceToCamera(frameKey);
             if (distance < closest) {
                 object = objectKey;
                 frame = frameKey;
@@ -443,7 +443,7 @@ realityEditor.gui.ar.getClosestNode = function () {
                     break;
                 }
 
-                distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(nodeKey);
+                distance = realityEditor.sceneGraph.getDistanceToCamera(nodeKey);
                 if (distance < closest) {
                     object = objectKey;
                     frame = frameKey;
@@ -471,7 +471,7 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
-            distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(frameKey);
+            distance = realityEditor.sceneGraph.getDistanceToCamera(frameKey);
             
             var thisFrame = realityEditor.getFrame(objectKey, frameKey);
             var dx = screenX - thisFrame.screenX;

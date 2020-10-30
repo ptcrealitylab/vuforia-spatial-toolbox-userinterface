@@ -254,7 +254,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     }
 
     let isImageTarget = !thisObject.isWorldObject && !thisObject.isAnchor;
-    realityEditor.gui.ar.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
+    realityEditor.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
 
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
@@ -285,7 +285,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             positionData.matrix = [];
         }
 
-        realityEditor.gui.ar.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+        realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
 
         for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
@@ -313,7 +313,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
 
-            realityEditor.gui.ar.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
+            realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
         }
         
         // TODO: invert dependency
@@ -1484,7 +1484,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             
             // ensure loyalty of this node is changed to groundplane even if it already exists
             if (msgContent.createNode.attachToGroundPlane && matchingNodeKey) {
-                realityEditor.gui.ar.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, matchingNodeKey);
+                realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, matchingNodeKey);
             }
 
             if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
@@ -1518,10 +1518,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
         
         thisFrame.nodes[nodeKey] = node;
 
-        realityEditor.gui.ar.sceneGraph.addNode(node.objectId, node.frameId, node, nodeKey);
+        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, node, nodeKey);
 
         if (msgContent.createNode.attachToGroundPlane) {
-            realityEditor.gui.ar.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
+            realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
         }
         
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
@@ -1759,7 +1759,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 newNode.data.value = nodeData.defaultValue;
             }
 
-            realityEditor.gui.ar.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey, newNode);
+            realityEditor.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey, newNode);
 
             // post node to server
             let object = realityEditor.getObject(msgContent.object);

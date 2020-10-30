@@ -8,6 +8,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+createNameSpace("realityEditor.sceneGraph");
+
 /**
  * This is the new positioning API for objects, tools, and nodes
  * Scene Graph implementation was inspired by:
@@ -259,4 +261,4 @@
     };
 
     exports.SceneNode = SceneNode;
-})(realityEditor.gui.ar.sceneGraph);
+})(realityEditor.sceneGraph);

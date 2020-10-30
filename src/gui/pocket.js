@@ -211,7 +211,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // send it to the server
             realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
 
-            realityEditor.gui.ar.sceneGraph.addNode(closestObjectKey, closestFrameKey, logicKey, addedLogic);
+            realityEditor.sceneGraph.addNode(closestObjectKey, closestFrameKey, logicKey, addedLogic);
 
             realityEditor.gui.pocket.setPocketNode(addedLogic, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
 
@@ -789,7 +789,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             closestObject.frames[frameID] = frame;
 
-            realityEditor.gui.ar.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
+            realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
 
             console.log(frame);
             // send it to the server

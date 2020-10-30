@@ -86,14 +86,14 @@ realityEditor.gui.spatial.checkState = function() {
 realityEditor.gui.spatial.collectSpatialLists = function() {
     if (!realityEditor.gui.spatial.spatialOn) return;
     
-    this.worldOrigin = realityEditor.gui.ar.sceneGraph.getViewMatrix();
+    this.worldOrigin = realityEditor.sceneGraph.getViewMatrix();
 
     this.collectSpatialList(globalStates.spatial.whereIs, this.whereIsList);
     this.collectSpatialList(globalStates.spatial.howFarIs, this.howFarIsList);
     this.collectSpatialList(globalStates.spatial.whereWas, this.whereWasList);
     this.collectSpatialList(globalStates.spatial.velocityOf, this.velocityOfList);
 
-    let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
 
     // if the historian is on, store the matrix of each visible object at each timestep
     if (realityEditor.gui.spatial.historianOn) {
@@ -101,7 +101,7 @@ realityEditor.gui.spatial.collectSpatialLists = function() {
             this.timeRecorder.initSequence(objectKey, objectKey, '', '');
             
             let objMatrix = []; // remove viewMatrix from modelView matrix to get correct modelMatrix
-            let objMVMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(objectKey, true, true);
+            let objMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(objectKey, true, true);
             this.utilities.multiplyMatrix(objMVMatrix, cameraNode.localMatrix, objMatrix);
             
             this.timeRecorder.addMatrix(objMatrix, objectKey);
@@ -112,7 +112,7 @@ realityEditor.gui.spatial.collectSpatialLists = function() {
                     this.timeRecorder.initSequence(frameKey, objectKey, frameKey, '');
 
                     let frameMatrix = []; // remove viewMatrix from modelView matrix to get correct modelMatrix
-                    let frameMVMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(frameKey, true, true);
+                    let frameMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(frameKey, true, true);
                     this.utilities.multiplyMatrix(frameMVMatrix, cameraNode.localMatrix, frameMatrix);
 
                     this.timeRecorder.addMatrix(frameMatrix, frameKey);
@@ -129,11 +129,11 @@ realityEditor.gui.spatial.collectSpatialList = function(selectionList, resultsLi
     for (let ip in selectionList) {
         for (let key in selectionList[ip]) {
             // try to get the ModelView matrix of this entity
-            let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(key);
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(key);
             if (sceneNode) {
                 resultsList[key] = {
                     'key': key,
-                    'matrix': realityEditor.gui.ar.sceneGraph.getModelViewMatrix(key, true, true)
+                    'matrix': realityEditor.sceneGraph.getModelViewMatrix(key, true, true)
                 };
             }
         }

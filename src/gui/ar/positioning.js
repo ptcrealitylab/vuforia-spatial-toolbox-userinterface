@@ -111,7 +111,7 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     
     positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
     
-    realityEditor.gui.ar.sceneGraph.updatePositionData(activeVehicle.uuid);
+    realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid);
 
     // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
@@ -172,7 +172,7 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
     matrixComputationDiv.style.width = vehicleContainer.style.width;
     matrixComputationDiv.style.height = vehicleContainer.style.height;
 
-    let untransformedMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrixWithoutTranslation(activeKey);
+    let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeKey);
     matrixComputationDiv.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
     
     return matrixComputationDiv;
@@ -239,7 +239,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     }
 
     // flags the sceneNode as dirty so it gets rendered again with the new x/y position
-    realityEditor.gui.ar.sceneGraph.updatePositionData(activeVehicle.uuid); 
+    realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid); 
 
     // broadcasts this to the realtime system if it's enabled
     if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
@@ -564,13 +564,13 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
  */
 realityEditor.gui.ar.positioning.canUnload = function(activeKey, finalMatrix, vehicleHalfWidth, vehicleHalfHeight, maxDistance) {
     // // if it's fully behind the viewport, it can be unloaded
-    if (!realityEditor.gui.ar.sceneGraph.isInFrontOfCamera(activeKey)) {
+    if (!realityEditor.sceneGraph.isInFrontOfCamera(activeKey)) {
         return true;
     }
     
     // if a distance threshold is provided, unload if it is too far away
     if (typeof maxDistance !== 'undefined') {
-        if (realityEditor.gui.ar.sceneGraph.getDistanceToCamera(activeKey) > maxDistance) {
+        if (realityEditor.sceneGraph.getDistanceToCamera(activeKey) > maxDistance) {
             return true;
         }
     }

@@ -80,9 +80,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // the visibleObjects matrix of its world
             let objectMatrix = realityEditor.getObject(objectKey).matrix || utilities.newIdentityMatrix();
 
-            let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
             if (sceneNode) {
-                let worldObjectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(bestWorldObject.objectId);
+                let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(bestWorldObject.objectId);
                 sceneNode.setParent(worldObjectSceneNode);
                 sceneNode.setLocalMatrix(objectMatrix);
             }
@@ -107,7 +107,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
         // TODO ben: reimplement with canUnload
         let isOutsideViewport = false; //realityEditor.gui.ar.positioning.canUnload(objectKey,
             // finalAnchorMatrices[objectKey], anchorContentSize/2, anchorContentSize/2);
-        let distanceToCamera = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
+        let distanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
 
         if (fullscreenAnchor === objectKey) {
             return true;
@@ -144,8 +144,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // retrieve final value computed in pre-processing step
             // let finalMatrix = finalAnchorMatrices[objectKey];
             
-            let visualElementNode = realityEditor.gui.ar.sceneGraph.getVisualElement('anchor' + objectKey);
-            let finalMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(visualElementNode.id);
+            let visualElementNode = realityEditor.sceneGraph.getVisualElement('anchor' + objectKey);
+            let finalMatrix = realityEditor.sceneGraph.getCSSMatrix(visualElementNode.id);
 
             let activeElt = globalDOMCache['anchor' + objectKey];
 
@@ -159,7 +159,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             
             // hide if it is outside the viewport or too far away
             // let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
-            let distanceToCamera =  realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
+            let distanceToCamera =  realityEditor.sceneGraph.getDistanceToCamera(objectKey);
             let isNowOutsideViewport = /*isNowOutsideViewport ||*/ (distanceToCamera > getAnchorDistanceThreshold(objectKey));
 
             if (isNowOutsideViewport) {
@@ -249,7 +249,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
         });
 
         // add a scene node to the groundPlane's rotateX sceneGraph node
-        let objectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+        let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
         let elementMatrix = [];
         let scale = 0.5;
         let transform = [
@@ -259,7 +259,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             0, 0, 0, 1
         ];
         utilities.multiplyMatrix(transform, makeGroundPlaneRotationZ(Math.PI), elementMatrix);
-        realityEditor.gui.ar.sceneGraph.addVisualElement(anchorContainer.id, objectSceneNode, undefined, elementMatrix);
+        realityEditor.sceneGraph.addVisualElement(anchorContainer.id, objectSceneNode, undefined, elementMatrix);
     }
 
     var makeGroundPlaneRotationZ =  function ( theta ) {
@@ -292,12 +292,12 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 // let finalMatrix = [];
                 // utilities.multiplyMatrix(rotationMatrix, inverseWorld, finalMatrix);
                 
-                // let anchorObjectNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
-                realityEditor.gui.ar.sceneGraph.moveSceneNodeToCamera(objectKey, false);
+                // let anchorObjectNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                realityEditor.sceneGraph.moveSceneNodeToCamera(objectKey, false);
 
                 // store the new relative position of the anchor to the world
                 let anchorObject = realityEditor.getObject(objectKey);
-                anchorObject.matrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey).localMatrix;
+                anchorObject.matrix = realityEditor.sceneGraph.getSceneNodeById(objectKey).localMatrix;
 
                 // upload to the server for persistence
                 realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix);

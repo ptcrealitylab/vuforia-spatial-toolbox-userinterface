@@ -334,7 +334,7 @@ createNameSpace("realityEditor.worldObjects");
             var object = realityEditor.getObject(objectKey);
             if (object.isWorldObject) {
                 // var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
-                distances[objectKey] = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey);
+                distances[objectKey] = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
             }
         }
         return distances;

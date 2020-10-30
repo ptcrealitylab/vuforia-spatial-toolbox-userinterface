@@ -64,8 +64,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     
     function startVisualization() {
         // add a scene node to the groundPlane's rotateX sceneGraph node
-        if (!realityEditor.gui.ar.sceneGraph.getVisualElement(elementName)) {
-            let groundPlaneSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('GROUNDPLANE');
+        if (!realityEditor.sceneGraph.getVisualElement(elementName)) {
+            let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById('GROUNDPLANE');
 
             // Ground plane must exist.. if it doesn't reschedule this to happen later
             if (!groundPlaneSceneNode) {
@@ -75,7 +75,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 }, 100);
                 return;
             }
-            elementId = realityEditor.gui.ar.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
+            elementId = realityEditor.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
         }
         
         // create the DOM element that should visualize it and add it to the scene
@@ -113,7 +113,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         // move the visualizer element to the resulting (x,y)
         
         // this gets used for the origin and the moving visualizer
-        let untransformedMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(elementId);
+        let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrix(elementId);
         
         let origin = getOriginElement();
         untransformedMatrix[14] = 10;

@@ -8,6 +8,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+createNameSpace("realityEditor.sceneGraph");
+
 /**
  * This is the new positioning API for objects, tools, and nodes
  * Scene Graph implementation was inspired by:
@@ -15,7 +17,7 @@
  */
 (function(exports) {
     
-    let SceneNode = realityEditor.gui.ar.sceneGraph.SceneNode;
+    let SceneNode = realityEditor.sceneGraph.SceneNode;
 
     let utils = realityEditor.gui.ar.utilities;
     let sceneGraph = {};
@@ -520,7 +522,7 @@
     };
 
     exports.isInFrontOfCamera = function(activeKey) {
-        let positionRelativeToCamera = realityEditor.gui.ar.sceneGraph.getPositionRelativeToCamera(activeKey);
+        let positionRelativeToCamera = realityEditor.sceneGraph.getPositionRelativeToCamera(activeKey);
         // z axis faces opposite direction as expected so this distance is negative if in front, positive if behind
         return positionRelativeToCamera.z < 0;
     };
@@ -529,7 +531,7 @@
         let vehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
         if (vehicle) {
             vehicle.attachToGroundPlane = true;
-            let vehicleSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(vehicle.uuid);
+            let vehicleSceneNode = realityEditor.sceneGraph.getSceneNodeById(vehicle.uuid);
             if (groundPlaneNode && vehicleSceneNode) {
                 // using changeParent instead of setParent automatically adds to rotateX node inside groundPlane
                 changeParent(vehicleSceneNode, NAMES.GROUNDPLANE, false);
@@ -624,4 +626,4 @@
     exports.changeId = changeId;
 
     exports.initService = initService;
-})(realityEditor.gui.ar.sceneGraph);
+})(realityEditor.sceneGraph);
