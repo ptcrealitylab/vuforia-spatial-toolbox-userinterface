@@ -356,7 +356,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     
     // each sceneGraphNode's local matrix gets updated with the visibleObjectMatrix in app/callbacks.js
     // so each frame, we just need to recompute everything's worldMatrix if their localMatrix changed
-    realityEditor.gui.ar.sceneGraph.calculateFinalMatrices(Object.keys(visibleObjects));
+    realityEditor.sceneGraph.calculateFinalMatrices(Object.keys(visibleObjects));
     
     realityEditor.gui.spatial.collectSpatialLists();
     
@@ -551,7 +551,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 
                     // unconstrained editing local frame - can't transition to global, but reset its matrix to what it was before starting to edit
                     if (realityEditor.device.isEditingUnconstrained(this.activeVehicle) && startingMatrix) {
-                        realityEditor.gui.ar.sceneGraph.getSceneNodeById(frameKey).setLocalMatrix(startingMatrix);
+                        realityEditor.sceneGraph.getSceneNodeById(frameKey).setLocalMatrix(startingMatrix);
                     }
 
                     // hide the frame
@@ -568,7 +568,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                         // unconstrained editing local node - can't transition to global, but reset its matrix to what it was before starting to edit
                         if (realityEditor.device.isEditingUnconstrained(this.activeNode) && startingMatrix) {
-                            realityEditor.gui.ar.sceneGraph.getSceneNodeById(nodeKey).setLocalMatrix(startingMatrix);
+                            realityEditor.sceneGraph.getSceneNodeById(nodeKey).setLocalMatrix(startingMatrix);
                         }
                         
                         // hide the node
@@ -753,10 +753,10 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         return;
     }
 
-    let frameSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldFrameKey);
+    let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(oldFrameKey);
     // this will recompute a new position for it so it stays in same place relative to camera/world
-    realityEditor.gui.ar.sceneGraph.changeParent(frameSceneNode, newObjectKey, true);
-    realityEditor.gui.ar.sceneGraph.changeId(frameSceneNode, newFrameKey);
+    realityEditor.sceneGraph.changeParent(frameSceneNode, newObjectKey, true);
+    realityEditor.sceneGraph.changeId(frameSceneNode, newFrameKey);
 
     // rename nodes and give new keys
     var newNodes = {};
@@ -770,8 +770,8 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         delete frame.nodes[oldNodeKey];
         
         // update the scene graph
-        let nodeSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldNodeKey);
-        realityEditor.gui.ar.sceneGraph.changeId(nodeSceneNode, newNodeKey);
+        let nodeSceneNode = realityEditor.sceneGraph.getSceneNodeById(oldNodeKey);
+        realityEditor.sceneGraph.changeId(nodeSceneNode, newNodeKey);
 
         // update the DOM elements for each node
         // (only if node has been loaded to DOM already - doesn't happen if haven't ever switched to node view)
@@ -949,8 +949,8 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     // realityEditor.gui.ar.positioning.setPositionDataMatrix(frameInMotion, startingMatrix);
     
     if (realityEditor.device.editingState.startingMatrix) {
-        // realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
-        realityEditor.gui.ar.sceneGraph.getSceneNodeById(globalStates.inTransitionFrame).setLocalMatrix(realityEditor.device.editingState.startingMatrix);
+        // realityEditor.device.editingState.startingMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
+        realityEditor.sceneGraph.getSceneNodeById(globalStates.inTransitionFrame).setLocalMatrix(realityEditor.device.editingState.startingMatrix);
     }
     
     // var positionData = realityEditor.gui.ar.positioning.getPositionData(frameInMotion);
@@ -1035,7 +1035,7 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
         // currentWorldMat = localMat * parentWorldMat
         // currentWorldMat * parentWorldMat^inv = localMat
         
-        // let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(oldFrameKey);
+        // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(oldFrameKey);
         // sceneNode.changeParent(newObjectKey, true);
         // sceneNode.changeId(newFrameKey);
         
@@ -1218,7 +1218,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (realityEditor.device.environment.supportsDistanceFading() &&
                 (!globalStates.freezeButtonState || realityEditor.device.environment.ignoresFreezeButton())) {
                 // fade out frames and nodes when they move beyond a certain distance
-                var distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(activeKey); //activeVehicle.screenZ;
+                var distance = realityEditor.sceneGraph.getDistanceToCamera(activeKey); //activeVehicle.screenZ;
                 var distanceScale = realityEditor.gui.ar.getDistanceScale(activeVehicle);
                 // multiply the default min distance by the amount this frame distance has been scaled up
                 var distanceThreshold = (distanceScale * realityEditor.device.distanceScaling.getDefaultDistance());
@@ -1319,8 +1319,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     // utilities.copyMatrixInPlace(activeObjectMatrix, activeVehicle.temp);
 
-                    let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey);
-                    let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+                    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
+                    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
                     
                     // do this one time when you first tap down on something unconstrained, to preserve its current matrix
                     if (matrix.copyStillFromMatrixSwitch) {
@@ -1396,7 +1396,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             //     projectedPoint = [0,0,0,0];
             // }
             
-            finalMatrix = utilities.copyMatrix(realityEditor.gui.ar.sceneGraph.getCSSMatrix(activeKey));
+            finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
             activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
@@ -1430,7 +1430,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 // draw a placeholder for unloaded vehicles to provide better visual feedback while they're loading
                 let iframe = globalDOMCache['iframe' + activeKey];
                 if (!iframe.dataset.doneLoading || activeVehicle.isOutsideViewport) {
-                    if (realityEditor.gui.ar.sceneGraph.isInFrontOfCamera(activeKey)) {
+                    if (realityEditor.sceneGraph.isInFrontOfCamera(activeKey)) {
                         this.debugDrawVehicle(activeVehicle, finalMatrix);
                     }
                 }
@@ -1499,15 +1499,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
-                        thisMsg.modelViewMatrix = realityEditor.gui.ar.sceneGraph.getModelViewMatrix(activeVehicle.uuid, true, true);
+                        thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid, true, true);
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
-                        thisMsg.devicePose = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA').worldMatrix; //this.correctedCameraMatrix;
+                        thisMsg.devicePose = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix; //this.correctedCameraMatrix;
                     }
 
                     if (activeVehicle.sendMatrices.groundPlane === true) {
-                        thisMsg.groundPlaneMatrix = realityEditor.gui.ar.sceneGraph.getGroundPlaneModelViewMatrix();
+                        thisMsg.groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
                     }
 
                     if (activeVehicle.sendMatrices.allObjects === true) {
@@ -1523,9 +1523,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         var halfHeight = parseInt(activeVehicle.frameSizeY)/2;
                         
                         thisMsg.frameScreenPosition = {
-                            upperLeft: realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey, [-halfWidth, -halfHeight, 0, 1]),
-                            center: realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey, [0, 0, 0, 1]),
-                            lowerRight: realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey, [halfWidth, halfHeight, 0, 1])
+                            upperLeft: realityEditor.sceneGraph.getScreenPosition(activeKey, [-halfWidth, -halfHeight, 0, 1]),
+                            center: realityEditor.sceneGraph.getScreenPosition(activeKey, [0, 0, 0, 1]),
+                            lowerRight: realityEditor.sceneGraph.getScreenPosition(activeKey, [halfWidth, halfHeight, 0, 1])
                         };
                     }
                     
@@ -1632,7 +1632,7 @@ realityEditor.gui.ar.draw.debugDrawVehicle = function(activeVehicle, finalMatrix
     let bbox = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
     let thisColor = 'rgba(0,255,255,0.3)';
     // 72 is a magic number that seems to work so that this had a pseudo-3d radius of frameSizeX/2
-    let thisSize = (parseInt(activeVehicle.frameSizeX)/2) / realityEditor.gui.ar.sceneGraph.getDistanceToCamera(activeVehicle.uuid) * 72;
+    let thisSize = (parseInt(activeVehicle.frameSizeX)/2) / realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid) * 72;
     this.globalCanvas.context.beginPath();
     this.globalCanvas.context.fillStyle = thisColor;
     this.globalCanvas.context.arc(bbox.center.x, bbox.center.y, thisSize, 0, Math.PI * 2);
@@ -1827,8 +1827,8 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
     
     // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
-    let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeKey);
-    let cameraNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById('CAMERA');
+    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
+    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
     let distanceInFrontOfCamera = 300; // 0.3 meters
     sceneNode.setPositionRelativeTo(cameraNode, [
         -1, 0, 0, 0,
@@ -1845,7 +1845,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
         
         // Several steps to translate it exactly to be centered on the touch when it gets added
         // 1. calculate where the center of the frame would naturally end up on the screen, given the moveFrameToCamera matrix
-        let defaultScreenCenter = realityEditor.gui.ar.sceneGraph.getScreenPosition(activeKey);
+        let defaultScreenCenter = realityEditor.sceneGraph.getScreenPosition(activeKey);
         //realityEditor.gui.ar.positioning.getScreenPosition(pocketContainer.vehicle.objectId, activeFrameKey, true, false, false, false, false).center;
         let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
         // 2. calculate the correct touch offset as if you placed it at the default position (doesn't actually set x and y)

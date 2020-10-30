@@ -482,7 +482,7 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     
     realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
 
-    realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
+    realityEditor.device.editingState.startingMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
 
     // document.getElementById('svg' + (nodeKey || frameKey)).style.display = 'inline';
     // document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
@@ -1334,10 +1334,10 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
     if (!ableToBePulled) { return; }
         
     if (!this.editingState.unconstrainedOffset) {
-        this.editingState.unconstrainedOffset = realityEditor.gui.ar.sceneGraph.getWorldPosition('CAMERA');
+        this.editingState.unconstrainedOffset = realityEditor.sceneGraph.getWorldPosition('CAMERA');
     
     } else {
-        let camPos = realityEditor.gui.ar.sceneGraph.getWorldPosition('CAMERA');
+        let camPos = realityEditor.sceneGraph.getWorldPosition('CAMERA');
         let dx = camPos.x - this.editingState.unconstrainedOffset.x;
         let dy = camPos.y - this.editingState.unconstrainedOffset.y;
         let dz = camPos.z - this.editingState.unconstrainedOffset.z;
@@ -1364,7 +1364,7 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
             // tell the renderer to freeze the current matrix as the unconstrained position on the screen
             realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
             // store this so we can undo the move if needed (e.g. image target disappears)
-            realityEditor.device.editingState.startingMatrix = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
+            realityEditor.device.editingState.startingMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
             
             this.callbackHandler.triggerCallbacks('onFramePulledIntoUnconstrained', {activeVehicle: activeVehicle});
         }

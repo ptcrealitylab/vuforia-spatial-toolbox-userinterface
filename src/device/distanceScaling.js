@@ -414,7 +414,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         // defaultDistance = 2000 is the default size in pixels of the radius
         // we divide by 0.9 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is just around the border
         
-        editingFrame.distanceScale = (realityEditor.gui.ar.sceneGraph.getDistanceToCamera(editingFrame.uuid) / defaultDistance) / 0.85; 
+        editingFrame.distanceScale = (realityEditor.sceneGraph.getDistanceToCamera(editingFrame.uuid) / defaultDistance) / 0.85; 
         
         callbackHandler.triggerCallbacks('scaleEditingFrameDistance', {frame: editingFrame});
     }

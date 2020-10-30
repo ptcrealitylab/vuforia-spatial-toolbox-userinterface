@@ -150,7 +150,7 @@ createNameSpace("realityEditor.network.availableFrames");
         });
         
         return validObjectKeys.map( function(objectKey) {
-            var distance = realityEditor.gui.ar.sceneGraph.getDistanceToCamera(objectKey); //realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+            var distance = realityEditor.sceneGraph.getDistanceToCamera(objectKey); //realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
             var isWorldObject = false;
             var object = realityEditor.getObject(objectKey);
             if (object && object.isWorldObject) {

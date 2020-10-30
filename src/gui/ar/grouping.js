@@ -96,9 +96,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 if (isUnconstrainedEditingGroup && !realityEditor.device.editingState.unconstrainedDisabled) {
 
                     let activeVehicle = realityEditor.device.getEditingVehicle();
-                    let selectedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                    let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
                     forEachGroupedFrame(activeVehicle, function(groupedFrame) {
-                        let groupedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                        let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
                         let relativePosition = groupRelativePositions[groupedFrame.uuid];
                         groupedSceneNode.setPositionRelativeTo(selectedSceneNode, relativePosition);
                     }, true);
@@ -137,10 +137,10 @@ createNameSpace("realityEditor.gui.ar.grouping");
                     // else if hitting a grouped frame, preserve relative locations between it and its groupies
                     var activeVehicle = realityEditor.device.getEditingVehicle();
                     if (activeVehicle) {
-                        let selectedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                        let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
 
                         forEachGroupedFrame(activeVehicle, function(groupedFrame) {
-                            let groupedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                            let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
                             groupRelativePositions[groupedFrame.uuid] = groupedSceneNode.getMatrixRelativeTo(selectedSceneNode);
                         }, true);
                     }
@@ -169,9 +169,9 @@ createNameSpace("realityEditor.gui.ar.grouping");
                     // moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
 
                     // new method?
-                    let selectedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                    let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
                     forEachGroupedFrame(activeVehicle, function(groupedFrame) {
-                        let groupedSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                        let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
                         let relativePosition = groupRelativePositions[groupedFrame.uuid];
                         groupedSceneNode.setPositionRelativeTo(selectedSceneNode, relativePosition);
                     }, true);
@@ -705,10 +705,10 @@ createNameSpace("realityEditor.gui.ar.grouping");
         var halfHeight = parseInt(frame.frameSizeY)/2 + buffer;
         
         return {
-            upperLeft: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [-halfWidth, -halfHeight, 0, 1]),
-            upperRight: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [halfWidth, -halfHeight, 0, 1]),
-            lowerLeft: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [-halfWidth, halfHeight, 0, 1]),
-            lowerRight: realityEditor.gui.ar.sceneGraph.getScreenPosition(frameKey, [halfWidth, halfHeight, 0, 1]),
+            upperLeft: realityEditor.sceneGraph.getScreenPosition(frameKey, [-halfWidth, -halfHeight, 0, 1]),
+            upperRight: realityEditor.sceneGraph.getScreenPosition(frameKey, [halfWidth, -halfHeight, 0, 1]),
+            lowerLeft: realityEditor.sceneGraph.getScreenPosition(frameKey, [-halfWidth, halfHeight, 0, 1]),
+            lowerRight: realityEditor.sceneGraph.getScreenPosition(frameKey, [halfWidth, halfHeight, 0, 1]),
         };
     }
 

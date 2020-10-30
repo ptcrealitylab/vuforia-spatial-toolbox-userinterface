@@ -216,7 +216,7 @@ createNameSpace('realityEditor.app.callbacks');
                     let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
                     if (worldObjectKey === bestWorldObject.uuid) {
                         
-                        let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(worldObjectKey);
+                        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectKey);
                         if (sceneNode) {
                             sceneNode.setLocalMatrix(visibleObjects[worldObjectKey]);
 
@@ -224,11 +224,11 @@ createNameSpace('realityEditor.app.callbacks');
                             if (globalStates.useGroundPlane) {
                                 let rotated = [];
                                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, visibleObjects[worldObjectKey], rotated);
-                                realityEditor.gui.ar.sceneGraph.setGroundPlanePosition(rotated);
+                                realityEditor.sceneGraph.setGroundPlanePosition(rotated);
                             }
-                            // let worldObjectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(worldObject.uuid);
+                            // let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
                             // if (worldObjectSceneNode) {
-                            //     realityEditor.gui.ar.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
+                            //     realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                             // }
                         }
                     }
@@ -242,7 +242,7 @@ createNameSpace('realityEditor.app.callbacks');
 
         // visibleObjects contains the raw modelMatrices -> send them to the scene graph
         for (let objectKey in visibleObjects) {
-            let sceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
             if (sceneNode) {
                 sceneNode.setLocalMatrix(visibleObjects[objectKey]);
             }
@@ -283,7 +283,7 @@ createNameSpace('realityEditor.app.callbacks');
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
-            realityEditor.gui.ar.sceneGraph.setCameraPosition(cameraMatrix);
+            realityEditor.sceneGraph.setCameraPosition(cameraMatrix);
             // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
     }
@@ -340,22 +340,22 @@ createNameSpace('realityEditor.app.callbacks');
             // snap groundPlane to world origin, if available
             if (worldObject && worldObject.uuid !== realityEditor.worldObjects.getLocalWorldId()) {
                 
-                let worldObjectSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(worldObject.uuid);
+                let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
                 if (worldObjectSceneNode) {
                     // note: if sceneGraph hierarchy gets more complicated, remember to switch localMatrix for
                     //       a matrix computed to preserve worldObject's worldMatrix
-                    // realityEditor.gui.ar.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
+                    // realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
 
                     let rotated = [];
                     realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
-                    realityEditor.gui.ar.sceneGraph.setGroundPlanePosition(rotated);
+                    realityEditor.sceneGraph.setGroundPlanePosition(rotated);
                     
                     return;
                 }
             }
 
             // only set to groundPlane from vuforia if it isn't set to a world object's matrix
-            realityEditor.gui.ar.sceneGraph.setGroundPlanePosition(groundPlaneMatrix);
+            realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneMatrix);
         }
     }
 

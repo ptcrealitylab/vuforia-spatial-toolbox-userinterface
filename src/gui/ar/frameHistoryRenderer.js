@@ -491,25 +491,25 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
         let ghostElementId = null;
         // compute CSS matrix from ghost ar.x, ar.y, ar.scale, ar.matrix
         let ghostPosition = realityEditor.gui.ar.positioning.getPositionData(ghostVehicle);
-        if (!realityEditor.gui.ar.sceneGraph.getVisualElement(elementName)) {
+        if (!realityEditor.sceneGraph.getVisualElement(elementName)) {
             let parentSceneNode = null;
             if (isNode) {
-                parentSceneNode = realityEditor.gui.ar.sceneGraph.getVisualElement('ghost' + frameKey);
+                parentSceneNode = realityEditor.sceneGraph.getVisualElement('ghost' + frameKey);
             } else {
-                parentSceneNode = realityEditor.gui.ar.sceneGraph.getSceneNodeById(objectKey);
+                parentSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
             }
 
             // elementName, optionalParent, linkedDataObject, initialLocalMatrix
-            ghostElementId = realityEditor.gui.ar.sceneGraph.addVisualElement(elementName, parentSceneNode, ghostVehicle, ghostPosition.matrix);
+            ghostElementId = realityEditor.sceneGraph.addVisualElement(elementName, parentSceneNode, ghostVehicle, ghostPosition.matrix);
         
         } else {
-            let ghostSceneNode = realityEditor.gui.ar.sceneGraph.getVisualElement(elementName);
+            let ghostSceneNode = realityEditor.sceneGraph.getVisualElement(elementName);
             ghostSceneNode.linkedVehicle = ghostVehicle; // make sure this points to up-to-date vehicle for x,y,scale
             ghostSceneNode.setLocalMatrix(ghostPosition.matrix);
             ghostElementId = ghostSceneNode.id;
         }
         
-        let finalMatrix = realityEditor.gui.ar.sceneGraph.getCSSMatrix(ghostElementId);
+        let finalMatrix = realityEditor.sceneGraph.getCSSMatrix(ghostElementId);
 
         // actually adjust the CSS to draw it with the correct transformation
         globalDOMCache['ghost' + activeKey].style.transform = 'matrix3d(' + finalMatrix.toString() + ')';

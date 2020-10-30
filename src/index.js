@@ -82,7 +82,6 @@ var realityEditor = realityEditor || {
             lines: {},
             moveabilityOverlay: {},
             positioning: {},
-            sceneGraph: {},
             utilities: {}
         },
         spatial: {
@@ -119,6 +118,9 @@ var realityEditor = realityEditor || {
         availableFrames: {},
         realtime: {},
         utilities: {}
+    },
+    sceneGraph: {
+        sceneNode: {}
     },
     envelopeManager: {},
     moduleCallbacks: {},
