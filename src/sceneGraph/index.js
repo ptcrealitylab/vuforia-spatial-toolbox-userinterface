@@ -52,6 +52,14 @@ createNameSpace("realityEditor.sceneGraph");
 
     exports.printInfo = false;
 
+    var makeGroundPlaneRotationX =  function ( theta ) {
+        var c = Math.cos( theta ), s = Math.sin( theta );
+        return [  1, 0, 0, 0,
+            0, c, -s, 0,
+            0, s, c, 0,
+            0, 0, 0, 1];
+    };
+
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
         rootNode = new SceneNode(NAMES.ROOT);
@@ -88,7 +96,7 @@ createNameSpace("realityEditor.sceneGraph");
         }, 1000);
     }
 
-    exports.addObject = function(objectId, initialLocalMatrix, needsRotateX) {
+    function addObject(objectId, initialLocalMatrix, needsRotateX) {
         let sceneNodeObject;
         if (typeof sceneGraph[objectId] !== 'undefined') {
             console.warn('trying to add duplicate object to scene graph');
@@ -112,15 +120,8 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeObject.needsRotateX = true;
             addRotateX(sceneNodeObject, objectId);
         }
-    };
-
-    var makeGroundPlaneRotationX =  function ( theta ) {
-        var c = Math.cos( theta ), s = Math.sin( theta );
-        return [  1, 0, 0, 0,
-            0, c, -s, 0,
-            0, s, c, 0,
-            0, 0, 0, 1];
-    };
+    }
+    exports.addObject = addObject;
 
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
         let sceneNodeRotateX;
@@ -160,7 +161,7 @@ createNameSpace("realityEditor.sceneGraph");
         return sceneNode;
     }
 
-    exports.addFrame = function(objectId, frameId, linkedFrame, initialLocalMatrix) {
+    function addFrame(objectId, frameId, linkedFrame, initialLocalMatrix) {
         let sceneNodeFrame;
         if (typeof sceneGraph[frameId] !== 'undefined') {
             console.warn('trying to add duplicate frame to scene graph');
@@ -188,9 +189,10 @@ createNameSpace("realityEditor.sceneGraph");
         if (typeof initialLocalMatrix !== 'undefined') {
             sceneNodeFrame.setLocalMatrix(initialLocalMatrix);
         }
-    };
+    }
+    exports.addFrame = addFrame;
 
-    exports.addNode = function(objectId, frameId, nodeId, linkedNode, initialLocalMatrix) {
+    function addNode(objectId, frameId, nodeId, linkedNode, initialLocalMatrix) {
         let sceneNodeNode;
         if (typeof sceneGraph[nodeId] !== 'undefined') {
             console.warn('trying to add duplicate node to scene graph');
@@ -213,37 +215,41 @@ createNameSpace("realityEditor.sceneGraph");
         if (typeof initialLocalMatrix !== 'undefined') {
             sceneNodeNode.setLocalMatrix(initialLocalMatrix);
         }
-    };
+    }
+    exports.addNode = addNode;
 
-    exports.setCameraPosition = function(cameraMatrix) {
+    function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix);
-    };
+    }
+    exports.setCameraPosition = setCameraPosition;
 
-    exports.setGroundPlanePosition = function(groundPlaneMatrix) {
+    function setGroundPlanePosition(groundPlaneMatrix) {
         groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
-    };
+    }
+    exports.setGroundPlanePosition = setGroundPlanePosition;
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
 
-    exports.getDistanceToCamera = function(id) {
+    function getDistanceToCamera(id) {
         let sceneNode = getSceneNodeById(id);
         if (sceneNode && cameraNode) {
             return sceneNode.getDistanceTo(cameraNode);
         }
         return realityEditor.gui.ar.MAX_DISTANCE;
-    };
+    }
+    exports.getDistanceToCamera = getDistanceToCamera;
 
     /**
      * @param {string} id
      * @return {SceneNode}
      */
-    const getSceneNodeById = function(id) {
+    function getSceneNodeById(id) {
         return sceneGraph[id];
-    };
+    }
     exports.getSceneNodeById = getSceneNodeById;
 
-    const recomputeScene = function() {
+    function recomputeScene() {
         if (rootNode) {
             rootNode.updateWorldMatrix();
         }
@@ -262,17 +268,17 @@ createNameSpace("realityEditor.sceneGraph");
             let visualElementNode = visualElements[elementId];
             visualElementNode.updateWorldMatrix();
         }
-    };
+    }
     exports.recomputeScene = recomputeScene;
 
-    const getDirtyNodes = function() {
+    function getDirtyNodes() {
         return Object.keys(sceneGraph).filter( function(id) {
             return sceneGraph[id].dirty;
         });
-    };
+    }
     exports.getDirtyNodes = getDirtyNodes;
 
-    const calculateFinalMatrices = function(visibleObjectIds) {
+    function calculateFinalMatrices(visibleObjectIds) {
         // ensure all worldMatrix reflects latest localMatrix
         recomputeScene();
 
@@ -363,7 +369,7 @@ createNameSpace("realityEditor.sceneGraph");
 
                 // TODO: only compute nodes when not in UI mode? if so we need to be sure to compute when switch mode
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
-                    let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                    // let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
 
                     if (!nodeSceneNode) { return; } // skip nodes without sceneNodes (true for hiddenNodeTypes)
@@ -401,17 +407,18 @@ createNameSpace("realityEditor.sceneGraph");
         }
 
         cameraNode.needsRerender = false;
-    };
+    }
     exports.calculateFinalMatrices = calculateFinalMatrices;
 
-    exports.getCSSMatrix = function(activeKey) {
+    function getCSSMatrix(activeKey) {
         if (typeof finalCSSMatrices[activeKey] === 'undefined') {
             return realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
         return finalCSSMatrices[activeKey];
-    };
+    }
+    exports.getCSSMatrix = getCSSMatrix;
 
-    exports.moveSceneNodeToCamera = function(activeKey, faceTowardsCamera) {
+    function moveSceneNodeToCamera(activeKey, faceTowardsCamera) {
         let sceneNode = getSceneNodeById(activeKey);
         let requiredWorldMatrix = cameraNode.worldMatrix;
         let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
@@ -426,10 +433,11 @@ createNameSpace("realityEditor.sceneGraph");
         }
 
         sceneNode.setLocalMatrix(requiredLocalMatrix);
-    };
+    }
+    exports.moveSceneNodeToCamera = moveSceneNodeToCamera;
 
     // TODO: cache after calculating, invalidate if finalCSSMatrices[activeKey] changes
-    exports.getCSSMatrixWithoutTranslation = function(activeKey) {
+    function getCSSMatrixWithoutTranslation(activeKey) {
         if (typeof finalCSSMatricesWithoutTransform[activeKey] === 'undefined') {
             finalCSSMatricesWithoutTransform[activeKey] = [];
         }
@@ -441,17 +449,19 @@ createNameSpace("realityEditor.sceneGraph");
         utils.multiplyMatrix(inverseTransform, finalCSSMatrices[activeKey], finalCSSMatricesWithoutTransform[activeKey]);
 
         return finalCSSMatricesWithoutTransform[activeKey];
-    };
+    }
+    exports.getCSSMatrixWithoutTranslation = getCSSMatrixWithoutTranslation;
 
-    exports.updatePositionData = function(activeKey) {
+    function updatePositionData(activeKey) {
         let sceneNode = getSceneNodeById(activeKey);
         if (sceneNode) {
             sceneNode.flagForRecompute();
         }
-    };
+    }
+    exports.updatePositionData = updatePositionData;
 
     // look at implementation of realityEditor.gui.ar.positioning.getScreenPosition to get other coordinates
-    exports.getScreenPosition = function(activeKey, frameCoordinateVector) {
+    function getScreenPosition(activeKey, frameCoordinateVector) {
         if (typeof frameCoordinateVector === 'undefined') {
             frameCoordinateVector = [0,0,0,1]; // defaults to center. [-halfWidth, -halfHeight, 0, 1] is upperLeft
         }
@@ -463,9 +473,10 @@ createNameSpace("realityEditor.sceneGraph");
             x: window.innerWidth/2,
             y: window.innerHeight/2
         }
-    };
+    }
+    exports.getScreenPosition = getScreenPosition;
 
-    exports.getWorldPosition = function(activeKey) {
+    function getWorldPosition(activeKey) {
         let sceneNode = getSceneNodeById(activeKey);
         return {
             // TODO: should we normalize all of these by default?
@@ -473,9 +484,10 @@ createNameSpace("realityEditor.sceneGraph");
             y: sceneNode.worldMatrix[13]/sceneNode.worldMatrix[15],
             z: sceneNode.worldMatrix[14]/sceneNode.worldMatrix[15]
         }
-    };
+    }
+    exports.getWorldPosition = getWorldPosition;
 
-    exports.getPositionRelativeToCamera = function(activeKey) {
+    function getPositionRelativeToCamera(activeKey) {
         let relativePosition = relativeToCamera[activeKey];
         if (!relativePosition) {
             let objectSceneNode = getSceneNodeById(activeKey); // todo: error handle
@@ -487,23 +499,27 @@ createNameSpace("realityEditor.sceneGraph");
             y: relativePosition[13]/relativePosition[15],
             z: relativePosition[14]/relativePosition[15]
         }
-    };
+    }
+    exports.getPositionRelativeToCamera = getPositionRelativeToCamera;
     
-    exports.getModelViewMatrix = function(activeKey) {
+    function getModelViewMatrix(activeKey) {
         return relativeToCamera[activeKey];
-    };
+    }
+    exports.getModelViewMatrix = getModelViewMatrix;
 
-    exports.getGroundPlaneModelViewMatrix = function() {
+    function getGroundPlaneModelViewMatrix() {
         return relativeToCamera[NAMES.GROUNDPLANE];
-    };
+    }
+    exports.getGroundPlaneModelViewMatrix = getGroundPlaneModelViewMatrix;
 
-    exports.isInFrontOfCamera = function(activeKey) {
+    function isInFrontOfCamera(activeKey) {
         let positionRelativeToCamera = realityEditor.sceneGraph.getPositionRelativeToCamera(activeKey);
         // z axis faces opposite direction as expected so this distance is negative if in front, positive if behind
         return positionRelativeToCamera.z < 0;
-    };
+    }
+    exports.isInFrontOfCamera = isInFrontOfCamera;
 
-    exports.attachToGroundPlane = function(objectKey, frameKey, nodeKey) {
+    function attachToGroundPlane(objectKey, frameKey, nodeKey) {
         let vehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
         if (vehicle) {
             vehicle.attachToGroundPlane = true;
@@ -513,10 +529,11 @@ createNameSpace("realityEditor.sceneGraph");
                 changeParent(vehicleSceneNode, NAMES.GROUNDPLANE, false);
             }
         }
-    };
+    }
+    exports.attachToGroundPlane = attachToGroundPlane;
 
     // a helper function for adding generic/miscellaneous elements to the sceneGraph that will be used for 3D UI
-    exports.addVisualElement = function(elementName, optionalParent, linkedDataObject, initialLocalMatrix) {
+    function addVisualElement(elementName, optionalParent, linkedDataObject, initialLocalMatrix) {
         let nodeId = elementName + '_VISUAL_ELEMENT'; // help prevent naming collisions
 
         let sceneNode;
@@ -544,15 +561,18 @@ createNameSpace("realityEditor.sceneGraph");
 
         return nodeId;
     };
+    exports.addVisualElement = addVisualElement;
 
-    exports.getVisualElement = function(elementName) {
+    function getVisualElement(elementName) {
         let nodeId = elementName + '_VISUAL_ELEMENT';
         return getSceneNodeById(nodeId);
     };
+    exports.getVisualElement = getVisualElement;
 
-    exports.getViewMatrix = function() {
+    function getViewMatrix() {
         return utils.invertMatrix(cameraNode.localMatrix);
     };
+    exports.getViewMatrix = getViewMatrix;
 
     /**
      * Moves the node in the scene graph to be located relative to a new parent
@@ -581,6 +601,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         sceneNode.flagForRecompute();
     }
+    exports.changeParent = changeParent;
 
     function changeId(sceneNode, newId) {
         let oldId = sceneNode.id;
@@ -597,8 +618,6 @@ createNameSpace("realityEditor.sceneGraph");
         // this.flagAsDirty(); // this will make sure computations get computed/cached with new ID
         sceneNode.flagForRecompute(); // TODO: might not be necessary? just say e.g. data[new] = data[old]; delete data[old];
     }
-    
-    exports.changeParent = changeParent;
     exports.changeId = changeId;
 
     exports.initService = initService;
