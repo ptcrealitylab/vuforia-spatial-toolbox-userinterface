@@ -51,15 +51,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.NAMES = NAMES;
 
     exports.printInfo = false;
-
-    var makeGroundPlaneRotationX =  function ( theta ) {
-        var c = Math.cos( theta ), s = Math.sin( theta );
-        return [  1, 0, 0, 0,
-            0, c, -s, 0,
-            0, s, c, 0,
-            0, 0, 0, 1];
-    };
-
+    
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
         rootNode = new SceneNode(NAMES.ROOT);
@@ -121,46 +113,7 @@ createNameSpace("realityEditor.sceneGraph");
             addRotateX(sceneNodeObject, objectId);
         }
     }
-    exports.addObject = addObject;
-
-    function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
-        let sceneNodeRotateX;
-        let thisNodeId = objectId + 'rotateX';
-        if (typeof sceneGraph[thisNodeId] !== 'undefined') {
-            console.warn('trying to add duplicate rotateX to scene graph');
-            sceneNodeRotateX = sceneGraph[thisNodeId];
-        } else {
-            sceneNodeRotateX = new SceneNode(thisNodeId);
-            // let _object = realityEditor.getObject(objectId);
-            sceneGraph[thisNodeId] = sceneNodeRotateX;
-        }
-
-        sceneNodeRotateX.setParent(sceneNodeObject);
-        console.log('SceneGraph: added rotateX to object ' + objectId);
-
-        // image target objects require one coordinate system rotation. ground plane requires another.
-        if (groundPlaneVariation) {
-            sceneNodeRotateX.setLocalMatrix( makeGroundPlaneRotationX(-(Math.PI/2)) );
-        } else {
-            sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
-                1, 0, 0, 0,
-                0, -1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            ]);
-        }
-
-        return sceneNodeRotateX;
-    }
-
-    function getNodeOrRotateXChild(sceneNode) {
-        if (sceneNode.needsRotateX) {
-            let childRotateXId = sceneNode.id + 'rotateX';
-            return getSceneNodeById(childRotateXId);
-        }
-        return sceneNode;
-    }
-
+    
     function addFrame(objectId, frameId, linkedFrame, initialLocalMatrix) {
         let sceneNodeFrame;
         if (typeof sceneGraph[frameId] !== 'undefined') {
@@ -190,7 +143,6 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeFrame.setLocalMatrix(initialLocalMatrix);
         }
     }
-    exports.addFrame = addFrame;
 
     function addNode(objectId, frameId, nodeId, linkedNode, initialLocalMatrix) {
         let sceneNodeNode;
@@ -216,18 +168,15 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeNode.setLocalMatrix(initialLocalMatrix);
         }
     }
-    exports.addNode = addNode;
 
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix);
     }
-    exports.setCameraPosition = setCameraPosition;
 
     function setGroundPlanePosition(groundPlaneMatrix) {
         groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
     }
-    exports.setGroundPlanePosition = setGroundPlanePosition;
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
 
@@ -238,7 +187,6 @@ createNameSpace("realityEditor.sceneGraph");
         }
         return realityEditor.gui.ar.MAX_DISTANCE;
     }
-    exports.getDistanceToCamera = getDistanceToCamera;
 
     /**
      * @param {string} id
@@ -247,36 +195,6 @@ createNameSpace("realityEditor.sceneGraph");
     function getSceneNodeById(id) {
         return sceneGraph[id];
     }
-    exports.getSceneNodeById = getSceneNodeById;
-
-    function recomputeScene() {
-        if (rootNode) {
-            rootNode.updateWorldMatrix();
-        }
-        if (cameraNode) {
-            cameraNode.updateWorldMatrix();
-        }
-
-        // this might become a child of a world object but still safe to call update multiple times
-        if (groundPlaneNode) {
-            groundPlaneNode.updateWorldMatrix();
-        }
-
-        // just in case, iterate over all miscellaneous visual elements (they are ignored if they've already been
-        // processed by one of the recursive calls above because .needsRecompute gets reset
-        for (let elementId in visualElements) {
-            let visualElementNode = visualElements[elementId];
-            visualElementNode.updateWorldMatrix();
-        }
-    }
-    exports.recomputeScene = recomputeScene;
-
-    function getDirtyNodes() {
-        return Object.keys(sceneGraph).filter( function(id) {
-            return sceneGraph[id].dirty;
-        });
-    }
-    exports.getDirtyNodes = getDirtyNodes;
 
     function calculateFinalMatrices(visibleObjectIds) {
         // ensure all worldMatrix reflects latest localMatrix
@@ -408,7 +326,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         cameraNode.needsRerender = false;
     }
-    exports.calculateFinalMatrices = calculateFinalMatrices;
 
     function getCSSMatrix(activeKey) {
         if (typeof finalCSSMatrices[activeKey] === 'undefined') {
@@ -416,7 +333,6 @@ createNameSpace("realityEditor.sceneGraph");
         }
         return finalCSSMatrices[activeKey];
     }
-    exports.getCSSMatrix = getCSSMatrix;
 
     function moveSceneNodeToCamera(activeKey, faceTowardsCamera) {
         let sceneNode = getSceneNodeById(activeKey);
@@ -434,7 +350,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         sceneNode.setLocalMatrix(requiredLocalMatrix);
     }
-    exports.moveSceneNodeToCamera = moveSceneNodeToCamera;
 
     // TODO: cache after calculating, invalidate if finalCSSMatrices[activeKey] changes
     function getCSSMatrixWithoutTranslation(activeKey) {
@@ -450,7 +365,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         return finalCSSMatricesWithoutTransform[activeKey];
     }
-    exports.getCSSMatrixWithoutTranslation = getCSSMatrixWithoutTranslation;
 
     function updatePositionData(activeKey) {
         let sceneNode = getSceneNodeById(activeKey);
@@ -458,7 +372,6 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNode.flagForRecompute();
         }
     }
-    exports.updatePositionData = updatePositionData;
 
     // look at implementation of realityEditor.gui.ar.positioning.getScreenPosition to get other coordinates
     function getScreenPosition(activeKey, frameCoordinateVector) {
@@ -474,7 +387,6 @@ createNameSpace("realityEditor.sceneGraph");
             y: window.innerHeight/2
         }
     }
-    exports.getScreenPosition = getScreenPosition;
 
     function getWorldPosition(activeKey) {
         let sceneNode = getSceneNodeById(activeKey);
@@ -485,7 +397,6 @@ createNameSpace("realityEditor.sceneGraph");
             z: sceneNode.worldMatrix[14]/sceneNode.worldMatrix[15]
         }
     }
-    exports.getWorldPosition = getWorldPosition;
 
     function getPositionRelativeToCamera(activeKey) {
         let relativePosition = relativeToCamera[activeKey];
@@ -500,24 +411,20 @@ createNameSpace("realityEditor.sceneGraph");
             z: relativePosition[14]/relativePosition[15]
         }
     }
-    exports.getPositionRelativeToCamera = getPositionRelativeToCamera;
     
     function getModelViewMatrix(activeKey) {
         return relativeToCamera[activeKey];
     }
-    exports.getModelViewMatrix = getModelViewMatrix;
 
     function getGroundPlaneModelViewMatrix() {
         return relativeToCamera[NAMES.GROUNDPLANE];
     }
-    exports.getGroundPlaneModelViewMatrix = getGroundPlaneModelViewMatrix;
 
     function isInFrontOfCamera(activeKey) {
         let positionRelativeToCamera = realityEditor.sceneGraph.getPositionRelativeToCamera(activeKey);
         // z axis faces opposite direction as expected so this distance is negative if in front, positive if behind
         return positionRelativeToCamera.z < 0;
     }
-    exports.isInFrontOfCamera = isInFrontOfCamera;
 
     function attachToGroundPlane(objectKey, frameKey, nodeKey) {
         let vehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
@@ -530,7 +437,6 @@ createNameSpace("realityEditor.sceneGraph");
             }
         }
     }
-    exports.attachToGroundPlane = attachToGroundPlane;
 
     // a helper function for adding generic/miscellaneous elements to the sceneGraph that will be used for 3D UI
     function addVisualElement(elementName, optionalParent, linkedDataObject, initialLocalMatrix) {
@@ -560,19 +466,16 @@ createNameSpace("realityEditor.sceneGraph");
         }
 
         return nodeId;
-    };
-    exports.addVisualElement = addVisualElement;
+    }
 
     function getVisualElement(elementName) {
         let nodeId = elementName + '_VISUAL_ELEMENT';
         return getSceneNodeById(nodeId);
-    };
-    exports.getVisualElement = getVisualElement;
+    }
 
     function getViewMatrix() {
         return utils.invertMatrix(cameraNode.localMatrix);
     };
-    exports.getViewMatrix = getViewMatrix;
 
     /**
      * Moves the node in the scene graph to be located relative to a new parent
@@ -601,7 +504,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         sceneNode.flagForRecompute();
     }
-    exports.changeParent = changeParent;
 
     function changeId(sceneNode, newId) {
         let oldId = sceneNode.id;
@@ -618,7 +520,112 @@ createNameSpace("realityEditor.sceneGraph");
         // this.flagAsDirty(); // this will make sure computations get computed/cached with new ID
         sceneNode.flagForRecompute(); // TODO: might not be necessary? just say e.g. data[new] = data[old]; delete data[old];
     }
+    
+    /************ Private Functions ************/
+    function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
+        let sceneNodeRotateX;
+        let thisNodeId = objectId + 'rotateX';
+        if (typeof sceneGraph[thisNodeId] !== 'undefined') {
+            console.warn('trying to add duplicate rotateX to scene graph');
+            sceneNodeRotateX = sceneGraph[thisNodeId];
+        } else {
+            sceneNodeRotateX = new SceneNode(thisNodeId);
+            // let _object = realityEditor.getObject(objectId);
+            sceneGraph[thisNodeId] = sceneNodeRotateX;
+        }
+
+        sceneNodeRotateX.setParent(sceneNodeObject);
+        console.log('SceneGraph: added rotateX to object ' + objectId);
+
+        // image target objects require one coordinate system rotation. ground plane requires another.
+        if (groundPlaneVariation) {
+            sceneNodeRotateX.setLocalMatrix( makeGroundPlaneRotationX(-(Math.PI/2)) );
+        } else {
+            sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
+                1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ]);
+        }
+
+        return sceneNodeRotateX;
+    }
+
+    function getNodeOrRotateXChild(sceneNode) {
+        if (sceneNode.needsRotateX) {
+            let childRotateXId = sceneNode.id + 'rotateX';
+            return getSceneNodeById(childRotateXId);
+        }
+        return sceneNode;
+    }
+
+    function makeGroundPlaneRotationX(theta) {
+        var c = Math.cos(theta), s = Math.sin(theta);
+        return [  1, 0, 0, 0,
+            0, c, -s, 0,
+            0, s, c, 0,
+            0, 0, 0, 1];
+    }
+
+    function recomputeScene() {
+        if (rootNode) {
+            rootNode.updateWorldMatrix();
+        }
+        if (cameraNode) {
+            cameraNode.updateWorldMatrix();
+        }
+
+        // this might become a child of a world object but still safe to call update multiple times
+        if (groundPlaneNode) {
+            groundPlaneNode.updateWorldMatrix();
+        }
+
+        // just in case, iterate over all miscellaneous visual elements (they are ignored if they've already been
+        // processed by one of the recursive calls above because .needsRecompute gets reset
+        for (let elementId in visualElements) {
+            let visualElementNode = visualElements[elementId];
+            visualElementNode.updateWorldMatrix();
+        }
+    }
+
+    /*******************************************/
+
+    // public init method
+    exports.initService = initService;
+
+    // public methods to add new things to the sceneGraph
+    exports.addObject = addObject;
+    exports.addFrame = addFrame;
+    exports.addNode = addNode;
+    exports.addVisualElement = addVisualElement;
+
+    // public methods to update the positions of things in the sceneGraph
+    exports.setCameraPosition = setCameraPosition;
+    exports.setGroundPlanePosition = setGroundPlanePosition;
+    exports.moveSceneNodeToCamera = moveSceneNodeToCamera;
+    exports.updatePositionData = updatePositionData;
+    exports.attachToGroundPlane = attachToGroundPlane;
+    exports.changeParent = changeParent;
     exports.changeId = changeId;
 
-    exports.initService = initService;
+    // public methods to compute calculations based on the sceneGraph
+    exports.getDistanceToCamera = getDistanceToCamera;
+    exports.getCSSMatrix = getCSSMatrix;
+    exports.getCSSMatrixWithoutTranslation = getCSSMatrixWithoutTranslation;
+    exports.getScreenPosition = getScreenPosition;
+    exports.getWorldPosition = getWorldPosition;
+    exports.getPositionRelativeToCamera = getPositionRelativeToCamera;
+    exports.getModelViewMatrix = getModelViewMatrix;
+    exports.getGroundPlaneModelViewMatrix = getGroundPlaneModelViewMatrix;
+    exports.isInFrontOfCamera = isInFrontOfCamera;
+    exports.getViewMatrix = getViewMatrix;
+
+    // public method to recompute sceneGraph for all visible entities
+    exports.calculateFinalMatrices = calculateFinalMatrices;
+
+    // TODO: can we get rid of full/direct access to sceneGraph?
+    exports.getSceneNodeById = getSceneNodeById;
+    exports.getVisualElement = getVisualElement;
+
 })(realityEditor.sceneGraph);
