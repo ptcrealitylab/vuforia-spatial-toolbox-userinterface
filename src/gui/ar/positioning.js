@@ -280,26 +280,12 @@ realityEditor.gui.ar.positioning.applyParentScaleToDragPosition = function(activ
  * @return {{x: number, y: number, scale: number, matrix: Array.<number>, ...}}
  */
 realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
-
     // frames use their AR data
-
     if (activeVehicle.hasOwnProperty('visualization')) {
         return activeVehicle.ar;
     }
 
-    // // nodes on global frames use their x, y, scale and their parent frame's matrix
-    // 
-    // if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
-    //     var frame = realityEditor.getFrame(activeVehicle.objectId, activeVehicle.frameId);
-    //     if (frame) {
-    //         var parentFramePositionData = realityEditor.gui.ar.positioning.getPositionData(frame);
-    //         // only parent frame has matrix -> just use that
-    //         realityEditor.gui.ar.utilities.copyMatrixInPlace(parentFramePositionData.matrix, activeVehicle.matrix);
-    //     }
-    // }
-
-    // logic nodes and nodes on local frames just use their own x, y, and matrix
-
+    // nodes have x, y, scale directly as properties
     return activeVehicle;
 };
 

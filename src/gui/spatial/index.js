@@ -101,7 +101,7 @@ realityEditor.gui.spatial.collectSpatialLists = function() {
             this.timeRecorder.initSequence(objectKey, objectKey, '', '');
             
             let objMatrix = []; // remove viewMatrix from modelView matrix to get correct modelMatrix
-            let objMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(objectKey, true, true);
+            let objMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(objectKey);
             this.utilities.multiplyMatrix(objMVMatrix, cameraNode.localMatrix, objMatrix);
             
             this.timeRecorder.addMatrix(objMatrix, objectKey);
@@ -112,7 +112,7 @@ realityEditor.gui.spatial.collectSpatialLists = function() {
                     this.timeRecorder.initSequence(frameKey, objectKey, frameKey, '');
 
                     let frameMatrix = []; // remove viewMatrix from modelView matrix to get correct modelMatrix
-                    let frameMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(frameKey, true, true);
+                    let frameMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(frameKey);
                     this.utilities.multiplyMatrix(frameMVMatrix, cameraNode.localMatrix, frameMatrix);
 
                     this.timeRecorder.addMatrix(frameMatrix, frameKey);
@@ -133,7 +133,7 @@ realityEditor.gui.spatial.collectSpatialList = function(selectionList, resultsLi
             if (sceneNode) {
                 resultsList[key] = {
                     'key': key,
-                    'matrix': realityEditor.sceneGraph.getModelViewMatrix(key, true, true)
+                    'matrix': realityEditor.sceneGraph.getModelViewMatrix(key)
                 };
             }
         }
