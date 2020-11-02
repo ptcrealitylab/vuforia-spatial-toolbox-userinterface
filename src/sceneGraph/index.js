@@ -497,9 +497,12 @@ createNameSpace("realityEditor.sceneGraph");
             let desiredWorldMatrix = sceneNode.worldMatrix;
             let newParentWorldMatrix = sceneNode.parent.worldMatrix;
             let requiredLocalMatrix = [];
-            // utils.multiplyMatrix(utils.invertMatrix(newParentWorldMatrix), desiredWorldMatrix, requiredLocalMatrix);
             utils.multiplyMatrix(desiredWorldMatrix, utils.invertMatrix(newParentWorldMatrix), requiredLocalMatrix);
-            sceneNode.setLocalMatrix(requiredLocalMatrix);
+            let transform = sceneNode.getTransformMatrix();
+            let inverseTransform = utils.invertMatrix(transform);
+            let untransformed = [];
+            utils.multiplyMatrix(inverseTransform, requiredLocalMatrix, untransformed);
+            sceneNode.setLocalMatrix(untransformed);
         }
 
         sceneNode.flagForRecompute();

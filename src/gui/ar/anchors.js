@@ -118,11 +118,11 @@ createNameSpace("realityEditor.gui.ar.anchors");
 
     /**
      * This gets triggered at the end of gui.ar.draw.update
-     * @param modelViewMatrices
+     * @param visibleObjects
      */
-    function onUpdate(modelViewMatrices) {
-        for (var objectKey in modelViewMatrices) {
-            if (!modelViewMatrices.hasOwnProperty(objectKey)) continue;
+    function onUpdate(visibleObjects) {
+        for (var objectKey in visibleObjects) {
+            if (!visibleObjects.hasOwnProperty(objectKey)) continue;
             if (!isAnchorObject(objectKey)) continue;
 
             // create the DOM element and render with the correct transformation
@@ -141,21 +141,18 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 continue;
             }
 
-            // retrieve final value computed in pre-processing step
-            // let finalMatrix = finalAnchorMatrices[objectKey];
-            
+            // retrieve final value computed by scene graph
             let visualElementNode = realityEditor.sceneGraph.getVisualElement('anchor' + objectKey);
             let finalMatrix = realityEditor.sceneGraph.getCSSMatrix(visualElementNode.id);
 
             let activeElt = globalDOMCache['anchor' + objectKey];
 
-            // TODO ben: re-enable showing/hiding based on distance and isOutsideViewport
+            // render if within view frustum and within distance threshold (last frame)
             if (!anchorsOutsideOfViewport[objectKey]) {
                 activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
             } else {
-                hideAnchorElementIfNeeded(objectKey); // hide if it was outside last frame
+                hideAnchorElementIfNeeded(objectKey); // hide if it was outside (last frame)
             }
-
             
             // hide if it is outside the viewport or too far away
             // let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
@@ -169,9 +166,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 if (anchorsOutsideOfViewport[objectKey]) {
                     delete anchorsOutsideOfViewport[objectKey];
                     activeElt.classList.remove('outsideOfViewport');
+                    activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
                 }
             }
-            
         }
     }
 
@@ -248,7 +245,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
             onAnchorTapped(objectKey);
         });
 
-        // add a scene node to the groundPlane's rotateX sceneGraph node
+        // add a scene node to object for the anchor graphics and rotate it 180 degrees so it faces correct direction
         let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
         let elementMatrix = [];
         let scale = 0.5;
@@ -258,11 +255,11 @@ createNameSpace("realityEditor.gui.ar.anchors");
             0, 0, scale, 0,
             0, 0, 0, 1
         ];
-        utilities.multiplyMatrix(transform, makeGroundPlaneRotationZ(Math.PI), elementMatrix);
+        utilities.multiplyMatrix(transform, makeRotationZ(Math.PI), elementMatrix);
         realityEditor.sceneGraph.addVisualElement(anchorContainer.id, objectSceneNode, undefined, elementMatrix);
     }
 
-    var makeGroundPlaneRotationZ =  function ( theta ) {
+    var makeRotationZ =  function ( theta ) {
         var c = Math.cos( theta ), s = Math.sin( theta );
         return [  c, -s, 0, 0,
             s, c, 0, 0,
@@ -277,22 +274,12 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function onAnchorTapped(objectKey) {
         if (!fullscreenAnchor) {
-            // setting fullscreenAnchor to the object ID is all that is necessary
+            // setting fullscreenAnchor to the object ID is all that is necessary to pick it up
             fullscreenAnchor = objectKey;
         } else {
-            // tapping on the fullscreen anchor requires more calculations to drop the anchor at the
-            // phone's exact position, because we need to calculate that position relative to world
+            // tapping on the fullscreen anchor drops the anchor at the phone's exact position
             if (fullscreenAnchor === objectKey) {
-                // let worldModelView = getWorldModelViewMatrix();
-                // let inverseWorld = utilities.invertMatrix(worldModelView);
-                //
-                // // flip it so it faces towards the camera instead of away from the camera
-                // let q = realityEditor.gui.ar.utilities.getQuaternionFromPitchRollYaw(Math.PI, Math.PI, 0);
-                // let rotationMatrix = utilities.getMatrixFromQuaternion(q);
-                // let finalMatrix = [];
-                // utilities.multiplyMatrix(rotationMatrix, inverseWorld, finalMatrix);
-                
-                // let anchorObjectNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                // calculates position relative to world so that anchor is positioned at the camera
                 realityEditor.sceneGraph.moveSceneNodeToCamera(objectKey, false);
 
                 // store the new relative position of the anchor to the world
@@ -320,7 +307,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
      *  least onc
      */
     function updateAnchorGraphics(objectKey, forceCreation) {
-        let element = globalDOMCache['anchorContents' + objectKey]; // TODO ben: why is this sometimes null?
+        let element = globalDOMCache['anchorContents' + objectKey];
         if (fullscreenAnchor === objectKey && (!element.classList.contains('anchorContentsFullscreen') || forceCreation)) {
 
             // first, hide the sidebar buttons

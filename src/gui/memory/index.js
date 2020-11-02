@@ -421,7 +421,6 @@ MemoryContainer.prototype.remember = function() {
 
     realityEditor.sceneGraph.setCameraPosition(this.memory.cameraMatrix);
     
-    // realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
     realityEditor.gui.ar.draw.visibleObjectsCopy[this.memory.id] = this.memory.matrix;
     realityEditor.gui.ar.draw.visibleObjects[this.memory.id] = this.memory.matrix;
     
