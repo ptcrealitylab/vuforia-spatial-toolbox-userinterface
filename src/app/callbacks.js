@@ -147,7 +147,6 @@ createNameSpace('realityEditor.app.callbacks');
                 realityEditor.network.addHeartbeatObject(message);
             }
 
-
             // forward the action message to the network module, to synchronize state across multiple clients
         } else if (typeof message.action !== 'undefined') {
             realityEditor.network.onAction(message.action);
@@ -226,10 +225,6 @@ createNameSpace('realityEditor.app.callbacks');
                                 realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, visibleObjects[worldObjectKey], rotated);
                                 realityEditor.sceneGraph.setGroundPlanePosition(rotated);
                             }
-                            // let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
-                            // if (worldObjectSceneNode) {
-                            //     realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
-                            // }
                         }
                     }
                 }
@@ -248,19 +243,13 @@ createNameSpace('realityEditor.app.callbacks');
             }
         }
 
+        // currently the origin matrix here isn't actually used, the sceneGraph matrix is used instead
+        // but this still importantly adds all localized world objects (non-null origin) to the visibleObjects list
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
-            // corrected camera matrix is actually the view matrix (inverse camera), so it works as an "object" placed at the world origin
-
-            // re-localize world objects based on the world reference marker (also used for ground plane re-localization)
             var origin = realityEditor.worldObjects.getOrigin(worldObjectKey);
             if (origin) {
-                // let tempMatrix = [];
-                // realityEditor.gui.ar.utilities.multiplyMatrix(origin, realityEditor.gui.ar.draw.correctedCameraMatrix, tempMatrix);
-                // visibleObjects[worldObjectKey] = tempMatrix;
-                
                 visibleObjects[worldObjectKey] = origin; // always add all worldObjects that have been localized
             }
-
         });
 
         realityEditor.gui.ar.draw.visibleObjectsCopy = visibleObjects;
@@ -268,10 +257,7 @@ createNameSpace('realityEditor.app.callbacks');
         // finally, render the objects/frames/nodes. I have tested doing this based on a requestAnimationFrame loop instead
         //  of being driven by the vuforia framerate, and have mixed results as to which is smoother/faster
 
-        // if (typeof realityEditor.gui.ar.draw.update !== 'undefined') {
         realityEditor.gui.ar.draw.update(realityEditor.gui.ar.draw.visibleObjectsCopy);
-        // }
-        
     }
 
     /**
@@ -284,7 +270,6 @@ createNameSpace('realityEditor.app.callbacks');
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
             realityEditor.sceneGraph.setCameraPosition(cameraMatrix);
-            // realityEditor.gui.ar.draw.correctedCameraMatrix = realityEditor.gui.ar.utilities.invertMatrix(cameraMatrix);
         }
     }
 
@@ -339,17 +324,14 @@ createNameSpace('realityEditor.app.callbacks');
 
             // snap groundPlane to world origin, if available
             if (worldObject && worldObject.uuid !== realityEditor.worldObjects.getLocalWorldId()) {
-                
                 let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
                 if (worldObjectSceneNode) {
-                    // note: if sceneGraph hierarchy gets more complicated, remember to switch localMatrix for
-                    //       a matrix computed to preserve worldObject's worldMatrix
-                    // realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
-
+                    // note: if sceneGraph hierarchy gets more complicated (if ground plane and world objects have
+                    // different parent's in the scene graph), remember to switch worldObjectSceneNode.localMatrix
+                    // for a matrix computed to preserve worldObject's worldMatrix
                     let rotated = [];
                     realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
                     realityEditor.sceneGraph.setGroundPlanePosition(rotated);
-                    
                     return;
                 }
             }
