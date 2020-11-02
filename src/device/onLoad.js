@@ -245,7 +245,6 @@ realityEditor.device.onload = function () {
     });
 
     var stats = new Stats();
-    // stats.showPanel( 2 );
     document.body.appendChild(stats.dom);
     
     // start TWEEN library for animations

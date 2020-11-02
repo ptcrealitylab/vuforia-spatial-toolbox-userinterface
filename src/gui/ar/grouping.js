@@ -163,12 +163,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 var isSingleTouch = params.event.touches.length === 1;
                 
                 if (activeVehicle && isSingleTouch) {
-                    // also move group objects too
-                    // var touchPosition = realityEditor.device.currentScreenTouches[0].position;
-                    // moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x,touchPosition.y);
-                    // moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
-
-                    // new method?
+                    // Any time a frame or node is moved, check if it's part of a group and move all grouped frames/nodes with it
                     let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
                     forEachGroupedFrame(activeVehicle, function(groupedFrame) {
                         let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
@@ -822,54 +817,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
             }
         }
         frameToObj[frameKey] = thisFrame.objectId;
-    }
-    
-    /**
-     * method to move transformed from to the (x,y) point on its plane
-     * where the (screenX,screenY) ray cast intersects with offset being
-     * locally calculated
-     * based on realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate
-     * @param {Frame} activeVehicle
-     * @param {number} screenX
-     * @param {number} screenY
-     */
-    function moveGroupVehicleToScreenCoordinate(activeVehicle, screenX, screenY) {
-        // TODO ben: fix this to preserve relative worldMatrix between vehicles
-        
-        // get the required relative world position between the activeVehicle and the selected vehicle
-        
-        // set the local matrix of this activeVehicle to preserve that relative world position
-        
-        // var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
-        //
-        // var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        // var newPosition = {
-        //     x: results.point.x - results.offsetLeft,
-        //     y: results.point.y - results.offsetTop
-        // };
-        //
-        // var changeInPosition = {
-        //     x: newPosition.x - positionData.x,
-        //     y: newPosition.y - positionData.y
-        // };
-        // if (activeVehicle.groupTouchOffset === undefined) {
-        //     activeVehicle.groupTouchOffset = changeInPosition;
-        // } else {
-        //     positionData.x = newPosition.x - activeVehicle.groupTouchOffset.x;
-        //     positionData.y = newPosition.y - activeVehicle.groupTouchOffset.y;
-        // }
-    }
-
-    /**
-     * Any time a frame or node is moved, check if it's part of a group and move all grouped frames/nodes with it
-     * @param {Frame|Node} activeVehicle
-     * @param {number} pageX
-     * @param {number} pageY
-     */
-    function moveGroupedVehiclesIfNeeded(activeVehicle, pageX, pageY) {
-        forEachGroupedFrame(activeVehicle, function(frame) {
-            moveGroupVehicleToScreenCoordinate(frame, pageX, pageY);
-        }, true);
     }
 
     exports.initService = initService;

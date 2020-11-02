@@ -7,6 +7,7 @@ module.exports = {
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly",
+        "Stats": "readonly",
 
         "Block": "writable",
         "BlockLink": "writable",

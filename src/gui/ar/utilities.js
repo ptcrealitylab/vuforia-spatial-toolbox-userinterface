@@ -766,7 +766,7 @@ realityEditor.gui.ar.utilities.distance = function (matrix) {
         if (realityEditor.device.environment.distanceRequiresCameraTransform()) {
             // calculate distance to camera
             var matrixToCamera = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, matrixToCamera);
+            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.sceneGraph.getViewMatrix(), matrixToCamera);
             matrix = matrixToCamera;
         }
         distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));

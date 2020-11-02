@@ -1440,10 +1440,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
             // }
 
             if (activeVehicle && !globalStates.editingMode) {
-                // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).style.display = 'none';
-                // document.getElementById('svg' + (this.editingState.node || this.editingState.frame)).classList.remove('visibleEditingSVG');
                 globalDOMCache[(this.editingState.node || this.editingState.frame)].querySelector('.corners').style.visibility = 'hidden';
-
             }
 
             this.resetEditingState();

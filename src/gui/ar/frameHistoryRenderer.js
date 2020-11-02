@@ -8,9 +8,6 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
 
 (function(exports) {
 
-    var utilities = realityEditor.gui.ar.utilities;
-    var tempResMatrix = [];
-    var activeObjectMatrix = [];
     var linesToDraw = [];
     var missingLinksToDraw = [];
 
@@ -118,8 +115,6 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 
             }
         });
-        
-
     }
 
     /**
@@ -499,7 +494,7 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
                 parentSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
             }
 
-            // elementName, optionalParent, linkedDataObject, initialLocalMatrix
+            // elementName, optionalParent, linkedDataObject (includes x,y,scale), initialLocalMatrix
             ghostElementId = realityEditor.sceneGraph.addVisualElement(elementName, parentSceneNode, ghostVehicle, ghostPosition.matrix);
         
         } else {
