@@ -411,8 +411,8 @@ createNameSpace("realityEditor.device.distanceScaling");
         var editingFrame = realityEditor.device.getEditingVehicle();
         if (!editingFrame) return;
 
-        // defaultDistance = 2000 is the default size in pixels of the radius
-        // we divide by 0.9 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is just around the border
+        // defaultDistance = 2000 is the default size of the radius (1000 per meter)
+        // we divide by 0.85 since 1.0 is when it fades out entirely, 0.8 is visible entirely, so 0.85 is in between
         
         editingFrame.distanceScale = (realityEditor.sceneGraph.getDistanceToCamera(editingFrame.uuid) / defaultDistance) / 0.85; 
         
