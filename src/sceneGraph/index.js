@@ -16,7 +16,7 @@ createNameSpace("realityEditor.sceneGraph");
  * https://webglfundamentals.org/webgl/lessons/webgl-scene-graph.html
  */
 (function(exports) {
-    
+
     let SceneNode = realityEditor.sceneGraph.SceneNode;
 
     let utils = realityEditor.gui.ar.utilities;
@@ -51,7 +51,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.NAMES = NAMES;
 
     exports.printInfo = false;
-    
+
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
         rootNode = new SceneNode(NAMES.ROOT);
@@ -113,7 +113,7 @@ createNameSpace("realityEditor.sceneGraph");
             addRotateX(sceneNodeObject, objectId);
         }
     }
-    
+
     function addFrame(objectId, frameId, linkedFrame, initialLocalMatrix) {
         let sceneNodeFrame;
         if (typeof sceneGraph[frameId] !== 'undefined') {
@@ -356,11 +356,11 @@ createNameSpace("realityEditor.sceneGraph");
         if (typeof finalCSSMatricesWithoutTransform[activeKey] === 'undefined') {
             finalCSSMatricesWithoutTransform[activeKey] = [];
         }
-        
+
         let sceneNode = getSceneNodeById(activeKey);
         let transform = sceneNode.getTransformMatrix();
         let inverseTransform = utils.invertMatrix(transform);
-        
+
         utils.multiplyMatrix(inverseTransform, finalCSSMatrices[activeKey], finalCSSMatricesWithoutTransform[activeKey]);
 
         return finalCSSMatricesWithoutTransform[activeKey];
@@ -411,7 +411,7 @@ createNameSpace("realityEditor.sceneGraph");
             z: relativePosition[14]/relativePosition[15]
         }
     }
-    
+
     function getModelViewMatrix(activeKey) {
         return relativeToCamera[activeKey];
     }
@@ -523,7 +523,7 @@ createNameSpace("realityEditor.sceneGraph");
         // this.flagAsDirty(); // this will make sure computations get computed/cached with new ID
         sceneNode.flagForRecompute(); // TODO: might not be necessary? just say e.g. data[new] = data[old]; delete data[old];
     }
-    
+
     /************ Private Functions ************/
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
         let sceneNodeRotateX;
