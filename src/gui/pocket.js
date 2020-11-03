@@ -189,7 +189,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         addedLogic.x = 0;
         addedLogic.y = 0;
 
-        addedLogic.scale = closestObject ? closestObject.averageScale : globalStates.defaultScale;
+        addedLogic.scale = globalStates.defaultScale / 2; // logic nodes are naturally larger so make them smaller
+        //closestObject ? closestObject.averageScale : globalStates.defaultScale;
         addedLogic.screenZ = 1000;
         addedLogic.loaded = false;
         addedLogic.matrix = [];

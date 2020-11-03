@@ -175,30 +175,8 @@ var globalStates = {
     reality: false,
     interface: "gui",
 
-    useGroundPlane: false,
-    numFunctionCalls: {
-        multiplyMatrix: 0,
-        invertMatrix: 0,
-        copyMatrix: 0
-    }
+    useGroundPlane: false
 };
-
-function printNumFunctionCalls() {
-    let calls = globalStates.numFunctionCalls;
-    let total = calls.multiplyMatrix + calls.invertMatrix + calls.copyMatrix;
-    console.log('\n' + total + ' matrix computations');
-    console.log(calls.multiplyMatrix + ' multiplyMatrix');
-    console.log(calls.invertMatrix + ' invertMatrix');
-    console.log(calls.copyMatrix + ' copyMatrix');
-
-    calls.multiplyMatrix = 0;
-    calls.invertMatrix = 0;
-    calls.copyMatrix = 0;
-}
-
-// setInterval(function() {
-//     printNumFunctionCalls();
-// }, 1000);
 
 var globalCanvas = {};
 

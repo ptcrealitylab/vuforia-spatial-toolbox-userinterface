@@ -244,8 +244,12 @@ realityEditor.device.onload = function () {
         evt.target.releasePointerCapture(evt.pointerId);
     });
 
-    var stats = new Stats();
-    document.body.appendChild(stats.dom);
+    const SHOW_FPS_STATS = false;
+    let stats;
+    if (SHOW_FPS_STATS) {
+        stats = new Stats();
+        document.body.appendChild(stats.dom);
+    }
     
     // start TWEEN library for animations
     (function animate(time) {
@@ -256,10 +260,10 @@ realityEditor.device.onload = function () {
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
-        stats.update();
-        
-        // TODO: implement separated render and recalculate functions for the rendering engine
-        // realityEditor.gui.ar.draw.render();
+
+        if (SHOW_FPS_STATS) {
+            stats.update();
+        }
     })();
     
     // start the AR framework in native iOS

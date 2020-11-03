@@ -27,9 +27,6 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
         for (var propertyName in additionalStyling) {
             corners.style[propertyName] = additionalStyling[propertyName];
         }
-        
-        console.log('wrapped div with padding=' + padding + ' and sizeAdjustment=' + sizeAdjustment + ' and' +
-            ' divWidth=' +  divWidth + '.... resulting width=' + corners.style.width);
 
         div.appendChild(corners);
         return corners;
@@ -102,7 +99,6 @@ createNameSpace('realityEditor.gui.moveabilityCorners');
         }
         corners.style.width = (width + padding * 2) + 'px';
         corners.style.height = (height + padding * 2) + 'px';
-        console.log('resulting width = ' + (width + padding * 2) + 'px');
         return corners;
     }
 
