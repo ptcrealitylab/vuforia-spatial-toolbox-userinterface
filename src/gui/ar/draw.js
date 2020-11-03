@@ -854,21 +854,14 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
  */
 realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
     
-    // (activeKey, activeVehicle, globalDOMCache, cout
     var frameInMotion = realityEditor.getFrame(globalStates.inTransitionObject, globalStates.inTransitionFrame);
     realityEditor.gui.ar.draw.hideTransformed(globalStates.inTransitionFrame, frameInMotion, globalDOMCache, cout);
-
-    // var startingMatrix = realityEditor.device.editingState.startingMatrix || [];
-    // realityEditor.gui.ar.positioning.setPositionDataMatrix(frameInMotion, startingMatrix);
     
     if (realityEditor.device.editingState.startingMatrix) {
-        // realityEditor.device.editingState.startingMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).localMatrix;
         realityEditor.sceneGraph.getSceneNodeById(globalStates.inTransitionFrame).setLocalMatrix(realityEditor.device.editingState.startingMatrix);
     }
     
-    // var positionData = realityEditor.gui.ar.positioning.getPositionData(frameInMotion);
-    // positionData.matrix = [];
-    
+    // TODO: remove temp and begin now that scene graph handles positioning
     frameInMotion.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
     frameInMotion.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
 
@@ -1627,6 +1620,9 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
         0, 0, -1, 0,
         0, 0, -1 * distanceInFrontOfCamera, 1
     ]);
+
+    // TODO: automatically recognize when CSS matrix is out of date, so that we don't need to manually recalculate here
+    realityEditor.sceneGraph.calculateFinalMatrices([pocketContainer.vehicle.objectId]);
     
     // only start editing (and animate) it if you didn't do a quick tap that already released by the time it loads
     if (pocketContainer.type !== 'ui' || realityEditor.device.currentScreenTouches.map(function(elt){return elt.targetId;}).indexOf("pocket-element") > -1) {

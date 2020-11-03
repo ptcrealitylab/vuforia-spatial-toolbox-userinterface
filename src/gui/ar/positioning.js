@@ -133,6 +133,8 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 };
 
 /**
+ * Currently not used, but this is a good alternative method for projecting a (screenX,Y) position onto an element:
+ * @example newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY))
  * Creates and returns a div with the same CSS3D transform as the provided vehicle, but with all x/y/scale removed
  * @param {Frame|Node} activeVehicle
  * @param {boolean} isContinuous
@@ -148,18 +150,14 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
         matrixComputationDiv.id = 'matrixComputationDiv';
         matrixComputationDiv.classList.add('main');
         matrixComputationDiv.classList.add('ignorePointerEvents');
-        // matrixComputationDiv.style.visibility = 'visible';
-        // matrixComputationDiv.style.backgroundColor = 'rgba(255,0,0,0.2)';
         
         // 3D transforms only apply correctly if it's a child of the GUI container (like the rest of the tools/nodes)
         document.getElementById('GUI').appendChild(matrixComputationDiv);
         globalDOMCache['matrixComputationDiv'] = matrixComputationDiv;
     }
     
-    // optimize dragging same element around while frozen by not recomputing matrix
-    // let matrixCantChange = !realityEditor.device.isEditingUnconstrained(activeVehicle) || globalStates.freezeButtonState;
-    if (/*matrixCantChange &&*/ isContinuous && globalStates.lastRepositionedUuid === activeKey) {
-        // console.log('optimized reposition');
+    // optimize dragging same element around while frozen by not recomputing matrix multiple times per drag
+    if (isContinuous && globalStates.lastRepositionedUuid === activeKey) {
         return matrixComputationDiv;
     }
     
@@ -178,12 +176,20 @@ realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(active
     return matrixComputationDiv;
 };
 
+/**
+ * Call this when you stop a drag gesture
+ */
 realityEditor.gui.ar.positioning.stopRepositioning = function() {
     if (globalDOMCache['matrixComputationDiv']) {
         globalDOMCache['matrixComputationDiv'].style.display = 'none'; // hide it after use so it doesn't consume resources
         globalStates.lastRepositionedUuid = null;
     }
+    globalStates.repositionStartingCSSMatrix = null;
 };
+
+// we can use either of two different implementations for moveVehicleToScreenCoordinate by toggling this
+// both are working but further investigation is needed to determine if one is always better than the other
+realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinaates = true;
 
 /**
  * Primary method to move a transformed frame or node to the (x,y) point on its plane where the (screenX,screenY) ray cast intersects
@@ -201,16 +207,29 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     var newPosition;
     try {
         // set dummy div transform to iframe without x,y,scale
-        let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle, isContinuous);
-        newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
+        if (this.useWebkitForProjectedCoordinaates) {
+            let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle, isContinuous);
+            newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
+        }
+
         if (!isContinuous) {
             realityEditor.gui.ar.positioning.stopRepositioning();
         } else {
             globalStates.lastRepositionedUuid = activeVehicle.uuid;
+            if (!this.useWebkitForProjectedCoordinaates) {
+                if (!globalStates.repositionStartingCSSMatrix) {
+                    globalStates.repositionStartingCSSMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid)
+                }
+            }
         }
+
+        if (!this.useWebkitForProjectedCoordinaates) {
+            let cssMatrix = globalStates.repositionStartingCSSMatrix || realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid);
+            newPosition = realityEditor.gui.ar.utilities.solveProjectedCoordinatesInVehicle(activeVehicle, screenX, screenY, cssMatrix);
+        }
+
     } catch (e) {
-        console.warn('Error computing untransformed matrix or in webkitConvertPointFromPageToNode while trying to' +
-            ' move vehicle', e);
+        console.warn('Error while trying to compute newPosition for vehicle', e);
         return;
     }
 

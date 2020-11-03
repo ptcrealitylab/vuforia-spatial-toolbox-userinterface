@@ -92,7 +92,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
                 drawGroupHulls();
 
-                // TODO ben: update with new sceneGraph 
                 if (isUnconstrainedEditingGroup && !realityEditor.device.editingState.unconstrainedDisabled) {
 
                     let activeVehicle = realityEditor.device.getEditingVehicle();
