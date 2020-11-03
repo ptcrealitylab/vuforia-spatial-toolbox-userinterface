@@ -47,7 +47,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalScaleAdjustment, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING */
+/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalFrameScaleAdjustment, globalNodeScaleAdjustment,, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING */
 
 /**********************************************************************************************************************
  ******************************************** constant settings *******************************************************
@@ -208,7 +208,8 @@ var pocketItem  = {"pocket" : new Objects()};
 pocketItem["pocket"].frames["pocket"] = new Frame();
 var pocketItemId = "";
 
-var globalScaleAdjustment = 1.0; // 0.5;
+var globalFrameScaleAdjustment = 0.5;
+var globalNodeScaleAdjustment = 0.5;
 
 /**
  * @typedef {Object} PocketContainer

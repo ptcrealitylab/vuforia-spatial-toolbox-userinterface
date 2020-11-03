@@ -103,10 +103,10 @@ createNameSpace("realityEditor.sceneGraph");
         }
 
         if (typeof this.linkedVehicle.ar !== 'undefined') {
-            return this.linkedVehicle.ar.scale / parentScaleRemoval;
+            return this.linkedVehicle.ar.scale / parentScaleRemoval * globalFrameScaleAdjustment;
         }
         if (typeof this.linkedVehicle.scale !== 'undefined') {
-            return this.linkedVehicle.scale / parentScaleRemoval;
+            return this.linkedVehicle.scale / parentScaleRemoval * globalNodeScaleAdjustment;
         }
         return 1;
     };

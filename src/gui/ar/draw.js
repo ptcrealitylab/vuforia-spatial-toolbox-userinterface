@@ -1106,6 +1106,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (typeof activeVehicle.isPendingInitialPlacement !== 'undefined') {
                 let touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
                 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, touchPosition.x, touchPosition.y, true);
+                let keys = activeVehicle.isPendingInitialPlacement;
+                realityEditor.device.beginTouchEditing(keys.objectKey, keys.frameKey, keys.nodeKey);
                 delete activeVehicle.isPendingInitialPlacement;
             }
 
@@ -1114,11 +1116,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             // 2. otherwise float in unconstrained slightly in front of the editor camera
             // 3. animate so it looks like it is being pushed from pocket
             if (activePocketNodeWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                console.log('just added pocket node');
                 this.addPocketVehicle(pocketNode);
             }
             if (activePocketFrameWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
-                console.log('just added pocket frame');
                 this.addPocketVehicle(pocketFrame);
             }
 
@@ -1533,17 +1533,6 @@ realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, _isFullScre
     }
 };
 
-/**
- * Given the vuforia matrix for the marker, and the transformation of the frame relative to that, gives a final composite matrix
- * @param {Array.<number>} visibleObjectMatrix
- * @param {Array.<number>} frameMatrix
- * @param {number} frameX
- * @param {number} frameY
- * @param {number} frameScale
- * @return {Array}
- * @todo: still unsure if this is completely correct. order of rotation, scale, and translation matters.
- */
-
 // Valentin: Speeding up the calls by placing the variables outside of the scope into an object. As such Javascript does not need to handle memory for it.
 
 realityEditor.gui.ar.draw.getMatrixValues = {
@@ -1554,26 +1543,6 @@ realityEditor.gui.ar.draw.getMatrixValues = {
     finalMatrix: [],
     rotateX : rotateX,
     scale : []
-};
-
-realityEditor.gui.ar.draw.getFinalMatrixForFrame = function(visibleObjectMatrix, frameMatrix, frameX, frameY, frameScale) {
- 
-    // 1. Construct matrix for scale and translation
-    this.getMatrixValues.scale = [
-        frameScale, 0, 0, 0,
-        0, -frameScale, 0, 0,
-        0, 0, frameScale, 0,
-        frameX, frameY, 0, 1
-    ];
-
-    // 2. multiply values
-    if (frameMatrix.length === 16) {
-        this.getMatrixValues.utils.multiplyMatrix(frameMatrix, visibleObjectMatrix, this.getMatrixValues.r3);
-        this.getMatrixValues.utils.multiplyMatrix(this.getMatrixValues.scale, this.getMatrixValues.r3, this.getMatrixValues.finalMatrix);
-    } else {
-        this.getMatrixValues.utils.multiplyMatrix(this.getMatrixValues.scale, visibleObjectMatrix, this.getMatrixValues.finalMatrix);
-    }
-    return this.getMatrixValues.finalMatrix;
 };
 
 /**
@@ -1600,7 +1569,6 @@ realityEditor.gui.ar.draw.showARFrame = function(activeKey) {
 /**
  * A one-time action that sets up the frame or node added from the pocket in the correct place and begins editing it
  * @param {PocketContainer} pocketContainer - either pocketFrame or pocketNode
- * @param {Object.<string, Array.<number>>} matrix - reference to realityEditor.gui.ar.draw.matrix collection of matrices
  */
 realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
 
@@ -1639,13 +1607,14 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, defaultScreenCenter.x, defaultScreenCenter.y, true);
         // 3. actually move it to the touch position (sets x and y), now that it knows the relative offset from the default
         realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(pocketContainer.vehicle, touchPosition.x, touchPosition.y, true);
-        // 4. add a flag so that we can finalize its position the next time drawTransformed is called
-        pocketContainer.vehicle.isPendingInitialPlacement = true;
-
-        realityEditor.device.beginTouchEditing(pocketContainer.vehicle.objectId, activeFrameKey, activeNodeKey);
-        // TODO ben: re-enable animation
+        // 4. add a flag so that we can finalize its position and begin dragging the next time drawTransformed is called
+        pocketContainer.vehicle.isPendingInitialPlacement = {
+            objectKey: pocketContainer.vehicle.objectId,
+            frameKey: activeFrameKey,
+            nodeKey: activeNodeKey
+        };
         // animate it as flowing out of the pocket
-        this.startPocketDropAnimation(250, 0.7, 1.0);
+        this.startPocketDropAnimation(200, 0, 0, 100);
     }
 
     // clear some flags so it gets rendered after this occurs
@@ -1659,13 +1628,13 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
  * Run an animation on the frame being dropped in from the pocket, performing a smooth tweening of its last matrix element
  * The frame scales down (moves away from camera) the bigger that 15th element is
  * @param {number} timeInMilliseconds - how long the animation takes (default 250ms)
- * @param {number} startPerspectiveDivide - the frame starts out (1 / this) times as big as usual (default 0.7)
- * @param {number} endPerspectiveDivide - the frame ends up (1 / this) times as big as usual (default 1)
+ * @param {number} startX - the frame starts out with this X translation and returns to its regular X
+ * @param {number} startY - the frame starts out with this Y translation and returns to its regular Y
+ * @param {number} startZ - the frame starts out with this Z translation and returns to its regular Z
  */
-realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds, startPerspectiveDivide, endPerspectiveDivide) {
+realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds, startX, startY, startZ) {
     var duration = timeInMilliseconds || 250;
-    var zStart = startPerspectiveDivide || 0.7;
-    var zEnd = endPerspectiveDivide || 1.0;
+    if (!startX && !startY && !startZ) { return; } // if motion unspecified or all are zero, skip animation
     
     // reset this so that the initial distance to screens gets calculated when the pocketAnimation ends
     // (or else it automatically gets pushed in by its own animation)
@@ -1673,17 +1642,25 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
         globalStates.initialDistance = null;
     }
     
-    var position = {x: 0, y: 0, z: zStart};
+    var position = {x: startX, y: startY, z: startZ};
     pocketDropAnimation = new TWEEN.Tween(position)
-        .to({z: zEnd}, duration)
+        .to({x: 0, y: 0, z: 0}, duration)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onUpdate(function() {
-            editingAnimationsMatrix[15] = position.z;
+            editingAnimationsMatrix[12] = position.x;
+            editingAnimationsMatrix[13] = position.y;
+            editingAnimationsMatrix[14] = position.z;
         }).onComplete(function() {
-            editingAnimationsMatrix[15] = zEnd;
+            editingAnimationsMatrix[12] = 0;
+            editingAnimationsMatrix[13] = 0;
+            editingAnimationsMatrix[14] = 0;
+            realityEditor.gui.ar.positioning.stopRepositioning(); // trigger drag matrix to be recomputed
             pocketDropAnimation = null;
         }).onStop(function() {
-            editingAnimationsMatrix[15] = zEnd;
+            editingAnimationsMatrix[12] = 0;
+            editingAnimationsMatrix[13] = 0;
+            editingAnimationsMatrix[14] = 0;
+            realityEditor.gui.ar.positioning.stopRepositioning();
             pocketDropAnimation = null;
         })
         .start();
@@ -1886,8 +1863,9 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         globalDOMCache[addSVG.id] = addSVG;
         
         // wrapping div in corners can only be done after it has been added
+        // the width and height don't matter as much here because it will get recalculated when frame contents load
         var padding = 24;
-        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(addOverlay, padding, false, {width: activeVehicle.width + padding/2 + 'px', height: activeVehicle.height + padding/2 + 'px', visibility: 'hidden'}, null, 4, 30);
+        realityEditor.gui.moveabilityCorners.wrapDivWithCorners(addOverlay, padding, false, {width: activeVehicle.width + padding*2 + 'px', height: activeVehicle.height + padding*2 + 'px', visibility: 'hidden'}, null, 4, 30);
         
         // add touch event listeners
         realityEditor.device.addTouchListenersForElement(addOverlay, activeVehicle);
