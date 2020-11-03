@@ -437,7 +437,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     function getViewMatrix() {
         return utils.invertMatrix(cameraNode.localMatrix);
-    };
+    }
 
     /**
      * Moves the node in the scene graph to be located relative to a new parent
