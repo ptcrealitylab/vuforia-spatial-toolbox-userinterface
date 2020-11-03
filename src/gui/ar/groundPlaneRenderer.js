@@ -17,17 +17,17 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
     let elementName = 'groundPlaneVisualization';
     let elementId = null;
-    
+
     let originName = 'groundPlaneOrigin';
     let originId = originName;
-    
+
     let elementPositionData = {
         x: 0,
         y: 0
     };
-    
+
     let centerPoint = new WebKitPoint(globalStates.height/2, globalStates.width/2);
-    
+
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
@@ -36,7 +36,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         realityEditor.gui.settings.addToggle('Visualize Ground Plane', 'shows detected ground plane', 'visualizeGroundPlane',  '../../../svg/powerSave.svg', false, function(newValue) {
             // only draw frame ghosts while in programming mode if we're not in power-save mode
             shouldVisualize = newValue;
-            
+
             if (newValue) {
                 globalStates.useGroundPlane = true; // makes sure the groundPlane position gets recalculated
                 startVisualization();
@@ -54,14 +54,14 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
             }
         });
-        
+
         // when the app loads, check once if it needs groundPlane and start up the tracker if so
         // TODO: wait until camera moves enough before trying to detect groundplane or it goes to origin
         setTimeout(function() {
             realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
         }, 1000);
     }
-    
+
     function startVisualization() {
         // add a scene node to the groundPlane's rotateX sceneGraph node
         if (!realityEditor.sceneGraph.getVisualElement(elementName)) {
@@ -77,14 +77,14 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             }
             elementId = realityEditor.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
         }
-        
+
         // create the DOM element that should visualize it and add it to the scene
         let element = getVisualizerElement();
         document.getElementById('GUI').appendChild(element);
-        
+
         let origin = getOriginElement();
         document.getElementById('GUI').appendChild(origin);
-        
+
         // add/activate the update loop
         if (!isUpdateListenerRegistered) {
             // registers a callback to the gui.ar.draw.update loop so that this module can manage its own rendering
@@ -92,7 +92,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             isUpdateListenerRegistered = true;
         }
     }
-    
+
     function stopVisualization() {
         let element = getVisualizerElement();
         if (element && element.parentNode) {
@@ -103,36 +103,32 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             element.parentNode.removeChild(element);
         }
     }
-    
+
     function onUpdate(_visibleObjects) {
         // render the ground plane visualizer
         if (!shouldVisualize) { return; } // TODO: actively unsubscribe on stop, so we don't have to ignore loop here
-        
+
         // raycast from screen coordinates (center of screen) onto groundplane
-        
         // move the visualizer element to the resulting (x,y)
-        
+
         // this gets used for the origin and the moving visualizer
         let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrix(elementId);
-        
+
         let origin = getOriginElement();
         untransformedMatrix[14] = 10;
         origin.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
-        
+
         // use the origin DOM element to convert the screen coordinate to the coordinate system of the plane
         elementPositionData = webkitConvertPointFromPageToNode(origin, centerPoint);
 
         let transform = [1, 0, 0, 0,
-                         0, 1, 0, 0,
-                         0, 0, 1, 0,
-                         elementPositionData.x, elementPositionData.y, 0, 1];
-        
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            elementPositionData.x, elementPositionData.y, 0, 1];
+
         let finalMatrix = [];
         realityEditor.gui.ar.utilities.multiplyMatrix(transform, untransformedMatrix, finalMatrix);
-        
-        // finalMatrix[14] = 10; // send to back
-        
-        
+
         let element = getVisualizerElement();
         element.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
     }
@@ -144,16 +140,15 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             // create if it doesn't exist
             // first create a container with the width and height of the screen. then add to that
 
+            // TODO: fiX the offset of the ground plane element so that it stays centered on the screen
             // let offsetContainer = document.createElement('div');
             // offsetContainer.classList.add('main');
             // offsetContainer.id = 'offset' + elementId;
-            
+
             let anchorContainer = document.createElement('div');
             anchorContainer.id = elementId;
             anchorContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
-            // IMPORTANT NOTE: the container size MUST be the size of the screen for the 3d math to work
-            // This is the same size as the containers that frames get added to.
-            // If size differs, rendering will be inconsistent between frames and anchors.
+            // IMPORTANT NOTE: the container size must be the size of the screen for the 3d math to work
             anchorContainer.style.width = globalStates.height + 'px';
             anchorContainer.style.height = globalStates.width + 'px';
 
@@ -184,9 +179,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             let anchorContainer = document.createElement('div');
             anchorContainer.id = originId;
             anchorContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
-            // IMPORTANT NOTE: the container size MUST be the size of the screen for the 3d math to work
-            // This is the same size as the containers that frames get added to.
-            // If size differs, rendering will be inconsistent between frames and anchors.
+            // IMPORTANT NOTE: the container size must be the size of the screen for the 3d math to work
             anchorContainer.style.width = globalStates.height + 'px';
             anchorContainer.style.height = globalStates.width + 'px';
 

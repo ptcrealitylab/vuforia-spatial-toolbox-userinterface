@@ -243,7 +243,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         return relativeMatrix;
     };
-    
+
     SceneNode.prototype.setPositionRelativeTo = function(otherSceneNode, relativeMatrix) {
         if (typeof relativeMatrix === 'undefined') { relativeMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix(); }
 
