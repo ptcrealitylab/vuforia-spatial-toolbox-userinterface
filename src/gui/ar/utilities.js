@@ -692,68 +692,170 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function() {
     };
 };
 
-/**
- * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
- * @param {HTMLElement} ele
- * @return {Array.<number>}
- */
-realityEditor.gui.ar.utilities.getTransform = function(ele) {
-    // var st = window.getComputedStyle(ele, null);
-    // tr = st.getPropertyValue("-webkit-transform") ||
-    //     st.getPropertyValue("-moz-transform") ||
-    //     st.getPropertyValue("-ms-transform") ||
-    //     st.getPropertyValue("-o-transform") ||
-    //     st.getPropertyValue("transform");
-
-    var tr = ele.style.webkitTransform;
-    if (!tr) {
-        return realityEditor.gui.ar.utilities.newIdentityMatrix();
-    }
-
-    var values = tr.split('(')[1].split(')')[0].split(',');
-
-    var out = [ 0, 0, 0, 1 ];
-    for (var i = 0; i < values.length; ++i) {
-        out[i] = parseFloat(values[i]);
-    }
-
-    return out;
-};
-
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
 /**
- * @desc Returns a matrix that has the correct positioning of an object in real world space.
- * It is not multiplied by the projection matrix. It only works for getting the real distance to an object.
- * @param {Array} matrix of the object
- * @param {Object} object that is used for calculation
- * @return {Array} calculated array
+ * private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
+ * @author Ben Reynolds
+ * @todo: simplify and then document individually
  */
-realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
-    var intermediateMatrix = [];
-    var correctedMatrix = [];
-    var obj = {};
-    
-    if(object.ar) obj = object.ar;
-    else obj = object;
-    
-    var possitionMatrix = [
-        obj.scale, 0, 0, 0,
-        0, obj.scale, 0, 0,
-        0, 0, obj.scale, 0,
-        obj.x, obj.y, 0, 1
-    ];
-    
-    if (obj.matrix.length < 13) {
-        this.multiplyMatrix(possitionMatrix, matrix, correctedMatrix);
+(function(exports) {
 
-    } else {
-        this.multiplyMatrix(obj.matrix, matrix, intermediateMatrix);
-        this.multiplyMatrix(possitionMatrix, intermediateMatrix, correctedMatrix);
+    function solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, cssMatrixToUse) {
+
+        var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+        var overlayDomElement = globalDOMCache[elementUuid];
+
+        // we are looking for the x, y coordinates at z = 0 on the frame
+        var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, 0, cssMatrixToUse);
+
+        return {
+            x: point.x,
+            y: point.y
+        }
     }
-    return correctedMatrix;
-};
+
+    function solveProjectedCoordinates(childDiv, screenX, screenY, projectedZ, cssMatrixToUse) {
+
+        // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
+        if (projectedZ === undefined) {
+            projectedZ = 0;
+        }
+
+        // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
+        var dt = 0.1;
+        var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
+        var p2 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, (projectedZ + dt), cssMatrixToUse);
+
+        // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
+
+        var dx = (p2[0] - p0[0]) / dt;
+        var dy = (p2[1] - p0[1]) / dt;
+        var dz = (p2[2] - p0[2]) / dt;
+        var neededDt = (p0[2]) / dz;
+
+        return {
+            x: p0[0] - dx * neededDt,
+            y: p0[1] - dy * neededDt,
+            z: p0[2] - dz * neededDt
+        }
+    }
+
+    function convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, transformedDiv, screenX, screenY, screenZ, cssMatrixToUse) {
+
+        // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
+        if (!cssMatrixToUse) {
+            cssMatrixToUse = getTransform(transformedDiv);
+        }
+
+        // translation matrix if the element has a different transform origin
+        var originTranslationVector = getTransformOrigin(transformedDiv);
+
+        // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+        // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+        var fullTx = computeTransformMatrix(cssMatrixToUse, originTranslationVector);
+
+        // invert and normalize the matrix
+        var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
+        var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
+
+        var screenPoint = [screenX, screenY, screenZ, 1];
+
+        // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+        return realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint));
+    }
+
+    // TODO: find out why we need to compute N = T^{-1}MT
+    function computeTransformMatrix(transformationMatrix, originTranslationVector)
+    {
+        var x = originTranslationVector[0];
+        var y = originTranslationVector[1];
+        var z = originTranslationVector[2];
+        var undoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -x, -y, -z, 1];
+        var redoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+        var temp1 = [];
+        var out = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(undoTranslationMatrix, transformationMatrix, temp1);
+        realityEditor.gui.ar.utilities.multiplyMatrix(temp1, redoTranslationMatrix, out);
+        return out;
+    }
+
+    /**
+     * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
+     * @param {HTMLElement} ele
+     * @return {Array.<number>}
+     */
+    function getTransform(ele) {
+        // var st = window.getComputedStyle(ele, null);
+        // tr = st.getPropertyValue("-webkit-transform") ||
+        //     st.getPropertyValue("-moz-transform") ||
+        //     st.getPropertyValue("-ms-transform") ||
+        //     st.getPropertyValue("-o-transform") ||
+        //     st.getPropertyValue("transform");
+
+        var tr = ele.style.webkitTransform;
+        if (!tr) {
+            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+        }
+
+        var values = tr.split('(')[1].split(')')[0].split(',');
+
+        var out = [ 0, 0, 0, 1 ];
+        for (var i = 0; i < values.length; ++i) {
+            out[i] = parseFloat(values[i]);
+        }
+
+        return out;
+    }
+
+    function getTransformOrigin(element) {
+
+        var out = [ 0, 0, 0, 1 ];
+
+        // this is a speedup that works for the frames we currently use. might need to remove in the future if it messes anything up
+        if (element.style.transformOrigin) {
+            var st = window.getComputedStyle(element, null);
+            var tr = st.getPropertyValue("-webkit-transform-origin") ||
+                st.getPropertyValue("-moz-transform-origin") ||
+                st.getPropertyValue("-ms-transform-origin") ||
+                st.getPropertyValue("-o-transform-origin") ||
+                st.getPropertyValue("transform-origin");
+
+            var values = tr.split(' ');
+
+            for (var i = 0; i < values.length; ++i) {
+                out[i] = parseInt(values[i]);
+            }
+        } else {
+            out[0] = parseInt(element.style.width)/2;
+            out[1] = parseInt(element.style.height)/2;
+        }
+
+        return out;
+    }
+
+    function transformVertex(mat, ver) {
+        var out = [0,0,0,0];
+
+        for (var i = 0; i < 4; i++) {
+            var sum = 0;
+            for (var j = 0; j < 4; j++) {
+                sum += mat[i + j * 4] * ver[j];
+            }
+            out[i] = sum;
+        }
+
+        return out;
+    }
+
+    exports.getTransform = getTransform;
+    exports.solveProjectedCoordinatesInVehicle = solveProjectedCoordinatesInVehicle;
+
+}(realityEditor.gui.ar.utilities));
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************/
 
 /**
  * @desc Uses Pythagorean theorem to return the 3D distance to the origin of the transformation matrix.
@@ -1134,65 +1236,4 @@ Matrix.prototype.clone = function() {
 
 Matrix.prototype.unflattened = function() {
     return this.mat;
-};
-
-/**
- * Based off of https://gist.github.com/Yaffle/1145197 with modifications to
- * support more complex matrices
- */
-realityEditor.device.utilities.polyfillWebkitConvertPointFromPageToNode = function() {
-    const identity = new DOMMatrix([
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ]);
-    if (!window.WebKitPoint) {
-        window.WebKitPoint = DOMPoint;
-    }
-    function getTransformationMatrix(element) {
-        var transformationMatrix = identity;
-        var x = element;
-        while (x != undefined && x !== x.ownerDocument.documentElement) {
-            var computedStyle = window.getComputedStyle(x);
-            var transform = computedStyle.transform || "none";
-            var c = transform === "none" ? identity : new DOMMatrix(transform);
-            transformationMatrix = c.multiply(transformationMatrix);
-            x = x.parentNode;
-        }
-        // Normalize current matrix to have m44=1 (w = 1). Math does not work
-        // otherwise because nothing knows how to scale based on w
-        let baseArr = transformationMatrix.toFloat64Array();
-        baseArr = baseArr.map(b => b / baseArr[15]);
-        transformationMatrix = new DOMMatrix(baseArr);
-        var w = element.offsetWidth;
-        var h = element.offsetHeight;
-        var i = 4;
-        var left = +Infinity;
-        var top = +Infinity;
-        while (--i >= 0) {
-            var p = transformationMatrix.transformPoint(new DOMPoint(i === 0 || i === 1 ? 0 : w, i === 0 || i === 3 ? 0 : h, 0));
-            if (p.x < left) {
-                left = p.x;
-            }
-            if (p.y < top) {
-                top = p.y;
-            }
-        }
-        var rect = element.getBoundingClientRect();
-        transformationMatrix = identity.translate(window.pageXOffset + rect.left - left, window.pageYOffset + rect.top - top, 0).multiply(transformationMatrix);
-        return transformationMatrix;
-    }
-    window.convertPointFromPageToNode = window.webkitConvertPointFromPageToNode = function (element, point) {
-        let mati = getTransformationMatrix(element).inverse();
-        // This involves a lot of math, sorry.
-        // Given $v = M^{-1}p$ we have p.x, p.y, p.w, M^{-1}, and know that v.z
-        // should be equal to 0.
-        // Solving for p.z we get the following:
-        let projectedZ = -(mati.m13 * point.x + mati.m23 * point.y + mati.m43) / mati.m33;
-        return mati.transformPoint(new DOMPoint(point.x, point.y, projectedZ));
-    };
-    window.convertPointFromNodeToPage = function (element, point) {
-        return getTransformationMatrix(element).transformPoint(point);
-    };
 };
