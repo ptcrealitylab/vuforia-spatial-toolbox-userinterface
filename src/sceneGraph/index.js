@@ -32,14 +32,6 @@ createNameSpace("realityEditor.sceneGraph");
     let relativeToCamera = {};
     let finalCSSMatrices = {};
     let finalCSSMatricesWithoutTransform = {};
-
-    let numWorldComputations = 0;
-    let numLocalComputations = 0;
-    let numRelativeComputations = 0;
-    let numDistanceComputations = 0;
-    let numFrameCSSComputations = 0;
-    let numNodeCSSComputations = 0;
-
     let visualElements = {};
 
     // TODO ben: use this enum in other modules instead of having any string names
@@ -66,26 +58,6 @@ createNameSpace("realityEditor.sceneGraph");
         groundPlaneNode.needsRotateX = true;
         addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
-
-        setInterval(function() {
-            if (exports.printInfo) {
-                let totalComputations = numWorldComputations + numLocalComputations + numRelativeComputations + numDistanceComputations + numFrameCSSComputations + numNodeCSSComputations;
-                console.log('\n' + totalComputations + ' computations');
-                console.log('world: ' + numWorldComputations);
-                console.log('local: ' + numLocalComputations);
-                console.log('relative: ' + numRelativeComputations);
-                console.log('distance: ' + numDistanceComputations);
-                console.log('frameCSS: ' + numFrameCSSComputations);
-                console.log('nodeCSS: ' + numNodeCSSComputations);
-
-                numWorldComputations = 0;
-                numLocalComputations = 0;
-                numRelativeComputations = 0;
-                numDistanceComputations = 0;
-                numFrameCSSComputations = 0;
-                numNodeCSSComputations = 0;
-            }
-        }, 1000);
     }
 
     function addObject(objectId, initialLocalMatrix, needsRotateX) {
@@ -259,7 +231,6 @@ createNameSpace("realityEditor.sceneGraph");
                     finalCSSMatrices[frameKey] = [];
                     utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatrices[frameKey]);
 
-                    numFrameCSSComputations++;
                     frameSceneNode.needsRerender = false;
                 }
 
@@ -268,20 +239,30 @@ createNameSpace("realityEditor.sceneGraph");
 
                 // TODO: only compute nodes when not in UI mode? if so we need to be sure to compute when switch mode
                 Object.keys(frame.nodes).forEach( function(nodeKey) {
-                    // let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                    let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
 
                     if (!nodeSceneNode) { return; } // skip nodes without sceneNodes (true for hiddenNodeTypes)
 
                     if (didCameraUpdate || nodeSceneNode.needsRerender) {
                         relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);
+
+                        // add in animations after everything else to get a new modelView matrix
+                        if (realityEditor.device.isEditingUnconstrained(node) && pocketDropAnimation) {
+                            var animatedFinalMatrix = [];
+                            utils.multiplyMatrix(relativeToCamera[nodeKey], editingAnimationsMatrix, animatedFinalMatrix);
+                            utils.copyMatrixInPlace(animatedFinalMatrix, relativeToCamera[nodeKey]);
+                            frameSceneNode.needsRerender = true;
+                        } else {
+                            frameSceneNode.needsRerender = false;
+                        }
+                        
                         finalCSSMatrices[nodeKey] = [];
                         utils.multiplyMatrix(relativeToCamera[nodeKey], globalStates.projectionMatrix, finalCSSMatrices[nodeKey]);
 
                         // TODO: what to do about this? is this really needed? maybe only compute when needed
                         // finalCSSMatricesWithoutTransform[nodeKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[nodeKey]);
 
-                        numNodeCSSComputations++;
                         nodeSceneNode.needsRerender = false;
                     }
 

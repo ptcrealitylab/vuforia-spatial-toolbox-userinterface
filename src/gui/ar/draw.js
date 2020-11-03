@@ -1581,7 +1581,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
     let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-    let distanceInFrontOfCamera = 300; // 0.3 meters
+    let distanceInFrontOfCamera = 400; // 0.4 meters
     sceneNode.setPositionRelativeTo(cameraNode, [
         -1, 0, 0, 0,
         0, 1, 0, 0,
@@ -1614,7 +1614,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
             nodeKey: activeNodeKey
         };
         // animate it as flowing out of the pocket
-        this.startPocketDropAnimation(200, 0, 0, 100);
+        this.startPocketDropAnimation(200, 0, 0, distanceInFrontOfCamera/3);
     }
 
     // clear some flags so it gets rendered after this occurs

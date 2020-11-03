@@ -109,7 +109,7 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     //     positionData.y += touchOffsetFromCenter.y * scaleDifference;
     // }
     
-    positionData.scale = Math.max(0.2, newScale); // 0.2 is the minimum scale allowed
+    positionData.scale = Math.max(0.1, newScale); // 0.1 is the minimum scale allowed
     
     realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid);
 

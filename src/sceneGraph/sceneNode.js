@@ -156,7 +156,6 @@ createNameSpace("realityEditor.sceneGraph");
 
             this.needsRecompute = false; // reset dirty flag so we don't repeat this redundantly
             this.flagForRerender();
-            // numWorldComputations++;
         }
 
         // process all of its children to update entire subtree
@@ -179,8 +178,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         // flagging this will eventually set the other necessary flags for this and parent/children nodes
         this.flagForRecompute();
-
-        // numLocalComputations++;
     };
 
     SceneNode.prototype.flagForRerender = function() {
@@ -213,8 +210,6 @@ createNameSpace("realityEditor.sceneGraph");
     };
 
     SceneNode.prototype.getMatrixRelativeTo = function(otherNode) {
-        // numRelativeComputations++;
-
         // note that this could be one frame out-of-date if this is flaggedForRecompute
         let thisWorldMatrix = this.worldMatrix;
         let thatWorldMatrix = otherNode.worldMatrix;
@@ -227,8 +222,6 @@ createNameSpace("realityEditor.sceneGraph");
     };
 
     SceneNode.prototype.getDistanceTo = function(otherNode) {
-        // numDistanceComputations++;
-
         return realityEditor.gui.ar.utilities.distance(this.getMatrixRelativeTo(otherNode));
     };
 
