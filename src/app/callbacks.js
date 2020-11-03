@@ -99,10 +99,15 @@ createNameSpace('realityEditor.app.callbacks');
 
         console.log('getGroundPlaneMatrixStream');
         realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
+        hasActiveGroundPlaneStream = true;
         
         // automatically stop after 1 second
         setTimeout(function() {
             realityEditor.app.acceptGroundPlaneAndStop();
+            
+            // prevent subsequent ground plane resets if the ground plane is snapped to a world object
+            let worldObject = realityEditor.worldObjects.getBestWorldObject();
+            hasActiveGroundPlaneStream = (worldObject && worldObject.uuid !== realityEditor.worldObjects.getLocalWorldId());
         }, 1000);
     }
 
@@ -315,8 +320,6 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} groundPlaneMatrix
      */
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
-        // console.log('receiveGroundPlaneMatricesFromAR'); // TODO: uncomment and fix so this doesn't keep happening
-        
         // only update groundPlane if unfrozen and at least one thing is has requested groundPlane usage
         if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
             
@@ -327,7 +330,7 @@ createNameSpace('realityEditor.app.callbacks');
                 let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
                 if (worldObjectSceneNode) {
                     // note: if sceneGraph hierarchy gets more complicated (if ground plane and world objects have
-                    // different parent's in the scene graph), remember to switch worldObjectSceneNode.localMatrix
+                    // different parents in the scene graph), remember to switch worldObjectSceneNode.localMatrix
                     // for a matrix computed to preserve worldObject's worldMatrix
                     let rotated = [];
                     realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);

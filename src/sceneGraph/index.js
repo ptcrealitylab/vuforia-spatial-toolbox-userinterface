@@ -245,38 +245,19 @@ createNameSpace("realityEditor.sceneGraph");
 
                 if (didCameraUpdate || frameSceneNode.needsRerender) {
                     relativeToCamera[frameKey] = frameSceneNode.getMatrixRelativeTo(cameraNode);
-                    // let modelViewProjection = [];
-                    // let scale = frame.ar.scale * globalScaleAdjustment;
-                    // let transform = [
-                    //     scale, 0, 0, 0,
-                    //     0, scale, 0, 0,
-                    //     0, 0, scale, 0,
-                    //     frame.ar.x, frame.ar.y, 0, 1];
-                    // let transformedFrameMat = [];
-                    // utils.multiplyMatrix(transform, relativeToCamera[frameKey], transformedFrameMat);
-                    // utils.multiplyMatrix(transformedFrameMat, globalStates.projectionMatrix, modelViewProjection);
-                    //
-                    // TODO ben: re-enable animations for pocket-drop
-                    // // TODO: find better place for these animations to fit into sceneGraph
-                    // if (realityEditor.device.isEditingUnconstrained(frame) && pocketDropAnimation) {
-                    //     var animatedFinalMatrix = [];
-                    //     utils.multiplyMatrix(modelViewProjection, editingAnimationsMatrix, animatedFinalMatrix);
-                    //     utils.copyMatrixInPlace(animatedFinalMatrix, modelViewProjection);
-                    //     frameSceneNode.needsRerender = true;
-                    // } else {
-                    //     frameSceneNode.needsRerender = false;
-                    // }
-                    //
-                    // finalCSSMatrices[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(modelViewProjection);
-                    //
-                    // finalCSSMatricesWithoutTransform[frameKey] = [];
-                    // utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatricesWithoutTransform[frameKey]);
+
+                    // add in animations after everything else to get a new modelView matrix
+                    if (realityEditor.device.isEditingUnconstrained(frame) && pocketDropAnimation) {
+                        var animatedFinalMatrix = [];
+                        utils.multiplyMatrix(relativeToCamera[frameKey], editingAnimationsMatrix, animatedFinalMatrix);
+                        utils.copyMatrixInPlace(animatedFinalMatrix, relativeToCamera[frameKey]);
+                        frameSceneNode.needsRerender = true;
+                    } else {
+                        frameSceneNode.needsRerender = false;
+                    }
 
                     finalCSSMatrices[frameKey] = [];
                     utils.multiplyMatrix(relativeToCamera[frameKey], globalStates.projectionMatrix, finalCSSMatrices[frameKey]);
-
-                    // TODO: what to do about this? is this really needed? maybe only compute when needed
-                    // finalCSSMatricesWithoutTransform[frameKey] = realityEditor.gui.ar.utilities.copyMatrix(finalCSSMatrices[frameKey]);
 
                     numFrameCSSComputations++;
                     frameSceneNode.needsRerender = false;

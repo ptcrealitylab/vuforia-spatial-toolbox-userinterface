@@ -1719,8 +1719,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
         overlay.style.height = height + 'px';
 
         let cornerPadding = 24;
-        overlay.querySelector('.corners').style.width = width + cornerPadding + 'px';
-        overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
+        overlay.querySelector('.corners').style.width = width + cornerPadding*2 + 'px';
+        overlay.querySelector('.corners').style.height = height + cornerPadding*2 + 'px';
     }
 
     // this is the API that frames can use to define which nodes they should have
@@ -2685,8 +2685,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
             };
 
             var cornerPadding = 24;
-            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
-            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding*2 + 'px';
+            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding*2 + 'px';
         }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 

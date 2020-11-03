@@ -133,7 +133,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         element.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
     }
 
-    const anchorContentSize = 100;
+    const visualizerContentSize = 100;
 
     function getVisualizerElement() {
         if (!globalDOMCache[elementId]) {
@@ -145,26 +145,26 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             // offsetContainer.classList.add('main');
             // offsetContainer.id = 'offset' + elementId;
 
-            let anchorContainer = document.createElement('div');
-            anchorContainer.id = elementId;
-            anchorContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
+            let visualizerContainer = document.createElement('div');
+            visualizerContainer.id = elementId;
+            visualizerContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
             // IMPORTANT NOTE: the container size must be the size of the screen for the 3d math to work
-            anchorContainer.style.width = globalStates.height + 'px';
-            anchorContainer.style.height = globalStates.width + 'px';
+            visualizerContainer.style.width = globalStates.height + 'px';
+            visualizerContainer.style.height = globalStates.width + 'px';
 
             // the contents are a different size than the screen, so we add another div and center it
-            let anchorContents = document.createElement('img');
-            anchorContents.src = '../../../svg/groundplane-corners.svg';
-            anchorContents.id = 'anchorContents' + elementId;
-            anchorContents.classList.add('groundPlaneVisualizer', 'usePointerEvents');
-            anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
-            anchorContents.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
+            let visualizerContents = document.createElement('img');
+            visualizerContents.src = '../../../svg/groundplane-corners.svg';
+            visualizerContents.id = 'visualizerContents' + elementId;
+            visualizerContents.classList.add('groundPlaneVisualizer', 'usePointerEvents');
+            visualizerContents.style.left = (globalStates.height/2 - visualizerContentSize/2) + 'px';
+            visualizerContents.style.top = (globalStates.width/2 - visualizerContentSize/2) + 'px';
 
-            // offsetContainer.appendChild(anchorContainer);
-            anchorContainer.appendChild(anchorContents);
+            // offsetContainer.appendChild(visualizerContainer);
+            visualizerContainer.appendChild(visualizerContents);
 
-            globalDOMCache[elementId] = anchorContainer;
-            globalDOMCache['anchorContents' + elementId] = anchorContents;
+            globalDOMCache[elementId] = visualizerContainer;
+            globalDOMCache['visualizerContents' + elementId] = visualizerContents;
             // globalDOMCache['offset' + elementId] = offsetContainer;
         }
 
@@ -176,25 +176,25 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             // create if it doesn't exist
             // first create a container with the width and height of the screen. then add to that
 
-            let anchorContainer = document.createElement('div');
-            anchorContainer.id = originId;
-            anchorContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
+            let originContainer = document.createElement('div');
+            originContainer.id = originId;
+            originContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
             // IMPORTANT NOTE: the container size must be the size of the screen for the 3d math to work
-            anchorContainer.style.width = globalStates.height + 'px';
-            anchorContainer.style.height = globalStates.width + 'px';
+            originContainer.style.width = globalStates.height + 'px';
+            originContainer.style.height = globalStates.width + 'px';
 
             // the contents are a different size than the screen, so we add another div and center it
-            let anchorContents = document.createElement('img');
-            anchorContents.src = '../../../svg/groundplane-crosshair.svg';
-            anchorContents.id = 'anchorContents' + elementId;
-            anchorContents.classList.add('groundPlaneOrigin', 'usePointerEvents');
-            anchorContents.style.left = (globalStates.height/2 - anchorContentSize/2) + 'px';
-            anchorContents.style.top = (globalStates.width/2 - anchorContentSize/2) + 'px';
+            let visualizerContents = document.createElement('img');
+            visualizerContents.src = '../../../svg/groundplane-crosshair.svg';
+            visualizerContents.id = 'visualizerContents' + elementId;
+            visualizerContents.classList.add('groundPlaneOrigin', 'usePointerEvents');
+            visualizerContents.style.left = (globalStates.height/2 - visualizerContentSize/2) + 'px';
+            visualizerContents.style.top = (globalStates.width/2 - visualizerContentSize/2) + 'px';
 
-            anchorContainer.appendChild(anchorContents);
+            originContainer.appendChild(visualizerContents);
 
-            globalDOMCache[originId] = anchorContainer;
-            globalDOMCache['anchorContents' + originId] = anchorContents;
+            globalDOMCache[originId] = originContainer;
+            globalDOMCache['visualizerContents' + originId] = visualizerContents;
         }
 
         return globalDOMCache[originId];
