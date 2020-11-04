@@ -504,7 +504,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         // image target objects require one coordinate system rotation. ground plane requires another.
         if (groundPlaneVariation) {
-            sceneNodeRotateX.setLocalMatrix( makeGroundPlaneRotationX(-(Math.PI/2)) );
+            sceneNodeRotateX.setLocalMatrix(makeGroundPlaneRotationX(-(Math.PI/2)));
         } else {
             sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
                 1, 0, 0, 0,

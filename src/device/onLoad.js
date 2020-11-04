@@ -175,7 +175,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.menus.init();
     
     // set active buttons and preload some images
-    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
+    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
     realityEditor.gui.buttons.initButtons();
     
     // initialize additional services

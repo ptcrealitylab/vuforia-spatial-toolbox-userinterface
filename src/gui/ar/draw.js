@@ -608,7 +608,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
     }
     
-    // todo ben: only do this if there are any closestObjectListeners
     if (this.closestObjectListeners.length > 0 && this.isLowFrequencyUpdateFrame) {
         var newClosestObject = realityEditor.gui.ar.getClosestObject()[0];
         if (newClosestObject !== this.currentClosestObject) {
@@ -619,7 +618,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         }
     }
 
-    // TODO: push more edge-case functionality from this function into extensible callbacks
     // make the update loop extensible by additional services that wish to subscribe to matrix updates
     this.updateListeners.forEach(function(callback) {
         // warning: sends a reference to the original set of matrices, for performance reasons, instead of a deep clone.
@@ -953,8 +951,6 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
  * @param finalMatrix - stores the resulting final CSS3D matrix for the vehicle @todo this doesnt seem to be used anywhere?
  * @param utilities - reference to realityEditor.gui.ar.utilities
  * @param _cout - reference to debug logging function (unused)
- * @return {boolean} whether to continue the update loop (defaults true, return false if you remove the activeVehicle during this loop)
- * @todo finish documenting function
  */
 realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
     //console.log(JSON.stringify(activeObjectMatrix));
