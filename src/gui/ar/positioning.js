@@ -189,7 +189,7 @@ realityEditor.gui.ar.positioning.stopRepositioning = function() {
 
 // we can use either of two different implementations for moveVehicleToScreenCoordinate by toggling this
 // both are working but further investigation is needed to determine if one is always better than the other
-realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinaates = true;
+realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinates = true;
 
 /**
  * Primary method to move a transformed frame or node to the (x,y) point on its plane where the (screenX,screenY) ray cast intersects
@@ -207,7 +207,7 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
     var newPosition;
     try {
         // set dummy div transform to iframe without x,y,scale
-        if (this.useWebkitForProjectedCoordinaates) {
+        if (this.useWebkitForProjectedCoordinates) {
             let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle, isContinuous);
             newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
         }
@@ -216,14 +216,14 @@ realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(active
             realityEditor.gui.ar.positioning.stopRepositioning();
         } else {
             globalStates.lastRepositionedUuid = activeVehicle.uuid;
-            if (!this.useWebkitForProjectedCoordinaates) {
+            if (!this.useWebkitForProjectedCoordinates) {
                 if (!globalStates.repositionStartingCSSMatrix) {
                     globalStates.repositionStartingCSSMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid)
                 }
             }
         }
 
-        if (!this.useWebkitForProjectedCoordinaates) {
+        if (!this.useWebkitForProjectedCoordinates) {
             let cssMatrix = globalStates.repositionStartingCSSMatrix || realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid);
             newPosition = realityEditor.gui.ar.utilities.solveProjectedCoordinatesInVehicle(activeVehicle, screenX, screenY, cssMatrix);
         }
