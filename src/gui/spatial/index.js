@@ -234,7 +234,9 @@ realityEditor.gui.spatial.sketch = function(p) {
 // for now, fix it by repeatedly setting it back to un-hidden a few times
 for (let time = 100; time < 5000; time *= 2) {
     setTimeout(function() {
-        globalCanvas.canvas.style.display = ''; // unhide the canvas getting auto-hidden by p5
+        if (globalCanvas && globalCanvas.canvas) {
+            globalCanvas.canvas.style.display = ''; // unhide the canvas getting auto-hidden by p5
+        }
     }, time);
 }
 
