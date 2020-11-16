@@ -77,6 +77,7 @@ createNameSpace("realityEditor.worldObjects");
         });
     }
 
+    let numLocalWorldAttempts = 0;
     /**
      * "Detects" a hard-coded "heartbeat" for the local world object and attempts to load its data
      * Tries again repeatedly every 1 second until it succeeds, in case server takes awhile to initialize
@@ -85,19 +86,21 @@ createNameSpace("realityEditor.worldObjects");
         console.log('try loading local world object...');
         let worldObjectBeat = { id: localWorldObjectKey,
             ip: '127.0.0.1',
-            port: 49369,
+            port: realityEditor.device.environment.variables.localServerPort,
             vn: 320,
             pr: 'R2',
             tcs: null,
             zone: '' };
 
         realityEditor.network.addHeartbeatObject(worldObjectBeat);
+        
+        numLocalWorldAttempts++;
 
         setTimeout(function() {
             if (!realityEditor.worldObjects.getWorldObjectKeys().includes(localWorldObjectKey)) {
                 tryLoadingLocalWorldObject(); // keep repeating until we load it successfully
             }
-        }, 1000);
+        }, 1000 * numLocalWorldAttempts);
     }
 
     /**

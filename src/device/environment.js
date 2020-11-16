@@ -33,7 +33,8 @@ createNameSpace("realityEditor.device.environment");
         shouldDisplayLogicMenuModally: false,
         // numbers
         lineWidthMultiplier: 1, // 5
-        distanceScaleFactor: 1 // 10
+        distanceScaleFactor: 1, // 10
+        localServerPort: 49369 // the port where a local vuforia-spatial-edge-server can be expected
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property
