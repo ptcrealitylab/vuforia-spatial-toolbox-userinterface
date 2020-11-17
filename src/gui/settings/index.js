@@ -224,12 +224,31 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     }.bind(realityEditor.gui.settings);
 
     document.addEventListener('toggle', function (e) {
-        uploadSettingsForToggle(e.target.id, e.detail.isActive);
-        
-        let textfield = e.target.parentElement.querySelector('.settingTextField');
+        onToggle(e.target, e.detail.isActive);
+    });
+
+    function onToggle(target, newIsActive) {
+        uploadSettingsForToggle(target.id, newIsActive);
+
+        let textfield = target.parentElement.querySelector('.settingTextField');
         // check if it has an attached text field, and if so, update if it needs frozen/unfrozen
         if (textfield && textfield.classList.contains('frozen')) {
-            textfield.disabled = e.target.classList.contains('active');
+            textfield.disabled = target.classList.contains('active');
+        }
+    }
+
+    // TODO: only do this if environment requires mouseEvents
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('toggle-handle')) {
+            console.log('clicked toggle handle for element: ' + e.target.parentElement.id);
+
+            let wasActive = e.target.parentElement.classList.contains('active');
+            if (wasActive) {
+                e.target.parentElement.classList.remove('active');
+            } else {
+                e.target.parentElement.classList.add('active');
+            }
+            onToggle(e.target.parentElement, !wasActive);
         }
     });
 
@@ -279,5 +298,10 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
 };
 
-window.onload = realityEditor.gui.settings.loadSettingsPost;
-realityEditor.gui.settings.loadSettingsPost();
+window.onload = function() {
+    setTimeout(function() {
+        realityEditor.gui.settings.loadSettingsPost(); // delay it or it happens too early to load settings
+        console.log('load settings iframe');
+    }, 100);
+};
+// realityEditor.gui.settings.loadSettingsPost();
