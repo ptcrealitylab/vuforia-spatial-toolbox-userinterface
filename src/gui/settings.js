@@ -126,7 +126,7 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
         realityEditor.gui.settings.toggleStates[propertyName] = newValue;
         window.localStorage.setItem(persistentStorageId, newValue);
         if (onToggleCallback) {
-            if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+            if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT || settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT) {
                 onToggleCallback(newValue, realityEditor.gui.settings.toggleStates[propertyName + 'Text']); // trigger additional side effects
             } else {
                 onToggleCallback(newValue); // trigger additional side effects
