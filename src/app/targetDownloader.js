@@ -96,7 +96,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
 
         var objectID = objectHeartbeat.id;
-        var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+        // var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+        var objectName = getObjectNameFromId(objectHeartbeat.id);
         temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
 
         var newChecksum = objectHeartbeat.tcs;
@@ -113,7 +114,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             // count down the number of re-download attempts
             retryMap[objectHeartbeat.id].attemptsLeft -= 1;
-            console.log(objectName + ' has ' + retryMap[objectID].attemptsLeft + ' download attempts left');
+            // console.log(objectName + ' has ' + retryMap[objectID].attemptsLeft + ' download attempts left');
         }
         retryMap[objectHeartbeat.id].previousTimestamp = Date.now();
 
@@ -129,6 +130,11 @@ createNameSpace("realityEditor.app.targetDownloader");
             MARKER_ADDED: DownloadState.NOT_STARTED
         };
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
+        
+        // regardless of previous conditions, don't proceed with any downloads if this is an anchor object
+        if (realityEditor.gui.ar.anchors.isAnchorHeartbeat(objectHeartbeat)) {
+            return;
+        }
 
         // don't download XML again if already stored the same checksum version - effectively a way to cache the targets
         if (isAlreadyDownloaded(objectID, 'XML')) {
@@ -140,6 +146,12 @@ createNameSpace("realityEditor.app.targetDownloader");
         // downloads the vuforia target.xml file if it doesn't have it yet
         realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetXMLDownloaded');
         targetDownloadStates[objectID].XML = DownloadState.STARTED;
+    }
+    
+    function getObjectNameFromId(objectId) {
+        let objectName = objectId.slice(0,-12); // get objectName from objectId
+        if (objectName.length === 0) { objectName = objectId; } // use objectId as a backup (e.g. for _WORLD_local)
+        return objectName;
     }
 
     /**
@@ -237,10 +249,10 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('failed to download DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.FAILED;
 
-            console.log('try to download JPG file instead');
+            // console.log('try to download JPG file instead');
 
             if (isAlreadyDownloaded(objectID, 'JPG')) {
-                console.log('skip downloading JPG for', objectID);
+                // console.log('skip downloading JPG for', objectID);
                 onTargetJPGDownloaded(true, jpgAddress); // just directly trigger onTargetXMLDownloaded
                 return;
             }
@@ -262,15 +274,15 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
-            console.log('successfully downloaded file: ' + fileName);
+            console.log('successfully downloaded JPG file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
             let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
-            console.log('attempting to add target via JPG of width ' + targetWidth);
+            // console.log('attempting to add target via JPG of width ' + targetWidth);
             realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             realityEditor.getObject(objectID).isJpgTarget = true;
         } else {
-            console.log('failed to download file: ' + fileName);
+            console.log('failed to download JPG file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
@@ -284,7 +296,7 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {string} fileName
      */
     function onMarkerAdded(success, fileName) {
-        console.log('marker added: ' + fileName + ', success? ' + success);
+        // console.log('marker added: ' + fileName + ', success? ' + success);
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
@@ -442,7 +454,8 @@ createNameSpace("realityEditor.app.targetDownloader");
     function downloadTargetFilesForDiscoveredObject(objectHeartbeat) {
 
         var objectID = objectHeartbeat.id;
-        var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+        var objectName = getObjectNameFromId(objectHeartbeat.id);
+        // objectHeartbeat.id.slice(0,-12); // get objectName from objectId
 
         temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
 
@@ -505,7 +518,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
 
         console.log('continue download for ' + objectHeartbeat);
-        var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+        // var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
+        var objectName = getObjectNameFromId(objectHeartbeat.id);
 
         // downloads the vuforia target.xml file if it doesn't have it yet
         if (needsXML) {

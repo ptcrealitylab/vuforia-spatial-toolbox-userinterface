@@ -303,7 +303,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                     publicDataCache[frameKey] = {};
                 }
                 publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
-                console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + thisNode.publicData);
+                // console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + JSON.stringify(thisNode.publicData));
             }
 
             if (thisNode.type === "logic") {
@@ -2216,8 +2216,7 @@ realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, cal
                         callback(objectKey, frameKey, nodeKey, JSON.parse(req.responseText));
                 } else {
                     // Handle error case
-                    console.log("could not load content");
-                    _this.cout("could not load content");
+                    console.log("could not load content for GET:" + url);
                 }
             }
         };
@@ -2891,12 +2890,14 @@ realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix
  * @param {string} ip
  * @param {string} objectKey
  * @param {Array.<number>} matrix
+ * @param {string} worldId
  */
-realityEditor.network.postObjectPosition = function(ip, objectKey, matrix) {
+realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, worldId) {
     let port = realityEditor.network.getPort(objects[objectKey]);
     var urlEndpoint = 'http://' + ip + ':' + port + '/object/' + objectKey + "/matrix";
     let content = {
         matrix: matrix,
+        worldId: worldId,
         lastEditor: globalStates.tempUuid
     };
     this.postData(urlEndpoint, content, function(err, _response) {

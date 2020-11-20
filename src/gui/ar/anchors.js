@@ -287,7 +287,16 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 anchorObject.matrix = realityEditor.sceneGraph.getSceneNodeById(objectKey).localMatrix;
 
                 // upload to the server for persistence
-                realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix);
+
+                // if it's an object, post object position relative to a world object
+                // let worldObjectId = realityEditor.sceneGraph.getWorldId();
+                // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+                // let anchorNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                // let relativeMatrix = anchorNode.getMatrixRelativeTo(worldNode);
+                
+                realityEditor.sceneGraph.network.uploadObjectPosition(objectKey);
+                
+                // realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix, worldObjectId);
 
                 fullscreenAnchor = null;
             }

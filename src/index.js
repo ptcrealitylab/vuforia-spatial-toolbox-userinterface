@@ -120,7 +120,8 @@ var realityEditor = realityEditor || {
         utilities: {}
     },
     sceneGraph: {
-        sceneNode: {}
+        sceneNode: {},
+        network: {}
     },
     envelopeManager: {},
     moduleCallbacks: {},

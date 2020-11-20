@@ -37,6 +37,7 @@ createNameSpace("realityEditor.sceneGraph");
         this.needsRerender = true;
         this.anythingInSubtreeNeedsRerender = true;
         this.anythingInSubtreeNeedsRecompute = true;
+        this.needsUploadToServer = false;
 
         // if a vehicle is linked, updating the sceneNode position will set the linkedVehicle position?
         this.linkedVehicle = null;

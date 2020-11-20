@@ -42,8 +42,6 @@ createNameSpace("realityEditor.sceneGraph");
     });
     exports.NAMES = NAMES;
 
-    exports.printInfo = false;
-
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
         rootNode = new SceneNode(NAMES.ROOT);
@@ -58,12 +56,15 @@ createNameSpace("realityEditor.sceneGraph");
         groundPlaneNode.needsRotateX = true;
         addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
+
+        // init the network service before this starts
+        realityEditor.sceneGraph.network.initService();
     }
 
     function addObject(objectId, initialLocalMatrix, needsRotateX) {
         let sceneNodeObject;
         if (typeof sceneGraph[objectId] !== 'undefined') {
-            console.warn('trying to add duplicate object to scene graph');
+            // console.warn('trying to add duplicate object to scene graph');
             sceneNodeObject = sceneGraph[objectId];
         } else {
             sceneNodeObject = new SceneNode(objectId);
@@ -73,7 +74,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         if (typeof rootNode !== 'undefined') {
             sceneNodeObject.setParent(rootNode);
-            console.log('SceneGraph: added object ' + objectId + ' to root');
+            // console.log('SceneGraph: added object ' + objectId + ' to root');
         }
 
         if (typeof initialLocalMatrix !== 'undefined') {
@@ -89,7 +90,7 @@ createNameSpace("realityEditor.sceneGraph");
     function addFrame(objectId, frameId, linkedFrame, initialLocalMatrix) {
         let sceneNodeFrame;
         if (typeof sceneGraph[frameId] !== 'undefined') {
-            console.warn('trying to add duplicate frame to scene graph');
+            // console.warn('trying to add duplicate frame to scene graph');
             sceneNodeFrame = sceneGraph[frameId];
         } else {
             sceneNodeFrame = new SceneNode(frameId);
@@ -100,10 +101,10 @@ createNameSpace("realityEditor.sceneGraph");
         if (typeof sceneGraph[objectId] !== 'undefined') {
             if (sceneGraph[objectId].needsRotateX) {
                 sceneNodeFrame.setParent(sceneGraph[objectId + 'rotateX']);
-                console.log('SceneGraph: added frame ' + frameId + ' to rotateX of object ' + objectId);
+                // console.log('SceneGraph: added frame ' + frameId + ' to rotateX of object ' + objectId);
             } else {
                 sceneNodeFrame.setParent(sceneGraph[objectId]);
-                console.log('SceneGraph: added frame ' + frameId + ' to object ' + objectId);
+                // console.log('SceneGraph: added frame ' + frameId + ' to object ' + objectId);
             }
         }
 
@@ -119,7 +120,7 @@ createNameSpace("realityEditor.sceneGraph");
     function addNode(objectId, frameId, nodeId, linkedNode, initialLocalMatrix) {
         let sceneNodeNode;
         if (typeof sceneGraph[nodeId] !== 'undefined') {
-            console.warn('trying to add duplicate node to scene graph');
+            // console.warn('trying to add duplicate node to scene graph');
             sceneNodeNode = sceneGraph[nodeId];
         } else {
             sceneNodeNode = new SceneNode(nodeId);
@@ -129,7 +130,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         if (typeof sceneGraph[frameId] !== 'undefined') {
             sceneNodeNode.setParent(sceneGraph[frameId]);
-            console.log('SceneGraph: added node ' + nodeId + ' to frame ' + frameId);
+            // console.log('SceneGraph: added node ' + nodeId + ' to frame ' + frameId);
         }
 
         if (typeof linkedNode !== 'undefined') {
@@ -406,7 +407,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         let sceneNode;
         if (typeof sceneGraph[nodeId] !== 'undefined') {
-            console.warn('trying to add duplicate visual element to scene graph');
+            // console.warn('trying to add duplicate visual element to scene graph');
             sceneNode = sceneGraph[nodeId];
         } else {
             sceneNode = new SceneNode(nodeId);
@@ -491,7 +492,7 @@ createNameSpace("realityEditor.sceneGraph");
         let sceneNodeRotateX;
         let thisNodeId = objectId + 'rotateX';
         if (typeof sceneGraph[thisNodeId] !== 'undefined') {
-            console.warn('trying to add duplicate rotateX to scene graph');
+            // console.warn('trying to add duplicate rotateX to scene graph');
             sceneNodeRotateX = sceneGraph[thisNodeId];
         } else {
             sceneNodeRotateX = new SceneNode(thisNodeId);
@@ -500,7 +501,7 @@ createNameSpace("realityEditor.sceneGraph");
         }
 
         sceneNodeRotateX.setParent(sceneNodeObject);
-        console.log('SceneGraph: added rotateX to object ' + objectId);
+        // console.log('SceneGraph: added rotateX to object ' + objectId);
 
         // image target objects require one coordinate system rotation. ground plane requires another.
         if (groundPlaneVariation) {
@@ -513,8 +514,6 @@ createNameSpace("realityEditor.sceneGraph");
                 0, 0, 0, 1
             ]);
         }
-
-        return sceneNodeRotateX;
     }
 
     function getNodeOrRotateXChild(sceneNode) {
@@ -554,6 +553,19 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
+    /**
+     * Gets the world object to which everything else is localized.
+     * If it's the _WORLD_local then return null, since that isn't a permanent world.
+     * @return {string|null}
+     */
+    function getWorldId() {
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (bestWorldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
+            return bestWorldObject.objectId;
+        }
+        return null;
+    }
+
     /*******************************************/
 
     // public init method
@@ -588,6 +600,9 @@ createNameSpace("realityEditor.sceneGraph");
 
     // public method to recompute sceneGraph for all visible entities
     exports.calculateFinalMatrices = calculateFinalMatrices;
+    
+    // public function to get the worldId to which everything is localized
+    exports.getWorldId = getWorldId;
 
     // TODO: can we get rid of full/direct access to sceneGraph?
     exports.getSceneNodeById = getSceneNodeById;
