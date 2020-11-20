@@ -360,7 +360,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                         // properly accounts for world correction
                         realityEditor.gui.ar.utilities.multiplyMatrix(this.visibleObjects[objectKey], realityEditor.gui.ar.utilities.invertMatrix(realityEditor.gui.ar.draw.worldCorrection), this.activeObject.matrix);
                         // this.activeObject.matrix = realityEditor.gui.ar.utilities.copyMatrix(this.visibleObjects[objectKey]); // old version didn't include worldCorrection
-                        realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix);
+                        realityEditor.network.realtime.broadcastUpdateObjectMatrix(objectKey, this.activeObject.matrix, realityEditor.sceneGraph.getWorldId());
                     }
                 }
             }
@@ -1818,7 +1818,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         if (isFrameElement && activeVehicle.location === 'global') {
             // loads frames from server of the object it is being added to
             thisUrl = realityEditor.network.availableFrames.getFrameSrc(objectKey, activeVehicle.src);
-            console.log('thisUrl = ' + thisUrl);
+            console.log('addElement with url = ' + thisUrl);
         }
         
         // Create DOM elements for everything associated with this frame/node
