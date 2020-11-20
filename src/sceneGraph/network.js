@@ -16,14 +16,9 @@ createNameSpace("realityEditor.sceneGraph.network");
  * https://webglfundamentals.org/webgl/lessons/webgl-scene-graph.html
  */
 (function(exports) {
-
-    let SceneNode = realityEditor.sceneGraph.SceneNode;
-    let utils = realityEditor.gui.ar.utilities;
     let sceneGraph = realityEditor.sceneGraph;
-    
     let uploadInfo = {};
-    
-    const synchronizationDelay = 1000; // waits 3 second between uploads
+    const synchronizationDelay = 1000; // waits 1 second between potential uploads
 
     function initService() {
         // every three seconds, send out an update to the server's sceneGraph with any updates to object positions
@@ -33,18 +28,16 @@ createNameSpace("realityEditor.sceneGraph.network");
     }
 
     function uploadChangesToServers() {
-        // TODO: ensure that worldId belongs to the server of the object localized relative to it
+        // certain environments (e.g. VR) might only be viewers of object scene graph, not authors
+        if (!realityEditor.device.environment.isSourceOfObjectPositions()) { return; }
         
+        // don't upload if we haven't localized everything to a world object yet
         if (!realityEditor.sceneGraph.getWorldId())  { return; }
         
         realityEditor.forEachObject(function(object, objectKey) {
             let sceneNode = sceneGraph.getSceneNodeById(objectKey);
             if (doesNeedUpload(sceneNode)) {
                 uploadSceneNode(sceneNode);
-            }
-            sceneNode.needsUploadToServer = true; // TODO ben: fix this in a better way
-            if (sceneNode.needsUploadToServer) {
-
             }
         });
     }
@@ -104,16 +97,6 @@ createNameSpace("realityEditor.sceneGraph.network");
         if (objectNode) {
             uploadSceneNode(objectNode);
         }
-        // upload to the server for persistence
-        // if it's an object, post object position relative to a world object
-        // let worldObjectId = realityEditor.sceneGraph.getWorldId();
-        // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-        // let anchorNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
-        // let relativeMatrix = anchorNode.getMatrixRelativeTo(worldNode);
-        //
-        // realityEditor.sceneGraph.network.uploadObjectPosition(objectKey);
-        //
-        // realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix, worldObjectId);
     }
 
     // public init method

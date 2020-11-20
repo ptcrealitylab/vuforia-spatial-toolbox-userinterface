@@ -31,6 +31,7 @@ createNameSpace("realityEditor.device.environment");
         distanceRequiresCameraTransform: false,
         ignoresFreezeButton: false,
         shouldDisplayLogicMenuModally: false,
+        isSourceOfObjectPositions: true,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
@@ -111,6 +112,15 @@ createNameSpace("realityEditor.device.environment");
      */
     exports.shouldDisplayLogicMenuModally = function() {
         return variables.shouldDisplayLogicMenuModally;
+    };
+
+    /**
+     * Whether this client is allowed to modify/upload .matrix properties of objects.
+     * Should be true for AR clients, since they can observe the world and determine latest positions of things.
+     * @return {boolean} - default true
+     */
+    exports.isSourceOfObjectPositions = function() {
+        return variables.isSourceOfObjectPositions;
     };
 
     /**
