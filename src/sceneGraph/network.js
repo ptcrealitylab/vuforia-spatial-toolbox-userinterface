@@ -39,35 +39,42 @@ createNameSpace("realityEditor.sceneGraph.network");
         
         realityEditor.forEachObject(function(object, objectKey) {
             let sceneNode = sceneGraph.getSceneNodeById(objectKey);
+            if (doesNeedUpload(sceneNode)) {
+                uploadSceneNode(sceneNode);
+            }
             sceneNode.needsUploadToServer = true; // TODO ben: fix this in a better way
             if (sceneNode.needsUploadToServer) {
-                uploadSceneNode(sceneNode);
-                sceneNode.needsUploadToServer = false;
+
             }
         });
     }
     
-    function uploadSceneNode(sceneNode) {
+    function doesNeedUpload(sceneNode) {
         // only do this for objects
         let object = realityEditor.getObject(sceneNode.id);
-        if (!object) { return; }
+        if (!object) { return false; }
         
+        // if the object specifically marked itself as needing to upload, upload it
+        if (sceneNode.needsUploadToServer) { return true; }
+
+        // otherwise check that it's moved since the last upload
         let previousUploadInfo = uploadInfo[sceneNode.id];
         if (previousUploadInfo) {
             // the less distance it's moved, the more time needs to pass between uploads
             let timeSinceLastUpload = (Date.now() - previousUploadInfo.timestamp) / 1000;
             let distanceMoved = distance(sceneGraph.getWorldPosition(sceneNode.id), previousUploadInfo.worldPosition) / 1000;
-            if (distanceMoved > 0.001) {
-                // console.log(sceneNode.id + ' has moved ' + distanceMoved + ' meters in the last ' + timeSinceLastUpload + ' seconds');
-            }
-            if (distanceMoved === 0) {
-                return;
-            }
+            if (distanceMoved === 0) { return false; }
             // needs to wait 1 second if it moves 10cm, 0.1 second if moves 1m, 10 sec if moves only 1cm
-            if (distanceMoved * timeSinceLastUpload < 0.1) {
-                return;
-            }
+            return (distanceMoved * timeSinceLastUpload) > 0.1;
         }
+
+        return true;
+    }
+
+    function uploadSceneNode(sceneNode) {
+        let object = realityEditor.getObject(sceneNode.id);
+        if (!object) { return; }
+
         uploadInfo[sceneNode.id] = {
             localMatrix: sceneNode.localMatrix,
             worldPosition: sceneGraph.getWorldPosition(sceneNode.id),
@@ -81,6 +88,8 @@ createNameSpace("realityEditor.sceneGraph.network");
         let worldNode = sceneGraph.getSceneNodeById(worldObjectId);
         let relativeMatrix = sceneNode.getMatrixRelativeTo(worldNode);
         realityEditor.network.postObjectPosition(object.ip, sceneNode.id, relativeMatrix, worldObjectId);
+
+        sceneNode.needsUploadToServer = false;
     }
     
     function distance(pos1, pos2) {
