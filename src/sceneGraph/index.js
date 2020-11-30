@@ -560,7 +560,7 @@ createNameSpace("realityEditor.sceneGraph");
      */
     function getWorldId() {
         let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (bestWorldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
+        if (bestWorldObject && bestWorldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
             return bestWorldObject.objectId;
         }
         return null;
