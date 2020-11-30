@@ -452,3 +452,34 @@ realityEditor.getKeysFromVehicle = function(vehicle) {
 realityEditor.isVehicleAFrame = function(vehicle) {
     return (vehicle.type === 'ui' || typeof vehicle.type === 'undefined');
 };
+
+/**
+ * Helper function loops over all links on all objects to find ones starting or ending at this node
+ * @param {string} nodeKey
+ * @return {{linksToNode: Array.<Link>, linksFromNode: Array.<Link>}}
+ */
+realityEditor.getLinksToAndFromNode = function(nodeKey) {
+    let linksToNode = [];
+    let linksFromNode = [];
+
+    // loop through all frames
+    realityEditor.forEachFrameInAllObjects(function(thatObjectKey, thatFrameKey) {
+        var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
+
+        // loop through all links in that frame
+        for (var linkKey in thatFrame.links) {
+            var link = thatFrame.links[linkKey];
+
+            if (link.nodeA === nodeKey) {
+                linksFromNode.push(link);
+            } else if (link.nodeB === nodeKey) {
+                linksToNode.push(link);
+            }
+        }
+    });
+
+    return {
+        linksToNode: linksToNode,
+        linksFromNode: linksFromNode
+    };
+};
