@@ -159,7 +159,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // hide if it is outside the viewport or too far away
             // let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
             let distanceToCamera =  realityEditor.sceneGraph.getDistanceToCamera(objectKey);
-            let isNowOutsideViewport = /*isNowOutsideViewport ||*/ (distanceToCamera > getAnchorDistanceThreshold(objectKey));
+            let isDistanceOk = distanceToCamera < getAnchorDistanceThreshold(objectKey) || !realityEditor.device.environment.supportsDistanceFading();
+
+            let isNowOutsideViewport = /*isNowOutsideViewport ||*/ !isDistanceOk;
 
             if (isNowOutsideViewport) {
                 hideAnchorElementIfNeeded(objectKey); // hide if newly outside this frame
