@@ -245,7 +245,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
         updateAnchorGraphics(objectKey, true);
 
         // attach event listeners
-        anchorContents.addEventListener('pointerup', function(_e) {
+        anchorContents.addEventListener('pointerup', function(event) {
+            if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+
             onAnchorTapped(objectKey);
         });
 
