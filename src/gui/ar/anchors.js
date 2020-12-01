@@ -113,7 +113,9 @@ createNameSpace("realityEditor.gui.ar.anchors");
             return true;
         }
 
-        return !isOutsideViewport && (distanceToCamera < getAnchorDistanceThreshold(objectKey));
+        let isDistanceOk = distanceToCamera < getAnchorDistanceThreshold(objectKey) || !realityEditor.device.environment.supportsDistanceFading();
+
+        return !isOutsideViewport && isDistanceOk;
     }
 
     /**
