@@ -58,11 +58,11 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     // this is a temporary fix to check if this script is being executed on the main settings vs the developer settings
     if (document.querySelector('.content').id === 'mainSettings') {
         settingsRequest.getMainDynamicSettings = true; // ask for which settings should be displayed on the main settings page
-    
+
     } else if (document.querySelector('.content').id === 'developSettings') {
         settingsRequest.getDevelopDynamicSettings = true; // ask for which settings should be displayed on the main settings page
     }
-    
+
     //  Get all the Setting states.
     parent.postMessage(JSON.stringify({
         settings: settingsRequest
@@ -90,8 +90,8 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
 
     }.bind(realityEditor.gui.settings));
-    
-    var onGetSettings = function(msg) {
+
+    var onGetSettings = function (msg) {
         console.log('settings/index.js getSettings', msg.getSettings);
 
         for (let key in msg.getSettings) {
@@ -101,7 +101,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
         if (typeof realityEditor.gui.settings.logo !== "undefined" && this.states.settingsButton && !this.states.animationFrameRequested) {
             this.states.animationFrameRequested = true;
-            if (realityEditor.gui.settings.logo && typeof(realityEditor.gui.settings.logo.step) === 'function') {
+            if (realityEditor.gui.settings.logo && typeof (realityEditor.gui.settings.logo.step) === 'function') {
                 window.requestAnimationFrame(realityEditor.gui.settings.logo.step);
             }
         }
@@ -123,7 +123,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
     }.bind(realityEditor.gui.settings);
 
-    var onGetMainDynamicSettings = function(dynamicSettings) {
+    var onGetMainDynamicSettings = function (dynamicSettings) {
         console.log('settings/index.js getMainDynamicSettings', dynamicSettings);
         var container = document.querySelector('.content').querySelector('.table-view');
         if (!container) {
@@ -175,14 +175,14 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                         textField.value = settingInfo.associatedText.value;
                         textField.placeholder = settingInfo.associatedText.placeholderText || '';
                     }
-                    
-                    textField.addEventListener('input', function() {
+
+                    textField.addEventListener('input', function () {
                         uploadSettingText(this.id);
                     });
 
                     newElement.appendChild(textField);
                 }
-                
+
                 if (settingInfo.settingType === InterfaceType.TOGGLE ||
                     settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT ||
                     settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
@@ -207,12 +207,12 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                     let sliderFill = document.createElement('div');
                     sliderFill.classList.add('slider-fill');
                     slider.appendChild(sliderFill);
-                    
+
                     let sliderHandle = document.createElement('div');
                     sliderHandle.classList.add('slider-handle');
                     slider.appendChild(sliderHandle);
 
-                    sliderHandle.addEventListener('pointerdown', function(_event) {
+                    sliderHandle.addEventListener('pointerdown', function (_event) {
                         sliderDown = slider;
                     });
                 }
@@ -220,7 +220,7 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 container.appendChild(newElement);
             }
         }
-        
+
     }.bind(realityEditor.gui.settings);
 
     document.addEventListener('toggle', function (e) {
@@ -237,20 +237,22 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
     }
 
-    // TODO: only do this if environment requires mouseEvents
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('toggle-handle')) {
-            console.log('clicked toggle handle for element: ' + e.target.parentElement.id);
+    // allows iOS-styled UI toggles to be clicked using mouse
+    if (realityEditor.device.environment.requiresMouseEvents()) {
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('toggle-handle')) {
+                console.log('clicked toggle handle for element: ' + e.target.parentElement.id);
 
-            let wasActive = e.target.parentElement.classList.contains('active');
-            if (wasActive) {
-                e.target.parentElement.classList.remove('active');
-            } else {
-                e.target.parentElement.classList.add('active');
+                let wasActive = e.target.parentElement.classList.contains('active');
+                if (wasActive) {
+                    e.target.parentElement.classList.remove('active');
+                } else {
+                    e.target.parentElement.classList.add('active');
+                }
+                onToggle(e.target.parentElement, !wasActive);
             }
-            onToggle(e.target.parentElement, !wasActive);
-        }
-    });
+        });
+    }
 
     document.addEventListener('pointermove', function(event) {
         if (sliderDown) {
@@ -300,8 +302,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
 window.onload = function() {
     setTimeout(function() {
-        realityEditor.gui.settings.loadSettingsPost(); // delay it or it happens too early to load settings
-        console.log('load settings iframe');
-    }, 100);
+        realityEditor.gui.settings.loadSettingsPost();
+    }, 100);  // delay it or it happens too early to load settings
 };
-// realityEditor.gui.settings.loadSettingsPost();

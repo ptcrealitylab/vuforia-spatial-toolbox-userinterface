@@ -64,17 +64,14 @@ createNameSpace("realityEditor.sceneGraph");
     function addObject(objectId, initialLocalMatrix, needsRotateX) {
         let sceneNodeObject;
         if (typeof sceneGraph[objectId] !== 'undefined') {
-            // console.warn('trying to add duplicate object to scene graph');
             sceneNodeObject = sceneGraph[objectId];
         } else {
             sceneNodeObject = new SceneNode(objectId);
-            // let _object = realityEditor.getObject(objectId);
             sceneGraph[objectId] = sceneNodeObject;
         }
 
         if (typeof rootNode !== 'undefined') {
             sceneNodeObject.setParent(rootNode);
-            // console.log('SceneGraph: added object ' + objectId + ' to root');
         }
 
         if (typeof initialLocalMatrix !== 'undefined') {
@@ -90,21 +87,17 @@ createNameSpace("realityEditor.sceneGraph");
     function addFrame(objectId, frameId, linkedFrame, initialLocalMatrix) {
         let sceneNodeFrame;
         if (typeof sceneGraph[frameId] !== 'undefined') {
-            // console.warn('trying to add duplicate frame to scene graph');
             sceneNodeFrame = sceneGraph[frameId];
         } else {
             sceneNodeFrame = new SceneNode(frameId);
-            // let _frame = realityEditor.getFrame(objectId, frameId);
             sceneGraph[frameId] = sceneNodeFrame;
         }
 
         if (typeof sceneGraph[objectId] !== 'undefined') {
             if (sceneGraph[objectId].needsRotateX) {
                 sceneNodeFrame.setParent(sceneGraph[objectId + 'rotateX']);
-                // console.log('SceneGraph: added frame ' + frameId + ' to rotateX of object ' + objectId);
             } else {
                 sceneNodeFrame.setParent(sceneGraph[objectId]);
-                // console.log('SceneGraph: added frame ' + frameId + ' to object ' + objectId);
             }
         }
 
@@ -120,17 +113,14 @@ createNameSpace("realityEditor.sceneGraph");
     function addNode(objectId, frameId, nodeId, linkedNode, initialLocalMatrix) {
         let sceneNodeNode;
         if (typeof sceneGraph[nodeId] !== 'undefined') {
-            // console.warn('trying to add duplicate node to scene graph');
             sceneNodeNode = sceneGraph[nodeId];
         } else {
             sceneNodeNode = new SceneNode(nodeId);
-            // let _frame = realityEditor.getFrame(objectId, frameId);
             sceneGraph[nodeId] = sceneNodeNode;
         }
 
         if (typeof sceneGraph[frameId] !== 'undefined') {
             sceneNodeNode.setParent(sceneGraph[frameId]);
-            // console.log('SceneGraph: added node ' + nodeId + ' to frame ' + frameId);
         }
 
         if (typeof linkedNode !== 'undefined') {
@@ -487,21 +477,31 @@ createNameSpace("realityEditor.sceneGraph");
         sceneNode.flagForRecompute(); // TODO: might not be necessary? just say e.g. data[new] = data[old]; delete data[old];
     }
 
+    /**
+     * Gets the world object to which everything else is localized.
+     * If it's the _WORLD_local then return null, since that isn't a permanent world.
+     * @return {string|null}
+     */
+    function getWorldId() {
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (bestWorldObject && bestWorldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
+            return bestWorldObject.objectId;
+        }
+        return null;
+    }
+
     /************ Private Functions ************/
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
         let sceneNodeRotateX;
         let thisNodeId = objectId + 'rotateX';
         if (typeof sceneGraph[thisNodeId] !== 'undefined') {
-            // console.warn('trying to add duplicate rotateX to scene graph');
             sceneNodeRotateX = sceneGraph[thisNodeId];
         } else {
             sceneNodeRotateX = new SceneNode(thisNodeId);
-            // let _object = realityEditor.getObject(objectId);
             sceneGraph[thisNodeId] = sceneNodeRotateX;
         }
 
         sceneNodeRotateX.setParent(sceneNodeObject);
-        // console.log('SceneGraph: added rotateX to object ' + objectId);
 
         // image target objects require one coordinate system rotation. ground plane requires another.
         if (groundPlaneVariation) {
@@ -551,19 +551,6 @@ createNameSpace("realityEditor.sceneGraph");
             let visualElementNode = visualElements[elementId];
             visualElementNode.updateWorldMatrix();
         }
-    }
-
-    /**
-     * Gets the world object to which everything else is localized.
-     * If it's the _WORLD_local then return null, since that isn't a permanent world.
-     * @return {string|null}
-     */
-    function getWorldId() {
-        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (bestWorldObject && bestWorldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
-            return bestWorldObject.objectId;
-        }
-        return null;
     }
 
     /*******************************************/
