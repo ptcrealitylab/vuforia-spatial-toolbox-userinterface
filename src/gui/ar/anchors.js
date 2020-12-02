@@ -286,8 +286,22 @@ createNameSpace("realityEditor.gui.ar.anchors");
             // tapping on the fullscreen anchor drops the anchor at the phone's exact position
             if (fullscreenAnchor === objectKey) {
                 // calculates position relative to world so that anchor is positioned at the camera
-                realityEditor.sceneGraph.moveSceneNodeToCamera(objectKey, false);
+                if (!realityEditor.device.environment.isCameraOrientationFlipped()) {
+                    realityEditor.sceneGraph.moveSceneNodeToCamera(objectKey, false);
 
+                } else {
+                    // needs to be upside-down relative to camera in certain environments
+                    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+                    let initialVehicleMatrix = [
+                        1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0, 1
+                    ];
+                    sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+                }
+                
                 // store the new relative position of the anchor to the world
                 let anchorObject = realityEditor.getObject(objectKey);
                 anchorObject.matrix = realityEditor.sceneGraph.getSceneNodeById(objectKey).localMatrix;

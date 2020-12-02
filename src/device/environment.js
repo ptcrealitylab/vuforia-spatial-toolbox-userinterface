@@ -32,6 +32,7 @@ createNameSpace("realityEditor.device.environment");
         ignoresFreezeButton: false,
         shouldDisplayLogicMenuModally: false,
         isSourceOfObjectPositions: true,
+        isCameraOrientationFlipped: false,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
@@ -130,6 +131,10 @@ createNameSpace("realityEditor.device.environment");
      */
     exports.distanceRequiresCameraTransform = function() {
         return variables.distanceRequiresCameraTransform;
+    };
+    
+    exports.isCameraOrientationFlipped = function() {
+        return variables.isCameraOrientationFlipped;
     };
 
     /**
