@@ -12,6 +12,7 @@ createNameSpace("realityEditor.sceneGraph.network");
 
 /**
  * This module interfaces and synchronizes the local scene graph with the scene graphs of any edge servers.
+ * Only uploads if everything has been localized to a world object.
  * Periodically uploads any updated objects' positions, and provides public functions to immediately upload positions.
  */
 (function(exports) {
@@ -85,6 +86,9 @@ createNameSpace("realityEditor.sceneGraph.network");
      * @param {SceneNode} sceneNode
      */
     function uploadSceneNode(sceneNode) {
+        // don't upload if we haven't localized everything to a world object yet
+        if (!realityEditor.sceneGraph.getWorldId())  { return; }
+
         let object = realityEditor.getObject(sceneNode.id);
         if (!object) { return; }
 

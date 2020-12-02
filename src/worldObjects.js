@@ -26,6 +26,8 @@ createNameSpace("realityEditor.worldObjects");
     const worldObjectId = '_WORLD_';
     const localWorldObjectKey = '_WORLD_local';
 
+    let numLocalWorldAttempts = 0;
+
     /**
      * Init world object module
      */
@@ -77,7 +79,6 @@ createNameSpace("realityEditor.worldObjects");
         });
     }
 
-    let numLocalWorldAttempts = 0;
     /**
      * "Detects" a hard-coded "heartbeat" for the local world object and attempts to load its data
      * Tries again repeatedly every 1 second until it succeeds, in case server takes awhile to initialize
