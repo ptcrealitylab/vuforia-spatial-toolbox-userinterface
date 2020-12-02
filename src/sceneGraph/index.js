@@ -57,7 +57,7 @@ createNameSpace("realityEditor.sceneGraph");
         addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
 
-        // init the network service before this starts
+        // also init the network service when this starts
         realityEditor.sceneGraph.network.initService();
     }
 
@@ -397,7 +397,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         let sceneNode;
         if (typeof sceneGraph[nodeId] !== 'undefined') {
-            // console.warn('trying to add duplicate visual element to scene graph');
             sceneNode = sceneGraph[nodeId];
         } else {
             sceneNode = new SceneNode(nodeId);
