@@ -86,7 +86,7 @@ createNameSpace("realityEditor.worldObjects");
         console.log('try loading local world object...');
         let worldObjectBeat = { id: localWorldObjectKey,
             ip: '127.0.0.1',
-            port: realityEditor.device.environment.variables.localServerPort,
+            port: realityEditor.device.environment.getLocalServerPort(),
             vn: 320,
             pr: 'R2',
             tcs: null,

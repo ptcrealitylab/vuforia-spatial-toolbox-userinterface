@@ -156,12 +156,11 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 hideAnchorElementIfNeeded(objectKey); // hide if it was outside (last frame)
             }
             
-            // hide if it is outside the viewport or too far away
-            // let isNowOutsideViewport = realityEditor.gui.ar.positioning.canUnload(objectKey, finalMatrix, anchorContentSize/2, anchorContentSize/2);
+            // hide if it is too far away or entirely behind the camera
             let distanceToCamera =  realityEditor.sceneGraph.getDistanceToCamera(objectKey);
             let isDistanceOk = distanceToCamera < getAnchorDistanceThreshold(objectKey) || !realityEditor.device.environment.supportsDistanceFading();
-
-            let isNowOutsideViewport = /*isNowOutsideViewport ||*/ !isDistanceOk;
+            let isNowOutsideViewport = !isDistanceOk;
+            // TODO: re-implement canUnload for more stringent viewport culling when outside frustum
 
             if (isNowOutsideViewport) {
                 hideAnchorElementIfNeeded(objectKey); // hide if newly outside this frame
@@ -306,17 +305,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
                 let anchorObject = realityEditor.getObject(objectKey);
                 anchorObject.matrix = realityEditor.sceneGraph.getSceneNodeById(objectKey).localMatrix;
 
-                // upload to the server for persistence
-
-                // if it's an object, post object position relative to a world object
-                // let worldObjectId = realityEditor.sceneGraph.getWorldId();
-                // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-                // let anchorNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
-                // let relativeMatrix = anchorNode.getMatrixRelativeTo(worldNode);
-                
+                // upload to the server for persistence. scene graph makes sure it uploads position relative to world
                 realityEditor.sceneGraph.network.uploadObjectPosition(objectKey);
-                
-                // realityEditor.network.postObjectPosition(anchorObject.ip, objectKey, anchorObject.matrix, worldObjectId);
 
                 fullscreenAnchor = null;
             }

@@ -96,7 +96,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
 
         var objectID = objectHeartbeat.id;
-        // var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
         var objectName = getObjectNameFromId(objectHeartbeat.id);
         temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
 
@@ -114,7 +113,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             // count down the number of re-download attempts
             retryMap[objectHeartbeat.id].attemptsLeft -= 1;
-            // console.log(objectName + ' has ' + retryMap[objectID].attemptsLeft + ' download attempts left');
         }
         retryMap[objectHeartbeat.id].previousTimestamp = Date.now();
 
@@ -249,10 +247,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('failed to download DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.FAILED;
 
-            // console.log('try to download JPG file instead');
-
             if (isAlreadyDownloaded(objectID, 'JPG')) {
-                // console.log('skip downloading JPG for', objectID);
                 onTargetJPGDownloaded(true, jpgAddress); // just directly trigger onTargetXMLDownloaded
                 return;
             }
@@ -277,7 +272,6 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully downloaded JPG file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
             let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
-            // console.log('attempting to add target via JPG of width ' + targetWidth);
             realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             realityEditor.getObject(objectID).isJpgTarget = true;
@@ -296,7 +290,6 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {string} fileName
      */
     function onMarkerAdded(success, fileName) {
-        // console.log('marker added: ' + fileName + ', success? ' + success);
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
@@ -455,7 +448,6 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         var objectID = objectHeartbeat.id;
         var objectName = getObjectNameFromId(objectHeartbeat.id);
-        // objectHeartbeat.id.slice(0,-12); // get objectName from objectId
 
         temporaryHeartbeatMap[objectHeartbeat.id] = objectHeartbeat;
 
