@@ -303,7 +303,6 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                     publicDataCache[frameKey] = {};
                 }
                 publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
-                // console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + JSON.stringify(thisNode.publicData));
             }
 
             if (thisNode.type === "logic") {

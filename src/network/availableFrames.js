@@ -48,7 +48,6 @@ createNameSpace("realityEditor.network.availableFrames");
         var urlEndpoint = 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/availableFrames/';
         realityEditor.network.getData(null, null, null, urlEndpoint, function (_nullObj, _nullFrame, _nullNode, response) {
             framesPerServer[serverIP] = response;
-            // console.log(framesPerServer);
             downloadFramePocketAssets(serverIP); // preload the icons
             triggerServerFramesInfoUpdatedCallbacks(); // this can be detected to update the pocket if it is already open
         });
@@ -133,7 +132,6 @@ createNameSpace("realityEditor.network.availableFrames");
             return framesCopy;
         });
         
-        // console.log(allFrames);
         return allFrames;
     }
     

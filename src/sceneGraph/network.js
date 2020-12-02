@@ -1,5 +1,5 @@
 /*
-* Created by Ben Reynolds on 07/13/20.
+* Created by Ben Reynolds on 11/20/20.
 *
 * Copyright (c) 2020 PTC Inc
 *
@@ -11,9 +11,8 @@
 createNameSpace("realityEditor.sceneGraph.network");
 
 /**
- * This is the new positioning API for objects, tools, and nodes
- * Scene Graph implementation was inspired by:
- * https://webglfundamentals.org/webgl/lessons/webgl-scene-graph.html
+ * This module interfaces and synchronizes the local scene graph with the scene graphs of any edge servers.
+ * Periodically uploads any updated objects' positions, and provides public functions to immediately upload positions.
  */
 (function(exports) {
     let sceneGraph = realityEditor.sceneGraph;
@@ -21,12 +20,15 @@ createNameSpace("realityEditor.sceneGraph.network");
     const synchronizationDelay = 1000; // waits 1 second between potential uploads
 
     function initService() {
-        // every three seconds, send out an update to the server's sceneGraph with any updates to object positions
+        // every X seconds, send out an update to the server's sceneGraph with any updates to object positions
         setInterval(function() {
             uploadChangesToServers();
         }, synchronizationDelay);
     }
 
+    /**
+     * Scans thru all objects and uploads the positions of objects it decides need to be updated
+     */
     function uploadChangesToServers() {
         // certain environments (e.g. VR) might only be viewers of object scene graph, not authors
         if (!realityEditor.device.environment.isSourceOfObjectPositions()) { return; }
@@ -41,7 +43,13 @@ createNameSpace("realityEditor.sceneGraph.network");
             }
         });
     }
-    
+
+    /**
+     * Uploads sceneNode iff: it's an object && (was specifically marked for upload || moved significantly)
+     * "moved significantly" is a combination of how far it moved and how long since its last upload
+     * @param {SceneNode} sceneNode
+     * @return {boolean}
+     */
     function doesNeedUpload(sceneNode) {
         // only do this for objects
         let object = realityEditor.getObject(sceneNode.id);
@@ -64,6 +72,18 @@ createNameSpace("realityEditor.sceneGraph.network");
         return true;
     }
 
+    function distance(pos1, pos2) {
+        let dx = pos2.x - pos1.x;
+        let dy = pos2.y - pos1.y;
+        let dz = pos2.z - pos1.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /**
+     * Computes object position relative to world, and uploads that position to the server
+     * Stores some metadata locally in uploadInfo so that we can compare to decide when to upload again
+     * @param {SceneNode} sceneNode
+     */
     function uploadSceneNode(sceneNode) {
         let object = realityEditor.getObject(sceneNode.id);
         if (!object) { return; }
@@ -84,14 +104,11 @@ createNameSpace("realityEditor.sceneGraph.network");
 
         sceneNode.needsUploadToServer = false;
     }
-    
-    function distance(pos1, pos2) {
-        let dx = pos2.x - pos1.x;
-        let dy = pos2.y - pos1.y;
-        let dz = pos2.z - pos1.z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-    
+
+    /**
+     * Public function for other modules to trigger an upload instead of waiting for this module to eventually do it
+     * @param {string} objectId
+     */
     function uploadObjectPosition(objectId) {
         let objectNode = sceneGraph.getSceneNodeById(objectId);
         if (objectNode) {
@@ -99,7 +116,6 @@ createNameSpace("realityEditor.sceneGraph.network");
         }
     }
 
-    // public init method
     exports.initService = initService;
     exports.uploadObjectPosition = uploadObjectPosition;
 

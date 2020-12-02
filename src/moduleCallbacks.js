@@ -38,7 +38,6 @@ createNameSpace("realityEditor.moduleCallbacks");
      */
     function CallbackHandler(moduleName) {
         this.moduleName = moduleName; // only stored for debugging purposes
-        // console.log('created CallbackHandler for ' + this.moduleName);
 
         /**
          * A set of arrays of callbacks that other modules can register to be notified of actions.

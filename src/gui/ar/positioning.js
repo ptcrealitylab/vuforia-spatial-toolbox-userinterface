@@ -547,7 +547,7 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
         frame.ar.y = 0;
     }
 
-    // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
+    // place it in front of the camera, facing towards the camera
     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
     let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
     let distanceInFrontOfCamera = mmInFrontOfCamera || 0; // 0.4 meters
@@ -559,6 +559,7 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
         0, 0, -1 * distanceInFrontOfCamera, 1
     ];
 
+    // needs to be flipped in some environments with different camera systems
     if (realityEditor.device.environment.isCameraOrientationFlipped()) {
         initialVehicleMatrix[5] *= -1;
         initialVehicleMatrix[10] *= -1;

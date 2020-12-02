@@ -510,7 +510,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
 
         console.log('continue download for ' + objectHeartbeat);
-        // var objectName = objectHeartbeat.id.slice(0,-12); // get objectName from objectId
         var objectName = getObjectNameFromId(objectHeartbeat.id);
 
         // downloads the vuforia target.xml file if it doesn't have it yet

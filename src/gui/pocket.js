@@ -342,7 +342,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             processedProxyIPs.push(serverFrameInfo.proxyIP);
         });
 
-        // console.log(aggregateFrames);
     }
 
     /**
