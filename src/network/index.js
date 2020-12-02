@@ -1864,6 +1864,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         }), "*");
     }
 
+    if (msgContent.settings.getEnvironmentVariables) {
+        self.contentWindow.postMessage(JSON.stringify({
+            getEnvironmentVariables: realityEditor.device.environment.variables
+        }), "*");
+    }
+
     // this is used for the "Found Objects" settings menu, to request the list of all found objects to be posted back into the settings iframe
     if (msgContent.settings.getObjects) {
 
