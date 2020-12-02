@@ -533,31 +533,38 @@ realityEditor.gui.ar.positioning.getProjectedCoordinates = function(frameCoordin
 };
 
 /**
- * Instantly moves the frame to the pocketBegin matrix, so it's floating right in front of the camera
- * @param objectKey
- * @param frameKey
+ * Instantly moves the frame so it's floating right in front of the camera
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {number} mmInFrontOfCamera - e.g. 400 = 0.4 meters. default 0
  */
-realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKey) {
+realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKey, mmInFrontOfCamera) {
 
-    // TODO: test that this still works
-    // calculates position relative to world so that anchor is positioned at the camera
-    realityEditor.sceneGraph.moveSceneNodeToCamera(frameKey, false);
+    // reset the (x, y) position so it will move to center of screen
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+    if (frame) {
+        frame.ar.x = 0;
+        frame.ar.y = 0;
+    }
 
-    // var frame = realityEditor.getFrame(objectKey, frameKey);
-    //
-    // // recompute frame.temp for the new object
-    // realityEditor.gui.ar.utilities.multiplyMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], globalStates.projectionMatrix, frame.temp);
-    //
-    // console.log('temp', frame.temp);
-    // frame.begin = realityEditor.gui.ar.utilities.copyMatrix(pocketBegin);
-    //
-    // // compute frame.matrix based on new object
-    // var resultMatrix = [];
-    // realityEditor.gui.ar.utilities.multiplyMatrix(frame.begin, realityEditor.gui.ar.utilities.invertMatrix(frame.temp), resultMatrix);
-    // realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, resultMatrix); // TODO: fix this somehow, make it more understandable
-    //
-    // // reset frame.begin
-    // frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
+    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+    let distanceInFrontOfCamera = mmInFrontOfCamera || 0; // 0.4 meters
+
+    let initialVehicleMatrix = [
+        -1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, -1, 0,
+        0, 0, -1 * distanceInFrontOfCamera, 1
+    ];
+
+    if (realityEditor.device.environment.isCameraOrientationFlipped()) {
+        initialVehicleMatrix[5] *= -1;
+        initialVehicleMatrix[10] *= -1;
+    }
+
+    sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
 };
 
 /**

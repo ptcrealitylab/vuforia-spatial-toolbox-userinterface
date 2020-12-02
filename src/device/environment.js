@@ -132,7 +132,12 @@ createNameSpace("realityEditor.device.environment");
     exports.distanceRequiresCameraTransform = function() {
         return variables.distanceRequiresCameraTransform;
     };
-    
+
+    /**
+     * In some environments adding new tools (etc) at the camera position results in them appearing upside-down unless
+     * corrected with some matrix adjustments
+     * @return {boolean} - default false
+     */
     exports.isCameraOrientationFlipped = function() {
         return variables.isCameraOrientationFlipped;
     };
@@ -151,6 +156,15 @@ createNameSpace("realityEditor.device.environment");
      */
     exports.getDistanceScaleFactor = function() {
         return variables.distanceScaleFactor;
+    };
+
+    /**
+     * The port where a local vuforia-spatial-edge-server can be expected
+     * This is where the toolbox tries to load the _WORLD_local
+     * @return {number} - default 49369
+     */
+    exports.getLocalServerPort = function() {
+        return variables.localServerPort;
     };
 
 }(realityEditor.device.environment));

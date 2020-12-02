@@ -1573,25 +1573,9 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     let activeKey = pocketContainer.vehicle.uuid;
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
     var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
-    
-    // place it 200 units (0.2 meters) in front of the camera, facing towards the camera
-    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
-    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-    let distanceInFrontOfCamera = 400; // 0.4 meters
-    
-    let initialVehicleMatrix = [
-        -1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, -1, 0,
-        0, 0, -1 * distanceInFrontOfCamera, 1
-    ];
-    
-    if (realityEditor.device.environment.isCameraOrientationFlipped()) {
-        initialVehicleMatrix[5] *= -1;
-        initialVehicleMatrix[10] *= -1;
-    }
-    
-    sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+
+    let distanceInFrontOfCamera = 400;
+    realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeKey, distanceInFrontOfCamera);
 
     // TODO: automatically recognize when CSS matrix is out of date, so that we don't need to manually recalculate here
     realityEditor.sceneGraph.calculateFinalMatrices([pocketContainer.vehicle.objectId]);
