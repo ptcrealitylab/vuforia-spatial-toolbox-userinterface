@@ -1770,6 +1770,74 @@ realityEditor.network.onInternalPostMessage = function (e) {
         console.log('editor got request to use webGlWorker for tool ' + msgContent.frame);
         realityEditor.gui.glRenderer.addWebGlProxy(msgContent.frame);
     }
+
+    if (typeof msgContent.attachesTo !== 'undefined') {
+        let attachesTo = msgContent.attachesTo;
+        console.log('received ATTACHES TO message from iframe (' + msgContent.frame + ')', msgContent.attachesTo);
+
+        if (!attachesTo || !(attachesTo.length >= 1)) {
+            console.warn('ignoring incorrectly formatted attachesTo list');
+            return;
+        }
+
+        let object = realityEditor.getObject(msgContent.object);
+        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+
+        // check if this object is incompatible
+        let shouldInclude = false;
+        if (attachesTo.includes('object')) {
+            shouldInclude = true;
+        }
+        if (attachesTo.includes('world')) {
+            if (object.isWorldObject) {
+                shouldInclude = true;
+            }
+        }
+        if (shouldInclude) { return; } // compatible - no need to do anything
+
+        console.log('try to re-attach to new object');
+
+        // if incompatible, check if there's a possible compatible object
+        let newObjectKey = this.getNewObjectForFrame(msgContent.object, msgContent.frame, attachesTo);
+
+        console.log('best new object for tool = ' + newObjectKey);
+
+        // if so, move this frame to that object, preserving world location
+        if (newObjectKey) {
+            var newFrameKey = newObjectKey + frame.name;
+            realityEditor.gui.ar.draw.moveFrameToNewObject(msgContent.object, msgContent.frame, newObjectKey, newFrameKey);
+            console.log('moved frame based on attachesTo');
+        } else {
+            // if not, remove this frame
+            console.warn('NO COMPATIBLE OBJECTS TO ATTACH TO... IMPLEMENT THIS TOOL\'S DESTRUCTION');
+        }
+    }
+};
+
+realityEditor.network.getNewObjectForFrame = function(objectKey, frameKey, attachesTo) {
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+
+    var possibleObjectKeys = realityEditor.network.availableFrames.getPossibleObjectsForFrame(frame.src);
+
+    // get the closest object that is in possibleObjectKeys and attaches to
+    return realityEditor.gui.ar.getClosestObject(function(objectKey) {
+        if (possibleObjectKeys.indexOf(objectKey) > -1) {
+            let thatObject = realityEditor.getObject(objectKey);
+            let shouldIncludeThat = false;
+            if (attachesTo.includes('object')) {
+                shouldIncludeThat = true;
+            }
+            if (attachesTo.includes('world')) {
+                if (thatObject.isWorldObject) {
+                    shouldIncludeThat = true;
+                }
+            }
+            if (shouldIncludeThat) {
+                return true;
+            }
+        }
+        return false;
+    })[0];
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
