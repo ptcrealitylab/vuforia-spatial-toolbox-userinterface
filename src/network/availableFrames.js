@@ -215,6 +215,32 @@ createNameSpace("realityEditor.network.availableFrames");
             }
         });
         
+        // filter down objects even more if this frame type includes an attachesTo property
+        // if the frame doesn't specify attachesTo, ignores this extra round of filtering
+        let attachesTo = realityEditor.gui.pocket.getAttachesTo(frameName);
+        if (typeof attachesTo !== 'undefined') {
+            let incompatibleObjects = [];
+            // filter out objects based on "object" and "world" tags in the attachesTo list
+            compatibleObjects.forEach(function(objectKey) {
+                let shouldInclude = false;
+                let object = realityEditor.getObject(objectKey);
+                if (attachesTo.includes('object')) {
+                    shouldInclude = true;
+                }
+                if (attachesTo.includes('world')) {
+                    if (object.isWorldObject) {
+                        shouldInclude = true;
+                    }
+                }
+                if (!shouldInclude) {
+                    incompatibleObjects.push(objectKey);
+                }
+            });
+            incompatibleObjects.forEach(function(objectKey) {
+                compatibleObjects.splice(compatibleObjects.indexOf(objectKey), 1);
+            });
+        }
+
         return compatibleObjects;
     }
 
