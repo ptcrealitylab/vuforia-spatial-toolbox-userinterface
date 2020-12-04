@@ -233,7 +233,7 @@ createNameSpace("realityEditor.sceneGraph");
                     let node = realityEditor.getNode(objectKey, frameKey, nodeKey);
                     let nodeSceneNode = getSceneNodeById(nodeKey);
 
-                    if (!nodeSceneNode) { return; } // skip nodes without sceneNodes (true for hiddenNodeTypes)
+                    if (!nodeSceneNode) { return; } // skip nodes without sceneNodes (true for invisible nodes)
 
                     if (didCameraUpdate || nodeSceneNode.needsRerender) {
                         relativeToCamera[nodeKey] = nodeSceneNode.getMatrixRelativeTo(cameraNode);

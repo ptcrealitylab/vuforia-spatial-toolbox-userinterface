@@ -412,6 +412,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
                         // nodes of certain types are invisible and don't need to be rendered (e.g. storeData nodes) 
                         if (this.hiddenNodeTypes.indexOf(this.activeType) > -1) { continue; }
+                        // the above check is deprecated: new nodes will have an invisible property
+                        if (this.activeNode.invisible) { continue; }
 
                         // perform all the 3D calculations and CSS updates to actually show the node and render in the correct position
                         this.drawTransformed(objectKey, this.activeKey, this.activeType, this.activeVehicle, this.notLoading,
