@@ -253,6 +253,9 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisObject.matrix = [];
     }
 
+    let isImageTarget = !thisObject.isWorldObject && !thisObject.isAnchor;
+    realityEditor.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
+
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
@@ -282,6 +285,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
             positionData.matrix = [];
         }
 
+        realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+
         for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
             var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
             if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
@@ -298,7 +303,6 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                     publicDataCache[frameKey] = {};
                 }
                 publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
-                console.log('set public data of ' + frameKey + ', ' + thisNode.name + ' to: ' + thisNode.publicData);
             }
 
             if (thisNode.type === "logic") {
@@ -307,6 +311,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
                 thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
                 //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
             }
+
+            realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
         }
         
         // TODO: invert dependency
@@ -657,9 +663,9 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (thisAction.lastEditor === globalStates.tempUuid) {
-        console.log(thisAction.lastEditor);
-        console.log(globalStates.tempUuid);
-        console.log("------------------------------------- its my self");
+        // console.log(thisAction.lastEditor);
+        // console.log(globalStates.tempUuid);
+        // console.log("------------------------------------- its my self");
         return;
     }
 
@@ -1103,21 +1109,32 @@ realityEditor.network.onInternalPostMessage = function (e) {
         iFrame.style.height = msgContent.height;
         iFrame.style.top = top;
         iFrame.style.left = left;
+        
+        let vehicle = realityEditor.getVehicle(msgContent.object, msgContent.frame, msgContent.node);
+        if (vehicle) {
+            vehicle.frameSizeX = msgContent.width;
+            vehicle.frameSizeY = msgContent.height;
+            vehicle.width = msgContent.width;
+            vehicle.height = msgContent.height;
+        }
 
-        svg.style.width = msgContent.width;
-        svg.style.height = msgContent.height;
+        if (svg) {
+            svg.style.width = msgContent.width;
+            svg.style.height = msgContent.height;
 
-        realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+            realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
+        }
+
         
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
             // svg.style.display = 'inline';
-            svg.classList.add('visibleEditingSVG');
+            // svg.classList.add('visibleEditingSVG');
 
             overlay.querySelector('.corners').style.visibility = 'visible';
             
         } else {
             // svg.style.display = 'none';
-            svg.classList.remove('visibleEditingSVG');
+            // svg.classList.remove('visibleEditingSVG');
 
             overlay.querySelector('.corners').style.visibility = 'hidden';
 
@@ -1208,7 +1225,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }
 
-        globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane();
+        let isGroundPlaneVisualizerEnabled = realityEditor.gui.settings.toggleStates.visualizeGroundPlane;
+        globalStates.useGroundPlane = realityEditor.gui.ar.draw.doesAnythingUseGroundPlane() || isGroundPlaneVisualizerEnabled;
         realityEditor.app.callbacks.startGroundPlaneTrackerIfNeeded();
     }
 
@@ -1457,12 +1475,20 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (msgContent.createNode.noDuplicate) {
             // check if a node with this name already exists on this frame
             var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+            let matchingNodeKey = null;
             var nodeNames = Object.keys(frame.nodes).map(function(nodeKey) {
+                matchingNodeKey = nodeKey;
                 return frame.nodes[nodeKey].name;
             });
+            
+            // ensure loyalty of this node is changed to groundplane even if it already exists
+            if (msgContent.createNode.attachToGroundPlane && matchingNodeKey) {
+                realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, matchingNodeKey);
+            }
+
             if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
                 console.log('don\'t duplicate node');
-                return; 
+                return;
             }
         }
         
@@ -1485,18 +1511,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
             node.y = (-200 + Math.random() * 400);
         }
         
-        if (msgContent.createNode.attachToGroundPlane) {
-            node.attachToGroundPlane = true;
-        }
-        
         if (typeof msgContent.createNode.nodeType !== 'undefined') {
             node.type = msgContent.createNode.nodeType;
         }
         
-        node.scale *= newNodeScaleFactor;
-        
         thisFrame.nodes[nodeKey] = node;
-        //                               (ip, objectKey, frameKey, nodeKey, thisNode) 
+
+        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, node, nodeKey);
+
+        if (msgContent.createNode.attachToGroundPlane) {
+            realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
+        }
+        
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
     }
     
@@ -1692,8 +1718,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
         overlay.style.height = height + 'px';
 
         let cornerPadding = 24;
-        overlay.querySelector('.corners').style.width = width + cornerPadding + 'px';
-        overlay.querySelector('.corners').style.height = height + cornerPadding + 'px';
+        overlay.querySelector('.corners').style.width = width + cornerPadding*2 + 'px';
+        overlay.querySelector('.corners').style.height = height + cornerPadding*2 + 'px';
     }
 
     // this is the API that frames can use to define which nodes they should have
@@ -1728,20 +1754,16 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (typeof nodeData.scaleFactor !== 'undefined') {
                 newNode.scale = nodeData.scaleFactor;
             }
-            newNode.scale *= newNodeScaleFactor;
             if (typeof nodeData.defaultValue !== 'undefined') {
                 newNode.data.value = nodeData.defaultValue;
             }
+
+            realityEditor.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey, newNode);
 
             // post node to server
             let object = realityEditor.getObject(msgContent.object);
             realityEditor.network.postNewNode(object.ip, msgContent.object, msgContent.frame, nodeKey, newNode);
         }
-    }
-    
-    if (typeof msgContent.useWebGlWorker !== 'undefined') {
-        console.log('editor got request to use webGlWorker for tool ' + msgContent.frame);
-        realityEditor.gui.glRenderer.addWebGlProxy(msgContent.frame);
     }
 };
 
@@ -1839,6 +1861,12 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
         console.log('DEVELOP asked for dynamic settings');
         self.contentWindow.postMessage(JSON.stringify({
             getDevelopDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.DEVELOP)
+        }), "*");
+    }
+
+    if (msgContent.settings.getEnvironmentVariables) {
+        self.contentWindow.postMessage(JSON.stringify({
+            getEnvironmentVariables: realityEditor.device.environment.variables
         }), "*");
     }
 
@@ -2193,8 +2221,7 @@ realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, cal
                         callback(objectKey, frameKey, nodeKey, JSON.parse(req.responseText));
                 } else {
                     // Handle error case
-                    console.log("could not load content");
-                    _this.cout("could not load content");
+                    console.log("could not load content for GET:" + url);
                 }
             }
         };
@@ -2642,7 +2669,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // if (globalDOMCache['svg' + activeKey]) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
-    
+
     globalDOMCache["iframe" + activeKey].setAttribute('loaded', true);
     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(newStyle), '*');
 
@@ -2662,14 +2689,14 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
             };
 
             var cornerPadding = 24;
-            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding + 'px';
-            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding + 'px';
+            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding*2 + 'px';
+            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding*2 + 'px';
         }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 
     // show the blue corners as soon as the frame loads
     if (realityEditor.device.editingState.frame === frameKey && realityEditor.device.editingState.node === nodeKey) {
-        document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
+        // document.getElementById('svg' + (nodeKey || frameKey)).classList.add('visibleEditingSVG');
         globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
     }
 
@@ -2677,6 +2704,9 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         delete globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading;
         realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     }
+
+    // this is used so we can render a placeholder until it loads
+    globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.doneLoading = true;
 
     this.cout("on_load");
 };
@@ -2865,12 +2895,14 @@ realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix
  * @param {string} ip
  * @param {string} objectKey
  * @param {Array.<number>} matrix
+ * @param {string} worldId
  */
-realityEditor.network.postObjectPosition = function(ip, objectKey, matrix) {
+realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, worldId) {
     let port = realityEditor.network.getPort(objects[objectKey]);
     var urlEndpoint = 'http://' + ip + ':' + port + '/object/' + objectKey + "/matrix";
     let content = {
         matrix: matrix,
+        worldId: worldId,
         lastEditor: globalStates.tempUuid
     };
     this.postData(urlEndpoint, content, function(err, _response) {

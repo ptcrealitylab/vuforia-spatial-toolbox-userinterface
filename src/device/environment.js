@@ -31,9 +31,12 @@ createNameSpace("realityEditor.device.environment");
         distanceRequiresCameraTransform: false,
         ignoresFreezeButton: false,
         shouldDisplayLogicMenuModally: false,
+        isSourceOfObjectPositions: true,
+        isCameraOrientationFlipped: false,
         // numbers
         lineWidthMultiplier: 1, // 5
-        distanceScaleFactor: 1 // 10
+        distanceScaleFactor: 1, // 10
+        localServerPort: 49369 // the port where a local vuforia-spatial-edge-server can be expected
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property
@@ -113,12 +116,30 @@ createNameSpace("realityEditor.device.environment");
     };
 
     /**
+     * Whether this client is allowed to modify/upload .matrix properties of objects.
+     * Should be true for AR clients, since they can observe the world and determine latest positions of things.
+     * @return {boolean} - default true
+     */
+    exports.isSourceOfObjectPositions = function() {
+        return variables.isSourceOfObjectPositions;
+    };
+
+    /**
      * Set to true if calculating distance of visibleObjects matrix should implicitly multiply by camera position
      * Necessary for some camera systems.
      * @return {boolean} - default false
      */
     exports.distanceRequiresCameraTransform = function() {
         return variables.distanceRequiresCameraTransform;
+    };
+
+    /**
+     * In some environments adding new tools (etc) at the camera position results in them appearing upside-down unless
+     * corrected with some matrix adjustments
+     * @return {boolean} - default false
+     */
+    exports.isCameraOrientationFlipped = function() {
+        return variables.isCameraOrientationFlipped;
     };
 
     /**
@@ -135,6 +156,15 @@ createNameSpace("realityEditor.device.environment");
      */
     exports.getDistanceScaleFactor = function() {
         return variables.distanceScaleFactor;
+    };
+
+    /**
+     * The port where a local vuforia-spatial-edge-server can be expected
+     * This is where the toolbox tries to load the _WORLD_local
+     * @return {number} - default 49369
+     */
+    exports.getLocalServerPort = function() {
+        return variables.localServerPort;
     };
 
 }(realityEditor.device.environment));

@@ -266,8 +266,9 @@ createNameSpace("realityEditor.network.realtime");
      * Updates an object property on the server (and synchronizes all other clients if necessary) using a websocket
      * @param {string} objectKey
      * @param {Array.<number>} matrix
+     * @param {string} worldId
      */
-    function broadcastUpdateObjectMatrix(objectKey, matrix) {
+    function broadcastUpdateObjectMatrix(objectKey, matrix, worldId) {
         if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
         if (matrix.length !== 16) { return; } // don't delete previous value by sending an empty matrix to the server
 
@@ -277,6 +278,7 @@ createNameSpace("realityEditor.network.realtime");
             var messageBody = {
                 objectKey: objectKey,
                 matrix: matrix,
+                worldId: worldId,
                 editorId: globalStates.tempUuid
             };
             serverSocket.emit('/update/object/matrix', JSON.stringify(messageBody));

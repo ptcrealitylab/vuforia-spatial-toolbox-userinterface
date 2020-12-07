@@ -131,6 +131,15 @@ realityEditor.app.getGroundPlaneMatrixStream = function(callBack) {
 };
 
 /**
+ * Call this some time after getGroundPlaneMatrixStream to stop actively searching for new ground planes, and use
+ * the most recently detected ground plane location as a static anchor that will represent ground plane (until
+ * getGroundPlaneMatrixStream is called again)
+ */
+realityEditor.app.acceptGroundPlaneAndStop = function() {
+    this.appFunctionCall('acceptGroundPlaneAndStop', null, null);
+};
+
+/**
  * Gets a screenshot image of the camera background.
  * The callback will have a screenshot with base64. Size can be S,M,L
  * @param {string} size - 'S' (25%), 'M' (50%), or 'L' (full size)
@@ -371,71 +380,6 @@ realityEditor.app.focusCamera = function() {
 
 // global shortcut for clearing the cache
 cc = realityEditor.app.clearCache.bind(realityEditor.app);
-
-/**
- * global shortcut for resetting the positions of all frames on visible objects to their object's target origin
- * in case frames get lost in space, or to test calculations when frame matrix is identity
- */
-rr = function() {
-    for (var objectKey in objects) {
-        if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(objectKey)) {
-            continue;
-        }
-
-        var tempResetObject = objects[objectKey];
-        // var shouldPlaceCenter = false;
-
-        if (globalStates.guiState ==="ui") {
-
-            // shouldPlaceCenter = (Object.keys(tempResetObject.frames).length === 1);
-            for (let frameKey in tempResetObject.frames) {
-                var activeFrame = tempResetObject.frames[frameKey];
-                if (activeFrame.visualization === 'screen') continue; // only reset position of AR frames
-                if (activeFrame.staticCopy) continue; // don't reset positions of staticCopy frames
-
-                var positionData = realityEditor.gui.ar.positioning.getPositionData(activeFrame);
-                positionData.matrix = [];
-                // if (shouldPlaceCenter) {
-                    positionData.x = 0;
-                    positionData.y = 0;
-                // } else {
-                //     positionData.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                //     positionData.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                // }
-                positionData.scale = globalStates.defaultScale;
-                realityEditor.network.sendResetContent(objectKey, frameKey, null, "ui");
-            }
-
-        }
-
-        if (globalStates.guiState === "node") {
-            for (let frameKey in tempResetObject.frames) {
-
-                let activeFrame = tempResetObject.frames[frameKey];
-                // cannot move nodes inside static copy frames
-                if (activeFrame && activeFrame.staticCopy) continue;
-
-                var shouldPlaceCenter = (Object.keys(activeFrame.nodes).length === 1);
-                for (var nodeKey in activeFrame.nodes) {
-                    var activeNode = activeFrame.nodes[nodeKey];
-
-                    realityEditor.gui.ar.positioning.setPositionDataMatrix(activeNode, []);
-                    activeNode.scale = globalStates.defaultScale;
-                    if (shouldPlaceCenter) {
-                        activeNode.x = 0;
-                        activeNode.y = 0;
-                    } else {
-                        activeNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                        activeNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-                    }
-                    realityEditor.network.sendResetContent(objectKey, frameKey, nodeKey, activeNode.type);
-                }
-            }
-
-        }
-
-    }
-};
 
 /**
  ************** SAVE DATA TO DISK ****************

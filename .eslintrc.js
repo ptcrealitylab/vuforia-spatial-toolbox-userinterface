@@ -7,6 +7,7 @@ module.exports = {
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly",
+        "Stats": "readonly",
 
         "Block": "writable",
         "BlockLink": "writable",
@@ -31,13 +32,13 @@ module.exports = {
         "globalCanvas": "writable",
         "globalDOMCache": "writable",
         "globalProgram": "writable",
-        "globalScaleAdjustment": "writable",
+        "globalFrameScaleAdjustment": "writable",
+        "globalNodeScaleAdjustment": "writable",
         "globalStates": "writable",
         "httpPort": "writable",
         "defaultHttpPort": "writable",
         "hull": "writable",
         "io": "writable",
-        "newNodeScaleFactor": "writable",
         "objects": "writable",
         "overlayDiv": "writable",
         "p5": "writable",

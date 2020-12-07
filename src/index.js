@@ -77,6 +77,7 @@ var realityEditor = realityEditor || {
             anchors: {},
             draw: {},
             frameHistoryRenderer: {},
+            groundPlaneRenderer: {},
             grouping: {},
             lines: {},
             moveabilityOverlay: {},
@@ -118,6 +119,10 @@ var realityEditor = realityEditor || {
         availableFrames: {},
         realtime: {},
         utilities: {}
+    },
+    sceneGraph: {
+        sceneNode: {},
+        network: {}
     },
     envelopeManager: {},
     moduleCallbacks: {},

@@ -344,9 +344,8 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
         if (screenFrame.location === 'global') { // only able to push global frames into the screen
 
             // calculate distance to frame
-            // var screenFrameMatrix = realityEditor.gui.ar.utilities.repositionedMatrix(realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object], screenFrame);
             // var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
-            var distanceToObject = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[this.screenObject.object]);
+            var distanceToObject = realityEditor.sceneGraph.getDistanceToCamera(this.screenObject.object);
 
             // console.log('distance to object, frame: ' + distanceToObject + ', ' + distanceToFrame);
             // console.log('distance to object: ' + distanceToFrame);
@@ -539,7 +538,8 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
             // 1. move it so it is centered on the pointer, ignoring touchOffset
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+            // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(thisFrame, touchPosition.x, touchPosition.y, false);
 
             // 2. convert touch offset from percent scale to actual scale of the frame
             var convertedTouchOffsetX = (this.screenObject.touchOffsetX) * parseFloat(thisFrame.width);

@@ -253,7 +253,7 @@ realityEditor.gui.ar.utilities.lerpMatrices = function(existingMatrix, newMatrix
  * @return {Array.<number>} a inverted copy of the origin matrix
  */
 realityEditor.gui.ar.utilities.invertMatrix = function (a) {
-	var b = [];
+    var b = [];
 	var c = a[0], d = a[1], e = a[2], g = a[3], f = a[4], h = a[5], i = a[6], j = a[7], k = a[8], l = a[9], o = a[10], m = a[11], n = a[12], p = a[13], r = a[14], s = a[15], A = c * h - d * f, B = c * i - e * f, t = c * j - g * f, u = d * i - e * h, v = d * j - g * h, w = e * j - g * i, x = k * p - l * n, y = k * r - o * n, z = k * s - m * n, C = l * r - o * p, D = l * s - m * p, E = o * s - m * r, q = 1 / (A * E - B * D + t * C + u * z - v * y + w * x);
 	b[0] = (h * E - i * D + j * C) * q;
 	b[1] = ( -d * E + e * D - g * C) * q;
@@ -674,6 +674,16 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     object.averageScale = Math.max(0.01, sum/amount); // TODO: put more thought into minimum scale
 };
 
+// exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
+// exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
+realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function() {
+    console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
+    return {
+        x: 0,
+        y: 0
+    };
+};
+
 /**********************************************************************************************************************
  **********************************************************************************************************************/
 
@@ -684,265 +694,17 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
  */
 (function(exports) {
 
-    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
-        
-        var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
-        if (visibleObjectMatrix) {
-            
-            var point = {
-                x: 0,
-                y: 0
-            };
-            
-            if (unconstrainedMatrix) {
-                let finalMatrix = unconstrainedMatrix;
-                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
-            } else {
-                let finalMatrix = computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
-                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
-            }
-            
-            return {
-                x: point.x - globalStates.height/2, // 284
-                y: point.y - globalStates.width/2 // 160
-            }
-        }
-        
-        else {
-            console.warn('this object is not visible, cannot determine its ray projection');
-            return {
-                x: 0,
-                y: 0
-            }
-        }
-    }
-    
-    function computeFinalMatrixFromMarkerMatrix(markerMatrix) {
-        var finalMatrix = [];
-
-        var draw = realityEditor.gui.ar.draw;
-        var activeObjectMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, activeObjectMatrix);
-
-        // console.log(activeObjectMatrix);
-        
-        // TODO: can we remove this last multiplication since the marker always has pos (0,0) and scale 1 ??
-        var positionData = {
-            scale: 1.0,
-            x: 0,
-            y: 0
-        };
-        draw.matrix.r3 = [
-            positionData.scale, 0, 0, 0,
-            0, positionData.scale, 0, 0,
-            0, 0, positionData.scale, 0,
-            positionData.x, positionData.y, 0, 1
-        ];
-        realityEditor.gui.ar.utilities.multiplyMatrix(draw.matrix.r3, activeObjectMatrix, finalMatrix);
-        
-        return finalMatrix;
-    }
-    
-    function undoTranslationAndScale(finalMatrix) {
-        return finalMatrix;
-    }
-    
-    function screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, relativeToMarker) {
-        if (relativeToMarker) {
-            finalMatrix = undoTranslationAndScale(finalMatrix);
-        }
-        // var results = {};
-
-        // var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
-        // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
-
-        var screenZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
-
-        // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
-        var dt = 0.1;
-        // var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
-
-        // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
-        
-        // translation matrix if the element has a different transform origin
-        // var originTranslationVector = getTransformOrigin(transformedDiv);
-        var originTranslationVector = [284, 160, 0, 1]; // TODO: this depends on screen size?
-
-        // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
-        // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
-        var fullTx = computeTransformMatrix(finalMatrix, originTranslationVector);
-        // var fullTx = finalMatrix;
-
-        // invert and normalize the matrix
-        var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
-        var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
-
-        var screenPoint0 = [screenX, screenY, screenZ, 1];
-        // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
-        var p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint0));
-        
-        var screenPoint2 = [screenX, screenY, screenZ + dt, 1];
-        var p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint2));
-
-        // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
-
-        var dx = (p2[0] - p0[0]) / dt;
-        var dy = (p2[1] - p0[1]) / dt;
-        var dz = (p2[2] - p0[2]) / dt;
-        var neededDt = (p0[2]) / dz; // TODO: make sure I don't divide by zero
-        var x = p0[0] - dx * neededDt;
-        var y = p0[1] - dy * neededDt;
-        var z = p0[2] - dz * neededDt;
-
-        var point = {
-            x: x,
-            y: y,
-            z: z
-        };
-
-        // var left = parseInt(overlayDomElement.style.left);
-        // if (isNaN(left)) {
-        //     left = 0;
-        // }
-        // var top = parseInt(overlayDomElement.style.top);
-        // if (isNaN(top)) {
-        //     top = 0;
-        // }
-
-        // return {
-        //     point: point,
-        //     offsetLeft: left,
-        //     offsetTop: top
-        // }
-        
-        return {
-            x: point.x,
-            y: point.y
-        }
-    }
-
-    /**
-     *
-     * @param {Frame|Node} thisVehicle -
-     * @param {Number} screenX - x coordinate on the screen plane
-     * @param {Number} screenY - y coordinate on the screen plane
-     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
-     * @return {{point (x,y,z), offsetLeft, offsetTop}}
-     */
-    function screenCoordinatesToMatrixXY(thisVehicle, screenX, screenY, relativeToMarker) {
-
-        var positionData;
-        var previousPosition;
-        var updatedCssMatrix;
-
-        // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
-        if (relativeToMarker) {
-            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
-
-            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
-                previousPosition = {
-                    x: positionData.x,
-                    y: positionData.y,
-                    scale: positionData.scale
-                };
-                positionData.x = 0;
-                positionData.y = 0;
-                positionData.scale = 1;
-                var draw = realityEditor.gui.ar.draw;
-                var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
-                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, cout);
-                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
-                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
-                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
-            }
-        }
-
-        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
-
-        // restore the frame's relative position that nothing visually changes due to this computation
-        if (previousPosition) {
-            positionData.x = previousPosition.x;
-            positionData.y = previousPosition.y;
-            positionData.scale = previousPosition.scale;
-        }
-
-        return results;
-    }
-    /**
-     *
-     * @param {Frame|Node} thisVehicle -
-     * @param {Number} screenX - x coordinate on the screen plane
-     * @param {Number} screenY - y coordinate on the screen plane
-     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
-     * @return {{point (x,y,z), offsetLeft, offsetTop}}
-     */
-    function screenCoordinatesToMatrixXY_Efficient(thisVehicle, screenX, screenY, relativeToMarker) {
-        console.warn('This gives close, but incorrect values right now... Use screenCoordinatesToMatrixXY instead');
-        var positionData;
-        // var previousPosition;
-        var updatedCssMatrix;
-
-        // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
-        if (relativeToMarker) {
-            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
-
-            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
-                // previousPosition = {
-                //     x: positionData.x,
-                //     y: positionData.y,
-                //     scale: positionData.scale
-                // };
-                // positionData.x = 0;
-                // positionData.y = 0;
-                // positionData.scale = 1;
-                var draw = realityEditor.gui.ar.draw;
-                // var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
-                // updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
-                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
-                updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
-
-                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
-            }
-        }
-
-        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
-
-        // restore the frame's relative position that nothing visually changes due to this computation
-        // if (previousPosition) {
-        //     positionData.x = previousPosition.x;
-        //     positionData.y = previousPosition.y;
-        //     positionData.scale = previousPosition.scale;
-        // }
-
-        return results;
-    }
-
-
-
-
-
-
     function solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, cssMatrixToUse) {
 
         var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
         var overlayDomElement = globalDOMCache[elementUuid];
-        
-        var projectedZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
-        var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
 
-        var left = parseInt(overlayDomElement.style.left);
-        if (isNaN(left)) {
-            left = 0;
-        }
-        var top = parseInt(overlayDomElement.style.top);
-        if (isNaN(top)) {
-            top = 0;
-        }
-        
+        // we are looking for the x, y coordinates at z = 0 on the frame
+        var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, 0, cssMatrixToUse);
+
         return {
-            point: point,
-            offsetLeft: left,
-            offsetTop: top
+            x: point.x,
+            y: point.y
         }
     }
 
@@ -959,32 +721,29 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         var p2 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, (projectedZ + dt), cssMatrixToUse);
 
         // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
-        
+
         var dx = (p2[0] - p0[0]) / dt;
         var dy = (p2[1] - p0[1]) / dt;
         var dz = (p2[2] - p0[2]) / dt;
-        var neededDt = (p0[2]) / dz; // TODO: make sure I don't divide by zero
-        var x = p0[0] - dx * neededDt;
-        var y = p0[1] - dy * neededDt;
-        var z = p0[2] - dz * neededDt;
+        var neededDt = (p0[2]) / dz;
 
         return {
-            x: x,
-            y: y,
-            z: z
+            x: p0[0] - dx * neededDt,
+            y: p0[1] - dy * neededDt,
+            z: p0[2] - dz * neededDt
         }
     }
 
     function convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, transformedDiv, screenX, screenY, screenZ, cssMatrixToUse) {
-        
+
         // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
         if (!cssMatrixToUse) {
             cssMatrixToUse = getTransform(transformedDiv);
         }
-        
+
         // translation matrix if the element has a different transform origin
         var originTranslationVector = getTransformOrigin(transformedDiv);
-        
+
         // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
         // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
         var fullTx = computeTransformMatrix(cssMatrixToUse, originTranslationVector);
@@ -992,9 +751,9 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         // invert and normalize the matrix
         var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
         var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
-        
+
         var screenPoint = [screenX, screenY, screenZ, 1];
-        
+
         // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
         return realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint));
     }
@@ -1026,14 +785,14 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         //     st.getPropertyValue("-ms-transform") ||
         //     st.getPropertyValue("-o-transform") ||
         //     st.getPropertyValue("transform");
-        
+
         var tr = ele.style.webkitTransform;
         if (!tr) {
             return realityEditor.gui.ar.utilities.newIdentityMatrix();
         }
 
         var values = tr.split('(')[1].split(')')[0].split(',');
-        
+
         var out = [ 0, 0, 0, 1 ];
         for (var i = 0; i < values.length; ++i) {
             out[i] = parseFloat(values[i]);
@@ -1082,384 +841,13 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
         return out;
     }
 
-    exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
-    exports.screenCoordinatesToMatrixXY_Efficient = screenCoordinatesToMatrixXY_Efficient;
-    exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
-    exports.computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
     exports.getTransform = getTransform;
+    exports.solveProjectedCoordinatesInVehicle = solveProjectedCoordinatesInVehicle;
 
 }(realityEditor.gui.ar.utilities));
 
 /**********************************************************************************************************************
  **********************************************************************************************************************/
-
-/**
- * private helper functions for realityEditor.gui.ar.utilities.drawMarkerPlaneIntersection
- * @author Ben Reynolds
- * @todo: simplify and then document individually
- */
-(function(exports) {
-    
-    /**
-     * @desc Given a 4x4 transformation matrix and an x, y coordinate pair,
-     calculates the z-position of the ring point
-     * @return {Number|Array} the ring z-coordinate
-     * @author Ben Reynolds
-     **/
-    function getCenterOfPoints(points) {
-        if (points.length < 1) {
-            return [0, 0];
-        }
-        var sumX = 0;
-        var sumY = 0;
-        points.forEach(function (point) {
-            sumX += point[0];
-            sumY += point[1];
-        });
-        var avgX = sumX / points.length;
-        var avgY = sumY / points.length;
-        return [avgX, avgY];
-    }
-    
-    /**
-     * @desc
-     * @param {Number|Array} points
-     * @return {Number|Array}
-     **/
-    
-    function sortPointsClockwise(points) {
-        var centerPoint = getCenterOfPoints(points);
-        var centerX = centerPoint[0];
-        var centerY = centerPoint[1];
-        return points.sort(function (a, b) {
-            var atanA = Math.atan2(a[1] - centerY, a[0] - centerX);
-            var atanB = Math.atan2(b[1] - centerY, b[0] - centerX);
-            if (atanA < atanB) return -1;
-            else if (atanB > atanA) return 1;
-            return 0;
-        });
-    }
-    
-    /**
-     * @desc
-     * @param {Object} thisSVG
-     **/
-    
-    function getCornersClockwise(thisSVG) {
-
-        var w = parseInt(thisSVG.style.width, 10);
-        var h = parseInt(thisSVG.style.height, 10);
-        
-        return [[0, 0, 0],
-            [w, 0, 0],
-            [w, h, 0],
-            [0, h, 0]];
-    }
-
-    /**
-     * 
-     * @param corner1
-     * @param corner2
-     * @return {boolean}
-     */
-    
-    function areCornersEqual(corner1, corner2) {
-        return (corner1[0] === corner2[0] && corner1[1] === corner2[1]);
-    }
-
-    /**
-     * 
-     * @param c1a
-     * @param c1b
-     * @param c2a
-     * @param c2b
-     * @return {boolean}
-     */
-    
-    function areCornerPairsIdentical(c1a, c1b, c2a, c2b) {
-        return (areCornersEqual(c1a, c2a) && areCornersEqual(c1b, c2b));
-    }
-
-    /**
-     * 
-     * @param c1a
-     * @param c1b
-     * @param c2a
-     * @param c2b
-     * @return {boolean}
-     */
-    
-    function areCornerPairsSymmetric(c1a, c1b, c2a, c2b) {
-        return (areCornersEqual(c1a, c2b) && areCornersEqual(c1b, c2a));
-    }
-
-    /**
-     * 
-     * @param corner1
-     * @param corner2
-     * @return {boolean}
-     */
-    
-    function areCornersAdjacent(corner1, corner2) {
-        return (corner1[0] === corner2[0] || corner1[1] === corner2[1]);
-    }
-
-    /**
-     * 
-     * @param corner1
-     * @param corner2
-     * @return {boolean}
-     */
-    
-    function areCornersOppositeZ(corner1, corner2) {
-        var z1 = corner1[2];
-        var z2 = corner2[2];
-        return ((z1 * z2) < 0);
-    }
-
-    /**
-     * makes sure we don't add symmetric pairs to list
-     * @param cornerPair
-     * @param oppositeCornerPairs
-     */
-    
-    function addCornerPairToOppositeCornerPairs(cornerPair, oppositeCornerPairs) {
-        var corner1 = cornerPair[0];
-        var corner2 = cornerPair[1];
-        var safeToAdd = true;
-        if (oppositeCornerPairs.length > 0) {
-            oppositeCornerPairs.forEach(function (pairList) {
-                var existingCorner1 = pairList[0];
-                var existingCorner2 = pairList[1];
-                if (areCornerPairsSymmetric(existingCorner1, existingCorner2, corner1, corner2)) {
-                    // console.log("symmetric", existingCorner1, existingCorner2, corner1, corner2);
-                    safeToAdd = false;
-                    return;
-                }
-                if (areCornerPairsIdentical(existingCorner1, existingCorner2, corner1, corner2)) {
-                    // console.log("identical", existingCorner1, existingCorner2, corner1, corner2);
-                    safeToAdd = false;
-                }
-            });
-        }
-        if (safeToAdd) {
-            oppositeCornerPairs.push([corner1, corner2]);
-        }
-    }
-    
-    /**
-     * Taken from https://stackoverflow.com/questions/17386707/how-to-check-if-a-canvas-is-blank
-     * @param canvas
-     * @returns {boolean}
-     */
-    /*
-    function isCanvasBlank(canvas) {
-        blank.width = canvas.width;
-        blank.height = canvas.height;
-        return canvas.toDataURL() === blank.toDataURL();
-    }
-    */
-
-    /**
-     * Shortcut approximately detects if it has been unconstrained moved with only a few comparisons
-     * @param matrix
-     * @return {boolean}
-     */
-    function hasBeenUnconstrainedPositioned(matrix) {
-        if (!matrix || matrix.length < 15) {
-            return false;
-        }
-        if (parseFloat(matrix[1].toFixed(3)) !== 0) {
-            return true;
-        }
-        if (parseFloat(matrix[2].toFixed(3)) !== 0) {
-            return true;
-        }
-        if (parseFloat(matrix[14].toFixed(3)) !== 0) {
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * 
-     * @param activeKey
-     * @param matrixSVG
-     * @param activeVehicle
-     * @return {boolean}
-     */
-    
-    function drawMarkerPlaneIntersection(activeKey, matrixSVG, activeVehicle) {
-        
-        // don't draw red lines unless it is something you are able to unconstrained reposition (frames and logic nodes)
-        if (!realityEditor.gui.ar.positioning.isVehicleUnconstrainedEditable(activeVehicle)) {
-            return;
-        }
-        
-        // don't draw lines unless the marker has been unconstrained edited
-        if (!hasBeenUnconstrainedPositioned(matrixSVG)) {
-            return;
-        }
-
-        // don't draw red lines on frames in a world object (doesn't make sense to have a "plane" intersection in world)
-        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-        var object = realityEditor.getObject(keys.objectKey);
-        if (object.isWorldObject) {
-            return;
-        }
-        
-        // if (globalStates.inTransitionFrame) return false;
-        var thisSVG = globalDOMCache["svg" + activeKey];
-
-        // check if css is a percentage (handle differently so we don't convert 100% to 100px)
-        if (thisSVG.style.width[thisSVG.style.width.length-1] === "%") {
-            return;
-        }
-        
-        var shadowObject = shadowObjects["svg" + activeKey] = {};
-        // console.log(activeVehicle);
-        if (!thisSVG.getElementById("lineID")) {
-            realityEditor.gui.ar.moveabilityOverlay.createSvg(thisSVG, activeVehicle.width, activeVehicle.height);
-        }
-        
-        if (matrixSVG) {
-            var w = parseInt(thisSVG.style.width, 10);
-            var h = parseInt(thisSVG.style.height, 10);
-
-            var corners = getCornersClockwise(thisSVG);
-            var out = [0, 0, 0, 0];
-            corners.forEach(function (corner) {
-                var x = corner[0] - w / 2;
-                var y = corner[1] - h / 2;
-                var input = [x, y, 0, 1]; // assumes z-position of corner is always 0
-
-                out = realityEditor.gui.ar.utilities.multiplyMatrix4(input, matrixSVG);
-                corner[2] = out[2]; // sets z position of corner to its eventual transformed value
-            });
-
-            var oppositeCornerPairs = [];
-            corners.forEach(function (corner1) {
-                corners.forEach(function (corner2) {
-                    // only check adjacent pairs of corners
-                    // ignore same corner
-                    if (areCornersEqual(corner1, corner2)) {
-                        return false;
-                    }
-                    // x or y should be the same
-                    if (areCornersAdjacent(corner1, corner2)) {
-                        if (areCornersOppositeZ(corner1, corner2)) {
-                            addCornerPairToOppositeCornerPairs([corner1, corner2], oppositeCornerPairs);
-                        }
-                    }
-                });
-            });
-            
-            // for each opposite corner pair, binary search for the x,y location that will correspond with 0 z-pos
-            // .... or can it be calculated directly....? it's just a linear equation!!!
-            var interceptPoints = [];
-            oppositeCornerPairs.forEach(function (cornerPair) {
-                var c1 = cornerPair[0];
-                var c2 = cornerPair[1];
-                var x1 = c1[0];
-                var y1 = c1[1];
-                var z1 = c1[2];
-                var x2 = c2[0];
-                var y2 = c2[1];
-                var z2 = c2[2];
-                var slope;
-
-                if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
-                    // console.log("dx");
-                    slope = ((z2 - z1) / (x2 - x1));
-                    var x_intercept = x1 - (z1 / slope);
-                    interceptPoints.push([x_intercept, y1]);
-                } else {
-                    // console.log("dy");
-                    slope = ((z2 - z1) / (y2 - y1));
-                    var y_intercept = y1 - (z1 / slope);
-                    interceptPoints.push([x1, y_intercept]);
-                }
-            });
-
-            var numBehindMarkerPlane = 0;
-            // get corners, add in correct order so they get drawn clockwise
-
-            corners.forEach(function (corner) {
-                if (corner[2] < 0) { // flipped sign from less than 0 to greater than because z axis flipped in vuforia 7.2
-                    interceptPoints.push(corner);
-                }
-
-                if (corner[2] < -100) {
-                    numBehindMarkerPlane++;
-                }
-            });
-            
-            var sortedPoints = sortPointsClockwise(interceptPoints);
-
-            var allPoints = "";
-
-            if (sortedPoints.length > 2) {
-                allPoints += sortedPoints[0][0] + "," + sortedPoints[0][1];
-                sortedPoints.forEach(function (point) {
-                    allPoints += "," + point[0] + "," + point[1];
-                });
-                shadowObject.clippingState = false;
-                realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, allPoints);
-            } else {
-          
-                if(!activeVehicle.clippingState) {
-                    shadowObject.clippingState = true;
-                    realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
-                }
-            }
-            if (numBehindMarkerPlane === 4) { //interceptPoints.length
-                // console.log('fully behind plane - send to screen!');
-               return true;
-            }
-        } else {
-            if(!activeVehicle.clippingState) {
-                shadowObject.clippingState = true;
-                realityEditor.gui.ar.moveabilityOverlay.changeClipping(thisSVG, 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0 + "," + 0);
-            }
-        }
-        return false;
-    }
-    
-    exports.drawMarkerPlaneIntersection = drawMarkerPlaneIntersection;
-
-}(realityEditor.gui.ar.utilities));
-
-/**
- * @desc Returns a matrix that has the correct positioning of an object in real world space.
- * It is not multiplied by the projection matrix. It only works for getting the real distance to an object.
- * @param {Array} matrix of the object
- * @param {Object} object that is used for calculation
- * @return {Array} calculated array
- */
-realityEditor.gui.ar.utilities.repositionedMatrix = function (matrix, object) {
-    var intermediateMatrix = [];
-    var correctedMatrix = [];
-    var obj = {};
-    
-    if(object.ar) obj = object.ar;
-    else obj = object;
-    
-    var possitionMatrix = [
-        obj.scale, 0, 0, 0,
-        0, obj.scale, 0, 0,
-        0, 0, obj.scale, 0,
-        obj.x, obj.y, 0, 1
-    ];
-    
-    if (obj.matrix.length < 13) {
-        this.multiplyMatrix(possitionMatrix, matrix, correctedMatrix);
-
-    } else {
-        this.multiplyMatrix(obj.matrix, matrix, intermediateMatrix);
-        this.multiplyMatrix(possitionMatrix, intermediateMatrix, correctedMatrix);
-    }
-    return correctedMatrix;
-};
 
 /**
  * @desc Uses Pythagorean theorem to return the 3D distance to the origin of the transformation matrix.
@@ -1472,7 +860,7 @@ realityEditor.gui.ar.utilities.distance = function (matrix) {
         if (realityEditor.device.environment.distanceRequiresCameraTransform()) {
             // calculate distance to camera
             var matrixToCamera = [];
-            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.gui.ar.draw.correctedCameraMatrix, matrixToCamera);
+            realityEditor.gui.ar.utilities.multiplyMatrix(matrix, realityEditor.sceneGraph.getViewMatrix(), matrixToCamera);
             matrix = matrixToCamera;
         }
         distance = Math.sqrt(Math.pow(matrix[12], 2) + Math.pow(matrix[13], 2) + Math.pow(matrix[14], 2));
@@ -1841,3 +1229,87 @@ Matrix.prototype.clone = function() {
 Matrix.prototype.unflattened = function() {
     return this.mat;
 };
+
+// polyfill webkit functions on Chrome browser
+if (typeof window.webkitConvertPointFromPageToNode === 'undefined') {
+    console.log('Polyfilling webkitConvertPointFromPageToNode for this browser');
+
+    polyfillWebkitConvertPointFromPageToNode();
+
+    var ssEl = document.createElement('style'),
+        css = '.or{position:absolute;opacity:0;height:33.333%;width:33.333%;top:0;left:0}.or.r-2{left:33.333%}.or.r-3{left:66.666%}.or.r-4{top:33.333%}.or.r-5{top:33.333%;left:33.333%}.or.r-6{top:33.333%;left:66.666%}.or.r-7{top:66.666%}.or.r-8{top:66.666%;left:33.333%}.or.r-9{top:66.666%;left:66.666%}';
+    ssEl.type = 'text/css';
+    (ssEl.styleSheet) ?
+        ssEl.styleSheet.cssText = css :
+        ssEl.appendChild(document.createTextNode(css));
+    document.getElementsByTagName('head')[0].appendChild(ssEl);
+}
+
+/**
+ * Based off of https://gist.github.com/Yaffle/1145197 with modifications to
+ * support more complex matrices
+ */
+function polyfillWebkitConvertPointFromPageToNode() {
+    const identity = new DOMMatrix([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
+
+    if (!window.WebKitPoint) {
+        window.WebKitPoint = DOMPoint;
+    }
+
+    function getTransformationMatrix(element) {
+        var transformationMatrix = identity;
+        var x = element;
+
+        while (x !== undefined && x !== x.ownerDocument.documentElement) {
+            var computedStyle = window.getComputedStyle(x);
+            var transform = computedStyle.transform || "none";
+            var c = transform === "none" ? identity : new DOMMatrix(transform);
+
+            transformationMatrix = c.multiply(transformationMatrix);
+            x = x.parentNode;
+        }
+
+        // Normalize current matrix to have m44=1 (w = 1). Math does not work
+        // otherwise because nothing knows how to scale based on w
+        let baseArr = transformationMatrix.toFloat64Array();
+        baseArr = baseArr.map(b => b / baseArr[15]);
+        transformationMatrix = new DOMMatrix(baseArr);
+
+        var w = element.offsetWidth;
+        var h = element.offsetHeight;
+        var i = 4;
+        var left = +Infinity;
+        var top = +Infinity;
+        while (--i >= 0) {
+            var p = transformationMatrix.transformPoint(new DOMPoint(i === 0 || i === 1 ? 0 : w, i === 0 || i === 3 ? 0 : h, 0));
+            if (p.x < left) {
+                left = p.x;
+            }
+            if (p.y < top) {
+                top = p.y;
+            }
+        }
+        var rect = element.getBoundingClientRect();
+        transformationMatrix = identity.translate(window.pageXOffset + rect.left - left, window.pageYOffset + rect.top - top, 0).multiply(transformationMatrix);
+        return transformationMatrix;
+    }
+
+    window.convertPointFromPageToNode = window.webkitConvertPointFromPageToNode = function (element, point) {
+        let mati = getTransformationMatrix(element).inverse();
+        // This involves a lot of math, sorry.
+        // Given $v = M^{-1}p$ we have p.x, p.y, p.w, M^{-1}, and know that v.z
+        // should be equal to 0.
+        // Solving for p.z we get the following:
+        let projectedZ = -(mati.m13 * point.x + mati.m23 * point.y + mati.m43) / mati.m33;
+        return mati.transformPoint(new DOMPoint(point.x, point.y, projectedZ));
+    };
+
+    window.convertPointFromNodeToPage = function (element, point) {
+        return getTransformationMatrix(element).transformPoint(point);
+    };
+}

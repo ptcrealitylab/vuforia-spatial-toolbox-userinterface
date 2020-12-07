@@ -94,7 +94,8 @@ createNameSpace("realityEditor.gui.buttons");
             REALITY_TAG: 'realityTag',
             REALITY_SEARCH: 'realitySearch',
             REALITY_WORK: 'realityWork',
-            BACK: 'back'
+            BACK: 'back',
+            GROUNDPLANE_RESET: 'groundPlaneReset'
         });
 
     /**

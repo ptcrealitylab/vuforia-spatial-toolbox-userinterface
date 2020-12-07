@@ -298,7 +298,7 @@ createNameSpace("realityEditor.envelopeManager");
     function addRequiredEnvelopeIfNeeded(objectKey, frameKey, frameType) {
 
         var realityElements = realityEditor.gui.pocket.getRealityElements();
-        var realityElement = realityElements.find(function(elt) { return elt.name === frameType; });
+        var realityElement = realityElements.find(function(elt) { return elt.properties.name === frameType; });
 
         // check if an additional envelope frame needs to be added
         if (realityElement.requiredEnvelope) {

@@ -375,7 +375,7 @@ realityEditor.gui.ar.closestVisibleObject = function(optionalFilter) {
 
         // distance is computed from modelViewMatrices rather than un-modified visibleObject matrices to be compatible
         // with both regular objects and anchor objects
-        distance = this.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+        distance = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
 
         if (distance < closest) {
             object = objectKey;
@@ -410,7 +410,7 @@ realityEditor.gui.ar.getClosestFrame = function (filterFunction) {
                 if (!filterFunction(this.objects[objectKey].frames[frameKey])) continue;
             }
             
-            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], this.objects[objectKey].frames[frameKey]));
+            distance = realityEditor.sceneGraph.getDistanceToCamera(frameKey);
             if (distance < closest) {
                 object = objectKey;
                 frame = frameKey;
@@ -442,8 +442,8 @@ realityEditor.gui.ar.getClosestNode = function () {
                 if (realityEditor.gui.ar.draw.hiddenNodeTypes.indexOf(realityEditor.getNode(objectKey, frameKey, nodeKey).type) > -1) {
                     break;
                 }
-                
-                distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], this.objects[objectKey].frames[frameKey].nodes[nodeKey]));
+
+                distance = realityEditor.sceneGraph.getDistanceToCamera(nodeKey);
                 if (distance < closest) {
                     object = objectKey;
                     frame = frameKey;
@@ -471,7 +471,7 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
 
     for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
         for(var frameKey in this.objects[objectKey].frames) {
-            distance = this.utilities.distance(this.utilities.repositionedMatrix(realityEditor.gui.ar.draw.modelViewMatrices[objectKey], this.objects[objectKey].frames[frameKey]));
+            distance = realityEditor.sceneGraph.getDistanceToCamera(frameKey);
             
             var thisFrame = realityEditor.getFrame(objectKey, frameKey);
             var dx = screenX - thisFrame.screenX;
@@ -498,19 +498,12 @@ realityEditor.gui.ar.getClosestFrameToScreenCoordinates = function(screenX, scre
  */
 realityEditor.gui.ar.getDistanceScale = function(activeVehicle) {
     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-    // check if the object is a jpgTarget and scale the distance from which it can be seen
-    // (compensates for bug in instant tracking that hasn't been fixed yet)
-    let objectTypeScale = 1;
-    let object = realityEditor.getObject(keys.objectKey);
-    if (object.isJpgTarget) {
-        objectTypeScale = 3;
-    }
     if (keys.nodeKey) {
         // it's a node, return its parent frame's value
         var parentFrame = realityEditor.getFrame(keys.objectKey, keys.frameKey);
-        return (parentFrame.distanceScale * objectTypeScale) || objectTypeScale;
+        return parentFrame.distanceScale || 1;
     } else {
         // it's a frame, return its own value
-        return (activeVehicle.distanceScale * objectTypeScale) || objectTypeScale;
+        return activeVehicle.distanceScale || 1;
     }
 };

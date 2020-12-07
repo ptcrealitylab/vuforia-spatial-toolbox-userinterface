@@ -118,7 +118,9 @@ MemoryContainer.prototype.set = function(obj) {
     
     var thumbnail = urlBase + 'memoryThumbnail.jpg';
     
+    // load matrices into thumbnail from the memory stored in the object
     var objectMatrix = obj.memory || realityEditor.gui.ar.utilities.newIdentityMatrix();
+    var cameraMatrix = obj.memoryCameraMatrix || realityEditor.gui.ar.utilities.newIdentityMatrix();
     
     // if (obj.memory && obj.memory.matrix) {
     //     objectMatrix = obj.memory.matrix;
@@ -129,8 +131,7 @@ MemoryContainer.prototype.set = function(obj) {
         image: image,
         thumbnail: thumbnail,
         matrix: objectMatrix, //obj.memory.matrix
-        // todo should this not be a copy of the matrix? 
-        cameraMatrix: realityEditor.gui.ar.draw.correctedCameraMatrix,
+        cameraMatrix: cameraMatrix,
         projectionMatrix: globalStates.projectionMatrix
     };
     this.element.dataset.objectId = this.memory.id;
@@ -283,6 +284,9 @@ MemoryContainer.prototype.stopDragging = function() {
 };
 
 MemoryContainer.prototype.onPointerUp = function() {
+    this.element.classList.remove('selectedContainer');
+    realityEditor.gui.pocket.highlightAvailableMemoryContainers(false);
+
     this.cancelRemember();
 
     if (this.dragTimer) {
@@ -329,6 +333,10 @@ MemoryContainer.prototype.onPointerUp = function() {
 
 MemoryContainer.prototype.onPointerEnter = function() {
     if (overlayDiv.classList.contains('overlayMemory')) {
+        // highlight if it's empty and this memory can be placed
+        if (!this.element.dataset.objectId) {
+            this.element.classList.add('selectedContainer');
+        }
         return;
     }
     if (this.dragTimer) {
@@ -338,6 +346,7 @@ MemoryContainer.prototype.onPointerEnter = function() {
 };
 
 MemoryContainer.prototype.onPointerLeave = function() {
+    this.element.classList.remove('selectedContainer');
     if (overlayDiv.classList.contains('overlayMemory')) {
         return;
     }
@@ -403,16 +412,24 @@ MemoryContainer.prototype.remember = function() {
     globalStates.freezeButtonState = true;
     
     // TODO: unload visible objects (besides WORLD_OBJECTs) first?
-    Object.keys(realityEditor.gui.ar.draw.visibleObjectsCopy).filter(function(objectKey) {
+    Object.keys(realityEditor.gui.ar.draw.visibleObjects).filter(function(objectKey) {
         return objectKey.indexOf('WORLD_OBJECT') === -1;
     }).forEach(function(nonWorldObjectKey) {
         delete realityEditor.gui.ar.draw.visibleObjectsCopy[nonWorldObjectKey];
         delete realityEditor.gui.ar.draw.visibleObjects[nonWorldObjectKey];
     });
+
+    realityEditor.sceneGraph.setCameraPosition(this.memory.cameraMatrix);
     
-    realityEditor.gui.ar.draw.correctedCameraMatrix = this.memory.cameraMatrix;
     realityEditor.gui.ar.draw.visibleObjectsCopy[this.memory.id] = this.memory.matrix;
     realityEditor.gui.ar.draw.visibleObjects[this.memory.id] = this.memory.matrix;
+    
+    // also set sceneGraph localMatrix
+    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(this.memory.id);
+    if (sceneNode) {
+        sceneNode.setLocalMatrix(this.memory.matrix);
+    }
+    
     // TODO: load in temporary projection matrix too?
 };
 
@@ -493,10 +510,16 @@ function createMemory() {
     realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
     
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
-    currentMemory.matrix = realityEditor.gui.ar.draw.visibleObjects[currentMemory.id];
-    currentMemory.cameraMatrix = realityEditor.gui.ar.draw.correctedCameraMatrix;
+    let sceneNode = realityEditor.sceneGraph.getSceneNodeById(currentMemory.id);
+    if (sceneNode) {
+        currentMemory.matrix = realityEditor.gui.ar.utilities.copyMatrix(sceneNode.localMatrix);
+    } else {
+        currentMemory.matrix = realityEditor.gui.ar.utilities.copyMatrix(realityEditor.gui.ar.draw.visibleObjects[currentMemory.id]);
+    }
+    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+    currentMemory.cameraMatrix = realityEditor.gui.ar.utilities.copyMatrix(cameraNode.localMatrix);
     currentMemory.projectionMatrix = globalStates.projectionMatrix;
-    
+
     addKnownObject(currentMemory.id);
 
     realityEditor.gui.menus.switchToMenu("bigPocket");

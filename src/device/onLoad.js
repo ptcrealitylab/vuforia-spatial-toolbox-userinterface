@@ -171,6 +171,13 @@ realityEditor.device.onload = function () {
     globalCanvas.canvas.height = globalStates.width;
     globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
+    // adds touch handlers for each of the menu buttons
+    realityEditor.gui.menus.init();
+    
+    // set active buttons and preload some images
+    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
+    realityEditor.gui.buttons.initButtons();
+    
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
@@ -179,6 +186,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.gui.ar.anchors.initService();
+    realityEditor.gui.ar.groundPlaneRenderer.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.realtime.initService();
     realityEditor.gui.crafting.initService();
@@ -188,8 +196,7 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
-    // realityEditor.gui.spatial.initService();
-    realityEditor.gui.glRenderer.initService();
+    realityEditor.sceneGraph.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
@@ -198,19 +205,12 @@ realityEditor.device.onload = function () {
 
     // assign global pointers to frequently used UI elements
     overlayDiv = document.getElementById('overlay');
-
-    // adds touch handlers for each of the menu buttons
-    realityEditor.gui.menus.init();
     
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;
     var menuHeightDifference = globalStates.width - MENU_HEIGHT;
     document.getElementById('UIButtons').style.top = menuHeightDifference/2 + 'px';
     CRAFTING_GRID_HEIGHT = globalStates.width - menuHeightDifference;
-
-    // set active buttons and preload some images
-    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset","unconstrained"]);
-	realityEditor.gui.buttons.initButtons();
 	
 	// set up the pocket and memory bars
     if (!TEMP_DISABLE_MEMORIES) {
@@ -239,9 +239,17 @@ realityEditor.device.onload = function () {
         e.preventDefault();
     });
 
-    // var stats=new Stats();
-    // // stats.showPanel( 2 );
-    // document.body.appendChild(stats.dom);
+    // release pointerevents that hit the background so that they can trigger pointerenter events on other elements
+    document.body.addEventListener('gotpointercapture', function(evt) {
+        evt.target.releasePointerCapture(evt.pointerId);
+    });
+
+    const SHOW_FPS_STATS = false;
+    let stats;
+    if (SHOW_FPS_STATS) {
+        stats = new Stats();
+        document.body.appendChild(stats.dom);
+    }
     
     // start TWEEN library for animations
     (function animate(time) {
@@ -252,10 +260,10 @@ realityEditor.device.onload = function () {
         }
         requestAnimationFrame(animate);
         TWEEN.update(time);
-        // stats.update();
-        
-        // TODO: implement separated render and recalculate functions for the rendering engine
-        // realityEditor.gui.ar.draw.render();
+
+        if (SHOW_FPS_STATS) {
+            stats.update();
+        }
     })();
     
     // start the AR framework in native iOS

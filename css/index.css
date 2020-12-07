@@ -578,6 +578,16 @@ body {
     background-color: rgba(0,0,0,0.5);
 }
 
+.memoryContainer.availableContainer {
+    border: 3px solid cyan;
+    background-color: rgba(0,127,127,0.3);
+}
+
+.memoryContainer.selectedContainer {
+    border: 3px solid cyan;
+    background-color: rgba(0,255,255,0.5);
+}
+
 .nodeMemoryContainer {
     height: calc(20vw - 18px);
 }
@@ -1548,4 +1558,10 @@ Logic Interface CSS
 .hiddenButtons {
     display: none;
     pointer-events: none;
+}
+
+.groundPlaneVisualizer, .groundPlaneOrigin {
+    width: 100px;
+    height: 100px;
+    position: relative;
 }

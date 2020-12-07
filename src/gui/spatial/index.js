@@ -50,7 +50,7 @@ realityEditor.gui.spatial.checkState = function() {
 
     if (!realityEditor.gui.spatial.spatialOn) {
         for (let ip in globalStates.spatial.howFarIs) {
-            if (Object.keys(globalStates.spatial.whereIs[ip]).length > 0) {
+            if (Object.keys(globalStates.spatial.howFarIs[ip]).length > 0) {
                 realityEditor.gui.spatial.spatialOn = true;
                 break;
             }
@@ -79,210 +79,62 @@ realityEditor.gui.spatial.checkState = function() {
     if (realityEditor.gui.spatial.myp5 === null && realityEditor.gui.spatial.spatialOn) {
         realityEditor.gui.spatial.myp5 = new p5(realityEditor.gui.spatial.sketch.bind(realityEditor.gui.spatial), 'p5WebGL');
     }
-}
+};
 
-realityEditor.gui.spatial.collectSpatialList = function(worldOrigin, modelMatrix, objMatrix, objectID){
-    if(!realityEditor.gui.spatial.spatialOn) return;
+// update the whereIsList, howFarIsList, whereWasList, and velocityOfList with modelView matrices of each selected thing
+// also append the model matrices of each selected thing to the historian timeRecorder
+realityEditor.gui.spatial.collectSpatialLists = function() {
+    if (!realityEditor.gui.spatial.spatialOn) return;
     
-    this.worldOrigin = worldOrigin;
-    
-    // console.log(objMatrix[12],objMatrix[13],objMatrix[14]);
-    for(let ip in  globalStates.spatial.whereIs) {
-        for(let key in  globalStates.spatial.whereIs[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.whereIs[ip][key], this.whereIsList, key, modelMatrix,objectID)
-        }
-    }
+    this.worldOrigin = realityEditor.sceneGraph.getViewMatrix();
 
-    for(let ip in  globalStates.spatial.howFarIs) {
-        for (let key in globalStates.spatial.howFarIs[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.howFarIs[ip][key], this.howFarIsList, key, modelMatrix, objectID)
-        }
-    }
+    this.collectSpatialList(globalStates.spatial.whereIs, this.whereIsList);
+    this.collectSpatialList(globalStates.spatial.howFarIs, this.howFarIsList);
+    this.collectSpatialList(globalStates.spatial.whereWas, this.whereWasList);
+    this.collectSpatialList(globalStates.spatial.velocityOf, this.velocityOfList);
 
-    for(let ip in  globalStates.spatial.whereWas) {
-        for (let key in globalStates.spatial.whereWas[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.whereWas[ip][key], this.whereWasList, key, null, objectID);
-        }
-    }
+    let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
 
-    for(let ip in  globalStates.spatial.velocityOf) {
-        for (let key in globalStates.spatial.velocityOf[ip]) {
-            this.loadObjectAndTool(this, globalStates.spatial.velocityOf[ip][key], this.velocityOfList, key, modelMatrix, objectID);
-        }
-    }
-    
+    // if the historian is on, store the matrix of each visible object at each timestep
     if (realityEditor.gui.spatial.historianOn) {
-        this.timeRecorder.initSequence(objectID, objectID, '', '');
-        this.timeRecorder.addMatrix(objMatrix, objectID);
+        Object.keys(realityEditor.gui.ar.draw.visibleObjects).forEach(function (objectKey) {
+            this.timeRecorder.initSequence(objectKey, objectKey, '', '');
+            
+            let objMatrix = []; // remove viewMatrix from modelView matrix to get correct modelMatrix
+            let objMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(objectKey);
+            this.utilities.multiplyMatrix(objMVMatrix, cameraNode.localMatrix, objMatrix);
+            
+            this.timeRecorder.addMatrix(objMatrix, objectKey);
+            
+            let thisObject = realityEditor.getObject(objectKey);
+            if (thisObject) {
+                Object.keys(thisObject.frames).forEach(function(frameKey) {
+                    this.timeRecorder.initSequence(frameKey, objectKey, frameKey, '');
 
-        if (this.objects[objectID]) {
-            for (let key in this.objects[objectID].frames) {
-                let thisTool = this.objects[objectID].frames[key];
-                let m3 = [
-                    thisTool.ar.scale, 0, 0, 0,
-                    0, thisTool.ar.scale, 0, 0,
-                    0, 0, thisTool.ar.scale, 0,
-                    thisTool.ar.x, thisTool.ar.y, 0, 1
-                ];
-                let m0 = [];
-                let m1 = [];
+                    let frameMatrix = []; // remove viewMatrix from modelView matrix to get correct modelMatrix
+                    let frameMVMatrix = realityEditor.sceneGraph.getModelViewMatrix(frameKey);
+                    this.utilities.multiplyMatrix(frameMVMatrix, cameraNode.localMatrix, frameMatrix);
 
-                if (thisTool.ar.matrix.length < 13) {
-                    this.utilities.multiplyMatrix(m3, objMatrix, m0);
-                } else {
-                    this.utilities.multiplyMatrix(thisTool.ar.matrix, objMatrix, m1);
-                    this.utilities.multiplyMatrix(m3, m1, m0);
-                }
+                    this.timeRecorder.addMatrix(frameMatrix, frameKey);
 
-                this.timeRecorder.initSequence(objectID+key, objectID, key, '');
-                this.timeRecorder.addMatrix(m0, objectID+key);
+                }.bind(this));
             }
-        }
+        }.bind(this));
     }
-    
-    
 };
 
-realityEditor.gui.spatial.collectNodeList = function(_objMatrix, _objectID, _nodeID){
-    // console.log(objectID, objects[objectID].internalMatrix.object);
-    /*
-    for(let key in  objects[objectID].frames){
-        if(objects[objectID].frames.hasOwnProperty(key)) {
-            realityEditor.gui.spatial.transformTools(objects[objectID].frames[key], objects[objectID], "tool");
-          //  console.log(objects[objectID].frames[key]);
-            for (let key2 in objects[objectID].frames[key].nodes) {
-                    realityEditor.gui.spatial.transformTools(objects[objectID].frames[key].nodes[key2], objects[objectID].frames[key], "node");
-              // console.log(objects[objectID].frames[key].nodes[key2]);
-               
-              realityEditor.gui.spatial.nodeList[objectID + key+key2] = {};
-                realityEditor.gui.spatial.nodeList[objectID + key+key2].object = objects[objectID].frames[key].nodes[key2];
-                realityEditor.gui.spatial.nodeList[objectID + key+key2].matrix = realityEditor.gui.spatial.nodeList[objectID + key+key2].object.internalMatrix.modelView;
-            }
-        }
-    }
-   // console.log(realityEditor.gui.spatial.nodeList);
- */
-};
-
-realityEditor.gui.spatial.transformTools = function ( thisItem, referenceObject, type) {
-    if(!referenceObject.internalMatrix) return;
-    let ar;
-    if(type === "node")
-        ar = thisItem;
-    else
-        ar = thisItem.ar;
-
-    let m3 = [
-        ar.scale, 0, 0, 0,
-        0, ar.scale, 0, 0,
-        0, 0, ar.scale, 0,
-        ar.x, ar.y, 0, 1
-    ];
-    
-    let m0 = [];
-    let m1 = [];
-    let m4 = [];
-    let m5 = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ];
-
-    if (type === "node") {
-        if(ar.matrix.length < 13){
-            if(referenceObject.ar.matrix.length > 13){
-                ar.matrix = referenceObject.ar.matrix;
-            }
-        }
-
-        if (referenceObject.location === "global") {
-            m3 = [
-                ar.scale * (referenceObject.ar.scale) , 0, 0, 0,
-                0, ar.scale * (referenceObject.ar.scale) , 0, 0,
-                0, 0, ar.scale * (referenceObject.ar.scale) , 0,
-                ar.x + referenceObject.ar.x, ar.y + referenceObject.ar.y, 0, 1
-            ];
-        }
-
-        if (ar.matrix.length < 13) {
-            this.utilities.multiplyMatrix(m3, referenceObject.internalMatrix.object, m5);
-        } else {
-            this.utilities.multiplyMatrix(ar.matrix, referenceObject.internalMatrix.object, m1);
-            this.utilities.multiplyMatrix(m3, m1, m5);
-        }
-        this.utilities.multiplyMatrix(m5, referenceObject.internalMatrix.world, m4);
-
-    } else if (type === "tool") {
-
-        if (ar.matrix.length < 13) {
-            this.utilities.multiplyMatrix(m3, referenceObject.internalMatrix.object, m0);
-        } else {
-            this.utilities.multiplyMatrix(ar.matrix, referenceObject.internalMatrix.object, m1);
-            this.utilities.multiplyMatrix(m3, m1, m0);
-        }
-
-        let m6 = [];
-
-        realityEditor.gui.ar.utilities.multiplyMatrix(rotateX, m0, m6); // TODO: to really optimize, could inline/simplify the rotateX multiplication
-        realityEditor.gui.ar.utilities.multiplyMatrix(m6, referenceObject.internalMatrix.world, m4);
-
-        //  this.utilities.multiplyMatrix(m0, referenceObject.internalMatrix.world, m4);
-
-        //  this.utilities.multiplyMatrix(m0, referenceObject.internalMatrix.world, m4);
-    }
-    //  this.ar.utilities.multiplyMatrix(this.rotateX, this.activeObjectMatrix, tempM);
-    //  this.ar.utilities.multiplyMatrix(tempM, this.correctedCameraMatrix, this.modelViewMatrices[objectKey]);
-    thisItem.internalMatrix = {
-        world: referenceObject.internalMatrix.world,
-        object: referenceObject.internalMatrix.object,
-        tool: m0,
-        node: m5,
-        modelView: m4
-    };
-};
-
-realityEditor.gui.spatial.loadObjectAndTool = function(that, workObject, list, key, matrix, objectID) {
-
-    if (workObject.objectID === objectID) {
-        if (workObject.toolID === "") {
-            list[objectID] = {
-                'key': objectID,
-                'matrix': matrix
-            };
-
-        } else if (this.objects[objectID]) {
-            for (let key in this.objects[objectID].frames) {
-                if (workObject.toolID === key) {
-                    if (!matrix) {
-                        list[objectID + key] = {
-                            'key': objectID + key,
-                            'matrix': null
-                        }
-                    } else {
-                        let thisTool = this.objects[objectID].frames[key];
-                        let m3 = [
-                            thisTool.ar.scale, 0, 0, 0,
-                            0, thisTool.ar.scale, 0, 0,
-                            0, 0, thisTool.ar.scale, 0,
-                            thisTool.ar.x, thisTool.ar.y, 0, 1
-                        ];
-                        let m0 = [];
-                        let m1 = [];
-
-                        if (thisTool.ar.matrix.length < 13) {
-                            this.utilities.multiplyMatrix(m3, matrix, m0);
-                        } else {
-                            this.utilities.multiplyMatrix(thisTool.ar.matrix, matrix, m1);
-                            this.utilities.multiplyMatrix(m3, m1, m0);
-                        }
-
-                        list[objectID + key] = {
-                            'key': objectID + key,
-                            'matrix': m0
-                        };
-                    }
-                }
+// helper function to populate the correct list (e.g. whereIsList) with the ID and modelView matrix pairs of each
+// object or tool selected for each server IP that has some active spatial questions
+realityEditor.gui.spatial.collectSpatialList = function(selectionList, resultsList) {
+    for (let ip in selectionList) {
+        for (let key in selectionList[ip]) {
+            // try to get the ModelView matrix of this entity
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(key);
+            if (sceneNode) {
+                resultsList[key] = {
+                    'key': key,
+                    'matrix': realityEditor.sceneGraph.getModelViewMatrix(key)
+                };
             }
         }
     }
@@ -354,6 +206,7 @@ realityEditor.gui.spatial.sketch = function(p) {
         }
 
         this.canvasThis.uMVMatrix.apply(this.worldOrigin);
+
         //  p.translate( this.worldOrigin[12], this.worldOrigin[13], this.worldOrigin[14]);
         /*
                 p.fill('rgba(0,255,255, 1)');
@@ -381,7 +234,9 @@ realityEditor.gui.spatial.sketch = function(p) {
 // for now, fix it by repeatedly setting it back to un-hidden a few times
 for (let time = 100; time < 5000; time *= 2) {
     setTimeout(function() {
-        globalCanvas.canvas.style.display = ''; // unhide the canvas getting auto-hidden by p5
+        if (globalCanvas && globalCanvas.canvas) {
+            globalCanvas.canvas.style.display = ''; // unhide the canvas getting auto-hidden by p5
+        }
     }, time);
 }
 

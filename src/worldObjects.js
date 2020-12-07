@@ -26,6 +26,8 @@ createNameSpace("realityEditor.worldObjects");
     const worldObjectId = '_WORLD_';
     const localWorldObjectKey = '_WORLD_local';
 
+    let numLocalWorldAttempts = 0;
+
     /**
      * Init world object module
      */
@@ -85,19 +87,21 @@ createNameSpace("realityEditor.worldObjects");
         console.log('try loading local world object...');
         let worldObjectBeat = { id: localWorldObjectKey,
             ip: '127.0.0.1',
-            port: 49369,
+            port: realityEditor.device.environment.getLocalServerPort(),
             vn: 320,
             pr: 'R2',
             tcs: null,
             zone: '' };
 
         realityEditor.network.addHeartbeatObject(worldObjectBeat);
+        
+        numLocalWorldAttempts++;
 
         setTimeout(function() {
             if (!realityEditor.worldObjects.getWorldObjectKeys().includes(localWorldObjectKey)) {
                 tryLoadingLocalWorldObject(); // keep repeating until we load it successfully
             }
-        }, 1000);
+        }, 1000 * numLocalWorldAttempts);
     }
 
     /**
@@ -333,8 +337,8 @@ createNameSpace("realityEditor.worldObjects");
         for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
             var object = realityEditor.getObject(objectKey);
             if (object.isWorldObject) {
-                var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
-                distances[objectKey] = thisDistance;
+                // var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+                distances[objectKey] = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
             }
         }
         return distances;

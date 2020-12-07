@@ -16,6 +16,12 @@ createNameSpace("realityEditor.gui.ar.grouping");
     var groupStruct = {};
 
     /**
+     * Maps each frameKey to its relativeWorldPosition to the selected frame
+     * @type {Object.<string, Set.<string>>}
+     */
+    var groupRelativePositions = {};
+
+    /**
      * @type {Object.<string, string>}
      */
     var frameToObj = {};
@@ -87,21 +93,14 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 drawGroupHulls();
 
                 if (isUnconstrainedEditingGroup && !realityEditor.device.editingState.unconstrainedDisabled) {
-                    var activeVehicle = realityEditor.device.getEditingVehicle();
-                    var activeVehicleMatrix = realityEditor.gui.ar.positioning.getPositionData(activeVehicle).matrix;
-                    forEachGroupedFrame(activeVehicle, function(frame) {
-                        var newMatrix = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(activeVehicleMatrix, frame.startingMatrixOffset, newMatrix);
-                        realityEditor.gui.ar.positioning.setPositionDataMatrix(frame, newMatrix);
-                    }, true);
 
-                    var isSingleTouch = realityEditor.device.currentScreenTouches.length === 1;
-                    if (activeVehicle && isSingleTouch) {
-                        // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                        var touchPosition = realityEditor.device.currentScreenTouches[0].position; // need to retrieve this way instead of CSS of overlayDiv to support multitouch
-                        // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
-                        moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x, touchPosition.y);
-                    }
+                    let activeVehicle = realityEditor.device.getEditingVehicle();
+                    let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                    forEachGroupedFrame(activeVehicle, function(groupedFrame) {
+                        let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                        let relativePosition = groupRelativePositions[groupedFrame.uuid];
+                        groupedSceneNode.setPositionRelativeTo(selectedSceneNode, relativePosition);
+                    }, true);
                 }
             }
         });
@@ -133,6 +132,17 @@ createNameSpace("realityEditor.gui.ar.grouping");
                             startLasso(params.event.pageX, params.event.pageY);
                         }
                     }
+                } else {
+                    // else if hitting a grouped frame, preserve relative locations between it and its groupies
+                    var activeVehicle = realityEditor.device.getEditingVehicle();
+                    if (activeVehicle) {
+                        let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+
+                        forEachGroupedFrame(activeVehicle, function(groupedFrame) {
+                            let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                            groupRelativePositions[groupedFrame.uuid] = groupedSceneNode.getMatrixRelativeTo(selectedSceneNode);
+                        }, true);
+                    }
                 }
 
             }
@@ -152,10 +162,14 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 var isSingleTouch = params.event.touches.length === 1;
                 
                 if (activeVehicle && isSingleTouch) {
-                    // also move group objects too
-                    var touchPosition = realityEditor.device.currentScreenTouches[0].position;
-                    moveGroupedVehiclesIfNeeded(activeVehicle, touchPosition.x,touchPosition.y);
-                    // moveGroupedVehiclesIfNeeded(activeVehicle, params.event.pageX, params.event.pageY);
+                    // Any time a frame or node is moved, check if it's part of a group and move all grouped frames/nodes with it
+                    let selectedSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+                    forEachGroupedFrame(activeVehicle, function(groupedFrame) {
+                        let groupedSceneNode = realityEditor.sceneGraph.getSceneNodeById(groupedFrame.uuid);
+                        let relativePosition = groupRelativePositions[groupedFrame.uuid];
+                        groupedSceneNode.setPositionRelativeTo(selectedSceneNode, relativePosition);
+                    }, true);
+                    
                 }
 
             }
@@ -299,7 +313,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         // 1. move it so it is centered on the pointer, ignoring touchOffset
                         // var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
                         var touchPosition = realityEditor.device.currentScreenTouches[0].position;
-                        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(groupedFrame, touchPosition.x, touchPosition.y, false);
+                        realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(groupedFrame, touchPosition.x, touchPosition.y, false);
 
                         /*
                         // 2. convert touch offset from percent scale to actual scale of the frame
@@ -443,10 +457,18 @@ createNameSpace("realityEditor.gui.ar.grouping");
      * @param {boolean} isEnabled
      */
     function toggleGroupingMode(isEnabled) {
+        let svg = document.getElementById('groupSVG');
+        let lassoSvg = document.getElementById('groupLassoSVG');
+
         if (!isEnabled) {
-            var svg = document.getElementById("groupSVG");
             clearHulls(svg);
             closeLasso();
+            
+            svg.style.display = 'none';
+            lassoSvg.style.display = 'none';
+        } else {
+            svg.style.display = '';
+            lassoSvg.style.display = '';
         }
     }
 
@@ -671,23 +693,17 @@ createNameSpace("realityEditor.gui.ar.grouping");
      */
     function getFrameCornersScreenCoordinates(objectKey, frameKey, buffer) {
         if (typeof buffer === 'undefined') buffer = 0;
-        var screenPosition = realityEditor.gui.ar.positioning.getScreenPosition(objectKey, frameKey, false, true, true, true, true, buffer);
+        // new method
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        var halfWidth = parseInt(frame.frameSizeX)/2 + buffer;
+        var halfHeight = parseInt(frame.frameSizeY)/2 + buffer;
         
-        // if (typeof screenPosition.upperLeft.x === 'number' && !isNaN(screenPosition.upperLeft.x) &&
-        //     typeof screenPosition.upperRight.x === 'number' && !isNaN(screenPosition.upperRight.x) &&
-        //     typeof screenPosition.lowerLeft.x === 'number' && !isNaN(screenPosition.lowerLeft.x) &&
-        //     typeof screenPosition.lowerRight.x === 'number' && !isNaN(screenPosition.lowerRight.x)) {
-
-            return {
-                upperLeft: screenPosition.upperLeft,
-                upperRight: screenPosition.upperRight,
-                lowerLeft: screenPosition.lowerLeft,
-                lowerRight: screenPosition.lowerRight
-            };
-        //    
-        // } else {
-        //     return null;
-        // }
+        return {
+            upperLeft: realityEditor.sceneGraph.getScreenPosition(frameKey, [-halfWidth, -halfHeight, 0, 1]),
+            upperRight: realityEditor.sceneGraph.getScreenPosition(frameKey, [halfWidth, -halfHeight, 0, 1]),
+            lowerLeft: realityEditor.sceneGraph.getScreenPosition(frameKey, [-halfWidth, halfHeight, 0, 1]),
+            lowerRight: realityEditor.sceneGraph.getScreenPosition(frameKey, [halfWidth, halfHeight, 0, 1]),
+        };
     }
 
     /**
@@ -741,7 +757,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 // make sure there is an object and frame
                 if (!frame || frame.visualization !== 'ar') continue;
 
-                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 10);
+                var bb = getFrameCornersScreenCoordinates(objectKey, frameKey, 50);
                 
                 // points.push([x, y]); // pushing center point
                 // pushing corner points
@@ -800,48 +816,6 @@ createNameSpace("realityEditor.gui.ar.grouping");
             }
         }
         frameToObj[frameKey] = thisFrame.objectId;
-    }
-    
-    /**
-     * method to move transformed from to the (x,y) point on its plane
-     * where the (screenX,screenY) ray cast intersects with offset being
-     * locally calculated
-     * based on realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate
-     * @param {Frame} activeVehicle
-     * @param {number} screenX
-     * @param {number} screenY
-     */
-    function moveGroupVehicleToScreenCoordinate(activeVehicle, screenX, screenY) {
-        var results = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY(activeVehicle, screenX, screenY, true);
-
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
-        var newPosition = {
-            x: results.point.x - results.offsetLeft,
-            y: results.point.y - results.offsetTop
-        };
-
-        var changeInPosition = {
-            x: newPosition.x - positionData.x,
-            y: newPosition.y - positionData.y
-        };
-        if (activeVehicle.groupTouchOffset === undefined) {
-            activeVehicle.groupTouchOffset = changeInPosition;
-        } else {
-            positionData.x = newPosition.x - activeVehicle.groupTouchOffset.x;
-            positionData.y = newPosition.y - activeVehicle.groupTouchOffset.y;
-        }
-    }
-
-    /**
-     * Any time a frame or node is moved, check if it's part of a group and move all grouped frames/nodes with it
-     * @param {Frame|Node} activeVehicle
-     * @param {number} pageX
-     * @param {number} pageY
-     */
-    function moveGroupedVehiclesIfNeeded(activeVehicle, pageX, pageY) {
-        forEachGroupedFrame(activeVehicle, function(frame) {
-            moveGroupVehicleToScreenCoordinate(frame, pageX, pageY);
-        }, true);
     }
 
     exports.initService = initService;

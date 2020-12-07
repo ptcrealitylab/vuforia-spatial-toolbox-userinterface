@@ -105,6 +105,10 @@
     <script src="src/network/frameContentAPI.js"></script>
     <script src="src/network/availableFrames.js"></script>
 
+    <script src="src/sceneGraph/sceneNode.js"></script>
+    <script src="src/sceneGraph/index.js"></script>
+    <script src="src/sceneGraph/network.js"></script>
+
     <script src="src/gui/utilities.js"></script>
     <script src="src/gui/buttons.js"></script>
     <script src="src/gui/menus.js"></script>
@@ -122,6 +126,7 @@
     <script src="src/gui/ar/grouping.js"></script>
     <script src="src/gui/ar/moveabilityOverlay.js"></script>
     <script src="src/gui/ar/frameHistoryRenderer.js"></script>
+    <script src="src/gui/ar/groundPlaneRenderer.js"></script>
     <script src="src/gui/ar/anchors.js"></script>
 
     <script src="src/gui/spatial/index.js"></script>
@@ -381,34 +386,57 @@
     </svg>
 
     <div id="unlockButtonDiv"></div>
-      <svg id="unlockButton">
-          <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
-          <path class="blue" d="M40.3,31.2V19.4c0-2.8-1.1-5.4-3-7.3c-2-2-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3V24h1.9v-4.6
+    <svg id="unlockButton">
+        <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
+        <path class="blue" d="M40.3,31.2V19.4c0-2.8-1.1-5.4-3-7.3c-2-2-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3V24h1.9v-4.6
                       c0-4.7,3.8-8.5,8.5-8.5c2.3,0,4.4,0.9,6,2.5c1.6,1.6,2.5,3.7,2.5,6v11.8h-23V51h29.1V31.2H40.3z M42.7,49.1H17.3V33h25.4V49.1z"/>
-          <rect id="bg" class="blue inactive" width="60" height="60"/>
-      </svg>
-      <div id="halflockButtonDiv"></div>
-      <svg id="halflockButton">
-          <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
-          <path class="blue" d="M40.3,31.2V19.4c0-2.8-1.1-5.4-3-7.3c-2-2-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3V24h1.9v-4.6
+        <rect id="bg" class="blue inactive" width="60" height="60"/>
+    </svg>
+    <div id="halflockButtonDiv"></div>
+    <svg id="halflockButton">
+        <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
+        <path class="blue" d="M40.3,31.2V19.4c0-2.8-1.1-5.4-3-7.3c-2-2-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3V24h1.9v-4.6
                       c0-4.7,3.8-8.5,8.5-8.5c2.3,0,4.4,0.9,6,2.5c1.6,1.6,2.5,3.7,2.5,6v11.8h-23V51h29.1V31.2H40.3z M42.7,49.1H17.3V33h25.4V49.1z"/>
-          <rect id="bg" class="blue inactive" width="60" height="60"/>
-      </svg>
-      <div id="lockButtonDiv"></div>
-      <svg id="lockButton">
-          <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
-          <path class="blue" d="M40.3,28.7v-6.8c0-2.8-1.1-5.4-3-7.3c-2-1.9-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3v6.8h-4.2v19.8h29.1V28.7
+        <rect id="bg" class="blue inactive" width="60" height="60"/>
+    </svg>
+    <div id="lockButtonDiv"></div>
+    <svg id="lockButton">
+        <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>
+        <path class="blue" d="M40.3,28.7v-6.8c0-2.8-1.1-5.4-3-7.3c-2-1.9-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3v6.8h-4.2v19.8h29.1V28.7
                       H40.3z M21.5,21.9c0-4.7,3.8-8.5,8.5-8.5c2.3,0,4.4,0.9,6,2.5c1.6,1.6,2.5,3.7,2.5,6v6.8h-17V21.9z M42.7,46.6H17.3V30.5h25.4V46.6z"/>
-          <rect id="bg" class="blue inactive" width="60" height="60"/>
-      </svg>
-  
-      <div id="recordButtonDiv"></div>
-      <svg id="recordButton">
-         <!-- <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>-->
-          <!--<path class="blue" d="M40.3,28.7v-6.8c0-2.8-1.1-5.4-3-7.3c-2-1.9-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3v6.8h-4.2v19.8h29.1V28.7-->
-	                <!--H40.3z M21.5,21.9c0-4.7,3.8-8.5,8.5-8.5c2.3,0,4.4,0.9,6,2.5c1.6,1.6,2.5,3.7,2.5,6v6.8h-17V21.9z M42.7,46.6H17.3V30.5h25.4V46.6z"/>-->
-          <path class="blue" d="M30,44.3c-7.9,0-14.3-6.4-14.3-14.3c0-7.9,6.4-14.3,14.3-14.3S44.3,22.2,44.3,30C44.3,37.9,37.9,44.3,30,44.3z
+        <rect id="bg" class="blue inactive" width="60" height="60"/>
+    </svg>
+
+    <div id="recordButtonDiv"></div>
+    <svg id="recordButton">
+        <!-- <path class="blue" d="M60,60H0V0h60V60z M58.1,1.9H1.9v56.3h56.3V1.9z"/>-->
+        <!--<path class="blue" d="M40.3,28.7v-6.8c0-2.8-1.1-5.4-3-7.3c-2-1.9-4.5-3-7.3-3c-5.7,0-10.3,4.6-10.3,10.3v6.8h-4.2v19.8h29.1V28.7-->
+        <!--H40.3z M21.5,21.9c0-4.7,3.8-8.5,8.5-8.5c2.3,0,4.4,0.9,6,2.5c1.6,1.6,2.5,3.7,2.5,6v6.8h-17V21.9z M42.7,46.6H17.3V30.5h25.4V46.6z"/>-->
+        <path class="blue" d="M30,44.3c-7.9,0-14.3-6.4-14.3-14.3c0-7.9,6.4-14.3,14.3-14.3S44.3,22.2,44.3,30C44.3,37.9,37.9,44.3,30,44.3z
 	 M30,17.8c-6.8,0-12.3,5.5-12.3,12.3c0,6.8,5.5,12.3,12.3,12.3c6.8,0,12.3-5.5,12.3-12.3C42.3,23.3,36.8,17.8,30,17.8z"/>
+        <rect id="bg" class="blue inactive" width="60" height="60"/>
+    </svg>
+    <div id="groundPlaneResetButtonDiv"></div>
+    <svg id="groundPlaneResetButton">
+        <path class="blue" d="M60,60H0V0H60ZM58.1,1.9H1.9V58.2H58.2V1.9Z"/>
+        <g>
+            <g>
+                <line class="blue-stroked" x1="52.1" y1="34.87" x2="52.1" y2="34.82"/>
+                <line class="blue-stroked" x1="30.78" y1="47.18" x2="49.45" y2="36.4"/>
+                <line class="blue-stroked" x1="52.1" y1="34.87" x2="52.1" y2="37.94"/>
+                <line class="blue-stroked" x1="7.9" y1="34.87" x2="7.9" y2="34.82"/>
+                <polyline class="blue-stroked" points="20.5 27.54 7.9 34.82 7.9 34.87 10.55 36.4 29.22 47.18"/>
+                <polyline class="blue-stroked" points="10.55 36.4 29.22 47.18 30.78 47.18 49.45 36.4 52.1 34.87 52.1 34.82 39.48 27.54"/>
+                <line class="blue-stroked" x1="7.9" y1="34.87" x2="7.9" y2="37.94"/>
+                <polyline class="blue-stroked" points="7.9 37.94 7.9 37.98 29.22 50.29 30.78 50.29 52.1 37.98 52.1 37.94"/>
+            </g>
+            <g>
+                <path class="blue" d="M32.89,30.66a10.85,10.85,0,0,1-2.91.43,9.86,9.86,0,0,1-4.1-18.84l.43.92a8.89,8.89,0,1,0,6.31-.38l-.1,2-4.32-2.7,4.53-2.38,0,2a10,10,0,0,1,6.8,6.59A9.88,9.88,0,0,1,32.89,30.66Z"/>
+                <rect class="blue" x="29.44" y="15.65" width="1.03" height="9.18"/>
+                <rect class="blue" x="29.44" y="25.96" width="1.03" height="1.35"/>
+            </g>
+            <polygon class="blue" points="34.37 37.36 33.37 37.92 30.05 36.02 26.8 37.9 25.77 37.33 29.05 35.44 25.64 33.46 26.64 32.89 30.05 34.86 33.22 33.03 34.26 33.59 31.05 35.44 34.37 37.36"/>
+        </g>
         <rect id="bg" class="blue inactive" width="60" height="60"/>
     </svg>
     <!-- Reality UI - Start -->
@@ -478,7 +506,7 @@
     <!-- Reality UI - End -->
 </div>
 
-<div class='memoryBackground'></div>
+<div class='memoryBackground ignorePointerEvents'></div>
 
 <div class="memoryPointerContainer">
 </div>
@@ -506,7 +534,7 @@
         style="position: absolute; left: 0; top: 0; width: 736px; height: 414px; background: transparent; 
         pointer-events: none;"></canvas>
 <svg xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink" class="groupSVGElement">
+     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupLassoSVG" class="groupSVGElement">
     <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>
 </svg>
 <svg xmlns="http://www.w3.org/2000/svg"

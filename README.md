@@ -176,7 +176,7 @@ You should learn several key vocabulary terms, which correspond to classes or ot
 7. Block
 8. Block Link
 
-In-depth explanations of each of these concepts are available in the [Data Model documentation](https://github.com/ptcrealitylab/vuforia-spatial-documentation/blob/master/understandSystem/dataModel.md).
+In-depth explanations of each of these concepts are available in the [Data Model documentation](https://github.com/ptcrealitylab/vuforia-spatial-toolbox-documentation/blob/master/dive-deeper/data-model.md).
 
 ### Code Documentation
 
