@@ -334,6 +334,9 @@ function LogicGUIState() {
 	this.menuBlockData = [ [], [], [], [], [] ]; //defaultBlockData(); //TODO: load cached blocks instead of empty
 	// dom elements for blocks in menu
 	this.menuBlockDivs = [];
+	// keeps track of which colors have links drawn to them from the outside
+    this.connectedInputColors = [false, false, false, false]; // blue, green, yellow, red
+    this.connectedOutputColors = [false, false, false, false]; // stored in array for easy conversion to coordinates
 }
 
 /**
