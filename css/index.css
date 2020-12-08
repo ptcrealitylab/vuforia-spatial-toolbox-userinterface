@@ -1555,6 +1555,16 @@ Logic Interface CSS
     height: 9%;
 }
 
+.hiddenAnchor {
+    display: none;
+    pointer-events: none;
+}
+
+.anchorContainerFullscreen {
+    display: unset;
+    pointer-events: unset;
+}
+
 .hiddenButtons {
     display: none;
     pointer-events: none;
