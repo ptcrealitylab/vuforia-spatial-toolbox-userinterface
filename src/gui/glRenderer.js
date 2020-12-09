@@ -24,7 +24,10 @@ createNameSpace("realityEditor.gui.glRenderer");
 
             this.uncloneables = {};
 
+            this.cache = {};
+
             this.commandBuffer = [];
+            this.lastTargettedBinds = {};
             this.buffering = false;
 
             this.onMessage = this.onMessage.bind(this);
@@ -51,13 +54,25 @@ createNameSpace("realityEditor.gui.glRenderer");
 
             const res = this.executeCommand(message);
 
-            this.worker.postMessage({
-                id: message.id,
-                result: res,
-            }, '*');
+            if (message.wantsResponse) {
+                this.worker.postMessage({
+                    id: message.id,
+                    result: res,
+                }, '*');
+            }
         }
 
         executeCommand(message) {
+            if (message.messages) {
+                for (let bufferedMessage of message.messages) {
+                    this.executeOneCommand(bufferedMessage);
+                }
+            } else {
+                this.executeOneCommand(message);
+            }
+        }
+
+        executeOneCommand(message) {
             for (let i = 0; i < message.args.length; i++) {
                 let arg = message.args[i];
                 if (arg && arg.fakeClone) {
@@ -81,7 +96,27 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.lastUseProgram = message;
             }
 
+            const targettedBinds = {
+                bindBuffer: true,
+                bindFramebuffer: true,
+                bindRenderbuffer: true,
+                bindTexture: true,
+            };
+
+            if (targettedBinds[message.name]) {
+                this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
+            }
+
             let res = this.gl[message.name].apply(this.gl, message.args);
+            if (res && typeof res !== 'object') {
+                if (!this.cache[message.name]) {
+                    this.cache[message.name] = [];
+                }
+                this.cache[message.name].push({
+                    args: message.args,
+                    res: res,
+                });
+            }
             if (typeof res === 'object') {
                 this.uncloneables[message.id] = res;
                 res = {fakeClone: true, index: message.id};
@@ -97,10 +132,20 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.commandBuffer = [];
         }
 
+        dropFrameCommands() {
+            this.buffering = false;
+            this.commandBuffer = [];
+        }
+
         getFrameCommands() {
             this.buffering = true;
             if (this.lastUseProgram) {
                 this.commandBuffer.push(this.lastUseProgram);
+            }
+            if (this.lastTargettedBinds) {
+                for (let command of Object.values(this.lastTargettedBinds)) {
+                    this.commandBuffer.push(command);
+                }
             }
             this.worker.postMessage({name: 'frame', time: Date.now()}, '*');
             return new Promise((res) => {
@@ -108,12 +153,12 @@ createNameSpace("realityEditor.gui.glRenderer");
             });
         }
     }
-    
+
     let canvas;
     let gl;
     const functions = [];
     const constants = {};
-    
+
     function initService() {
         // canvas = globalCanvas.canvas;
         canvas = document.querySelector('#glcanvas');
@@ -216,28 +261,28 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         // let end = performance.now();
         // console.log(end - start);
-        
+
         // console.log('rendered ' + proxies.length + ' proxies');
-        
+
         requestAnimationFrame(renderFrame);
     }
-    
+
     function generateWorkerIdForTool(toolId) {
         // method 1 - generate randomly
         // workerIds[toolId] = realityEditor.utilities.randomIntInc(1, 65535);
-        
+
         // method 2 - generate incrementally
         workerIds[toolId] = nextWorkerId;
         nextWorkerId += 1;
         return workerIds[toolId];
     }
-    
+
     function addWebGlProxy(toolId) {
         const worker = globalDOMCache['iframe' + toolId].contentWindow;
         let proxy = new WorkerGLProxy(worker, gl, generateWorkerIdForTool(toolId));
         proxies.push(proxy);
         toolIdToProxy[toolId] = proxy;
-        
+
         worker.postMessage(JSON.stringify({
             workerId: workerIds[toolId]
         }), '*');
