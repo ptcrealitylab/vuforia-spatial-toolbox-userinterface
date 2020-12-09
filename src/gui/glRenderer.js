@@ -6,7 +6,7 @@ createNameSpace("realityEditor.gui.glRenderer");
     let toolIdToProxy = {};
     let proxies = [];
 
-    const MAX_PROXIES = 10; // maximum number that can be safely rendered each frame
+    const MAX_PROXIES = 32; // maximum number that can be safely rendered each frame
 
     /**
      * Mediator between the worker iframe and the gl implementation
