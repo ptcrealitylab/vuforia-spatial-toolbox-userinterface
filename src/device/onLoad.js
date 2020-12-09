@@ -197,6 +197,7 @@ realityEditor.device.onload = function () {
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
     realityEditor.sceneGraph.initService();
+    realityEditor.gui.glRenderer.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
