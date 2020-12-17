@@ -106,6 +106,10 @@ createNameSpace("realityEditor.sceneGraph.network");
         let relativeMatrix = sceneNode.getMatrixRelativeTo(worldNode);
         realityEditor.network.postObjectPosition(object.ip, sceneNode.id, relativeMatrix, worldObjectId);
 
+        objectLocalizedCallbacks.forEach(function(callback) {
+            callback(sceneNode.id, worldObjectId);
+        });
+
         sceneNode.needsUploadToServer = false;
     }
 
@@ -120,7 +124,23 @@ createNameSpace("realityEditor.sceneGraph.network");
         }
     }
 
+    let objectLocalizedCallbacks = [];
+    function onObjectLocalized(callback) {
+        objectLocalizedCallbacks.push(callback);
+    }
+
+    function triggerLocalizationCallbacks(objectId) {
+        // check what it's best worldId should be
+        let worldObjectId = sceneGraph.getWorldId();
+
+        objectLocalizedCallbacks.forEach(function(callback) {
+            callback(objectId, worldObjectId);
+        });
+    }
+
     exports.initService = initService;
     exports.uploadObjectPosition = uploadObjectPosition;
+    exports.onObjectLocalized = onObjectLocalized;
+    exports.triggerLocalizationCallbacks = triggerLocalizationCallbacks;
 
 })(realityEditor.sceneGraph.network);

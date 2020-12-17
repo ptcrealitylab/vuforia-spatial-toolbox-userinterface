@@ -1812,6 +1812,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
             console.warn('NO COMPATIBLE OBJECTS TO ATTACH TO... IMPLEMENT THIS TOOL\'S DESTRUCTION');
         }
     }
+
+    if (typeof msgContent.getWorldId !== 'undefined') {
+        // trigger the getWorldId callback
+        realityEditor.sceneGraph.network.triggerLocalizationCallbacks(msgContent.object);
+    }
 };
 
 realityEditor.network.getNewObjectForFrame = function(objectKey, frameKey, attachesTo) {

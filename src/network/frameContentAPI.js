@@ -18,6 +18,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected);
+
+        realityEditor.sceneGraph.network.onObjectLocalized(worldIdUpdated);
     }
 
     /**
@@ -70,12 +72,19 @@ createNameSpace("realityEditor.network.frameContentAPI");
      */
     function sendMessageToAllVisibleFrames(msgContent) {
         for (var visibleObjectKey in realityEditor.gui.ar.draw.visibleObjects) {
-            if (!realityEditor.gui.ar.draw.visibleObjects.hasOwnProperty(visibleObjectKey)) continue;
-
-            realityEditor.forEachFrameInObject(visibleObjectKey, function(objectKey, frameKey) {
-                realityEditor.network.postMessageIntoFrame(frameKey, msgContent);
-            });
+            sendMessageToAllFramesOnObject(visibleObjectKey, msgContent);
         }
+    }
+
+    /**
+     * Helper function to post a message into all iframes on visible objects
+     * @param {string} objectKey
+     * @param {*} msgContent
+     */
+    function sendMessageToAllFramesOnObject(objectKey, msgContent) {
+        realityEditor.forEachFrameInObject(objectKey, function(objectKey, frameKey) {
+            realityEditor.network.postMessageIntoFrame(frameKey, msgContent);
+        });
     }
 
     /**
@@ -119,6 +128,20 @@ createNameSpace("realityEditor.network.frameContentAPI");
             }
         }
         return newObject;
+    }
+
+    /**
+     * Gets triggered whenever an object's worldId get loaded or changed
+     * @param objectId
+     * @param worldId
+     */
+    function worldIdUpdated(objectId, worldId) {
+        sendMessageToAllFramesOnObject(objectId, {
+            updateWorldId: {
+                objectId: objectId,
+                worldId: worldId
+            }
+        });
     }
 
     exports.initService = initService;
