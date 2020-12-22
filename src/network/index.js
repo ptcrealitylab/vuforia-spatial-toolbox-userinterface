@@ -240,6 +240,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     thisObject.fullScreen = false;
     thisObject.sendMatrix = false;
     thisObject.sendMatrices = {
+        model: false,
+        view: false,
         modelView : false,
         devicePose : false,
         groundPlane : false,
@@ -264,6 +266,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisFrame.fullScreen = false;
         thisFrame.sendMatrix = false;
         thisFrame.sendMatrices = {
+            model: false,
+            view: false,
             modelView : false,
             devicePose : false,
             groundPlane : false,
@@ -944,6 +948,8 @@ realityEditor.network.onAction = function (action) {
             frame.fullScreen = false;
             frame.sendMatrix = false;
             frame.sendMatrices = {
+                model: false,
+                view: false,
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,
@@ -1189,6 +1195,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.sendMatrices !== "undefined") {
+        if (msgContent.sendMatrices.model === true || msgContent.sendMatrices.view === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.model = msgContent.sendMatrices.model;
+                tempThisObject.sendMatrices.view = msgContent.sendMatrices.view;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
+            }
+        }
         if (msgContent.sendMatrices.groundPlane === true) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};

@@ -746,6 +746,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             frame.fullScreen = false;
             frame.sendMatrix = false;
             frame.sendMatrices = {
+                model: false,
+                view: false,
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,

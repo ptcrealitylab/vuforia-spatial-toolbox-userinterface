@@ -1278,15 +1278,23 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             // }
             
             if (activeType === "ui") {
-
-                if (activeVehicle.sendMatrix === true || activeVehicle.sendAcceleration === true || activeVehicle.sendScreenPosition === true ||
-                    activeVehicle.sendMatrices && (activeVehicle.sendMatrices.devicePose === true || activeVehicle.sendMatrices.groundPlane === true || activeVehicle.sendMatrices.allObjects === true)) {
+                let sendMatrices = activeVehicle.sendMatrices;
+                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition ||
+                    sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
 
                     var thisMsg = {};
 
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
                         thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                    }
+
+                    if (activeVehicle.sendMatrices.model === true) {
+                        thisMsg.modelMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).worldMatrix;
+                    }
+
+                    if (activeVehicle.sendMatrices.view === true) {
+                        thisMsg.viewMatrix = realityEditor.sceneGraph.getViewMatrix();
                     }
                     
                     if (activeVehicle.sendMatrices.devicePose === true) {
@@ -1391,7 +1399,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
         this.hideScreenFrame(activeKey);
     }
 
-    if (typeof activeVehicle.ignoreAllTouches !== 'undefined') {
+    if (typeof activeVehicle.ignoreAllTouches !== 'undefined' && globalDOMCache['object' + activeKey]) {
         if (activeVehicle.ignoreAllTouches) {
             if ( !globalDOMCache['object' + activeKey].classList.contains('ignoreAllTouches') ) {
                 globalDOMCache['object' + activeKey].classList.add('ignoreAllTouches');
