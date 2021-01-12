@@ -666,6 +666,9 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         return;
     }
 
+    // invalidate vehicleKeyCache
+    delete realityEditor.vehicleKeyCache[oldFrameKey];
+
     let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(oldFrameKey);
     // this will recompute a new position for it so it stays in same place relative to camera/world
     realityEditor.sceneGraph.changeParent(frameSceneNode, newObjectKey, true);
@@ -681,7 +684,10 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         node.uuid = newNodeKey;
         newNodes[node.uuid] = node;
         delete frame.nodes[oldNodeKey];
-        
+
+        // invalidate vehicleKeyCache
+        delete realityEditor.vehicleKeyCache[oldNodeKey];
+
         // update the scene graph
         let nodeSceneNode = realityEditor.sceneGraph.getSceneNodeById(oldNodeKey);
         realityEditor.sceneGraph.changeId(nodeSceneNode, newNodeKey);
@@ -1217,8 +1223,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 // draw a placeholder for unloaded vehicles to provide better visual feedback while they're loading
                 let iframe = globalDOMCache['iframe' + activeKey];
                 if (!iframe.dataset.doneLoading || activeVehicle.isOutsideViewport) {
-                    if (realityEditor.sceneGraph.isInFrontOfCamera(activeKey)) {
-                        this.debugDrawVehicle(activeVehicle, finalMatrix);
+                    if (realityEditor.sceneGraph.getSceneNodeById(activeKey)) {
+                        if (realityEditor.sceneGraph.isInFrontOfCamera(activeKey)) {
+                            this.debugDrawVehicle(activeVehicle, finalMatrix);
+                        }
                     }
                 }
 
@@ -1279,7 +1287,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             
             if (activeType === "ui") {
                 let sendMatrices = activeVehicle.sendMatrices;
-                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition ||
+                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition || activeVehicle.sendPositionInWorld ||
                     sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
 
                     var thisMsg = {};
@@ -1322,6 +1330,23 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                             center: realityEditor.sceneGraph.getScreenPosition(activeKey, [0, 0, 0, 1]),
                             lowerRight: realityEditor.sceneGraph.getScreenPosition(activeKey, [halfWidth, halfHeight, 0, 1])
                         };
+                    }
+
+                    if (activeVehicle.sendPositionInWorld === true) {
+                        // check what it's best worldId should be
+                        let worldObjectId = realityEditor.sceneGraph.getWorldId();
+                        // only works if its localized against a world object
+                        if (worldObjectId) {
+                            let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);//.worldMatrix;
+                            let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);//.worldMatrix;
+                            let relativeMatrix = toolSceneNode.getMatrixRelativeTo(worldSceneNode);
+
+                            thisMsg.positionInWorld = {
+                                objectId: objectKey,
+                                worldId: worldObjectId,
+                                worldMatrix: relativeMatrix
+                            }
+                        }
                     }
                     
                     if (activeType === 'ui') {

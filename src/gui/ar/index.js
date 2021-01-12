@@ -504,6 +504,7 @@ realityEditor.gui.ar.getDistanceScale = function(activeVehicle) {
     if (keys.nodeKey) {
         // it's a node, return its parent frame's value
         var parentFrame = realityEditor.getFrame(keys.objectKey, keys.frameKey);
+        if (!parentFrame) { return 1; }
         return parentFrame.distanceScale || 1;
     } else {
         // it's a frame, return its own value

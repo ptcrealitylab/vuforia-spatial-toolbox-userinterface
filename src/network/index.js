@@ -1535,7 +1535,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         
         thisFrame.nodes[nodeKey] = node;
 
-        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, node, nodeKey);
+        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, nodeKey, node);
 
         if (msgContent.createNode.attachToGroundPlane) {
             realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
@@ -1824,6 +1824,16 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (newObjectKey) {
             var newFrameKey = newObjectKey + frame.name;
             realityEditor.gui.ar.draw.moveFrameToNewObject(msgContent.object, msgContent.frame, newObjectKey, newFrameKey);
+
+            let thisFrame = realityEditor.getFrame(newObjectKey, newFrameKey);
+
+            realityEditor.network.callbackHandler.triggerCallbacks('vehicleReattached', {
+                oldObjectKey: msgContent.object,
+                oldFrameKey: msgContent.frame,
+                newObjectKey: newObjectKey,
+                newFrameKey: newFrameKey,
+                frameType: thisFrame.src
+            });
             console.log('moved frame based on attachesTo');
         } else {
             // if not, remove this frame
@@ -1834,6 +1844,38 @@ realityEditor.network.onInternalPostMessage = function (e) {
     if (typeof msgContent.getWorldId !== 'undefined') {
         // trigger the getWorldId callback
         realityEditor.sceneGraph.network.triggerLocalizationCallbacks(msgContent.object);
+    }
+
+    if (typeof msgContent.sendPositionInWorld !== 'undefined') {
+        tempThisObject.sendPositionInWorld = true;
+    }
+
+    if (typeof msgContent.getPositionInWorld !== 'undefined') {
+        let response = {};
+
+        // check what it's best worldId should be
+        let worldObjectId = realityEditor.sceneGraph.getWorldId();
+
+        // only works if its localized against a world object
+        if (worldObjectId) {
+            let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(msgContent.frame);//.worldMatrix;
+            let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);//.worldMatrix;
+            let relativeMatrix = toolSceneNode.getMatrixRelativeTo(worldSceneNode);
+
+            response.getPositionInWorld = {
+                objectId: msgContent.object,
+                worldId: worldObjectId,
+                worldMatrix: relativeMatrix
+            }
+        } else {
+            response.getPositionInWorld = {
+                objectId: msgContent.object,
+                worldId: null,
+                worldMatrix: null
+            }
+        }
+
+        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
     }
 };
 
