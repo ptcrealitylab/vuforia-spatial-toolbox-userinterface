@@ -354,6 +354,16 @@ realityEditor.app.enableOrientationChanges = function (callBack) {
 };
 
 /**
+ * Triggers the callback whenever the app moves to background or foreground
+ * The callback has a single string argument of:
+ * "appDidBecomeActive", "appWillResignActive", "appDidEnterBackground", "appWillEnterForeground", or "appWillTerminate"
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.subscribeToAppLifeCycleEvents = function (callBack) {
+    this.appFunctionCall('subscribeToAppLifeCycleEvents', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  **************Debugging****************
  **/
 

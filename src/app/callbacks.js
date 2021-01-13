@@ -275,6 +275,14 @@ createNameSpace('realityEditor.app.callbacks');
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
             realityEditor.sceneGraph.setCameraPosition(cameraMatrix);
+            
+            console.log('camera');
+
+            if (anyPendingCallbacks) {
+                let callback = trackingStartedCallbacks.pop();
+                callback();
+                anyPendingCallbacks = trackingStartedCallbacks.length > 0;
+            }
         }
     }
 
@@ -344,6 +352,13 @@ createNameSpace('realityEditor.app.callbacks');
         }
     }
 
+    let trackingStartedCallbacks = [];
+    let anyPendingCallbacks = false;
+    function onTrackingInitialized(callback) {
+        trackingStartedCallbacks.push(callback);
+        anyPendingCallbacks = true;
+    }
+
     // public methods (anything triggered by a native app callback needs to be public
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
@@ -354,5 +369,6 @@ createNameSpace('realityEditor.app.callbacks');
     exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
 
     exports.startGroundPlaneTrackerIfNeeded = startGroundPlaneTrackerIfNeeded;
+    exports.onTrackingInitialized = onTrackingInitialized;
 
 })(realityEditor.app.callbacks);

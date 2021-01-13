@@ -168,6 +168,9 @@ createNameSpace("realityEditor.envelopeManager");
         sendMessageToEnvelopeContents(frameId, {
             showContainedFrame: false
         });
+        
+        // TODO: hide contained frames at a higher level by giving them some property or CSS class
+        // TODO: after 3 seconds, kill/unload them? (make sure it doesn't interfere with envelope when it opens again
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();

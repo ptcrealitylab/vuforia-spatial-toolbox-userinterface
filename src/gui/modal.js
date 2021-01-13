@@ -52,7 +52,6 @@ createNameSpace("realityEditor.gui.modal");
         setTimeout(function() {
             removeElements([domElements.fade]);
         }, 250);
-        
     }
 
     /**
@@ -171,8 +170,91 @@ createNameSpace("realityEditor.gui.modal");
             submitButton: submitButton
         }
     }
+    
+    function Notification(headerText, descriptionText, onCloseCallback) {
+        this.headerText = headerText;
+        this.descriptionText = descriptionText;
+        this.onCloseCallback = onCloseCallback;
+        this.domElements = createNotificationDOM(true);
+    }
+    
+    Notification.prototype.dismiss = function() {
+        hideModal(this.domElements);
+        this.onCloseCallback();
+    };
+    
+    function showSimpleNotification(headerText, descriptionText, onCloseCallback) {
+        
+        let notification = new Notification(headerText, descriptionText, onCloseCallback);
+        
+        // create the instance of the modal
+        // instantiate / modify the DOM elements
+        let domElements = notification.domElements;
+        domElements.header.innerHTML = headerText;
+        domElements.description.innerHTML = descriptionText;
+        // domElements.cancelButton.innerHTML = 'Dismiss'; // cancelButtonText || 'Cancel';
+
+        // attach callbacks to button pointer events + delete/hide when done
+        // domElements.cancelButton.addEventListener('pointerup', function(event) {
+        //     hideModal(domElements);
+        //     onCloseCallback(event);
+        // });
+
+        // disable touch actions elsewhere on the screen
+        // todo does this happen automatically from the fade element?
+        domElements.fade.addEventListener('pointerevent', function(event) {
+            event.stopPropagation();
+        });
+
+        // present on the DOM
+        document.body.appendChild(domElements.fade);
+        document.body.appendChild(domElements.container);
+        
+        return notification;
+    }
+    
+    function createNotificationDOM(includeLoader) {
+        var fade = document.createElement('div'); // darkens/blurs the background
+        var container = document.createElement('div'); // panel holding all the modal elements
+        var header = document.createElement('div');
+        var description = document.createElement('div');
+        // var cancelButton = document.createElement('div');
+
+        fade.id = 'modalFadeNotification';
+        container.id = 'modalContainerNotification';
+        header.id = 'modalHeaderNotification';
+        description.id = 'modalDescriptionNotification';
+        // cancelButton.id = 'modalCancelNotification';
+
+        // cancelButton.classList.add('modalButtonNotification');
+        
+        fade.classList.add('modalBlurOut');
+
+        container.appendChild(header);
+
+        let loader = null;
+        if (includeLoader) {
+            loader = document.createElement('div');
+            container.classList.add('loaderContainer');
+            loader.classList.add('loader');
+            container.appendChild(loader);
+        }
+        
+        container.appendChild(description);
+        // container.appendChild(cancelButton);
+
+        return {
+            fade: fade,
+            container: container,
+            header: header,
+            description: description,
+            // cancelButton: cancelButton,
+            loader: loader
+        }
+    }
 
     exports.openClassicModal = openClassicModal;
     exports.openRealityModal = openRealityModal;
+    exports.showSimpleNotification = showSimpleNotification;
     
 })(realityEditor.gui.modal);
