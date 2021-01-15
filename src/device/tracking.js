@@ -25,6 +25,11 @@ createNameSpace("realityEditor.device.tracking");
     }
 
     function waitForTracking(noDescriptionText) {
+
+        // hide all AR elements and canvas lines
+        document.getElementById('GUI').classList.add('hiddenWhileLoading');
+        document.getElementById('canvas').classList.add('hiddenWhileLoading');
+
         let headerText = 'Initializing AR Tracking...';
         let descriptionText = noDescriptionText ? '' : 'Move your camera around to speed up the process';
         
@@ -35,6 +40,9 @@ createNameSpace("realityEditor.device.tracking");
         );
 
         realityEditor.app.callbacks.onTrackingInitialized(function() {
+            document.getElementById('GUI').classList.remove('hiddenWhileLoading');
+            document.getElementById('canvas').classList.remove('hiddenWhileLoading');
+
             notification.dismiss();
         });
     }

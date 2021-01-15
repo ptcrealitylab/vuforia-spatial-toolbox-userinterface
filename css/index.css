@@ -1610,3 +1610,7 @@ Logic Interface CSS
     line-height: unset;
     height: 50px;
 }
+
+.hiddenWhileLoading {
+    display: none;
+}
