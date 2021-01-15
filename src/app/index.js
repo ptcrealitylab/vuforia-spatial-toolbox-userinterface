@@ -364,6 +364,16 @@ realityEditor.app.subscribeToAppLifeCycleEvents = function (callBack) {
 };
 
 /**
+ * Causes the positional device tracker (used for camera matrices to deinit and initialize again.
+ * This will cause the coordinate system origin to reset to the phone's current position, but will
+ * fix the AR tracking if the device is stuck in a re-localizing limited tracking mode
+ */
+realityEditor.app.restartDeviceTracker = function() {
+    console.log('restartDeviceTracker');
+    this.appFunctionCall('restartDeviceTracker', null, null);
+};
+
+/**
  **************Debugging****************
  **/
 

@@ -147,54 +147,6 @@ realityEditor.device.initService = function() {
             realityEditor.device.resetEditingState();
         }
     }
-
-    realityEditor.app.subscribeToAppLifeCycleEvents('realityEditor.device.onAppLifeCycleEvent');
-
-    let cameraExists = realityEditor.sceneGraph && realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-    let isTrackingInitialized = false;
-    if (cameraExists && !realityEditor.gui.ar.utilities.isIdentityMatrix(realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix)) {
-        isTrackingInitialized = true;
-    }
-
-    if (!isTrackingInitialized) {
-        this.waitForTracking();
-    }
-};
-
-realityEditor.device.waitForTracking = function() {
-    let notification = realityEditor.gui.modal.showSimpleNotification(
-        'Initializing AR Tracking...',
-        'Move your camera around to speed up the process',
-        function () {
-            console.log('closed...');
-        }
-    );
-
-    realityEditor.app.callbacks.onTrackingInitialized(function() {
-        notification.dismiss();
-    });
-};
-
-realityEditor.device.onAppLifeCycleEvent = function(eventName) {
-    console.log('APP LIFE-CYCLE EVENT:');
-    console.log(eventName);
-    
-    switch (eventName) {
-        case 'appDidBecomeActive':
-            realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
-            break;
-        case 'appWillResignActive':
-            break;
-        case 'appDidEnterBackground':
-            realityEditor.device.waitForTracking();
-            break;
-        case 'appWillEnterForeground':
-            break;
-        case 'appWillTerminate':
-            break;
-        default:
-            break;
-    }
 };
 
 /**

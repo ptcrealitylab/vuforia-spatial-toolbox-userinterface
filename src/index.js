@@ -69,6 +69,7 @@ var realityEditor = realityEditor || {
         onLoad: {},
         touchInputs: {},
         touchPropagation: {},
+        tracking: {},
         utilities: {},
         videoRecording: {}
     },

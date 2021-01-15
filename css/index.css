@@ -1575,3 +1575,38 @@ Logic Interface CSS
     height: 100px;
     position: relative;
 }
+
+.statusBar {
+    position: absolute;
+    left: 80px;
+    top: 0;
+    width: calc(100vw - 220px);
+    height: 40px;
+    color: white;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    background-color: rgba(0,0,0,0.7);
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    text-align: center;
+    line-height: 40px;
+    animation: dropIn 300ms ease-out;
+}
+
+@keyframes dropIn {
+    0% { top: -40px }
+    100% { top: 0 }
+}
+
+.statusBarHidden {
+    display: none;
+    pointer-events: none;
+}
+
+.statusBarText {
+    padding: 10px;
+}
+
+.statusTextLong {
+    line-height: unset;
+    height: 50px;
+}
