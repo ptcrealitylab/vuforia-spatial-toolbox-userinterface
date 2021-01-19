@@ -2122,7 +2122,8 @@ realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
  */
 realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
     var prefix = (serverUrl.indexOf('http://') === -1) ? ('http://') : ('');
-    var url = prefix + serverUrl + '/allObjects/';
+    var portSuffix = (/(:[0-9]+)$/.test(serverUrl)) ? ('') : (':' + defaultHttpPort);
+    var url = prefix + serverUrl + portSuffix + '/allObjects/';
     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
         console.log('got all objects');
         console.log(msg);
