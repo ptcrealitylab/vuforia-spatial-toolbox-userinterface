@@ -299,3 +299,16 @@ realityEditor.device.utilities.isEventHittingBackground = function(event) {
     var activeVehicle = realityEditor.device.getEditingVehicle();
     return (event.target.tagName === 'BODY' || event.target.id === 'canvas' || event.target.id === 'groupSVG' || event.target.className === 'memoryBackground') && !activeVehicle;
 };
+
+/**
+ * Helper function to take the id of a DOM element and give the uuid
+ * e.g. (svguuid -> uuid) or (uuidcorners -> uuid)
+ * @todo: what if an object's name starts with svg?
+ * @param {string} targetId
+ * @return {string}
+ */
+realityEditor.device.utilities.getVehicleIdFromTargetId = function(targetId) {
+    targetId = targetId.replace(/^(svg)/,'');
+    targetId = targetId.replace(/(corners)$/,'');
+    return targetId;
+};
