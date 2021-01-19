@@ -1,5 +1,10 @@
 createNameSpace("realityEditor.device.tracking");
 
+/**
+ * @fileOverview
+ * This module is responsible for responding to information about the device's tracking state and capabilities,
+ * It can enable/disable/restart behavior as needed and communicate the tracking status to the user.
+ */
 (function(exports) {
 
     let isRelocalizing = false;
@@ -48,16 +53,15 @@ createNameSpace("realityEditor.device.tracking");
     }
 
     function onAppLifeCycleEvent(eventName) {
-        console.log('APP LIFE-CYCLE EVENT:');
-        console.log(eventName);
+        console.log('APP LIFE-CYCLE EVENT: ' + eventName);
 
         switch (eventName) {
             case 'appDidBecomeActive':
-                // realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
                 break;
             case 'appWillResignActive':
                 break;
             case 'appDidEnterBackground':
+                // hide AR elements and show UI until we receive a new valid camera matrix
                 waitForTracking();
                 break;
             case 'appWillEnterForeground':
@@ -83,35 +87,9 @@ createNameSpace("realityEditor.device.tracking");
 
     function handleTrackingStatus(trackingStatus, trackingStatusInfo) {
         if (trackingStatus === 'LIMITED') {
-            // console.log('limited tracking (' + trackingStatusInfo + ')');
             // show the UI
             showLimitedTrackingUI(trackingStatusInfo);
             currentStatusInfo = trackingStatusInfo;
-
-            // switch (trackingStatusInfo) {
-            //     case 'INITIALIZING':
-            //         break;
-            //     case 'RELOCALIZING':
-            //         break;
-            //     case 'EXCESSIVE_MOTION':
-            //         break;
-            //     case 'INSUFFICIENT_FEATURES':
-            //         break;
-            //     case 'INSUFFICIENT_LIGHT':
-            //         break;
-            //     case 'NO_DETECTION_RECOMMENDING_GUIDANCE':
-            //         break;
-            //     default:
-            //         break;
-            // }
-
-            // if (trackingStatusInfo === 'INITIALIZING') {
-            //    
-            // } else if (trackingStatusInfo === 'RELOCALIZING') {
-            //    
-            // } else if (trackingStatusInfo === 'EXCESSIVE_MOTION') {
-            //    
-            // }
 
         } else {
             // hide the UI
@@ -137,10 +115,16 @@ createNameSpace("realityEditor.device.tracking");
                     timeRelocalizing = Date.now() - relocalizingStartTime;
                 }
 
+                // TODO: only bother relocalizing if any tools have been added to world local - otherwise it
+                //  shouldn't matter whether you restart tracking immediately
                 if (timeRelocalizing > 4000) {
-                    readableStatus = 'Trouble relocalizing - move device to the same position it was at when app' +
-                        ' last closed, or tap here to restart AR tracking';
-                    isLongMessage = true;
+                    if (willRelocalizingHaveEffect()) {
+                        readableStatus = 'Trouble re-localizing - move device to the same position it was at<br/>' +
+                            'when the app was last closed, or tap here to restart AR tracking';
+                        isLongMessage = true;
+                    } else {
+                        realityEditor.app.restartDeviceTracker();
+                    }
                 } else {
                     readableStatus += ' - Re-localizing device';
                 }
@@ -180,19 +164,25 @@ createNameSpace("realityEditor.device.tracking");
             trackingStatusUI.classList.add('statusBarText');
             trackingStatusUI.appendChild(textContainer);
 
-            // trackingStatusUI.addEventListener('pointerup', statusBarPointerDown);
             trackingStatusUI.addEventListener('pointerup', statusBarPointerUp);
         }
 
         // show and populate with message
+        trackingStatusUI.classList.add('statusBar');
         trackingStatusUI.classList.remove('statusBarHidden');
-        textContainer.innerText = readableStatus;
+        textContainer.innerHTML = readableStatus;
         
         if (isLongMessage) {
             trackingStatusUI.classList.add('statusTextLong');
         } else {
             trackingStatusUI.classList.remove('statusTextLong');
         }
+    }
+
+    function willRelocalizingHaveEffect() {
+        // if there are no tools attached to _WORLD_local, it doesn't matter, so just restart instead of prompting user
+        let localWorldObject = realityEditor.getObject(realityEditor.worldObjects.getLocalWorldId());
+        return (localWorldObject && Object.keys(localWorldObject.frames).length > 0);
     }
 
     function statusBarPointerUp() {
@@ -207,6 +197,7 @@ createNameSpace("realityEditor.device.tracking");
         if (!trackingStatusUI) { return; } // no need to hide it if it doesn't exist
 
         trackingStatusUI.classList.add('statusBarHidden');
+        trackingStatusUI.classList.remove('statusBar');
     }
 
     exports.initService = initService;

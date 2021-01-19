@@ -1589,15 +1589,16 @@ Logic Interface CSS
     left: 80px;
     top: 0;
     width: calc(100vw - 220px);
-    height: 40px;
+    height: 30px;
     color: white;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     background-color: rgba(0,0,0,0.7);
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
     text-align: center;
-    line-height: 40px;
+    line-height: 30px;
     animation: dropIn 300ms ease-out;
+    transition: height 300ms ease-out;
 }
 
 @keyframes dropIn {
@@ -1612,11 +1613,12 @@ Logic Interface CSS
 
 .statusBarText {
     padding: 10px;
+    font-size: 14px;
 }
 
 .statusTextLong {
     line-height: unset;
-    height: 50px;
+    height: 44px;
 }
 
 .hiddenWhileLoading {
