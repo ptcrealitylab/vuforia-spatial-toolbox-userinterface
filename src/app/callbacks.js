@@ -278,7 +278,7 @@ createNameSpace('realityEditor.app.callbacks');
             let cameraMatrix = cameraInfo.matrix;
             let trackingStatus = cameraInfo.status;
             let trackingStatusInfo = cameraInfo.statusInfo;
-            console.log('camera : ' + trackingStatus + ' : ' + trackingStatusInfo);
+            // console.log('camera : ' + trackingStatus + ' : ' + trackingStatusInfo);
 
             trackingStatusCallbacks.forEach(function(callback) {
                 callback(trackingStatus, trackingStatusInfo);

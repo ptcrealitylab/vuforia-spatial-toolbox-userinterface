@@ -83,7 +83,7 @@ createNameSpace("realityEditor.device.tracking");
 
     function handleTrackingStatus(trackingStatus, trackingStatusInfo) {
         if (trackingStatus === 'LIMITED') {
-            console.log('limited tracking (' + trackingStatusInfo + ')');
+            // console.log('limited tracking (' + trackingStatusInfo + ')');
             // show the UI
             showLimitedTrackingUI(trackingStatusInfo);
             currentStatusInfo = trackingStatusInfo;
