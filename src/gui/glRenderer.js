@@ -162,6 +162,10 @@ createNameSpace("realityEditor.gui.glRenderer");
     function initService() {
         // canvas = globalCanvas.canvas;
         canvas = document.querySelector('#glcanvas');
+        canvas.width = globalStates.height;
+        canvas.height = globalStates.width;
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
         gl = canvas.getContext('webgl');
 
         // If we don't have a GL context, give up now
