@@ -32,7 +32,10 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.network.addPostMessageHandler('envelopeMessage', handleEnvelopeMessage);
 
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
-        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
+
         realityEditor.network.registerCallback('elementReloaded', onElementReloaded);
         // realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected); // this is handled already in network/frameContentAPI the same way as it is for any exclusiveFullScreen frame, so no need to listen/handle the event here
         realityEditor.network.registerCallback('vehicleReattached', function(params) {
@@ -145,6 +148,14 @@ createNameSpace("realityEditor.envelopeManager");
             showContainedFrame: true
         });
 
+        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        containedFrameIds.forEach(function(id) {
+            let element = globalDOMCache['object' + id];
+            if (element) {
+                element.classList.remove('hiddenEnvelopeContents');
+            }
+        });
+
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
     }
@@ -171,6 +182,14 @@ createNameSpace("realityEditor.envelopeManager");
         
         // TODO: hide contained frames at a higher level by giving them some property or CSS class
         // TODO: after 3 seconds, kill/unload them? (make sure it doesn't interfere with envelope when it opens again
+        
+        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        containedFrameIds.forEach(function(id) {
+            let element = globalDOMCache['object' + id];
+            if (element) {
+                element.classList.add('hiddenEnvelopeContents');
+            }
+        });
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();

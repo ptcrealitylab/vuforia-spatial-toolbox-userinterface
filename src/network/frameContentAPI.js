@@ -16,7 +16,10 @@ createNameSpace("realityEditor.network.frameContentAPI");
         realityEditor.device.keyboardEvents.registerCallback('keyboardHidden', onKeyboardHidden);
         
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
+
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
+
         realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected);
 
         realityEditor.sceneGraph.network.onObjectLocalized(worldIdUpdated);

@@ -485,6 +485,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             for (let nodeKey in originNodes) {
                 if (originNodes.hasOwnProperty(nodeKey) && !remoteNodes.hasOwnProperty(nodeKey)) {
                     realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
+                    realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey, additionalInfo: {}});
                 }
             }
             
@@ -506,7 +507,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
     for (let frameKey in origin.frames) {
         if (origin.frames.hasOwnProperty(frameKey) && !remote.frames.hasOwnProperty(frameKey)) {
             // delete origin.frames[frameKey];
+            let frameType = origin.frames[frameKey].src;
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
+            realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType}});
         }
     }
 };

@@ -16,11 +16,13 @@ createNameSpace("realityEditor.gui.glRenderer");
          * @param {Element} worker - worker iframe
          * @param {WebGLContext} gl
          * @param {number|string} workerId - unique identifier of worker
+         * @param {string} toolId - unique identifier of associated tool
          */
-        constructor(worker, gl, workerId) {
+        constructor(worker, gl, workerId, toolId) {
             this.worker = worker;
             this.gl = gl;
             this.workerId = workerId;
+            this.toolId = toolId;
 
             this.uncloneables = {};
 
@@ -199,6 +201,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         // }, 200);
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
     }
 
     /**
@@ -226,18 +229,27 @@ createNameSpace("realityEditor.gui.glRenderer");
      * If there are too many proxies, chooses a random subset of them
      * @return {Array}
      */
-    function getSafeProxySubset() {
-        if (proxies.length < MAX_PROXIES) {
-            return proxies;
+    function getSafeProxySubset(proxiesToConsider) {
+        if (proxiesToConsider.length < MAX_PROXIES) {
+            return proxiesToConsider;
         } else {
             // choose 10 random elements from the proxies array
-            return getRandom(proxies, MAX_PROXIES);
+            return getRandom(proxiesToConsider, MAX_PROXIES);
         }
     }
 
     async function renderFrame() {
         // let start = performance.now();
-        let proxiesToBeRenderedThisFrame = getSafeProxySubset();
+        let proxiesToConsider = [];
+        proxies.forEach(function(thisProxy) {
+            let toolId = thisProxy.toolId;
+            let element = globalDOMCache['object' + toolId];
+            if (element && window.getComputedStyle(element).display !== 'none') {
+                proxiesToConsider.push(thisProxy);
+            }
+        });
+
+        let proxiesToBeRenderedThisFrame = getSafeProxySubset(proxiesToConsider);
 
         // Get all the commands from the worker iframes
         // await Promise.all([
@@ -283,7 +295,7 @@ createNameSpace("realityEditor.gui.glRenderer");
 
     function addWebGlProxy(toolId) {
         const worker = globalDOMCache['iframe' + toolId].contentWindow;
-        let proxy = new WorkerGLProxy(worker, gl, generateWorkerIdForTool(toolId));
+        let proxy = new WorkerGLProxy(worker, gl, generateWorkerIdForTool(toolId), toolId);
         proxies.push(proxy);
         toolIdToProxy[toolId] = proxy;
 

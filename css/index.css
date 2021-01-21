@@ -1624,3 +1624,7 @@ Logic Interface CSS
 .hiddenWhileLoading {
     display: none;
 }
+
+.hiddenEnvelopeContents {
+    display: none;
+}
