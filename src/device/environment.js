@@ -33,6 +33,7 @@ createNameSpace("realityEditor.device.environment");
         shouldDisplayLogicMenuModally: false,
         isSourceOfObjectPositions: true,
         isCameraOrientationFlipped: false,
+        waitForARTracking: true,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
@@ -166,5 +167,13 @@ createNameSpace("realityEditor.device.environment");
     exports.getLocalServerPort = function() {
         return variables.localServerPort;
     };
+
+    /**
+     * True by default - whether this client needs to wait for the AR SDK to provide it with camera matrices
+     * @return {boolean}
+     */
+    exports.waitForARTracking = function() {
+        return variables.waitForARTracking;
+    }
 
 }(realityEditor.device.environment));

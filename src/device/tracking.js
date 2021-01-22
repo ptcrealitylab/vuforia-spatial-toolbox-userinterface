@@ -19,7 +19,9 @@ createNameSpace("realityEditor.device.tracking");
         realityEditor.app.callbacks.handleDeviceTrackingStatus(handleTrackingStatus);
 
         let cameraExists = realityEditor.sceneGraph && realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-        let isTrackingInitialized = false;
+        
+        let isTrackingInitialized = !realityEditor.device.environment.waitForARTracking();
+        
         if (cameraExists && !realityEditor.gui.ar.utilities.isIdentityMatrix(realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix)) {
             isTrackingInitialized = true;
         }
