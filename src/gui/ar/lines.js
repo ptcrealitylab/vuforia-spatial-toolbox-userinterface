@@ -240,12 +240,14 @@ realityEditor.gui.ar.lines.drawAllLines = function (thisFrame, context) {
             nodeA.screenLinearZ = nodeB.screenLinearZ;
             nodeASize = objectB.averageScale
         }
+        
         if(!nodeASize) nodeASize = objectA.averageScale;
         if(!nodeBSize) nodeBSize = objectB.averageScale;
 
         // linearize a non linear zBuffer (see index.js)
-        var nodeAScreenZ =   nodeA.screenLinearZ*(nodeASize*1.5);
-        var nodeBScreenZ = nodeB.screenLinearZ*(nodeBSize*1.5);
+        // It needs to be a scale factor relative to the nnode scale! 
+        var nodeAScreenZ =   nodeA.screenLinearZ*(nodeA.scale*1.5);
+        var nodeBScreenZ = nodeB.screenLinearZ*(nodeB.scale*1.5);
         
         var logicA;
         if (link.logicA == null || link.logicA === false) {
@@ -302,7 +304,7 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
             nodeA.screenZ = 6;
             
         } else if(nodeA.screenLinearZ) {
-            nodeA.screenZ = nodeA.screenLinearZ*objectA.averageScale;
+            nodeA.screenZ = nodeA.screenLinearZ*nodeA.scale*1.5;
         }
 
         var logicA = globalProgram.logicA;
@@ -370,6 +372,7 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     this.nodeExistsA = true;
    this.nodeExistsB = true;
 
+   
     if (lineStartPoint[0] < this.extendedBorderNegative) {
         lineStartPoint[0] = this.extendedBorderNegative;
         this.nodeExistsA = false;
