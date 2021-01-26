@@ -32,9 +32,17 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.network.addPostMessageHandler('envelopeMessage', handleEnvelopeMessage);
 
         realityEditor.gui.pocket.registerCallback('frameAdded', onFrameAdded);
-        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
+
         realityEditor.network.registerCallback('elementReloaded', onElementReloaded);
         // realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected); // this is handled already in network/frameContentAPI the same way as it is for any exclusiveFullScreen frame, so no need to listen/handle the event here
+        realityEditor.network.registerCallback('vehicleReattached', function(params) {
+            setTimeout(function() {
+                onVehicleReattached(params);
+            }, 500); // send after a delay so original messages have a chance to be processed first
+        });
 
         realityEditor.gui.pocket.addElementHighlightFilter(function(pocketFrameNames) {
             var frameTypesToHighlight = getCurrentCompatibleFrameTypes();
@@ -83,7 +91,8 @@ createNameSpace("realityEditor.envelopeManager");
                 knownEnvelopes[fullMessageContent.frame] = {
                     object: fullMessageContent.object,
                     frame: fullMessageContent.frame,
-                    compatibleFrameTypes: eventData.compatibleFrameTypes
+                    compatibleFrameTypes: eventData.compatibleFrameTypes,
+                    containedFrameIds: []
                 };
                 // check if registered envelope was autoAdded and needs to be configured
                 onEnvelopeRegistered(fullMessageContent.object, fullMessageContent.frame);
@@ -139,6 +148,14 @@ createNameSpace("realityEditor.envelopeManager");
             showContainedFrame: true
         });
 
+        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        containedFrameIds.forEach(function(id) {
+            let element = globalDOMCache['object' + id];
+            if (element) {
+                element.classList.remove('hiddenEnvelopeContents');
+            }
+        });
+
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
     }
@@ -161,6 +178,17 @@ createNameSpace("realityEditor.envelopeManager");
         // hide all contained frames
         sendMessageToEnvelopeContents(frameId, {
             showContainedFrame: false
+        });
+        
+        // TODO: hide contained frames at a higher level by giving them some property or CSS class
+        // TODO: after 3 seconds, kill/unload them? (make sure it doesn't interfere with envelope when it opens again
+        
+        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        containedFrameIds.forEach(function(id) {
+            let element = globalDOMCache['object' + id];
+            if (element) {
+                element.classList.add('hiddenEnvelopeContents');
+            }
         });
 
         // adjust exit/cancel/back buttons for # of open frames
@@ -203,38 +231,40 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {{objectKey: string, frameKey: string, frameType: string}} params
      */
     function onFrameAdded(params) {
-        
         try {
             addRequiredEnvelopeIfNeeded(params.objectKey, params.frameKey, params.frameType);
         } catch (e) {
             console.warn('error adding required envelope');
         }
         
-        var maxAttempts = 10; // prevent infinite loops by limiting number of attempts to an arbitrary number
-        
-        // waits until the frame is loaded before triggering the message
-        function attemptToSendMessage(params) {
-            if (globalDOMCache['iframe' + params.frameKey] && globalDOMCache['iframe' + params.frameKey].getAttribute('loaded')) {
-                // right now it notifies all envelopes, and it is the responsibility of the envelope to only accept frames types that it is compatible with
-                sendMessageToOpenEnvelopes({
-                    onFrameAdded: {
-                        objectId: params.objectKey,
-                        frameId: params.frameKey,
-                        frameType: params.frameType
-                    }
-                }, params.frameType);
-                
-            } else {
-                setTimeout(function() {
-                    maxAttempts--;
-                    if (maxAttempts > 0) {
-                        attemptToSendMessage(params); // keeps checking if it's ready to send every 500ms until it loads
-                    }
-                }, 500);
-            }
+        attemptWithRetransmission(function() {
+            sendMessageToOpenEnvelopes({
+                onFrameAdded: {
+                    objectId: params.objectKey,
+                    frameId: params.frameKey,
+                    frameType: params.frameType
+                }
+            }, params.frameType);
+        }, function() {
+            return globalDOMCache['iframe' + params.frameKey] && globalDOMCache['iframe' + params.frameKey].getAttribute('loaded');
+        }, 500, 10);
+    }
+
+    function attemptWithRetransmission(callback, conditionToProceed, timeBetweenAttempts, numAttemptsLeft) {
+        if (typeof conditionToProceed === 'undefined' || conditionToProceed()) {
+            console.log('attempt transmission');
+            callback();
         }
 
-        attemptToSendMessage(params);
+        if (typeof conditionToProceed === 'undefined' || !conditionToProceed()) {
+            console.log('condition not satisfied... retransmit in ' + timeBetweenAttempts + 'ms (' + (numAttemptsLeft-1) + ')');
+            setTimeout(function() {
+                numAttemptsLeft--;
+                if (numAttemptsLeft > 0) {
+                    attemptWithRetransmission(callback, conditionToProceed, timeBetweenAttempts, numAttemptsLeft); // keeps checking
+                }
+            }, timeBetweenAttempts);
+        }
     }
 
     /**
@@ -257,7 +287,6 @@ createNameSpace("realityEditor.envelopeManager");
             // if deleted frame was an envelope, delete its contained frames too
             if (typeof knownEnvelopes[params.frameKey] !== 'undefined') {
                 var deletedEnvelope = knownEnvelopes[params.frameKey];
-                if (typeof deletedEnvelope.containedFrameIds === 'undefined') { return; }
                     
                 deletedEnvelope.containedFrameIds.forEach(function(containedFrameKey) {
                     // contained frame always belongs to same object as envelope, so ok to use params.objectKey
@@ -285,6 +314,53 @@ createNameSpace("realityEditor.envelopeManager");
             // should belong to at most 1 envelope at a time.. but we'll do for each just in case that changes
             closeEnvelope(envelope.frame);
             console.log('closing parent envelope: ' + envelope.frame);
+        });
+    }
+
+    /**
+     * When a frame gets reattached e.g. from an object to the world, make sure that the envelope it belongs to
+     * keeps track of its new object id
+     * @param {{oldObjectKey: string, oldFrameKey: string, newObjectKey: string, newFrameKey: string, frameType: string}} params
+     */
+    function onVehicleReattached(params) {
+
+        attemptWithRetransmission(function() {
+            updateContainedFrameId(params.oldObjectKey, params.oldFrameKey, params.newObjectKey, params.newFrameKey, params.frameType);
+        },  undefined, //function() {
+            // return globalDOMCache['iframe' + params.frameKey] && globalDOMCache['iframe' +
+            // params.frameKey].getAttribute('loaded');
+        // },
+        500, 10);
+    }
+
+    function updateContainedFrameId(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, frameType) {
+        // check if the old id belongs to any envelope
+        Object.values(knownEnvelopes).filter(function(envelope) {
+            return envelope.containedFrameIds.includes(oldFrameKey);
+        }).forEach(function(envelope) {
+
+            console.log('reattach frame ' + oldFrameKey + ' in envelope ' + envelope.frame);
+
+            // remove this frame from the envelope and replace it with the new id
+            sendMessageToEnvelope(envelope.frame, {
+                onFrameDeleted: {
+                    objectId: oldObjectKey,
+                    frameId: oldFrameKey,
+                    frameType: frameType
+                }
+            });
+
+            // add the new id to the envelope after slight delay
+            setTimeout(function() {
+                sendMessageToEnvelope(envelope.frame, {
+                    onFrameAdded: {
+                        objectId: newObjectKey,
+                        frameId: newFrameKey,
+                        frameType: frameType
+                    }
+                });
+                console.log('reattached frame is now ' + newFrameKey + ' in envelope ' + envelope.frame);
+            }, 500);
         });
     }
 

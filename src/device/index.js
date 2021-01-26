@@ -141,7 +141,7 @@ realityEditor.device.initService = function() {
     realityEditor.gui.buttons.registerCallbackForButton('gui', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('setting', resetEditingOnButtonUp);
-    
+
     function resetEditingOnButtonUp(params) {
         if (params.newButtonState === 'up') {
             realityEditor.device.resetEditingState();
@@ -1113,7 +1113,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     [].slice.call(event.touches).forEach(function(touch) {
         if (realityEditor.device.currentScreenTouches.map(function(elt) { return elt.identifier; }).indexOf(touch.identifier) === -1) {
             realityEditor.device.currentScreenTouches.push({
-                targetId: touch.target.id.replace(/^(svg)/,""),
+                targetId: realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id), //touch.target.id.replace(/^(svg)/,""),
                 identifier: touch.identifier,
                 position: {
                     x: touch.pageX,
@@ -1186,7 +1186,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
             // also consider a touch that started on pocket-element to be on the frame element
             var touchTargets = Array.from(event.touches).map(function(touch) {
-                var targetId = touch.target.id.replace(/^(svg)/,"");
+                var targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
                 if (targetId === 'pocket-element') {
                     targetId = activeVehicle.uuid;
                 }
@@ -1218,8 +1218,9 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
                 // make sure the scale event is centered around the frame
                 [].slice.call(event.touches).forEach(function(touch){
 
-                    var didTouchOnFrame = touch.target.id.replace(/^(svg)/,"") === activeVehicle.uuid;
-                    var didTouchOnNode = touch.target.id.replace(/^(svg)/,"") === activeVehicle.frameId + activeVehicle.name;
+                    let targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
+                    var didTouchOnFrame = targetId === activeVehicle.uuid;
+                    var didTouchOnNode = targetId === activeVehicle.frameId + activeVehicle.name;
                     var didTouchOnPocketContainer = touch.target.className === "element-template";
                     if (didTouchOnFrame || didTouchOnNode || didTouchOnPocketContainer) {
                         centerTouch = {

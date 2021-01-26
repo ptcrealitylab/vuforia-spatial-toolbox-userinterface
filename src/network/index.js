@@ -240,6 +240,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     thisObject.fullScreen = false;
     thisObject.sendMatrix = false;
     thisObject.sendMatrices = {
+        model: false,
+        view: false,
         modelView : false,
         devicePose : false,
         groundPlane : false,
@@ -264,6 +266,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisFrame.fullScreen = false;
         thisFrame.sendMatrix = false;
         thisFrame.sendMatrices = {
+            model: false,
+            view: false,
             modelView : false,
             devicePose : false,
             groundPlane : false,
@@ -481,6 +485,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             for (let nodeKey in originNodes) {
                 if (originNodes.hasOwnProperty(nodeKey) && !remoteNodes.hasOwnProperty(nodeKey)) {
                     realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
+                    realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey, additionalInfo: {}});
                 }
             }
             
@@ -502,7 +507,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
     for (let frameKey in origin.frames) {
         if (origin.frames.hasOwnProperty(frameKey) && !remote.frames.hasOwnProperty(frameKey)) {
             // delete origin.frames[frameKey];
+            let frameType = origin.frames[frameKey].src;
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
+            realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType}});
         }
     }
 };
@@ -944,6 +951,8 @@ realityEditor.network.onAction = function (action) {
             frame.fullScreen = false;
             frame.sendMatrix = false;
             frame.sendMatrices = {
+                model: false,
+                view: false,
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,
@@ -1189,6 +1198,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.sendMatrices !== "undefined") {
+        if (msgContent.sendMatrices.model === true || msgContent.sendMatrices.view === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.model = msgContent.sendMatrices.model;
+                tempThisObject.sendMatrices.view = msgContent.sendMatrices.view;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
+            }
+        }
         if (msgContent.sendMatrices.groundPlane === true) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
@@ -1517,7 +1538,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         
         thisFrame.nodes[nodeKey] = node;
 
-        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, node, nodeKey);
+        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, nodeKey, node);
 
         if (msgContent.createNode.attachToGroundPlane) {
             realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
@@ -1770,6 +1791,121 @@ realityEditor.network.onInternalPostMessage = function (e) {
         console.log('editor got request to use webGlWorker for tool ' + msgContent.frame);
         realityEditor.gui.glRenderer.addWebGlProxy(msgContent.frame);
     }
+
+    if (typeof msgContent.attachesTo !== 'undefined') {
+        let attachesTo = msgContent.attachesTo;
+        console.log('received ATTACHES TO message from iframe (' + msgContent.frame + ')', msgContent.attachesTo);
+
+        if (!attachesTo || !(attachesTo.length >= 1)) {
+            console.warn('ignoring incorrectly formatted attachesTo list');
+            return;
+        }
+
+        let object = realityEditor.getObject(msgContent.object);
+        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
+
+        // check if this object is incompatible
+        let shouldInclude = false;
+        if (attachesTo.includes('object')) {
+            shouldInclude = true;
+        }
+        if (attachesTo.includes('world')) {
+            if (object.isWorldObject) {
+                shouldInclude = true;
+            }
+        }
+        if (shouldInclude) { return; } // compatible - no need to do anything
+
+        console.log('try to re-attach to new object');
+
+        // if incompatible, check if there's a possible compatible object
+        let newObjectKey = this.getNewObjectForFrame(msgContent.object, msgContent.frame, attachesTo);
+
+        console.log('best new object for tool = ' + newObjectKey);
+
+        // if so, move this frame to that object, preserving world location
+        if (newObjectKey) {
+            var newFrameKey = newObjectKey + frame.name;
+            realityEditor.gui.ar.draw.moveFrameToNewObject(msgContent.object, msgContent.frame, newObjectKey, newFrameKey);
+
+            let thisFrame = realityEditor.getFrame(newObjectKey, newFrameKey);
+
+            realityEditor.network.callbackHandler.triggerCallbacks('vehicleReattached', {
+                oldObjectKey: msgContent.object,
+                oldFrameKey: msgContent.frame,
+                newObjectKey: newObjectKey,
+                newFrameKey: newFrameKey,
+                frameType: thisFrame.src
+            });
+            console.log('moved frame based on attachesTo');
+        } else {
+            // if not, remove this frame
+            console.warn('NO COMPATIBLE OBJECTS TO ATTACH TO... IMPLEMENT THIS TOOL\'S DESTRUCTION');
+        }
+    }
+
+    if (typeof msgContent.getWorldId !== 'undefined') {
+        // trigger the getWorldId callback
+        realityEditor.sceneGraph.network.triggerLocalizationCallbacks(msgContent.object);
+    }
+
+    if (typeof msgContent.sendPositionInWorld !== 'undefined') {
+        tempThisObject.sendPositionInWorld = true;
+    }
+
+    if (typeof msgContent.getPositionInWorld !== 'undefined') {
+        let response = {};
+
+        // check what it's best worldId should be
+        let worldObjectId = realityEditor.sceneGraph.getWorldId();
+
+        // only works if its localized against a world object
+        if (worldObjectId) {
+            let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(msgContent.frame);//.worldMatrix;
+            let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);//.worldMatrix;
+            let relativeMatrix = toolSceneNode.getMatrixRelativeTo(worldSceneNode);
+
+            response.getPositionInWorld = {
+                objectId: msgContent.object,
+                worldId: worldObjectId,
+                worldMatrix: relativeMatrix
+            }
+        } else {
+            response.getPositionInWorld = {
+                objectId: msgContent.object,
+                worldId: null,
+                worldMatrix: null
+            }
+        }
+
+        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+    }
+};
+
+realityEditor.network.getNewObjectForFrame = function(objectKey, frameKey, attachesTo) {
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+
+    var possibleObjectKeys = realityEditor.network.availableFrames.getPossibleObjectsForFrame(frame.src);
+
+    // get the closest object that is in possibleObjectKeys and attaches to
+    return realityEditor.gui.ar.getClosestObject(function(objectKey) {
+        if (possibleObjectKeys.indexOf(objectKey) > -1) {
+            let thatObject = realityEditor.getObject(objectKey);
+            let shouldIncludeThat = false;
+            if (attachesTo.includes('object')) {
+                shouldIncludeThat = true;
+            }
+            if (attachesTo.includes('world')) {
+                if (thatObject.isWorldObject) {
+                    shouldIncludeThat = true;
+                }
+            }
+            if (shouldIncludeThat) {
+                return true;
+            }
+        }
+        return false;
+    })[0];
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks
@@ -1989,7 +2125,8 @@ realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
  */
 realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
     var prefix = (serverUrl.indexOf('http://') === -1) ? ('http://') : ('');
-    var url = prefix + serverUrl + '/allObjects/';
+    var portSuffix = (/(:[0-9]+)$/.test(serverUrl)) ? ('') : (':' + defaultHttpPort);
+    var url = prefix + serverUrl + portSuffix + '/allObjects/';
     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
         console.log('got all objects');
         console.log(msg);

@@ -1563,6 +1563,16 @@ Logic Interface CSS
     height: 9%;
 }
 
+.hiddenAnchor {
+    display: none;
+    pointer-events: none;
+}
+
+.anchorContainerFullscreen {
+    display: unset;
+    pointer-events: unset;
+}
+
 .hiddenButtons {
     display: none;
     pointer-events: none;
@@ -1572,4 +1582,49 @@ Logic Interface CSS
     width: 100px;
     height: 100px;
     position: relative;
+}
+
+.statusBar {
+    position: absolute;
+    left: 80px;
+    top: 0;
+    width: calc(100vw - 220px);
+    height: 30px;
+    color: white;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    background-color: rgba(0,0,0,0.7);
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    text-align: center;
+    line-height: 30px;
+    animation: dropIn 300ms ease-out;
+    transition: height 300ms ease-out;
+}
+
+@keyframes dropIn {
+    0% { top: -40px }
+    100% { top: 0 }
+}
+
+.statusBarHidden {
+    display: none;
+    pointer-events: none;
+}
+
+.statusBarText {
+    padding: 10px;
+    font-size: 14px;
+}
+
+.statusTextLong {
+    line-height: unset;
+    height: 44px;
+}
+
+.hiddenWhileLoading {
+    display: none;
+}
+
+.hiddenEnvelopeContents {
+    display: none;
 }

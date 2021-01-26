@@ -268,13 +268,29 @@ createNameSpace('realityEditor.app.callbacks');
     /**
      * Callback for realityEditor.app.getCameraMatrixStream
      * Gets triggered ~60FPS when the AR SDK sends us a new cameraMatrix based on the device's world coordinates
-     * @param {Array.<number>} cameraMatrix
+     * @param {*} cameraInfo
      */
-    function receiveCameraMatricesFromAR(cameraMatrix) {
+    function receiveCameraMatricesFromAR(cameraInfo) {
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState) {
             realityEditor.worldObjects.checkIfFirstLocalization();
+
+            let cameraMatrix = cameraInfo.matrix;
+            let trackingStatus = cameraInfo.status;
+            let trackingStatusInfo = cameraInfo.statusInfo;
+            // console.log('camera : ' + trackingStatus + ' : ' + trackingStatusInfo);
+
+            trackingStatusCallbacks.forEach(function(callback) {
+                callback(trackingStatus, trackingStatusInfo);
+            });
+
             realityEditor.sceneGraph.setCameraPosition(cameraMatrix);
+
+            if (anyPendingCallbacks) {
+                let callback = trackingStartedCallbacks.pop();
+                callback();
+                anyPendingCallbacks = trackingStartedCallbacks.length > 0;
+            }
         }
     }
 
@@ -344,6 +360,29 @@ createNameSpace('realityEditor.app.callbacks');
         }
     }
 
+    let trackingStartedCallbacks = [];
+    let anyPendingCallbacks = false;
+
+    /**
+     * Adds a callback that will trigger one time when tracking resumes (when the camera reports a new position)
+     * The callback will be discarded afterwards.
+     * @param {function} callback
+     */
+    function onTrackingInitialized(callback) {
+        trackingStartedCallbacks.push(callback);
+        anyPendingCallbacks = true;
+    }
+
+    let trackingStatusCallbacks = [];
+
+    /**
+     * Adds an event handler which will constantly receive the camera's tracking status and statusInfo
+     * @param {function} callback
+     */
+    function handleDeviceTrackingStatus(callback) {
+        trackingStatusCallbacks.push(callback);
+    }
+
     // public methods (anything triggered by a native app callback needs to be public
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
@@ -354,5 +393,7 @@ createNameSpace('realityEditor.app.callbacks');
     exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
 
     exports.startGroundPlaneTrackerIfNeeded = startGroundPlaneTrackerIfNeeded;
+    exports.onTrackingInitialized = onTrackingInitialized;
+    exports.handleDeviceTrackingStatus = handleDeviceTrackingStatus;
 
 })(realityEditor.app.callbacks);

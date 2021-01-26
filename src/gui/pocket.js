@@ -422,6 +422,20 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     }
 
     /**
+     * If frame metadata includes "attachesTo" property, returns that array of locations ("world", "object", etc)
+     * @param {string} frameName
+     * @return {undefined|Array.<string>}
+     */
+    function getAttachesTo(frameName) {
+        // do this if necessary: rebuildAggregateFrames();
+        let frameInfo = aggregateFrames[frameName];
+        if (frameInfo && frameInfo.metadata) {
+            return frameInfo.metadata.attachesTo;
+        }
+        return undefined;
+    }
+
+    /**
      * Returns a data structure similar to what was previously defined in pocketFrames.js, but dynamically generated
      * from the set of servers that have been detected and have a visible world or object on the screen
      * Result contains the IP of the server that this frame would be placed on, the "proxy" IP if this server is relying
@@ -732,6 +746,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             frame.fullScreen = false;
             frame.sendMatrix = false;
             frame.sendMatrices = {
+                model: false,
+                view: false,
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,
@@ -1340,5 +1356,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     
     exports.createFrame = createFrame;
     exports.addTutorialFrame = addTutorialFrame;
+
+    exports.getAttachesTo = getAttachesTo;
     
 }(realityEditor.gui.pocket));

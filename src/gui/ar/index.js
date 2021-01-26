@@ -439,9 +439,12 @@ realityEditor.gui.ar.getClosestNode = function () {
             for(var nodeKey in this.objects[objectKey].frames[frameKey].nodes) {
 
                 // don't include hidden node types (e.g. dataStore) when finding closest
-                if (realityEditor.gui.ar.draw.hiddenNodeTypes.indexOf(realityEditor.getNode(objectKey, frameKey, nodeKey).type) > -1) {
+                let thisNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
+                if (realityEditor.gui.ar.draw.hiddenNodeTypes.indexOf(thisNode.type) > -1) {
                     break;
                 }
+                // the above check is deprecated: new nodes will have an invisible property
+                if (thisNode.invisible) { break; }
 
                 distance = realityEditor.sceneGraph.getDistanceToCamera(nodeKey);
                 if (distance < closest) {
@@ -501,6 +504,7 @@ realityEditor.gui.ar.getDistanceScale = function(activeVehicle) {
     if (keys.nodeKey) {
         // it's a node, return its parent frame's value
         var parentFrame = realityEditor.getFrame(keys.objectKey, keys.frameKey);
+        if (!parentFrame) { return 1; }
         return parentFrame.distanceScale || 1;
     } else {
         // it's a frame, return its own value
