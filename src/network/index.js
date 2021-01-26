@@ -1765,6 +1765,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.network.postNewNode(object.ip, msgContent.object, msgContent.frame, nodeKey, newNode);
         }
     }
+
+    if (typeof msgContent.useWebGlWorker !== 'undefined') {
+        console.log('editor got request to use webGlWorker for tool ' + msgContent.frame);
+        realityEditor.gui.glRenderer.addWebGlProxy(msgContent.frame);
+    }
 };
 
 // TODO: this is a potentially incorrect way to implement this... figure out a more generalized way to pass closure variables into app.callbacks

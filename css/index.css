@@ -796,6 +796,14 @@ body {
     pointer-events: none;
 }
 
+#glcanvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
 .ignorePointerEvents {
     pointer-events: none;
 }

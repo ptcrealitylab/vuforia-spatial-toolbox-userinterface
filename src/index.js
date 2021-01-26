@@ -106,6 +106,7 @@ var realityEditor = realityEditor || {
         },
         buttons: {},
         dropdown: {},
+        glRenderer: {},
         menus:{},
         modal: {},
         moveabilityCorners: {},
