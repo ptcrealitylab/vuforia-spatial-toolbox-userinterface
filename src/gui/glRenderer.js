@@ -170,9 +170,6 @@ createNameSpace("realityEditor.gui.glRenderer");
         canvas.style.height = canvas.height + 'px';
         gl = canvas.getContext('webgl');
 
-        // const worker = document.getElementById('worker1').contentWindow;
-        // const worker2 = document.getElementById('worker2').contentWindow;
-
         // If we don't have a GL context, give up now
 
         if (!gl) {
@@ -191,14 +188,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
         }
 
-        // let proxy = new WorkerGLProxy(worker, gl, 1);
-        // let proxy2 = new WorkerGLProxy(worker2, gl, 2);
-
-        // setTimeout(() => {
-            // worker.postMessage({name: 'bootstrap', functions, constants}, '*');
-            // worker2.postMessage({name: 'bootstrap', functions, constants}, '*');
-            setTimeout(renderFrame, 500);
-        // }, 200);
+        setTimeout(renderFrame, 500);
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
@@ -233,13 +223,12 @@ createNameSpace("realityEditor.gui.glRenderer");
         if (proxiesToConsider.length < MAX_PROXIES) {
             return proxiesToConsider;
         } else {
-            // choose 10 random elements from the proxies array
+            // choose N random elements from the proxies array
             return getRandom(proxiesToConsider, MAX_PROXIES);
         }
     }
 
     async function renderFrame() {
-        // let start = performance.now();
         let proxiesToConsider = [];
         proxies.forEach(function(thisProxy) {
             let toolId = thisProxy.toolId;
@@ -252,10 +241,6 @@ createNameSpace("realityEditor.gui.glRenderer");
         let proxiesToBeRenderedThisFrame = getSafeProxySubset(proxiesToConsider);
 
         // Get all the commands from the worker iframes
-        // await Promise.all([
-        //     proxy.getFrameCommands(),
-        //     proxy2.getFrameCommands(),
-        // ]);
         await Promise.all(proxiesToBeRenderedThisFrame.map(proxy => proxy.getFrameCommands()));
 
         gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
@@ -267,27 +252,15 @@ createNameSpace("realityEditor.gui.glRenderer");
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Execute all pending commands for this frame
-        // proxies.forEach(proxy => proxy.executeFrameCommands());
-        // proxy.executeFrameCommands();
-        // proxy2.executeFrameCommands();
-
         proxiesToBeRenderedThisFrame.forEach(function(proxy) {
             proxy.executeFrameCommands();
         });
-
-        // let end = performance.now();
-        // console.log(end - start);
-
-        // console.log('rendered ' + proxies.length + ' proxies');
 
         requestAnimationFrame(renderFrame);
     }
 
     function generateWorkerIdForTool(toolId) {
-        // method 1 - generate randomly
-        // workerIds[toolId] = realityEditor.utilities.randomIntInc(1, 65535);
-
-        // method 2 - generate incrementally
+        // generate workerIds incrementally
         workerIds[toolId] = nextWorkerId;
         nextWorkerId += 1;
         return workerIds[toolId];
@@ -305,7 +278,6 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         setTimeout(() => {
             worker.postMessage({name: 'bootstrap', functions, constants}, '*');
-            // worker2.postMessage({name: 'bootstrap', functions, constants}, '*');
         }, 200);
     }
 
