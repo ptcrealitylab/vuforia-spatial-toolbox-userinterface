@@ -1298,23 +1298,23 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
                     }
 
-                    if (activeVehicle.sendMatrices.model === true) {
+                    if (sendMatrices.model === true) {
                         thisMsg.modelMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).worldMatrix;
                     }
 
-                    if (activeVehicle.sendMatrices.view === true) {
+                    if (sendMatrices.view === true) {
                         thisMsg.viewMatrix = realityEditor.sceneGraph.getViewMatrix();
                     }
                     
-                    if (activeVehicle.sendMatrices.devicePose === true) {
+                    if (sendMatrices.devicePose === true) {
                         thisMsg.devicePose = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix;
                     }
 
-                    if (activeVehicle.sendMatrices.groundPlane === true) {
+                    if (sendMatrices.groundPlane === true) {
                         thisMsg.groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
                     }
 
-                    if (activeVehicle.sendMatrices.allObjects === true) {
+                    if (sendMatrices.allObjects === true) {
                         thisMsg.allObjects = this.visibleObjects; // TODO ben: get correct matrices from scene graph
                     }
 
