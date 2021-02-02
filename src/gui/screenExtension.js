@@ -221,25 +221,7 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
         for (var frameKey in this.visibleScreenObjects) {
             if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
             var visibleScreenObject = this.visibleScreenObjects[frameKey];
-            // var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
-
-            var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(visibleScreenObject.object, eventObject.x, eventObject.y);
-
-            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-            // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-            // sceneNode.getMatrixRelativeTo(camNode)
-            // var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(realityEditor.sceneGraph.getCSSMatrix(sceneNode), eventObject.x, eventObject.y);
-
-
-            // var point = realityEditor.gui.ar.utilities.old_screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
-
-
-            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-            // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-            // // if (closestSceneNode && camNode) {
-            //     let point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.x, eventObject.y);
-            // // }
-
+            var point = realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY(visibleScreenObject.object, eventObject.x, eventObject.y);
             visibleScreenObject.x = point.x;
             visibleScreenObject.y = point.y;
         }
@@ -268,27 +250,11 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
     for (var frameKey in this.visibleScreenObjects) {
         if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
         var visibleScreenObject = this.visibleScreenObjects[frameKey];
-        // var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
-        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(visibleScreenObject.object, eventObject.x, eventObject.y);
-        
-        // var point = realityEditor.gui.ar.utilities.old_screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
-
-        // var targetSize = realityEditor.getObject(visibleScreenObject.object).targetSize;
-        // point.x += targetSize.width/2;
-        // point.y += targetSize.height/2;
-
-
-        // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-        // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-        // // if (closestSceneNode && camNode) {
-        // let point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.x, eventObject.y);
-        // // }
-        
+        var point = realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY(visibleScreenObject.object, eventObject.x, eventObject.y);
         visibleScreenObject.x = point.x;
         visibleScreenObject.y = point.y;
         
-        // console.log('touched (x,y) = (' + visibleScreenObject.x + ', ' + visibleScreenObject.y + ')');
-        
+        // console.log('touched (x,y) = (' + visibleScreenObject.x + ', ' + visibleScreenObject.y + ')')
         
         // var markerWidth = targetSize.width;
         // var screenX = point.x + markerWidth/2;
@@ -303,17 +269,8 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
                 y: point.y,
                 type: eventObject.type
             };
-            // var secondPoint = realityEditor.gui.ar.utilities.old_screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
-            // var secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
 
-            var secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
-
-            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-            // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-            // // if (closestSceneNode && camNode) {
-            // let secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.touches[1].screenX, eventObject.touches[1].screenY);
-            // // }
-
+            var secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
             visibleScreenObject.touches[1] = {
                 x: secondPoint.x,
                 y: secondPoint.y,

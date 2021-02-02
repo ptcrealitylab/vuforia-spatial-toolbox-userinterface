@@ -408,7 +408,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
             // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
             var thisFrameFrameCenterScreenPosition = realityEditor.gui.ar.positioning.getScreenPosition(groupedFrame.objectId,groupedFrame.uuid,true,false,false,false,false).center;
-            var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, thisFrameFrameCenterScreenPosition.x, thisFrameFrameCenterScreenPosition.y);
+            var point = realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY(visibleScreenObject.object, thisFrameFrameCenterScreenPosition.x, thisFrameFrameCenterScreenPosition.y);
             // visibleScreenObject.x = point.x;
             // visibleScreenObject.y = point.y;
 
