@@ -753,8 +753,8 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new = function(object
     let newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
     
     return {
-        x: newPosition.x,
-        y: newPosition.y
+        x: newPosition.x - window.innerWidth / 2,
+        y: newPosition.y - window.innerHeight / 2
     }
 };
 

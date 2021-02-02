@@ -537,8 +537,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(closestKey, touchPosition.x, touchPosition.y);
             // let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), window.innerWidth/2, window.innerHeight/2);
             
-            console.log('center hits: (' + (projectedCenter.x - window.innerWidth/2) + ', ' +
-                                           (projectedCenter.y - window.innerHeight/2) + ' on closest object');
+            console.log('center hits: (' + (projectedCenter.x) + ', ' +
+                                           (projectedCenter.y) + ' on closest object');
 
             // let bbox = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
             let thisColor = 'rgba(255,0,255,0.5)';

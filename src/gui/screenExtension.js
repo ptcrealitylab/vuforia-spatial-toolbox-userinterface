@@ -223,6 +223,8 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
             var visibleScreenObject = this.visibleScreenObjects[frameKey];
             // var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
 
+            var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(visibleScreenObject.object, eventObject.x, eventObject.y);
+
             // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
             // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
             // sceneNode.getMatrixRelativeTo(camNode)
@@ -232,14 +234,14 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
             // var point = realityEditor.gui.ar.utilities.old_screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
 
 
-            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-            let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-            // if (closestSceneNode && camNode) {
-                let point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.x, eventObject.y);
-            // }
+            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
+            // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            // // if (closestSceneNode && camNode) {
+            //     let point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.x, eventObject.y);
+            // // }
 
-            visibleScreenObject.x = point.x - window.innerWidth/2;
-            visibleScreenObject.y = point.y - window.innerHeight/2;
+            visibleScreenObject.x = point.x;
+            visibleScreenObject.y = point.y;
         }
         
     }
@@ -267,6 +269,7 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
         if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
         var visibleScreenObject = this.visibleScreenObjects[frameKey];
         // var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
+        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(visibleScreenObject.object, eventObject.x, eventObject.y);
         
         // var point = realityEditor.gui.ar.utilities.old_screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
 
@@ -275,16 +278,16 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
         // point.y += targetSize.height/2;
 
 
-        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-        let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-        // if (closestSceneNode && camNode) {
-        let point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.x, eventObject.y);
-        // }
+        // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
+        // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+        // // if (closestSceneNode && camNode) {
+        // let point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.x, eventObject.y);
+        // // }
         
-        visibleScreenObject.x = point.x - window.innerWidth/2;
-        visibleScreenObject.y = point.y - window.innerHeight/2;
+        visibleScreenObject.x = point.x;
+        visibleScreenObject.y = point.y;
         
-        console.log('touched (x,y) = (' + visibleScreenObject.x + ', ' + visibleScreenObject.y + ')');
+        // console.log('touched (x,y) = (' + visibleScreenObject.x + ', ' + visibleScreenObject.y + ')');
         
         
         // var markerWidth = targetSize.width;
@@ -303,16 +306,17 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
             // var secondPoint = realityEditor.gui.ar.utilities.old_screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
             // var secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
 
+            var secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(visibleScreenObject.object, eventObject.touches[1].screenX, eventObject.touches[1].screenY);
 
-            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
-            let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
-            // if (closestSceneNode && camNode) {
-            let secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.touches[1].screenX, eventObject.touches[1].screenY);
-            // }
+            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
+            // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            // // if (closestSceneNode && camNode) {
+            // let secondPoint = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(sceneNode.getMatrixRelativeTo(camNode), eventObject.touches[1].screenX, eventObject.touches[1].screenY);
+            // // }
 
             visibleScreenObject.touches[1] = {
-                x: secondPoint.x - window.innerWidth/2,
-                y: secondPoint.y - window.innerHeight/2,
+                x: secondPoint.x,
+                y: secondPoint.y,
                 type: eventObject.touches[1].type
             };
         } else {
