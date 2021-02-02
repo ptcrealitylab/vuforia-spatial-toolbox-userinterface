@@ -523,6 +523,27 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
             this.ar.lines.drawInteractionLines();
         }
     }
+    
+    // draw dot projected on closest object
+    let closestKey = realityEditor.gui.ar.getClosestObject()[0];
+    let closest = realityEditor.getObject(closestKey);
+    if (closest && !closest.isWorldObject) {
+        let closestSceneNode = realityEditor.sceneGraph.getSceneNodeById(closestKey);
+        let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+        if (closestSceneNode && camNode) {
+            let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), window.innerWidth/2, window.innerHeight/2);
+
+            // let bbox = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
+            let thisColor = 'rgba(255,0,255,0.5)';
+            // 72 is a magic number that seems to work so that this had a pseudo-3d radius of frameSizeX/2
+            let thisSize = 720;
+            globalCanvas.context.beginPath();
+            globalCanvas.context.fillStyle = thisColor;
+            globalCanvas.context.arc(projectedCenter.x, projectedCenter.y, 10 * (thisSize / Math.abs(projectedCenter.z)), 0, Math.PI * 2);
+            globalCanvas.context.fill();
+            globalCanvas.hasContent = true;
+        }
+    }
 
     // render the frame that was pulled off of one object and is being moved through global space to a new object
     if (globalStates.inTransitionObject && globalStates.inTransitionFrame) {
@@ -1037,23 +1058,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     activeVehicle.animationScale = 0;
                 }
             }
-            
-            // re-activate the activeScreenObject when it reappears
-            var screenExtension = realityEditor.gui.screenExtension;
-            if (screenExtension.registeredScreenObjects[activeKey]) {
-
-                if (!screenExtension.visibleScreenObjects.hasOwnProperty(activeKey)) {
-                    screenExtension.visibleScreenObjects[activeKey] = {
-                        object: objectKey,
-                        frame: activeKey,
-                        node: null,
-                        x: 0,
-                        y: 0,
-                        touches: null
-                    };
-                }
-            }
-
         }
 
         // render visible frame/node
@@ -1769,10 +1773,10 @@ realityEditor.gui.ar.draw.hideTransformed = function (activeKey, activeVehicle, 
 
         globalDOMCache[activeKey].querySelector('.corners').style.visibility = 'hidden';
 
-        // reset the active screen object when it disappears
-        if (realityEditor.gui.screenExtension.visibleScreenObjects[activeKey]) {
-            delete realityEditor.gui.screenExtension.visibleScreenObjects[activeKey];
-        }
+        // // reset the active screen object when it disappears
+        // if (realityEditor.gui.screenExtension.visibleScreenObjects[activeKey]) {
+        //     delete realityEditor.gui.screenExtension.visibleScreenObjects[activeKey];
+        // }
 
         cout("hideTransformed");
     

@@ -676,11 +676,160 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
 
 // exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
 // exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
-realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function() {
-    console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
+
+// globalStates
+
+// TODO: find out why we need to compute N = T^{-1}MT
+function computeTransformMatrix(transformationMatrix, originTranslationVector)
+{
+    var x = originTranslationVector[0];
+    var y = originTranslationVector[1];
+    var z = originTranslationVector[2];
+    var undoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -x, -y, -z, 1];
+    var redoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+    var temp1 = [];
+    var out = [];
+    realityEditor.gui.ar.utilities.multiplyMatrix(undoTranslationMatrix, transformationMatrix, temp1);
+    realityEditor.gui.ar.utilities.multiplyMatrix(temp1, redoTranslationMatrix, out);
+    return out;
+}
+
+function transformVertex(mat, ver) {
+    var out = [0,0,0,0];
+
+    for (var i = 0; i < 4; i++) {
+        var sum = 0;
+        for (var j = 0; j < 4; j++) {
+            sum += mat[i + j * 4] * ver[j];
+        }
+        out[i] = sum;
+    }
+
+    return out;
+}
+
+realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix = function(finalMatrix, screenX, screenY, relativeToMarker) {
+    
+    // invert the y axis since screen y-axis goes in opposite direction as the 3D axis
+    screenY = window.innerHeight - screenY;
+    
+    // if (relativeToMarker) {
+    //     finalMatrix = undoTranslationAndScale(finalMatrix);
+    // }
+    // var results = {};
+
+    // var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
+    // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
+
+    var screenZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
+
+    // project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
+    var dt = 1;
+
+    // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
+
+    // translation matrix if the element has a different transform origin
+    // var originTranslationVector = getTransformOrigin(transformedDiv);
+    // var originTranslationVector = [284, 160, 0, 1]; // TODO: this depends on screen size?
+    var originTranslationVector = [window.innerWidth/2, window.innerHeight/2, 0, 1]; // TODO: this depends on screen
+    // size?
+
+    // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+    // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+    var fullTx = computeTransformMatrix(finalMatrix, originTranslationVector);
+    // var fullTx = finalMatrix;
+    var finalMatrixZ = finalMatrix[14]/finalMatrix[15];
+
+    // invert and normalize the matrix
+    var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
+    var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
+
+    var screenPoint0 = [screenX, screenY, screenZ, 1];
+    // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+    var p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint0));
+
+    var screenPoint2 = [screenX, screenY, screenZ + dt, 1];
+    var p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint2));
+
+    // interpolate to calculate the x,y coordinate that corresponds to z = finalMat on the projected plane, based on the
+    // two samples
+
+    var dx = (p2[0] - p0[0]) / dt;
+    var dy = (p2[1] - p0[1]) / dt;
+    var dz = (p2[2] - p0[2]) / dt;
+    var neededDt = (p0[2] - finalMatrixZ) / dz; // TODO: make sure I don't divide by zero
+    var x = p0[0] - dx * neededDt;
+    var y = p0[1] - dy * neededDt;
+    var z = p0[2] - dz * neededDt;
+
+    var point = {
+        x: x,
+        y: y,
+        z: z
+    };
+
+    // var left = parseInt(overlayDomElement.style.left);
+    // if (isNaN(left)) {
+    //     left = 0;
+    // }
+    // var top = parseInt(overlayDomElement.style.top);
+    // if (isNaN(top)) {
+    //     top = 0;
+    // }
+
+    // return {
+    //     point: point,
+    //     offsetLeft: left,
+    //     offsetTop: top
+    // }
+
     return {
-        x: 0,
-        y: 0
+        x: point.x,
+        y: point.y,
+        z: point.z
+    }
+};
+
+realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function(key, screenX, screenY) {
+    console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
+    
+    let matMVP = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(key);
+    // let position = realityEditor.gui.ar.utilities.solveProjectedCoordinatesInVehicle(activeVehicle, screenX, screenY, elementMatrix);
+    
+    // invert and normalize the matrix
+    let inverseMVP = realityEditor.gui.ar.utilities.invertMatrix(matMVP);
+    var normalizedInverseMVP = realityEditor.gui.ar.utilities.perspectiveDivide(inverseMVP);
+
+
+    // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
+    let projectedZ = 0;
+
+    // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
+    var dt = 0.1;
+    // var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
+    // var p2 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, (projectedZ + dt), cssMatrixToUse);
+
+    // compute a matrix that fully describes the transformation, including a nonzero origin translation
+    // var fullTx = computeTransformMatrix(cssMatrixToUse, originTranslationVector);
+
+    var screenPoint1 = [screenX, screenY, projectedZ , 1];
+    var screenPoint2 = [screenX, screenY, projectedZ + dt , 1];
+
+    // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+    let p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(normalizedInverseMVP, screenPoint1));
+    let p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(normalizedInverseMVP, screenPoint2));
+
+    // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
+
+    var dx = (p2[0] - p0[0]) / dt;
+    var dy = (p2[1] - p0[1]) / dt;
+    var dz = (p2[2] - p0[2]) / dt;
+    var neededDt = (p0[2]) / dz;
+
+    return {
+        x: p0[0] - dx * neededDt,
+        y: p0[1] - dy * neededDt,
+        z: p0[2] - dz * neededDt
     };
 };
 

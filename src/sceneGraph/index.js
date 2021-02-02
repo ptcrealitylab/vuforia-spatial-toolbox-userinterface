@@ -194,6 +194,8 @@ createNameSpace("realityEditor.sceneGraph");
 
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+                finalCSSMatrices[objectKey] = [];
+                utils.multiplyMatrix(relativeToCamera[objectKey], globalStates.projectionMatrix, finalCSSMatrices[objectKey]);
                 objectSceneNode.needsRerender = false;
             }
 

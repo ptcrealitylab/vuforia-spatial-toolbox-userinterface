@@ -1287,8 +1287,9 @@ realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY)
     var isWithinBounds = false;
     
     // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
-    for (var frameKey in realityEditor.gui.screenExtension.visibleScreenObjects) {
-        if (!realityEditor.gui.screenExtension.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
+    for (var objectKey in realityEditor.gui.screenExtension.visibleScreenObjects) {
+        if (!realityEditor.gui.screenExtension.visibleScreenObjects.hasOwnProperty(objectKey)) continue;
+
         var visibleScreenObject = realityEditor.gui.screenExtension.visibleScreenObjects[frameKey];
         var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, screenX, screenY);
         // visibleScreenObject.x = point.x;

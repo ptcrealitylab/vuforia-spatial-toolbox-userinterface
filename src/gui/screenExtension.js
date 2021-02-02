@@ -44,6 +44,55 @@ realityEditor.gui.screenExtension.registerCallback = function(functionName, call
     this.callbackHandler.registerCallback(functionName, callback);
 };
 
+realityEditor.gui.screenExtension.initService = function() {
+    // TODO: don't enable if this has a certain environment variable
+
+    // register screen objects when they are loaded
+    realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
+        // check if this object is visualization===screen and if so, add to registeredScreenObjects
+        if (object.visualization !== 'screen') { return; }
+
+        realityEditor.gui.screenExtension.registeredScreenObjects[objectKey] = {
+            object : objectKey,
+            frame : null,
+            node: null
+        };
+    });
+
+    // register screen objects when their visualization property is updated
+    // TODO: network listener? update?
+
+    // use registeredScreenObjects and visibleObjects to get visibleScreenObjects
+    realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
+        // return if no registered screenObjects
+        let screenExtension = realityEditor.gui.screenExtension;
+        let registeredObjectKeys = Object.keys(screenExtension.registeredScreenObjects);
+        if (registeredObjectKeys.length === 0) { return; }
+
+        // remove visibleScreenObjects that aren't in visibleObjects anymore
+        let visibleRegisteredObjectKeys = Object.keys(screenExtension.visibleScreenObjects);
+        visibleRegisteredObjectKeys.forEach(function(objectKey) {
+            if (!visibleObjects.hasOwnProperty(objectKey)) {
+                delete screenExtension.visibleScreenObjects[objectKey];
+            }
+        });
+
+        // add objects that are registered and visible but not in visibleScreenObjects yet
+        registeredObjectKeys.forEach(function(objectKey) {
+            if (visibleObjects.hasOwnProperty(objectKey) && !screenExtension.visibleScreenObjects.hasOwnProperty(objectKey)) {
+                screenExtension.visibleScreenObjects[objectKey] = {
+                    object: objectKey,
+                    frame: null,
+                    node: null,
+                    x: 0,
+                    y: 0,
+                    touches: null
+                };
+            }
+        });
+    });
+};
+
 realityEditor.gui.screenExtension.shouldSendTouchesToScreen = function(eventObject) {
     
     // don't send touches 
@@ -163,9 +212,9 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
     if (this.screenObject.closestObject && !didTouchARFrame) {
 
         // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
-        for (var frameKey in this.visibleScreenObjects) {
-            if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
-            var visibleScreenObject = this.visibleScreenObjects[frameKey];
+        for (var objectKey in this.visibleScreenObjects) {
+            if (!this.visibleScreenObjects.hasOwnProperty(objectKey)) continue;
+            var visibleScreenObject = this.visibleScreenObjects[objectKey];
             var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
             visibleScreenObject.x = point.x;
             visibleScreenObject.y = point.y;
@@ -410,9 +459,9 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
 realityEditor.gui.screenExtension.sendScreenObject = function (){
     
-    for (var frameKey in this.visibleScreenObjects) {
-        if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
-        var visibleScreenObject = this.visibleScreenObjects[frameKey];
+    for (var objectKey in this.visibleScreenObjects) {
+        if (!this.visibleScreenObjects.hasOwnProperty(objectKey)) continue;
+        var visibleScreenObject = this.visibleScreenObjects[objectKey];
         var screenObjectClone = JSON.parse(JSON.stringify(this.screenObject));
         screenObjectClone.x = visibleScreenObject.x;
         screenObjectClone.y = visibleScreenObject.y;

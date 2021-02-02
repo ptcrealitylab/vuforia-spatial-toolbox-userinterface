@@ -184,6 +184,7 @@ realityEditor.device.onload = function () {
     realityEditor.device.videoRecording.initService();
     realityEditor.device.environment.initService();
     realityEditor.device.tracking.initService();
+    realityEditor.gui.screenExtension.initService();
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.gui.ar.anchors.initService();
