@@ -708,6 +708,56 @@ function transformVertex(mat, ver) {
     return out;
 }
 
+/**
+ * Currently not used, but this is a good alternative method for projecting a (screenX,Y) position onto an element:
+ * @example newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY))
+ * Creates and returns a div with the same CSS3D transform as the provided vehicle, but with all x/y/scale removed
+ * @param {string} objectKey
+ * @param {boolean} isContinuous
+ * @return {HTMLElement}
+ */
+realityEditor.gui.ar.utilities.getDivWithUntransformedMatrix = function(objectKey) {
+
+    let matrixComputationDiv = globalDOMCache['matrixComputationDivForObjects'];
+    if (!matrixComputationDiv) {
+        // create it if needed
+        matrixComputationDiv = document.createElement('div');
+        matrixComputationDiv.id = 'matrixComputationDivForObjects';
+        matrixComputationDiv.classList.add('main');
+        matrixComputationDiv.classList.add('ignorePointerEvents');
+
+        // 3D transforms only apply correctly if it's a child of the GUI container (like the rest of the tools/nodes)
+        document.getElementById('GUI').appendChild(matrixComputationDiv);
+        globalDOMCache['matrixComputationDivForObjects'] = matrixComputationDiv;
+    }
+
+    if (matrixComputationDiv.style.display === 'none') {
+        matrixComputationDiv.style.display = '';
+    }
+
+    // the computation is only correct if it has the same width/height as the vehicle's transformed element
+    matrixComputationDiv.style.width = window.innerWidth + 'px';
+    matrixComputationDiv.style.height = window.innerHeight + 'px';
+
+    let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(objectKey);
+    matrixComputationDiv.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
+
+    return matrixComputationDiv;
+};
+
+realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new = function(objectKey, screenX, screenY) {
+    // tapping on the center of the object matrix should yield (0,0)
+
+    // set dummy div transform to iframe without x,y,scale
+    let matrixComputationDiv = this.getDivWithUntransformedMatrix(objectKey);
+    let newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
+    
+    return {
+        x: newPosition.x,
+        y: newPosition.y
+    }
+};
+
 realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix = function(finalMatrix, screenX, screenY, relativeToMarker) {
     
     // invert the y axis since screen y-axis goes in opposite direction as the 3D axis

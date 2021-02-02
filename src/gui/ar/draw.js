@@ -534,7 +534,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
 
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
-            let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), touchPosition.x, touchPosition.y);
+            let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_new(closestKey, touchPosition.x, touchPosition.y);
             // let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), window.innerWidth/2, window.innerHeight/2);
             
             console.log('center hits: (' + (projectedCenter.x - window.innerWidth/2) + ', ' +
