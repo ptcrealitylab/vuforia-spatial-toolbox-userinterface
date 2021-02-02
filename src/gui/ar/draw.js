@@ -527,11 +527,18 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     // draw dot projected on closest object
     let closestKey = realityEditor.gui.ar.getClosestObject()[0];
     let closest = realityEditor.getObject(closestKey);
-    if (closest && !closest.isWorldObject) {
+    if (closest && !closest.isWorldObject && overlayDiv.style.display !== 'none') {
         let closestSceneNode = realityEditor.sceneGraph.getSceneNodeById(closestKey);
         let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
         if (closestSceneNode && camNode) {
-            let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), window.innerWidth/2, window.innerHeight/2);
+
+            var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+
+            let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), touchPosition.x, touchPosition.y);
+            // let projectedCenter = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(closestSceneNode.getMatrixRelativeTo(camNode), window.innerWidth/2, window.innerHeight/2);
+            
+            console.log('center hits: (' + (projectedCenter.x - window.innerWidth/2) + ', ' +
+                                           (projectedCenter.y - window.innerHeight/2) + ' on closest object');
 
             // let bbox = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
             let thisColor = 'rgba(255,0,255,0.5)';

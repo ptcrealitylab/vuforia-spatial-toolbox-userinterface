@@ -1217,7 +1217,7 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function(key, scree
     console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
     
     // inverted because screen coordinates are opposite the 3D y-axis
-    screenY = window.innerHeight - screenY;
+    // screenY = window.innerHeight - screenY;
     
     let matMVP = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(key);
     // let position = realityEditor.gui.ar.utilities.solveProjectedCoordinatesInVehicle(activeVehicle, screenX, screenY, elementMatrix);
@@ -1261,8 +1261,8 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function(key, scree
     var neededDt = (p0[2]) / dz;
 
     return {
-        x: p0[0] - dx * neededDt,
-        y: p0[1] - dy * neededDt,
+        x: p0[0] - dx * neededDt,// - window.innerWidth/2,
+        y: p0[1] - dy * neededDt, //- window.innerHeight/2,
         z: p0[2] - dz * neededDt
     };
 };
