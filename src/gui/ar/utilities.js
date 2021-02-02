@@ -711,7 +711,7 @@ function transformVertex(mat, ver) {
 realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix = function(finalMatrix, screenX, screenY, relativeToMarker) {
     
     // invert the y axis since screen y-axis goes in opposite direction as the 3D axis
-    screenY = window.innerHeight - screenY;
+    // screenY = window.innerHeight - screenY;
     
     // if (relativeToMarker) {
     //     finalMatrix = undoTranslationAndScale(finalMatrix);
@@ -793,8 +793,19 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix = functio
 realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function(key, screenX, screenY) {
     console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
     
+    // inverted because screen coordinates are opposite the 3D y-axis
+    screenY = window.innerHeight - screenY;
+    
     let matMVP = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(key);
     // let position = realityEditor.gui.ar.utilities.solveProjectedCoordinatesInVehicle(activeVehicle, screenX, screenY, elementMatrix);
+
+    // var originTranslationVector = [window.innerWidth/2, window.innerHeight/2, 0, 1]; // TODO: this depends on screen
+    // // size?
+    //
+    // // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+    // // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+    // var fullTx = computeTransformMatrix(matMVP, originTranslationVector);
+
     
     // invert and normalize the matrix
     let inverseMVP = realityEditor.gui.ar.utilities.invertMatrix(matMVP);

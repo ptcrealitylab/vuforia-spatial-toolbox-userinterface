@@ -44,7 +44,13 @@ realityEditor.gui.screenExtension.registerCallback = function(functionName, call
     this.callbackHandler.registerCallback(functionName, callback);
 };
 
+realityEditor.gui.screenExtension.disableAutoRegistration = true;
 realityEditor.gui.screenExtension.initService = function() {
+    if (this.disableAutoRegistration) {
+        console.warn('SCREEN EXTENSION initService is currently internally-disabled');
+        return;
+    }
+    
     // TODO: don't enable if this has a certain environment variable
 
     // register screen objects when they are loaded
@@ -212,10 +218,16 @@ realityEditor.gui.screenExtension.onScreenTouchDown = function(eventObject) {
     if (this.screenObject.closestObject && !didTouchARFrame) {
 
         // for every visible screen, calculate this touch's exact x,y coordinate within that screen plane
-        for (var objectKey in this.visibleScreenObjects) {
-            if (!this.visibleScreenObjects.hasOwnProperty(objectKey)) continue;
-            var visibleScreenObject = this.visibleScreenObjects[objectKey];
-            var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
+        for (var frameKey in this.visibleScreenObjects) {
+            if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
+            var visibleScreenObject = this.visibleScreenObjects[frameKey];
+            // var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, eventObject.x, eventObject.y);
+
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(visibleScreenObject.object);
+            // let camNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            // sceneNode.getMatrixRelativeTo(camNode)
+            var point = realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix(realityEditor.sceneGraph.getCSSMatrix(sceneNode), eventObject.x, eventObject.y);
+
             visibleScreenObject.x = point.x;
             visibleScreenObject.y = point.y;
         }
@@ -459,9 +471,9 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
 realityEditor.gui.screenExtension.sendScreenObject = function (){
     
-    for (var objectKey in this.visibleScreenObjects) {
-        if (!this.visibleScreenObjects.hasOwnProperty(objectKey)) continue;
-        var visibleScreenObject = this.visibleScreenObjects[objectKey];
+    for (var frameKey in this.visibleScreenObjects) {
+        if (!this.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
+        var visibleScreenObject = this.visibleScreenObjects[frameKey];
         var screenObjectClone = JSON.parse(JSON.stringify(this.screenObject));
         screenObjectClone.x = visibleScreenObject.x;
         screenObjectClone.y = visibleScreenObject.y;
