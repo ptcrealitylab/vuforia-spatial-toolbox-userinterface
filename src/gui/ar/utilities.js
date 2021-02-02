@@ -790,6 +790,429 @@ realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY_finalMatrix = functio
     }
 };
 
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************/
+
+/**
+ * private helper functions for realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY and realityEditor.gui.ar.utilities.screenCoordinatesToMatrixXY (which is used by moveVehicleToScreenCoordinate)
+ * @author Ben Reynolds
+ * @todo: simplify and then document individually
+ */
+(function(exports) {
+
+    function screenCoordinatesToMarkerXY(objectKey, screenX, screenY, unconstrainedMatrix) {
+        
+        // screenY = window.innerHeight - screenY;
+
+        var visibleObjectMatrix = realityEditor.gui.ar.draw.visibleObjects[objectKey];
+        if (visibleObjectMatrix) {
+
+            var point = {
+                x: 0,
+                y: 0
+            };
+
+            if (unconstrainedMatrix) {
+                let finalMatrix = unconstrainedMatrix;
+                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            } else {
+                let finalMatrix = realityEditor.sceneGraph.getCSSMatrix(objectKey); //computeFinalMatrixFromMarkerMatrix(visibleObjectMatrix);
+                point = screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, true);
+            }
+
+            return {
+                x: point.x - globalStates.height/2, // 284
+                y: point.y - globalStates.width/2 // 160
+            }
+        }
+
+        else {
+            console.warn('this object is not visible, cannot determine its ray projection');
+            return {
+                x: 0,
+                y: 0
+            }
+        }
+    }
+
+    function computeFinalMatrixFromMarkerMatrix(markerMatrix) {
+        var finalMatrix = [];
+
+        var draw = realityEditor.gui.ar.draw;
+        var activeObjectMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(markerMatrix, globalStates.projectionMatrix, activeObjectMatrix);
+
+        // console.log(activeObjectMatrix);
+
+        // TODO: can we remove this last multiplication since the marker always has pos (0,0) and scale 1 ??
+        var positionData = {
+            scale: 1.0,
+            x: 0,
+            y: 0
+        };
+        draw.matrix.r3 = [
+            positionData.scale, 0, 0, 0,
+            0, positionData.scale, 0, 0,
+            0, 0, positionData.scale, 0,
+            positionData.x, positionData.y, 0, 1
+        ];
+        realityEditor.gui.ar.utilities.multiplyMatrix(draw.matrix.r3, activeObjectMatrix, finalMatrix);
+
+        return finalMatrix;
+    }
+
+    function undoTranslationAndScale(finalMatrix) {
+        return finalMatrix;
+    }
+
+    function screenCoordinatesToMatrixXY_finalMatrix(finalMatrix, screenX, screenY, relativeToMarker) {
+        if (relativeToMarker) {
+            finalMatrix = undoTranslationAndScale(finalMatrix);
+        }
+        // var results = {};
+
+        // var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
+        // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
+
+        var screenZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
+
+        // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
+        var dt = 0.1;
+        // var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
+
+        // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
+
+        // translation matrix if the element has a different transform origin
+        // var originTranslationVector = getTransformOrigin(transformedDiv);
+        var originTranslationVector = [284, 160, 0, 1]; // TODO: this depends on screen size?
+
+        // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+        // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+        var fullTx = computeTransformMatrix(finalMatrix, originTranslationVector);
+        // var fullTx = finalMatrix;
+
+        // invert and normalize the matrix
+        var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
+        var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
+
+        var screenPoint0 = [screenX, screenY, screenZ, 1];
+        // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+        var p0 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint0));
+
+        var screenPoint2 = [screenX, screenY, screenZ + dt, 1];
+        var p2 = realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint2));
+
+        // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
+
+        var dx = (p2[0] - p0[0]) / dt;
+        var dy = (p2[1] - p0[1]) / dt;
+        var dz = (p2[2] - p0[2]) / dt;
+        var neededDt = (p0[2]) / dz; // TODO: make sure I don't divide by zero
+        var x = p0[0] - dx * neededDt;
+        var y = p0[1] - dy * neededDt;
+        var z = p0[2] - dz * neededDt;
+
+        var point = {
+            x: x,
+            y: y,
+            z: z
+        };
+
+        // var left = parseInt(overlayDomElement.style.left);
+        // if (isNaN(left)) {
+        //     left = 0;
+        // }
+        // var top = parseInt(overlayDomElement.style.top);
+        // if (isNaN(top)) {
+        //     top = 0;
+        // }
+
+        // return {
+        //     point: point,
+        //     offsetLeft: left,
+        //     offsetTop: top
+        // }
+
+        return {
+            x: point.x,
+            y: point.y
+        }
+    }
+
+    /**
+     *
+     * @param {Frame|Node} thisVehicle -
+     * @param {Number} screenX - x coordinate on the screen plane
+     * @param {Number} screenY - y coordinate on the screen plane
+     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
+     * @return {{point (x,y,z), offsetLeft, offsetTop}}
+     */
+    function screenCoordinatesToMatrixXY(thisVehicle, screenX, screenY, relativeToMarker) {
+
+        var positionData;
+        var previousPosition;
+        var updatedCssMatrix;
+
+        // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
+        if (relativeToMarker) {
+            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
+
+            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
+                previousPosition = {
+                    x: positionData.x,
+                    y: positionData.y,
+                    scale: positionData.scale
+                };
+                positionData.x = 0;
+                positionData.y = 0;
+                positionData.scale = 1;
+                var draw = realityEditor.gui.ar.draw;
+                var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+                updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, cout);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
+                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
+            }
+        }
+
+        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
+
+        // restore the frame's relative position that nothing visually changes due to this computation
+        if (previousPosition) {
+            positionData.x = previousPosition.x;
+            positionData.y = previousPosition.y;
+            positionData.scale = previousPosition.scale;
+        }
+
+        return results;
+    }
+    /**
+     *
+     * @param {Frame|Node} thisVehicle -
+     * @param {Number} screenX - x coordinate on the screen plane
+     * @param {Number} screenY - y coordinate on the screen plane
+     * @param {boolean} relativeToMarker - true if you want the position relative to (0,0) on the marker, not thisVehicle's existing translation
+     * @return {{point (x,y,z), offsetLeft, offsetTop}}
+     */
+    function screenCoordinatesToMatrixXY_Efficient(thisVehicle, screenX, screenY, relativeToMarker) {
+        console.warn('This gives close, but incorrect values right now... Use screenCoordinatesToMatrixXY instead');
+        var positionData;
+        // var previousPosition;
+        var updatedCssMatrix;
+
+        // first undo the frame's relative position, so that the result will be absolute position compared to marker, not div
+        if (relativeToMarker) {
+            positionData = realityEditor.gui.ar.positioning.getPositionData(thisVehicle);
+
+            if (positionData.x !== 0 || positionData.y !== 0 || positionData.scale !== 1) {
+                // previousPosition = {
+                //     x: positionData.x,
+                //     y: positionData.y,
+                //     scale: positionData.scale
+                // };
+                // positionData.x = 0;
+                // positionData.y = 0;
+                // positionData.scale = 1;
+                var draw = realityEditor.gui.ar.draw;
+                // var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+                // updatedCssMatrix = draw.recomputeTransformMatrix(draw.visibleObjects, thisVehicle.objectId, elementUuid, thisVehicle.type, thisVehicle, false, globalDOMCache, globalStates, globalCanvas, draw.activeObjectMatrix, draw.matrix, draw.finalMatrix, draw.utilities, draw.nodeCalculations, cout);
+                // updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, previousPosition);
+                updatedCssMatrix = draw.removeFrameMatrixFromFinalMatrix(thisVehicle, positionData);
+
+                // console.log(updatedCssMatrix, newUpdatedCssMatrix);
+            }
+        }
+
+        var results = solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, updatedCssMatrix);
+
+        // restore the frame's relative position that nothing visually changes due to this computation
+        // if (previousPosition) {
+        //     positionData.x = previousPosition.x;
+        //     positionData.y = previousPosition.y;
+        //     positionData.scale = previousPosition.scale;
+        // }
+
+        return results;
+    }
+
+
+
+
+
+
+    function solveProjectedCoordinatesInVehicle(thisVehicle, screenX, screenY, cssMatrixToUse) {
+
+        var elementUuid = thisVehicle.uuid || thisVehicle.frameId + thisVehicle.name;
+        var overlayDomElement = globalDOMCache[elementUuid];
+
+        var projectedZ = 0; // You are looking for the x, y coordinates at z = 0 on the frame
+        var point = solveProjectedCoordinates(overlayDomElement, screenX, screenY, projectedZ, cssMatrixToUse);
+
+        var left = parseInt(overlayDomElement.style.left);
+        if (isNaN(left)) {
+            left = 0;
+        }
+        var top = parseInt(overlayDomElement.style.top);
+        if (isNaN(top)) {
+            top = 0;
+        }
+
+        return {
+            point: point,
+            offsetLeft: left,
+            offsetTop: top
+        }
+    }
+
+    function solveProjectedCoordinates(childDiv, screenX, screenY, projectedZ, cssMatrixToUse) {
+
+        // projectedZ lets you find the projected x,y coordinates that occur on the frame at screenX, screenZ, and that z coordinate
+        if (projectedZ === undefined) {
+            projectedZ = 0;
+        }
+
+        // raycast isn't perfect, so project two rays from screenX, screenY. project from a different Z each time, because they will land on the same line. 
+        var dt = 0.1;
+        var p0 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, projectedZ, cssMatrixToUse);
+        var p2 = convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, childDiv.parentElement, screenX, screenY, (projectedZ + dt), cssMatrixToUse);
+
+        // interpolate to calculate the x,y coordinate that corresponds to z = 0 on the projected plane, based on the two samples
+
+        var dx = (p2[0] - p0[0]) / dt;
+        var dy = (p2[1] - p0[1]) / dt;
+        var dz = (p2[2] - p0[2]) / dt;
+        var neededDt = (p0[2]) / dz; // TODO: make sure I don't divide by zero
+        var x = p0[0] - dx * neededDt;
+        var y = p0[1] - dy * neededDt;
+        var z = p0[2] - dz * neededDt;
+
+        return {
+            x: x,
+            y: y,
+            z: z
+        }
+    }
+
+    function convertScreenPointToLocalCoordinatesRelativeToDivParent(childDiv, transformedDiv, screenX, screenY, screenZ, cssMatrixToUse) {
+
+        // it can either use the hard-coded css 3d matrix provided in the last parameter, or extract one from the transformedDiv element  // TODO: just pass around matrices, not the full css transform... then we can just use the mostRecentFinalMatrix from the frame, or compute based on a matrix without a corresponding DOM element
+        if (!cssMatrixToUse) {
+            cssMatrixToUse = getTransform(transformedDiv);
+        }
+
+        // translation matrix if the element has a different transform origin
+        var originTranslationVector = getTransformOrigin(transformedDiv);
+
+        // compute a matrix that fully describes the transformation, including a nonzero origin translation // TODO: learn why this works
+        // var fullTx = computeTransformationData(cssMatrixToUse, originTranslationVector);
+        var fullTx = computeTransformMatrix(cssMatrixToUse, originTranslationVector);
+
+        // invert and normalize the matrix
+        var fullTx_inverse = realityEditor.gui.ar.utilities.invertMatrix(fullTx);
+        var fullTx_normalized_inverse = realityEditor.gui.ar.utilities.perspectiveDivide(fullTx_inverse);
+
+        var screenPoint = [screenX, screenY, screenZ, 1];
+
+        // multiply the screen point by the inverse matrix, and divide by the W coordinate to get the real position
+        return realityEditor.gui.ar.utilities.perspectiveDivide(transformVertex(fullTx_normalized_inverse, screenPoint));
+    }
+
+    // TODO: find out why we need to compute N = T^{-1}MT
+    function computeTransformMatrix(transformationMatrix, originTranslationVector)
+    {
+        var x = originTranslationVector[0];
+        var y = originTranslationVector[1];
+        var z = originTranslationVector[2];
+        var undoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -x, -y, -z, 1];
+        var redoTranslationMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+        var temp1 = [];
+        var out = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(undoTranslationMatrix, transformationMatrix, temp1);
+        realityEditor.gui.ar.utilities.multiplyMatrix(temp1, redoTranslationMatrix, out);
+        return out;
+    }
+
+    /**
+     * Helper function that extracts a 4x4 matrix from the element's CSS matrix3d
+     * @param {HTMLElement} ele
+     * @return {Array.<number>}
+     */
+    function getTransform(ele) {
+        // var st = window.getComputedStyle(ele, null);
+        // tr = st.getPropertyValue("-webkit-transform") ||
+        //     st.getPropertyValue("-moz-transform") ||
+        //     st.getPropertyValue("-ms-transform") ||
+        //     st.getPropertyValue("-o-transform") ||
+        //     st.getPropertyValue("transform");
+
+        var tr = ele.style.webkitTransform;
+        if (!tr) {
+            return realityEditor.gui.ar.utilities.newIdentityMatrix();
+        }
+
+        var values = tr.split('(')[1].split(')')[0].split(',');
+
+        var out = [ 0, 0, 0, 1 ];
+        for (var i = 0; i < values.length; ++i) {
+            out[i] = parseFloat(values[i]);
+        }
+
+        return out;
+    }
+
+    function getTransformOrigin(element) {
+
+        var out = [ 0, 0, 0, 1 ];
+
+        // this is a speedup that works for the frames we currently use. might need to remove in the future if it messes anything up
+        if (element.style.transformOrigin) {
+            var st = window.getComputedStyle(element, null);
+            var tr = st.getPropertyValue("-webkit-transform-origin") ||
+                st.getPropertyValue("-moz-transform-origin") ||
+                st.getPropertyValue("-ms-transform-origin") ||
+                st.getPropertyValue("-o-transform-origin") ||
+                st.getPropertyValue("transform-origin");
+
+            var values = tr.split(' ');
+
+            for (var i = 0; i < values.length; ++i) {
+                out[i] = parseInt(values[i]);
+            }
+        } else {
+            out[0] = parseInt(element.style.width)/2;
+            out[1] = parseInt(element.style.height)/2;
+        }
+
+        return out;
+    }
+
+    function transformVertex(mat, ver) {
+        var out = [0,0,0,0];
+
+        for (var i = 0; i < 4; i++) {
+            var sum = 0;
+            for (var j = 0; j < 4; j++) {
+                sum += mat[i + j * 4] * ver[j];
+            }
+            out[i] = sum;
+        }
+
+        return out;
+    }
+
+    exports.old_screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
+    exports.old_screenCoordinatesToMatrixXY_Efficient = screenCoordinatesToMatrixXY_Efficient;
+    exports.old_screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
+    exports.old_computeFinalMatrixFromMarkerMatrix = computeFinalMatrixFromMarkerMatrix;
+    exports.old_getTransform = getTransform;
+
+}(realityEditor.gui.ar.utilities));
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************/
+
+
 realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function(key, screenX, screenY) {
     console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
     
