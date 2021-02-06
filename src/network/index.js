@@ -462,6 +462,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             origin.frames[frameKey].uuid = frameKey;
 
             console.log('added new frame', origin.frames[frameKey]);
+
+            var positionData = realityEditor.gui.ar.positioning.getPositionData(origin.frames[frameKey]);
+            realityEditor.sceneGraph.addFrame(objectKey, frameKey, origin.frames[frameKey], positionData.matrix);
             
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
