@@ -289,7 +289,7 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
 
                 // keep the invisible AR frames synchronized with the position of their screen frames (so that nodes are in same place and pulls out in the right place)
                 matchingARFrame.ar.x = point.x;
-                matchingARFrame.ar.y = point.y;
+                matchingARFrame.ar.y = -1 * point.y; // y-axis is inverted between screen and AR
 
                 // console.log('...to (' + matchingARFrame.ar.x + ', ' + matchingARFrame.ar.y + ')');
             }
