@@ -1881,7 +1881,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }
 
-        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+        if (globalDOMCache["iframe" + msgContent.frame]) {
+            globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+        }
     }
 };
 

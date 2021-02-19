@@ -388,6 +388,16 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
     var screenFrame = realityEditor.getFrame(this.screenObject.object, this.screenObject.frame);
     if (!screenFrame) return;
 
+    // don't do it if we're moving the tool directly dropped from the pocket
+    if (pocketFrame.vehicle && pocketFrame.vehicle.uuid === this.screenObject.frame) {
+        return;
+    }
+    
+    // don't do it if we're transitioning the tool from another object
+    if (globalStates.inTransitionFrame === this.screenObject.frame) {
+        return;
+    }
+
     var isScreenObjectVisible = !!realityEditor.gui.ar.draw.visibleObjects[this.screenObject.object]; // can only push in frames to visible objects
     if (screenFrame && isScreenObjectVisible && !pocketDropAnimation) { // can only push in frames not being animated forwards when dropping from pocket
         

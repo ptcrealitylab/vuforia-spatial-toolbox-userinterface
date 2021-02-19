@@ -893,47 +893,50 @@ realityEditor.gui.ar.draw.returnTransitionFrameBackToSource = function() {
  */
 realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, optionalPosition) {
     
-    var oldObjectTargetWidth = realityEditor.gui.utilities.getTargetSize(oldObjectKey).width;
-    var newObjectTargetWidth = realityEditor.gui.utilities.getTargetSize(newObjectKey).width;
-    
-    console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of ' +
-        'size ' + newObjectTargetWidth);
+    // var oldObjectTargetWidth = realityEditor.gui.utilities.getTargetSize(oldObjectKey).width;
+    // var newObjectTargetWidth = realityEditor.gui.utilities.getTargetSize(newObjectKey).width;
+    //
+    // console.log('moving frame from an object of size ' + oldObjectTargetWidth + ' to one of ' +
+    //     'size ' + newObjectTargetWidth);
     
     this.moveFrameToNewObject(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey);
     
-    var frame = realityEditor.getFrame(newObjectKey, newFrameKey);
+    // var frame = realityEditor.getFrame(newObjectKey, newFrameKey);
     
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     
-    var newObject = realityEditor.getObject(newObjectKey);
+    // var newObject = realityEditor.getObject(newObjectKey);
     
-    var scaleFactor = 1;
-    if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
-        scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
-        if (!isNaN(scaleFactor)) {
-            frame.ar.scale *= scaleFactor;
-        }
-    }
+    // TODO: i'm pretty sure this scale factor isn't needed anymore but we should check
+    // var scaleFactor = 1;
+    // if (typeof oldObjectTargetWidth !== 'undefined' && typeof newObjectTargetWidth !== 'undefined') {
+    //     scaleFactor = (newObjectTargetWidth/oldObjectTargetWidth);
+    //     if (!isNaN(scaleFactor)) {
+    //         frame.ar.scale *= scaleFactor;
+    //     }
+    // }
     
+    
+    // TODO: BEN DO THESE REALLY NEED TO BE COMMENTED OUT?
     // fixme: quick fix to allow better pushing into screens - what happens when we try with scene graph?
     // screen interactions break when we use the slightly buggy matrix computed in the other case, so if the new object
     // is a screen object, instead we reset its matrix to the marker plane.
-    if (newObject.visualization === 'screen') {
-
-        frame.ar.x = 0;
-        frame.ar.y = 0;
-
-        if (optionalPosition) {
-            frame.ar.x = optionalPosition.x;
-            frame.ar.y = optionalPosition.y;
-        }
-
-        frame.ar.matrix = [];
-        frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        
-    }
+    // if (newObject.visualization === 'screen') {
+    //
+    //     frame.ar.x = 0;
+    //     frame.ar.y = 0;
+    //
+    //     if (optionalPosition) {
+    //         frame.ar.x = optionalPosition.x;
+    //         frame.ar.y = optionalPosition.y;
+    //     }
+    //
+    //     frame.ar.matrix = [];
+    //     frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //     frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //    
+    // }
     
 };
 
