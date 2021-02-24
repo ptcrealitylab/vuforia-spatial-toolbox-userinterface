@@ -1097,6 +1097,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
             tempThisObject = pocketItem[msgContent.object];
         }
     }
+
+    if (msgContent.frame && !tempThisObject) {
+        console.log('The tool that sent this message doesn\'t exist - ignore the message', msgContent);
+        return;
+    }
     
     tempThisObject = tempThisObject || {};
     
