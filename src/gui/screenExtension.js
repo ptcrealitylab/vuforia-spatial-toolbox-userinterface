@@ -405,91 +405,43 @@ realityEditor.gui.screenExtension.calculatePushPop = function() {
 
             let toolNode = realityEditor.sceneGraph.getSceneNodeById(this.screenObject.frame);
             let objectNode = realityEditor.sceneGraph.getSceneNodeById(this.screenObject.object);
-            
+
+            // get position of tool relative to object, because this is used to push things into the screen
             let relativeMatrix = (toolNode && objectNode) ? toolNode.getMatrixRelativeTo(objectNode) : realityEditor.gui.ar.utilities.newIdentityMatrix();
             let zDistance = relativeMatrix[14];
 
-            // calculate distance to frame
-            // var distanceToFrame = realityEditor.gui.ar.utilities.distance(screenFrameMatrix);
+            // calculate distance from camera to object, because this is used to pull things out of screen
             var distanceToObject = realityEditor.sceneGraph.getDistanceToCamera(this.screenObject.object);
-            // // var distanceToTool = realityEditor.sceneGraph.getDistanceToCamera(this.screenObject.frame);
-            //
-            // let objectPositionZ = Math.abs(realityEditor.sceneGraph.getPositionRelativeToCamera(this.screenObject.object).z);
-            // let toolPositionZ = Math.abs(realityEditor.sceneGraph.getPositionRelativeToCamera(this.screenObject.frame).z);
-
-            // TODO: we need more than Z, we need Z as viewed from directly in front, doesn't work from extreme angle
-            
-            // var zDistanceToObject = realityEditor.sceneGraph.
-            // var zDistanceToTool = 0;
-
-            // console.log('distance to object, frame: ' + distanceToObject + ', ' + distanceToFrame);
-            // console.log('distance to object: ' + distanceToFrame);
 
             if (!globalStates.initialDistance) {
-                globalStates.initialDistance = distanceToObject; //objectPositionZ; //distanceToFrame;
+                globalStates.initialDistance = distanceToObject;
             }
 
             var distanceThreshold = globalStates.framePullThreshold;
-            // console.log(distanceThreshold);
 
-            // is frame within screen bounds... don't push it in if you aren't located on top of a screen
-
-            // var resultMatrix = [];
-            // if (screenFrame.ar.matrix.length === 16) {
-            //     realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
-            // } else {
-            //     resultMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            // }
-            // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
-
+            // only push in frame if it is within the width and height of the image target (screen size)
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
             var projectedPoint = realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY(this.screenObject.object, touchPosition.x, touchPosition.y);
-
-            // var isWithinWidth = Math.abs(screenFrame.ar.x) < (object.targetSize.width * 1000)/2;
-            // var isWithinHeight = Math.abs(screenFrame.ar.y) < (object.targetSize.height * 1000)/2;
-
             let targetSize = realityEditor.gui.utilities.getTargetSize(this.screenObject.object);
-
             var isWithinWidth = Math.abs(projectedPoint.x) < (targetSize.width * 1000)/2;
             var isWithinHeight = Math.abs(projectedPoint.y) < (targetSize.height * 1000)/2;
-            
+
             var didPushIn = false;
 
-            if (isWithinWidth && isWithinHeight) {
-                
-                if (zDistance < 0) {
-                    didPushIn = true;
-                }
-                
-                // if (toolPositionZ > objectPositionZ + distanceThreshold) {
-                //     didPushIn = true;
-                // }
-                
-                // // when unconstrained editing, push in if the frame goes completely behind the z = 0 plane
-                // if (realityEditor.device.isEditingUnconstrained(screenFrame)) {
-                //     // calculate center Z of frame to know if it is mostly in front or behind the marker plane
-                //     // var resultMatrix = [];
-                //     // realityEditor.gui.ar.utilities.multiplyMatrix(screenFrame.begin, realityEditor.gui.ar.utilities.invertMatrix(screenFrame.temp), resultMatrix);
-                //     // var projectedPoint = realityEditor.gui.ar.utilities.multiplyMatrix4([screenFrame.ar.x, screenFrame.ar.y, 0, 1], resultMatrix);
-                //     didPushIn = projectedPoint[2] < -10; // if the z coordinate of center of frame is negative
-                //     // when not in unconstrained editing mode, just push in if you move towards the screen more than a certain threshold
-                // } else {
-                //     didPushIn = (distanceToObject < (globalStates.initialDistance - distanceThreshold));
-                // }
+            // pushing in happens when z distance between tool and screen is negative
+            if (isWithinWidth && isWithinHeight && zDistance < 0) {
+                didPushIn = true;
             }
-            
+
+            // pulling out happens when current distance to screen exceeds initial distance by a certain threshold
             var didPullOut = (distanceToObject > (globalStates.initialDistance + distanceThreshold) ||
                                 !isWithinWidth || !isWithinHeight);
 
-            // pull out either if you move away from the screen, or if you move outside the screen bounds
             if (didPullOut) { 
                 this.onScreenPullOut(screenFrame);
-
-            // push into screen depending if you move close to frame while within screen bounds
             } else if (didPushIn) { 
                 this.onScreenPushIn(screenFrame);
             }
-            
         }
     }
 };
@@ -596,10 +548,6 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             // set to false so it definitely gets re-added and re-rendered
             thisFrame.visible = false;
 
-            // thisFrame.ar.matrix = [];
-            // thisFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            // thisFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-
             var activeKey = thisFrame.uuid;
 
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
@@ -626,6 +574,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             svg.style.height = iframe.style.height;
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
 
+            // TODO: this still isn't correct all of the time
             // set the correct position for the frame that was just pulled to AR
 
             // 1. move it so it is centered on the pointer, ignoring touchOffset
