@@ -462,6 +462,17 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             origin.frames[frameKey].uuid = frameKey;
 
             console.log('added new frame', origin.frames[frameKey]);
+
+            var positionData = realityEditor.gui.ar.positioning.getPositionData(origin.frames[frameKey]);
+            realityEditor.sceneGraph.addFrame(objectKey, frameKey, origin.frames[frameKey], positionData.matrix);
+
+            // process each node in the frame
+            let nodes = origin.frames[frameKey].nodes;
+            for (let nodeKey in nodes) {
+                if (!nodes.hasOwnProperty(nodeKey)) continue;
+                let positionData = realityEditor.gui.ar.positioning.getPositionData(nodes[nodeKey]);
+                realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, nodes[nodeKey], positionData.matrix);
+            }
             
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
@@ -557,6 +568,9 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         }
 
         objects[objectKey].frames[frameKey].nodes[nodeKey] = origin;
+
+        let positionData = realityEditor.gui.ar.positioning.getPositionData(origin);
+        realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, origin, positionData.matrix);
 
     } else {
         // update the local node's properties to match the one on the server if they both exists
@@ -1878,7 +1892,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }
 
-        globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+        if (globalDOMCache["iframe" + msgContent.frame]) {
+            globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+        }
     }
 };
 

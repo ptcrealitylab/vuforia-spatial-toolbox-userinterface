@@ -674,14 +674,57 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
     object.averageScale = Math.max(0.01, sum/amount); // TODO: put more thought into minimum scale
 };
 
-// exports.screenCoordinatesToMatrixXY = screenCoordinatesToMatrixXY;
-// exports.screenCoordinatesToMarkerXY = screenCoordinatesToMarkerXY;
-realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY = function() {
-    console.warn('TODO ben: reimplement screenCoordinatesToMarkerXY using sceneGraph');
+/**
+ * Creates and returns a div with the CSS3D transform needed to position it at an image target's origin
+ * @param {string} objectKey
+ * @return {HTMLElement}
+ */
+realityEditor.gui.ar.utilities.getDivWithMarkerTransformation = function(objectKey) {
+
+    let matrixComputationDiv = globalDOMCache['matrixComputationDivForObjects'];
+    if (!matrixComputationDiv) {
+        // create it if needed
+        matrixComputationDiv = document.createElement('div');
+        matrixComputationDiv.id = 'matrixComputationDivForObjects';
+        matrixComputationDiv.classList.add('main');
+        matrixComputationDiv.classList.add('ignorePointerEvents');
+
+        // 3D transforms only apply correctly if it's a child of the GUI container (like the rest of the tools/nodes)
+        document.getElementById('GUI').appendChild(matrixComputationDiv);
+        globalDOMCache['matrixComputationDivForObjects'] = matrixComputationDiv;
+    }
+
+    if (matrixComputationDiv.style.display === 'none') {
+        matrixComputationDiv.style.display = '';
+    }
+
+    // the computation is only correct if it has the same width/height as the vehicle's transformed element
+    matrixComputationDiv.style.width = window.innerWidth + 'px';
+    matrixComputationDiv.style.height = window.innerHeight + 'px';
+
+    let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(objectKey);
+    matrixComputationDiv.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
+
+    return matrixComputationDiv;
+};
+
+/**
+ * tapping on the center of the object matrix should yield (0,0). ranges from [-targetSize/2, targetSize/2]
+ * @param {string} objectKey
+ * @param {number} screenX
+ * @param {number} screenY
+ * @return {{x: number, y: number}}
+ */
+realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY = function(objectKey, screenX, screenY) {
+
+    // set dummy div transform to iframe without x,y,scale
+    let matrixComputationDiv = this.getDivWithMarkerTransformation(objectKey);
+    let newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
+
     return {
-        x: 0,
-        y: 0
-    };
+        x: newPosition.x - window.innerWidth / 2,
+        y: newPosition.y - window.innerHeight / 2
+    }
 };
 
 /**********************************************************************************************************************

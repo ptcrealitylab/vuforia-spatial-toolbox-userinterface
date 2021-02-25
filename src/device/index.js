@@ -908,11 +908,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
 
                 var newFrameKey = closestObjectKey + frameBeingMoved.name;
 
-                var screenX = event.pageX;
-                var screenY = event.pageY;
-                var projectedCoordinates = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(closestObjectKey, screenX, screenY);
-
-                realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey, projectedCoordinates);
+                realityEditor.gui.ar.draw.moveTransitionFrameToObject(globalStates.inTransitionObject, globalStates.inTransitionFrame, closestObjectKey, newFrameKey);
 
                 var newFrame = realityEditor.getFrame(closestObjectKey, newFrameKey);
                 realityEditor.network.postVehiclePosition(newFrame);
@@ -1290,7 +1286,7 @@ realityEditor.device.checkIfTouchWithinScreenBounds = function(screenX, screenY)
     for (var frameKey in realityEditor.gui.screenExtension.visibleScreenObjects) {
         if (!realityEditor.gui.screenExtension.visibleScreenObjects.hasOwnProperty(frameKey)) continue;
         var visibleScreenObject = realityEditor.gui.screenExtension.visibleScreenObjects[frameKey];
-        var point = realityEditor.gui.ar.utilities.screenCoordinatesToMarkerXY(visibleScreenObject.object, screenX, screenY);
+        var point = realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY(visibleScreenObject.object, screenX, screenY);
         // visibleScreenObject.x = point.x;
         // visibleScreenObject.y = point.y;
         
