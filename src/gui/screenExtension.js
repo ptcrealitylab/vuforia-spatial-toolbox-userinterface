@@ -44,14 +44,18 @@ realityEditor.gui.screenExtension.registerCallback = function(functionName, call
     this.callbackHandler.registerCallback(functionName, callback);
 };
 
+// If this is false, it will automatically keep registeredScreenObjects and visibleScreenObjects up-to-date
+//   by searching for all objects marked as 'screen'.
+// If this is true, relies on a tool on that object to use the activateScreenObject API to register the object.
+// This is set to false because the tool with activateScreenObject is needed anyways for screen message passing
+//   but I can imagine a future where that tool isn't needed and we can remove this flag
 realityEditor.gui.screenExtension.disableAutoRegistration = true;
+
 realityEditor.gui.screenExtension.initService = function() {
     if (this.disableAutoRegistration) {
         console.warn('SCREEN EXTENSION initService is currently internally-disabled');
         return;
     }
-    
-    // TODO: don't enable if this has a certain environment variable
 
     // register screen objects when they are loaded
     realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
@@ -59,14 +63,14 @@ realityEditor.gui.screenExtension.initService = function() {
         if (object.visualization !== 'screen') { return; }
 
         realityEditor.gui.screenExtension.registeredScreenObjects[objectKey] = {
-            object : objectKey,
-            frame : null,
+            object: objectKey,
+            frame: null,
             node: null
         };
     });
 
     // register screen objects when their visualization property is updated
-    // TODO: network listener? update?
+    // TODO: this would require a network listener to detect changes
 
     // use registeredScreenObjects and visibleObjects to get visibleScreenObjects
     realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
