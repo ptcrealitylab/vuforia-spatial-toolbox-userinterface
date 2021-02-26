@@ -54,6 +54,9 @@ createNameSpace("realityEditor.device");
  * Sets the application's window.onload function to trigger this init method, which sets up the GUI and networking.
  */
 
+// add-ons can register a function to be called instead of getVuforiaReady
+realityEditor.device.initFunctions = [];
+
 /**
  * When the index.html first finishes loading, set up the:
  * Sidebar menu buttons,
@@ -268,8 +271,13 @@ realityEditor.device.onload = function () {
         }
     })();
     
-    // start the AR framework in native iOS
-    realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+    if (realityEditor.device.initFunctions.length === 0) {
+        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+    } else {
+        realityEditor.device.initFunctions.forEach(function(initFunction) {
+            initFunction();
+        });
+    }
 
     // see if we should open the modal - defaults hidden but can be turned on from menu
     let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';

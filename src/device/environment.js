@@ -37,7 +37,9 @@ createNameSpace("realityEditor.device.environment");
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
-        localServerPort: 49369 // the port where a local vuforia-spatial-edge-server can be expected
+        localServerPort: 49369, // the port where a local vuforia-spatial-edge-server can be expected
+        // matrices
+        initialPocketToolRotation: null
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property
@@ -174,6 +176,14 @@ createNameSpace("realityEditor.device.environment");
      */
     exports.waitForARTracking = function() {
         return variables.waitForARTracking;
-    }
+    };
+
+    /**
+     * Multiplies the original transform of tools dropped from the pocket by this
+     * @return {Array.<number>|null}
+     */
+    exports.getInitialPocketToolRotation = function() {
+        return variables.initialPocketToolRotation;
+    };
 
 }(realityEditor.device.environment));
