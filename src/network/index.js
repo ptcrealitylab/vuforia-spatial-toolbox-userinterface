@@ -1585,7 +1585,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             content.scale = positionData.scale;
 
             content.lastEditor = globalStates.tempUuid;
-            let urlEndpoint = 'http://' + objects[objectKey].ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
+            let urlEndpoint = 'http://' + objects[msgContent.object].ip + ':' + realityEditor.network.getPort(objects[msgContent.object]) + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
             realityEditor.network.postData(urlEndpoint, content);
         });
     }
