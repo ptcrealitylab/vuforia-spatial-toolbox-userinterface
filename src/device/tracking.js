@@ -43,8 +43,7 @@ createNameSpace("realityEditor.device.tracking");
         let notification = realityEditor.gui.modal.showSimpleNotification(
             headerText, descriptionText,function () {
                 console.log('closed...');
-            }
-        );
+            }, realityEditor.device.environment.variables.layoutUIForPortrait);
 
         realityEditor.app.callbacks.onTrackingInitialized(function() {
             document.getElementById('GUI').classList.remove('hiddenWhileLoading');
@@ -154,11 +153,14 @@ createNameSpace("realityEditor.device.tracking");
 
         // create UI if needed
         let trackingStatusUI = document.getElementById('trackingStatusUI');
-        let textContainer = document.getElementById('trackingStatusText')
+        let textContainer = document.getElementById('trackingStatusText');
         if (!trackingStatusUI) {
             trackingStatusUI = document.createElement('div');
             trackingStatusUI.id = 'trackingStatusUI';
             trackingStatusUI.classList.add('statusBar');
+            if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+                trackingStatusUI.classList.add('statusBarPortrait');
+            }
             document.body.appendChild(trackingStatusUI);
             
             textContainer = document.createElement('div');

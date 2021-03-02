@@ -274,6 +274,12 @@ a.modalLink:active { color: #757575; }
     -webkit-transform: translateZ(9001px);
     color: black;
 }
+.notificationPortrait {
+    left: 40px !important;
+    top: calc(50vh - 50px) !important;
+    width: calc(100vw - 80px) !important;
+    height: 100px !important;
+}
 #modalHeaderNotification {
     position: relative;
     /*text-align: left;*/
@@ -283,6 +289,11 @@ a.modalLink:active { color: #757575; }
     top: 5vh;
     font-size: 3vw;
 }
+.notificationHeaderPortrait {
+    top: 3vh !important;
+    font-size: 4vw !important;
+    height: unset !important;
+}
 #modalDescriptionNotification {
     position: relative;
     width: 100%;
@@ -291,6 +302,9 @@ a.modalLink:active { color: #757575; }
     top: 15vh;
     display: table;
     font-size: 2vw;
+}
+.notificationDescriptionPortrait {
+    font-size: 3vw !important;
 }
 /* Buttons for the modal */
 .modalButtonNotification {
@@ -317,6 +331,11 @@ a.modalLink:active { color: #757575; }
 
 .loaderContainer {
     height: 50vh !important;
+}
+
+.loaderContainerPortrait {
+    height: 32vh !important;
+    top: calc(50vh - 16vh) !important;
 }
 
 .loader {

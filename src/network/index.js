@@ -1276,6 +1276,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
     }
     
+    if (msgContent.sendDeviceDistance) {
+        tempThisObject.sendDeviceDistance = msgContent.sendDeviceDistance;
+    }
+    
     if (msgContent.sendAcceleration === true) {
         
         if (tempThisObject.integerVersion >= 32) {
@@ -1376,7 +1380,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
             
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
-            
+
+            if (msgContent.fullscreenZPosition) {
+                tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
+            }
+
             let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
@@ -1429,6 +1437,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
             
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
+            
+            if (msgContent.fullscreenZPosition) {
+                tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
+            }
 
             let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
 

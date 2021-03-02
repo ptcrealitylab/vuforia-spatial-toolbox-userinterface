@@ -34,6 +34,10 @@ createNameSpace("realityEditor.device.environment");
         isSourceOfObjectPositions: true,
         isCameraOrientationFlipped: false,
         waitForARTracking: true,
+        overrideMenusAndButtons: false,
+        listenForDeviceOrientationChanges: true,
+        enableViewFrustumCulling: true,
+        layoutUIForPortrait: false,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10

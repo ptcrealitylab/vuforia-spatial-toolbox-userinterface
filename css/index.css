@@ -1601,6 +1601,11 @@ Logic Interface CSS
     transition: height 300ms ease-out;
 }
 
+.statusBarPortrait {
+    left: 40px;
+    width: calc(100vw - 100px); /* centers, including padding */
+}
+
 @keyframes dropIn {
     0% { top: -40px }
     100% { top: 0 }

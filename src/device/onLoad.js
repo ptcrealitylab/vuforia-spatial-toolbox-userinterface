@@ -174,18 +174,21 @@ realityEditor.device.onload = function () {
     globalCanvas.canvas.height = globalStates.width;
     globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
+    realityEditor.device.environment.initService();
+
     // adds touch handlers for each of the menu buttons
-    realityEditor.gui.menus.init();
-    
-    // set active buttons and preload some images
-    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
-    realityEditor.gui.buttons.initButtons();
+    if (!realityEditor.device.environment.variables.overrideMenusAndButtons) {
+        realityEditor.gui.menus.init();
+
+        // set active buttons and preload some images
+        realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
+        realityEditor.gui.buttons.initButtons();
+    }
     
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
     realityEditor.device.videoRecording.initService();
-    realityEditor.device.environment.initService();
     realityEditor.device.tracking.initService();
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
@@ -237,7 +240,9 @@ realityEditor.device.onload = function () {
     realityEditor.device.layout.adjustForScreenSize();
 
     // adjust when phone orientation changes - also triggers one time immediately with the initial orientation
-    realityEditor.app.enableOrientationChanges('realityEditor.device.layout.onOrientationChanged');
+    if (realityEditor.device.environment.variables.listenForDeviceOrientationChanges) {
+        realityEditor.app.enableOrientationChanges('realityEditor.device.layout.onOrientationChanged');
+    }
 
     // prevent touch events on overlayDiv
     overlayDiv.addEventListener('touchstart', function (e) {

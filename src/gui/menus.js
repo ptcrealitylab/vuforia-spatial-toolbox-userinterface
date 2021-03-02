@@ -169,6 +169,8 @@ createNameSpace("realityEditor.gui.menus");
      * Registers the DOM elements for each possible menu button, and adds the touch event listeners.
      */
     function init() {
+        document.querySelector('#UIButtons').style.display = '';
+        
         addButtonEventListeners();
         registerButtonCallbacks();
     }
@@ -489,6 +491,10 @@ createNameSpace("realityEditor.gui.menus");
      * @param {Array.<string>|null} buttonsToUnhighlight
      */
     function switchToMenu(newMenuName, buttonsToHighlight, buttonsToUnhighlight) {
+        if (realityEditor.device.environment.variables.overrideMenusAndButtons) {
+            return;
+        }
+
         // handle null parameters gracefully
         buttonsToHighlight = buttonsToHighlight || [];
         buttonsToUnhighlight = buttonsToUnhighlight || [];

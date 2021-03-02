@@ -171,11 +171,11 @@ createNameSpace("realityEditor.gui.modal");
         }
     }
     
-    function Notification(headerText, descriptionText, onCloseCallback) {
+    function Notification(headerText, descriptionText, onCloseCallback, isPortraitLayout) {
         this.headerText = headerText;
         this.descriptionText = descriptionText;
         this.onCloseCallback = onCloseCallback;
-        this.domElements = createNotificationDOM(true);
+        this.domElements = createNotificationDOM(true, isPortraitLayout);
     }
     
     Notification.prototype.dismiss = function() {
@@ -183,9 +183,9 @@ createNameSpace("realityEditor.gui.modal");
         this.onCloseCallback();
     };
     
-    function showSimpleNotification(headerText, descriptionText, onCloseCallback) {
+    function showSimpleNotification(headerText, descriptionText, onCloseCallback, isPortraitLayout) {
         
-        let notification = new Notification(headerText, descriptionText, onCloseCallback);
+        let notification = new Notification(headerText, descriptionText, onCloseCallback, isPortraitLayout);
         
         // create the instance of the modal
         // instantiate / modify the DOM elements
@@ -213,7 +213,7 @@ createNameSpace("realityEditor.gui.modal");
         return notification;
     }
     
-    function createNotificationDOM(includeLoader) {
+    function createNotificationDOM(includeLoader, isPortraitLayout) {
         var fade = document.createElement('div'); // darkens/blurs the background
         var container = document.createElement('div'); // panel holding all the modal elements
         var header = document.createElement('div');
@@ -225,6 +225,12 @@ createNameSpace("realityEditor.gui.modal");
         header.id = 'modalHeaderNotification';
         description.id = 'modalDescriptionNotification';
         // cancelButton.id = 'modalCancelNotification';
+
+        if (isPortraitLayout) {
+            container.classList.add('notificationPortrait');
+            header.classList.add('notificationHeaderPortrait');
+            description.classList.add('notificationDescriptionPortrait');
+        }
 
         // cancelButton.classList.add('modalButtonNotification');
         
@@ -238,6 +244,10 @@ createNameSpace("realityEditor.gui.modal");
             container.classList.add('loaderContainer');
             loader.classList.add('loader');
             container.appendChild(loader);
+
+            if (isPortraitLayout) {
+                container.classList.add('loaderContainerPortrait');
+            }
         }
         
         container.appendChild(description);
