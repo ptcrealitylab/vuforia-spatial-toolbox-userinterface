@@ -805,6 +805,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             closestObject.frames[frameID] = frame;
 
+            realityEditor.network.toBeInitialized[frameID] = true;
+
             realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
 
             console.log(frame);

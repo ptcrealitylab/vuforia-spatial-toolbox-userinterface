@@ -2788,6 +2788,16 @@ realityEditor.network.sendResetToLastCommit = function (objectKey) {
     this.postData(urlEndpoint, content, function(){});
 };
 
+realityEditor.network.toBeInitialized = {};
+realityEditor.network.isFirstInitialization = function(objectKey, frameKey, nodeKey) {
+    let activeKey = nodeKey || frameKey;
+    if (this.toBeInitialized[activeKey]) {
+        delete this.toBeInitialized[activeKey];
+        return true;
+    }
+    return false;
+};
+
 /**
  * Gets set as the "onload" function of each frame/node iframe element.
  * When the iframe contents finish loading, update some local state that depends on its size, and
@@ -2826,7 +2836,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         node: nodeKey,
         nodes: simpleNodes,
         port: realityEditor.network.getPort(object),
-        interface: globalStates.interface
+        interface: globalStates.interface,
+        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey)
     };
 
     if (version < 170 && objectKey === nodeKey) {
