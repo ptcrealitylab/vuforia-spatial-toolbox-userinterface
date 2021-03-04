@@ -14,9 +14,9 @@
  *     .dxk0KKdc:cdOXKl............. .. ..,c....
  *      .',lxOOxl:'':xkl,',......'....    ,'.
  *           .';:oo:...                        .
- *                .cd,      ╔═╗┌┬┐┬┌┬┐┌─┐┬─┐    .
- *                  .l;     ║╣  │││ │ │ │├┬┘    '
- *                    'l.   ╚═╝─┴┘┴ ┴ └─┘┴└─   '.
+ *                .cd,      â•”â•â•—â”Œâ”¬â”â”¬â”Œâ”¬â”â”Œâ”€â”â”¬â”€â”    .
+ *                  .l;     â•‘â•£  â”‚â”‚â”‚ â”‚ â”‚ â”‚â”œâ”¬â”˜    '
+ *                    'l.   â•šâ•â•â”€â”´â”˜â”´ â”´ â””â”€â”˜â”´â””â”€   '.
  *                     .o.                   ...
  *                      .''''','.;:''.........
  *                           .'  .l
@@ -28,9 +28,9 @@
  *                       o.
  *                      .,
  *
- *      ╦═╗┌─┐┌─┐┬  ┬┌┬┐┬ ┬  ╔═╗┌┬┐┬┌┬┐┌─┐┬─┐  ╔═╗┬─┐┌─┐ ┬┌─┐┌─┐┌┬┐
- *      ╠╦╝├┤ ├─┤│  │ │ └┬┘  ║╣  │││ │ │ │├┬┘  ╠═╝├┬┘│ │ │├┤ │   │
- *      ╩╚═└─┘┴ ┴┴─┘┴ ┴  ┴   ╚═╝─┴┘┴ ┴ └─┘┴└─  ╩  ┴└─└─┘└┘└─┘└─┘ ┴
+ *      â•¦â•â•—â”Œâ”€â”â”Œâ”€â”â”¬  â”¬â”Œâ”¬â”â”¬ â”¬  â•”â•â•—â”Œâ”¬â”â”¬â”Œâ”¬â”â”Œâ”€â”â”¬â”€â”  â•”â•â•—â”¬â”€â”â”Œâ”€â” â”¬â”Œâ”€â”â”Œâ”€â”â”Œâ”¬â”
+ *      â• â•¦â•â”œâ”¤ â”œâ”€â”¤â”‚  â”‚ â”‚ â””â”¬â”˜  â•‘â•£  â”‚â”‚â”‚ â”‚ â”‚ â”‚â”œâ”¬â”˜  â• â•â•â”œâ”¬â”˜â”‚ â”‚ â”‚â”œâ”¤ â”‚   â”‚
+ *      â•©â•šâ•â””â”€â”˜â”´ â”´â”´â”€â”˜â”´ â”´  â”´   â•šâ•â•â”€â”´â”˜â”´ â”´ â””â”€â”˜â”´â””â”€  â•©  â”´â””â”€â””â”€â”˜â””â”˜â””â”€â”˜â””â”€â”˜ â”´
  *
  *
  * Created by Valentin on 10/22/14.
@@ -428,7 +428,8 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
     this.length2 = lineEndPoint[1] - lineStartPoint[1];
     this.lineVectorLength = Math.sqrt(this.length1 * this.length1 + this.length2 * this.length2);
     //this.keepColor = this.lineVectorLength / 6;
-    this.spacer = 2.3;
+
+    this.spacer = 9;
     this.ratio = 0;
     this.newColor = [255,255,255,0];
     
@@ -469,16 +470,62 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         this.x__ = lineStartPoint[0] - Math.cos(this.angle) * this.ballPosition;
         this.y__ = lineStartPoint[1] - Math.sin(this.angle) * this.ballPosition;
         this.positionDelta += this.ballSize * this.spacer;
+
+
         context.beginPath();
         context.fillStyle = "rgba("+this.newColor+")";
-        context.arc(this.x__, this.y__, this.ballSize, 0, this.mathPI);
+
+        
+        // Draws arrow head going from specified start to end points   
+        function drawArrow(context, from, to, radius) {
+
+            var x_center = to.x;
+            var y_center = to.y;
+
+            var angle;
+            var x;
+            var y;
+
+            context.beginPath();
+
+            angle = Math.atan2(to.y - from.y, to.x - from.x)
+            x = radius * Math.cos(angle) + x_center;
+            y = radius * Math.sin(angle) + y_center;
+
+            context.moveTo(x, y);
+
+            angle += (1.0/3.0) * (2 * Math.PI)
+            x = radius * Math.cos(angle) + x_center;
+            y = radius * Math.sin(angle) + y_center;
+
+            context.lineTo(x, y);
+
+            angle += (1.0/3.0) * (2 * Math.PI)
+            x = radius *Math.cos(angle) + x_center;
+            y = radius *Math.sin(angle) + y_center;
+
+            context.lineTo(x, y);
+
+            context.closePath();
+
+            context.fill();
+        }
+        
+        // Start and End objects 
+        var START = {
+             x: lineStartPoint[0],
+             y: lineStartPoint[1] 
+          };
+        var END = {
+             x: this.x__,
+             y: this.y__
+          };
+
+
+        drawArrow(context, START, END, this.ballSize);
+
         context.fill();
     }
-
-    context.beginPath();
-    context.fillStyle = "rgba("+this.newColor+")";
-    context.arc(lineEndPoint[0],lineEndPoint[1], lineEndWeight, 0, 2*Math.PI);
-    context.fill();
     
     linkObject.ballAnimationCount += (lineStartWeight * timeCorrector.delta)+speed;
 };
