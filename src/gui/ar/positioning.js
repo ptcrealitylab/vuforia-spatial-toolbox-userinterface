@@ -573,9 +573,6 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
     }
 
     sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
-
-    // POST position to server
-    realityEditor.network.postVehiclePosition(frame);
 };
 
 /**
