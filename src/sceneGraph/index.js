@@ -42,6 +42,13 @@ createNameSpace("realityEditor.sceneGraph");
     });
     exports.NAMES = NAMES;
 
+    const TAGS = Object.freeze({
+        OBJECT: 'object',
+        TOOL: 'tool',
+        NODE: 'node',
+        ROTATE_X: 'rotateX'
+    });
+
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
         rootNode = new SceneNode(NAMES.ROOT);
@@ -67,6 +74,7 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeObject = sceneGraph[objectId];
         } else {
             sceneNodeObject = new SceneNode(objectId);
+            sceneNodeObject.addTag(TAGS.OBJECT);
             sceneGraph[objectId] = sceneNodeObject;
         }
 
@@ -90,6 +98,7 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeFrame = sceneGraph[frameId];
         } else {
             sceneNodeFrame = new SceneNode(frameId);
+            sceneNodeFrame.addTag(TAGS.TOOL);
             sceneGraph[frameId] = sceneNodeFrame;
         }
 
@@ -116,6 +125,7 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeNode = sceneGraph[nodeId];
         } else {
             sceneNodeNode = new SceneNode(nodeId);
+            sceneNodeNode.addTag(TAGS.NODE);
             sceneGraph[nodeId] = sceneNodeNode;
         }
 
@@ -499,6 +509,7 @@ createNameSpace("realityEditor.sceneGraph");
             sceneNodeRotateX = sceneGraph[thisNodeId];
         } else {
             sceneNodeRotateX = new SceneNode(thisNodeId);
+            sceneNodeRotateX.addTag(TAGS.ROTATE_X);
             sceneGraph[thisNodeId] = sceneNodeRotateX;
         }
 
@@ -554,6 +565,45 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
+    function getObjects() {
+        return Object.values(sceneGraph).filter(function(sceneNode) {
+            return sceneNode.tags[TAGS.OBJECT];
+        });
+    }
+
+    function getTools() {
+        return Object.values(sceneGraph).filter(function(sceneNode) {
+            return sceneNode.tags[TAGS.TOOL];
+        });
+    }
+
+    function getNodes() {
+        return Object.values(sceneGraph).filter(function(sceneNode) {
+            return sceneNode.tags[TAGS.NODE];
+        });
+    }
+
+    function getObjectsWithinCameraDistance(maxDistance) {
+        return getObjects().filter(function(sceneNode) {
+            let distance = sceneNode.getDistanceTo(cameraNode);
+            return distance < maxDistance
+        });
+    }
+
+    function getToolsWithinCameraDistance(maxDistance) {
+        return getTools().filter(function(sceneNode) {
+            let distance = sceneNode.getDistanceTo(cameraNode);
+            return distance < maxDistance
+        });
+    }
+
+    function getNodesWithinCameraDistance(maxDistance) {
+        return getNodes().filter(function(sceneNode) {
+            let distance = sceneNode.getDistanceTo(cameraNode);
+            return distance < maxDistance
+        });
+    }
+
     /*******************************************/
 
     // public init method
@@ -595,5 +645,12 @@ createNameSpace("realityEditor.sceneGraph");
     // TODO: can we get rid of full/direct access to sceneGraph?
     exports.getSceneNodeById = getSceneNodeById;
     exports.getVisualElement = getVisualElement;
+
+    exports.getObjects = getObjects;
+    exports.getTools = getTools;
+    exports.getNodes = getNodes;
+    exports.getObjectsWithinCameraDistance = getObjectsWithinCameraDistance;
+    exports.getToolsWithinCameraDistance = getToolsWithinCameraDistance;
+    exports.getNodesWithinCameraDistance = getNodesWithinCameraDistance;
 
 })(realityEditor.sceneGraph);

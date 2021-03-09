@@ -29,6 +29,7 @@ createNameSpace("realityEditor.sceneGraph");
         this.children = [];
         this.id = id; // mostly attached for debugging
         this.parent = null;
+        this.tags = {}; // can be used to label nodes and query the graph
 
         // if true, any nodes added to this will instead be added to a child of this rotating 90deg
         this.needsRotateX = false;
@@ -252,6 +253,14 @@ createNameSpace("realityEditor.sceneGraph");
         utils.multiplyMatrix(relativeMatrix, temp, result);
 
         this.setLocalMatrix(result);
+    };
+
+    SceneNode.prototype.addTag = function(tagName) {
+        this.tags[tagName] = true;
+    };
+
+    SceneNode.prototype.removeTag = function(tagName) {
+        delete this.tags[tagName];
     };
 
     exports.SceneNode = SceneNode;

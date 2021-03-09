@@ -1702,6 +1702,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             publicDataCache[msgContent.frame][node.name] = msgContent.publicData;
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
+            node.publicData = JSON.parse(JSON.stringify(msgContent.publicData));
             
             var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
             
