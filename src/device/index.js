@@ -738,6 +738,12 @@ realityEditor.device.onElementTouchUp = function(event) {
 
     if (this.shouldPostEventsIntoIframe()) {
         this.postEventIntoIframe(event, target.frameId, target.nodeId);
+
+        if (!target.nodeId) {
+            this.toolInteractionCallbacks.forEach(function(callback) {
+                callback(target.objectId, target.frameId, 'touchUp');
+            });
+        }
     }
 
     // var didDisplayCrafting = false;
@@ -1552,4 +1558,9 @@ realityEditor.device.touchEventObject = function (evt, type, cb) {
         realityEditor.device.eventObject.touches[1] = {};
     }
     cb(realityEditor.device.eventObject);
+};
+
+realityEditor.device.toolInteractionCallbacks = [];
+realityEditor.device.onToolInteraction = function(callback) {
+    this.toolInteractionCallbacks.push(callback);
 };
