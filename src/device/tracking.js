@@ -154,7 +154,7 @@ createNameSpace("realityEditor.device.tracking");
 
         // create UI if needed
         let trackingStatusUI = document.getElementById('trackingStatusUI');
-        let textContainer = document.getElementById('trackingStatusText')
+        let textContainer = document.getElementById('trackingStatusText');
         if (!trackingStatusUI) {
             trackingStatusUI = document.createElement('div');
             trackingStatusUI.id = 'trackingStatusUI';
