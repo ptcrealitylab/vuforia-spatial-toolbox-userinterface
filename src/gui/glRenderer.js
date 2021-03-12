@@ -26,8 +26,6 @@ createNameSpace("realityEditor.gui.glRenderer");
 
             this.uncloneables = {};
 
-            this.cache = {};
-
             this.commandBuffer = [];
             this.lastUseProgram = null;
             this.lastActiveTexture = {
@@ -132,15 +130,6 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
 
             let res = this.gl[message.name].apply(this.gl, message.args);
-            if (res && typeof res !== 'object') {
-                if (!this.cache[message.name]) {
-                    this.cache[message.name] = [];
-                }
-                this.cache[message.name].push({
-                    args: message.args,
-                    res: res,
-                });
-            }
             if (typeof res === 'object') {
                 this.uncloneables[message.id] = res;
                 res = {fakeClone: true, index: message.id};
