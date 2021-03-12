@@ -90,11 +90,7 @@ createNameSpace("realityEditor.gui.glRenderer");
                 return;
             }
 
-            const blacklist = {
-                clear: true,
-            };
-
-            if (blacklist[message.name]) {
+            if (message.name === 'clear') {
                 return;
             }
 
@@ -118,7 +114,7 @@ createNameSpace("realityEditor.gui.glRenderer");
                 // texImage2D: true,
             };
 
-            if (targettedBinds[message.name]) {
+            if (targettedBinds.hasOwnProperty(message.name)) {
                 this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
             }
             if (message.name === 'bindTexture') {
