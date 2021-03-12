@@ -1821,7 +1821,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
 
         let object = realityEditor.getObject(msgContent.object);
-        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
         // check if this object is incompatible
         let shouldInclude = false;
@@ -1837,30 +1836,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
         console.log('try to re-attach to new object');
 
-        // if incompatible, check if there's a possible compatible object
-        let newObjectKey = this.getNewObjectForFrame(msgContent.object, msgContent.frame, attachesTo);
-
-        console.log('best new object for tool = ' + newObjectKey);
-
-        // if so, move this frame to that object, preserving world location
-        if (newObjectKey) {
-            var newFrameKey = newObjectKey + frame.name;
-            realityEditor.gui.ar.draw.moveFrameToNewObject(msgContent.object, msgContent.frame, newObjectKey, newFrameKey);
-
-            let thisFrame = realityEditor.getFrame(newObjectKey, newFrameKey);
-
-            realityEditor.network.callbackHandler.triggerCallbacks('vehicleReattached', {
-                oldObjectKey: msgContent.object,
-                oldFrameKey: msgContent.frame,
-                newObjectKey: newObjectKey,
-                newFrameKey: newFrameKey,
-                frameType: thisFrame.src
-            });
-            console.log('moved frame based on attachesTo');
-        } else {
-            // if not, remove this frame
-            console.warn('NO COMPATIBLE OBJECTS TO ATTACH TO... IMPLEMENT THIS TOOL\'S DESTRUCTION');
-        }
+        let loyaltyString = attachesTo.includes('object') ? 'object' : (attachesTo.includes('world') ? 'world' : null);
+        realityEditor.sceneGraph.setLoyalty(loyaltyString, msgContent.object, msgContent.frame, msgContent.node);
     }
 
     if (typeof msgContent.getWorldId !== 'undefined') {
@@ -1900,6 +1877,41 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (globalDOMCache["iframe" + msgContent.frame]) {
             globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
         }
+    }
+
+    if (typeof msgContent.errorNotification !== 'undefined') {
+        let errorMessageText = msgContent.errorNotification;
+        let messageTime = 5000;
+
+        // create UI if needed
+        let errorNotificationUI = document.getElementById('errorNotificationUI');
+        let textContainer = document.getElementById('errorNotificationText');
+        if (!errorNotificationUI) {
+            errorNotificationUI = document.createElement('div');
+            errorNotificationUI.id = 'errorNotificationUI';
+            errorNotificationUI.classList.add('statusBar');
+            document.body.appendChild(errorNotificationUI);
+
+            textContainer = document.createElement('div');
+            textContainer.id = 'errorNotificationText';
+            errorNotificationUI.classList.add('statusBarText');
+            errorNotificationUI.appendChild(textContainer);
+        }
+
+        // show and populate with message
+        errorNotificationUI.classList.add('statusBar');
+        errorNotificationUI.classList.remove('statusBarHidden');
+        textContainer.innerHTML = errorMessageText;
+
+        setTimeout(function () {
+            // let errorNotificationUI = document.getElementById('errorNotificationUI');
+            if (!errorNotificationUI) {
+                return;
+            } // no need to hide it if it doesn't exist
+
+            errorNotificationUI.classList.add('statusBarHidden');
+            errorNotificationUI.classList.remove('statusBar');
+        }, messageTime);
     }
 };
 

@@ -393,6 +393,31 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
+    function setLoyalty(loyaltyString, objectKey, frameKey, nodeKey) {
+        if (!loyaltyString) { return; }
+
+        let vehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
+        if (vehicle) {
+            vehicle.spatialLoyalty = loyaltyString;
+            let vehicleSceneNode = realityEditor.sceneGraph.getSceneNodeById(vehicle.uuid);
+
+            // get newParentId from loyaltyString
+            let newParentId = null;
+            if (loyaltyString === 'world') {
+                newParentId = realityEditor.worldObjects.getBestWorldObject().objectId;
+            } else if (loyaltyString === 'groundplane') {
+                newParentId = NAMES.GROUNDPLANE;
+            } else if (loyaltyString === 'object') {
+                newParentId = realityEditor.network.availableFrames.getBestObjectInfoForFrame(realityEditor.getFrame(objectKey, frameKey).src);
+            }
+
+            if (newParentId && vehicleSceneNode) {
+                // using changeParent instead of setParent automatically adds to rotateX node inside groundPlane
+                changeParent(vehicleSceneNode, newParentId, true);
+            }
+        }
+    }
+
     // a helper function for adding generic/miscellaneous elements to the sceneGraph that will be used for 3D UI
     function addVisualElement(elementName, optionalParent, linkedDataObject, initialLocalMatrix) {
         let nodeId = elementName + '_VISUAL_ELEMENT'; // help prevent naming collisions
@@ -571,6 +596,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.moveSceneNodeToCamera = moveSceneNodeToCamera;
     exports.updatePositionData = updatePositionData;
     exports.attachToGroundPlane = attachToGroundPlane;
+    exports.setLoyalty = setLoyalty;
     exports.changeParent = changeParent;
     exports.changeId = changeId;
 
