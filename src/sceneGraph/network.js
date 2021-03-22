@@ -18,7 +18,7 @@ createNameSpace("realityEditor.sceneGraph.network");
 (function(exports) {
     let sceneGraph = realityEditor.sceneGraph;
     let uploadInfo = {};
-    const synchronizationDelay = 1000; // waits 1 second between potential uploads
+    const synchronizationDelay = 100; // waits 1 second between potential uploads
 
     function initService() {
         // every X seconds, send out an update to the server's sceneGraph with any updates to object positions
@@ -43,6 +43,8 @@ createNameSpace("realityEditor.sceneGraph.network");
                 uploadSceneNode(sceneNode);
             }
         });
+        
+        uploadSceneNode(realityEditor.sceneGraph.getSceneNodeById('CAMERA'));
     }
 
     /**
@@ -90,7 +92,7 @@ createNameSpace("realityEditor.sceneGraph.network");
         if (!realityEditor.sceneGraph.getWorldId())  { return; }
 
         let object = realityEditor.getObject(sceneNode.id);
-        if (!object) { return; }
+        if (!object && sceneNode.id !== 'CAMERA') { return; }
 
         uploadInfo[sceneNode.id] = {
             localMatrix: sceneNode.localMatrix,
@@ -104,7 +106,12 @@ createNameSpace("realityEditor.sceneGraph.network");
         let worldObjectId = sceneGraph.getWorldId();
         let worldNode = sceneGraph.getSceneNodeById(worldObjectId);
         let relativeMatrix = sceneNode.getMatrixRelativeTo(worldNode);
-        realityEditor.network.postObjectPosition(object.ip, sceneNode.id, relativeMatrix, worldObjectId);
+        if (sceneNode.id === 'CAMERA') {
+            let ip = realityEditor.worldObjects.getBestWorldObject().ip;
+            realityEditor.network.postCameraPosition(ip, relativeMatrix, worldObjectId);
+        } else {
+            realityEditor.network.postObjectPosition(object.ip, sceneNode.id, relativeMatrix, worldObjectId);
+        }
 
         objectLocalizedCallbacks.forEach(function(callback) {
             callback(sceneNode.id, worldObjectId);

@@ -1356,3 +1356,16 @@ function polyfillWebkitConvertPointFromPageToNode() {
         return getTransformationMatrix(element).transformPoint(point);
     };
 }
+
+realityEditor.gui.ar.utilities.subtractVectors = function(v1, v2) {
+    if (v1.length !== v2.length) {
+        console.warn('trying to dot two vectors of different lengths');
+        return 0;
+    }
+    var r = [];
+
+    for (var i = 0; i < v1.length; i++) {
+        r[i] = v1[i] - v2[i];
+    }
+    return r;
+};

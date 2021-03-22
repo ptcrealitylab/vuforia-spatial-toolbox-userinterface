@@ -3100,3 +3100,69 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
         }
     })
 };
+
+realityEditor.network.postCameraPosition = function(ip, matrix, worldId) {
+    let port = realityEditor.network.getPort(objects[worldId]);
+    var urlEndpoint = 'http://' + ip + ':' + port + '/cameraPosition';
+    let content = {
+        matrix: matrix,
+        cameraMatrix: matrix,
+        cameraRotation: getCameraRotation(matrix),
+        localizedToOrigin: true,
+        worldId: worldId,
+        timestamp: Date.now(),
+        lastEditor: globalStates.tempUuid,
+        clientId: globalStates.tempUuid
+    };
+    this.postData(urlEndpoint, content, function(err, _response) {
+        if (err) {
+            console.warn('error posting to ' + urlEndpoint, err);
+        } else {
+            console.log('successfully posted to ' + urlEndpoint);
+        }
+    })
+};
+
+function getCameraRotation(cameraMatrix) {
+    var zAxisCamera = [cameraMatrix[2], cameraMatrix[6], cameraMatrix[10], 0];
+// var zAxisGroundPlane = [0, 0, 1, 0];
+// var groundPlaneMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+    var groundPlaneNormal = [0, 1, 0, 0];
+    // if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+    //     groundPlaneNormal = [1, 0, 0, 0];
+    // }
+// if (!!realityEditor.gui.ar.draw.worldCorrection) {
+//     groundPlaneNormal = [1, 0, 0, 0];
+// }
+
+    var dotProduct = realityEditor.gui.ar.utilities.dotProduct(zAxisCamera, groundPlaneNormal); // simplified because ground plane normal is already normalized
+    var perpendicularComponent = realityEditor.gui.ar.utilities.scalarMultiplyVector(groundPlaneNormal, dotProduct);
+    var projectedAxis = realityEditor.gui.ar.utilities.subtractVectors(zAxisCamera, perpendicularComponent);
+// console.log(projectedAxis);
+
+    // var rotation = 0;
+    // if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+    //     rotation = Math.atan2(projectedAxis[2], projectedAxis[0]);
+    // } else {
+        var rotation = Math.atan2(projectedAxis[2], projectedAxis[0]);
+    // }
+
+    console.log(rotation);
+
+// var projectedAxis = zAxisCamera - perpendicularComponent;
+    
+    return rotation;
+
+    // var contents = {
+    //     cameraMatrix: cameraMatrix,
+    //     cameraRotation: rotation, /*{
+    //             phi: eulerAngles.phi,
+    //             theta: eulerAngles.theta,
+    //             psi: eulerAngles.psi
+    //         },*/
+    //     localizedToOrigin: !!realityEditor.gui.ar.draw.worldCorrection,
+    //     clientId: globalStates.tempUuid,
+    //     timestamp: getTimestampInt()
+    // };
+}
