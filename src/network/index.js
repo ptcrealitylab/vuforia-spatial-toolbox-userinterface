@@ -1802,7 +1802,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
             // post node to server
             let object = realityEditor.getObject(msgContent.object);
-            realityEditor.network.postNewNode(object.ip, msgContent.object, msgContent.frame, nodeKey, newNode);
+            realityEditor.network.postNewNode(object.ip, msgContent.object, msgContent.frame, nodeKey, newNode, function(response) {
+                // node data from server, taken from template (e.g. invisible status)
+                console.log('postNewNode response: ', response);
+
+                if (response.node) {
+                    let serverNode = JSON.parse(response.node);
+                    let thisNode = object.frames[msgContent.frame].nodes[nodeKey];
+                    for (let key in serverNode) {
+                        thisNode[key] = serverNode[key];
+                    }
+                }
+            });
         }
     }
 
@@ -2566,11 +2577,13 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
  * @param {string} nodeKey
  * @param {Node} thisNode
  */
-realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, thisNode) {
+realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, thisNode, callback) {
     thisNode.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode', thisNode, function (err) {
+    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode', thisNode, function (err, response) {
         if (err) {
             console.log('postNewNode error:', err);
+        } else if (callback) {
+            callback(response);
         }
     });
 
