@@ -3103,3 +3103,16 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
         }
     })
 };
+
+realityEditor.network.postSpatialLoyalty = function(objectKey, frameKey, _nodeKey, loyaltyString) {
+    let thisObject = realityEditor.getObject(objectKey);
+    var urlEndpoint = 'http://' + thisObject.ip + ':' + realityEditor.network.getPort(thisObject) + '/object/' + objectKey + "/frame/" + frameKey + "/spatialLoyalty/";
+    var content = {
+        spatialLoyalty: loyaltyString,
+        lastEditor: globalStates.tempUuid
+    };
+    this.postData(urlEndpoint, content, function (err, response) {
+        console.log('set loyalty to ' + loyaltyString + ' on server');
+        console.log(err, response);
+    });
+};

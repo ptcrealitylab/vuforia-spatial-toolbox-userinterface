@@ -103,6 +103,12 @@ createNameSpace("realityEditor.sceneGraph");
 
         if (typeof linkedFrame !== 'undefined') {
             sceneNodeFrame.linkedVehicle = linkedFrame;
+            
+            if (typeof linkedFrame.spatialLoyalty !== 'undefined' && linkedFrame.spatialLoyalty !== 'default') {
+                setTimeout(function() {
+                    changeParent(sceneNodeFrame, linkedFrame.spatialLoyalty, false);
+                }, 100); // give time for all nodes to be created in scene graph
+            }
         }
 
         if (typeof initialLocalMatrix !== 'undefined') {
@@ -398,7 +404,10 @@ createNameSpace("realityEditor.sceneGraph");
 
         let vehicle = realityEditor.getVehicle(objectKey, frameKey, nodeKey);
         if (vehicle) {
-            vehicle.spatialLoyalty = loyaltyString;
+            if (vehicle.spatialLoyalty === loyaltyString) {
+                console.log('spatialLoyalty is already set to ' + loyaltyString);
+                return;
+            }
             let vehicleSceneNode = realityEditor.sceneGraph.getSceneNodeById(vehicle.uuid);
 
             // get newParentId from loyaltyString
@@ -411,10 +420,14 @@ createNameSpace("realityEditor.sceneGraph");
                 newParentId = realityEditor.network.availableFrames.getBestObjectInfoForFrame(realityEditor.getFrame(objectKey, frameKey).src);
             }
 
+            vehicle.spatialLoyalty = newParentId;
+
             if (newParentId && vehicleSceneNode) {
                 // using changeParent instead of setParent automatically adds to rotateX node inside groundPlane
                 changeParent(vehicleSceneNode, newParentId, true);
             }
+            
+            realityEditor.network.postSpatialLoyalty(objectKey, frameKey, nodeKey, newParentId);
         }
     }
 
@@ -467,6 +480,11 @@ createNameSpace("realityEditor.sceneGraph");
         let parentNode = getSceneNodeById(newParentId);
         if (!parentNode) {
             console.warn('can\'t find the parent SceneNode to add this to');
+            return;
+        }
+        if (parentNode === sceneNode.parent) {
+            console.warn('ignore changeParent (same parent as current)');
+            return;
         }
         // check if the parent needs all of its children to be added to a rotateX node inside of it instead
         parentNode = getNodeOrRotateXChild(parentNode);
