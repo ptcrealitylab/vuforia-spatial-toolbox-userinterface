@@ -1889,6 +1889,26 @@ realityEditor.network.onInternalPostMessage = function (e) {
             globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
         }
     }
+    
+    if (typeof msgContent.createTool !== 'undefined'){
+        
+        console.log('New Create Tool message! Create a new tool');
+        
+        let toolData = msgContent.createTool.toolData;
+        
+        let touchPosition = {
+            x: window.innerWidth/2,
+            y: window.innerHeight/2
+        };
+        
+        let addedElement = realityEditor.gui.pocket.createFrame(toolData.type, undefined, undefined, undefined, undefined, touchPosition.x, touchPosition.y, true);
+        
+        realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid);
+        
+        setTimeout(function () {
+            realityEditor.network.postVehiclePosition(addedElement);
+        }, 1000);
+    }
 
     if (typeof msgContent.errorNotification !== 'undefined') {
         let errorMessageText = msgContent.errorNotification;
