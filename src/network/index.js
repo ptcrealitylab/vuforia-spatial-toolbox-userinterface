@@ -258,8 +258,18 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     let isImageTarget = !thisObject.isWorldObject && !thisObject.isAnchor;
     realityEditor.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
 
+    thisObject.unpinnedFrameKeys = {};
+    thisObject.visibleUnpinnedFrames = {};
+
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+        
+        // skip unpinned frames, we will delete these from the object tree
+        // we can specifically ask for them later
+        if (typeof thisFrame.pinned !== 'undefined' && !thisFrame.pinned) {
+            thisObject.unpinnedFrameKeys[frameKey] = true;
+            continue;
+        }
 
         // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
         thisFrame.screenZ = 1000;
@@ -322,6 +332,11 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         // TODO: invert dependency
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
     }
+
+    Object.keys(thisObject.unpinnedFrameKeys).forEach(function(frameKey) {
+        console.log('deleted unpinned frame (for now): ' + frameKey);
+        delete thisObject.frames[frameKey];
+    });
 
     if (!thisObject.protocol) {
         thisObject.protocol = "R0";
@@ -1912,6 +1927,34 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
         if (globalDOMCache["iframe" + msgContent.frame]) {
             globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
+        }
+    }
+
+    if (typeof msgContent.setPinned !== "undefined") {
+        realityEditor.network.setPinned(msgContent.object, msgContent.frame, msgContent.setPinned);
+    }
+};
+
+realityEditor.network.setPinned = function(objectKey, frameKey, isPinned) {
+    let object = realityEditor.getObject(objectKey);
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+
+    if (object && frame) {
+        if (isPinned !== frame.pinned) {
+            frame.pinned = isPinned;
+
+            let port = realityEditor.network.getPort(object);
+            var urlEndpoint = 'http://' + object.ip + ':' + port + '/object/' + objectKey + '/frame/' + frameKey + '/pinned/';
+            let content = {
+                isPinned: isPinned
+            };
+            this.postData(urlEndpoint, content, function(err, _response) {
+                if (err) {
+                    console.warn('error posting to ' + urlEndpoint, err);
+                } else {
+                    console.log('successfully posted to ' + urlEndpoint);
+                }
+            })
         }
     }
 };
