@@ -2891,6 +2891,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     if (globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading) {
         delete globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading;
         realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
+    } else {
+        realityEditor.network.callbackHandler.triggerCallbacks('elementLoaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     }
 
     // this is used so we can render a placeholder until it loads
