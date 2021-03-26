@@ -412,12 +412,25 @@ createNameSpace("realityEditor.sceneGraph");
 
             // get newParentId from loyaltyString
             let newParentId = null;
+            let alreadyLoyal = false;
             if (loyaltyString === 'world') {
                 newParentId = realityEditor.worldObjects.getBestWorldObject().objectId;
+                // let thatParent = getNodeOrRotateXChild(realityEditor.sceneGraph.getSceneNodeById(newParentId));
+                if (realityEditor.getObject(vehicle.objectId).isWorldObject) {
+                    alreadyLoyal = true;
+                }
             } else if (loyaltyString === 'groundplane') {
                 newParentId = NAMES.GROUNDPLANE;
             } else if (loyaltyString === 'object') {
                 newParentId = realityEditor.network.availableFrames.getBestObjectInfoForFrame(realityEditor.getFrame(objectKey, frameKey).src);
+                if (vehicle.objectId === newParentId) {
+                    alreadyLoyal = true;
+                }
+            }
+
+            if (alreadyLoyal) {
+                console.log('this sceneNode is already loyal to: ' + loyaltyString);
+                return;
             }
 
             vehicle.spatialLoyalty = newParentId;
