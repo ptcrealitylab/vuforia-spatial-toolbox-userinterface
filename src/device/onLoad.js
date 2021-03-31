@@ -203,6 +203,7 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
+    realityEditor.network.search.initService();
     realityEditor.sceneGraph.initService();
     realityEditor.gui.glRenderer.initService();
 

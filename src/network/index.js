@@ -258,85 +258,18 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     let isImageTarget = !thisObject.isWorldObject && !thisObject.isAnchor;
     realityEditor.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
 
-    thisObject.unpinnedFrameKeys = {};
-    thisObject.visibleUnpinnedFrames = {};
+    // thisObject.unpinnedFrameKeys = {};
+    // thisObject.visibleUnpinnedFrames = {};
 
     for (let frameKey in objects[objectKey].frames) {
         var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-        
-        // skip unpinned frames, we will delete these from the object tree
-        // we can specifically ask for them later
-        if (typeof thisFrame.pinned !== 'undefined' && !thisFrame.pinned) {
-            thisObject.unpinnedFrameKeys[frameKey] = true;
-            continue;
-        }
-
-        // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
-        thisFrame.screenZ = 1000;
-        thisFrame.fullScreen = false;
-        thisFrame.sendMatrix = false;
-        thisFrame.sendMatrices = {
-            model: false,
-            view: false,
-            modelView : false,
-            devicePose : false,
-            groundPlane : false,
-            allObjects : false
-        };
-        thisFrame.sendScreenPosition = false;
-        thisFrame.sendAcceleration = false;
-        thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
-        thisFrame.visible = false;
-        thisFrame.objectId = objectKey;
-
-        if (typeof thisFrame.developer === 'undefined') {
-            thisFrame.developer = true;
-        }
-
-        var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
-
-        if (positionData.matrix === null || typeof positionData.matrix !== "object") {
-            positionData.matrix = [];
-        }
-
-        realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
-
-        for (let nodeKey in objects[objectKey].frames[frameKey].nodes) {
-            var thisNode = objects[objectKey].frames[frameKey].nodes[nodeKey];
-            if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
-                thisNode.matrix = [];
-            }
-
-            thisNode.objectId = objectKey;
-            thisNode.frameId = frameKey;
-            thisNode.loaded = false;
-            thisNode.visible = false;
-
-            if (typeof thisNode.publicData !== 'undefined') {
-                if (!publicDataCache.hasOwnProperty(frameKey)) {
-                    publicDataCache[frameKey] = {};
-                }
-                publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
-            }
-
-            if (thisNode.type === "logic") {
-                thisNode.guiState = new LogicGUIState();
-                let container = document.getElementById('craftingBoard');
-                thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, thisObject.uuid);
-                //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
-            }
-
-            realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
-        }
-        
-        // TODO: invert dependency
-        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+        realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, thisFrame);
     }
 
-    Object.keys(thisObject.unpinnedFrameKeys).forEach(function(frameKey) {
-        console.log('deleted unpinned frame (for now): ' + frameKey);
-        delete thisObject.frames[frameKey];
-    });
+    // Object.keys(thisObject.unpinnedFrameKeys).forEach(function(frameKey) {
+    //     console.log('deleted unpinned frame (for now): ' + frameKey);
+    //     delete thisObject.frames[frameKey];
+    // });
 
     if (!thisObject.protocol) {
         thisObject.protocol = "R0";
@@ -368,6 +301,73 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     });
 };
 
+realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, thisFrame) {
+    // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
+    thisFrame.screenZ = 1000;
+    thisFrame.fullScreen = false;
+    thisFrame.sendMatrix = false;
+    thisFrame.sendMatrices = {
+        model: false,
+        view: false,
+        modelView : false,
+        devicePose : false,
+        groundPlane : false,
+        allObjects : false
+    };
+    thisFrame.sendScreenPosition = false;
+    thisFrame.sendAcceleration = false;
+    thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
+    thisFrame.visible = false;
+    thisFrame.objectId = objectKey;
+
+    if (typeof thisFrame.developer === 'undefined') {
+        thisFrame.developer = true;
+    }
+
+    var positionData = realityEditor.gui.ar.positioning.getPositionData(thisFrame);
+
+    if (positionData.matrix === null || typeof positionData.matrix !== "object") {
+        positionData.matrix = [];
+    }
+
+    realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+
+    for (let nodeKey in thisFrame.nodes) {
+        var thisNode = thisFrame.nodes[nodeKey];
+        realityEditor.network.initializeDownloadedNode(objectKey, frameKey, nodeKey, thisNode);
+    }
+
+    // TODO: invert dependency
+    realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+};
+
+realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, nodeKey, thisNode) {
+    if (thisNode.matrix === null || typeof thisNode.matrix !== "object") {
+        thisNode.matrix = [];
+    }
+
+    thisNode.objectId = objectKey;
+    thisNode.frameId = frameKey;
+    thisNode.loaded = false;
+    thisNode.visible = false;
+
+    if (typeof thisNode.publicData !== 'undefined') {
+        if (!publicDataCache.hasOwnProperty(frameKey)) {
+            publicDataCache[frameKey] = {};
+        }
+        publicDataCache[frameKey][thisNode.name] = thisNode.publicData;
+    }
+
+    if (thisNode.type === "logic") {
+        thisNode.guiState = new LogicGUIState();
+        let container = document.getElementById('craftingBoard');
+        thisNode.grid = new realityEditor.gui.crafting.grid.Grid(container.clientWidth - realityEditor.gui.crafting.menuBarWidth, container.clientHeight, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, nodeKey);
+        //_this.realityEditor.gui.crafting.utilities.convertLinksFromServer(thisObject);
+    }
+
+    realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, thisNode, thisNode.matrix);
+};
+
 /**
  * Looks at an object heartbeat, and if the object hasn't been added yet, downloads it and initializes all appropriate state
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
@@ -376,7 +376,9 @@ realityEditor.network.addHeartbeatObject = function (beat) {
     if (beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
-            this.getData(beat.id, null, null, 'http://' + beat.ip + ':' + realityEditor.network.getPort(beat) + '/object/' + beat.id, function (objectKey, frameKey, nodeKey, msg) {
+            let baseUrl = 'http://' + beat.ip + ':' + realityEditor.network.getPort(beat) + '/object/' + beat.id;
+            let queryParams = '?excludeUnpinned=true';
+            this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey) {
                     // add the object
                     objects[objectKey] = msg;
@@ -3142,4 +3144,22 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
             console.log('successfully posted to ' + urlEndpoint);
         }
     })
+};
+
+realityEditor.network.searchAndDownloadUnpinnedFrames = function (ip, port) {
+    realityEditor.network.search.searchFrames(ip, port, {src: 'communication'}, function(matchingFrame) {
+        let object = realityEditor.getObject(matchingFrame.objectId);
+        if (!object) { return; }
+        
+        if (typeof object.unpinnedFrameKeys !== 'undefined' && typeof object.frames[matchingFrame.uuid] === 'undefined') {
+            let index = object.unpinnedFrameKeys.indexOf(matchingFrame.uuid);
+            if (index > -1) {
+                object.frames[matchingFrame.uuid] = matchingFrame;
+                realityEditor.network.initializeDownloadedFrame(matchingFrame.objectId, matchingFrame.uuid, matchingFrame);
+
+                // it's still unpinned, but it's already downloaded so it can be removed from this list
+                object.unpinnedFrameKeys.splice(index, 1);
+            }
+        }
+    });
 };
