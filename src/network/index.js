@@ -1538,6 +1538,14 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
         }
     }
+    
+    if (typeof msgContent.getIsExclusiveFullScreenOccupied !== "undefined") {
+        if (globalDOMCache['iframe' + msgContent.frame]) {
+            globalDOMCache['iframe' + msgContent.frame].contentWindow.postMessage(JSON.stringify({
+                fullScreenOccupiedStatus: realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames().length > 0
+            }), '*');
+        }
+    }
 
     if (typeof msgContent.createNode !== "undefined") {
         
