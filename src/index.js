@@ -113,6 +113,7 @@ var realityEditor = realityEditor || {
         moveabilityCorners: {},
         pocket: {},
         screenExtension : {},
+        threejsScene: {},
         utilities: {}
     },
     network: {
