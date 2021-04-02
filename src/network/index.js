@@ -1425,6 +1425,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
             
             globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
+
+            globalDOMCache['object' + tempThisObject.uuid].style.zIndex = zIndex;
             
             if (realityEditor.device.editingState.frame === msgContent.frame) {
                 realityEditor.device.resetEditingState();
@@ -1512,6 +1514,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
 
             globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
+
+            globalDOMCache['object' + tempThisObject.uuid].style.zIndex = zIndex;
 
             // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
             let object = realityEditor.getObject(msgContent.object);

@@ -2129,6 +2129,8 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
 
     globalDOMCache['iframe' + frame.uuid].classList.remove('webGlFrame');
 
+    globalDOMCache['object' + frame.uuid].style.zIndex = '';
+
     var containingObject = realityEditor.getObject(objectKey);
     if (!containingObject.objectVisible) {
         containingObject.objectVisible = true;
