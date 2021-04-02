@@ -568,6 +568,7 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
 
     // needs to be flipped in some environments with different camera systems
     if (realityEditor.device.environment.isCameraOrientationFlipped()) {
+        initialVehicleMatrix[0] *= -1;
         initialVehicleMatrix[5] *= -1;
         initialVehicleMatrix[10] *= -1;
     }
