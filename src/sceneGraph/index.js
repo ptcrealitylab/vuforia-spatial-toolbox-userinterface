@@ -335,10 +335,13 @@ createNameSpace("realityEditor.sceneGraph");
         return finalCSSMatricesWithoutTransform[activeKey];
     }
 
-    function updatePositionData(activeKey) {
+    function updatePositionData(activeKey, dontBroadcastNext) {
         let sceneNode = getSceneNodeById(activeKey);
         if (sceneNode) {
             sceneNode.flagForRecompute();
+            if (typeof dontBroadcastNext !== 'undefined') {
+                sceneNode.dontBroadcastNext = dontBroadcastNext;
+            }
         }
     }
 

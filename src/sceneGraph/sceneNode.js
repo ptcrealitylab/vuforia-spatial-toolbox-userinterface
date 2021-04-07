@@ -42,6 +42,9 @@ createNameSpace("realityEditor.sceneGraph");
 
         // if a vehicle is linked, updating the sceneNode position will set the linkedVehicle position?
         this.linkedVehicle = null;
+        
+        // this can be set true when sceneGraph is updated as a result of remote activity
+        this.dontBroadcastNext = false;
     }
 
     /**
@@ -175,7 +178,8 @@ createNameSpace("realityEditor.sceneGraph");
         utils.copyMatrixInPlace(matrix, this.localMatrix);
 
         if (this.linkedVehicle) {
-            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.linkedVehicle, matrix);
+            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.linkedVehicle, matrix, this.dontBroadcastNext);
+            this.dontBroadcastNext = false;
         }
 
         // flagging this will eventually set the other necessary flags for this and parent/children nodes
