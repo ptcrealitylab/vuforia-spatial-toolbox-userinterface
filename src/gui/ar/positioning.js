@@ -314,7 +314,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
  * @param {Array.<number>} newMatrixValue
  * @todo: ensure fully implemented
  */
-realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue) {
+realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue, dontBroadcast) {
 
     if (realityEditor.isVehicleAFrame(activeVehicle)) {
         realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.ar.matrix);
@@ -322,11 +322,11 @@ realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle,
         realityEditor.gui.ar.utilities.copyMatrixInPlace(newMatrixValue, activeVehicle.matrix);
     }
 
-    // if (shouldBroadcastUpdate) {
-    //     var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-    //     var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
-    //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
-    // }
+    if (!dontBroadcast) {
+        var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+        var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
+        realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
+    }
 };
 
 /**
