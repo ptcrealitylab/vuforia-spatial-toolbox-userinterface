@@ -182,7 +182,7 @@ createNameSpace('realityEditor.app.callbacks');
         // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
             if (visibleObjects.hasOwnProperty(worldObjectKey)) {
-                console.log('world object ' + worldObjectKey + ' detected... relocalize');
+                //console.log('world object ' + worldObjectKey + ' detected... relocalize');
                 realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
                 delete visibleObjects[worldObjectKey];
             }
