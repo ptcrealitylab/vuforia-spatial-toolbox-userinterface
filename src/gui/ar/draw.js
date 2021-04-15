@@ -600,7 +600,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // then tap every 0.5 seconds if you're looking at an image/object target
                 // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {
-                    realityEditor.app.tap();
+                    if (!globalStates.freezeButtonState) {
+                        realityEditor.app.tap();
+                    }
                 }, delay);
                 
                 // keep track of the the tap delay used, so that you can adjust the interval when switching between world and image targets

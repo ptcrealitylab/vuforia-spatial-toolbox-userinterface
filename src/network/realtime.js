@@ -219,7 +219,6 @@ createNameSpace("realityEditor.network.realtime");
 
         addServerSocketMessageListener(serverAddress, '/batchedUpdate', function(msg) {
 
-
             var msgContent = JSON.parse(msg);
             if (typeof msgContent.batchedUpdates === 'undefined') { return; }
             
