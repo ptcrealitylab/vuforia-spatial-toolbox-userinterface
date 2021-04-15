@@ -77,7 +77,7 @@ realityEditor.network.getPort = function(object) {
 realityEditor.network.getPortByIp = function(ip) {
     let serverPort = defaultHttpPort;
     
-    let thisObject = null
+    let thisObject = null;
     for(let key in objects){
         if(ip === objects[key].ip) {
             thisObject = objects[key];
@@ -3184,7 +3184,25 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
         } else {
             console.log('successfully posted to ' + urlEndpoint);
         }
-    })
+    });
+};
+
+realityEditor.network.postCameraPosition = function(ip, worldId, matrix, clientId) {
+    let port = realityEditor.network.getPort(objects[worldId]);
+    var urlEndpoint = 'http://' + ip + ':' + port + '/spatial/cameraMatrix';
+    let content = {
+        matrix: matrix,
+        clientId: clientId,
+        worldId: worldId,
+        lastEditor: globalStates.tempUuid
+    };
+    this.postData(urlEndpoint, content, function(err, _response) {
+        if (err) {
+            console.warn('error posting to ' + urlEndpoint, err);
+        } else {
+            console.log('successfully posted to ' + urlEndpoint);
+        }
+    });
 };
 
 realityEditor.network.searchAndDownloadUnpinnedFrames = function (ip, port) {

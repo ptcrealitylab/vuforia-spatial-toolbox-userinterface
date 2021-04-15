@@ -130,7 +130,8 @@ var realityEditor = realityEditor || {
     },
     envelopeManager: {},
     moduleCallbacks: {},
-    worldObjects: {}
+    worldObjects: {},
+    humanObjects: {}
 };
 
 /**

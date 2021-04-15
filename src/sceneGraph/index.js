@@ -145,6 +145,11 @@ createNameSpace("realityEditor.sceneGraph");
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix);
+
+        // if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
+        //     var keys = realityEditor.getKeysFromVehicle(frame);
+        //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
+        // }
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {
