@@ -282,6 +282,9 @@ createNameSpace("realityEditor.worldObjects");
             
             if (worldCorrections[objectKey] === null) {
                 console.log('set origin of ' + objectKey + ' for the first time');
+                localizedWithinWorldCallbacks.forEach(function(callback) {
+                    callback(objectKey);
+                });
                 realityEditor.app.tap();
                 setTimeout(function() {
                     realityEditor.app.tap();
@@ -294,6 +297,11 @@ createNameSpace("realityEditor.worldObjects");
             
             worldCorrections[objectKey] = originMatrix;
         }
+    }
+
+    let localizedWithinWorldCallbacks = [];
+    function onLocalizedWithinWorld(callback) {
+        localizedWithinWorldCallbacks.push(callback);
     }
 
     /**
@@ -378,5 +386,6 @@ createNameSpace("realityEditor.worldObjects");
     exports.getWorldObjectsByIP = getWorldObjectsByIP;
     exports.getDistanceToEachWorld = getDistanceToEachWorld;
     exports.checkIfFirstLocalization = checkIfFirstLocalization;
+    exports.onLocalizedWithinWorld = onLocalizedWithinWorld;
 
 }(realityEditor.worldObjects));

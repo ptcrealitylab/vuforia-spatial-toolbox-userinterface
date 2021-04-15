@@ -61,6 +61,8 @@ var boundListeners = {};
 
 var TEMP_DISABLE_MEMORIES = false;
 
+var DEBUG_CLIENT_NAME = '_HUMAN_BenReynolds';
+
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
 /**********************************************************************************************************************
  ******************************************** global variables  *******************************************************
