@@ -148,12 +148,19 @@ createNameSpace("realityEditor.network.availableFrames");
         });
         
         return validObjectKeys.map( function(objectKey) {
-            var distance = realityEditor.sceneGraph.getDistanceToCamera(objectKey); //realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
+            var distance = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
             var isWorldObject = false;
             var object = realityEditor.getObject(objectKey);
             if (object && object.isWorldObject) {
-                distance = realityEditor.gui.ar.MAX_DISTANCE; // world objects are essentially infinitely far away
                 isWorldObject = true;
+                if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
+                    // WORLD_local is "infinitely" far away, so that it is prioritized last
+                    distance = Number.MAX_SAFE_INTEGER;
+                } else {
+                    // world objects are essentially infinitely far away (10 million meters) compared to regular objects
+                    // so that regular objects are prioritized over them
+                    distance = realityEditor.gui.ar.MAX_DISTANCE + distance;
+                }
             }
             return {
                 objectKey: objectKey,
@@ -162,11 +169,7 @@ createNameSpace("realityEditor.network.availableFrames");
                 timestamp: object.timestamp || 0
             };
         }).sort(function (a, b) {
-            var worldObjectTimeDifference = 0; // todo: remove this, uses distance to world origin instead
-            if (a.isWorldObject && b.isWorldObject) {
-                worldObjectTimeDifference = b.timestamp - a.timestamp; // this sorts newer world objects above older ones (or ones without timestamp property)
-            }
-            return (a.distance - b.distance) + worldObjectTimeDifference;
+            return (a.distance - b.distance);
         });
     }
 
