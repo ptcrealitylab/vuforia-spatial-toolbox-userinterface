@@ -111,6 +111,7 @@ var realityEditor = realityEditor || {
         menus:{},
         modal: {},
         moveabilityCorners: {},
+        navigation: {},
         pocket: {},
         screenExtension : {},
         threejsScene: {},
