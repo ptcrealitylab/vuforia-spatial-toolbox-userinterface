@@ -1,3 +1,5 @@
+/* eslint-env worker */
+
 importScripts('../../thirdPartyCode/three/three.min.js');
 importScripts('../../thirdPartyCode/three/GLTFLoader.js');
 importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
@@ -18,7 +20,7 @@ onmessage = function(evt) {
 }
 
 const createNavmeshFromFile = (fileName) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     gltfLoader.load(fileName, (gltf) => {
       if (gltf.scene.children[0].geometry) {
         resolve(createNavmesh(gltf.scene.children[0].geometry, heatmapResolution));
@@ -135,16 +137,16 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     regionMap.push(regionMapZArray);
   }
   
-  // Helper to convert from navmesh position to 2D position
-  const indexToPos = (x,z) => {
-    return [((x) / xLength) * (maxX - minX) + minX, ((z) / zLength) * (maxZ - minZ) + minZ];
-  }
-  
-  // Helper to convert from navmesh position to 2D position
-  const indexToVec2 = (x,z) => {
-    const pos = indexToPos(x,z);
-    return new THREE.Vector2(pos[0], pos[1]);
-  }
+  // // Helper to convert from navmesh position to 2D position
+  // const indexToPos = (x,z) => {
+  //   return [((x) / xLength) * (maxX - minX) + minX, ((z) / zLength) * (maxZ - minZ) + minZ];
+  // }
+  // 
+  // // Helper to convert from navmesh position to 2D position
+  // const indexToVec2 = (x,z) => {
+  //   const pos = indexToPos(x,z);
+  //   return new THREE.Vector2(pos[0], pos[1]);
+  // }
   
   const indexedFaceAttribute = geometry.index;
   const positionAttribute = geometry.attributes.position;

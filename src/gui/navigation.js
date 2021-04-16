@@ -96,22 +96,22 @@ createNameSpace("realityEditor.gui.navigation");
         }
     }
     
-    const relativePosToWorldPos = (pos, sceneNode) => {
-        const worldMatrix = sceneNode.worldMatrix;
-        const relativePositionMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        relativePositionMatrix[12] = pos.x;
-        relativePositionMatrix[13] = pos.y;
-        relativePositionMatrix[14] = pos.z;
-        const worldPositionMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        realityEditor.gui.ar.utilities.multiplyMatrix(worldMatrix, relativePositionMatrix, worldPositionMatrix);
-        return matrixToPos(worldPositionMatrix);
-    }
+    // const relativePosToWorldPos = (pos, sceneNode) => {
+    //     const worldMatrix = sceneNode.worldMatrix;
+    //     const relativePositionMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //     relativePositionMatrix[12] = pos.x;
+    //     relativePositionMatrix[13] = pos.y;
+    //     relativePositionMatrix[14] = pos.z;
+    //     const worldPositionMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
+    //     realityEditor.gui.ar.utilities.multiplyMatrix(worldMatrix, relativePositionMatrix, worldPositionMatrix);
+    //     return matrixToPos(worldPositionMatrix);
+    // }
     
     const indexToPos = (navmesh, index) => {
       const map = navmesh.map;
       const minX = navmesh.minX;
       const maxX = navmesh.maxX;
-      const minY = navmesh.minY;
+      // const minY = navmesh.minY;
       const minZ = navmesh.minZ;
       const maxZ = navmesh.maxZ;
       const floorOffset = navmesh.floorOffset;
@@ -291,4 +291,6 @@ createNameSpace("realityEditor.gui.navigation");
         }
         return pathCopy;
     }
+    
+    exports.findPath = findPath;
 })(realityEditor.gui.navigation);
