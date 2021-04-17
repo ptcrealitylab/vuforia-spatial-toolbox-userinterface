@@ -173,6 +173,10 @@ createNameSpace("realityEditor.sceneGraph");
     function getSceneNodeById(id) {
         return sceneGraph[id];
     }
+    
+    function getCameraNode() {
+        return sceneGraph[NAMES.CAMERA];
+    }
 
     function calculateFinalMatrices(visibleObjectIds) {
         // ensure all worldMatrix reflects latest localMatrix
@@ -684,6 +688,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     // TODO: can we get rid of full/direct access to sceneGraph?
     exports.getSceneNodeById = getSceneNodeById;
+    exports.getCameraNode = getCameraNode;
     exports.getVisualElement = getVisualElement;
 
     exports.getObjects = getObjects;

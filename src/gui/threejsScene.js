@@ -13,6 +13,8 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
     var rendererHeight = window.innerHeight;
     var aspectRatio = rendererWidth / rendererHeight;
     var isProjectionMatrixSet = false;
+    const animationCallbacks = [];
+    let lastFrameTime = Date.now();
 
     // for now, everything gets added to this and then this moves based on the modelview matrix of the world origin
     // todo: in future, move three.js camera instead of moving the scene
@@ -44,6 +46,24 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
         spotLight.position.set(-30, -30, 150);
         spotLight.castShadow = true;
         scene.add(spotLight);
+        
+        const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
+        const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
+        const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
+        const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
+        xBox.position.x = 15;
+        yBox.position.y = 15;
+        zBox.position.z = 15;
+        threejsContainerObj.add(originBox);
+        originBox.scale.set(10,10,10);
+        originBox.add(xBox);
+        originBox.add(yBox);
+        originBox.add(zBox);
+        // onAnimationFrame(deltaT => {
+        //   originBox.scale.x = 100 * Math.abs(Math.sin(Date.now()/2));
+        //   originBox.scale.y = 100 * Math.abs(Math.sin(Date.now()/2));
+        //   originBox.scale.z = 100 * Math.abs(Math.sin(Date.now()/2));
+        // });
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -60,8 +80,10 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
     }
 
     function renderScene() {
-        // only set the projection matrix for the camera 1 time, since it stays the same
-        if (!isProjectionMatrixSet && globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
+        const deltaTime = Date.now() - lastFrameTime; // In ms
+        lastFrameTime = Date.now();
+        
+        if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
@@ -70,6 +92,8 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
         let modelViewMatrix = null;
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject && worldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
+            // TODO: modify addToScene to addToAreaTarget and use positions relative to that
+            // This also allows for multiple containers with different mvMatrices for each area target
             modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObject.objectId);
         }
 
@@ -77,8 +101,12 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
         if (isProjectionMatrixSet && modelViewMatrix) {
 
             // children of the threejsContainerObject can be animated here
-            // mesh.rotation.x += 0.005; // slow rotation, for aesthetic effect
-            // mesh.rotation.y += 0.01;
+            // mesh.rotation.x += 0.25 * deltaT / 1000; // slow rotation, for aesthetic effect
+            // mesh.rotation.y += 0.5 * deltaT / 1000;
+            
+            animationCallbacks.forEach(callback => {
+                callback(deltaTime);
+            });
 
             // update model view matrix and render the scene
             setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
@@ -86,6 +114,24 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
         }
         
         requestAnimationFrame(renderScene);
+    }
+    
+    function addToScene(obj) {
+      threejsContainerObj.add(obj);
+    }
+    
+    function removeFromScene(obj) {
+      threejsContainerObj.remove(obj);
+    }
+    
+    function onAnimationFrame(callback) {
+      animationCallbacks.push(callback);
+    }
+    
+    function removeAnimationCallback(callback) {
+      if (animationCallbacks.includes(callback)) {
+        animationCallbacks.splice(animationCallbacks.indexOf(callback), 1);
+      }
     }
     
     /* For my example area target:
@@ -137,4 +183,9 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
 
     exports.initService = initService;
     exports.addGltfToScene = addGltfToScene;
+    exports.onAnimationFrame = onAnimationFrame;
+    exports.removeAnimationCallback = removeAnimationCallback;
+    exports.addToScene = addToScene;
+    exports.removeFromScene = removeFromScene;
+    exports.THREE = THREE;
 })(realityEditor.gui.threejsScene);
