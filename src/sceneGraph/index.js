@@ -210,6 +210,12 @@ createNameSpace("realityEditor.sceneGraph");
         visibleObjectIds.forEach( function(objectKey) {
             let object = realityEditor.getObject(objectKey);
             let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
+            
+            // if (objectSceneNode.tags[TAGS.OBJECT] && objectSceneNode.id.indexOf('HUMAN') > -1) {
+            //     console.log(objectSceneNode.localMatrix.toString());
+            //     console.log(objectSceneNode.worldMatrix.toString());
+            //     console.log('');
+            // }
 
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);

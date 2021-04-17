@@ -48,7 +48,7 @@ createNameSpace("realityEditor.humanObjects");
 
         // when an object is detected, check if we need to add a world object for its server
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
-            if (object.isHumanObject) {
+            if (object.type === 'human') {
                 // add to the internal world objects
                 if (typeof humanObjects[objectKey] === 'undefined') {
                     humanObjects[objectKey] = object;
@@ -69,10 +69,60 @@ createNameSpace("realityEditor.humanObjects");
             let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
             if (!humanSceneNode || !cameraNode) { return; }
 
+            /*
             // humanSceneNode.setLocalMatrix(cameraNode.localMatrix);
             realityEditor.sceneGraph.moveSceneNodeToCamera(persistentClientId);
             
-            console.log(realityEditor.sceneGraph.getWorldPosition(persistentClientId));
+            // console.log(realityEditor.sceneGraph.getWorldPosition(persistentClientId));
+            */
+
+            // place it in front of the camera, facing towards the camera
+            let distanceInFrontOfCamera = 100;
+
+            let initialVehicleMatrix = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
+
+            // let initialVehicleMatrix = [
+            //     -1, 0, 0, 0,
+            //     0, 1, 0, 0,
+            //     0, 0, -1, 0,
+            //     0, 0, -1 * distanceInFrontOfCamera, 1
+            // ];
+            //
+            // let additionalRotation = realityEditor.device.environment.getInitialPocketToolRotation();
+            // if (additionalRotation) {
+            //     let temp = [];
+            //     realityEditor.gui.ar.utilities.multiplyMatrix(additionalRotation, initialVehicleMatrix, temp);
+            //     initialVehicleMatrix = temp;
+            // }
+            //
+            // // needs to be flipped in some environments with different camera systems
+            // if (realityEditor.device.environment.isCameraOrientationFlipped()) {
+            //     initialVehicleMatrix[0] *= -1;
+            //     initialVehicleMatrix[5] *= -1;
+            //     initialVehicleMatrix[10] *= -1;
+            // }
+
+            humanSceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+            humanSceneNode.updateWorldMatrix();
+
+            let dontBroadcast = false;
+            if (!dontBroadcast) {
+
+                // if it's an object, post object position relative to a world object
+                let worldObjectId = realityEditor.sceneGraph.getWorldId();
+                let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+                let relativeMatrix = humanSceneNode.getMatrixRelativeTo(worldNode);
+                // realityEditor.network.postObjectPosition(humanObject.ip, sceneNode.id, relativeMatrix, worldObjectId);
+
+                realityEditor.network.realtime.broadcastUpdate(persistentClientId, null, null, 'matrix', relativeMatrix);
+
+                // realityEditor.network.realtime.broadcastUpdate(persistentClientId, null, null, 'matrix', humanSceneNode.localMatrix);
+            }
         });
     }
     
