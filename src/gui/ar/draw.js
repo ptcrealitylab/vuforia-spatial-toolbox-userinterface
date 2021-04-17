@@ -1579,7 +1579,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
     var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
-    let distanceInFrontOfCamera = 400;
+    let distanceInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier;
     realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeKey, distanceInFrontOfCamera);
 
     // TODO: automatically recognize when CSS matrix is out of date, so that we don't need to manually recalculate here
