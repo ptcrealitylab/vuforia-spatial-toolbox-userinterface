@@ -324,7 +324,7 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
                 return false;
             }
         }
-        return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey);
+        return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey); // && object[objectKey].type !== 'human'; // TODO: ben undo this, temporary fix for human objects but eventually tools should attach to them!
     });
 
     // if no visible non-world objects, get the closest non-local-world object
