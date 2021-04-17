@@ -271,7 +271,10 @@ realityEditor.gui.spatial.draw.whereWasP5 = function (workObject,p){
         for (let i = 1; i < sequence.length; i++) {
             // p.vertex(sequence[i].m[0], sequence[i].m[1],sequence[i].m[2]);
             // realityEditor.gui.spatial.draw.drawLineP5(p, null, sequence[i-1].m,sequence[i].m,2, 2,[0,255,255, 1],[0,255,255, 1], "solid", 2, null);
-            realityEditor.gui.spatial.draw.drawLineP5(p, workObject, sequence[i-1].m,sequence[i].m ,2, 2,[0,255,255, 1],[0,255,255, 1], "solid", -0.1, null);
+            
+            let lineWidth = 2 * realityEditor.device.environment.getLineWidthMultiplier();
+            
+            realityEditor.gui.spatial.draw.drawLineP5(p, workObject, sequence[i-1].m,sequence[i].m ,lineWidth, lineWidth,[0,255,255, 1],[0,255,255, 1], "solid", -0.1, null);
 
         }
         /*  p.endShape();
