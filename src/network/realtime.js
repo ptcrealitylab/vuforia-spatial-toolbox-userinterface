@@ -111,7 +111,7 @@ createNameSpace("realityEditor.network.realtime");
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(object, msgContent.propertyPath, msgContent.newValue);
-        console.log('set object (' + msgContent.objectKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set object (' + msgContent.objectKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
 
         if (msgContent.propertyPath === 'matrix') {
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(msgContent.objectKey);
@@ -216,6 +216,11 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} serverAddress
      */
     function addServerUpdateListener(serverAddress) {
+        
+        // addServerSocketMessageListener(serverAddress, '/spatial/graph', function(msg) {
+        //     // this will be triggered anytime the spatial graph updates
+        //     console.log('spatial graph updated on server', msg);
+        // });
 
         addServerSocketMessageListener(serverAddress, '/batchedUpdate', function(msg) {
 
