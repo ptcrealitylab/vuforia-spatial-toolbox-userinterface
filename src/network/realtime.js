@@ -62,6 +62,7 @@ createNameSpace("realityEditor.network.realtime");
     function loop() {
         sendBatchedUpdates();
         batchedUpdates = {};
+        // check for realtime updates
         requestAnimationFrame(loop);
     }
 
