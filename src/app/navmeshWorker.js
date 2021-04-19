@@ -122,18 +122,22 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   const zLength = Math.ceil((maxZ - minZ) * resolution); // Navmesh size
   const faceData = []; // Stores data about normal directions
   const outerHoles = []; // Stores data about areas that are part of the mesh
+  const expandedWallMap = []; // Stores data about where the walls are, expanded to prevent pathfinding along walls
   const regionMap = []; // Stores data about isolated floor sections (to eliminate tables, countertops, etc.)
   for (let x = 0; x < xLength; x++) {
     const faceDataZArray = [];
     const outerHolesZArray = [];
+    const expandedWallZArray = [];
     const regionMapZArray = [];
     for (let z = 0; z < zLength; z++) {
       faceDataZArray.push([0,0,0]); // [totalWeight, count, withinMesh]
       outerHolesZArray.push(0);
+      expandedWallZArray.push(0);
       regionMapZArray.push(0);
     }
     faceData.push(faceDataZArray);
     outerHoles.push(outerHolesZArray);
+    expandedWallMap.push(expandedWallZArray);
     regionMap.push(regionMapZArray);
   }
   
@@ -304,12 +308,49 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     }
   }
   
+  faceData.forEach((xRow, x) => {
+    xRow.forEach((value, z) => {
+      if (x-1 >= 0 && faceData[x-1][z][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (z-1 >= 0 && faceData[x][z-1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x+1 < faceData.length && faceData[x+1][z][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (z+1 < faceData[x].length && faceData[x][z+1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x-1 >= 0 && z-1 >= 0 && faceData[x-1][z-1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x+1 < faceData.length && z-1 >= 0 && faceData[x+1][z-1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x+1 < faceData.length && z+1 < faceData[x].length && faceData[x+1][z+1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x-1 >= 0 && z+1 < faceData[x].length && faceData[x-1][z+1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+    })
+  });
+  
   // Finding largest contiguous region for floor
   let regionNumber = 1; // Number of current region
   let maxRegionNumber = 0; // Number of largest region
   let maxRegionCount = 0; // Number of pixels in largest region
   const isMapped = (x,z) => {
-    return regionMap[x][z] != 0 || faceData[x][z][1] === 0;
+    return regionMap[x][z] != 0 || expandedWallMap[x][z] === 1;
   }
   for (let x = 0; x < xLength; x++) {
     for (let z = 0; z < zLength; z++) {
