@@ -16,6 +16,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+    
+    const DISPLAY_ORIGIN_BOX = false;
 
     // for now, this contains everything not attached to a specific world object
     // todo: in future, move three.js camera instead of moving the scene
@@ -85,20 +87,20 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 scene.add(group);
                 
                 // Helps visualize world object origin point for debugging
-                // if (worldObjectId != realityEditor.worldObjects.getLocalWorldId()) {
-                //     const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
-                //     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
-                //     const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
-                //     const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
-                //     xBox.position.x = 15;
-                //     yBox.position.y = 15;
-                //     zBox.position.z = 15;
-                //     group.add(originBox);
-                //     originBox.scale.set(10,10,10);
-                //     originBox.add(xBox);
-                //     originBox.add(yBox);
-                //     originBox.add(zBox);
-                // }
+                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId()) {
+                    const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
+                    const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
+                    const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
+                    const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
+                    xBox.position.x = 15;
+                    yBox.position.y = 15;
+                    zBox.position.z = 15;
+                    group.add(originBox);
+                    originBox.scale.set(10,10,10);
+                    originBox.add(xBox);
+                    originBox.add(yBox);
+                    originBox.add(zBox);
+                }
             }
             const group = worldObjectGroups[worldObjectId];
             const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
