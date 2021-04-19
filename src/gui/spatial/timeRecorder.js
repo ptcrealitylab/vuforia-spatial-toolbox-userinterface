@@ -11,8 +11,8 @@
 createNameSpace("realityEditor.gui.spatial.timeRecorder");
 
 realityEditor.gui.spatial.timeRecorder.sequences = {};
-realityEditor.gui.spatial.timeRecorder.recordingTime = 180000;
-realityEditor.gui.spatial.timeRecorder.recordingSteps = 100;
+realityEditor.gui.spatial.timeRecorder.recordingTime = 1800000; // multiplied by 10 on 4-18-21
+realityEditor.gui.spatial.timeRecorder.recordingSteps = 1000; // multiplied by 10 on 4-18-21
 realityEditor.gui.spatial.timeRecorder.sensitivity = 30.0;
 realityEditor.gui.spatial.timeRecorder.TimeSequence = function (_objectID, _toolID, _nodeID) {
     this.objectID = '';

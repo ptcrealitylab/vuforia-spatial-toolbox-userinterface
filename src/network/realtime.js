@@ -22,7 +22,7 @@ createNameSpace("realityEditor.network.realtime");
         // TODO Is this redundant code? It seems to generate the error that pops up
 
         // realtime is necessary for some environments to work
-        if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
+        if (realityEditor.device.environment.shouldCreateDesktopSocket() || realityEditor.device.environment.variables.alwaysEnableRealtime) {
             realityEditor.gui.settings.toggleStates.realtimeEnabled = true;
         }
         console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, realityEditor.gui.settings.toggleStates.realtimeEnabled);

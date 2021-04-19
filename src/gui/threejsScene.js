@@ -15,6 +15,8 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
     var isProjectionMatrixSet = false;
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
+    
+    const DISPLAY_ORIGIN_BOX = false;
 
     // for now, everything gets added to this and then this moves based on the modelview matrix of the world origin
     // todo: in future, move three.js camera instead of moving the scene
@@ -47,23 +49,25 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
         spotLight.castShadow = true;
         scene.add(spotLight);
         
-        const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
-        const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
-        const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
-        const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
-        xBox.position.x = 15;
-        yBox.position.y = 15;
-        zBox.position.z = 15;
-        threejsContainerObj.add(originBox);
-        originBox.scale.set(10,10,10);
-        originBox.add(xBox);
-        originBox.add(yBox);
-        originBox.add(zBox);
-        // onAnimationFrame(deltaT => {
-        //   originBox.scale.x = 100 * Math.abs(Math.sin(Date.now()/2));
-        //   originBox.scale.y = 100 * Math.abs(Math.sin(Date.now()/2));
-        //   originBox.scale.z = 100 * Math.abs(Math.sin(Date.now()/2));
-        // });
+        if (DISPLAY_ORIGIN_BOX) {
+            const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
+            const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
+            const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
+            const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
+            xBox.position.x = 15;
+            yBox.position.y = 15;
+            zBox.position.z = 15;
+            threejsContainerObj.add(originBox);
+            originBox.scale.set(10,10,10);
+            originBox.add(xBox);
+            originBox.add(yBox);
+            originBox.add(zBox);
+            // onAnimationFrame(deltaT => {
+            //   originBox.scale.x = 100 * Math.abs(Math.sin(Date.now()/2));
+            //   originBox.scale.y = 100 * Math.abs(Math.sin(Date.now()/2));
+            //   originBox.scale.z = 100 * Math.abs(Math.sin(Date.now()/2));
+            // });
+        }
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;

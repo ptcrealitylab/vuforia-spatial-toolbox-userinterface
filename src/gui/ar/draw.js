@@ -1615,6 +1615,14 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     pocketContainer.waitingToRender = false;
     
     realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
+
+    // realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
+
+    // setTimeout(function() {
+    //     var keys = realityEditor.getKeysFromVehicle(pocketContainer.vehicle);
+    //     var propertyPath = pocketContainer.vehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
+    //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
+    // }, 500);
 };
 
 /**
