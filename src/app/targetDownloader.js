@@ -268,7 +268,7 @@ createNameSpace("realityEditor.app.targetDownloader");
                 return;
             }
 
-            // try to download DAT
+            // try to download GLB
             realityEditor.app.downloadFile(glbAddress, moduleName + '.onTargetGLBDownloaded');
             targetDownloadStates[objectID].GLB = DownloadState.STARTED;
 
@@ -300,13 +300,18 @@ createNameSpace("realityEditor.app.targetDownloader");
         if (success) {
             console.log('successfully downloaded GLB file: ' + fileName);
             targetDownloadStates[objectID].GLB = DownloadState.SUCCEEDED;
-            navmeshWorker.postMessage({fileName, objectID});
-            
         } else {
             console.log('failed to download GLB file: ' + fileName);
             targetDownloadStates[objectID].GLB = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
+        onTargetGLBAddress(fileName, objectID);
+    }
+    
+    function onTargetGLBAddress(fileName, objectID) {
+        console.log('got GLB address');
+        navmeshWorker.postMessage({fileName, objectID});
+        realityEditor.gui.threejsScene.addOcclusionGltf(fileName, objectID);
     }
 
     /**

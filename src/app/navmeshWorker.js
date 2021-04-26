@@ -20,7 +20,7 @@ onmessage = function(evt) {
 }
 
 const createNavmeshFromFile = (fileName) => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     gltfLoader.load(fileName, (gltf) => {
       if (gltf.scene.children[0].geometry) {
         resolve(createNavmesh(gltf.scene.children[0].geometry, heatmapResolution));
@@ -29,7 +29,7 @@ const createNavmeshFromFile = (fileName) => {
         resolve(createNavmesh(mergedGeometry, heatmapResolution));
       }
     });
-  })
+  });
 }
 
 // Rasterization algorithm from http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html

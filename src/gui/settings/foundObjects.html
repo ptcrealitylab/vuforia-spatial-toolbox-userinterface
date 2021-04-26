@@ -159,6 +159,9 @@
                       <label class="objectButton uploadTargetButton">Upload Target</label>
                     </form>
                 </div>
+                <div class="occlusionText" hidden>
+                    <span>Occlusion Active</span>
+                </div>
             </div>
         </div>
     </template>
@@ -288,6 +291,8 @@
         if (isLocalized === false) { // explicitly unlocalized anchors/worlds have different text
             buttonRow.querySelector('.locateButton').innerText = 'Not Yet Seen';
         }
+        
+        buttonRow.querySelector('.occlusionText').hidden = !previousFoundObjects[objectKey].isOcclusionActive;
     }
 
     /**

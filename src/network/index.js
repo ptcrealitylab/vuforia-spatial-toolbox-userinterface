@@ -2117,7 +2117,8 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 frames: {},
                 initialized: isInitialized,
                 isAnchor: realityEditor.gui.ar.anchors.isAnchorObject(objectKey),
-                isWorld: thisObject.isWorldObject
+                isWorld: thisObject.isWorldObject,
+                isOcclusionActive: realityEditor.gui.threejsScene.isOcclusionActive(objectKey)
             };
 
             if (thisObject.isWorldObject) {

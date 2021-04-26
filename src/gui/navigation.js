@@ -8,6 +8,18 @@ createNameSpace("realityEditor.gui.navigation");
 (function(exports) {
     const trackedObjectIDs = [];
     const navigationObjects = {};
+    let initialized = false;
+    
+    const initialize = () => {
+        initialized = true;
+        realityEditor.gui.threejsScene.onAnimationFrame(() => {
+            trackedObjectIDs.forEach(id => {
+                // refresh path
+                removeNavigationPath(id);
+                addNavigationPath(id);
+            });
+        });
+    }
     
     setInterval(() => {
         const whereIs = globalStates.spatial.whereIs;
@@ -17,24 +29,24 @@ createNameSpace("realityEditor.gui.navigation");
                 newObjectIDs.push(whereIs[ip][objectKey].objectID);
             }
         }
+        if (newObjectIDs.length > 0 && !initialized) {
+            initialize();
+        }
         trackedObjectIDs.filter(id=>!newObjectIDs.includes(id)).forEach(id=>{
             trackedObjectIDs.splice(trackedObjectIDs.indexOf(id),1);
-            stopNavigation(id);
+            removeNavigationPath(id);
         });
         newObjectIDs.filter(id=>!trackedObjectIDs.includes(id)).forEach(id=>{
             trackedObjectIDs.push(id);
-            startNavigation(id);
         });
     },300);
     
-    const startNavigation = (goalID) => {
-        console.log('starting navigation');
+    const addNavigationPath = (goalID) => {
         const THREE = realityEditor.gui.threejsScene.THREE;
         const navmeshesWithNode = realityEditor.sceneGraph.getObjects()
             .map(sceneNode => {return {sceneNode, navmesh:JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${sceneNode.id}`))}})
             .filter(navmeshWithNode => navmeshWithNode.navmesh != null);
         if (navmeshesWithNode.length > 0) {
-            console.log('navigating with navmesh');
             const navmeshWithNode = navmeshesWithNode[0];
             const navmesh = navmeshWithNode.navmesh; //TODO: select navmesh based on which includes/is closest to the goal position
             const areaTargetNode = navmeshWithNode.sceneNode;
@@ -50,33 +62,47 @@ createNameSpace("realityEditor.gui.navigation");
             const goalIndex = posToIndex(navmesh, scalePos(goalRelativePosition, 1/1000));
             const indexPath = findPath(navmesh, cameraIndex, goalIndex);
             const relativePath = indexPath.map(index => indexToPos(navmesh, index)).map(pos => scalePos(pos, 1000));
-            // const worldPath = relativePath.map(pos => relativePosToWorldPos(pos, areaTargetNode));
+            relativePath[0].x = cameraRelativePosition.x;
+            relativePath[0].z = cameraRelativePosition.z;
             
             // building threejs path and adding to scene
-            const topPoints = relativePath.map(pos => new THREE.Vector3(pos.x, pos.y, pos.z));
-            const bottomPoints = relativePath.map(pos => new THREE.Vector3(pos.x, pos.y-10, pos.z));
+            const topPoints = relativePath.map(pos => new THREE.Vector3(pos.x, pos.y+1000, pos.z));
+            // const bottomPoints = relativePath.map(pos => new THREE.Vector3(pos.x, pos.y+1000-5, pos.z));
             const topGeometry = new THREE.BufferGeometry().setFromPoints(topPoints);
-            const bottomGeometry = new THREE.BufferGeometry().setFromPoints(bottomPoints);
-            const topMaterial = new THREE.LineBasicMaterial({color:0xffff00, linewidth:1500});
-            const bottomMaterial = new THREE.LineBasicMaterial({color:0x000000, linewidth:2250});
+            // const bottomGeometry = new THREE.BufferGeometry().setFromPoints(bottomPoints);
+            const topMaterial = new THREE.LineBasicMaterial({color:0xffff00, linewidth:7.5});
+            // const bottomMaterial = new THREE.LineBasicMaterial({color:0x000000, linewidth:10});
             const topNavLine = new THREE.Line(topGeometry, topMaterial);
-            const bottomNavLine = new THREE.Line(bottomGeometry, bottomMaterial);
-            realityEditor.gui.threejsScene.addToScene(topNavLine);
-            realityEditor.gui.threejsScene.addToScene(bottomNavLine);
-            navigationObjects[goalID] = [topNavLine, bottomNavLine];
+            // const bottomNavLine = new THREE.Line(bottomGeometry, bottomMaterial);
+            realityEditor.gui.threejsScene.addToScene(topNavLine, areaTargetNode.id, true);
+            // realityEditor.gui.threejsScene.addToScene(bottomNavLine, areaTargetNode.id, true);
+            // The occluded lines are the ones that are visible when the path is occluded
+            const topOccludedMaterial = new THREE.LineDashedMaterial({color:0xffff00, linewidth:7.5, dashSize:1, gapSize:1, scale:1/80});
+            // const bottomOccludedMaterial = new THREE.LineDashedMaterial({color:0x000000, linewidth:10, dashSize:1, gapSize:1, scale:1/80});
+            const topOccludedNavLine = new THREE.Line(topGeometry, topOccludedMaterial);
+            // const bottomOccludedNavLine = new THREE.Line(bottomGeometry, bottomOccludedMaterial);
+            topOccludedNavLine.computeLineDistances(); // Needed for LineDashedMaterial
+            // bottomOccludedNavLine.computeLineDistances(); // Needed for LineDashedMaterial
+            realityEditor.gui.threejsScene.addToScene(topOccludedNavLine, areaTargetNode.id);
+            // realityEditor.gui.threejsScene.addToScene(bottomOccludedNavLine, areaTargetNode.id);
+            const goalObj = new THREE.Mesh(new THREE.BoxGeometry(50,50,50),new THREE.MeshStandardMaterial({color:0xffff00}));
+            goalObj.position.x = topPoints[topPoints.length-1].x;
+            goalObj.position.y = topPoints[topPoints.length-1].y;
+            goalObj.position.z = topPoints[topPoints.length-1].z;
+            realityEditor.gui.threejsScene.addToScene(goalObj, areaTargetNode.id);
+            navigationObjects[goalID] = [topNavLine, topOccludedNavLine, goalObj];
         }
         else {
             console.log('no navmeshes available');
-            //TODO: navigate using a straight line.
         }
     }
     
-    const stopNavigation = (goalID) => {
+    const removeNavigationPath = (goalID) => {
         if (navigationObjects[goalID]) {
-          navigationObjects[goalID].forEach(obj => {
-            realityEditor.gui.threejsScene.removeFromScene(obj);
-          });
-          delete navigationObjects[goalID];
+            navigationObjects[goalID].forEach(obj => {
+                realityEditor.gui.threejsScene.removeFromScene(obj);
+            });
+            delete navigationObjects[goalID];
         }
     }
     
