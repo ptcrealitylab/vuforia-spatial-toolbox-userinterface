@@ -1,5 +1,6 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
+// three.js libraries are loaded from a CDN since we don't currently use a build system for the userinterface
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
