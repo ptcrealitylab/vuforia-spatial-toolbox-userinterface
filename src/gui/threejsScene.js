@@ -8,7 +8,8 @@ import { MeshStandardMaterial}  from 'https://unpkg.com/three@0.126.1/src/materi
 import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/jsm/utils/BufferGeometryUtils.js';
 // import { SceneUtils }  from 'https://unpkg.com/three@0.126.1/examples/jsm/utils/SceneUtils.js';
 
-let DEBUG_CEILING_HEIGHT = 2.3;
+let maxCeilingHeight = 2.3;
+window.DEBUG_CEILING_HEIGHT = 0;
 
 (function(exports) {
 
@@ -23,6 +24,8 @@ let DEBUG_CEILING_HEIGHT = 2.3;
     const DISPLAY_ORIGIN_BOX = false;
     
     let thisMaterial = null;
+    
+    let materialPointers = [];
 
     // for now, everything gets added to this and then this moves based on the modelview matrix of the world origin
     // todo: in future, move three.js camera instead of moving the scene
@@ -129,6 +132,13 @@ let DEBUG_CEILING_HEIGHT = 2.3;
             const time = performance.now() * 0.0005;
             thisMaterial.uniforms[ "time" ].value = time;
         }
+        
+        materialPointers.forEach(function(mat) {
+            if (window.DEBUG_CEILING_HEIGHT < maxCeilingHeight) {
+                window.DEBUG_CEILING_HEIGHT += 0.0001;
+                mat.uniforms[ "maxHeight" ].value = window.DEBUG_CEILING_HEIGHT;
+            }
+        });
     }
     
     function addToScene(obj) {
@@ -151,149 +161,77 @@ let DEBUG_CEILING_HEIGHT = 2.3;
 
     function vertexShader() {
         return `
-        varying vec3 vUv; 
-    
-        void main() {
-          vUv = position; 
-    
-          vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_Position = projectionMatrix * modelViewPosition; 
+        precision highp float;
+
+        uniform float sineTime;
+        uniform float time;
+        
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        
+        attribute vec3 position;
+        attribute vec3 offset;
+        attribute vec4 color;
+        attribute vec4 orientationStart;
+        attribute vec4 orientationEnd;
+        attribute vec3 translate;
+        attribute vec2 uv;
+        
+        varying vec3 vPosition;
+        varying vec4 vColor;
+        varying float vScale;
+        varying vec2 vUv;
+        
+        void main(){
+        
+            vPosition = offset * max( abs( sineTime * 2.0 + 1.0 ), 0.5 ) + position;
+            vec4 orientation = normalize( mix( orientationStart, orientationEnd, sineTime ) );
+            vec3 vcV = cross( orientation.xyz, vPosition );
+            vPosition = vcV * ( 2.0 * orientation.w ) + ( cross( orientation.xyz, vcV ) * 2.0 + vPosition );
+        
+            vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
+            float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
+            vScale = scale;
+        
+            vColor = color;
+            vUv = uv;
+        
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
+        
         }
       `
     }
     
-    //             gl_FragColor = vec4(mix(colorA, colorB, vUv.y), 1.0);
     function fragmentShader() {
         return `
-          uniform vec3 colorA; 
-          uniform vec3 colorB;
-          uniform float maxHeight;
-          uniform sampler2D benTexture;
-          varying vec3 vUv;
-    
-          void main() {
-            gl_FragColor = vec4(mix(colorA, colorB, vUv.y), 1.0);
-             
-            if (vUv.y > maxHeight)
-              discard;
-          }
-      `
-    }
-
-    function simpleVertexShader() {
-        return `
-        varying vec3 vUv; 
-    
+        precision highp float;
+        
+        uniform sampler2D map;
+        uniform float maxHeight;
+        
+        varying vec2 vUv;
+        varying float vScale;
+        varying vec3 vPosition;
+        
         void main() {
-          vUv = position; 
-    
-          vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_Position = projectionMatrix * modelViewPosition; 
+            gl_FragColor = texture2D( map, vUv );
+            
+            if (vPosition.y > maxHeight) discard;
         }
-      `
-    }
-
-    function simpleFragmentShader() {
-        return `
-          uniform sampler2D textureSampler;
-          varying vec3 vUv;
-    
-          void main() {
-            gl_FragColor = texture2D(textureSampler, vUv);
-          }
       `
     }
 
     function createMaterial(sourceTexture) {
-        // create a texture loader.
-        const textureLoader = new TextureLoader();
-
-        // load a texture
-        const texture = textureLoader.load(
-            '/png/blue.png',
-        );
-
-        // create a "standard" material using
-        // the texture we just loaded as a color map
-        const material = new MeshStandardMaterial({
-            map: sourceTexture,
-        });
-
-        // return material;
-
-        // return new THREE.RawShaderMaterial( {
-        //     uniforms: {
-        //         "map": { value: texture },
-        //         "time": { value: 0.0 },
-        //         "colorB": {type: 'vec3', value: new THREE.Color(0xACB6E5)},
-        //         "colorA": {type: 'vec3', value: new THREE.Color(0x74ebd5)},
-        //         "maxHeight": {value: DEBUG_CEILING_HEIGHT}
-        //     },
-        //     vertexShader: simpleVertexShader(), //document.getElementById( 'vshader' ).textContent,
-        //     fragmentShader: fragmentShader(), //document.getElementById( 'fshader' ).textContent,
-        //     depthTest: true,
-        //     depthWrite: true
-        // } );
-
-        // return new THREE.RawShaderMaterial({
-        //     uniforms: {
-        //         // benTexture: {type: 't', value: THREE.ImageUtils.loadTexture(image)},
-        //         colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
-        //         colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)},
-        //         maxHeight: {value: DEBUG_CEILING_HEIGHT},
-        //         map: { value: texture },
-        //         time: { value: 0.0 },
-        //     },
-        //     vertexShader: document.getElementById( 'vshader' ).textContent, //simpleVertexShader(),
-        //     fragmentShader: document.getElementById( 'fshader' ).textContent //fragmentShader()
-        // });
-        
-        // if (!thisMaterial) {
-        //    
-        //     // this works, blue stripes animate over time
-        //     // thisMaterial = new THREE.RawShaderMaterial({
-        //     //
-        //     //     uniforms: {
-        //     //         "time": {value: 1.0},
-        //     //         "sineTime": {value: 1.0}
-        //     //     },
-        //     //     vertexShader: document.getElementById('vertexShader').textContent,
-        //     //     fragmentShader: document.getElementById('fragmentShader').textContent,
-        //     //     side: THREE.DoubleSide,
-        //     //     transparent: true
-        //     //
-        //     // });
-        //
-        //     thisMaterial = new THREE.RawShaderMaterial({
-        //
-        //         uniforms: {
-        //             "time": {value: 1.0},
-        //             "sineTime": {value: 1.0},
-        //             "map": { value: sourceTexture }
-        //         },
-        //         vertexShader: document.getElementById('vertexShader').textContent,
-        //         fragmentShader: document.getElementById('fshader').textContent,
-        //         side: THREE.DoubleSide,
-        //         transparent: true
-        //
-        //     });
-        // }
-        //
-        // return thisMaterial;
-        
         return new THREE.RawShaderMaterial({
-
             uniforms: {
                 "time": {value: 1.0},
                 "sineTime": {value: 1.0},
                 "map": { value: sourceTexture },
-                "maxHeight": {value: DEBUG_CEILING_HEIGHT}
+                "maxHeight": {value: window.DEBUG_CEILING_HEIGHT}
             },
-            vertexShader: document.getElementById('vertexShader').textContent,
-            fragmentShader: document.getElementById('fshader').textContent,
-            side: THREE.DoubleSide,
-            transparent: true
-
+            vertexShader: vertexShader(),
+            fragmentShader: fragmentShader(),
+            side: THREE.FrontSide
         });
     }
 
@@ -305,80 +243,20 @@ let DEBUG_CEILING_HEIGHT = 2.3;
     function addGltfToScene(pathToGltf, originOffset, originRotation) {
         const gltfLoader = new GLTFLoader();
         
-        let lastMaterial = null;
-
         gltfLoader.load(pathToGltf, function(gltf) {
             
             if (gltf.scene.children[0].geometry) {
-                // gltf.scene.children[0].material = new THREE.MeshStandardMaterial( { color: 0xaaaaaa } );
+                gltf.scene.children[0].material = createMaterial(gltf.scene.children[0].material.map);
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
             } else {
-                let uniforms = {
-                    colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
-                    colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)},
-                    maxHeight: {value: DEBUG_CEILING_HEIGHT}
-                };
-                let customMaterial =  new THREE.ShaderMaterial({
-                    uniforms: uniforms,
-                    fragmentShader: fragmentShader(),
-                    vertexShader: vertexShader(),
-                });
-
-                // var loader = new THREE.TextureLoader;
-                // let image = loader.load('/png/blue.png');
-
                 gltf.scene.children[0].children.forEach(child => {
-                    // child.material = new THREE.MeshBasicMaterial( {color: new THREE.Color(Math.random(), Math.random(), Math.random()) }); //, side: THREE.BackSide })
-
-                    // let image = child.material.map;
-                    //
-                    // // const texture = new THREE.CanvasTexture( imageBitmap );
-                    // // const material = new THREE.MeshBasicMaterial( { map: texture } );
-                    //
-                    // // var creatureImage = textureLoader.load('texture.png');
-                    // // creatureImage.magFilter = THREE.NearestFilter;
-                    //
-                    // var mat = new THREE.ShaderMaterial({
-                    //     uniforms: {
-                    //         benTexture: {type: 't', value: THREE.ImageUtils.loadTexture(image)},
-                    //         colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
-                    //         colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)},
-                    //         maxHeight: {value: DEBUG_CEILING_HEIGHT}
-                    //     },
-                    //     vertexShader: simpleVertexShader(),
-                    //     fragmentShader: fragmentShader()
-                    // });
-                    // // THREE.UniformsUtils.merge() call THREE.clone() on
-                    // // each uniform. We don't want our texture to be
-                    // // duplicated, so I assign it to the uniform value
-                    // // right here.
-                    // // mat.uniforms.textureSampler.value = texture;
-                    //
-                    // // mat.uniforms.textureSampler.value = image;
-                    //
-                    // // var _material = new THREE.ShaderMaterial({
-                    // //     fragmentShader: simpleFragmentShader(),
-                    // //     vertexShader: simpleVertexShader(),
-                    // //     uniforms: {
-                    // //         colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
-                    // //         colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)},
-                    // //         maxHeight: {value: DEBUG_CEILING_HEIGHT},
-                    // //         // texture: {type: "t", value: image},
-                    // //         map: texture
-                    // //     }
-                    // // });
-                    // child.material = mat;
-                    
-                    
                     child.material = createMaterial(child.material.map);
-                    
-                    // lastMaterial = child.material;
+                    materialPointers.push(child.material);
                 });
-                // const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
-                // mergedGeometry.computeVertexNormals();
-                // mergedGeometry.computeBoundingBox();
-                
+                const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
+                mergedGeometry.computeVertexNormals();
+                mergedGeometry.computeBoundingBox();
             }
 
             // align the coordinate systems
@@ -393,20 +271,6 @@ let DEBUG_CEILING_HEIGHT = 2.3;
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
-
-            // setTimeout(function() {
-            //     // Force shaders to be built
-            //     renderer.compile(scene, camera);
-            //
-            //     // Get the GL context:
-            //     const gl = renderer.getContext();
-            //
-            //     // Print the shader source!
-            //     console.log(
-            //         gl.getShaderSource(lastMaterial.program.fragmentShader)
-            //     );
-            // }, 1000);
-
         });
     }
 
