@@ -152,9 +152,162 @@
 
     <script src="src/gui/moveabilityCorners.js"></script>
 
-    <script>
-    
-    </script>
+<!--    <script type="x-shader/x-vertex" id="vertexshader">-->
+<!--            // switch on high precision floats-->
+<!--            #ifdef GL_ES-->
+<!--            precision highp float;-->
+<!--            #endif-->
+
+<!--            varying vec2 texcoord;-->
+
+<!--            void main()-->
+<!--            {-->
+<!--                gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);-->
+<!--                texcoord  = uv;-->
+<!--            }-->
+<!--        </script>-->
+<!--    <script type="x-shader/x-fragment" id="fragmentshader">-->
+<!--            #ifdef GL_ES-->
+<!--            precision highp float;-->
+<!--            #endif-->
+
+<!--            varying vec2 texcoord;-->
+<!--            uniform sampler2D u_texture;-->
+
+<!--            void main()-->
+<!--            {-->
+<!--                /* Set color of the fragment */-->
+<!--                gl_FragColor = texture2D(u_texture, texcoord);-->
+<!--                -->
+<!--            }-->
+<!--        </script>-->
+
+<!--    <script id="vshader" type="x-shader/x-vertex">-->
+<!--		precision highp float;-->
+<!--		uniform mat4 modelViewMatrix;-->
+<!--		uniform mat4 projectionMatrix;-->
+<!--		uniform float time;-->
+
+<!--		attribute vec3 position;-->
+<!--		attribute vec2 uv;-->
+<!--		attribute vec3 translate;-->
+
+<!--		varying vec2 vUv;-->
+<!--		varying float vScale;-->
+
+<!--		void main() {-->
+
+<!--			vec4 mvPosition = modelViewMatrix * vec4( translate, 1.0 );-->
+<!--			vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);-->
+<!--			float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );-->
+<!--			vScale = scale;-->
+<!--			scale = scale * 10.0 + 10.0;-->
+<!--			mvPosition.xyz += position * scale;-->
+<!--			vUv = uv;-->
+<!--			gl_Position = projectionMatrix * mvPosition;-->
+
+<!--		}-->
+<!--	</script>-->
+
+    <script id="vertexShader" type="x-shader/x-vertex">
+		precision highp float;
+
+		uniform float sineTime;
+		uniform float time;
+
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+
+		attribute vec3 position;
+		attribute vec3 offset;
+		attribute vec4 color;
+		attribute vec4 orientationStart;
+		attribute vec4 orientationEnd;
+        attribute vec3 translate;
+        attribute vec2 uv;
+
+		varying vec3 vPosition;
+		varying vec4 vColor;
+        varying float vScale;
+		varying vec2 vUv;
+
+		void main(){
+
+			vPosition = offset * max( abs( sineTime * 2.0 + 1.0 ), 0.5 ) + position;
+			vec4 orientation = normalize( mix( orientationStart, orientationEnd, sineTime ) );
+			vec3 vcV = cross( orientation.xyz, vPosition );
+			vPosition = vcV * ( 2.0 * orientation.w ) + ( cross( orientation.xyz, vcV ) * 2.0 + vPosition );
+			
+            vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
+			float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
+			vScale = scale;
+
+			vColor = color;
+            vUv = uv;
+            
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
+
+		}
+
+	</script>
+
+    <script id="fshader" type="x-shader/x-fragment">
+		precision highp float;
+
+		uniform sampler2D map;
+        uniform float maxHeight;
+
+		varying vec2 vUv;
+		varying float vScale;
+
+		// HSL to RGB Convertion helpers
+		vec3 HUEtoRGB(float H){
+			H = mod(H,1.0);
+			float R = abs(H * 6.0 - 3.0) - 1.0;
+			float G = 2.0 - abs(H * 6.0 - 2.0);
+			float B = 2.0 - abs(H * 6.0 - 4.0);
+			return clamp(vec3(R,G,B),0.0,1.0);
+		}
+
+		vec3 HSLtoRGB(vec3 HSL){
+			vec3 RGB = HUEtoRGB(HSL.x);
+			float C = (1.0 - abs(2.0 * HSL.z - 1.0)) * HSL.y;
+			return (RGB - 0.5) * C + HSL.z;
+		}
+
+		void main() {
+			vec4 diffuseColor = texture2D( map, vUv );
+			gl_FragColor = vec4( diffuseColor.xyz * HSLtoRGB(vec3(vScale/5.0, 1.0, 0.5)), diffuseColor.w );
+
+			if ( diffuseColor.w < 0.5 ) discard;
+			
+            if (vUv.y > maxHeight) discard;
+		}
+	</script>
+
+<!--    <script id="fragmentShader" type="x-shader/x-fragment">-->
+
+<!--		precision highp float;-->
+
+<!--		uniform float time;-->
+<!--        uniform float maxHeight;-->
+
+<!--		varying vec3 vPosition;-->
+<!--		varying vec4 vColor;-->
+
+<!--		void main() {-->
+
+<!--			vec4 color = vec4( vColor );-->
+<!--			color.r += sin( vPosition.x * 10.0 + time ) * 0.5;-->
+
+<!--			gl_FragColor = color;-->
+<!--			-->
+<!--            if (vUv.y > maxHeight)-->
+<!--              discard;-->
+
+<!--		}-->
+
+<!--	</script>-->
 </head>
 <body touch-action="none">
 
