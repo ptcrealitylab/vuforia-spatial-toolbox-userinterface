@@ -2,10 +2,7 @@ createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
-import { TextureLoader }  from 'https://unpkg.com/three@0.126.1/src/loaders/TextureLoader.js'
-import { MeshStandardMaterial }  from 'https://unpkg.com/three@0.126.1/src/materials/MeshStandardMaterial.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
-// import { SimplifyModifier } from '../../thirdPartyCode/three/SimplifyModifier.module.js';
 
 let maxCeilingHeight = 2.3;
 window.DEBUG_CEILING_HEIGHT = 0;
@@ -27,6 +24,7 @@ window.DEBUG_CEILING_HEIGHT = 0;
     let thisMaterial = null;
     
     let materialPointers = [];
+    let customShaderLibrary;
 
     // for now, this contains everything not attached to a specific world object
     // todo: in future, move three.js camera instead of moving the scene
@@ -59,6 +57,8 @@ window.DEBUG_CEILING_HEIGHT = 0;
         spotLight.position.set(-30, -30, 150);
         spotLight.castShadow = true;
         scene.add(spotLight);
+
+        customShaderLibrary = new CustomShaderLibrary();
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -142,17 +142,17 @@ window.DEBUG_CEILING_HEIGHT = 0;
         
         requestAnimationFrame(renderScene);
         
-        if (thisMaterial) {
-            const time = performance.now() * 0.0005;
-            thisMaterial.uniforms[ "time" ].value = time;
-        }
-        
-        materialPointers.forEach(function(mat) {
-            if (window.DEBUG_CEILING_HEIGHT < maxCeilingHeight) {
-                window.DEBUG_CEILING_HEIGHT += 0.0001;
-                mat.uniforms[ "maxHeight" ].value = window.DEBUG_CEILING_HEIGHT;
-            }
-        });
+        // if (thisMaterial) {
+        //     const time = performance.now() * 0.0005;
+        //     thisMaterial.uniforms[ "time" ].value = time;
+        // }
+        //
+        // materialPointers.forEach(function(mat) {
+        //     if (window.DEBUG_CEILING_HEIGHT < maxCeilingHeight) {
+        //         window.DEBUG_CEILING_HEIGHT += 0.0001;
+        //         mat.uniforms[ "maxHeight" ].value = window.DEBUG_CEILING_HEIGHT;
+        //     }
+        // });
     }
     
     function addToScene(obj, parameters) {
@@ -253,100 +253,28 @@ window.DEBUG_CEILING_HEIGHT = 0;
         return !!worldOcclusionObjects[objectId];
     }
 
-    function vertexShader() {
-        return `
-        precision highp float;
-
-        uniform float sineTime;
-        uniform float time;
-        
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        
-        attribute vec3 position;
-        attribute vec3 offset;
-        attribute vec4 color;
-        attribute vec4 orientationStart;
-        attribute vec4 orientationEnd;
-        attribute vec3 translate;
-        attribute vec2 uv;
-        
-        varying vec3 vPosition;
-        varying vec4 vColor;
-        varying float vScale;
-        varying vec2 vUv;
-        
-        void main(){
-        
-            vPosition = offset * max( abs( sineTime * 2.0 + 1.0 ), 0.5 ) + position;
-            vec4 orientation = normalize( mix( orientationStart, orientationEnd, sineTime ) );
-            vec3 vcV = cross( orientation.xyz, vPosition );
-            vPosition = vcV * ( 2.0 * orientation.w ) + ( cross( orientation.xyz, vcV ) * 2.0 + vPosition );
-        
-            vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
-            float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
-            vScale = scale;
-        
-            vColor = color;
-            vUv = uv;
-        
-            gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
-        
-        }
-      `
-    }
-    
-    function fragmentShader() {
-        return `
-        precision highp float;
-        
-        uniform sampler2D map;
-        uniform float maxHeight;
-        
-        varying vec2 vUv;
-        varying float vScale;
-        varying vec3 vPosition;
-        
-        void main() {
-            gl_FragColor = texture2D( map, vUv );
-            
-            if (vPosition.y > maxHeight) discard;
-        }
-      `
-    }
-
-    function createMaterial(sourceTexture) {
-        return new THREE.RawShaderMaterial({
-            uniforms: {
-                "time": {value: 1.0},
-                "sineTime": {value: 1.0},
-                "map": { value: sourceTexture },
-                "maxHeight": {value: window.DEBUG_CEILING_HEIGHT}
-            },
-            vertexShader: vertexShader(),
-            fragmentShader: fragmentShader(),
-            side: THREE.FrontSide
-        });
-    }
-    
     /* For my example area target:
         pathToGltf = './svg/BenApt1_authoring.glb' // put in arbitrary local directory to test
         originOffset = {x: -600, y: 0, z: -3300};
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation) {
+    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight) {
         const gltfLoader = new GLTFLoader();
         
         gltfLoader.load(pathToGltf, function(gltf) {
             
             if (gltf.scene.children[0].geometry) {
-                gltf.scene.children[0].material = createMaterial(gltf.scene.children[0].material.map);
+                if (typeof maxHeight !== 'undefined') {
+                    gltf.scene.children[0].material = customShaderLibrary.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight);
+                }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
             } else {
                 gltf.scene.children[0].children.forEach(child => {
-                    child.material = createMaterial(child.material.map);
-                    materialPointers.push(child.material);
+                    if (typeof maxHeight !== 'undefined') {
+                        child.material = customShaderLibrary.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight);
+                        // materialPointers.push(child.material);
+                    }
                 });
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
@@ -376,127 +304,77 @@ window.DEBUG_CEILING_HEIGHT = 0;
             array[3], array[7], array[11], array[15]
         );
     }
+
+    class CustomShaderLibrary {
+        constructor() { }
+        areaTargetVertexShader() {
+            return `
+            precision highp float;
     
-    // /////////////////////////////////////////////////////////
-    // // Generates custom shader using an updatable
-    // // dynamic texture generated programmatically
-    // //
-    // /////////////////////////////////////////////////////////
-    // function createShader (options) {
-    //
-    //     // Vertex Shader code
-    //     const vertexShader = options.vertexShader || `
-    //   attribute float pointSize;
-    //   attribute vec4 color;
-    //   varying vec4 vColor;
-    //   void main() {
-    //     vec4 vPosition = modelViewMatrix * vec4(position, 1.0);
-    //     gl_Position = projectionMatrix * vPosition;
-    //     gl_PointSize = pointSize;
-    //     vColor = color;
-    //   }
-    // `
-    //
-    //     // Fragment Shader code
-    //     const fragmentShader = options.fragmentShader || `
-    //   uniform sampler2D texture;
-    //   varying vec4 vColor;
-    //   void main() {
-    //     vec4 tex = texture2D(texture, gl_PointCoord);
-    //     if (tex.a < 0.2) discard;
-    //     if (vColor.a == 0.0) {
-    //       gl_FragColor = vec4(tex.r, tex.g, tex.b, tex.a);
-    //     } else {
-    //       gl_FragColor = vColor;
-    //     }
-    //   }
-    // `
-    //
-    //     const tex = options.texture || defaultTex
-    //
-    //     // Shader material parameters
-    //     const shaderParams = options.shaderParams || {
-    //         side: THREE.DoubleSide,
-    //         depthWrite: false,
-    //         depthTest: false,
-    //         fragmentShader,
-    //         vertexShader,
-    //         opacity: 0.5,
-    //         attributes: {
-    //             pointSize: {
-    //                 type: 'f',
-    //                 value: []
-    //             },
-    //             color: {
-    //                 type: 'v4',
-    //                 value: []
-    //             }
-    //         },
-    //         uniforms: {
-    //             texture: {
-    //                 value: THREE.ImageUtils.loadTexture(tex),
-    //                 type: 't'
-    //             }
-    //         }
-    //     }
-    //
-    //     // creates shader material
-    //     const material =
-    //         new THREE.ShaderMaterial(
-    //             shaderParams)
-    //
-    //     const generateCanvasTexture = () => {
-    //
-    //         const canvas = document.createElement("canvas")
-    //         const ctx = canvas.getContext('2d')
-    //
-    //         ctx.font = '20pt Arial'
-    //         ctx.textAlign = 'center'
-    //         ctx.textBaseline = 'middle'
-    //         ctx.fillText(new Date().toLocaleString(),
-    //             canvas.width / 2, canvas.height / 2)
-    //
-    //         const canvasTexture = new THREE.Texture(canvas)
-    //
-    //         canvasTexture.needsUpdate = true
-    //         canvasTexture.flipX = false
-    //         canvasTexture.flipY = false
-    //
-    //         return canvasTexture
-    //     }
-    //
-    //     const stopwatch = new Stopwatch()
-    //
-    //     let radius = 0.0
-    //
-    //     return {
-    //         setTexture: (tex) => {
-    //
-    //             const {texture} = shaderParams.uniforms
-    //
-    //             texture.value = THREE.ImageUtils.loadTexture(tex)
-    //
-    //             texture.needsUpdate = true
-    //
-    //         },
-    //         update: () => {
-    //
-    //             const dt = stopwatch.getElapsedMs() * 0.001
-    //
-    //             radius += dt * 0.25
-    //
-    //             radius = radius > 0.5 ? 0.0 : radius
-    //
-    //             const {texture} = shaderParams.uniforms
-    //
-    //             texture.value = generateCanvasTexture();
-    //
-    //             texture.needsUpdate = true
-    //
-    //         },
-    //         material
-    //     }
-    // }
+            uniform float sineTime;
+            uniform float time;
+            
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            
+            attribute vec3 position;
+            attribute vec4 color;
+            attribute vec3 translate;
+            attribute vec2 uv;
+            
+            varying vec3 vPosition;
+            varying vec4 vColor;
+            varying float vScale;
+            varying vec2 vUv;
+            
+            void main(){
+            
+                vPosition = position;
+                vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
+                float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
+                vScale = scale;
+            
+                vColor = color;
+                vUv = uv;
+            
+                gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
+            
+            }
+          `
+        }
+        areaTargetFragmentShader() {
+            return `
+            precision highp float;
+            
+            uniform sampler2D map;
+            uniform float maxHeight;
+            
+            varying vec2 vUv;
+            varying float vScale;
+            varying vec3 vPosition;
+            
+            void main() {
+                gl_FragColor = texture2D( map, vUv );
+                
+                if (vPosition.y > maxHeight) discard;
+            }
+          `
+        }
+        areaTargetMaterialWithTextureAndHeight(sourceTexture, maxHeight) {
+            return new THREE.RawShaderMaterial({
+                uniforms: {
+                    "time": {value: 1.0},
+                    "sineTime": {value: 1.0},
+                    "map": { value: sourceTexture },
+                    "maxHeight": {value: maxHeight}
+                },
+                vertexShader: this.areaTargetVertexShader(),
+                fragmentShader: this.areaTargetFragmentShader(),
+                side: THREE.FrontSide
+            });
+        }
+        
+    }
 
     exports.initService = initService;
     exports.addOcclusionGltf = addOcclusionGltf;
