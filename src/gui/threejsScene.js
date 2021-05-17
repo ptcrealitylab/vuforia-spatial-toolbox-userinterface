@@ -21,10 +21,7 @@ window.DEBUG_CEILING_HEIGHT = 0;
     
     const DISPLAY_ORIGIN_BOX = false;
     
-    let thisMaterial = null;
-    
-    let materialPointers = [];
-    let customShaderLibrary;
+    let customMaterials;
 
     // for now, this contains everything not attached to a specific world object
     // todo: in future, move three.js camera instead of moving the scene
@@ -58,7 +55,7 @@ window.DEBUG_CEILING_HEIGHT = 0;
         spotLight.castShadow = true;
         scene.add(spotLight);
 
-        customShaderLibrary = new CustomShaderLibrary();
+        customMaterials = new CustomMaterials();
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -134,25 +131,15 @@ window.DEBUG_CEILING_HEIGHT = 0;
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
         }
-        
+
+        customMaterials.update();
+
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             renderer.render( scene, camera );
         }
         
         requestAnimationFrame(renderScene);
-        
-        // if (thisMaterial) {
-        //     const time = performance.now() * 0.0005;
-        //     thisMaterial.uniforms[ "time" ].value = time;
-        // }
-        //
-        // materialPointers.forEach(function(mat) {
-        //     if (window.DEBUG_CEILING_HEIGHT < maxCeilingHeight) {
-        //         window.DEBUG_CEILING_HEIGHT += 0.0001;
-        //         mat.uniforms[ "maxHeight" ].value = window.DEBUG_CEILING_HEIGHT;
-        //     }
-        // });
     }
     
     function addToScene(obj, parameters) {
@@ -257,6 +244,7 @@ window.DEBUG_CEILING_HEIGHT = 0;
         pathToGltf = './svg/BenApt1_authoring.glb' // put in arbitrary local directory to test
         originOffset = {x: -600, y: 0, z: -3300};
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
+        maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
     function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight) {
         const gltfLoader = new GLTFLoader();
@@ -265,15 +253,14 @@ window.DEBUG_CEILING_HEIGHT = 0;
             
             if (gltf.scene.children[0].geometry) {
                 if (typeof maxHeight !== 'undefined') {
-                    gltf.scene.children[0].material = customShaderLibrary.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight);
+                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight, true);
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
             } else {
                 gltf.scene.children[0].children.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
-                        child.material = customShaderLibrary.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight);
-                        // materialPointers.push(child.material);
+                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight, true);
                     }
                 });
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
@@ -305,8 +292,10 @@ window.DEBUG_CEILING_HEIGHT = 0;
         );
     }
 
-    class CustomShaderLibrary {
-        constructor() { }
+    class CustomMaterials {
+        constructor() {
+            this.materialsToAnimate = [];
+        }
         areaTargetVertexShader() {
             return `
             precision highp float;
@@ -360,8 +349,8 @@ window.DEBUG_CEILING_HEIGHT = 0;
             }
           `
         }
-        areaTargetMaterialWithTextureAndHeight(sourceTexture, maxHeight) {
-            return new THREE.RawShaderMaterial({
+        areaTargetMaterialWithTextureAndHeight(sourceTexture, maxHeight, animateOnLoad) {
+            let material = new THREE.RawShaderMaterial({
                 uniforms: {
                     "time": {value: 1.0},
                     "sineTime": {value: 1.0},
@@ -372,8 +361,37 @@ window.DEBUG_CEILING_HEIGHT = 0;
                 fragmentShader: this.areaTargetFragmentShader(),
                 side: THREE.FrontSide
             });
+            
+            if (animateOnLoad) {
+                this.materialsToAnimate.push({
+                    material: material,
+                    currentHeight: 0,
+                    maxHeight: maxHeight,
+                    animationSpeed: 0.01
+                });
+            }
+            
+            return material;
         }
-        
+        update() {
+            if (this.materialsToAnimate.length === 0) { return; }
+            
+            let indicesToRemove = [];
+            this.materialsToAnimate.forEach(function(entry, index) {
+                let material = entry.material;
+                if (entry.currentHeight < entry.maxHeight) {
+                    entry.currentHeight += entry.animationSpeed;
+                    material.uniforms['maxHeight'].value = entry.currentHeight;
+                } else {
+                    indicesToRemove.push(index);
+                }
+            });
+            
+            for (let i = indicesToRemove.length-1; i > 0; i--) {
+                let matIndex = indicesToRemove[i];
+                this.materialsToAnimate.splice(matIndex, 1);
+            }
+        }
     }
 
     exports.initService = initService;
