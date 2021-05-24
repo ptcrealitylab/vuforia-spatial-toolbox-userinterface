@@ -2118,7 +2118,8 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 initialized: isInitialized,
                 isAnchor: realityEditor.gui.ar.anchors.isAnchorObject(objectKey),
                 isWorld: thisObject.isWorldObject,
-                isOcclusionActive: realityEditor.gui.threejsScene.isOcclusionActive(objectKey)
+                isOcclusionActive: realityEditor.gui.threejsScene.isOcclusionActive(objectKey),
+                isNavigable: window.localStorage.getItem(`realityEditor.navmesh.${objectKey}`) != null
             };
 
             if (thisObject.isWorldObject) {

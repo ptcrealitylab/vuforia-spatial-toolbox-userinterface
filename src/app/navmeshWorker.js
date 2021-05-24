@@ -13,7 +13,7 @@ onmessage = function(evt) {
   console.log(`Starting navmesh generation for ${objectID}`);
   createNavmeshFromFile(fileName).then(navmesh => {
     console.log(`Done creating navmesh for ${objectID}`);
-    postMessage({navmesh,objectID});
+    postMessage({navmesh,objectID,fileName});
   }).catch(error => {
     console.error(error);
   });
@@ -22,6 +22,8 @@ onmessage = function(evt) {
 const createNavmeshFromFile = (fileName) => {
   return new Promise((resolve, reject) => {
     gltfLoader.load(fileName, (gltf) => {
+      // TODO: Make this more robust to edited GLBs that accidentally left other objects in (like default lights in Blender)
+      // One approach is to just merge all geometry in the scene among all scene children
       if (gltf.scene.children[0].geometry) {
         resolve(createNavmesh(gltf.scene.children[0].geometry, heatmapResolution));
       } else {
@@ -140,17 +142,6 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     expandedWallMap.push(expandedWallZArray);
     regionMap.push(regionMapZArray);
   }
-  
-  // // Helper to convert from navmesh position to 2D position
-  // const indexToPos = (x,z) => {
-  //   return [((x) / xLength) * (maxX - minX) + minX, ((z) / zLength) * (maxZ - minZ) + minZ];
-  // }
-  // 
-  // // Helper to convert from navmesh position to 2D position
-  // const indexToVec2 = (x,z) => {
-  //   const pos = indexToPos(x,z);
-  //   return new THREE.Vector2(pos[0], pos[1]);
-  // }
   
   const indexedFaceAttribute = geometry.index;
   const positionAttribute = geometry.attributes.position;

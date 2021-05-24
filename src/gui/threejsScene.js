@@ -1,10 +1,9 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
-// three.js libraries are loaded from a CDN since we don't currently use a build system for the userinterface
-import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
-import { GLTFLoader } from 'https://unpkg.com/three@0.126.1/examples/jsm/loaders/GLTFLoader.js';
-import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/jsm/utils/BufferGeometryUtils.js';
-// import { SceneUtils }  from 'https://unpkg.com/three@0.126.1/examples/jsm/utils/SceneUtils.js';
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
+import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
+import { SimplifyModifier } from '../../thirdPartyCode/three/SimplifyModifier.module.js';
 
 (function(exports) {
 
@@ -16,10 +15,9 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
-    const worldObjectOccludedGroups = {}; // Parent objects for occluded objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
 
-    // for now, everything gets added to this and then this moves based on the modelview matrix of the world origin
+    // for now, this contains everything not attached to a specific world object
     // todo: in future, move three.js camera instead of moving the scene
     var threejsContainerObj;
 
@@ -32,8 +30,9 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
         document.body.appendChild( renderer.domElement );
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
         scene = new THREE.Scene();
+        scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
-        // create a parent 3D object to contain all the three js objects
+        // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
@@ -85,13 +84,7 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
                 
-                const occludedGroup = new THREE.Group();
-                worldObjectOccludedGroups[worldObjectId] = occludedGroup;
-                occludedGroup.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-                occludedGroup.renderOrder = 2; // Causes objects in this group to be occluded by the mesh
-                scene.add(occludedGroup);
-                
-                // Helps visualize world object origin point
+                // Helps visualize world object origin point for debugging
                 // if (worldObjectId != realityEditor.worldObjects.getLocalWorldId()) {
                 //     const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
                 //     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
@@ -108,16 +101,21 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
                 // }
             }
             const group = worldObjectGroups[worldObjectId];
-            const occludedGroup = worldObjectOccludedGroups[worldObjectId];
             const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
             if (modelViewMatrix) {
                 setMatrixFromArray(group.matrix, modelViewMatrix);
-                setMatrixFromArray(occludedGroup.matrix, modelViewMatrix);
                 group.visible = true;
-                occludedGroup.visible = true;
+                
+                if (worldOcclusionObjects[worldObjectId]) {
+                    setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
+                    worldOcclusionObjects[worldObjectId].visible = true;
+                }
             } else {
                 group.visible = false;
-                occludedGroup.visible = false;
+                
+                if (worldOcclusionObjects[worldObjectId]) {
+                    worldOcclusionObjects[worldObjectId].visible = false;
+                }
             }
         });
         
@@ -131,33 +129,40 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
             renderer.render( scene, camera );
         }
         
-        // // this gets the model view matrix of the world object. ignores the WORLD_local
-        // let modelViewMatrix = null;
-        // let worldObject = realityEditor.worldObjects.getBestWorldObject();
-        // if (worldObject && worldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
-        //     // TODO: modify addToScene to addToAreaTarget and use positions relative to that
-        //     // This also allows for multiple containers with different mvMatrices for each area target
-        //     modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObject.objectId);
-        // }
-        // 
-        // // only render the scene if we're localized within a world object and the projection matrix is initialized
-        // if (isProjectionMatrixSet && modelViewMatrix) {
-        //     // update model view matrix and render the scene
-        //     setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
-        //     renderer.render( scene, camera );
-        // }
-        
         requestAnimationFrame(renderScene);
     }
     
-    function addToScene(obj, worldObjectId, occluded) {
-        if (obj) {
-            if (worldObjectId) {
-                if (occluded) {
-                    worldObjectOccludedGroups[worldObjectId].add(obj);
-                } else {
-                    worldObjectGroups[worldObjectId].add(obj);
-                }
+    function addToScene(obj, parameters) {
+        if (!parameters) {
+            parameters = {};
+        }
+        const occluded = parameters.occluded;
+        const parentToCamera = parameters.parentToCamera;
+        const worldObjectId = parameters.worldObjectId;
+        const attach = parameters.attach;
+        if (occluded) {
+            const queue = [obj];
+            while (queue.length > 0) {
+                const currentObj = queue.pop();
+                currentObj.renderOrder = 2;
+                currentObj.children.forEach(child => queue.push(child));
+            }
+        }
+        if (parentToCamera) {
+            if (attach) {
+                camera.attach(obj);
+            } else {
+                camera.add(obj);
+            }
+        } else if (worldObjectId) {
+            if (attach) {
+                worldObjectGroups[worldObjectId].attach(obj);
+            } else {
+                worldObjectGroups[worldObjectId].add(obj);
+            }
+        } else {
+            if (attach) {
+                threejsContainerObj.attach(obj);
             } else {
                 threejsContainerObj.add(obj);
             }
@@ -181,42 +186,43 @@ import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/js
     }
     
     function addOcclusionGltf(pathToGltf, objectId) {
+        // Code remains here, but likely won't be used due to distance-based fading looking better
+      
         if (worldOcclusionObjects[objectId]) {
-            console.log(`didn't load occlusion gltf`);
+            console.log(`occlusion gltf already loaded`);
             return; // Don't try creating multiple occlusion objects for the same world object
         }
         
         const gltfLoader = new GLTFLoader();
         console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
+            let geometry;
             if (gltf.scene.children[0].geometry) {
-                gltf.scene.children[0].geometry.computeVertexNormals();
-                gltf.scene.children[0].material = new THREE.MeshNormalMaterial();
-                gltf.scene.children[0].material.colorWrite = false; // Makes it invisible
-                // gltf.scene.children[0].renderOrder = 1;
+                geometry = gltf.scene.children[0].geometry;
             } else {
-                gltf.scene.children[0].children.forEach(child => {
-                    child.geometry.computeVertexNormals();
-                    child.material = new THREE.MeshNormalMaterial();
-                    child.material.colorWrite = false; // Makes it invisible
-                    // child.renderOrder = 1;
-                });
+                const geometries = gltf.scene.children[0].children.map(child=>child.geometry);
+                geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
             }
-            // gltf.scene.material = new THREE.MeshNormalMaterial();
-            // gltf.scene.material.colorWrite = false; // Makes it invisible
-            gltf.scene.renderOrder = 1; // To make something occluded by the mesh, set its renderOrder > 1
-        
-            // align the coordinate systems
-            gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
-        
-            scene.add(gltf.scene);
-        
-            worldOcclusionObjects[objectId] = gltf.scene;
+            
+            // SimplifyModifier seems to freeze app
+            // if (geometry.index) {
+            //     geometry = new SimplifyModifier().modify(geometry, geometry.index.count * 0.2);
+            // } else {
+            //     geometry = new SimplifyModifier().modify(geometry, geometry.attributes.position.count * 0.2);
+            // }
+            geometry.computeVertexNormals();
+            const material = new THREE.MeshNormalMaterial();
+            material.colorWrite = false; // Makes it invisible
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.renderOrder = 1;
+            mesh.scale.set(1000, 1000, 1000); // convert meters -> mm
+            const group = new THREE.Group(); // mesh needs to be in group so scale doesn't get overriden by model view matrix
+            group.add(mesh);
+            group.matrixAutoUpdate = false; // allows us to update with the model view matrix
+            scene.add(group);
+            worldOcclusionObjects[objectId] = group;
         
             console.log(`loaded occlusion gltf for ${objectId}`, pathToGltf);
-            
-            // const testObj = new THREE.Mesh(new THREE.BoxGeometry(50,200,50),new THREE.MeshStandardMaterial());
-            // worldObjectGroups[objectId].add(testObj);
         });
     }
     

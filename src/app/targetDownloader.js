@@ -84,7 +84,11 @@ createNameSpace("realityEditor.app.targetDownloader");
     navmeshWorker.onmessage = function(evt) {
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
+        const fileName = evt.data.fileName;
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+        
+        // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future
+        // realityEditor.gui.threejsScene.addOcclusionGltf(fileName, objectID);
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
@@ -311,7 +315,6 @@ createNameSpace("realityEditor.app.targetDownloader");
     function onTargetGLBAddress(fileName, objectID) {
         console.log('got GLB address');
         navmeshWorker.postMessage({fileName, objectID});
-        realityEditor.gui.threejsScene.addOcclusionGltf(fileName, objectID);
     }
 
     /**

@@ -159,6 +159,9 @@
                       <label class="objectButton uploadTargetButton">Upload Target</label>
                     </form>
                 </div>
+                <div class="navigableText" hidden>
+                  <span>Navmesh Active</span>
+                </div>
                 <div class="occlusionText" hidden>
                     <span>Occlusion Active</span>
                 </div>
@@ -288,11 +291,13 @@
         }
 
         let isLocalized = previousFoundObjects[objectKey].isLocalized;
-        if (isLocalized === false) { // explicitly unlocalized anchors/worlds have different text
+        if (isLocalized) {
+            buttonRow.querySelector('.navigableText').hidden = !previousFoundObjects[objectKey].isNavigable;
+            buttonRow.querySelector('.occlusionText').hidden = !previousFoundObjects[objectKey].isOcclusionActive;
+        } else { // explicitly unlocalized anchors/worlds have different text
             buttonRow.querySelector('.locateButton').innerText = 'Not Yet Seen';
         }
         
-        buttonRow.querySelector('.occlusionText').hidden = !previousFoundObjects[objectKey].isOcclusionActive;
     }
 
     /**
