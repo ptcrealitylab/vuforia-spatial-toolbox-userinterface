@@ -148,10 +148,11 @@ createNameSpace('realityEditor.device.layout');
 
         // if we have access to the device name, calculate edge based on this info
         if (knownDeviceName) {
+            
             // TODO: test on each of these 9 devices to ensure that these offsets are correct
             if (knownDeviceName === 'iPhone10,3' || knownDeviceName === 'iPhone10,6' || knownDeviceName === 'iPhone11,8') {
                 return 74;
-            } else if (knownDeviceName === 'iPhone11,2' || knownDeviceName === 'iPhone11,4' || knownDeviceName === 'iPhone11,6' || knownDeviceName === 'iPhone12,1' || knownDeviceName === 'iPhone12,3' || knownDeviceName === 'iPhone12,5') {
+            } else if (knownDeviceName === 'iPhone13,2' || knownDeviceName === 'iPhone13,3' || knownDeviceName === 'iPhone13,4' ||  knownDeviceName === 'iPhone11,2' || knownDeviceName === 'iPhone11,4' || knownDeviceName === 'iPhone11,6' || knownDeviceName === 'iPhone12,1' || knownDeviceName === 'iPhone12,3' || knownDeviceName === 'iPhone12,5') {
                 return 37;
             }
             return 0;

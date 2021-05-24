@@ -37,6 +37,7 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
 
         realityEditor.network.registerCallback('elementReloaded', onElementReloaded);
+        realityEditor.network.registerCallback('elementLoaded', onElementReloaded);
         // realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected); // this is handled already in network/frameContentAPI the same way as it is for any exclusiveFullScreen frame, so no need to listen/handle the event here
         realityEditor.network.registerCallback('vehicleReattached', function(params) {
             setTimeout(function() {
@@ -120,9 +121,7 @@ createNameSpace("realityEditor.envelopeManager");
                 
                 // if we added any new frames, and they are visible but the envelope is closed, then hide them
                 if (!knownEnvelopes[fullMessageContent.frame].isOpen) {
-                    sendMessageToEnvelopeContents(fullMessageContent.frame, {
-                        showContainedFrame: false
-                    });
+                    closeEnvelope(fullMessageContent.frame, true);
                 }
             }
         }
@@ -315,6 +314,15 @@ createNameSpace("realityEditor.envelopeManager");
             closeEnvelope(envelope.frame);
             console.log('closing parent envelope: ' + envelope.frame);
         });
+
+        // send message to open envelopes so that it gets updates properly if a tool on another object loads
+        sendMessageToOpenEnvelopes({
+            onFrameLoaded: {
+                objectId: params.objectKey,
+                frameId: params.frameKey,
+                frameType: params.frameType
+            }
+        }, params.frameType);
     }
 
     /**

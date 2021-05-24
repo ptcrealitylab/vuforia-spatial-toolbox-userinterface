@@ -26,10 +26,14 @@ createNameSpace("realityEditor.gui.glRenderer");
 
             this.uncloneables = {};
 
-            this.cache = {};
-
             this.commandBuffer = [];
+            this.lastUseProgram = null;
+            this.lastActiveTexture = {
+                name: 'activeTexture',
+                args: [this.gl.TEXTURE0],
+            };
             this.lastTargettedBinds = {};
+            this.lastTextureBinds = {};
             this.buffering = false;
 
             this.onMessage = this.onMessage.bind(this);
@@ -86,11 +90,7 @@ createNameSpace("realityEditor.gui.glRenderer");
                 return;
             }
 
-            const blacklist = {
-                clear: true,
-            };
-
-            if (blacklist[message.name]) {
+            if (message.name === 'clear') {
                 return;
             }
 
@@ -98,27 +98,34 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.lastUseProgram = message;
             }
 
+            if (message.name === 'activeTexture') {
+                this.lastActiveTexture = message;
+            }
+
             const targettedBinds = {
+                bindAttribLocation: true,
                 bindBuffer: true,
                 bindFramebuffer: true,
                 bindRenderbuffer: true,
-                bindTexture: true,
+                // bindTexture: true, // can't be here because of activeTexture nonsense
+                // pixelStorei: true,
+                // texParameterf: true, // 2 hmm
+                // texParameteri: true, // 2
+                // texImage2D: true,
             };
 
-            if (targettedBinds[message.name]) {
+            if (targettedBinds.hasOwnProperty(message.name)) {
                 this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
+            }
+            if (message.name === 'bindTexture') {
+                let activeTexture = this.lastActiveTexture.args[0];
+                if (!this.lastTextureBinds[activeTexture]) {
+                    this.lastTextureBinds[activeTexture] = {};
+                }
+                this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
             }
 
             let res = this.gl[message.name].apply(this.gl, message.args);
-            if (res && typeof res !== 'object') {
-                if (!this.cache[message.name]) {
-                    this.cache[message.name] = [];
-                }
-                this.cache[message.name].push({
-                    args: message.args,
-                    res: res,
-                });
-            }
             if (typeof res === 'object') {
                 this.uncloneables[message.id] = res;
                 res = {fakeClone: true, index: message.id};
@@ -126,11 +133,71 @@ createNameSpace("realityEditor.gui.glRenderer");
             return res;
         }
 
+        logCommandBuffer() {
+            let program = [];
+            for (let command of this.commandBuffer) {
+                let messages = command.messages || [command];
+                for (let message of messages) {
+                    let args = message.args.map(arg => {
+                        // if (arg.hasOwnProperty('0') && typeof arg !== 'string') {}
+                        if (typeof arg === 'object' && arg) {
+                            // let arrayArg = [];
+                            // for (let a of Array.from(arg)) {
+                            //   arrayArg.push(typeof a);
+                            // }
+                            if (arg.length || arg[0]) {
+                                arg = [(typeof arg[0]) || 'object', arg.length || Object.keys(arg).length];
+                            } else {
+                                return arg.toString();
+                            }
+                        }
+                        return JSON.stringify(arg);
+                    });
+                    program.push(`gl.${message.name}(${args.join(', ')})`);
+                }
+            }
+            let frame = program.join('\n');
+            if (!window.lastFrames) {
+                window.lastFrames = {};
+            }
+            if (!window.lastFrames[frame]) {
+                window.lastFrames[frame] = true;
+
+                console.log(`frame workerId=${this.workerId}`);
+                console.log(frame);
+            }
+        }
+
         executeFrameCommands() {
             this.buffering = false;
+
+            let setup = [];
+            if (this.lastUseProgram) {
+                setup.push(this.lastUseProgram);
+            }
+            for (let activeTexture in this.lastTextureBinds) {
+                setup.push({
+                    name: 'activeTexture',
+                    args: [activeTexture],
+                });
+                for (let command of Object.values(this.lastTextureBinds[activeTexture])) {
+                    setup.push(command);
+                }
+            }
+            if (this.lastActiveTexture) {
+                setup.push(this.lastActiveTexture);
+            }
+            if (this.lastTargettedBinds) {
+                for (let command of Object.values(this.lastTargettedBinds)) {
+                    setup.push(command);
+                }
+            }
+            this.commandBuffer = setup.concat(this.commandBuffer);
+
             for (let message of this.commandBuffer) {
                 this.executeCommand(message);
             }
+            // this.logCommandBuffer();
             this.commandBuffer = [];
         }
 
@@ -141,14 +208,6 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         getFrameCommands() {
             this.buffering = true;
-            if (this.lastUseProgram) {
-                this.commandBuffer.push(this.lastUseProgram);
-            }
-            if (this.lastTargettedBinds) {
-                for (let command of Object.values(this.lastTargettedBinds)) {
-                    this.commandBuffer.push(command);
-                }
-            }
             this.worker.postMessage({name: 'frame', time: Date.now()}, '*');
             return new Promise((res) => {
                 this.frameEndListener = res;
@@ -179,12 +238,12 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         for (let key in gl) {
             switch (typeof gl[key]) {
-                case 'function':
-                    functions.push(key);
-                    break;
-                case 'number':
-                    constants[key] = gl[key];
-                    break;
+            case 'function':
+                functions.push(key);
+                break;
+            case 'number':
+                constants[key] = gl[key];
+                break;
             }
         }
 
