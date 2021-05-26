@@ -157,6 +157,15 @@ realityEditor.device.onload = function () {
         }
 
     }).moveToDevelopMenu();
+    
+    realityEditor.gui.settings.addToggle('Demo Aspect Ratio', 'set screen ratio to 16:9', 'demoAspectRatio',  '../../../svg/cameraZoom.svg', false, function(newValue) {
+        const currentRatio = globalStates.height / globalStates.width;
+        if (Math.abs(currentRatio - (16/9)) < 0.001) {
+            realityEditor.app.setAspectRatio(0); // Resets to default
+        } else {
+            realityEditor.app.setAspectRatio(16/9);
+        }
+    }, true).moveToDevelopMenu();
 
     // Add a debug toggle to the develop menu that forces the targetDownloader to re-download each time instead of using the cache
     realityEditor.gui.settings.addToggle('Reset Target Cache', 'clear cache of downloaded target data', 'resetTargetCache',  '../../../svg/object.svg', false, function(newValue) {
