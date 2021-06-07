@@ -433,6 +433,10 @@ realityEditor.app.authenticateTouch = function() {
     realityEditor.app.appFunctionCall("authenticateTouch", null, null);
 };
 
+realityEditor.app.setAspectRatio = function(ratio) {
+    realityEditor.app.appFunctionCall("setAspectRatio", {ratio});
+}
+
 /**
  **************UTILITIES****************
  **/
