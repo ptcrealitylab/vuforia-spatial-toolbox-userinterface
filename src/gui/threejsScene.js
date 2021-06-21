@@ -3,7 +3,7 @@ createNameSpace("realityEditor.gui.threejsScene");
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
-import { SimplifyModifier } from '../../thirdPartyCode/three/SimplifyModifier.module.js';
+// import { SimplifyModifier } from '../../thirdPartyCode/three/SimplifyModifier.module.js';
 
 (function(exports) {
 
