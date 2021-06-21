@@ -1,5 +1,22 @@
 /* eslint-env worker */
 
+// ***** On Using Web Workers *****
+// Web Workers allow scripts to execute code in a background thread. In this
+//   case, we use one for loading the GLBs for the area targets and generating
+//   the corresponding navmeshes, as this is a computationally intensive process
+//   that would otherwise block the main app.
+// 
+// The onmessage function is called whenever the script that spawned the worker
+//   (src/app/targetDownloader.js) sends a message to it.
+// The postMessage function allows the worker to send messages back to the
+//   script that spawned the worker.
+// Workers can use the importScripts function to load in scripts from other
+//   files.
+
+// This file receives a URL for a GLB file as well as the corresponding objectID
+//   through the Web Worker messaging interface and returns the resulting
+//   navmesh through the same interface
+
 importScripts('../../thirdPartyCode/three/three.min.js');
 importScripts('../../thirdPartyCode/three/GLTFLoader.js');
 importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
@@ -24,6 +41,7 @@ const createNavmeshFromFile = (fileName) => {
     gltfLoader.load(fileName, (gltf) => {
       // TODO: Make this more robust to edited GLBs that accidentally left other objects in (like default lights in Blender)
       // One approach is to just merge all geometry in the scene among all scene children
+      // Doesn't really cause any issues unless someone manually edits a mesh
       if (gltf.scene.children[0].geometry) {
         resolve(createNavmesh(gltf.scene.children[0].geometry, heatmapResolution));
       } else {
