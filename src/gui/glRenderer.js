@@ -178,7 +178,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             for (let activeTexture in this.lastTextureBinds) {
                 setup.push({
                     name: 'activeTexture',
-                    args: [activeTexture],
+                    args: [parseInt(activeTexture)],
                 });
                 for (let command of Object.values(this.lastTextureBinds[activeTexture])) {
                     setup.push(command);
