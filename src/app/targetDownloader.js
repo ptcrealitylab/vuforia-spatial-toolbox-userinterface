@@ -84,7 +84,6 @@ createNameSpace("realityEditor.app.targetDownloader");
     navmeshWorker.onmessage = function(evt) {
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
-        const fileName = evt.data.fileName;
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
         
         // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future

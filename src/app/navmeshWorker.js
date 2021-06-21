@@ -20,7 +20,7 @@ onmessage = function(evt) {
 }
 
 const createNavmeshFromFile = (fileName) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     gltfLoader.load(fileName, (gltf) => {
       // TODO: Make this more robust to edited GLBs that accidentally left other objects in (like default lights in Blender)
       // One approach is to just merge all geometry in the scene among all scene children

@@ -9,7 +9,6 @@ createNameSpace("realityEditor.gui.navigation");
     const trackedObjectIDs = [];
     const navigationObjects = {};
     let initialized = false;
-    let meshResources;
     let pathMeshResources;
     
     const initialize = () => {
@@ -92,7 +91,6 @@ createNameSpace("realityEditor.gui.navigation");
         let topVertices = [];
         let wallVertices = [];
         const up = new THREE.Vector3(0,1,0);
-        const forward = new THREE.Vector3(0,0,1);
         // Base should be wider to allow visibility while moving along line
         const bottomScale = 1.4; // How much wider the bottom of the walls is
         let lightDistanceTraveled = 0; // Used to determine light placement
@@ -259,7 +257,7 @@ createNameSpace("realityEditor.gui.navigation");
             const goalIndex = posToIndex(navmesh, scalePos(goalRelativePosition, 1/1000));
             const indexPath = findPath(navmesh, cameraIndex, goalIndex);
             const pathHeightOffset = 750; // 0.75m
-            const relativePath = indexPath.map(index => indexToPos(navmesh, index)).map(pos => scalePos(pos, 1000)).map(point => new THREE.Vector3(point.x, point.y + pathHeightOffset, point.z));;
+            const relativePath = indexPath.map(index => indexToPos(navmesh, index)).map(pos => scalePos(pos, 1000)).map(point => new THREE.Vector3(point.x, point.y + pathHeightOffset, point.z));
             relativePath[0].x = cameraRelativePosition.x;
             relativePath[0].z = cameraRelativePosition.z;
             relativePath.push(new THREE.Vector3(goalRelativePosition.x, goalRelativePosition.y, goalRelativePosition.z));
