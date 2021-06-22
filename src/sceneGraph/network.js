@@ -43,39 +43,6 @@ createNameSpace("realityEditor.sceneGraph.network");
                 uploadSceneNode(sceneNode);
             }
         });
-        
-        // try uploading the camera position
-        // uploadCameraPosition();
-    }
-
-    function uploadCameraPosition() {
-        let cameraNode = sceneGraph.getSceneNodeById(sceneGraph.NAMES.CAMERA);
-
-        if (!cameraNode) { return; }
-
-        // if (doesNeedUpload(cameraNode)) {
-        //     uploadSceneNode(cameraNode);
-        // }
-
-        // don't upload if we haven't localized everything to a world object yet
-        if (!realityEditor.sceneGraph.getWorldId())  { return; }
-
-        uploadInfo[cameraNode.id] = {
-            localMatrix: cameraNode.localMatrix,
-            worldPosition: sceneGraph.getWorldPosition(cameraNode.id),
-            timestamp: Date.now()
-        };
-
-        console.log('uploading scene graph object position for ' + cameraNode.id);
-
-        // if it's an object, post object position relative to a world object
-        let worldObjectId = sceneGraph.getWorldId();
-        let worldNode = sceneGraph.getSceneNodeById(worldObjectId);
-        let relativeMatrix = cameraNode.getMatrixRelativeTo(worldNode);
-        let worldObject = realityEditor.getObject(worldObjectId);
-        realityEditor.network.postCameraPosition(worldObject.ip, worldObjectId, relativeMatrix, DEBUG_CLIENT_NAME);
-
-        cameraNode.needsUploadToServer = false;
     }
 
     /**

@@ -3187,24 +3187,6 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
     });
 };
 
-realityEditor.network.postCameraPosition = function(ip, worldId, matrix, clientId) {
-    let port = realityEditor.network.getPort(objects[worldId]);
-    var urlEndpoint = 'http://' + ip + ':' + port + '/spatial/cameraMatrix';
-    let content = {
-        matrix: matrix,
-        clientId: clientId,
-        worldId: worldId,
-        lastEditor: globalStates.tempUuid
-    };
-    this.postData(urlEndpoint, content, function(err, _response) {
-        if (err) {
-            console.warn('error posting to ' + urlEndpoint, err);
-        } else {
-            console.log('successfully posted to ' + urlEndpoint);
-        }
-    });
-};
-
 realityEditor.network.searchAndDownloadUnpinnedFrames = function (ip, port) {
     realityEditor.network.search.searchFrames(ip, port, {src: 'communication'}, function(matchingFrame) {
         let object = realityEditor.getObject(matchingFrame.objectId);

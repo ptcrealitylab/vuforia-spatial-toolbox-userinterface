@@ -1,16 +1,15 @@
 createNameSpace("realityEditor.humanObjects");
 
 /**
- * @fileOverview realityEditor.worldObjects
- * Loads world objects from any servers where it has discovered any objects, because world objects are stored differently
- *  on the server and so they aren't advertised in the same way as the rest of the objects.
- * Also manually adds a _WORLD_local which is a special world object hosted by the iOS device but doesn't persist
- *  data from session to session, and has the lowest priority to add frames to if any other world objects are visible
+ * @fileOverview realityEditor.humanObjects
+ * When the app successfully localizes within a world, checks if this device has a "human" representation saved on that
+ * world object's server. If not, create one. Continuously updates this object's position in the scene graph to match
+ * the camera position, and broadcasts that position over the realtime sockets.
  */
 
 (function(exports) {
     
-    let persistentClientId = window.localStorage.getItem('persistentClientId') || DEBUG_CLIENT_NAME;
+    let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName;
     let humanObjectInitialized = false;
     var humanObjects = {}; // human objects are stored in the regular global "objects" variable, but also in here
 
@@ -69,30 +68,16 @@ createNameSpace("realityEditor.humanObjects");
             let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
             if (!humanSceneNode || !cameraNode) { return; }
 
-            /*
-            // humanSceneNode.setLocalMatrix(cameraNode.localMatrix);
-            realityEditor.sceneGraph.moveSceneNodeToCamera(persistentClientId);
-            
-            // console.log(realityEditor.sceneGraph.getWorldPosition(persistentClientId));
-            */
-
             // place it in front of the camera, facing towards the camera
-            let distanceInFrontOfCamera = 100;
+            let distanceInFrontOfCamera = 0;
 
             let initialVehicleMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                0, 0, 0, 1
+                0, 0, -1 * distanceInFrontOfCamera, 1
             ];
 
-            // let initialVehicleMatrix = [
-            //     -1, 0, 0, 0,
-            //     0, 1, 0, 0,
-            //     0, 0, -1, 0,
-            //     0, 0, -1 * distanceInFrontOfCamera, 1
-            // ];
-            //
             // let additionalRotation = realityEditor.device.environment.getInitialPocketToolRotation();
             // if (additionalRotation) {
             //     let temp = [];
@@ -117,11 +102,7 @@ createNameSpace("realityEditor.humanObjects");
                 let worldObjectId = realityEditor.sceneGraph.getWorldId();
                 let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
                 let relativeMatrix = humanSceneNode.getMatrixRelativeTo(worldNode);
-                // realityEditor.network.postObjectPosition(humanObject.ip, sceneNode.id, relativeMatrix, worldObjectId);
-
                 realityEditor.network.realtime.broadcastUpdate(persistentClientId, null, null, 'matrix', relativeMatrix);
-
-                // realityEditor.network.realtime.broadcastUpdate(persistentClientId, null, null, 'matrix', humanSceneNode.localMatrix);
             }
         });
     }

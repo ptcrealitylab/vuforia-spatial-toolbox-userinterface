@@ -61,8 +61,6 @@ var boundListeners = {};
 
 var TEMP_DISABLE_MEMORIES = false;
 
-var DEBUG_CLIENT_NAME = '_HUMAN_BenReynolds';
-
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
 /**********************************************************************************************************************
  ******************************************** global variables  *******************************************************
@@ -177,7 +175,9 @@ var globalStates = {
     reality: false,
     interface: "gui",
 
-    useGroundPlane: false
+    useGroundPlane: false,
+    
+    defaultClientName: '_HUMAN_device'
 };
 
 var globalCanvas = {};
