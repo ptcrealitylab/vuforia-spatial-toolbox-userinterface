@@ -54,6 +54,9 @@ createNameSpace("realityEditor.device");
  * Sets the application's window.onload function to trigger this init method, which sets up the GUI and networking.
  */
 
+// add-ons can register a function to be called instead of getVuforiaReady
+realityEditor.device.initFunctions = [];
+
 /**
  * When the index.html first finishes loading, set up the:
  * Sidebar menu buttons,
@@ -180,18 +183,21 @@ realityEditor.device.onload = function () {
     globalCanvas.canvas.height = globalStates.width;
     globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
+    realityEditor.device.environment.initService();
+
     // adds touch handlers for each of the menu buttons
-    realityEditor.gui.menus.init();
-    
-    // set active buttons and preload some images
-    realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
-    realityEditor.gui.buttons.initButtons();
+    if (!realityEditor.device.environment.variables.overrideMenusAndButtons) {
+        realityEditor.gui.menus.init();
+
+        // set active buttons and preload some images
+        realityEditor.gui.menus.switchToMenu("main", ["gui"], ["reset", "unconstrained"]);
+        realityEditor.gui.buttons.initButtons();
+    }
     
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.touchInputs.initService();
     realityEditor.device.videoRecording.initService();
-    realityEditor.device.environment.initService();
     realityEditor.device.tracking.initService();
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
@@ -206,8 +212,10 @@ realityEditor.device.onload = function () {
     realityEditor.network.frameContentAPI.initService();
     realityEditor.envelopeManager.initService();
     realityEditor.network.availableFrames.initService();
+    realityEditor.network.search.initService();
     realityEditor.sceneGraph.initService();
     realityEditor.gui.glRenderer.initService();
+    realityEditor.gui.threejsScene.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
@@ -243,7 +251,9 @@ realityEditor.device.onload = function () {
     realityEditor.device.layout.adjustForScreenSize();
 
     // adjust when phone orientation changes - also triggers one time immediately with the initial orientation
-    realityEditor.app.enableOrientationChanges('realityEditor.device.layout.onOrientationChanged');
+    if (realityEditor.device.environment.variables.listenForDeviceOrientationChanges) {
+        realityEditor.app.enableOrientationChanges('realityEditor.device.layout.onOrientationChanged');
+    }
 
     // prevent touch events on overlayDiv
     overlayDiv.addEventListener('touchstart', function (e) {
@@ -277,8 +287,13 @@ realityEditor.device.onload = function () {
         }
     })();
     
-    // start the AR framework in native iOS
-    realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+    if (realityEditor.device.initFunctions.length === 0) {
+        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+    } else {
+        realityEditor.device.initFunctions.forEach(function(initFunction) {
+            initFunction();
+        });
+    }
 
     // see if we should open the modal - defaults hidden but can be turned on from menu
     let shouldShowIntroModal = window.localStorage.getItem('neverAgainShowIntroTips') !== 'true';

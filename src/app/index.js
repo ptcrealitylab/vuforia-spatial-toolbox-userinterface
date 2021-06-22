@@ -374,6 +374,14 @@ realityEditor.app.restartDeviceTracker = function() {
 };
 
 /**
+ * Param should be "landscapeLeft", "landscapeRight", "portrait", or "portraitUpsideDown"
+ * @param orientationString
+ */
+realityEditor.app.setOrientation = function(orientationString, callBack) {
+    this.appFunctionCall('setOrientation', {orientationString: orientationString}, 'realityEditor.app.callBack('+callBack+')');
+};
+
+/**
  **************Debugging****************
  **/
 

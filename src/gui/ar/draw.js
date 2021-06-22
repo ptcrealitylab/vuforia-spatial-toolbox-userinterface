@@ -1193,7 +1193,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
                 }
 
-                if (this.isLowFrequencyUpdateFrame) {
+                if (this.isLowFrequencyUpdateFrame && realityEditor.device.environment.variables.enableViewFrustumCulling) {
                     
                     // if too far beyond visibility threshold, unload and render a little dot instead
                     let distanceThreshold = 1.2 * realityEditor.gui.ar.getDistanceScale(activeVehicle) * realityEditor.device.distanceScaling.getDefaultDistance();
@@ -1245,13 +1245,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (this.isLowFrequencyUpdateFrame && activeVehicle.fullScreen === true) {
                 // update z-order of fullscreen frames so that closest ones get put in front of further-back ones
                 let distanceToFullscreenFrame = realityEditor.sceneGraph.getDistanceToCamera(activeKey);
-                const defaultZ = -5000;
-                globalDOMCache["object" + activeKey].style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + (defaultZ - distanceToFullscreenFrame) + ',1)';
+                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : -5000 - distanceToFullscreenFrame;
+                globalDOMCache["object" + activeKey].style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zPosition + ',1)';
             }
             
             if (activeType === "ui") {
                 let sendMatrices = activeVehicle.sendMatrices;
-                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition || activeVehicle.sendPositionInWorld ||
+                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition || activeVehicle.sendPositionInWorld || activeVehicle.sendDeviceDistance ||
                     sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
 
                     var thisMsg = {};
@@ -1311,6 +1311,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                                 worldMatrix: relativeMatrix
                             }
                         }
+                    }
+
+                    if (activeVehicle.sendDeviceDistance === true) {
+                        thisMsg.deviceDistance = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
                     }
                     
                     if (activeType === 'ui') {

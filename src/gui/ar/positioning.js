@@ -559,6 +559,13 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
         0, 0, -1 * distanceInFrontOfCamera, 1
     ];
 
+    let additionalRotation = realityEditor.device.environment.getInitialPocketToolRotation();
+    if (additionalRotation) {
+        let temp = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(additionalRotation, initialVehicleMatrix, temp);
+        initialVehicleMatrix = temp;
+    }
+
     // needs to be flipped in some environments with different camera systems
     if (realityEditor.device.environment.isCameraOrientationFlipped()) {
         initialVehicleMatrix[5] *= -1;

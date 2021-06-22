@@ -804,6 +804,16 @@ body {
     pointer-events: none;
 }
 
+#mainThreejsCanvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: transparent;
+    pointer-events: none;
+    -webkit-transform-style: preserve-3d;
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -30, 1);
+}
+
 .ignorePointerEvents {
     pointer-events: none;
 }
@@ -1599,6 +1609,11 @@ Logic Interface CSS
     line-height: 30px;
     animation: dropIn 300ms ease-out;
     transition: height 300ms ease-out;
+}
+
+.statusBarPortrait {
+    left: 40px;
+    width: calc(100vw - 100px); /* centers, including padding */
 }
 
 @keyframes dropIn {

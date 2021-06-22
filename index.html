@@ -73,6 +73,8 @@
     <script src="thirdPartyCode/socket.io.js"></script>
     <script src="thirdPartyCode/hull.js"></script>
     <script src="thirdPartyCode/stats.min.js"></script>
+    <!-- three.js is imported as a module in src/gui/threejsScene.js rather than here -->
+
     <script src="src/constructors.js"></script>
     <script src="src/objects.js"></script>
     <script src="src/index.js"></script>
@@ -105,6 +107,7 @@
     <script src="src/network/utilities.js"></script>
     <script src="src/network/frameContentAPI.js"></script>
     <script src="src/network/availableFrames.js"></script>
+    <script src="src/network/search.js"></script>
 
     <script src="src/sceneGraph/sceneNode.js"></script>
     <script src="src/sceneGraph/index.js"></script>
@@ -118,6 +121,8 @@
     <script src="src/gui/modal.js"></script>
     <script src="src/gui/dropdown.js"></script>
     <script src="src/gui/glRenderer.js"></script>
+    <script src="src/gui/navigation.js"></script>
+    <script src="src/gui/threejsScene.js" type="module"></script>
 
     <script src="src/gui/ar/index.js"></script>
     <script src="src/gui/ar/utilities.js"></script>
@@ -162,7 +167,7 @@
 
 <!-- This is the Interface frontend GUI part -->
 
-<div class='Interfaces' id="UIButtons">
+<div class='Interfaces' id="UIButtons" style="display: none">
     <div id="backButtonDiv"></div>
     <svg id="backButton">
         <!--   <path class="blue" d="M60,125H0V0h60V125z M58.1,1.9H1.8v121.3h56.3V1.9z"/>-->

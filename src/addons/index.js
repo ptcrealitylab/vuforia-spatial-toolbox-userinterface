@@ -14,9 +14,33 @@ createNameSpace("realityEditor.addons");
         }
     });
 
+    // Also fetch CSS addons
+    fetch('/addons/styles').then((res) => {
+        return res.json();
+    }).then((addonSources) => {
+        // Inject all stylesheets
+        for (const source of addonSources) {
+            const styleNode = document.createElement('link');
+            styleNode.rel = 'stylesheet';
+            styleNode.type = 'text/css';
+            styleNode.href = source;
+            document.head.appendChild(styleNode);
+        }
+    });
+
+    // Also fetch image resources and store references to them at the correct path
+    let resourcePaths = [];
+    fetch('/addons/resources').then((res) => {
+        return res.json();
+    }).then((addonSources) => {
+        resourcePaths = addonSources;
+        onResourcesLoaded(addonSources);
+    });
+
     const callbacks = {
         init: [],
         networkSetSettings: [],
+        resourcesLoaded: []
     };
 
     // Whether our onInit function has been called
@@ -44,6 +68,16 @@ createNameSpace("realityEditor.addons");
     }
 
     /**
+     * When img resource paths are retrieved from the server, call all callbacks
+     * @param {Array.<string>} resourcePaths
+     */
+    function onResourcesLoaded(resourcePaths) {
+        callbacks['resourcesLoaded'].forEach(cb => {
+            cb(JSON.parse(JSON.stringify(resourcePaths)));
+        });
+    }
+
+    /**
      * Add a callback to an event, throws if eventName is unknown
      * @param {string} eventName
      * @param {Function} callback
@@ -54,6 +88,10 @@ createNameSpace("realityEditor.addons");
         // Invoke onInit callbacks if they missed the boat
         if (eventName === 'init' && initialized) {
             callback();
+        }
+
+        if (eventName === 'resourcesLoaded' && resourcePaths.length > 0) {
+            callback(resourcePaths);
         }
     }
 

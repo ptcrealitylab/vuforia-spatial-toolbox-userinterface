@@ -75,6 +75,23 @@ createNameSpace("realityEditor.app.targetDownloader");
             FAILED: 2,
             SUCCEEDED: 3
         });
+        
+    /**
+     * Worker that generates navmeshes from upload area target meshes
+     * @type {Worker}
+     */
+    const navmeshWorker = new Worker('src/app/navmeshWorker.js');
+    navmeshWorker.onmessage = function(evt) {
+        const navmesh = evt.data.navmesh;
+        const objectID = evt.data.objectID;
+        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+        
+        // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future
+        // realityEditor.gui.threejsScene.addOcclusionGltf(fileName, objectID);
+    }
+    navmeshWorker.onerror = function(error) {
+        console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
+    }
 
     /**
      * Downloads the JPG files, and adds the AR marker to the tracking engine, when a new UDP object heartbeat is detected
@@ -125,6 +142,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             XML: DownloadState.NOT_STARTED,
             DAT: DownloadState.NOT_STARTED,
             JPG: DownloadState.NOT_STARTED,
+            GLB: DownloadState.NOT_STARTED,
             MARKER_ADDED: DownloadState.NOT_STARTED
         };
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
@@ -165,6 +183,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             if (targetDownloadStates[objectID].XML === DownloadState.STARTED ||
                 targetDownloadStates[objectID].DAT === DownloadState.STARTED ||
                 targetDownloadStates[objectID].JPG === DownloadState.STARTED ||
+                targetDownloadStates[objectID].GLB === DownloadState.STARTED ||
                 targetDownloadStates[objectID].MARKER_ADDED === DownloadState.STARTED) {
                 return false;
             }
@@ -231,7 +250,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
         var object = realityEditor.getObject(objectID);
 
-      const jpgAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.jpg';
+        const jpgAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.jpg';
 
         if (success) {
 
@@ -242,6 +261,19 @@ createNameSpace("realityEditor.app.targetDownloader");
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             realityEditor.getObject(objectID).isJpgTarget = false;
+            
+            var glbAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.glb';
+
+            // don't download again if already stored the same checksum version
+            if (isAlreadyDownloaded(objectID, 'GLB')) {
+                console.log('skip downloading GLB for ' + objectID);
+                onTargetGLBDownloaded(true, glbAddress); // just directly trigger onTargetGLBDownloaded
+                return;
+            }
+
+            // try to download GLB
+            realityEditor.app.downloadFile(glbAddress, moduleName + '.onTargetGLBDownloaded');
+            targetDownloadStates[objectID].GLB = DownloadState.STARTED;
 
         } else {
             console.log('failed to download DAT file: ' + fileName);
@@ -257,6 +289,31 @@ createNameSpace("realityEditor.app.targetDownloader");
             realityEditor.app.downloadFile(jpgAddress, moduleName + '.onTargetJPGDownloaded');
             targetDownloadStates[objectID].JPG = DownloadState.STARTED;
         }
+    }
+    
+    /**
+     * If successfully downloads target GLB, tries to set up navigation map
+     * @param {boolean} success
+     * @param {string} fileName
+     */
+    function onTargetGLBDownloaded(success, fileName) {
+        // we don't have the objectID but luckily it can be extracted from the fileName
+        var objectID = getObjectIDFromFilename(fileName);
+
+        if (success) {
+            console.log('successfully downloaded GLB file: ' + fileName);
+            targetDownloadStates[objectID].GLB = DownloadState.SUCCEEDED;
+        } else {
+            console.log('failed to download GLB file: ' + fileName);
+            targetDownloadStates[objectID].GLB = DownloadState.FAILED;
+            onDownloadFailed(objectID);
+        }
+        onTargetGLBAddress(fileName, objectID);
+    }
+    
+    function onTargetGLBAddress(fileName, objectID) {
+        console.log('got GLB address');
+        navmeshWorker.postMessage({fileName, objectID});
     }
 
     /**
@@ -369,6 +426,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         let xmlPreviouslyDownloaded = false;
         let jpgPreviouslyDownloaded = false;
         let datPreviouslyDownloaded = false;
+        let glbPreviouslyDownloaded = false;
         let previousChecksum = null;
         if (previousDownloadInfo) {
             try {
@@ -376,6 +434,7 @@ createNameSpace("realityEditor.app.targetDownloader");
                 xmlPreviouslyDownloaded = parsed.xmlDownloaded === DownloadState.SUCCEEDED;
                 jpgPreviouslyDownloaded = parsed.jpgDownloaded === DownloadState.SUCCEEDED;
                 datPreviouslyDownloaded = parsed.datDownloaded === DownloadState.SUCCEEDED;
+                glbPreviouslyDownloaded = parsed.glbDownloaded === DownloadState.SUCCEEDED;
                 previousChecksum = parsed.checksum;
             } catch (e) {
                 console.warn('error parsing previousDownloadInfo');
@@ -388,6 +447,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else if (fileType === 'DAT' && !datPreviouslyDownloaded) {
             return false;
         } else if (fileType === 'JPG' && !jpgPreviouslyDownloaded) {
+            return false;
+        } else if (fileType === 'GLB' && !glbPreviouslyDownloaded) {
             return false;
         }
 
@@ -416,7 +477,8 @@ createNameSpace("realityEditor.app.targetDownloader");
                 checksum: temporaryChecksumMap[objectID],
                 xmlDownloaded: targetDownloadStates[objectID].XML,
                 datDownloaded: targetDownloadStates[objectID].DAT,
-                jpgDownloaded: targetDownloadStates[objectID].JPG
+                jpgDownloaded: targetDownloadStates[objectID].JPG,
+                glbDownloaded: targetDownloadStates[objectID].GLB
             }));
         }
     }
@@ -639,6 +701,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;
     exports.onTargetDATDownloaded = onTargetDATDownloaded;
     exports.onTargetJPGDownloaded = onTargetJPGDownloaded;
+    exports.onTargetGLBDownloaded = onTargetGLBDownloaded;
     exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
     exports.onTargetFileDownloaded = onTargetFileDownloaded;

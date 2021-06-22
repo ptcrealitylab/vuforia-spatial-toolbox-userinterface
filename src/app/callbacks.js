@@ -61,6 +61,11 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
+    function onOrientationSet() {
+        // start the AR framework in native iOS
+        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+    }
+
     /**
      * Callback for realityEditor.app.getVuforiaReady
      * Triggered when Vuforia Engine finishes initializing.
@@ -384,6 +389,7 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     // public methods (anything triggered by a native app callback needs to be public
+    exports.onOrientationSet = onOrientationSet;
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
     exports.receivedUDPMessage = receivedUDPMessage;

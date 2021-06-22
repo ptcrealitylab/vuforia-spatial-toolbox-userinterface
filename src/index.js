@@ -111,14 +111,17 @@ var realityEditor = realityEditor || {
         menus:{},
         modal: {},
         moveabilityCorners: {},
+        navigation: {},
         pocket: {},
         screenExtension : {},
+        threejsScene: {},
         utilities: {}
     },
     network: {
         frameContentAPI: {},
         availableFrames: {},
         realtime: {},
+        search: {},
         utilities: {}
     },
     sceneGraph: {
