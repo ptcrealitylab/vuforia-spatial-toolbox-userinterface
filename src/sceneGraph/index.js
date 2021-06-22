@@ -145,11 +145,6 @@ createNameSpace("realityEditor.sceneGraph");
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix);
-
-        // if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
-        //     var keys = realityEditor.getKeysFromVehicle(frame);
-        //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
-        // }
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {
@@ -210,12 +205,6 @@ createNameSpace("realityEditor.sceneGraph");
         visibleObjectIds.forEach( function(objectKey) {
             let object = realityEditor.getObject(objectKey);
             let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
-            
-            // if (objectSceneNode.tags[TAGS.OBJECT] && objectSceneNode.id.indexOf('HUMAN') > -1) {
-            //     console.log(objectSceneNode.localMatrix.toString());
-            //     console.log(objectSceneNode.worldMatrix.toString());
-            //     console.log('');
-            // }
 
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
