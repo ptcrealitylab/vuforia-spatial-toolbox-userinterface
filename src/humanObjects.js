@@ -14,7 +14,7 @@ createNameSpace("realityEditor.humanObjects");
     var humanObjects = {}; // human objects are stored in the regular global "objects" variable, but also in here
 
     /**
-     * Init world object module
+     * Init human object module
      */
     function initService() {
         console.log('initService: humanObjects');
@@ -27,19 +27,17 @@ createNameSpace("realityEditor.humanObjects");
             console.log('humanObjects module onLocalizedWithinWorld: ' + objectKey);
             
             // check if humanObject for this device exists on server?
-            // /http://localhost:8080/object/BenReynolds
-            
             let worldObject = realityEditor.getObject(objectKey);
-
             let downloadUrl = 'http://' + worldObject.ip + ':' + realityEditor.network.getPort(worldObject) + '/object/' + persistentClientId;
+
             realityEditor.network.getData(null,  null, null, downloadUrl, function (_objectKey, _frameKey, _nodeKey, msg) {
                 if (msg) {
                     console.log('found humanObject', msg);
                     humanObjectInitialized = true;
                 } else {
-                    console.log('cant find humanObject');
-                    // try creating it!
-                    addHumanObject(objectKey, persistentClientId);
+                    console.log('cant find humanObject - try creating it');
+                    // the name of the object will be (defaultClientName + a random uuid string added by the server)
+                    addHumanObject(objectKey, globalStates.defaultClientName);
                 }
             });
             
@@ -111,6 +109,12 @@ createNameSpace("realityEditor.humanObjects");
         console.log('todo: implement initializeHumanObject');
     }
 
+    /**
+     * Tell the server (corresponding to this world object) to create a new human object with the specified ID
+     * @param {string} worldId
+     * @param {string} clientId
+     * @return {boolean}
+     */
     function addHumanObject(worldId, clientId) {
         let worldObject = realityEditor.getObject(worldId);
         if (!worldObject) { return; }
