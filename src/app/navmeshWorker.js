@@ -1,5 +1,22 @@
 /* eslint-env worker */
 
+// ***** On Using Web Workers *****
+// Web Workers allow scripts to execute code in a background thread. In this
+//   case, we use one for loading the GLBs for the area targets and generating
+//   the corresponding navmeshes, as this is a computationally intensive process
+//   that would otherwise block the main app.
+// 
+// The onmessage function is called whenever the script that spawned the worker
+//   (src/app/targetDownloader.js) sends a message to it.
+// The postMessage function allows the worker to send messages back to the
+//   script that spawned the worker.
+// Workers can use the importScripts function to load in scripts from other
+//   files.
+
+// This file receives a URL for a GLB file as well as the corresponding objectID
+//   through the Web Worker messaging interface and returns the resulting
+//   navmesh through the same interface
+
 importScripts('../../thirdPartyCode/three/three.min.js');
 importScripts('../../thirdPartyCode/three/GLTFLoader.js');
 importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
@@ -13,15 +30,18 @@ onmessage = function(evt) {
   console.log(`Starting navmesh generation for ${objectID}`);
   createNavmeshFromFile(fileName).then(navmesh => {
     console.log(`Done creating navmesh for ${objectID}`);
-    postMessage({navmesh,objectID});
+    postMessage({navmesh,objectID,fileName});
   }).catch(error => {
     console.error(error);
   });
 }
 
 const createNavmeshFromFile = (fileName) => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     gltfLoader.load(fileName, (gltf) => {
+      // TODO: Make this more robust to edited GLBs that accidentally left other objects in (like default lights in Blender)
+      // One approach is to just merge all geometry in the scene among all scene children
+      // Doesn't really cause any issues unless someone manually edits a mesh
       if (gltf.scene.children[0].geometry) {
         resolve(createNavmesh(gltf.scene.children[0].geometry, heatmapResolution));
       } else {
@@ -29,7 +49,7 @@ const createNavmeshFromFile = (fileName) => {
         resolve(createNavmesh(mergedGeometry, heatmapResolution));
       }
     });
-  })
+  });
 }
 
 // Rasterization algorithm from http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
@@ -122,31 +142,24 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   const zLength = Math.ceil((maxZ - minZ) * resolution); // Navmesh size
   const faceData = []; // Stores data about normal directions
   const outerHoles = []; // Stores data about areas that are part of the mesh
+  const expandedWallMap = []; // Stores data about where the walls are, expanded to prevent pathfinding along walls
   const regionMap = []; // Stores data about isolated floor sections (to eliminate tables, countertops, etc.)
   for (let x = 0; x < xLength; x++) {
     const faceDataZArray = [];
     const outerHolesZArray = [];
+    const expandedWallZArray = [];
     const regionMapZArray = [];
     for (let z = 0; z < zLength; z++) {
       faceDataZArray.push([0,0,0]); // [totalWeight, count, withinMesh]
       outerHolesZArray.push(0);
+      expandedWallZArray.push(0);
       regionMapZArray.push(0);
     }
     faceData.push(faceDataZArray);
     outerHoles.push(outerHolesZArray);
+    expandedWallMap.push(expandedWallZArray);
     regionMap.push(regionMapZArray);
   }
-  
-  // // Helper to convert from navmesh position to 2D position
-  // const indexToPos = (x,z) => {
-  //   return [((x) / xLength) * (maxX - minX) + minX, ((z) / zLength) * (maxZ - minZ) + minZ];
-  // }
-  // 
-  // // Helper to convert from navmesh position to 2D position
-  // const indexToVec2 = (x,z) => {
-  //   const pos = indexToPos(x,z);
-  //   return new THREE.Vector2(pos[0], pos[1]);
-  // }
   
   const indexedFaceAttribute = geometry.index;
   const positionAttribute = geometry.attributes.position;
@@ -304,12 +317,49 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     }
   }
   
+  faceData.forEach((xRow, x) => {
+    xRow.forEach((value, z) => {
+      if (x-1 >= 0 && faceData[x-1][z][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (z-1 >= 0 && faceData[x][z-1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x+1 < faceData.length && faceData[x+1][z][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (z+1 < faceData[x].length && faceData[x][z+1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x-1 >= 0 && z-1 >= 0 && faceData[x-1][z-1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x+1 < faceData.length && z-1 >= 0 && faceData[x+1][z-1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x+1 < faceData.length && z+1 < faceData[x].length && faceData[x+1][z+1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+      if (x-1 >= 0 && z+1 < faceData[x].length && faceData[x-1][z+1][1] === 0) {
+        expandedWallMap[x][z] = 1;
+        return;
+      }
+    })
+  });
+  
   // Finding largest contiguous region for floor
   let regionNumber = 1; // Number of current region
   let maxRegionNumber = 0; // Number of largest region
   let maxRegionCount = 0; // Number of pixels in largest region
   const isMapped = (x,z) => {
-    return regionMap[x][z] != 0 || faceData[x][z][1] === 0;
+    return regionMap[x][z] != 0 || expandedWallMap[x][z] === 1;
   }
   for (let x = 0; x < xLength; x++) {
     for (let z = 0; z < zLength; z++) {

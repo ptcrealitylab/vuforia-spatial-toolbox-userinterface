@@ -2144,7 +2144,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 frames: {},
                 initialized: isInitialized,
                 isAnchor: realityEditor.gui.ar.anchors.isAnchorObject(objectKey),
-                isWorld: thisObject.isWorldObject
+                isWorld: thisObject.isWorldObject,
+                isOcclusionActive: realityEditor.gui.threejsScene.isOcclusionActive(objectKey),
+                isNavigable: window.localStorage.getItem(`realityEditor.navmesh.${objectKey}`) != null
             };
 
             if (thisObject.isWorldObject) {
@@ -3173,24 +3175,6 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
     var urlEndpoint = 'http://' + ip + ':' + port + '/object/' + objectKey + "/matrix";
     let content = {
         matrix: matrix,
-        worldId: worldId,
-        lastEditor: globalStates.tempUuid
-    };
-    this.postData(urlEndpoint, content, function(err, _response) {
-        if (err) {
-            console.warn('error posting to ' + urlEndpoint, err);
-        } else {
-            console.log('successfully posted to ' + urlEndpoint);
-        }
-    });
-};
-
-realityEditor.network.postCameraPosition = function(ip, worldId, matrix, clientId) {
-    let port = realityEditor.network.getPort(objects[worldId]);
-    var urlEndpoint = 'http://' + ip + ':' + port + '/spatial/cameraMatrix';
-    let content = {
-        matrix: matrix,
-        clientId: clientId,
         worldId: worldId,
         lastEditor: globalStates.tempUuid
     };

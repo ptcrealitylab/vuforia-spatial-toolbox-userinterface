@@ -1,12 +1,9 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
-// three.js libraries are loaded from a CDN since we don't currently use a build system for the userinterface
-import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
-import { GLTFLoader } from 'https://unpkg.com/three@0.126.1/examples/jsm/loaders/GLTFLoader.js';
-import { BufferGeometryUtils } from 'https://unpkg.com/three@0.126.1/examples/jsm/utils/BufferGeometryUtils.js';
-
-let maxCeilingHeight = 2.3;
-window.DEBUG_CEILING_HEIGHT = 0;
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
+import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
+// import { SimplifyModifier } from '../../thirdPartyCode/three/SimplifyModifier.module.js';
 
 (function(exports) {
 
@@ -17,12 +14,14 @@ window.DEBUG_CEILING_HEIGHT = 0;
     var isProjectionMatrixSet = false;
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
-    
-    const DISPLAY_ORIGIN_BOX = false;
-    
+    const worldObjectGroups = {}; // Parent objects for objects attached to world objects
+    const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+
     let customMaterials;
 
-    // for now, everything gets added to this and then this moves based on the modelview matrix of the world origin
+    const DISPLAY_ORIGIN_BOX = false;
+
+    // for now, this contains everything not attached to a specific world object
     // todo: in future, move three.js camera instead of moving the scene
     var threejsContainerObj;
 
@@ -35,8 +34,9 @@ window.DEBUG_CEILING_HEIGHT = 0;
         document.body.appendChild( renderer.domElement );
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
         scene = new THREE.Scene();
+        scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
-        // create a parent 3D object to contain all the three js objects
+        // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
@@ -52,28 +52,8 @@ window.DEBUG_CEILING_HEIGHT = 0;
         spotLight.position.set(-30, -30, 150);
         spotLight.castShadow = true;
         scene.add(spotLight);
-        
+
         customMaterials = new CustomMaterials();
-        
-        if (DISPLAY_ORIGIN_BOX) {
-            const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
-            const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
-            const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
-            const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
-            xBox.position.x = 15;
-            yBox.position.y = 15;
-            zBox.position.z = 15;
-            threejsContainerObj.add(originBox);
-            originBox.scale.set(10,10,10);
-            originBox.add(xBox);
-            originBox.add(yBox);
-            originBox.add(zBox);
-            // onAnimationFrame(deltaT => {
-            //   originBox.scale.x = 100 * Math.abs(Math.sin(Date.now()/2));
-            //   originBox.scale.y = 100 * Math.abs(Math.sin(Date.now()/2));
-            //   originBox.scale.z = 100 * Math.abs(Math.sin(Date.now()/2));
-            // });
-        }
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -93,59 +73,171 @@ window.DEBUG_CEILING_HEIGHT = 0;
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
         
+        animationCallbacks.forEach(callback => {
+            callback(deltaTime);
+        });
+        
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
         
-        // this gets the model view matrix of the world object. ignores the WORLD_local
-        let modelViewMatrix = null;
-        let worldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (worldObject && worldObject.objectId !== realityEditor.worldObjects.getLocalWorldId()) {
-            // TODO: modify addToScene to addToAreaTarget and use positions relative to that
-            // This also allows for multiple containers with different mvMatrices for each area target
-            modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObject.objectId);
-        }
-        
+        const worldObjectIds = realityEditor.worldObjects.getWorldObjectKeys();
+        worldObjectIds.forEach(worldObjectId => {
+            if (!worldObjectGroups[worldObjectId]) {
+                const group = new THREE.Group();
+                worldObjectGroups[worldObjectId] = group;
+                group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
+                scene.add(group);
+                
+                // Helps visualize world object origin point for debugging
+                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId()) {
+                    const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
+                    const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
+                    const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
+                    const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
+                    xBox.position.x = 15;
+                    yBox.position.y = 15;
+                    zBox.position.z = 15;
+                    group.add(originBox);
+                    originBox.scale.set(10,10,10);
+                    originBox.add(xBox);
+                    originBox.add(yBox);
+                    originBox.add(zBox);
+                }
+            }
+            const group = worldObjectGroups[worldObjectId];
+            const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
+            if (modelViewMatrix) {
+                setMatrixFromArray(group.matrix, modelViewMatrix);
+                group.visible = true;
+                
+                if (worldOcclusionObjects[worldObjectId]) {
+                    setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
+                    worldOcclusionObjects[worldObjectId].visible = true;
+                }
+            } else {
+                group.visible = false;
+                
+                if (worldOcclusionObjects[worldObjectId]) {
+                    worldOcclusionObjects[worldObjectId].visible = false;
+                }
+            }
+        });
+
         customMaterials.update();
 
-        // only render the scene if we're localized within a world object and the projection matrix is initialized
-        if (isProjectionMatrixSet && modelViewMatrix) {
-
-            // children of the threejsContainerObject can be animated here
-            // mesh.rotation.x += 0.25 * deltaT / 1000; // slow rotation, for aesthetic effect
-            // mesh.rotation.y += 0.5 * deltaT / 1000;
-            
-            animationCallbacks.forEach(callback => {
-                callback(deltaTime);
-            });
-
-            // update model view matrix and render the scene
-            setMatrixFromArray(threejsContainerObj.matrix, modelViewMatrix);
+        const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+        if (rootModelViewMatrix) {
+            setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+        }
+        
+        // only render the scene if the projection matrix is initialized
+        if (isProjectionMatrixSet) {
             renderer.render( scene, camera );
         }
         
         requestAnimationFrame(renderScene);
     }
     
-    function addToScene(obj) {
-      threejsContainerObj.add(obj);
+    function addToScene(obj, parameters) {
+        if (!parameters) {
+            parameters = {};
+        }
+        const occluded = parameters.occluded;
+        const parentToCamera = parameters.parentToCamera;
+        const worldObjectId = parameters.worldObjectId;
+        const attach = parameters.attach;
+        if (occluded) {
+            const queue = [obj];
+            while (queue.length > 0) {
+                const currentObj = queue.pop();
+                currentObj.renderOrder = 2;
+                currentObj.children.forEach(child => queue.push(child));
+            }
+        }
+        if (parentToCamera) {
+            if (attach) {
+                camera.attach(obj);
+            } else {
+                camera.add(obj);
+            }
+        } else if (worldObjectId) {
+            if (attach) {
+                worldObjectGroups[worldObjectId].attach(obj);
+            } else {
+                worldObjectGroups[worldObjectId].add(obj);
+            }
+        } else {
+            if (attach) {
+                threejsContainerObj.attach(obj);
+            } else {
+                threejsContainerObj.add(obj);
+            }
+        }
     }
     
     function removeFromScene(obj) {
-      threejsContainerObj.remove(obj);
+        if (obj && obj.parent) {
+            obj.parent.remove(obj);
+        }
     }
     
     function onAnimationFrame(callback) {
-      animationCallbacks.push(callback);
+        animationCallbacks.push(callback);
     }
     
     function removeAnimationCallback(callback) {
-      if (animationCallbacks.includes(callback)) {
-        animationCallbacks.splice(animationCallbacks.indexOf(callback), 1);
-      }
+        if (animationCallbacks.includes(callback)) {
+            animationCallbacks.splice(animationCallbacks.indexOf(callback), 1);
+        }
     }
-
+    
+    function addOcclusionGltf(pathToGltf, objectId) {
+        // Code remains here, but likely won't be used due to distance-based fading looking better
+      
+        if (worldOcclusionObjects[objectId]) {
+            console.log(`occlusion gltf already loaded`);
+            return; // Don't try creating multiple occlusion objects for the same world object
+        }
+        
+        const gltfLoader = new GLTFLoader();
+        console.log('loading occlusion gltf');
+        gltfLoader.load(pathToGltf, function(gltf) {
+            let geometry;
+            if (gltf.scene.children[0].geometry) {
+                geometry = gltf.scene.children[0].geometry;
+            } else {
+                const geometries = gltf.scene.children[0].children.map(child=>child.geometry);
+                geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+            }
+            
+            // SimplifyModifier seems to freeze app
+            // if (geometry.index) {
+            //     geometry = new SimplifyModifier().modify(geometry, geometry.index.count * 0.2);
+            // } else {
+            //     geometry = new SimplifyModifier().modify(geometry, geometry.attributes.position.count * 0.2);
+            // }
+            geometry.computeVertexNormals();
+            const material = new THREE.MeshNormalMaterial();
+            material.colorWrite = false; // Makes it invisible
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.renderOrder = 1;
+            mesh.scale.set(1000, 1000, 1000); // convert meters -> mm
+            const group = new THREE.Group(); // mesh needs to be in group so scale doesn't get overriden by model view matrix
+            group.add(mesh);
+            group.matrixAutoUpdate = false; // allows us to update with the model view matrix
+            scene.add(group);
+            worldOcclusionObjects[objectId] = group;
+        
+            console.log(`loaded occlusion gltf for ${objectId}`, pathToGltf);
+        });
+    }
+    
+    function isOcclusionActive(objectId) {
+        return !!worldOcclusionObjects[objectId];
+    }
+    
     /* For my example area target:
         pathToGltf = './svg/BenApt1_authoring.glb' // put in arbitrary local directory to test
         originOffset = {x: -600, y: 0, z: -3300};
@@ -154,7 +246,7 @@ window.DEBUG_CEILING_HEIGHT = 0;
      */
     function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight) {
         const gltfLoader = new GLTFLoader();
-        
+
         gltfLoader.load(pathToGltf, function(gltf) {
             
             if (gltf.scene.children[0].geometry) {
@@ -301,6 +393,8 @@ window.DEBUG_CEILING_HEIGHT = 0;
     }
 
     exports.initService = initService;
+    exports.addOcclusionGltf = addOcclusionGltf;
+    exports.isOcclusionActive = isOcclusionActive;
     exports.addGltfToScene = addGltfToScene;
     exports.onAnimationFrame = onAnimationFrame;
     exports.removeAnimationCallback = removeAnimationCallback;

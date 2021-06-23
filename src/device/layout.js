@@ -147,7 +147,7 @@ createNameSpace('realityEditor.device.layout');
         }
 
         // if we have access to the device name, calculate edge based on this info
-        if (knownDeviceName) {
+        if (knownDeviceName && !realityEditor.gui.settings.toggleStates['demoAspectRatio']) {
             
             // TODO: test on each of these 9 devices to ensure that these offsets are correct
             if (knownDeviceName === 'iPhone10,3' || knownDeviceName === 'iPhone10,6' || knownDeviceName === 'iPhone11,8') {

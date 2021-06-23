@@ -28,7 +28,7 @@ createNameSpace("realityEditor.network.realtime");
         console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, realityEditor.gui.settings.toggleStates.realtimeEnabled);
 
         // don't initialize multiple times or if this feature is specifically turned off
-        if (hasBeenInitialized || !realityEditor.gui.settings.toggleStates.realtimeEnabled) return;
+        if (hasBeenInitialized || !(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) return;
         
         console.log('actually initializing realtime services');
 
@@ -53,16 +53,11 @@ createNameSpace("realityEditor.network.realtime");
         hasBeenInitialized = true;
 
         loop();
-
-        // setInterval(function () {
-        //
-        // }, 100); // every 1 second, send batched updates to server
     }
     
     function loop() {
         sendBatchedUpdates();
         batchedUpdates = {};
-        // check for realtime updates
         requestAnimationFrame(loop);
     }
 
@@ -105,7 +100,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function updateObject(msgContent) {
 
-        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+        if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
 
         var object = realityEditor.getObject(msgContent.objectKey);
         if (!object) { return; }
@@ -119,11 +114,6 @@ createNameSpace("realityEditor.network.realtime");
             sceneNode.dontBroadcastNext = true;
             sceneNode.setLocalMatrix(msgContent.newValue);
         }
-
-        // flags the sceneNode as dirty so it gets rendered again with the new x/y position
-        // realityEditor.sceneGraph.updatePositionData(msgContent.objectKey, true);
-
-        // TODO: special case for sceneGraph-related changes??
     }
 
     /**
@@ -132,7 +122,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function updateFrame(msgContent) {
 
-        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+        if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
 
         var frame = realityEditor.getFrame(msgContent.objectKey, msgContent.frameKey);
         if (!frame) { return; }
@@ -166,7 +156,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function updateNode(msgContent) {
 
-        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+        if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
 
         var node = realityEditor.getNode(msgContent.objectKey, msgContent.frameKey, msgContent.nodeKey);
         if (!node) { return; }
@@ -217,11 +207,6 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} serverAddress
      */
     function addServerUpdateListener(serverAddress) {
-        
-        // addServerSocketMessageListener(serverAddress, '/spatial/graph', function(msg) {
-        //     // this will be triggered anytime the spatial graph updates
-        //     console.log('spatial graph updated on server', msg);
-        // });
 
         addServerSocketMessageListener(serverAddress, '/batchedUpdate', function(msg) {
 
@@ -251,37 +236,7 @@ createNameSpace("realityEditor.network.realtime");
                     updateObject(update);
                 }
             });
-
-
-
         });
-
-        // addServerSocketMessageListener(serverAddress, '/update', function(msg) {
-        //
-        //     var objectKey;
-        //     var frameKey;
-        //     var nodeKey;
-        //
-        //     var msgContent = JSON.parse(msg);
-        //     if (typeof msgContent.objectKey !== 'undefined') {
-        //         objectKey = msgContent.objectKey;
-        //     }
-        //     if (typeof msgContent.frameKey !== 'undefined') {
-        //         frameKey = msgContent.frameKey;
-        //     }
-        //     if (typeof msgContent.nodeKey !== 'undefined') {
-        //         nodeKey = msgContent.nodeKey;
-        //     }
-        //
-        //     if (objectKey && frameKey && nodeKey) {
-        //         updateNode(msgContent);
-        //     } else if (objectKey && frameKey) {
-        //         updateFrame(msgContent);
-        //     } else if (objectKey) {
-        //         updateObject(msgContent);
-        //     }
-        //
-        // });
     }
 
     /**
@@ -323,25 +278,6 @@ createNameSpace("realityEditor.network.realtime");
 
             serverSocket.emit('/batchedUpdate', JSON.stringify(messageBody));
         }
-        
-        // batchedUpdates.forEach(function(update) {
-        //     // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
-        //     
-        //     if (serverSocket) {
-        //
-        //         var messageBody = {
-        //             objectKey: objectKey,
-        //             frameKey: frameKey,
-        //             nodeKey: nodeKey,
-        //             propertyPath: propertyPath,
-        //             newValue: newValue,
-        //             editorId: globalStates.tempUuid
-        //         };
-        //
-        //         serverSocket.emit('/update', JSON.stringify(messageBody));
-        //
-        //     }
-        // });
     }
     
     class Update {
@@ -379,7 +315,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function broadcastUpdate(objectKey, frameKey, nodeKey, propertyPath, newValue) {
         
-        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+        if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
         
         if (typeof batchedUpdates[objectKey] === 'undefined') {
             batchedUpdates[objectKey] = [];
@@ -407,7 +343,7 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} worldId
      */
     function broadcastUpdateObjectMatrix(objectKey, matrix, worldId) {
-        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+        if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
         if (matrix.length !== 16) { return; } // don't delete previous value by sending an empty matrix to the server
 
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
@@ -424,7 +360,7 @@ createNameSpace("realityEditor.network.realtime");
     }
     
     function subscribeToObjectMatrices(objectKey, callback) {
-        if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+        if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
 
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);
@@ -552,7 +488,7 @@ createNameSpace("realityEditor.network.realtime");
     exports.pauseRealtime = pauseRealtime;
     exports.broadcastUpdate = broadcastUpdate;
     
-    // TODO: remove these
+    // TODO: remove these and their invocations - these two are for deprecated reality zone demos
     exports.broadcastUpdateObjectMatrix = broadcastUpdateObjectMatrix;
     exports.subscribeToObjectMatrices = subscribeToObjectMatrices;
     

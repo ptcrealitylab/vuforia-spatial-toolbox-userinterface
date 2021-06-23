@@ -78,5 +78,12 @@ module.exports = {
             "argsIgnorePattern": "^_",
           },
         ],
-    }
+    },
+    "overrides": [{
+        "files": "src/gui/threejsScene.js",
+        "parserOptions": {
+            "ecmaVersion": 2018,
+            "sourceType": "module"
+        }
+    }]
 };

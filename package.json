@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "description": "User interface of the Reality Editor",
   "main": "src/index.js",
-  "dependencies": {},
   "devDependencies": {
-    "eslint": "^6.8.0"
+    "eslint": "^7.29.0"
   },
   "scripts": {
     "test": "npm run lint",
