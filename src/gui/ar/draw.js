@@ -600,7 +600,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // then tap every 0.5 seconds if you're looking at an image/object target
                 // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {
-                    realityEditor.app.tap();
+                    if (!globalStates.freezeButtonState) {
+                        realityEditor.app.tap();
+                    }
                 }, delay);
                 
                 // keep track of the the tap delay used, so that you can adjust the interval when switching between world and image targets
@@ -1577,7 +1579,7 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
     var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
-    let distanceInFrontOfCamera = 400;
+    let distanceInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier;
     realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeKey, distanceInFrontOfCamera);
 
     // TODO: automatically recognize when CSS matrix is out of date, so that we don't need to manually recalculate here
@@ -2128,6 +2130,8 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
     }
 
     globalDOMCache['iframe' + frame.uuid].classList.remove('webGlFrame');
+
+    globalDOMCache['object' + frame.uuid].style.zIndex = '';
 
     var containingObject = realityEditor.getObject(objectKey);
     if (!containingObject.objectVisible) {

@@ -175,7 +175,9 @@ var globalStates = {
     reality: false,
     interface: "gui",
 
-    useGroundPlane: false
+    useGroundPlane: false,
+    
+    defaultClientName: '_HUMAN_device'
 };
 
 var globalCanvas = {};
