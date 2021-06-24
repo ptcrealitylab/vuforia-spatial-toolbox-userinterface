@@ -16,7 +16,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     
-    const DISPLAY_ORIGIN_BOX = false;
+    const DISPLAY_ORIGIN_BOX = true;
     
     let customMaterials;
 
