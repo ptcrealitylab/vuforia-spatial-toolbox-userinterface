@@ -4,9 +4,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 
-let maxCeilingHeight = 2.3;
-window.DEBUG_CEILING_HEIGHT = 0;
-
 (function(exports) {
 
     var camera, scene, renderer;
