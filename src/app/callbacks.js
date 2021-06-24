@@ -237,9 +237,18 @@ createNameSpace('realityEditor.app.callbacks');
                                     realityEditor.sceneGraph.setGroundPlanePosition(rotated);
                                 } else {
                                     let offset = [];
-                                    let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
-                                    let buffer = 100;
-                                    floorOffset += buffer;
+                                    let floorOffset = 0;
+                                    
+                                    // tries to use offset calculated from area target, if needed
+                                    let navmesh = window.localStorage.getItem(`realityEditor.navmesh.${worldObjectKey}`);
+                                    if (navmesh && typeof navmesh === 'string') {
+                                        navmesh = JSON.parse(navmesh);
+                                        if (navmesh && navmesh.floorOffset) {
+                                            let buffer = 0.05; // looks better if ground is *slightly* too high, not too low
+                                            floorOffset = (navmesh.floorOffset + buffer) * 1000; // meters -> mm
+                                        }
+                                    }
+
                                     let groundPlaneOffsetMatrix = [
                                         1, 0, 0, 0,
                                         0, 1, 0, 0,
@@ -248,8 +257,6 @@ createNameSpace('realityEditor.app.callbacks');
                                     ];
                                     realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, visibleObjects[worldObjectKey], offset);
                                     realityEditor.sceneGraph.setGroundPlanePosition(offset);
-                                    // realityEditor.sceneGraph.setGroundPlanePosition(JSON.parse(JSON.stringify(visibleObjects[worldObjectKey])));
-                                    // realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneMatrix);
                                 }
                             }
                         }
