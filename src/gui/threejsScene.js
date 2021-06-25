@@ -41,6 +41,16 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
         scene.add(threejsContainerObj);
 
+        // const geometry = new THREE.PlaneGeometry( 10000, 10000 );
+        // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+        // const groundplaneMesh = new THREE.Mesh( geometry, material );
+        // threejsContainerObj.add(groundplaneMesh);
+        //
+        // const divisions = 10;
+        // const size = 1000 * divisions;
+        // const gridHelper = new THREE.GridHelper( size, divisions );
+        // threejsContainerObj.add( gridHelper );
+
         // light the scene with a combination of ambient and directional white light
         var ambLight = new THREE.AmbientLight(0xffffff);
         scene.add(ambLight);
@@ -103,6 +113,14 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                     originBox.add(xBox);
                     originBox.add(yBox);
                     originBox.add(zBox);
+                    
+                    // const plane = 
+
+                    // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+                    // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+                    // const groundplaneMesh = new THREE.Mesh( geometry, material );
+                    // group.add(groundplaneMesh);
+                    // // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
                 }
             }
             const group = worldObjectGroups[worldObjectId];
@@ -127,6 +145,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+            // const groundplaneMesh = new THREE.Mesh( geometry, material );
+            // threejsContainerObj.add(groundplaneMesh);
+            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         customMaterials.update();
