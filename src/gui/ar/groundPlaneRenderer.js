@@ -8,6 +8,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+// import * as THREE from "../../../thirdPartyCode/three/three.module";
+
 createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
 (function(exports) {
@@ -20,6 +22,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
     let originName = 'groundPlaneOrigin';
     let originId = originName;
+    
+    let gridHelper = null;
 
     let elementPositionData = {
         x: 0,
@@ -76,6 +80,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 return;
             }
             elementId = realityEditor.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
+
+            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+            // const groundplaneMesh = new THREE.Mesh( geometry, material );
+            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         // create the DOM element that should visualize it and add it to the scene
@@ -84,6 +93,17 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
         let origin = getOriginElement();
         document.getElementById('GUI').appendChild(origin);
+        
+        if (!gridHelper) {
+            const divisions = 10 * 2;
+            const size = (1000 / 2) * divisions;
+            const THREE = realityEditor.gui.threejsScene.THREE;
+            const colorCenterLine = new THREE.Color(0, 0.3, 0.3);
+            const colorGrid = new THREE.Color(0, 1, 1);
+            gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
+            // threejsContainerObj.add( gridHelper );
+            realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
+        }
 
         // add/activate the update loop
         if (!isUpdateListenerRegistered) {
@@ -101,6 +121,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         element = getOriginElement();
         if (element && element.parentNode) {
             element.parentNode.removeChild(element);
+        }
+        
+        if (gridHelper) {
+            realityEditor.gui.threejsScene.removeFromScene(gridHelper);
+            gridHelper = null;
         }
     }
 

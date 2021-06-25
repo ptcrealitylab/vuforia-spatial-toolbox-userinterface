@@ -1195,7 +1195,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
                 }
 
-                if (this.isLowFrequencyUpdateFrame && realityEditor.device.environment.variables.enableViewFrustumCulling) {
+                if (this.isLowFrequencyUpdateFrame && realityEditor.device.environment.variables.enableViewFrustumCulling && !(globalStates.disableUnloading)) {
                     
                     // if too far beyond visibility threshold, unload and render a little dot instead
                     let distanceThreshold = 1.2 * realityEditor.gui.ar.getDistanceScale(activeVehicle) * realityEditor.device.distanceScaling.getDefaultDistance();
