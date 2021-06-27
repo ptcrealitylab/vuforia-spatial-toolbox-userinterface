@@ -316,7 +316,7 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
     };
     thisFrame.sendScreenPosition = false;
     thisFrame.sendAcceleration = false;
-    thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
+    thisFrame.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, "")) || 300;
     thisFrame.visible = false;
     thisFrame.objectId = objectKey;
 
@@ -480,16 +480,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
             console.log('added new frame', origin.frames[frameKey]);
 
-            var positionData = realityEditor.gui.ar.positioning.getPositionData(origin.frames[frameKey]);
-            realityEditor.sceneGraph.addFrame(objectKey, frameKey, origin.frames[frameKey], positionData.matrix);
-
-            // process each node in the frame
-            let nodes = origin.frames[frameKey].nodes;
-            for (let nodeKey in nodes) {
-                if (!nodes.hasOwnProperty(nodeKey)) continue;
-                let positionData = realityEditor.gui.ar.positioning.getPositionData(nodes[nodeKey]);
-                realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, nodes[nodeKey], positionData.matrix);
-            }
+            realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
             
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;

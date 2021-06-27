@@ -130,7 +130,7 @@ createNameSpace("realityEditor.network.realtime");
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(frame, msgContent.propertyPath, msgContent.newValue);
-        console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
         
         if (msgContent.propertyPath === 'ar.matrix') {
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(msgContent.frameKey);
