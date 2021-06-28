@@ -335,8 +335,16 @@ createNameSpace("realityEditor.gui.glRenderer");
             workerId: workerIds[toolId]
         }), '*');
 
+        const {width, height} = globalStates;
+
         setTimeout(() => {
-            worker.postMessage({name: 'bootstrap', functions, constants}, '*');
+            worker.postMessage({
+                name: 'bootstrap',
+                functions,
+                constants,
+                width: height,
+                height: width,
+            }, '*');
         }, 200);
     }
 
