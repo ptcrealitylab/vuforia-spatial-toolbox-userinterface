@@ -232,8 +232,8 @@ createNameSpace('realityEditor.app.callbacks');
                             // also relocalize the groundplane if it's already been detected / in use
                             if (globalStates.useGroundPlane) {
                                 let rotated = [];
-                                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, visibleObjects[worldObjectKey], rotated);
-                                realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                                //realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, visibleObjects[worldObjectKey], rotated);
+                                realityEditor.sceneGraph.setGroundPlanePosition(visibleObjects[worldObjectKey]);
                             }
                         }
                     }
@@ -354,8 +354,8 @@ createNameSpace('realityEditor.app.callbacks');
                     // different parents in the scene graph), remember to switch worldObjectSceneNode.localMatrix
                     // for a matrix computed to preserve worldObject's worldMatrix
                     let rotated = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
-                    realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                    //realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
+                    realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                     return;
                 }
             }
