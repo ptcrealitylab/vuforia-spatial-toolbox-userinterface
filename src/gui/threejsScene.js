@@ -15,7 +15,9 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    
+    let raycaster;
+    let mouse;
+
     const DISPLAY_ORIGIN_BOX = true;
     
     let customMaterials;
@@ -64,6 +66,9 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 
         customMaterials = new CustomMaterials();
 
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
         // var geometry = new THREE.IcosahedronGeometry( radius, 1 );
@@ -88,6 +93,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
+            camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
             isProjectionMatrixSet = true;
         }
         
@@ -312,6 +318,18 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         );
     }
 
+    // this module exports this utility so that other modules can perform hit tests
+    function getRaycastIntersects(clientX, clientY) {
+        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
+
+        //2. set the picking ray from the camera position and mouse coordinates
+        raycaster.setFromCamera( mouse, camera );
+
+        //3. compute intersections
+        return raycaster.intersectObjects( scene.children, true );
+    }
+
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
@@ -387,7 +405,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                     material: material,
                     currentHeight: 0,
                     maxHeight: maxHeight,
-                    animationSpeed: 0.01
+                    animationSpeed: 0.02
                 });
             }
             
@@ -422,5 +440,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.removeAnimationCallback = removeAnimationCallback;
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
+    exports.getRaycastIntersects = getRaycastIntersects;
     exports.THREE = THREE;
 })(realityEditor.gui.threejsScene);
