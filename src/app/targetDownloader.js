@@ -75,7 +75,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             FAILED: 2,
             SUCCEEDED: 3
         });
-        
+
     /**
      * Worker that generates navmeshes from upload area target meshes
      * @type {Worker}
@@ -85,12 +85,12 @@ createNameSpace("realityEditor.app.targetDownloader");
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
-        
+
         // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future
         // let object = realityEditor.getObject(objectID);
         // let gltfPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(objectID) + '/obj/' + object.name + '/target/target.glb';
         // realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
-        
+
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath);
         // let floorOffset = -1.55 * 1000;
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath, {x: -600, y: -floorOffset, z: -3300}, {x: 0, y: 2.661627109291353, z: 0});
@@ -153,7 +153,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             MARKER_ADDED: DownloadState.NOT_STARTED
         };
         var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
-        
+
         // regardless of previous conditions, don't proceed with any downloads if this is an anchor object
         if (realityEditor.gui.ar.anchors.isAnchorHeartbeat(objectHeartbeat)) {
             return;
@@ -170,7 +170,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetXMLDownloaded');
         targetDownloadStates[objectID].XML = DownloadState.STARTED;
     }
-    
+
     function getObjectNameFromId(objectId) {
         let objectName = objectId.slice(0,-12); // get objectName from objectId
         if (objectName.length === 0) { objectName = objectId; } // use objectId as a backup (e.g. for _WORLD_local)
@@ -268,19 +268,21 @@ createNameSpace("realityEditor.app.targetDownloader");
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             realityEditor.getObject(objectID).isJpgTarget = false;
-            
-            var glbAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.glb';
 
-            // don't download again if already stored the same checksum version
-            if (isAlreadyDownloaded(objectID, 'GLB')) {
-                console.log('skip downloading GLB for ' + objectID);
-                onTargetGLBDownloaded(true, glbAddress); // just directly trigger onTargetGLBDownloaded
-                return;
+            if (realityEditor.getObject(objectID).isWorldObject) {
+              var glbAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.glb';
+
+              // don't download again if already stored the same checksum version
+              if (isAlreadyDownloaded(objectID, 'GLB')) {
+                  console.log('skip downloading GLB for ' + objectID);
+                  onTargetGLBDownloaded(true, glbAddress); // just directly trigger onTargetGLBDownloaded
+                  return;
+              }
+
+              // try to download GLB
+              realityEditor.app.downloadFile(glbAddress, moduleName + '.onTargetGLBDownloaded');
+              targetDownloadStates[objectID].GLB = DownloadState.STARTED;
             }
-
-            // try to download GLB
-            realityEditor.app.downloadFile(glbAddress, moduleName + '.onTargetGLBDownloaded');
-            targetDownloadStates[objectID].GLB = DownloadState.STARTED;
 
         } else {
             console.log('failed to download DAT file: ' + fileName);
@@ -297,7 +299,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].JPG = DownloadState.STARTED;
         }
     }
-    
+
     /**
      * If successfully downloads target GLB, tries to set up navigation map
      * @param {boolean} success
@@ -317,7 +319,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
         onTargetGLBAddress(fileName, objectID);
     }
-    
+
     function onTargetGLBAddress(fileName, objectID) {
         console.log('got GLB address');
         navmeshWorker.postMessage({fileName, objectID});
@@ -501,7 +503,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             window.localStorage.removeItem(key);
         });
     }
-    
+
     /**
      * @deprecated - use downloadAvailableTargetFiles instead, if the device can add objects based on DAT or JPG, not just DAT
      * @todo - evaluate if this is necessary at all or if it can be completely removed (github issue #14)
@@ -597,7 +599,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
 
     /**
-     * 
+     *
      * @param {boolean} success
      * @param {Array.<string>} fileNameArray
      */
@@ -703,7 +705,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.isObjectTargetInitialized = isObjectTargetInitialized;
     exports.isObjectReadyToRetryDownload = isObjectReadyToRetryDownload;
     exports.resetTargetDownloadCache = resetTargetDownloadCache;
-    
+
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;
     exports.onTargetDATDownloaded = onTargetDATDownloaded;
@@ -712,5 +714,5 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
     exports.onTargetFileDownloaded = onTargetFileDownloaded;
-    
+
 })(realityEditor.app.targetDownloader);

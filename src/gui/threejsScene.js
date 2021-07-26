@@ -15,9 +15,9 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    
+
     const DISPLAY_ORIGIN_BOX = true;
-    
+
     let customMaterials;
 
     // for now, this contains everything not attached to a specific world object
@@ -75,22 +75,22 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         // threejsContainerObj.add( mesh );
         // mesh.position.setZ(150);
 
-        renderScene(); // update loop 
+        renderScene(); // update loop
     }
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
-        
+
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
         });
-        
+
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
-        
+
         const worldObjectIds = realityEditor.worldObjects.getWorldObjectKeys();
         worldObjectIds.forEach(worldObjectId => {
             if (!worldObjectGroups[worldObjectId]) {
@@ -98,7 +98,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
-                
+
                 // Helps visualize world object origin point for debugging
                 if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId()) {
                     const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
@@ -113,8 +113,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                     originBox.add(xBox);
                     originBox.add(yBox);
                     originBox.add(zBox);
-                    
-                    // const plane = 
+
+                    // const plane =
 
                     // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
                     // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
@@ -128,20 +128,20 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             if (modelViewMatrix) {
                 setMatrixFromArray(group.matrix, modelViewMatrix);
                 group.visible = true;
-                
+
                 if (worldOcclusionObjects[worldObjectId]) {
                     setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
                     worldOcclusionObjects[worldObjectId].visible = true;
                 }
             } else {
                 group.visible = false;
-                
+
                 if (worldOcclusionObjects[worldObjectId]) {
                     worldOcclusionObjects[worldObjectId].visible = false;
                 }
             }
         });
-        
+
         const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
@@ -158,10 +158,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         if (isProjectionMatrixSet) {
             renderer.render( scene, camera );
         }
-        
+
         requestAnimationFrame(renderScene);
     }
-    
+
     function addToScene(obj, parameters) {
         if (!parameters) {
             parameters = {};
@@ -198,31 +198,31 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             }
         }
     }
-    
+
     function removeFromScene(obj) {
         if (obj && obj.parent) {
             obj.parent.remove(obj);
         }
     }
-    
+
     function onAnimationFrame(callback) {
         animationCallbacks.push(callback);
     }
-    
+
     function removeAnimationCallback(callback) {
         if (animationCallbacks.includes(callback)) {
             animationCallbacks.splice(animationCallbacks.indexOf(callback), 1);
         }
     }
-    
+
     function addOcclusionGltf(pathToGltf, objectId) {
         // Code remains here, but likely won't be used due to distance-based fading looking better
-      
+
         if (worldOcclusionObjects[objectId]) {
             console.log(`occlusion gltf already loaded`);
             return; // Don't try creating multiple occlusion objects for the same world object
         }
-        
+
         const gltfLoader = new GLTFLoader();
         console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
@@ -233,7 +233,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 const geometries = gltf.scene.children[0].children.map(child=>child.geometry);
                 geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
             }
-            
+
             // SimplifyModifier seems to freeze app
             // if (geometry.index) {
             //     geometry = new SimplifyModifier().modify(geometry, geometry.index.count * 0.2);
@@ -251,11 +251,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             group.matrixAutoUpdate = false; // allows us to update with the model view matrix
             scene.add(group);
             worldOcclusionObjects[objectId] = group;
-        
+
             console.log(`loaded occlusion gltf for ${objectId}`, pathToGltf);
         });
     }
-    
+
     function isOcclusionActive(objectId) {
         return !!worldOcclusionObjects[objectId];
     }
@@ -266,11 +266,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight) {
+    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, callback) {
         const gltfLoader = new GLTFLoader();
-        
+
         gltfLoader.load(pathToGltf, function(gltf) {
-            
+
             if (gltf.scene.children[0].geometry) {
                 if (typeof maxHeight !== 'undefined') {
                     gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight, true);
@@ -300,6 +300,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
+
+            if (callback) {
+              callback(gltf.scene);
+            }
         });
     }
 
@@ -319,52 +323,52 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         areaTargetVertexShader() {
             return `
             precision highp float;
-    
+
             uniform float sineTime;
             uniform float time;
-            
+
             uniform mat4 modelViewMatrix;
             uniform mat4 projectionMatrix;
-            
+
             attribute vec3 position;
             attribute vec4 color;
             attribute vec3 translate;
             attribute vec2 uv;
-            
+
             varying vec3 vPosition;
             varying vec4 vColor;
             varying float vScale;
             varying vec2 vUv;
-            
+
             void main(){
-            
+
                 vPosition = position;
                 vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
                 float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
                 vScale = scale;
-            
+
                 vColor = color;
                 vUv = uv;
-            
+
                 gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
-            
+
             }
           `
         }
         areaTargetFragmentShader() {
             return `
             precision highp float;
-            
+
             uniform sampler2D map;
             uniform float maxHeight;
-            
+
             varying vec2 vUv;
             varying float vScale;
             varying vec3 vPosition;
-            
+
             void main() {
                 gl_FragColor = texture2D( map, vUv );
-                
+
                 if (vPosition.y > maxHeight) discard;
             }
           `
@@ -381,7 +385,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 fragmentShader: this.areaTargetFragmentShader(),
                 side: THREE.FrontSide
             });
-            
+
             if (animateOnLoad) {
                 this.materialsToAnimate.push({
                     material: material,
@@ -390,12 +394,12 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                     animationSpeed: 0.01
                 });
             }
-            
+
             return material;
         }
         update() {
             if (this.materialsToAnimate.length === 0) { return; }
-            
+
             let indicesToRemove = [];
             this.materialsToAnimate.forEach(function(entry, index) {
                 let material = entry.material;
@@ -406,7 +410,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                     indicesToRemove.push(index);
                 }
             });
-            
+
             for (let i = indicesToRemove.length-1; i > 0; i--) {
                 let matIndex = indicesToRemove[i];
                 this.materialsToAnimate.splice(matIndex, 1);
