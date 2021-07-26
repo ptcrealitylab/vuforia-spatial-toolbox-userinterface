@@ -216,10 +216,41 @@ createNameSpace('realityEditor.app.callbacks');
             return;
         }
 
+        // don't render origin objects as themselves
+        let originObjects = realityEditor.worldObjects.getOriginObjects();
+        let detectedOrigins = {};
+        Object.keys(originObjects).forEach(function(originKey) {
+            if (visibleObjects.hasOwnProperty(originKey)) {
+                detectedOrigins[originKey] = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[originKey]);
+                delete visibleObjects[originKey];
+            }
+        });
+
         // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
             if (visibleObjects.hasOwnProperty(worldObjectKey)) {
-                realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
+                let matchingOrigin = realityEditor.worldObjects.getMatchingOriginObject(worldObjectKey);
+                let worldObject = realityEditor.getObject(worldObjectKey);
+
+                let worldOriginMatrix = [];
+                let isMatchingOriginVisible = (matchingOrigin && typeof detectedOrigins[matchingOrigin.uuid] !== 'undefined');
+                if (!isMatchingOriginVisible && typeof worldObject.originOffset === 'undefined') {
+                    worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]);
+                } else {
+                    // update originOffset
+                    if (isMatchingOriginVisible) {
+                        if (typeof worldObject.originOffset === 'undefined') {
+                            realityEditor.app.tap(); // haptic feedback the first time it localizes against origin
+                        }
+                        let relative = [];
+                        let inverseWorld = realityEditor.gui.ar.utilities.invertMatrix(visibleObjects[worldObjectKey]);
+                        realityEditor.gui.ar.utilities.multiplyMatrix(inverseWorld, detectedOrigins[matchingOrigin.uuid], relative);
+                        worldObject.originOffset = relative;
+                    }
+                    worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(worldObject.originOffset);
+                }
+
+                realityEditor.worldObjects.setOrigin(worldObjectKey, worldOriginMatrix);
                 
                 if (worldObjectKey !== realityEditor.worldObjects.getLocalWorldId()) {
                     let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -227,12 +258,12 @@ createNameSpace('realityEditor.app.callbacks');
                         
                         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectKey);
                         if (sceneNode) {
-                            sceneNode.setLocalMatrix(visibleObjects[worldObjectKey]);
+                            sceneNode.setLocalMatrix(worldOriginMatrix);
 
                             // also relocalize the groundplane if it's already been detected / in use
                             if (globalStates.useGroundPlane) {
                                 let rotated = [];
-                                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, visibleObjects[worldObjectKey], rotated);
+                                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
                                 realityEditor.sceneGraph.setGroundPlanePosition(rotated);
                             }
                         }

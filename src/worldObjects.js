@@ -15,6 +15,9 @@ createNameSpace("realityEditor.worldObjects");
     var discoveredServerIPs = [];
     
     var cameraMatrixOffset; // can be used to relocalize the world objects to a different origin point // todo: isn't actually used, should probably be removed
+    
+    var originObjects = {}; // detected _ORIGIN_ objects with type=origin
+    var originByName = {};
 
     /**
      * Will store the camera matrix offsets to each world object's origin compared to the phone's coordinate system origin
@@ -62,6 +65,10 @@ createNameSpace("realityEditor.worldObjects");
                 if (object.objectId === getLocalWorldId()) {
                     initializeWorldObject(object);
                 }
+            }
+
+            if (object.type === 'origin') {
+                originObjects[objectKey] = object;
             }
             
             // backwards compatible with old servers - try downloading the local server's worldObject from http://ip:port/worldObject/
@@ -238,6 +245,37 @@ createNameSpace("realityEditor.worldObjects");
     }
 
     /**
+     * Returns all of the origin objects (each origin object can correspond to a world object)
+     * @returns {Object.<Objects>}
+     */
+    function getOriginObjects() {
+        return originObjects;
+    }
+
+    /**
+     * 
+     * @param worldKey
+     */
+    function getMatchingOriginObject(worldKey) {
+        let worldObject = worldObjects[worldKey];
+        if (!worldObject) { return null; }
+        let originName = worldObject.name.replace(/^_WORLD_/, '_ORIGIN_');
+        return getOriginByName(originName);
+    }
+    
+    function getOriginByName(originName) {
+        if (typeof originByName[originName] !== 'undefined') {
+            return originByName[originName];
+        }
+        let origin = Object.values(originObjects).find(obj => obj.name === originName);
+        if (origin) {
+            originByName[originName] = origin;
+            return originByName[originName];
+        }
+        return null;
+    }
+
+    /**
      * @todo: this hasn't been tested or used anywhere yet. instead we relocalize in app.callbacks.receiveMatricesFromAR
      * @todo: replace with a terrain target or spatial anchor solution
      * Re-localize the camera origin to the current camera position...
@@ -387,5 +425,7 @@ createNameSpace("realityEditor.worldObjects");
     exports.getDistanceToEachWorld = getDistanceToEachWorld;
     exports.checkIfFirstLocalization = checkIfFirstLocalization;
     exports.onLocalizedWithinWorld = onLocalizedWithinWorld;
+    exports.getOriginObjects = getOriginObjects;
+    exports.getMatchingOriginObject = getMatchingOriginObject;
 
 }(realityEditor.worldObjects));
