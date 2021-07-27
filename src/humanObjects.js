@@ -9,7 +9,7 @@ createNameSpace("realityEditor.humanObjects");
 
 (function(exports) {
     
-    let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName;
+    let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName + globalStates.tempUuid;
     let humanObjectInitialized = false;
     var humanObjects = {}; // human objects are stored in the regular global "objects" variable, but also in here
 

@@ -179,6 +179,14 @@ realityEditor.device.onload = function () {
         }
     }).moveToDevelopMenu();
 
+    // Add a debug toggle to the develop menu that forces the targetDownloader to re-download each time instead of using the cache
+    realityEditor.gui.settings.addToggle('Disable Unloading', 'don\'t unload offscreen tools', 'disableUnloading',  '../../../svg/object.svg', false, function(newValue) {
+        globalStates.disableUnloading = newValue;
+        // if (newValue) {
+        //     // realityEditor.app.targetDownloader.resetTargetDownloadCache();
+        // }
+    }).moveToDevelopMenu();
+
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
     globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all

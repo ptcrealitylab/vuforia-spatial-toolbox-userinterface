@@ -22,7 +22,7 @@ createNameSpace("realityEditor.network.realtime");
         // TODO Is this redundant code? It seems to generate the error that pops up
 
         // realtime is necessary for some environments to work
-        if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
+        if (realityEditor.device.environment.shouldCreateDesktopSocket() || realityEditor.device.environment.variables.alwaysEnableRealtime) {
             realityEditor.gui.settings.toggleStates.realtimeEnabled = true;
         }
         console.log('realityEditor.network.realtime.initService()', hasBeenInitialized, realityEditor.gui.settings.toggleStates.realtimeEnabled);
@@ -58,6 +58,7 @@ createNameSpace("realityEditor.network.realtime");
     function loop() {
         sendBatchedUpdates();
         batchedUpdates = {};
+        // check for realtime updates
         requestAnimationFrame(loop);
     }
 
@@ -129,7 +130,7 @@ createNameSpace("realityEditor.network.realtime");
         if (!msgContent.hasOwnProperty('propertyPath') || !msgContent.hasOwnProperty('newValue')) { return; }
 
         setObjectValueAtPath(frame, msgContent.propertyPath, msgContent.newValue);
-        console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
+        // console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
         
         if (msgContent.propertyPath === 'ar.matrix') {
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(msgContent.frameKey);

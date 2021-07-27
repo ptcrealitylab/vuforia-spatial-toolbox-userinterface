@@ -281,6 +281,18 @@ createNameSpace('realityEditor.app.callbacks');
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
             if (sceneNode) {
                 sceneNode.setLocalMatrix(visibleObjects[objectKey]);
+
+                let dontBroadcast = false;
+                if (!dontBroadcast && realityEditor.device.environment.isSourceOfObjectPositions()) {
+                    // if it's an object, post object position relative to a world object
+                    let worldObjectId = realityEditor.sceneGraph.getWorldId();
+                    if (worldObjectId) {
+                        let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+                        sceneNode.updateWorldMatrix();
+                        let relativeMatrix = sceneNode.getMatrixRelativeTo(worldNode);
+                        realityEditor.network.realtime.broadcastUpdate(objectKey, null, null, 'matrix', relativeMatrix);
+                    }
+                }
             }
         }
 
@@ -384,9 +396,25 @@ createNameSpace('realityEditor.app.callbacks');
                     // note: if sceneGraph hierarchy gets more complicated (if ground plane and world objects have
                     // different parents in the scene graph), remember to switch worldObjectSceneNode.localMatrix
                     // for a matrix computed to preserve worldObject's worldMatrix
-                    let rotated = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
-                    realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                    if (worldObject.isJpgTarget) {
+                        let rotated = [];
+                        realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
+                        realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                    } else {
+                        let offset = [];
+                        let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
+                        let buffer = 100;
+                        floorOffset += buffer;
+                        let groundPlaneOffsetMatrix = [
+                            1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            0, floorOffset, 0, 1
+                        ];
+                        realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
+                        realityEditor.sceneGraph.setGroundPlanePosition(offset);
+                        // realityEditor.sceneGraph.setGroundPlanePosition(JSON.parse(JSON.stringify(worldObjectSceneNode.localMatrix)));
+                    }
                     return;
                 }
             }

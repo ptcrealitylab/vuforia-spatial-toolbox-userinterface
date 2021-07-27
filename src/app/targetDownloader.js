@@ -87,7 +87,14 @@ createNameSpace("realityEditor.app.targetDownloader");
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
         
         // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future
-        // realityEditor.gui.threejsScene.addOcclusionGltf(fileName, objectID);
+        // let object = realityEditor.getObject(objectID);
+        // let gltfPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(objectID) + '/obj/' + object.name + '/target/target.glb';
+        // realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
+        
+        // realityEditor.gui.threejsScene.addGltfToScene(gltfPath);
+        // let floorOffset = -1.55 * 1000;
+        // realityEditor.gui.threejsScene.addGltfToScene(gltfPath, {x: -600, y: -floorOffset, z: -3300}, {x: 0, y: 2.661627109291353, z: 0});
+
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);

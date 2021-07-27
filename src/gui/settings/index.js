@@ -72,7 +72,12 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
     window.addEventListener("message", function (e) {
 
-        var msg = JSON.parse(e.data);
+        var msg = {};
+        try {
+            msg = JSON.parse(e.data);
+        } catch (e) {
+            // console.warn(e);
+        }
 
         if (typeof msg.getSettings !== 'undefined') {
             onGetSettings(msg);

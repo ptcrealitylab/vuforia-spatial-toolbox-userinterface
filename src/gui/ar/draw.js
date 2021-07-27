@@ -1195,7 +1195,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
                 }
 
-                if (this.isLowFrequencyUpdateFrame && realityEditor.device.environment.variables.enableViewFrustumCulling) {
+                if (this.isLowFrequencyUpdateFrame && realityEditor.device.environment.variables.enableViewFrustumCulling && !(globalStates.disableUnloading)) {
                     
                     // if too far beyond visibility threshold, unload and render a little dot instead
                     let distanceThreshold = 1.2 * realityEditor.gui.ar.getDistanceScale(activeVehicle) * realityEditor.device.distanceScaling.getDefaultDistance();
@@ -1615,6 +1615,14 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     pocketContainer.waitingToRender = false;
     
     realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
+
+    // realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
+
+    // setTimeout(function() {
+    //     var keys = realityEditor.getKeysFromVehicle(pocketContainer.vehicle);
+    //     var propertyPath = pocketContainer.vehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
+    //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
+    // }, 500);
 };
 
 /**
