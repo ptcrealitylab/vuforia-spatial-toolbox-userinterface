@@ -8,7 +8,7 @@ createNameSpace("realityEditor.humanObjects");
  */
 
 (function(exports) {
-    
+
     let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName + globalStates.tempUuid;
     let humanObjectInitialized = false;
     var humanObjects = {}; // human objects are stored in the regular global "objects" variable, but also in here
@@ -18,14 +18,14 @@ createNameSpace("realityEditor.humanObjects");
      */
     function initService() {
         console.log('initService: humanObjects');
-        
+
         realityEditor.worldObjects.onLocalizedWithinWorld(function(objectKey) {
             if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
                 return; // skip local world
             }
 
             console.log('humanObjects module onLocalizedWithinWorld: ' + objectKey);
-            
+
             // check if humanObject for this device exists on server?
             let worldObject = realityEditor.getObject(objectKey);
             let downloadUrl = 'http://' + worldObject.ip + ':' + realityEditor.network.getPort(worldObject) + '/object/' + persistentClientId;
@@ -40,7 +40,7 @@ createNameSpace("realityEditor.humanObjects");
                     addHumanObject(objectKey, globalStates.defaultClientName);
                 }
             });
-            
+
         });
 
         // when an object is detected, check if we need to add a world object for its server
@@ -54,7 +54,7 @@ createNameSpace("realityEditor.humanObjects");
                 initializeHumanObject(object);
             }
         });
-        
+
         realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
             if (!humanObjectInitialized || globalStates.freezeButtonState) { return; }
 
@@ -104,7 +104,7 @@ createNameSpace("realityEditor.humanObjects");
             }
         });
     }
-    
+
     function initializeHumanObject(_object) {
         console.log('todo: implement initializeHumanObject');
     }
@@ -142,6 +142,3 @@ createNameSpace("realityEditor.humanObjects");
     exports.getHumanObjects = getHumanObjects;
 
 }(realityEditor.humanObjects));
-
-
-
