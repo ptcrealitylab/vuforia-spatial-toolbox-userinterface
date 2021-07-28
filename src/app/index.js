@@ -114,6 +114,14 @@ realityEditor.app.getMatrixStream = function(callBack) {
 };
 
 /**
+ * Sets up a callback for the coordinates of any poses the phone finds
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getPosesStream = function(callBack) {
+    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  * Sets up a callback for the positional device tracker, reporting the pose of the camera at every frame.
  * Callback will have the cameraMatrix (which is the inverse of the view matrix) as a parameter.
  * @param {FunctionName} callBack
