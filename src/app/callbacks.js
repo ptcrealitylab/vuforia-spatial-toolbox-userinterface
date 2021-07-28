@@ -82,6 +82,9 @@ createNameSpace('realityEditor.app.callbacks');
         // subscribe to the camera matrix from the positional device tracker
         realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
+        // Subscribe to poses if available
+        realityEditor.app.getPosesStream('realityEditor.app.callbacks.receivePoses');
+
         // add heartbeat listener for UDP object discovery
         realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
 
@@ -178,6 +181,65 @@ createNameSpace('realityEditor.app.callbacks');
         globalStates.device = deviceName;
         console.log('The Reality Editor is loaded on a ' + globalStates.device);
         realityEditor.device.layout.adjustForDevice(deviceName);
+    }
+
+    /**
+     * Callback for realityEditor.app.getPosesStream
+     * @param {Array<Object>} poses
+     */
+    function receivePoses(poses) {
+        if (poses.length > 0) {
+            console.log('yey poses', poses);
+        }
+
+        realityEditor.gui.poses.drawPoses(poses);
+
+        if (!window.rzvIo) {
+            // window.rzvIo = io('http://10.10.10.165:31337');
+            // window.rzvIo = io('http://192.168.0.106:31337');
+            window.rzvIo = io('http://192.168.50.98:31337');
+        }
+
+        let coolerPoses = [];
+        for (let point of poses) {
+            // place it in front of the camera, facing towards the camera
+            let sceneNode = new realityEditor.sceneGraph.SceneNode('posePixel');
+            sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT'));
+            let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+
+            const THREE = realityEditor.gui.threejsScene.THREE;
+            let vec = new THREE.Vector3(0, 0, point.depth * 1000);
+            vec.applyEuler(new THREE.Euler(point.rotX, point.rotY, 0));
+            let initialVehicleMatrix = [
+                -1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, -1, 0,
+                vec.x, vec.y, -vec.z, 1
+            ];
+
+            // needs to be flipped in some environments with different camera systems
+            if (realityEditor.device.environment.isCameraOrientationFlipped()) {
+                initialVehicleMatrix[0] *= -1;
+                initialVehicleMatrix[5] *= -1;
+                initialVehicleMatrix[10] *= -1;
+            }
+
+            sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+            let mat = sceneNode.localMatrix;
+            let worldX = mat[12];
+            let worldY = mat[13];
+            let worldZ = mat[14];
+            coolerPoses.push({
+                x: worldX / 1000,
+                y: worldY / 1000,
+                z: worldZ / 1000,
+            });
+        }
+        let msg = {time: Date.now(), pose: [{id: 1337, joints: coolerPoses}]};
+        if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
+            window.lastPosesLen = coolerPoses.length;
+            window.rzvIo.emit('/update/humanPoses', JSON.stringify(msg));
+        }
     }
 
     /**
@@ -483,6 +545,7 @@ createNameSpace('realityEditor.app.callbacks');
     exports.getDeviceReady = getDeviceReady;
     exports.receiveGroundPlaneMatricesFromAR = receiveGroundPlaneMatricesFromAR;
     exports.receiveMatricesFromAR = receiveMatricesFromAR;
+    exports.receivePoses = receivePoses;
     exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
 
     exports.startGroundPlaneTrackerIfNeeded = startGroundPlaneTrackerIfNeeded;
