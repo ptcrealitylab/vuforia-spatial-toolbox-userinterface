@@ -263,8 +263,8 @@ createNameSpace('realityEditor.app.callbacks');
                             // also relocalize the groundplane if it's already been detected / in use
                             if (globalStates.useGroundPlane) {
                                 let rotated = [];
-                                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
-                                realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                                // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
+                                realityEditor.sceneGraph.setGroundPlanePosition(worldOriginMatrix);
                             }
                         }
                     }
@@ -398,8 +398,8 @@ createNameSpace('realityEditor.app.callbacks');
                     // for a matrix computed to preserve worldObject's worldMatrix
                     if (worldObject.isJpgTarget) {
                         let rotated = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
-                        realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                        // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
+                        realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                     } else {
                         let offset = [];
                         let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
