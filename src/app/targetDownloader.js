@@ -407,6 +407,8 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @return {boolean}
      */
     function isObjectReadyToRetryDownload(objectID, beatChecksum) {
+        if (!retryMap[objectID]) { return false; }
+
         // if we ran out of attempts for this checksum, don't retry download
         let hasAttemptsLeft = retryMap[objectID].attemptsLeft > 0;
         let isNewChecksum = beatChecksum && beatChecksum !== retryMap[objectID].previousChecksum;

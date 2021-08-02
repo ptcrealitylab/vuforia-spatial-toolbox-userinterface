@@ -222,6 +222,13 @@ createNameSpace('realityEditor.app.callbacks');
         Object.keys(originObjects).forEach(function(originKey) {
             if (visibleObjects.hasOwnProperty(originKey)) {
                 detectedOrigins[originKey] = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[originKey]);
+
+                // this part is just to enable the the SceneGraph/network.js to know when the origin moves enough to upload the originOffset
+                let sceneNode = realityEditor.sceneGraph.getSceneNodeById(originKey);
+                if (sceneNode) {
+                    sceneNode.setLocalMatrix(visibleObjects[originKey]);
+                }
+
                 delete visibleObjects[originKey];
             }
         });
@@ -233,22 +240,56 @@ createNameSpace('realityEditor.app.callbacks');
                 let worldObject = realityEditor.getObject(worldObjectKey);
 
                 let worldOriginMatrix = [];
+                let hasMatchingOrigin = !!matchingOrigin;
                 let isMatchingOriginVisible = (matchingOrigin && typeof detectedOrigins[matchingOrigin.uuid] !== 'undefined');
-                if (!isMatchingOriginVisible && typeof worldObject.originOffset === 'undefined') {
+                let hasOriginOffset = typeof worldObject.originOffset !== 'undefined';
+                
+                if (!hasMatchingOrigin) {
                     worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]);
                 } else {
-                    // update originOffset
-                    if (isMatchingOriginVisible) {
-                        if (typeof worldObject.originOffset === 'undefined') {
+                    if (!isMatchingOriginVisible) {
+                        if (!hasOriginOffset) {
+                            worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]);
+                        } else {
+                            // calculate origin matrix using originOffset and visibleObjects[worldObjectKey]
+                            
+                            // inverseWorld * originMatrix = relative;
+                            // therefore:
+                            // originMatrix = world * relative
+                            
+                            realityEditor.gui.ar.utilities.multiplyMatrix(visibleObjects[worldObjectKey], worldObject.originOffset, worldOriginMatrix);
+                        }
+                    } else {
+                        if (!hasOriginOffset) {
                             realityEditor.app.tap(); // haptic feedback the first time it localizes against origin
                         }
                         let relative = [];
                         let inverseWorld = realityEditor.gui.ar.utilities.invertMatrix(visibleObjects[worldObjectKey]);
                         realityEditor.gui.ar.utilities.multiplyMatrix(inverseWorld, detectedOrigins[matchingOrigin.uuid], relative);
                         worldObject.originOffset = relative;
+                        worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(detectedOrigins[matchingOrigin.uuid]);
                     }
-                    worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(worldObject.originOffset);
                 }
+
+                // if (!isMatchingOriginVisible && typeof worldObject.originOffset !== 'undefined') {
+                //     console.log('world object has pre-saved origin offset');
+                // }
+                //
+                // if (!isMatchingOriginVisible && typeof worldObject.originOffset === 'undefined') {
+                //     worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]);
+                // } else {
+                //     // update originOffset
+                //     if (isMatchingOriginVisible) {
+                //         if (typeof worldObject.originOffset === 'undefined') {
+                //             realityEditor.app.tap(); // haptic feedback the first time it localizes against origin
+                //         }
+                //         let relative = [];
+                //         let inverseWorld = realityEditor.gui.ar.utilities.invertMatrix(visibleObjects[worldObjectKey]);
+                //         realityEditor.gui.ar.utilities.multiplyMatrix(inverseWorld, detectedOrigins[matchingOrigin.uuid], relative);
+                //         worldObject.originOffset = relative;
+                //     }
+                //     worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(detectedOrigins[matchingOrigin.uuid]);  //worldObject.originOffset);
+                // }
 
                 realityEditor.worldObjects.setOrigin(worldObjectKey, worldOriginMatrix);
                 

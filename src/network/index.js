@@ -379,7 +379,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
             let baseUrl = 'http://' + beat.ip + ':' + realityEditor.network.getPort(beat) + '/object/' + beat.id;
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
-                if (msg && objectKey) {
+                if (msg && objectKey && !objects[objectKey]) {
                     // add the object
                     objects[objectKey] = msg;
                     objects[objectKey].ip = beat.ip;

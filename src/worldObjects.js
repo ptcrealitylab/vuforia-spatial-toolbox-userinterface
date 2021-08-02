@@ -18,6 +18,7 @@ createNameSpace("realityEditor.worldObjects");
     
     var originObjects = {}; // detected _ORIGIN_ objects with type=origin
     var originByName = {};
+    var worldByName = {};
 
     /**
      * Will store the camera matrix offsets to each world object's origin compared to the phone's coordinate system origin
@@ -69,6 +70,8 @@ createNameSpace("realityEditor.worldObjects");
 
             if (object.type === 'origin') {
                 originObjects[objectKey] = object;
+                updateOriginOffsetIfNecessary(null, object);
+                setTimeout(function() { updateOriginOffsetIfNecessary(null, object); }, 100);
             }
             
             // backwards compatible with old servers - try downloading the local server's worldObject from http://ip:port/worldObject/
@@ -84,6 +87,38 @@ createNameSpace("realityEditor.worldObjects");
                 handleServerDiscovered(message.worldObject.ip)
             }
         });
+    }
+    
+    function updateOriginOffsetIfNecessary(worldObject, originObject) {
+        console.log('updateOriginOffsetIfNecessary');
+
+        if (worldObject && !originObject) {
+            originObject = getMatchingOriginObject(worldObject.objectId);
+        }
+        if (originObject && !worldObject) {
+            worldObject = getMatchingWorldObject(originObject.objectId);
+        }
+        
+        console.log(worldObject, originObject);
+
+        // only use offset if both are loaded
+        if (!originObject || !worldObject) { return; }
+
+        if (typeof worldObject.originOffset !== 'undefined') { return; }
+
+        console.log(originObject.matrix);
+        
+        // only use offset if a non-identity matrix has been saved to that origin. we know it was localized because that is a prerequisite for saving.
+        if (!originObject.matrix || originObject.matrix.length !== 16 || realityEditor.gui.ar.utilities.isIdentityMatrix(originObject.matrix, 3)) {
+            return;
+        }
+
+        console.log('loaded originOffset for ' + worldObject.objectId);
+
+        realityEditor.getObject(worldObject.objectId).originOffset = realityEditor.gui.ar.utilities.copyMatrix(originObject.matrix);
+        // worldObject.originOffset = realityEditor.gui.ar.utilities.copyMatrix(originObject.matrix);
+        
+        console.log(worldObject.originOffset);
     }
 
     /**
@@ -170,6 +205,10 @@ createNameSpace("realityEditor.worldObjects");
         if (object.objectId === localWorldObjectKey) {
             realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
         }
+
+        updateOriginOffsetIfNecessary(object, null);
+        setTimeout(function() { updateOriginOffsetIfNecessary(object, null); }, 100);
+
         console.log('successfully initialized world object: ' + object.objectId);
     }
 
@@ -262,6 +301,13 @@ createNameSpace("realityEditor.worldObjects");
         let originName = worldObject.name.replace(/^_WORLD_/, '_ORIGIN_');
         return getOriginByName(originName);
     }
+
+    function getMatchingWorldObject(originKey) {
+        let originObject = realityEditor.getObject(originKey);
+        if (!originObject) { return null; }
+        let worldName = originObject.name.replace(/^_ORIGIN_/, '_WORLD_');
+        return getWorldByName(worldName);
+    }
     
     function getOriginByName(originName) {
         if (typeof originByName[originName] !== 'undefined') {
@@ -271,6 +317,18 @@ createNameSpace("realityEditor.worldObjects");
         if (origin) {
             originByName[originName] = origin;
             return originByName[originName];
+        }
+        return null;
+    }
+
+    function getWorldByName(worldName) {
+        if (typeof worldByName[worldName] !== 'undefined') {
+            return worldByName[worldName];
+        }
+        let world = Object.values(worldObjects).find(obj => obj.name === worldName);
+        if (world) {
+            worldByName[worldName] = world;
+            return worldByName[worldName];
         }
         return null;
     }
@@ -382,7 +440,7 @@ createNameSpace("realityEditor.worldObjects");
         var distances = {};
         for (var objectKey in realityEditor.gui.ar.draw.visibleObjects) {
             var object = realityEditor.getObject(objectKey);
-            if (object.isWorldObject) {
+            if (object && object.isWorldObject) {
                 // var thisDistance = realityEditor.gui.ar.utilities.distance(realityEditor.gui.ar.draw.modelViewMatrices[objectKey]);
                 distances[objectKey] = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
             }
@@ -427,5 +485,6 @@ createNameSpace("realityEditor.worldObjects");
     exports.onLocalizedWithinWorld = onLocalizedWithinWorld;
     exports.getOriginObjects = getOriginObjects;
     exports.getMatchingOriginObject = getMatchingOriginObject;
+    exports.getMatchingWorldObject = getMatchingWorldObject;
 
 }(realityEditor.worldObjects));
