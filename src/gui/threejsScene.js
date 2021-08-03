@@ -278,14 +278,14 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         gltfLoader.load(pathToGltf, function(gltf) {
 
             if (gltf.scene.children[0].geometry) {
-                if (typeof maxHeight !== 'undefined') {
+                if (typeof maxHeight !== 'undefined' && gltf.scene.children[0].material.map) {
                     gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight, true);
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
             } else {
                 gltf.scene.children[0].children.forEach(child => {
-                    if (typeof maxHeight !== 'undefined') {
+                    if (typeof maxHeight !== 'undefined' && child.material.map) {
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight, true);
                     }
                 });
