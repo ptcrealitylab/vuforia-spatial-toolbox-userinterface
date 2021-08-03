@@ -56,6 +56,12 @@ createNameSpace("realityEditor.sceneGraph.network");
         let object = realityEditor.getObject(sceneNode.id);
         if (!object) { return false; }
         
+        // ignore objects that have a different worldObject than the currently-localized world
+        if (object.worldId && object.worldId !== realityEditor.worldObjects.getBestWorldObject().objectId) {
+            console.log('skipping upload for ' + object.name + ' because world = ' + object.worldId);
+            return false;
+        }
+        
         // if the object specifically marked itself as needing to upload, upload it
         if (sceneNode.needsUploadToServer) { return true; }
 

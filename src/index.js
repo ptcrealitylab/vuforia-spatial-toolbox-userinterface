@@ -105,6 +105,9 @@ var realityEditor = realityEditor || {
             logo: {},
             states: {}
         },
+        zones: {
+            mesh: {}
+        },
         buttons: {},
         dropdown: {},
         glRenderer: {},

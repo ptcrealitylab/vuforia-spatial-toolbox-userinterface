@@ -227,6 +227,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.glRenderer.initService();
     realityEditor.gui.threejsScene.initService();
     realityEditor.humanObjects.initService();
+    realityEditor.gui.zones.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
