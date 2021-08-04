@@ -22,10 +22,12 @@ createNameSpace('realityEditor.gui.zones');
     });
     let zoneVisibilityToggle;
     let zoneVisibilityCallbacks = [];
+    let currentZones = [];
 
     function initService() {
         update(); // start update loop
         realityEditor.network.addObjectDiscoveredCallback(onObjectDiscovered);
+        realityEditor.gui.ar.draw.addVisibleObjectModifier(modifyVisibleObjects);
 
         zoneVisibilityToggle = realityEditor.gui.settings.addToggle('View Zones', 'render borders of Zone Objects', 'viewZones',  '../../../svg/powerSave.svg', false, function(newValue) {
             console.log('View Zones toggled');
@@ -40,18 +42,45 @@ createNameSpace('realityEditor.gui.zones');
         });
     }
 
+    /**
+     * This gets triggered at the beginning of gui.ar.draw.update
+     * We use this function to inject zone objects into the visibleObjects
+     * @param visibleObjects
+     */
+    function modifyVisibleObjects(visibleObjects) {
+        // if there's no visible world object other than the world_local, ignore all this code
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+            return;
+        }
+
+        currentZones.forEach(function(zoneId) {
+            visibleObjects[zoneId] = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        });
+    }
+
     function update() {
         try {
-            let cameraPosition = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+            let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.worldObjects.getBestWorldObject().objectId);
+            let cameraPositionInWorld = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(worldNode);
+            let cameraPosition = {
+                x: cameraPositionInWorld[12]/cameraPositionInWorld[15],
+                y: cameraPositionInWorld[13]/cameraPositionInWorld[15],
+                z: cameraPositionInWorld[14]/cameraPositionInWorld[15]
+            };
+
+            currentZones = []; // should there only be one at a time?
 
             forEachLocalizedZone(function(zoneId) {
                 let thisZone = zoneInfo[zoneId];
                 if (!thisZone.hull) { return; }
+                // let camCoords = worldToHullCoordinates(cameraPosition.x, cameraPosition.z, bitmapSize, planeWidth);
                 let camCoords = worldToHullCoordinates(cameraPosition.x, cameraPosition.z, bitmapSize, planeWidth);
                 let isInsideZone = checkPointConcave(camCoords.x, camCoords.y, thisZone.hull);
                 if (isInsideZone) {
                     if (thisZone.hullGroup) {
                         thisZone.hullGroup.children[0].children[1].material.color.setHex(0xffffff);
+                        currentZones.push(zoneId);
                     }
                 } else {
                     if (thisZone.hullGroup) {
@@ -179,8 +208,8 @@ createNameSpace('realityEditor.gui.zones');
                 thisZone.mesh = new THREE.Mesh(geometry, material);
                 thisZone.mesh.rotation.x = -Math.PI / 2;
 
-                // realityEditor.gui.threejsScene.addToScene(thisZone.mesh, {occluded: true});
-                realityEditor.gui.threejsScene.addToScene(thisZone.mesh); // TODO: occlude only on AR, not remote operator
+                // TODO: perhaps add parameters {occluded: true} or {worldObjectId: realityEditor.getObject(zoneId).worldId}
+                realityEditor.gui.threejsScene.addToScene(thisZone.mesh);
             }
 
             thisZone.mesh.position.y = 200;
