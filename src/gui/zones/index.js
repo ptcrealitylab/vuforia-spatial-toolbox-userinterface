@@ -299,10 +299,18 @@ createNameSpace('realityEditor.gui.zones');
 
     function hullToWorldCoordinates(hull, bitmapSize, planeSize) {
         const THREE = realityEditor.gui.threejsScene.THREE;
+        const utils = realityEditor.gui.ar.utilities;
 
-        return hull.map(function(pt) {
-            return new THREE.Vector3((pt[0] / bitmapSize - 0.5) * planeSize, 0, (pt[1] / bitmapSize - 0.5) * planeSize);
+        let worldTransform = realityEditor.sceneGraph.getSceneNodeById(realityEditor.worldObjects.getBestWorldObject().objectId).worldMatrix;
+
+        let newHullPoints = hull.map(function(pt) {
+            // convert from bitmap (x,y) -> plane (x,0,z), where plane's center is at (0,0,0)
+            let untransformed = [(pt[0] / bitmapSize - 0.5) * planeSize, 0, (pt[1] / bitmapSize - 0.5) * planeSize, 1];
+            // align plane coordinates with world coordinates
+            let transformed = utils.multiplyMatrix4(untransformed, worldTransform);
+            return new THREE.Vector3(transformed[0], 0, transformed[2]);
         });
+        return newHullPoints;
     }
 
     function worldToHullCoordinates(x, y, bitmapSize, planeSize) {
