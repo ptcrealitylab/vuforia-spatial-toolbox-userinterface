@@ -316,7 +316,7 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     var object = null;
     var frame = null;
     var node = null;
-    
+
     // first looks for visible non-world objects
     var info = this.closestVisibleObject(function(objectKey) {
         if (typeof optionalFilter !== 'undefined') {
@@ -324,8 +324,20 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
                 return false;
             }
         }
-        return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey);
+        return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey) && objects[objectKey].type !== 'zone';
     });
+
+    // then look for visible zone objects
+    if (!info.objectKey) {
+        info = this.closestVisibleObject(function (objectKey) {
+            if (typeof optionalFilter !== 'undefined') {
+                if (!optionalFilter(objectKey)) {
+                    return false;
+                }
+            }
+            return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey) && objects[objectKey].type === 'zone';
+        });
+    }
 
     // if no visible non-world objects, get the closest non-local-world object
     if (!info.objectKey) {

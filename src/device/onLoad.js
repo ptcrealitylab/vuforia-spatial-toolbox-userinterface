@@ -327,6 +327,13 @@ realityEditor.device.onload = function () {
         });
     }
 
+    if (globalStates.debugSpeechConsole) {
+        document.getElementById('speechConsole').style.display = 'inline';
+        realityEditor.gui.ar.draw.onClosestObjectChanged(function(oldKey, newKey) {
+            document.getElementById('speechConsole').innerHTML = newKey;
+        });
+    }
+
     this.cout("onload");
 };
 
