@@ -177,6 +177,7 @@ createNameSpace("realityEditor.sceneGraph");
         // ensure all worldMatrix reflects latest localMatrix
         recomputeScene();
 
+        if (!cameraNode) { return; }
         const didCameraUpdate = cameraNode.needsRerender;
 
         // update ground plane first, in case frames/nodes/etc are relative to it
@@ -204,7 +205,8 @@ createNameSpace("realityEditor.sceneGraph");
 
         visibleObjectIds.forEach( function(objectKey) {
             let object = realityEditor.getObject(objectKey);
-            let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
+            let objectSceneNode = getSceneNodeById(objectKey);
+            if (!object || !objectSceneNode) { return; } // skip this object for now
 
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);

@@ -56,7 +56,7 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function isAnchorObject(objectId) {
         let object = realityEditor.getObject(objectId);
-        if (object.type === 'human') { return false; }
+        if (object && object.type === 'human') { return false; }
         return anchorObjects.hasOwnProperty(objectId);
     }
 

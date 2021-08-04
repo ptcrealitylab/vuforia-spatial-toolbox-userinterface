@@ -318,13 +318,22 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     var node = null;
 
     // first looks for visible non-world objects
+    // (note: currently ignores all type='human' objects entirely)
     var info = this.closestVisibleObject(function(objectKey) {
         if (typeof optionalFilter !== 'undefined') {
             if (!optionalFilter(objectKey)) {
                 return false;
             }
         }
-        return (typeof objects[objectKey] !== 'undefined') && !realityEditor.worldObjects.isWorldObjectKey(objectKey) && objects[objectKey].type !== 'zone';
+        // TODO: for remote operator, impose a maximum distance that these  objects can be and still be considered visible
+        if (typeof objects[objectKey] === 'undefined') { return false; }
+        if (realityEditor.worldObjects.isWorldObjectKey(objectKey) || objects[objectKey].type === 'zone' && objects[objectKey].type === 'human') { return false; }
+        var env = realityEditor.device.environment.variables;
+        if (env.objectInteractionDistance) {
+            let distance = realityEditor.sceneGraph.getDistanceToCamera(objectKey);
+            if (distance > env.objectInteractionDistance) { return false; }
+        }
+        return true;
     });
 
     // then look for visible zone objects

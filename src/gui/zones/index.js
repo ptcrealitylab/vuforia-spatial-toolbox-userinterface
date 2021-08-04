@@ -55,12 +55,28 @@ createNameSpace('realityEditor.gui.zones');
         }
 
         currentZones.forEach(function(zoneId) {
-            visibleObjects[zoneId] = realityEditor.gui.ar.utilities.newIdentityMatrix();
+            // the visibleObjects matrix of its world
+            let objectMatrix = realityEditor.getObject(zoneId).matrix || realityEditor.gui.ar.utilities.newIdentityMatrix();
+
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(zoneId);
+            if (sceneNode) {
+                let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(bestWorldObject.objectId);
+                sceneNode.setParent(worldObjectSceneNode);
+                sceneNode.setLocalMatrix(objectMatrix);
+            }
+
+            visibleObjects[zoneId] = objectMatrix;
         });
     }
 
     function update() {
         try {
+            // if (realityEditor.gui.settings.toggleStates.viewZones) {
+            //     showZones();
+            // } else {
+            //     hideZones();
+            // }
+
             let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.worldObjects.getBestWorldObject().objectId);
             let cameraPositionInWorld = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(worldNode);
             let cameraPosition = {
@@ -149,6 +165,10 @@ createNameSpace('realityEditor.gui.zones');
     }
 
     function showZones() {
+        if (realityEditor.worldObjects.getBestWorldObject() && realityEditor.worldObjects.getBestWorldObject().objectId === realityEditor.worldObjects.getLocalWorldId()) {
+            return;
+        }
+
         console.log('show zones');
         const THREE = realityEditor.gui.threejsScene.THREE;
 
