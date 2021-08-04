@@ -20,17 +20,23 @@ createNameSpace('realityEditor.gui.zones');
         Pencil: '#ffffff',
         Eraser: '#000000'
     });
+    let zoneVisibilityToggle;
+    let zoneVisibilityCallbacks = [];
 
     function initService() {
         update(); // start update loop
         realityEditor.network.addObjectDiscoveredCallback(onObjectDiscovered);
 
-        realityEditor.gui.settings.addToggle('View Zones', 'render borders of Zone Objects', 'viewZones',  '../../../svg/powerSave.svg', false, function(newValue) {
+        zoneVisibilityToggle = realityEditor.gui.settings.addToggle('View Zones', 'render borders of Zone Objects', 'viewZones',  '../../../svg/powerSave.svg', false, function(newValue) {
+            console.log('View Zones toggled');
             if (newValue) {
-                renderZones();
+                showZones();
             } else {
                 hideZones();
             }
+            zoneVisibilityCallbacks.forEach(function(callback) {
+                callback(newValue);
+            })
         });
     }
 
@@ -102,8 +108,19 @@ createNameSpace('realityEditor.gui.zones');
             }
         }
     }
+    
+    function triggerShowZones() {
+        zoneVisibilityToggle.setValue(true);
+        showZones();
+    }
+    
+    function triggerHideZones() {
+        zoneVisibilityToggle.setValue(false);
+        hideZones();
+    }
 
-    function renderZones() {
+    function showZones() {
+        console.log('show zones');
         const THREE = realityEditor.gui.threejsScene.THREE;
 
         forEachLocalizedZone(function(zoneId) {
@@ -167,15 +184,24 @@ createNameSpace('realityEditor.gui.zones');
             }
 
             thisZone.mesh.position.y = 200;
-            thisZone.mesh.visible = DEBUG_SHOW_CANVAS;
+            thisZone.mesh.visible = DEBUG_SHOW_CANVAS; // mesh is the canvas
+            if (thisZone.hullGroup) {
+                thisZone.hullGroup.visible = true; // hullGroup is the 3D model of the zone
+            }
         });
     }
 
     function hideZones() {
+        console.log('hide zones');
         for (let zoneId in zoneInfo) {
             let thisZone = zoneInfo[zoneId];
             if (!thisZone.mesh) { return; }
             thisZone.mesh.visible = false;
+            if (thisZone.hullGroup) {
+                thisZone.hullGroup.visible = false; // hullGroup is the 3D model of the zone
+            }
+
+            console.log(zoneId, thisZone.mesh.visible);
         }
     }
 
@@ -214,7 +240,6 @@ createNameSpace('realityEditor.gui.zones');
         thisZone.hull = hull;
 
         let worldCoordinates = hullToWorldCoordinates(hull, bitmapSize, planeWidth);
-        console.log(worldCoordinates);
 
         if (!thisZone.hullGroup) {
             thisZone.hullGroup = new THREE.Group();
@@ -286,6 +311,20 @@ createNameSpace('realityEditor.gui.zones');
             y: (y / planeSize + 0.5) * bitmapSize
         };
     }
+    
+    function getZoneInfo() {
+        return zoneInfo;
+    }
+    
+    function onZoneVisibilityToggled(callback) {
+        zoneVisibilityCallbacks.push(callback);
+    }
 
     exports.initService = initService;
+    exports.renderUpdates = renderUpdates;
+    exports.getZoneInfo = getZoneInfo;
+    exports.hideZones = triggerHideZones;
+    exports.showZones = triggerShowZones;
+    exports.onZoneVisibilityToggled = onZoneVisibilityToggled;
+    
 })(realityEditor.gui.zones);
