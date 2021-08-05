@@ -58,7 +58,7 @@ createNameSpace("realityEditor.sceneGraph.network");
         
         // ignore objects that have a different worldObject than the currently-localized world
         if (object.worldId && object.worldId !== realityEditor.worldObjects.getBestWorldObject().objectId) {
-            console.log('skipping upload for ' + object.name + ' because world = ' + object.worldId);
+            // console.log('skipping upload for ' + object.name + ' because world = ' + object.worldId);
             return false;
         }
         
@@ -104,7 +104,7 @@ createNameSpace("realityEditor.sceneGraph.network");
             timestamp: Date.now()
         };
         
-        console.log('uploading scene graph object position for ' + sceneNode.id);
+        // console.log('uploading scene graph object position for ' + sceneNode.id);
         
         // if it's an object, post object position relative to a world object
         let worldObjectId = sceneGraph.getWorldId();

@@ -1272,7 +1272,51 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
                     
                     if (sendMatrices.devicePose === true) {
-                        thisMsg.devicePose = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix;
+
+                        let unityCameraNode = realityEditor.sceneGraph.getSceneNodeById('UNITY_CAMERA_VISUAL_ELEMENT');
+                        if (!unityCameraNode) {
+                            let invertedCoordinatesNodeId = realityEditor.sceneGraph.addVisualElement('INVERTED_COORDINATES', undefined, undefined, [-1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+                            let invertedCoordinatesNode = realityEditor.sceneGraph.getSceneNodeById(invertedCoordinatesNodeId);
+
+                            // the 1.1 should be a 1, but it's a bit off because the area target scan wasn't perfectly scanned with the same axes as the original calibrated model
+                            let rotatedCoordinatesNodeId = realityEditor.sceneGraph.addVisualElement('ROTATED_COORDINATES', invertedCoordinatesNode, undefined, makeGroundPlaneRotationY(Math.PI * 1.05));
+                            let rotatedCoordinatesNode = realityEditor.sceneGraph.getSceneNodeById(rotatedCoordinatesNodeId);
+
+                            function makeGroundPlaneRotationY(theta) {
+                                var c = Math.cos(theta), s = Math.sin(theta);
+                                return [
+                                    c, 0, s, 0,
+                                    0, 1, 0, 0,
+                                    -s, 0, c, 0,
+                                    0, 0, 0, 1
+                                ];
+                            }
+
+                            // sceneNodeRotateX.setLocalMatrix(makeGroundPlaneRotationX(-(Math.PI/2)));
+
+                            // let unityCameraNodeId = realityEditor.sceneGraph.addVisualElement('UNITY_CAMERA', invertedCoordinatesNode);
+                            // unityCameraNode = realityEditor.sceneGraph.getSceneNodeById(unityCameraNodeId);
+                            // unityCamera = new realityEditor.device.VirtualCamera(unityCameraNode, 1, 0.001, 10, INITIAL_CAMERA_POSITIONS.LAB, true);
+
+
+                            realityEditor.sceneGraph.addVisualElement('UNITY_CAMERA', rotatedCoordinatesNode);
+                        }
+                        // thisMsg.devicePose = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix;
+                        
+                        if (unityCameraNode) {
+                            // send devicePose relative to worldObject
+                            let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                            if (worldNode) {
+                                // thisMsg.devicePose = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(worldNode);
+
+                                // unityCameraNode.setLocalMatrix(realityEditor.sceneGraph.getCameraNode().localMatrix);
+                                unityCameraNode.setLocalMatrix(realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(worldNode));
+                                // thisMsg.devicePose = unityCameraNode.getMatrixRelativeTo(worldNode);
+                                thisMsg.devicePose = unityCameraNode.worldMatrix;
+                                
+                                // thisMsg.devicePose = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix;
+                            }
+                        }
                     }
 
                     if (sendMatrices.groundPlane === true) {

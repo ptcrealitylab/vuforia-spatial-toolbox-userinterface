@@ -3169,12 +3169,12 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
         worldId: worldId,
         lastEditor: globalStates.tempUuid
     };
-    this.postData(urlEndpoint, content, function(err, _response) {
-        if (err) {
-            console.warn('error posting to ' + urlEndpoint, err);
-        } else {
-            console.log('successfully posted to ' + urlEndpoint);
-        }
+    this.postData(urlEndpoint, content, function(_err, _response) {
+        // if (err) {
+        //     console.warn('error posting to ' + urlEndpoint, err);
+        // } else {
+        //     console.log('successfully posted to ' + urlEndpoint);
+        // }
     });
 };
 
