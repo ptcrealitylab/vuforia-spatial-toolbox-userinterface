@@ -20,7 +20,8 @@ createNameSpace('realityEditor.gui.zones.mesh');
                 const lightMaterial = new THREE.MeshBasicMaterial({color:0xFFFFCC, transparent:true});
                 const topMaterial = new THREE.MeshBasicMaterial({color:0x000000, transparent:true});
                 const wallMaterial = new THREE.MeshBasicMaterial({color:0x01fffc, transparent:true, opacity:0.8});
-                pathMeshResources = {lightGeometry, lightMaterial, topMaterial, wallMaterial};
+                const floorMaterial = new THREE.MeshBasicMaterial({color:0x01fffc, transparent: true, opacity: 0.3, side: THREE.DoubleSide});
+                pathMeshResources = {lightGeometry, lightMaterial, topMaterial, wallMaterial, floorMaterial};
             }
             return pathMeshResources;
         } else {
@@ -28,8 +29,9 @@ createNameSpace('realityEditor.gui.zones.mesh');
             const lightMaterial = new THREE.MeshBasicMaterial({color:0xFFFFCC, transparent:true});
             const topMaterial = new THREE.MeshBasicMaterial({color:0x000000, transparent:true});
             const wallMaterial = new THREE.MeshBasicMaterial({color:0x01fffc, transparent:true, opacity:0.8});
+            const floorMaterial = new THREE.MeshBasicMaterial({color:0x01fffc, transparent: true, opacity: 0.3, side: THREE.DoubleSide});
 
-            return {lightGeometry, lightMaterial, topMaterial, wallMaterial};
+            return {lightGeometry, lightMaterial, topMaterial, wallMaterial, floorMaterial};
         }
     }
 
@@ -50,6 +52,7 @@ createNameSpace('realityEditor.gui.zones.mesh');
         const wallGeometry = new THREE.BufferGeometry(); // The wall represents the yellow sides of the line
         let topVertices = [];
         let wallVertices = [];
+        let floorVertices = [];
         const up = new THREE.Vector3(0,1,0);
         // Base should be wider to allow visibility while moving along line
         const bottomScale = 1.4; // How much wider the bottom of the walls is
@@ -67,6 +70,11 @@ createNameSpace('realityEditor.gui.zones.mesh');
         // const lightMaterial = resources.lightMaterial;
         const topMaterial = resources.topMaterial;
         const wallMaterial = resources.wallMaterial;
+        const floorMaterial = resources.floorMaterial;
+        
+        const floorShape = new THREE.Shape();
+
+        floorShape.moveTo(path[path.length-1].x, path[path.length-1].z);
 
         for (let i = path.length - 1; i > 0; i--) {
             const start = path[i];
@@ -178,15 +186,24 @@ createNameSpace('realityEditor.gui.zones.mesh');
             //     }
             // }
             // lightDistanceTraveled += segLengthRemaining;
+            
+            floorShape.lineTo(start.x, start.z);
         }
+
+        floorShape.lineTo(path[path.length-1].x, path[path.length-1].z);
+
+        const floorGeometry = new THREE.ShapeGeometry(floorShape); // This is a wide flat surface inside the path
 
         topGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(topVertices), 3));
         wallGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(wallVertices), 3));
         const topMesh = new THREE.Mesh(topGeometry, topMaterial);
         const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+        const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+        floorMesh.rotation.x = Math.PI / 2;
         const group = new THREE.Group();
         group.add(topMesh);
         group.add(wallMesh);
+        group.add(floorMesh);
         // group.add(lightGroup);
         group.onRemove = () => {
             // Since these geometries are not reused, they MUST be disposed to prevent memory leakage

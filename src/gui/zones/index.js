@@ -301,6 +301,14 @@ createNameSpace('realityEditor.gui.zones');
         }
 
         let mesh = realityEditor.gui.zones.mesh.pathToMesh(worldCoordinates);
+        
+        // set Y position of mesh to be on floor
+        if (!realityEditor.device.environment.shouldCreateDesktopSocket()) {
+            mesh.position.y = -1500;
+        } else {
+            mesh.position.y = 100;
+        }
+        
         thisZone.hullGroup.add(mesh);
     }
 
