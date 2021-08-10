@@ -430,7 +430,7 @@ createNameSpace('realityEditor.app.callbacks');
                         realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                     } else {
                         let offset = [];
-                        let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
+                        let floorOffset = (-1.5009218056996663) * 1000; // meters -> mm // -1.5009218056996663
                         let buffer = 100;
                         floorOffset += buffer;
                         let groundPlaneOffsetMatrix = [

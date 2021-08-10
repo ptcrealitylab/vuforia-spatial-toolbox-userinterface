@@ -94,13 +94,15 @@ createNameSpace('realityEditor.gui.zones');
                 let camCoords = worldToHullCoordinates(cameraPosition.x, cameraPosition.z, bitmapSize, planeWidth);
                 let isInsideZone = checkPointConcave(camCoords.x, camCoords.y, thisZone.hull);
                 if (isInsideZone) {
-                    if (thisZone.hullGroup) {
+                    if (thisZone.hullGroup && thisZone.hullGroup.children.length > 0 && thisZone.hullGroup.children[0].children.length > 0) {
                         thisZone.hullGroup.children[0].children[1].material.color.setHex(0xffffff);
+                        thisZone.hullGroup.children[0].children[2].material.opacity = 0.2;
                         currentZones.push(zoneId);
                     }
                 } else {
-                    if (thisZone.hullGroup) {
+                    if (thisZone.hullGroup && thisZone.hullGroup.children.length > 0 && thisZone.hullGroup.children[0].children.length > 0) {
                         thisZone.hullGroup.children[0].children[1].material.color.setHex(0x01fffc);
+                        thisZone.hullGroup.children[0].children[2].material.opacity = 0.3;
                     }
                 }
             });
@@ -229,7 +231,7 @@ createNameSpace('realityEditor.gui.zones');
                 thisZone.mesh.rotation.x = -Math.PI / 2;
 
                 // TODO: perhaps add parameters {occluded: true} or {worldObjectId: realityEditor.getObject(zoneId).worldId}
-                realityEditor.gui.threejsScene.addToScene(thisZone.mesh);
+                realityEditor.gui.threejsScene.addToScene(thisZone.mesh); // , {worldObjectId: realityEditor.getObject(zoneId).worldId, occluded: true});
             }
 
             thisZone.mesh.position.y = 200;
@@ -304,7 +306,7 @@ createNameSpace('realityEditor.gui.zones');
         
         // set Y position of mesh to be on floor
         if (!realityEditor.device.environment.shouldCreateDesktopSocket()) {
-            mesh.position.y = -1500;
+            mesh.position.y = -1200;
         } else {
             mesh.position.y = 100;
         }

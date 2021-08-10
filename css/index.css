@@ -1346,6 +1346,7 @@ Logic Interface CSS
     width: 100%;
     height: 100%;
     display: none;
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -99999, 1);
 }
 
 #pocketScrollContainer {
