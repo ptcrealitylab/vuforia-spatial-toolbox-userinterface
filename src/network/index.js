@@ -2027,20 +2027,12 @@ realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName
     if (thisNode) {
         thisNode.fullScreen = isFullscreen;
 
-        let zIndex = -5000;
-
         let element = globalDOMCache[thisNodeKey];
         let iframeElement = globalDOMCache['iframe' + thisNodeKey];
         let objectElement = globalDOMCache['object' + thisNodeKey];
 
         if (isFullscreen) {
-            objectElement.style.zIndex = zIndex.toString();
-            objectElement.style.transform =
-                'matrix3d(1, 0, 0, 0,' +
-                '0, 1, 0, 0,' +
-                '0, 0, 1, 0,' +
-                '0, 0, ' + zIndex + ', 1)';
-
+            // don't need to set objectElement.style.transform here because that happens in gui.ar.draw
             element.dataset.leftBeforeFullscreen = element.style.left;
             element.dataset.topBeforeFullscreen = element.style.top;
             element.style.opacity = '0'; // svg overlay still exists so we can reposition, but invisible
