@@ -143,6 +143,29 @@ realityEditor.network.registerCallback = function(functionName, callback) {
     this.callbackHandler.registerCallback(functionName, callback);
 };
 
+realityEditor.network.pendingNodeAdjustments = {};
+
+realityEditor.network.addPendingNodeAdjustment = function(objectKey, frameKey, nodeName, msgContent) {
+    let pendings = this.pendingNodeAdjustments;
+    if (typeof pendings[objectKey] === 'undefined') { pendings[objectKey] = {}; }
+    if (typeof pendings[objectKey][frameKey] === 'undefined') { pendings[objectKey][frameKey] = {}; }
+    if (typeof pendings[objectKey][frameKey][nodeName] === 'undefined') { pendings[objectKey][frameKey][nodeName] = []; }
+
+    pendings[objectKey][frameKey][nodeName].push(msgContent);
+}
+
+realityEditor.network.processPendingNodeAdjustments = function(objectKey, frameKey, nodeName, callback) {
+    let pendings = this.pendingNodeAdjustments;
+    if (typeof pendings[objectKey] === 'undefined') { return; }
+    if (typeof pendings[objectKey][frameKey] === 'undefined') { return; }
+    if (typeof pendings[objectKey][frameKey][nodeName] === 'undefined') { return; }
+
+    pendings[objectKey][frameKey][nodeName].forEach(function(msgContent) {
+        callback(objectKey, frameKey, nodeName, JSON.parse(JSON.stringify(msgContent)));
+    });
+    delete pendings[objectKey][frameKey][nodeName];
+}
+
 /**
  * Converts an object with version < 1.7.0 to the new format:
  * Objects now have frames, which can have nodes, but in the old version there were no frames
@@ -1389,7 +1412,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
         //         }
         //     }
         // }
-        
     }
     
     if (typeof msgContent.fullScreen === "boolean") {
@@ -1548,6 +1570,23 @@ realityEditor.network.onInternalPostMessage = function (e) {
             globalDOMCache['iframe' + msgContent.frame].contentWindow.postMessage(JSON.stringify({
                 fullScreenOccupiedStatus: realityEditor.gui.ar.draw.getAllVisibleExclusiveFrames().length > 0
             }), '*');
+        }
+    }
+
+    if (typeof msgContent.nodeIsFullScreen !== 'undefined') {
+        let nodeName = msgContent.nodeName;
+
+        let thisNodeKey = null;
+        Object.keys(tempThisObject.nodes).map(function(nodeKey) {
+            if (tempThisObject.nodes[nodeKey].name === nodeName) {
+                thisNodeKey = nodeKey;
+            }
+        });
+
+        if (thisNodeKey) {
+            this.setNodeFullScreen(tempThisObject.objectId, tempThisObject.uuid, nodeName, msgContent);
+        } else {
+            this.addPendingNodeAdjustment(tempThisObject.objectId, tempThisObject.uuid, nodeName, JSON.parse(JSON.stringify(msgContent)));
         }
     }
 
@@ -1971,6 +2010,62 @@ realityEditor.network.onInternalPostMessage = function (e) {
         realityEditor.network.setPinned(msgContent.object, msgContent.frame, msgContent.setPinned);
     }
 };
+
+realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName, msgContent) {
+    let tempThisObject = realityEditor.getFrame(objectKey, frameKey);
+
+    let thisNodeKey = null;
+    Object.keys(tempThisObject.nodes).map(function(nodeKey) {
+        if (tempThisObject.nodes[nodeKey].name === nodeName) {
+            thisNodeKey = nodeKey;
+        }
+    });
+
+    let isFullscreen = msgContent.nodeIsFullScreen;
+
+    let thisNode = tempThisObject.nodes[thisNodeKey];
+    if (thisNode) {
+        thisNode.fullScreen = isFullscreen;
+
+        let element = globalDOMCache[thisNodeKey];
+        let iframeElement = globalDOMCache['iframe' + thisNodeKey];
+        let objectElement = globalDOMCache['object' + thisNodeKey];
+
+        if (isFullscreen) {
+            // don't need to set objectElement.style.transform here because that happens in gui.ar.draw
+            element.dataset.leftBeforeFullscreen = element.style.left;
+            element.dataset.topBeforeFullscreen = element.style.top;
+            element.style.opacity = '0'; // svg overlay still exists so we can reposition, but invisible
+            element.style.left = '0';
+            element.style.top = '0';
+
+            iframeElement.dataset.leftBeforeFullscreen = iframeElement.style.left;
+            iframeElement.dataset.topBeforeFullscreen = iframeElement.style.top;
+            iframeElement.style.left = '0';
+            iframeElement.style.top = '0';
+            iframeElement.style.margin = '-2px';
+
+        } else {
+            objectElement.style.zIndex = '';
+
+            element.style.opacity = '1';
+            if (element.dataset.leftBeforeFullscreen) {
+                // reset left/top offset when returns to non-fullscreen
+                element.style.left = element.dataset.leftBeforeFullscreen;
+            }
+            if (element.dataset.topBeforeFullscreen) {
+                element.style.top = element.dataset.topBeforeFullscreen;
+            }
+
+            if (iframeElement.dataset.leftBeforeFullscreen) {
+                iframeElement.style.left = iframeElement.dataset.leftBeforeFullscreen;
+            }
+            if (iframeElement.dataset.topBeforeFullscreen) {
+                iframeElement.style.top = iframeElement.dataset.topBeforeFullscreen;
+            }
+        }
+    }
+}
 
 realityEditor.network.setPinned = function(objectKey, frameKey, isPinned) {
     let object = realityEditor.getObject(objectKey);
@@ -2949,6 +3044,13 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         if (node.type === 'logic') {
             realityEditor.gui.ar.draw.updateLogicNodeIcon(node);
         }
+
+        this.processPendingNodeAdjustments(objectKey, frameKey, node.name, function(objectKey, frameKey, nodeName, msgContent) {
+            console.log('processing pending node adjustment in onElementLoad', frameKey, nodeName, msgContent);
+            if (typeof msgContent.nodeIsFullScreen !== 'undefined') {
+                realityEditor.network.setNodeFullScreen(objectKey, frameKey, nodeName, msgContent); // TODO: actually do this after onElementLoad for the node
+            }
+        });
     }
     
     // adjust move-ability corner UI to match true width and height of frame contents

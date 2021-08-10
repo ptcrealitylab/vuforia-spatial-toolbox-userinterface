@@ -1231,20 +1231,34 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     }
                 }
             } else {
-                this.updateStickyFrameCss(activeKey, activeVehicle.fullScreen);
+                if (realityEditor.isVehicleAFrame(activeVehicle)) {
+                    this.updateStickyFrameCss(activeKey, activeVehicle.fullScreen);
+                } else {
+                    // fullscreen nodes can be dragged around, need to be updated
+                    let zIndex = parseInt(globalDOMCache['object' + activeKey].style.zIndex || 5000);
+                    globalDOMCache['object' + activeKey].style.transform =
+                        'matrix3d(' + activeVehicle.scale + ', 0, 0, 0,' +
+                        '0, ' + activeVehicle.scale + ', 0, 0,' +
+                        '0, 0, 1, 0,' +
+                        activeVehicle.x + ', ' + activeVehicle.y + ', ' + zIndex + ', 1)';
+                }
             }
 
-            // this is for later
-            // The matrix has been changed from Vuforia 3 to 4 and 5. Instead of  finalMatrix[3][2] it is now finalMatrix[3][3]
-            activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
-            activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
-            // activeVehicle.screenZ = finalMatrix[14];
+            if (activeVehicle.fullScreen) {
+                let clientRect = globalDOMCache[activeKey].getClientRects()[0];
+                activeVehicle.screenX = clientRect.left + clientRect.width/2;
+                activeVehicle.screenY = clientRect.top + clientRect.height/2;
+                activeVehicle.screenZ = 500; // this gives it a good link line width
+            } else {
+                activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
+                activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
+            }
             
             if (thisIsBeingEdited) {
                 realityEditor.device.checkIfFramePulledIntoUnconstrained(activeVehicle);
             }
 
-            if (this.isLowFrequencyUpdateFrame && activeVehicle.fullScreen === true) {
+            if (this.isLowFrequencyUpdateFrame && activeVehicle.fullScreen === true && realityEditor.isVehicleAFrame(activeVehicle)) {
                 // update z-order of fullscreen frames so that closest ones get put in front of further-back ones
                 let distanceToFullscreenFrame = realityEditor.sceneGraph.getDistanceToCamera(activeKey);
                 const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : -5000 - distanceToFullscreenFrame;
