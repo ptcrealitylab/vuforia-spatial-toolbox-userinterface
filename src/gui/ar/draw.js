@@ -1244,12 +1244,21 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 }
             }
 
-            if (activeVehicle.fullScreen) {
-                let clientRect = globalDOMCache[activeKey].getClientRects()[0];
-                activeVehicle.screenX = clientRect.left + clientRect.width/2;
-                activeVehicle.screenY = clientRect.top + clientRect.height/2;
-                activeVehicle.screenZ = 500; // this gives it a good link line width
-            } else {
+            let didSetScreenXYZ = false;
+            if (activeVehicle.fullScreen && !realityEditor.isVehicleAFrame(activeVehicle)) {
+                let overlayElement = globalDOMCache[activeKey];
+                if (overlayElement) {
+                    let clientRect = overlayElement.getClientRects()[0];
+                    if (clientRect) {
+                        activeVehicle.screenX = clientRect.left + clientRect.width/2;
+                        activeVehicle.screenY = clientRect.top + clientRect.height/2;
+                        activeVehicle.screenZ = 500; // this gives it a good link line width
+                        didSetScreenXYZ = true;
+                    }
+                }
+            }
+
+            if (!didSetScreenXYZ) {
                 activeVehicle.screenX = finalMatrix[12] / finalMatrix[15] + (globalStates.height / 2);
                 activeVehicle.screenY = finalMatrix[13] / finalMatrix[15] + (globalStates.width / 2);
             }
