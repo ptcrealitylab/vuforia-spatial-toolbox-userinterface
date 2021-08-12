@@ -1583,7 +1583,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         });
 
-        if (thisNodeKey) {
+        if (thisNodeKey && globalDOMCache[thisNodeKey]) {
             this.setNodeFullScreen(tempThisObject.objectId, tempThisObject.uuid, nodeName, msgContent);
         } else {
             this.addPendingNodeAdjustment(tempThisObject.objectId, tempThisObject.uuid, nodeName, JSON.parse(JSON.stringify(msgContent)));
@@ -2024,10 +2024,14 @@ realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName
     let isFullscreen = msgContent.nodeIsFullScreen;
 
     let thisNode = tempThisObject.nodes[thisNodeKey];
+    let element = globalDOMCache[thisNodeKey];
+    if (!element) {
+        console.warn('cannot set node sticky fullscreen yet because html element isnt initialized yet');
+        return;
+    }
     if (thisNode) {
         thisNode.fullScreen = isFullscreen;
 
-        let element = globalDOMCache[thisNodeKey];
         let iframeElement = globalDOMCache['iframe' + thisNodeKey];
         let objectElement = globalDOMCache['object' + thisNodeKey];
 
