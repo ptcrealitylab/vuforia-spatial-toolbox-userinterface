@@ -148,7 +148,17 @@ createNameSpace("realityEditor.sceneGraph");
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {
-        groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
+        let floorOffset = 0; // -1.7 * 1000; // 0;
+        let offsetMatrix = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, floorOffset, 0, 1
+        ];
+        let final = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(offsetMatrix, groundPlaneMatrix, final);
+        // groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
+        groundPlaneNode.setLocalMatrix(final);
     }
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)

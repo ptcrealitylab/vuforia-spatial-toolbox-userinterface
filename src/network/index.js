@@ -245,7 +245,8 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         modelView : false,
         devicePose : false,
         groundPlane : false,
-        allObjects : false
+        allObjects : false,
+        unityCamera: false
     };
     thisObject.sendScreenPosition = false;
     thisObject.sendAcceleration = false;
@@ -312,7 +313,8 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
         modelView : false,
         devicePose : false,
         groundPlane : false,
-        allObjects : false
+        allObjects : false,
+        unityCamera: false
     };
     thisFrame.sendScreenPosition = false;
     thisFrame.sendAcceleration = false;
@@ -978,7 +980,8 @@ realityEditor.network.onAction = function (action) {
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,
-                allObjects : false
+                allObjects : false,
+                unityCamera: false
             };
             frame.sendScreenPosition = false;
             frame.sendAcceleration = false;
@@ -1252,6 +1255,18 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (tempThisObject.integerVersion >= 32) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.devicePose = true;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                if (activeKey === msgContent.frame) {
+                    // send the projection matrix into the iframe (e.g. for three.js to use)
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
+            }
+        }
+        if (msgContent.sendMatrices.unityCamera === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.unityCamera = true;
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     // send the projection matrix into the iframe (e.g. for three.js to use)

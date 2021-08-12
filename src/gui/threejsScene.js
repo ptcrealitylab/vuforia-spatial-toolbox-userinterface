@@ -82,6 +82,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 
         renderScene(); // update loop
     }
+    
+    let count = 0;
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
@@ -148,9 +150,12 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             }
         });
 
-        const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+        // const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+        // root is at origin, so model is identity, so modelview is just the view matrix
+        const rootModelViewMatrix = realityEditor.sceneGraph.getViewMatrix(); //realityEditor.sceneGraph.getModelViewMatrix('ROOT');
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+
             // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
             // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
             // const groundplaneMesh = new THREE.Mesh( geometry, material );
