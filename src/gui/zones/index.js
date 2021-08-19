@@ -95,8 +95,8 @@ createNameSpace('realityEditor.gui.zones');
                 let isInsideZone = checkPointConcave(camCoords.x, camCoords.y, thisZone.hull);
                 if (isInsideZone) {
                     if (thisZone.hullGroup && thisZone.hullGroup.children.length > 0 && thisZone.hullGroup.children[0].children.length > 0) {
-                        thisZone.hullGroup.children[0].children[1].material.color.setHex(0xffffff);
-                        thisZone.hullGroup.children[0].children[2].material.opacity = 0.2;
+                        thisZone.hullGroup.children[0].children[1].material.color.setHex(0xffffff); // change wall color
+                        thisZone.hullGroup.children[0].children[2].material.opacity = 0.1; // change floor opacity
                         currentZones.push(zoneId);
                     }
                 } else {
@@ -231,7 +231,7 @@ createNameSpace('realityEditor.gui.zones');
                 thisZone.mesh.rotation.x = -Math.PI / 2;
 
                 // TODO: perhaps add parameters {occluded: true} or {worldObjectId: realityEditor.getObject(zoneId).worldId}
-                realityEditor.gui.threejsScene.addToScene(thisZone.mesh); // , {worldObjectId: realityEditor.getObject(zoneId).worldId, occluded: true});
+                realityEditor.gui.threejsScene.addToScene(thisZone.mesh); //, {worldObjectId: realityEditor.getObject(zoneId).worldId, occluded: true});
             }
 
             thisZone.mesh.position.y = 200;
@@ -260,7 +260,7 @@ createNameSpace('realityEditor.gui.zones');
         if (object.type === 'zone') {
             if (typeof zoneInfo[objectKey] !== 'undefined') { return; }
             
-            zoneInfo[objectKey] = { name: object.name, color: COLORS.Pencil }; // pencil color is interpreted as the zone when forming convex hull
+            zoneInfo[objectKey] = { id: objectKey, name: object.name, color: COLORS.Pencil }; // pencil color is interpreted as the zone when forming convex hull
 
             // try to load bitmap for zone territory map - it is stored in the target.jpg for this object
             let bitmapUrl = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.jpg';
@@ -294,7 +294,7 @@ createNameSpace('realityEditor.gui.zones');
 
         if (!thisZone.hullGroup) {
             thisZone.hullGroup = new THREE.Group();
-            realityEditor.gui.threejsScene.addToScene(thisZone.hullGroup);
+            realityEditor.gui.threejsScene.addToScene(thisZone.hullGroup); //,{worldObjectId: realityEditor.getObject(thisZone.id).worldId, occluded: true}); //, attach: true}); //  
         }
 
         // clear the group

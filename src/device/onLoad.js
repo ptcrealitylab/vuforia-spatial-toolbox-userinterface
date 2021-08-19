@@ -330,7 +330,12 @@ realityEditor.device.onload = function () {
     if (globalStates.debugSpeechConsole) {
         document.getElementById('speechConsole').style.display = 'inline';
         realityEditor.gui.ar.draw.onClosestObjectChanged(function(oldKey, newKey) {
-            document.getElementById('speechConsole').innerHTML = newKey;
+            let object = realityEditor.getObject(newKey);
+            if (object && object.name) {
+                document.getElementById('speechConsole').innerHTML = object.name;
+            } else {
+                document.getElementById('speechConsole').innerHTML = '';
+            }
         });
     }
 

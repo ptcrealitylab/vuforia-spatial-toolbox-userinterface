@@ -148,7 +148,7 @@ createNameSpace("realityEditor.sceneGraph");
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {
-        let floorOffset = 0; // -1.7 * 1000; // 0;
+        let floorOffset = 0; //-1.7 * 1000; // 0;
         let offsetMatrix = [
             1, 0, 0, 0,
             0, 1, 0, 0,
