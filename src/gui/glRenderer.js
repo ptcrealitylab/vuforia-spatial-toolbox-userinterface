@@ -219,6 +219,7 @@ createNameSpace("realityEditor.gui.glRenderer");
     let gl;
     const functions = [];
     const constants = {};
+    let lastRender = Date.now();
 
     function initService() {
         // canvas = globalCanvas.canvas;
@@ -248,6 +249,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         }
 
         setTimeout(renderFrame, 500);
+        setInterval(watchpuppy, 1000);
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
@@ -289,6 +291,9 @@ createNameSpace("realityEditor.gui.glRenderer");
 
     async function renderFrame() {
         let proxiesToConsider = [];
+        let watchdog = new Promise((res) => {
+            setTimeout(res, 1000, false);
+        });
         proxies.forEach(function(thisProxy) {
             let toolId = thisProxy.toolId;
             let element = globalDOMCache['object' + toolId];
@@ -300,7 +305,12 @@ createNameSpace("realityEditor.gui.glRenderer");
         let proxiesToBeRenderedThisFrame = getSafeProxySubset(proxiesToConsider);
 
         // Get all the commands from the worker iframes
-        await Promise.all(proxiesToBeRenderedThisFrame.map(proxy => proxy.getFrameCommands()));
+        let res = await Promise.race([watchdog, Promise.all(proxiesToBeRenderedThisFrame.map(proxy => proxy.getFrameCommands()))]);
+        if (!res) {
+            console.warn('glRenderer watchdog is barking');
+            requestAnimationFrame(renderFrame);
+            return;
+        }
 
         gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
         gl.clearDepth(1.0);                 // Clear everything
@@ -316,6 +326,13 @@ createNameSpace("realityEditor.gui.glRenderer");
         });
 
         requestAnimationFrame(renderFrame);
+        lastRender = Date.now();
+    }
+
+    function watchpuppy() {
+        if (lastRender + 3000 < Date.now()) {
+            renderFrame();
+        }
     }
 
     function generateWorkerIdForTool(toolId) {
