@@ -49,7 +49,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
 
             if (this.frameEndListener && message.isFrameEnd) {
-                this.frameEndListener();
+                this.frameEndListener(true);
                 return;
             }
 
@@ -291,9 +291,11 @@ createNameSpace("realityEditor.gui.glRenderer");
 
     async function renderFrame() {
         let proxiesToConsider = [];
-        let watchdog = new Promise((res) => {
-            setTimeout(res, 1000, false);
-        });
+        function makeWatchdog() {
+            return new Promise((res) => {
+                setTimeout(res, 100, false);
+            });
+        }
         proxies.forEach(function(thisProxy) {
             let toolId = thisProxy.toolId;
             let element = globalDOMCache['object' + toolId];
@@ -305,7 +307,8 @@ createNameSpace("realityEditor.gui.glRenderer");
         let proxiesToBeRenderedThisFrame = getSafeProxySubset(proxiesToConsider);
 
         // Get all the commands from the worker iframes
-        let res = await Promise.race([watchdog, Promise.all(proxiesToBeRenderedThisFrame.map(proxy => proxy.getFrameCommands()))]);
+        let prommies = proxiesToBeRenderedThisFrame.map(proxy => Promise.race([makeWatchdog(), proxy.getFrameCommands()]));
+        let res = await Promise.all(prommies);
         if (!res) {
             console.warn('glRenderer watchdog is barking');
             requestAnimationFrame(renderFrame);
@@ -321,9 +324,14 @@ createNameSpace("realityEditor.gui.glRenderer");
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Execute all pending commands for this frame
-        proxiesToBeRenderedThisFrame.forEach(function(proxy) {
+        for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
+            let proxy = proxiesToBeRenderedThisFrame[i];
+            if (!res[i]) {
+                console.warn('miscreant detected', proxy);
+                continue;
+            }
             proxy.executeFrameCommands();
-        });
+        }
 
         requestAnimationFrame(renderFrame);
         lastRender = Date.now();
@@ -386,5 +394,6 @@ createNameSpace("realityEditor.gui.glRenderer");
     exports.initService = initService;
     exports.addWebGlProxy = addWebGlProxy;
     exports.removeWebGlProxy = removeWebGlProxy;
+    exports.renderFrame = renderFrame;
 
 })(realityEditor.gui.glRenderer);
