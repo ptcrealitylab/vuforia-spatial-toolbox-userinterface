@@ -188,16 +188,12 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array<Object>} poses
      */
     function receivePoses(poses) {
-        if (poses.length > 0) {
-            console.log('yey poses', poses);
-        }
-
         realityEditor.gui.poses.drawPoses(poses);
 
         if (!window.rzvIo) {
-            // window.rzvIo = io('http://10.10.10.165:31337');
+            window.rzvIo = io('http://10.10.10.166:31337');
             // window.rzvIo = io('http://192.168.0.106:31337');
-            window.rzvIo = io('http://192.168.50.98:31337');
+            // window.rzvIo = io('http://192.168.50.98:31337');
         }
 
         let coolerPoses = [];
