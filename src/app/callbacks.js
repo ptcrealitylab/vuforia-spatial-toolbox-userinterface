@@ -205,7 +205,7 @@ createNameSpace('realityEditor.app.callbacks');
 
             const THREE = realityEditor.gui.threejsScene.THREE;
             let vec = new THREE.Vector3(0, 0, point.depth * 1000);
-            vec.applyEuler(new THREE.Euler(point.rotX, point.rotY, 0));
+            vec.applyEuler(new THREE.Euler(point.rotY / 2, -point.rotX / 2, 0));
             let initialVehicleMatrix = [
                 -1, 0, 0, 0,
                 0, 1, 0, 0,

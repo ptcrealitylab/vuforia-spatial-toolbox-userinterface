@@ -65,28 +65,45 @@ exports.drawPoses = function(poses) {
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
     gfx.fillStyle = 'green';
+    gfx.font = '32px sans-serif';
     gfx.strokeStyle = 'green';
 
     const jointSize = 16;
-    const cx = 1920 / 2;
-    const cy = 1080 / 2;
+    const pointWidth = 1920;
+    const pointHeight = 1080;
+    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
+    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    const cx = pointWidth / 2;
+    const cy = pointHeight / 2;
+
+    // if (window.outScaleX) {
+    //     outWidth *= window.outScaleX;
+    // }
+    // if (window.outScaleY) {
+    //     outHeight *= window.outScaleY;
+    // }
+
+    if (poses.length === 0) {
+        return;
+    }
 
     for (let point of poses) {
-        gfx.fillRect(
-            (point.x - cx - jointSize / 2) / devicePixelRatio + gfx.width / 2,
-            (point.y - cy - jointSize / 2) / devicePixelRatio + gfx.height / 2, jointSize, jointSize);
+        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2 - jointSize / 2;
+        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2 - jointSize / 2;
+        gfx.fillRect(x, y, jointSize, jointSize);
+        // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
     }
 
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
+        const ax = (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const ay = (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const bx = (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const by = (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
         gfx.beginPath();
-        gfx.moveTo(
-            (a.x - cx) / devicePixelRatio + gfx.width / 2,
-            (a.y - cy) / devicePixelRatio + gfx.height / 2);
-        gfx.lineTo(
-            (b.x - cx) / devicePixelRatio + gfx.width / 2,
-            (b.y - cy) / devicePixelRatio + gfx.height / 2);
+        gfx.moveTo(ax, ay);
+        gfx.lineTo(bx, by);
         gfx.stroke();
     }
 };
