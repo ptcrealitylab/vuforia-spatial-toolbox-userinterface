@@ -28,6 +28,7 @@ createNameSpace("realityEditor.device.environment");
         requiresMouseEvents: false,
         supportsDistanceFading: true,
         shouldCreateDesktopSocket: false,
+        alwaysEnableRealtime: true,
         distanceRequiresCameraTransform: false,
         ignoresFreezeButton: false,
         shouldDisplayLogicMenuModally: false,

@@ -49,7 +49,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
 
             if (this.frameEndListener && message.isFrameEnd) {
-                this.frameEndListener();
+                this.frameEndListener(true);
                 return;
             }
 
@@ -219,6 +219,7 @@ createNameSpace("realityEditor.gui.glRenderer");
     let gl;
     const functions = [];
     const constants = {};
+    let lastRender = Date.now();
 
     function initService() {
         // canvas = globalCanvas.canvas;
@@ -248,6 +249,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         }
 
         setTimeout(renderFrame, 500);
+        setInterval(watchpuppy, 1000);
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
@@ -289,6 +291,11 @@ createNameSpace("realityEditor.gui.glRenderer");
 
     async function renderFrame() {
         let proxiesToConsider = [];
+        function makeWatchdog() {
+            return new Promise((res) => {
+                setTimeout(res, 100, false);
+            });
+        }
         proxies.forEach(function(thisProxy) {
             let toolId = thisProxy.toolId;
             let element = globalDOMCache['object' + toolId];
@@ -300,7 +307,13 @@ createNameSpace("realityEditor.gui.glRenderer");
         let proxiesToBeRenderedThisFrame = getSafeProxySubset(proxiesToConsider);
 
         // Get all the commands from the worker iframes
-        await Promise.all(proxiesToBeRenderedThisFrame.map(proxy => proxy.getFrameCommands()));
+        let prommies = proxiesToBeRenderedThisFrame.map(proxy => Promise.race([makeWatchdog(), proxy.getFrameCommands()]));
+        let res = await Promise.all(prommies);
+        if (!res) {
+            console.warn('glRenderer watchdog is barking');
+            requestAnimationFrame(renderFrame);
+            return;
+        }
 
         gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
         gl.clearDepth(1.0);                 // Clear everything
@@ -311,11 +324,23 @@ createNameSpace("realityEditor.gui.glRenderer");
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Execute all pending commands for this frame
-        proxiesToBeRenderedThisFrame.forEach(function(proxy) {
+        for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
+            let proxy = proxiesToBeRenderedThisFrame[i];
+            if (!res[i]) {
+                console.warn('miscreant detected', proxy);
+                continue;
+            }
             proxy.executeFrameCommands();
-        });
+        }
 
         requestAnimationFrame(renderFrame);
+        lastRender = Date.now();
+    }
+
+    function watchpuppy() {
+        if (lastRender + 3000 < Date.now()) {
+            renderFrame();
+        }
     }
 
     function generateWorkerIdForTool(toolId) {
@@ -369,5 +394,6 @@ createNameSpace("realityEditor.gui.glRenderer");
     exports.initService = initService;
     exports.addWebGlProxy = addWebGlProxy;
     exports.removeWebGlProxy = removeWebGlProxy;
+    exports.renderFrame = renderFrame;
 
 })(realityEditor.gui.glRenderer);

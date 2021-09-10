@@ -3,7 +3,6 @@ createNameSpace("realityEditor.gui.threejsScene");
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
-// import { SimplifyModifier } from '../../thirdPartyCode/three/SimplifyModifier.module.js';
 
 (function(exports) {
 
@@ -16,6 +15,12 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+    let raycaster;
+    let mouse;
+
+    const DISPLAY_ORIGIN_BOX = true;
+
+    let customMaterials;
 
     // for now, this contains everything not attached to a specific world object
     // todo: in future, move three.js camera instead of moving the scene
@@ -38,6 +43,16 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
         scene.add(threejsContainerObj);
 
+        // const geometry = new THREE.PlaneGeometry( 10000, 10000 );
+        // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+        // const groundplaneMesh = new THREE.Mesh( geometry, material );
+        // threejsContainerObj.add(groundplaneMesh);
+        //
+        // const divisions = 10;
+        // const size = 1000 * divisions;
+        // const gridHelper = new THREE.GridHelper( size, divisions );
+        // threejsContainerObj.add( gridHelper );
+
         // light the scene with a combination of ambient and directional white light
         var ambLight = new THREE.AmbientLight(0xffffff);
         scene.add(ambLight);
@@ -48,6 +63,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         spotLight.position.set(-30, -30, 150);
         spotLight.castShadow = true;
         scene.add(spotLight);
+
+        customMaterials = new CustomMaterials();
+
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -60,22 +80,23 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         // threejsContainerObj.add( mesh );
         // mesh.position.setZ(150);
 
-        renderScene(); // update loop 
+        renderScene(); // update loop
     }
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
-        
+
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
         });
-        
+
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
+            camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
             isProjectionMatrixSet = true;
         }
-        
+
         const worldObjectIds = realityEditor.worldObjects.getWorldObjectKeys();
         worldObjectIds.forEach(worldObjectId => {
             if (!worldObjectGroups[worldObjectId]) {
@@ -83,55 +104,70 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
-                
+
                 // Helps visualize world object origin point for debugging
-                // if (worldObjectId != realityEditor.worldObjects.getLocalWorldId()) {
-                //     const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
-                //     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
-                //     const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
-                //     const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
-                //     xBox.position.x = 15;
-                //     yBox.position.y = 15;
-                //     zBox.position.z = 15;
-                //     group.add(originBox);
-                //     originBox.scale.set(10,10,10);
-                //     originBox.add(xBox);
-                //     originBox.add(yBox);
-                //     originBox.add(zBox);
-                // }
+                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId()) {
+                    const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
+                    const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
+                    const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
+                    const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
+                    xBox.position.x = 15;
+                    yBox.position.y = 15;
+                    zBox.position.z = 15;
+                    group.add(originBox);
+                    originBox.scale.set(10,10,10);
+                    originBox.add(xBox);
+                    originBox.add(yBox);
+                    originBox.add(zBox);
+
+                    // const plane =
+
+                    // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+                    // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+                    // const groundplaneMesh = new THREE.Mesh( geometry, material );
+                    // group.add(groundplaneMesh);
+                    // // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
+                }
             }
             const group = worldObjectGroups[worldObjectId];
             const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
             if (modelViewMatrix) {
                 setMatrixFromArray(group.matrix, modelViewMatrix);
                 group.visible = true;
-                
+
                 if (worldOcclusionObjects[worldObjectId]) {
                     setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
                     worldOcclusionObjects[worldObjectId].visible = true;
                 }
             } else {
                 group.visible = false;
-                
+
                 if (worldOcclusionObjects[worldObjectId]) {
                     worldOcclusionObjects[worldObjectId].visible = false;
                 }
             }
         });
-        
+
         const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+            // const groundplaneMesh = new THREE.Mesh( geometry, material );
+            // threejsContainerObj.add(groundplaneMesh);
+            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
-        
+
+        customMaterials.update();
+
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             renderer.render( scene, camera );
         }
-        
+
         requestAnimationFrame(renderScene);
     }
-    
+
     function addToScene(obj, parameters) {
         if (!parameters) {
             parameters = {};
@@ -168,31 +204,31 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             }
         }
     }
-    
+
     function removeFromScene(obj) {
         if (obj && obj.parent) {
             obj.parent.remove(obj);
         }
     }
-    
+
     function onAnimationFrame(callback) {
         animationCallbacks.push(callback);
     }
-    
+
     function removeAnimationCallback(callback) {
         if (animationCallbacks.includes(callback)) {
             animationCallbacks.splice(animationCallbacks.indexOf(callback), 1);
         }
     }
-    
+
     function addOcclusionGltf(pathToGltf, objectId) {
         // Code remains here, but likely won't be used due to distance-based fading looking better
-      
+
         if (worldOcclusionObjects[objectId]) {
             console.log(`occlusion gltf already loaded`);
             return; // Don't try creating multiple occlusion objects for the same world object
         }
-        
+
         const gltfLoader = new GLTFLoader();
         console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
@@ -203,7 +239,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 const geometries = gltf.scene.children[0].children.map(child=>child.geometry);
                 geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
             }
-            
+
             // SimplifyModifier seems to freeze app
             // if (geometry.index) {
             //     geometry = new SimplifyModifier().modify(geometry, geometry.index.count * 0.2);
@@ -221,32 +257,37 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             group.matrixAutoUpdate = false; // allows us to update with the model view matrix
             scene.add(group);
             worldOcclusionObjects[objectId] = group;
-        
+
             console.log(`loaded occlusion gltf for ${objectId}`, pathToGltf);
         });
     }
-    
+
     function isOcclusionActive(objectId) {
         return !!worldOcclusionObjects[objectId];
     }
-    
+
     /* For my example area target:
         pathToGltf = './svg/BenApt1_authoring.glb' // put in arbitrary local directory to test
         originOffset = {x: -600, y: 0, z: -3300};
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
+        maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation) {
+    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, callback) {
         const gltfLoader = new GLTFLoader();
 
         gltfLoader.load(pathToGltf, function(gltf) {
-            
+
             if (gltf.scene.children[0].geometry) {
-                // gltf.scene.children[0].material = new THREE.MeshStandardMaterial( { color: 0xaaaaaa } );
+                if (typeof maxHeight !== 'undefined') {
+                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight, true);
+                }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
             } else {
                 gltf.scene.children[0].children.forEach(child => {
-                    child.material = new THREE.MeshBasicMaterial( {color: new THREE.Color(Math.random(), Math.random(), Math.random()) }); //, side: THREE.BackSide })
+                    if (typeof maxHeight !== 'undefined') {
+                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight, true);
+                    }
                 });
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
@@ -265,6 +306,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
+
+            if (callback) {
+              callback(gltf.scene);
+            }
         });
     }
 
@@ -277,6 +322,120 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         );
     }
 
+    // this module exports this utility so that other modules can perform hit tests
+    function getRaycastIntersects(clientX, clientY) {
+        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
+
+        //2. set the picking ray from the camera position and mouse coordinates
+        raycaster.setFromCamera( mouse, camera );
+
+        //3. compute intersections
+        return raycaster.intersectObjects( scene.children, true );
+    }
+
+    class CustomMaterials {
+        constructor() {
+            this.materialsToAnimate = [];
+        }
+        areaTargetVertexShader() {
+            return `
+            precision highp float;
+
+            uniform float sineTime;
+            uniform float time;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            attribute vec3 position;
+            attribute vec4 color;
+            attribute vec3 translate;
+            attribute vec2 uv;
+
+            varying vec3 vPosition;
+            varying vec4 vColor;
+            varying float vScale;
+            varying vec2 vUv;
+
+            void main(){
+
+                vPosition = position;
+                vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
+                float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
+                vScale = scale;
+
+                vColor = color;
+                vUv = uv;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
+
+            }
+          `
+        }
+        areaTargetFragmentShader() {
+            return `
+            precision highp float;
+
+            uniform sampler2D map;
+            uniform float maxHeight;
+
+            varying vec2 vUv;
+            varying float vScale;
+            varying vec3 vPosition;
+
+            void main() {
+                gl_FragColor = texture2D( map, vUv );
+
+                if (vPosition.y > maxHeight) discard;
+            }
+          `
+        }
+        areaTargetMaterialWithTextureAndHeight(sourceTexture, maxHeight, animateOnLoad) {
+            let material = new THREE.RawShaderMaterial({
+                uniforms: {
+                    "time": {value: 1.0},
+                    "sineTime": {value: 1.0},
+                    "map": { value: sourceTexture },
+                    "maxHeight": {value: maxHeight}
+                },
+                vertexShader: this.areaTargetVertexShader(),
+                fragmentShader: this.areaTargetFragmentShader(),
+                side: THREE.FrontSide
+            });
+
+            if (animateOnLoad) {
+                this.materialsToAnimate.push({
+                    material: material,
+                    currentHeight: 0,
+                    maxHeight: maxHeight,
+                    animationSpeed: 0.02
+                });
+            }
+
+            return material;
+        }
+        update() {
+            if (this.materialsToAnimate.length === 0) { return; }
+
+            let indicesToRemove = [];
+            this.materialsToAnimate.forEach(function(entry, index) {
+                let material = entry.material;
+                if (entry.currentHeight < entry.maxHeight) {
+                    entry.currentHeight += entry.animationSpeed;
+                    material.uniforms['maxHeight'].value = entry.currentHeight;
+                } else {
+                    indicesToRemove.push(index);
+                }
+            });
+
+            for (let i = indicesToRemove.length-1; i > 0; i--) {
+                let matIndex = indicesToRemove[i];
+                this.materialsToAnimate.splice(matIndex, 1);
+            }
+        }
+    }
+
     exports.initService = initService;
     exports.addOcclusionGltf = addOcclusionGltf;
     exports.isOcclusionActive = isOcclusionActive;
@@ -285,5 +444,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.removeAnimationCallback = removeAnimationCallback;
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
+    exports.getRaycastIntersects = getRaycastIntersects;
     exports.THREE = THREE;
 })(realityEditor.gui.threejsScene);

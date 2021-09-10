@@ -216,10 +216,69 @@ createNameSpace('realityEditor.app.callbacks');
             return;
         }
 
+        // don't render origin objects as themselves
+        let originObjects = realityEditor.worldObjects.getOriginObjects();
+        let detectedOrigins = {};
+        Object.keys(originObjects).forEach(function(originKey) {
+            if (visibleObjects.hasOwnProperty(originKey)) {
+
+                // if (worldObject.isJpgTarget) {
+                    let rotatedOriginMatrix = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(rotationXMatrix, visibleObjects[originKey], rotatedOriginMatrix);
+                // }
+
+                // detectedOrigins[originKey] = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[originKey]);
+                detectedOrigins[originKey] = realityEditor.gui.ar.utilities.copyMatrix(rotatedOriginMatrix);
+
+                // this part is just to enable the the SceneGraph/network.js to know when the origin moves enough to upload the originOffset
+                let sceneNode = realityEditor.sceneGraph.getSceneNodeById(originKey);
+                if (sceneNode) {
+                    sceneNode.setLocalMatrix(visibleObjects[originKey]);
+                }
+
+                delete visibleObjects[originKey];
+            }
+        });
+
         // this next section adjusts each world origin to be centered on their image target if it ever gets recognized
         realityEditor.worldObjects.getWorldObjectKeys().forEach(function (worldObjectKey) {
             if (visibleObjects.hasOwnProperty(worldObjectKey)) {
-                realityEditor.worldObjects.setOrigin(worldObjectKey, realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]));
+                let matchingOrigin = realityEditor.worldObjects.getMatchingOriginObject(worldObjectKey);
+                let worldObject = realityEditor.getObject(worldObjectKey);
+
+                let worldOriginMatrix = [];
+                let hasMatchingOrigin = !!matchingOrigin;
+                let isMatchingOriginVisible = (matchingOrigin && typeof detectedOrigins[matchingOrigin.uuid] !== 'undefined');
+                let hasOriginOffset = typeof worldObject.originOffset !== 'undefined';
+                
+                if (!hasMatchingOrigin) {
+                    worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]);
+                } else {
+                    if (!isMatchingOriginVisible) {
+                        if (!hasOriginOffset) {
+                            worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(visibleObjects[worldObjectKey]);
+                        } else {
+                            // calculate origin matrix using originOffset and visibleObjects[worldObjectKey]
+                            
+                            // inverseWorld * originMatrix = relative;
+                            // therefore:
+                            // originMatrix = world * relative
+                            
+                            realityEditor.gui.ar.utilities.multiplyMatrix(visibleObjects[worldObjectKey], worldObject.originOffset, worldOriginMatrix);
+                        }
+                    } else {
+                        if (!hasOriginOffset) {
+                            realityEditor.app.tap(); // haptic feedback the first time it localizes against origin
+                        }
+                        let relative = [];
+                        let inverseWorld = realityEditor.gui.ar.utilities.invertMatrix(visibleObjects[worldObjectKey]);
+                        realityEditor.gui.ar.utilities.multiplyMatrix(inverseWorld, detectedOrigins[matchingOrigin.uuid], relative);
+                        worldObject.originOffset = relative;
+                        worldOriginMatrix = realityEditor.gui.ar.utilities.copyMatrix(detectedOrigins[matchingOrigin.uuid]);
+                    }
+                }
+
+                realityEditor.worldObjects.setOrigin(worldObjectKey, worldOriginMatrix);
                 
                 if (worldObjectKey !== realityEditor.worldObjects.getLocalWorldId()) {
                     let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -227,13 +286,13 @@ createNameSpace('realityEditor.app.callbacks');
                         
                         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectKey);
                         if (sceneNode) {
-                            sceneNode.setLocalMatrix(visibleObjects[worldObjectKey]);
+                            sceneNode.setLocalMatrix(worldOriginMatrix);
 
                             // also relocalize the groundplane if it's already been detected / in use
                             if (globalStates.useGroundPlane) {
-                                let rotated = [];
-                                realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, visibleObjects[worldObjectKey], rotated);
-                                realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                                // let rotated = [];
+                                // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
+                                realityEditor.sceneGraph.setGroundPlanePosition(worldOriginMatrix);
                             }
                         }
                     }
@@ -250,6 +309,18 @@ createNameSpace('realityEditor.app.callbacks');
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
             if (sceneNode) {
                 sceneNode.setLocalMatrix(visibleObjects[objectKey]);
+
+                let dontBroadcast = false;
+                if (!dontBroadcast && realityEditor.device.environment.isSourceOfObjectPositions()) {
+                    // if it's an object, post object position relative to a world object
+                    let worldObjectId = realityEditor.sceneGraph.getWorldId();
+                    if (worldObjectId) {
+                        let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+                        sceneNode.updateWorldMatrix();
+                        let relativeMatrix = sceneNode.getMatrixRelativeTo(worldNode);
+                        realityEditor.network.realtime.broadcastUpdate(objectKey, null, null, 'matrix', relativeMatrix);
+                    }
+                }
             }
         }
 
@@ -353,9 +424,25 @@ createNameSpace('realityEditor.app.callbacks');
                     // note: if sceneGraph hierarchy gets more complicated (if ground plane and world objects have
                     // different parents in the scene graph), remember to switch worldObjectSceneNode.localMatrix
                     // for a matrix computed to preserve worldObject's worldMatrix
-                    let rotated = [];
-                    realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
-                    realityEditor.sceneGraph.setGroundPlanePosition(rotated);
+                    if (worldObject.isJpgTarget) {
+                        // let rotated = [];
+                        // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldObjectSceneNode.localMatrix, rotated);
+                        realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
+                    } else {
+                        let offset = [];
+                        let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
+                        let buffer = 100;
+                        floorOffset += buffer;
+                        let groundPlaneOffsetMatrix = [
+                            1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            0, floorOffset, 0, 1
+                        ];
+                        realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
+                        realityEditor.sceneGraph.setGroundPlanePosition(offset);
+                        // realityEditor.sceneGraph.setGroundPlanePosition(JSON.parse(JSON.stringify(worldObjectSceneNode.localMatrix)));
+                    }
                     return;
                 }
             }

@@ -210,7 +210,13 @@ createNameSpace("realityEditor.network.availableFrames");
         var compatibleObjects = [];
         
         Object.keys(realityEditor.gui.ar.draw.visibleObjects).filter(function(objectKey) {
-            return typeof objects[objectKey] !== 'undefined';
+            if (typeof objects[objectKey] === 'undefined') {
+                return false;
+            }
+            if (objects[objectKey].type === 'human') {
+                return false;
+            }
+            return true;
         }).forEach(function(objectKey) {
             var proxyIP = getServerIPForObjectFrames(objectKey);
             if (compatibleServerIPs.indexOf(proxyIP) > -1) {
