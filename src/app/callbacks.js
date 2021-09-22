@@ -188,8 +188,6 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array<Object>} poses
      */
     function receivePoses(poses) {
-        realityEditor.gui.poses.drawPoses(poses);
-
         if (!window.rzvIo) {
             window.rzvIo = io('http://10.10.10.166:31337');
             // window.rzvIo = io('http://192.168.0.106:31337');
@@ -205,7 +203,7 @@ createNameSpace('realityEditor.app.callbacks');
 
             const THREE = realityEditor.gui.threejsScene.THREE;
             let vec = new THREE.Vector3(0, 0, point.depth * 1000);
-            vec.applyEuler(new THREE.Euler(point.rotY / 2, -point.rotX / 2, 0));
+            vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
             let initialVehicleMatrix = [
                 -1, 0, 0, 0,
                 0, 1, 0, 0,
@@ -231,11 +229,39 @@ createNameSpace('realityEditor.app.callbacks');
                 z: worldZ / 1000,
             });
         }
-        let msg = {time: Date.now(), pose: [{id: 1337, joints: coolerPoses}]};
-        if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
-            window.lastPosesLen = coolerPoses.length;
-            window.rzvIo.emit('/update/humanPoses', JSON.stringify(msg));
+
+        let initialVehicleMatrix = [
+            -1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, -1, 0,
+            0, 0, 0, 1
+        ];
+
+        sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+        sceneNode.updateWorldMatrix();
+
+        let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
+        let msg = {time: Date.now(), pose: [{id: 1337, joints: coolerPoses}], camera: cameraMat};
+
+        // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
+        //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
+        //         window.lastPosesLen = coolerPoses.length;
+        //     }
+        if (window.rzvIo.readyState === WebSocket.OPEN) {
+            window.rzvIo.send(JSON.stringify(Object.assign({
+                command: '/update/humanPoses'
+            }, msg)));
         }
+        // }
+
+        let camX = cameraMat[12];
+        let camY = cameraMat[13];
+        let camZ = cameraMat[14];
+        realityEditor.gui.poses.drawPoses(poses, coolerPoses, {
+            x: camX / 1000,
+            y: camY / 1000,
+            z: camZ / 1000,
+        });
     }
 
     /**
