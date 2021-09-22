@@ -206,7 +206,10 @@ createNameSpace('realityEditor.app.callbacks');
         // }
         // let worldObjectId = worldObject.objectId;
         // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-        let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+        let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
+        if (!gpNode) {
+             gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+        }
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
         // let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName;
         // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(persistentClientId);
