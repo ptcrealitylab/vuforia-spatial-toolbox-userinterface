@@ -41,7 +41,9 @@ const JOINT_CONNECTIONS = [
   [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.RIGHT_ANKLE],
 ];
 
-exports.drawPoses = function(poses) {
+let lastDraw = performance.now();
+
+exports.drawPoses = function(poses, coords, cameraPos) {
     let canvas = document.getElementById('supercooldebugcanvas');
     let gfx;
     if (!canvas) {
@@ -68,6 +70,14 @@ exports.drawPoses = function(poses) {
     gfx.font = '32px sans-serif';
     gfx.strokeStyle = 'green';
 
+    function format(n) {
+        return Math.round(n * 100) / 100;
+    }
+    // gfx.fillText(`${format(cameraPos.x)} ${format(cameraPos.y)} ${format(cameraPos.z)}`, 16, 32);
+
+    // gfx.fillText(`${format(performance.now() - lastDraw)}`, 16, 96);
+    lastDraw = performance.now();
+
     const jointSize = 16;
     const pointWidth = 1920;
     const pointHeight = 1080;
@@ -87,6 +97,7 @@ exports.drawPoses = function(poses) {
         return;
     }
 
+    // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     for (let point of poses) {
         const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2 - jointSize / 2;
         const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2 - jointSize / 2;
