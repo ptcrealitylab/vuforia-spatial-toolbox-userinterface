@@ -189,9 +189,13 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receivePoses(poses) {
         if (!window.rzvIo) {
-            window.rzvIo = io('http://10.10.10.166:31337');
+            // window.rzvIo = io('http://jhobin0ml.local:31337');
+            // window.rzvIo = io('http://10.10.10.166:31337');
             // window.rzvIo = io('http://192.168.0.106:31337');
             // window.rzvIo = io('http://192.168.50.98:31337');
+
+            const url = 'ws://192.168.50.98:31337/';
+            window.rzvIo = new WebSocket(url);
         }
 
         let coolerPoses = [];
