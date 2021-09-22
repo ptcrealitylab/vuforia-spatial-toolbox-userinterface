@@ -48,6 +48,7 @@ createNameSpace("realityEditor.sceneGraph");
         NODE: 'node',
         ROTATE_X: 'rotateX'
     });
+    exports.TAGS = TAGS;
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
