@@ -199,11 +199,36 @@ createNameSpace('realityEditor.app.callbacks');
         }
 
         let coolerPoses = [];
+        // let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        // if (!worldObject) {
+        //     console.warn('okay I give up');
+        //     return;
+        // }
+        // let worldObjectId = worldObject.objectId;
+        // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+        let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+        let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
+        // let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName;
+        // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(persistentClientId);
+        let sceneNode = new realityEditor.sceneGraph.SceneNode('posePixel');
+        sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT'));
+        // realityEditor.sceneGraph.changeParent(sceneNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
+        // let gpNode = sceneNode.parent;
+        // if (!worldNode) {
+        //     worldNode = gpNode;
+        // }
+        let basisNode = gpNode;
+        // basisNode.updateWorldMatrix();
+        // cameraNode.setParent(gpNode);
+        // realityEditor.sceneGraph.changeParent(cameraNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
+        // if (!basisNode.parent) {
+        //     console.log('updating basis parent');
+        //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
+        // }
+
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
-            let sceneNode = new realityEditor.sceneGraph.SceneNode('posePixel');
-            sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT'));
-            let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
 
             const THREE = realityEditor.gui.threejsScene.THREE;
             let vec = new THREE.Vector3(0, 0, point.depth * 1000);
@@ -223,7 +248,10 @@ createNameSpace('realityEditor.app.callbacks');
             }
 
             sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
-            let mat = sceneNode.localMatrix;
+            sceneNode.updateWorldMatrix();
+
+            let mat = sceneNode.getMatrixRelativeTo(basisNode);
+
             let worldX = mat[12];
             let worldY = mat[13];
             let worldZ = mat[14];
