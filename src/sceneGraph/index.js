@@ -390,6 +390,10 @@ createNameSpace("realityEditor.sceneGraph");
     }
 
     function getGroundPlaneModelViewMatrix() {
+        let gpRX = getSceneNodeById(NAMES.GROUNDPLANE + TAGS.ROTATE_X);
+        if (gpRX) {
+            return gpRX.getMatrixRelativeTo(cameraNode);
+        }
         return relativeToCamera[NAMES.GROUNDPLANE];
     }
 
