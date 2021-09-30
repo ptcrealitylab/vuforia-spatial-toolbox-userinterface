@@ -195,6 +195,7 @@ createNameSpace('realityEditor.app.callbacks');
             // window.rzvIo = io('http://192.168.50.98:31337');
 
             const url = 'ws://192.168.50.98:31337/';
+            // const url = 'ws://10.10.10.166:31337/';
             window.rzvIo = new WebSocket(url);
         }
 
