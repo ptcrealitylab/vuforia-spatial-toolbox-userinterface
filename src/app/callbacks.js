@@ -557,7 +557,7 @@ createNameSpace('realityEditor.app.callbacks');
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
-                            0, floorOffset, 0, 1
+                            0, 0 * floorOffset, 0, 1
                         ];
                         realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
                         realityEditor.sceneGraph.setGroundPlanePosition(offset);
