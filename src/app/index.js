@@ -438,6 +438,22 @@ realityEditor.app.setAspectRatio = function(ratio) {
 }
 
 /**
+ ************** AREA TARGET CAPTURE API ****************
+ */
+
+realityEditor.app.areaTargetCaptureStart = function () {
+    realityEditor.app.appFunctionCall("areaTargetCaptureStart", null, null);
+}
+
+realityEditor.app.areaTargetCaptureStop = function () {
+    realityEditor.app.appFunctionCall("areaTargetCaptureStop", null, null);
+}
+
+realityEditor.app.areaTargetCaptureGenerate = function () {
+    realityEditor.app.appFunctionCall("areaTargetCaptureGenerate", null, null);
+}
+
+/**
  **************UTILITIES****************
  **/
 
