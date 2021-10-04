@@ -73,10 +73,10 @@ createNameSpace("realityEditor.gui.modal");
      * @param {function} onCancelCallback
      * @param {function} onSubmitCallback
      */
-    function openClassicModal(headerText, descriptionText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback) {
+    function openClassicModal(headerText, descriptionText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback, useSmallerVersion) {
         // create the instance of the modal
         // instantiate / modify the DOM elements
-        var domElements = createClassicModalDOM();
+        var domElements = createClassicModalDOM(useSmallerVersion);
         domElements.header.innerHTML = headerText;
         domElements.description.innerHTML = descriptionText;
         domElements.cancelButton.innerHTML = cancelButtonText || 'Cancel';
@@ -138,7 +138,7 @@ createNameSpace("realityEditor.gui.modal");
      * Constructs the DOM and returns references to its elements
      * @return {{fade: HTMLDivElement, container: HTMLDivElement, description: HTMLDivElement, cancelButton: HTMLDivElement, submitButton: HTMLDivElement}}
      */
-    function createClassicModalDOM() {
+    function createClassicModalDOM(useSmallerCenteredVersion) {
         var fade = document.createElement('div'); // darkens/blurs the background
         var container = document.createElement('div'); // panel holding all the modal elements
         var header = document.createElement('div');
@@ -147,7 +147,7 @@ createNameSpace("realityEditor.gui.modal");
         var submitButton = document.createElement('div');
         
         fade.id = 'modalFadeClassic';
-        container.id = 'modalContainerClassic';
+        container.id = useSmallerCenteredVersion ? 'modalContainerClassicCentered' : 'modalContainerClassic';
         header.id = 'modalHeaderClassic';
         description.id = 'modalDescriptionClassic';
         cancelButton.id = 'modalCancelClassic';

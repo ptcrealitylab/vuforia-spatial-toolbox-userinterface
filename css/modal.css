@@ -6,7 +6,7 @@
     height: 100vh;
     background-color: rgba(0,0,0,0.7);
     -webkit-backdrop-filter: blur(2px);
-    -webkit-transform: translateZ(9000px)
+    -webkit-transform: translateZ(8990px)
 }
 
 #modalContainer {
@@ -19,7 +19,7 @@
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     font-size: 13px;
     border-radius: 5px;
-    -webkit-transform: translateZ(9001px)
+    -webkit-transform: translateZ(9000px)
 }
 
 #modalDescription {
@@ -164,7 +164,7 @@
     height: 100vh;
     background-color: rgba(0,0,0,0.2);
     -webkit-backdrop-filter: blur(40px);
-    -webkit-transform: translateZ(9000px)
+    -webkit-transform: translateZ(8990px)
 }
 /* container for the modal */
 #modalContainerClassic {
@@ -177,7 +177,20 @@
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
-    -webkit-transform: translateZ(9001px);
+    -webkit-transform: translateZ(8995px);
+    color: black;
+}
+#modalContainerClassicCentered {
+    position: absolute;
+    width: calc(100vw - 260px);
+    left: 100px;
+    top: 25vh;
+    height: 50vh;
+    text-align: center;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    border-radius: 5px;
+    background-color: rgba(255,255,255,0.7);
+    -webkit-transform: translateZ(8995px);
     color: black;
 }
 #modalHeaderClassic {
@@ -239,7 +252,7 @@ a.modalLink:active { color: #757575; }
     height: 100vh;
     background-color: rgba(0,0,0,0.2);
     -webkit-backdrop-filter: blur(20px);
-    -webkit-transform: translateZ(9000px)
+    -webkit-transform: translateZ(8990px)
 }
 
 @keyframes blurThenClear {
@@ -271,7 +284,7 @@ a.modalLink:active { color: #757575; }
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
-    -webkit-transform: translateZ(9001px);
+    -webkit-transform: translateZ(8995px);
     color: black;
 }
 .notificationPortrait {

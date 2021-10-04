@@ -122,7 +122,7 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} matrix
      */
     function receivedProjectionMatrix(matrix) {
-        console.log('got projection matrix!', matrix);
+        // console.log('got projection matrix!', matrix);
         realityEditor.gui.ar.setProjectionMatrix(matrix);
     }
 
