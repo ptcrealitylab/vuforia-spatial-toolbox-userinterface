@@ -9,6 +9,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     let foundAnyWorldObjects = false;
     let isScanning = false;
 
+    let feedbackString = null;
+    let feedbackInterval = null;
+    let feedbackTick = 0;
+
+    const MAX_SCAN_TIME = 120;
+    let timeLeftSeconds = MAX_SCAN_TIME;
+
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
@@ -93,13 +100,21 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             console.log('already scanning.. ignore.');
             return;
         }
+        isScanning = true;
+        timeLeftSeconds = MAX_SCAN_TIME;
+
         realityEditor.app.areaTargetCaptureStart('realityEditor.gui.ar.areaTargetScanner.captureStatusHandler');
 
         // TODO: turn app into scanning mode, disabling any AR rendering and other UI
-        
+
         // add a stop button to the screen that can be pressed to trigger stopScanning
-        let stopButton = getRecordingIndicator();
-        stopButton.style.display = 'inline';
+        getRecordingIndicator().style.display = 'inline';
+        getStopButton().style.display = 'inline';
+        getTimerTextfield().style.display = 'inline';
+
+        if (!feedbackInterval) {
+            feedbackInterval = setInterval(printFeedback, 1000);
+        }
     }
 
     /**
@@ -107,24 +122,102 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
      * @return {Element}
      */
     function getRecordingIndicator() {
-        var recordingIndicator = document.querySelector('#scanRecordingIndicator');
-        if (!recordingIndicator) {
-            recordingIndicator = document.createElement('div');
-            recordingIndicator.id = 'scanRecordingIndicator';
-            recordingIndicator.style.position = 'absolute';
-            recordingIndicator.style.left = '10px';
-            recordingIndicator.style.top = '10px';
-            recordingIndicator.style.width = '30px';
-            recordingIndicator.style.height = '30px';
-            recordingIndicator.style.backgroundColor = 'red';
-            recordingIndicator.style.borderRadius = '15px';
-            document.body.appendChild(recordingIndicator);
-            
-            recordingIndicator.addEventListener('pointerup', function() {
+        var div = document.querySelector('#scanRecordingIndicator');
+        if (!div) {
+            div = document.createElement('div');
+            div.id = 'scanRecordingIndicator';
+            div.style.position = 'absolute';
+            div.style.left = '10px';
+            div.style.top = '10px';
+            div.style.width = '30px';
+            div.style.height = '30px';
+            div.style.backgroundColor = 'red';
+            div.style.borderRadius = '15px';
+            document.body.appendChild(div);
+        }
+        return div;
+    }
+
+    /**
+     * Lazy instantiation and getter of the stop button to generate the area target from the scan
+     * @return {Element}
+     */
+    function getStopButton() {
+        var div = document.querySelector('#scanStopButton');
+        if (!div) {
+            div = document.createElement('div');
+            div.id = 'scanStopButton';
+            div.style.position = 'absolute';
+            div.style.left = '40vw';
+            div.style.bottom = '10vh';
+            div.style.width = '20vw';
+            div.style.height = '60px';
+            div.style.lineHeight = '60px';
+            div.style.backgroundColor = 'rgba(255,255,255,0.7)';
+            div.style.color = 'rgb(0,0,0)';
+            div.style.borderRadius = '15px';
+            div.style.textAlign = 'center';
+            div.style.fontSize = '20px';
+            div.style.verticalAlign = 'middle';
+            document.body.appendChild(div);
+
+            div.innerHTML = 'Stop Scanning';
+
+            div.addEventListener('pointerup', function() {
                 stopScanning();
             });
         }
-        return recordingIndicator;
+        return div;
+    }
+
+    /**
+     * Lazy instantiation and getter of the stop button to generate the area target from the scan
+     * @return {Element}
+     */
+    function getStatusTextfield() {
+        var div = document.querySelector('#scanStatusTextfield');
+        if (!div) {
+            div = document.createElement('div');
+            div.id = 'scanStatusTextfield';
+            div.style.position = 'absolute';
+            div.style.left = '15vw';
+            div.style.top = '10vh';
+            div.style.width = '70vw';
+            div.style.height = '60px';
+            div.style.lineHeight = '60px';
+            div.style.backgroundColor = 'rgba(255,255,255,0.5)';
+            div.style.color = 'rgb(0,0,0)';
+            div.style.borderRadius = '15px';
+            div.style.textAlign = 'center';
+            div.style.verticalAlign = 'middle';
+            document.body.appendChild(div);
+        }
+        return div;
+    }
+
+    /**
+     * Lazy instantiation and getter of the stop button to generate the area target from the scan
+     * @return {Element}
+     */
+    function getTimerTextfield() {
+        var div = document.querySelector('#scanTimerTextfield');
+        if (!div) {
+            div = document.createElement('div');
+            div.id = 'scanTimerTextfield';
+            div.style.position = 'absolute';
+            div.style.left = '40vw';
+            div.style.bottom = 'calc(10vh - 30px)';
+            div.style.width = '20vw';
+            div.style.height = '30px';
+            div.style.lineHeight = '30px';
+            div.style.color = 'rgb(255,255,255)';
+            div.style.borderRadius = '15px';
+            div.style.textAlign = 'center';
+            div.style.fontSize = '12px';
+            div.style.verticalAlign = 'middle';
+            document.body.appendChild(div);
+        }
+        return div;
     }
 
     function stopScanning() {
@@ -133,15 +226,25 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
         realityEditor.app.areaTargetCaptureStop();
         getRecordingIndicator().style.display = 'none';
+        getStopButton().style.display = 'none';
+        getTimerTextfield().style.display = 'none';
+        getStatusTextfield().style.display = 'none';
         isScanning = false;
-        
+
+        feedbackString = null;
+
+        if (feedbackInterval) {
+            clearInterval(feedbackInterval);
+            feedbackInterval = null;
+        }
+
         if (globalStates.debugSpeechConsole) {
             let console = document.getElementById('speechConsole');
             if (console) { console.innerHTML = ''; }
         }
     }
 
-    function generateTarget() {
+    function _generateTarget() {
         realityEditor.app.areaTargetCaptureGenerate();
     }
 
@@ -149,13 +252,37 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         console.log('capture status: ' + status);
         console.log('capture statusInfo: ' + statusInfo);
         console.log('---');
-        
+
+        feedbackString = status + '... (' + statusInfo + ')';
+
         if (globalStates.debugSpeechConsole) {
             let console = document.getElementById('speechConsole');
             if (!console) { return; }
-            console.innerHTML = 
+            console.innerHTML =
                 'Status: ' + status + '<br>' +
                 'Info: ' + statusInfo;
+        }
+    }
+
+    function printFeedback() {
+        if (!isScanning || !feedbackString) { return; }
+
+        let dots = '';
+        for (let i = 0; i < feedbackTick; i++) {
+            dots += '.';
+        }
+        getStatusTextfield().innerHTML = feedbackString + dots;
+        getStatusTextfield().style.display = 'inline';
+
+        feedbackTick += 1;
+        feedbackTick = feedbackTick % 4;
+
+        timeLeftSeconds -= 1;
+        getTimerTextfield().innerHTML = timeLeftSeconds + 's';
+        getTimerTextfield().style.display = 'inline';
+
+        if (timeLeftSeconds <= 0) {
+            stopScanning();
         }
     }
 

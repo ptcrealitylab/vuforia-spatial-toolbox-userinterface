@@ -76,7 +76,7 @@ var globalStates = {
     craftingMoveDelay: 400,
     tempUuid: "0000",
     debug: false,
-    debugSpeechConsole: true,
+    debugSpeechConsole: false,
     device: "",
     // drawWithLines
     ballDistance: 14,
