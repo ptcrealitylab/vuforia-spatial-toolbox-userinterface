@@ -15,6 +15,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     const MAX_SCAN_TIME = 120;
     let timeLeftSeconds = MAX_SCAN_TIME;
+    
+    let loadingDialog = null;
 
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -60,6 +62,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         //     }
         //     detectedServers[serverIP] = true;
         // });
+        
+        realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
     }
 
     function showNotificationIfNeeded() {
@@ -224,7 +228,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (!isScanning) {
             console.log('not scanning.. ignore.');
         }
-        realityEditor.app.areaTargetCaptureStop();
+        
+        realityEditor.app.areaTargetCaptureStop('realityEditor.gui.ar.areaTargetScanner.captureSuccessOrError');
+        
         getRecordingIndicator().style.display = 'none';
         getStopButton().style.display = 'none';
         getTimerTextfield().style.display = 'none';
@@ -242,6 +248,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             let console = document.getElementById('speechConsole');
             if (console) { console.innerHTML = ''; }
         }
+        
+        // show loading animation. hide when successOrError finishes.
+        showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
     }
 
     function _generateTarget() {
@@ -285,8 +294,100 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             stopScanning();
         }
     }
+    
+    function onAreaTargetGenerateProgress(percentGenerated) {
+        // onAreaTargetGenerateProgress
+        console.log('Generated: ' + percentGenerated);
+    }
+    
+    function captureSuccessOrError(success, errorMessage) {
+        console.log("_____");
+        console.log("Capture Done. Success?: " + success);
+        console.log("Error?: " + errorMessage);
+        console.log("_____");
+
+        loadingDialog.dismiss();
+        loadingDialog = null;
+        
+        if (success) {
+            // let notification = realityEditor.gui.modal.showSimpleNotification(
+            //     headerText, descriptionText,function () {
+            //         console.log('closed...');
+            //     }, realityEditor.device.environment.variables.layoutUIForPortrait);
+            
+            // let notification = realityEditor.gui.modal.showSimpleNotification()
+
+            showMessage('Success = ' + success + '. Error = ' + errorMessage, 3000);
+        }
+    }
+    
+    function showMessage(message, lifetime) {
+        // create UI if needed
+        // let notificationUI = document.getElementById('captureNotificationUI');
+        // let notificationTextContainer = document.getElementById('captureNotificationStatusText');
+        // if (!notificationUI) {
+        let notificationUI = document.createElement('div');
+        // notificationUI.id = 'notificationUI';
+        notificationUI.classList.add('statusBar');
+        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+            notificationUI.classList.add('statusBarPortrait');
+        }
+        document.body.appendChild(notificationUI);
+
+        let notificationTextContainer = document.createElement('div');
+        // notificationTextContainer.id = 'trackingStatusText';
+        notificationUI.classList.add('statusBarText');
+        notificationUI.appendChild(notificationTextContainer);
+        // }
+
+        // show and populate with message
+        notificationUI.classList.add('statusBar');
+        notificationUI.classList.remove('statusBarHidden');
+        notificationTextContainer.innerHTML = message;
+        
+        setTimeout(function() {
+            // let errorNotificationUI = document.getElementById('errorNotificationUI');
+            if (!notificationUI) {
+                return;
+            } // no need to hide it if it doesn't exist
+            // notificationUI.classList.add('statusBarHidden');
+            // notificationUI.classList.remove('statusBar');
+            notificationUI.parentElement.removeChild(notificationUI);
+        }, lifetime);
+
+        // if (isLongMessage) {
+        //     notificationUI.classList.add('statusTextLong');
+        // } else {
+        //     notificationUI.classList.remove('statusTextLong');
+        // }
+    }
+
+    function showLoadingDialog(headerText, descriptionText) {
+        if (loadingDialog) { // hide existing dialog before showing new one
+            loadingDialog.dismiss();
+            loadingDialog = null;
+        }
+        
+        // // hide all AR elements and canvas lines
+        // document.getElementById('GUI').classList.add('hiddenWhileLoading');
+        // document.getElementById('canvas').classList.add('hiddenWhileLoading');
+
+        loadingDialog = realityEditor.gui.modal.showSimpleNotification(
+            headerText, descriptionText,function () {
+                console.log('closed...');
+            }, realityEditor.device.environment.variables.layoutUIForPortrait);
+
+        // realityEditor.app.callbacks.onTrackingInitialized(function() {
+        //     document.getElementById('GUI').classList.remove('hiddenWhileLoading');
+        //     document.getElementById('canvas').classList.remove('hiddenWhileLoading');
+        //
+        //     notification.dismiss();
+        // });
+    }
 
     exports.initService = initService;
     exports.captureStatusHandler = captureStatusHandler;
+    exports.onAreaTargetGenerateProgress = onAreaTargetGenerateProgress;
+    exports.captureSuccessOrError = captureSuccessOrError;
 
 }(realityEditor.gui.ar.areaTargetScanner));

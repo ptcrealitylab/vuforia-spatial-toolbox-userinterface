@@ -445,12 +445,16 @@ realityEditor.app.areaTargetCaptureStart = function (callBack) {
     realityEditor.app.appFunctionCall("areaTargetCaptureStart", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 }
 
-realityEditor.app.areaTargetCaptureStop = function () {
-    realityEditor.app.appFunctionCall("areaTargetCaptureStop", null, null);
+realityEditor.app.areaTargetCaptureStop = function (callBack) {
+    realityEditor.app.appFunctionCall("areaTargetCaptureStop", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 }
 
 realityEditor.app.areaTargetCaptureGenerate = function () {
     realityEditor.app.appFunctionCall("areaTargetCaptureGenerate", null, null);
+}
+
+realityEditor.app.onAreaTargetGenerateProgress = function (callBack) {
+    realityEditor.app.appFunctionCall("onAreaTargetGenerateProgress", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 }
 
 /**
