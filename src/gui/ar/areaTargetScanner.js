@@ -15,12 +15,15 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     const MAX_SCAN_TIME = 120;
     let timeLeftSeconds = MAX_SCAN_TIME;
-    
+
     let loadingDialog = null;
-    
+
     let pendingAddedObjectName = null;
-    
+
     let sessionObjectId = null;
+    let targetUploadURL = null;
+    
+    let hasFirstSeenInstantWorld = false;
 
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -45,7 +48,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 return;
             }
             detectedObjects[objectKey] = true;
-            
+
             if (pendingAddedObjectName) {
                 if (object.name === pendingAddedObjectName) {
                     pendingObjectAdded(objectKey, object.ip, realityEditor.network.getPort(object));
@@ -60,14 +63,14 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 console.log("obj detected");
             }
 
-            // wait 3 seconds after detecting an object to check the next step
+            // wait 5 seconds after detecting an object to check the next step
             setTimeout(function() {
                 showNotificationIfNeeded();
-            }, 1000);
+            }, 5000);
         });
 
         realityEditor.network.onNewServerDetected(function(serverIP) {
-            if (serverIP === '127.0.0.1' || serverIP === 'localhost') { 
+            if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
                 return;
             }
             if (typeof detectedServers[serverIP] !== 'undefined') {
@@ -76,6 +79,24 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             detectedServers[serverIP] = true;
         });
         
+        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
+           if (!sessionObjectId) { return; }
+           if (isScanning) { return; }
+           if (hasFirstSeenInstantWorld) { return; }
+           
+           if (typeof visibleObjects[sessionObjectId] !== 'undefined') {
+               hasFirstSeenInstantWorld = true;
+
+               getStatusTextfield().innerHTML = 'Successfully localized within new scan!'
+               getStatusTextfield().style.display = 'inline';
+               
+               setTimeout(function() {
+                   getStatusTextfield().innerHTML = '';
+                   getStatusTextfield().style.display = 'none';
+               }, 3000);
+           }
+        });
+
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
     }
 
@@ -106,7 +127,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             console.log('Ignore scan modal');
         }, function() {
             console.log('Begin scan');
-            startScanning();
+            // startScanning();
+            createPendingWorldObject();
         }, true);
 
         hasUserBeenNotified = true;
@@ -120,7 +142,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         isScanning = true;
         timeLeftSeconds = MAX_SCAN_TIME;
 
-        realityEditor.app.areaTargetCaptureStart('realityEditor.gui.ar.areaTargetScanner.captureStatusHandler');
+        realityEditor.app.areaTargetCaptureStart(sessionObjectId, 'realityEditor.gui.ar.areaTargetScanner.captureStatusHandler');
 
         // TODO: turn app into scanning mode, disabling any AR rendering and other UI
 
@@ -241,9 +263,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (!isScanning) {
             console.log('not scanning.. ignore.');
         }
-        
+
         realityEditor.app.areaTargetCaptureStop('realityEditor.gui.ar.areaTargetScanner.captureSuccessOrError');
-        
+
         getRecordingIndicator().style.display = 'none';
         getStopButton().style.display = 'none';
         getTimerTextfield().style.display = 'none';
@@ -261,51 +283,47 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             let console = document.getElementById('speechConsole');
             if (console) { console.innerHTML = ''; }
         }
-        
+
         // show loading animation. hide when successOrError finishes.
         showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
     }
 
-    // TODO: rename to generateWorldWithTarget
-    function generateTarget() {
-        console.log('generateTarget()');
-        
+    function createPendingWorldObject() {
+        console.log('createPendingWorldObject()');
+
         // TODO: first create a new object and post it to the server
         let randomServerIP = Object.keys(detectedServers)[0]; // this is guaranteed to have at least one entry if we get here
         pendingAddedObjectName = "_WORLD_instantScan";
         addObject(pendingAddedObjectName, randomServerIP, 8080); // TODO: get port programmatically
-        
+
+        showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
         setTimeout(function() {
-            showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
             realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
-        }, 500);
-        
+            setTimeout(function() {
+                realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
+                setTimeout(function() {
+                    realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
+                }, 900);
+            }, 600);
+        }, 300);
+
         // wait for a response, wait til we have the objectID and know it exists
     }
-    
+
     function pendingObjectAdded(objectKey, serverIp, serverPort) {
         // the object definitely exists...
         pendingAddedObjectName = null;
 
-        loadingDialog.dismiss();
-        loadingDialog = null;
-        
-        let objectName = realityEditor.getObject(objectKey).name;
-
-        let targetUploadURL = 'http://' + serverIp + ':' + serverPort + '/content/' + objectName;
-        
-        // then call this
-        realityEditor.app.areaTargetCaptureGenerate(targetUploadURL);
-
         setTimeout(function() {
-            showLoadingDialog('Uploading Target Data...', 'Please wait. Uploading data to server.');
-            
-            setTimeout(function() {
-                loadingDialog.dismiss();
-                loadingDialog = null;
-                console.log("uploading target data timed out");
-            }, 3000);
+            loadingDialog.dismiss();
+            loadingDialog = null;
         }, 500);
+
+        let objectName = realityEditor.getObject(objectKey).name;
+        sessionObjectId = objectKey;
+        targetUploadURL = 'http://' + serverIp + ':' + serverPort + '/content/' + objectName;
+
+        startScanning();
     }
 
     function addObject(objectName, serverIp, serverPort) {
@@ -357,12 +375,12 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             stopScanning();
         }
     }
-    
+
     function onAreaTargetGenerateProgress(percentGenerated) {
         // onAreaTargetGenerateProgress
         console.log('Generated: ' + percentGenerated);
     }
-    
+
     function captureSuccessOrError(success, errorMessage) {
         console.log("_____");
         console.log("Capture Done. Success?: " + success);
@@ -371,23 +389,37 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         loadingDialog.dismiss();
         loadingDialog = null;
-        
-        // if (success) {
-            // let notification = realityEditor.gui.modal.showSimpleNotification(
-            //     headerText, descriptionText,function () {
-            //         console.log('closed...');
-            //     }, realityEditor.device.environment.variables.layoutUIForPortrait);
-            
-            // let notification = realityEditor.gui.modal.showSimpleNotification()
 
-            showMessage('Success = ' + success + '. Error = ' + errorMessage, 3000);
+        // if (success) {
+        // let notification = realityEditor.gui.modal.showSimpleNotification(
+        //     headerText, descriptionText,function () {
+        //         console.log('closed...');
+        //     }, realityEditor.device.environment.variables.layoutUIForPortrait);
+
+        // let notification = realityEditor.gui.modal.showSimpleNotification()
+
+        showMessage('Success = ' + success + '. Error = ' + errorMessage, 3000);
         // }
-        
+
         if (success) {
-            generateTarget();
+            // generateTarget();
+
+            // then call this
+            realityEditor.app.areaTargetCaptureGenerate(targetUploadURL);
+
+            setTimeout(function() {
+                showLoadingDialog('Uploading Target Data...', 'Please wait. Uploading data to server.');
+
+                setTimeout(function() {
+                    loadingDialog.dismiss();
+                    loadingDialog = null;
+                    console.log("uploading target data timed out");
+                }, 2000);
+            }, 500);
+
         }
     }
-    
+
     function showMessage(message, lifetime) {
         // create UI if needed
         // let notificationUI = document.getElementById('captureNotificationUI');
@@ -411,7 +443,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         notificationUI.classList.add('statusBar');
         notificationUI.classList.remove('statusBarHidden');
         notificationTextContainer.innerHTML = message;
-        
+
         setTimeout(function() {
             // let errorNotificationUI = document.getElementById('errorNotificationUI');
             if (!notificationUI) {
@@ -434,7 +466,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             loadingDialog.dismiss();
             loadingDialog = null;
         }
-        
+
         // // hide all AR elements and canvas lines
         // document.getElementById('GUI').classList.add('hiddenWhileLoading');
         // document.getElementById('canvas').classList.add('hiddenWhileLoading');
