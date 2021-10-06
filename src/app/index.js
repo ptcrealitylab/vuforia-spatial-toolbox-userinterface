@@ -441,16 +441,16 @@ realityEditor.app.setAspectRatio = function(ratio) {
  ************** AREA TARGET CAPTURE API ****************
  */
 
-realityEditor.app.areaTargetCaptureStart = function (callBack) {
-    realityEditor.app.appFunctionCall("areaTargetCaptureStart", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+realityEditor.app.areaTargetCaptureStart = function (objectId, callBack) {
+    realityEditor.app.appFunctionCall("areaTargetCaptureStart", {objectId: objectId}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 }
 
 realityEditor.app.areaTargetCaptureStop = function (callBack) {
     realityEditor.app.appFunctionCall("areaTargetCaptureStop", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 }
 
-realityEditor.app.areaTargetCaptureGenerate = function () {
-    realityEditor.app.appFunctionCall("areaTargetCaptureGenerate", null, null);
+realityEditor.app.areaTargetCaptureGenerate = function (targetUploadURL) {
+    realityEditor.app.appFunctionCall("areaTargetCaptureGenerate", {targetUploadURL: targetUploadURL}, null);
 }
 
 realityEditor.app.onAreaTargetGenerateProgress = function (callBack) {

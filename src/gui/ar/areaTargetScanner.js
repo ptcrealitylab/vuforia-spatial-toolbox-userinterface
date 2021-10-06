@@ -3,7 +3,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 (function(exports) {
 
     let hasUserBeenNotified = false;
-    // let detectedServers = {};
+    let detectedServers = {};
     let detectedObjects = {};
 
     let foundAnyWorldObjects = false;
@@ -17,6 +17,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     let timeLeftSeconds = MAX_SCAN_TIME;
     
     let loadingDialog = null;
+    
+    let pendingAddedObjectName = null;
+    
+    let sessionObjectId = null;
 
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -41,6 +45,12 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 return;
             }
             detectedObjects[objectKey] = true;
+            
+            if (pendingAddedObjectName) {
+                if (object.name === pendingAddedObjectName) {
+                    pendingObjectAdded(objectKey, object.ip, realityEditor.network.getPort(object));
+                }
+            }
 
             // check if it's a world object
             if (object && (object.isWorldObject || object.type === 'world')) {
@@ -56,12 +66,15 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             }, 1000);
         });
 
-        // realityEditor.network.onNewServerDetected(function(serverIP) {
-        //     if (typeof detectedServers[serverIP] !== 'undefined') {
-        //         return;
-        //     }
-        //     detectedServers[serverIP] = true;
-        // });
+        realityEditor.network.onNewServerDetected(function(serverIP) {
+            if (serverIP === '127.0.0.1' || serverIP === 'localhost') { 
+                return;
+            }
+            if (typeof detectedServers[serverIP] !== 'undefined') {
+                return;
+            }
+            detectedServers[serverIP] = true;
+        });
         
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
     }
@@ -253,8 +266,58 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
     }
 
-    function _generateTarget() {
-        realityEditor.app.areaTargetCaptureGenerate();
+    // TODO: rename to generateWorldWithTarget
+    function generateTarget() {
+        console.log('generateTarget()');
+        
+        // TODO: first create a new object and post it to the server
+        let randomServerIP = Object.keys(detectedServers)[0]; // this is guaranteed to have at least one entry if we get here
+        pendingAddedObjectName = "_WORLD_instantScan";
+        addObject(pendingAddedObjectName, randomServerIP, 8080); // TODO: get port programmatically
+        
+        setTimeout(function() {
+            showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
+            realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
+        }, 500);
+        
+        // wait for a response, wait til we have the objectID and know it exists
+    }
+    
+    function pendingObjectAdded(objectKey, serverIp, serverPort) {
+        // the object definitely exists...
+        pendingAddedObjectName = null;
+
+        loadingDialog.dismiss();
+        loadingDialog = null;
+        
+        let objectName = realityEditor.getObject(objectKey).name;
+
+        let targetUploadURL = 'http://' + serverIp + ':' + serverPort + '/content/' + objectName;
+        
+        // then call this
+        realityEditor.app.areaTargetCaptureGenerate(targetUploadURL);
+
+        setTimeout(function() {
+            showLoadingDialog('Uploading Target Data...', 'Please wait. Uploading data to server.');
+            
+            setTimeout(function() {
+                loadingDialog.dismiss();
+                loadingDialog = null;
+                console.log("uploading target data timed out");
+            }, 3000);
+        }, 500);
+    }
+
+    function addObject(objectName, serverIp, serverPort) {
+        var postUrl = 'http://' + serverIp + ':' + serverPort + '/';
+        var params = new URLSearchParams({action: 'new', name: objectName, isWorld: true});
+        fetch(postUrl, {
+            method: 'POST',
+            body: params
+        }).then((response) => {
+            console.log('added new object');
+            console.log(response);
+        });
     }
 
     function captureStatusHandler(status, statusInfo) {
@@ -309,7 +372,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         loadingDialog.dismiss();
         loadingDialog = null;
         
-        if (success) {
+        // if (success) {
             // let notification = realityEditor.gui.modal.showSimpleNotification(
             //     headerText, descriptionText,function () {
             //         console.log('closed...');
@@ -318,6 +381,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             // let notification = realityEditor.gui.modal.showSimpleNotification()
 
             showMessage('Success = ' + success + '. Error = ' + errorMessage, 3000);
+        // }
+        
+        if (success) {
+            generateTarget();
         }
     }
     
