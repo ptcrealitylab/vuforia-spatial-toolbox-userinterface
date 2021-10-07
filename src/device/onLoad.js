@@ -79,7 +79,16 @@ realityEditor.device.onload = function () {
     realityEditor.addons.onInit();
 
     // populate the default settings menus with toggle switches and text boxes, with associated callbacks
-
+    
+    realityEditor.gui.settings.addToggleWithText('Network over Cloud', '', 'cloudState', '../../../svg/cloud.svg', false, 'enter network ID',
+        function(newValue) {
+            console.log('cloud is set to ' + newValue);
+        },
+        function(newValue) {
+            console.log('cloud is set to ' + newValue);
+        }
+    );
+    
     realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
         function(newValue) {
             console.log('zone mode was set to ' + newValue);
@@ -186,6 +195,9 @@ realityEditor.device.onload = function () {
     globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
     realityEditor.device.environment.initService();
+
+    globalCanvas.canv23 = document.getElementById("testcan");
+    globalCanvas.ctx2333 = globalCanvas.canv23.getContext("2d");
 
     // adds touch handlers for each of the menu buttons
     if (!realityEditor.device.environment.variables.overrideMenusAndButtons) {

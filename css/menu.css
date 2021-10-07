@@ -10,6 +10,43 @@
     -webkit-transform: translateZ(10000px);
     z-index: 1000;
 }
+#toolsButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 0px;
+    visibility: visible;
+}
+#toolsButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 0px;
+    visibility: hidden;
+    z-index: 20;
+}
+#programmingButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 0px;
+    visibility: visible;
+}
+#programmingButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 0px;
+    visibility: hidden;
+    z-index: 20;
+}
+
+
+
 #mainButton {
     position: fixed;
     width: 60px;
@@ -53,7 +90,16 @@
     visibility: hidden;
     z-index: 20;
 }
-#freezeButton {
+#searchCodeButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 260px;
+    visibility: hidden;
+    z-index: 20;
+}
+#searchCodeButton {
     position: fixed;
     width: 60px;
     height: 60px;
@@ -61,12 +107,78 @@
     top: 260px;
     visibility: hidden;
 }
-#freezeButtonDiv {
+
+
+
+
+#connectedEdgeButtonDiv {
     position: fixed;
     width: 60px;
     height: 60px;
     right: 0px;
     top: 260px;
+    visibility: hidden;
+    z-index: 20;
+}
+#connectedEdgeButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 260px;
+    visibility: hidden;
+}
+#waitingForConnectionButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 260px;
+    visibility: hidden;
+    z-index: 20;
+}
+#waitingForConnectionButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 260px;
+    visibility: hidden;
+}
+#connectedCloudButtonButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 260px;
+    visibility: hidden;
+    z-index: 20;
+}
+#connectedCloudButtonButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 260px;
+    visibility: hidden;
+}
+
+
+
+#freezeButton {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 65px;
+    visibility: hidden;
+}
+#freezeButtonDiv {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    right: 0px;
+    top: 65px;
     visibility: hidden;
     z-index: 20;
 }

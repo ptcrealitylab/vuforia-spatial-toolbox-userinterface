@@ -72,6 +72,7 @@ realityEditor.gui.settings.InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
     TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
+    UI_FOR_CLOUD: 'UI_FOR_CLOUD',
     SLIDER: 'SLIDER'
 });
 

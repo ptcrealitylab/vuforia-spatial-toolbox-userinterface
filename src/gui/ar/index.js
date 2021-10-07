@@ -64,7 +64,14 @@ createNameSpace("realityEditor.gui.ar");
  * Makes some adjustments based on the viewport of the device and notifies the native iOS app when it is done.
  * @param {Array.<number>} matrix - a 4x4 projection matrix
  */
+
+realityEditor.gui.ar.yvariable = 0;
+
 realityEditor.gui.ar.setProjectionMatrix = function(matrix) {
+    
+    let zvariable = 0;
+    
+    this.xvariable = 0;
     
     var corX = 0;
     var corY = 0;

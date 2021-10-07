@@ -124,6 +124,9 @@ var realityEditor = realityEditor || {
         search: {},
         utilities: {}
     },
+    cloud: {
+        
+    },
     sceneGraph: {
         sceneNode: {},
         network: {}

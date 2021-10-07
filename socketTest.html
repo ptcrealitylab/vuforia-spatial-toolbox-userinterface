@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+
+<script>
+
+    // Create WebSocket connection.
+    const socket = new WebSocket('ws://192.168.50.200:52317');
+
+    // Connection opened
+    socket.addEventListener('open', function (event) {
+        socket.send({data:"Hello Server!", isBinary:false});
+    });
+
+    // Listen for messages
+    socket.addEventListener('message', function (event) {
+        console.log('Message from server ', event.data);
+    });
+    
+</script>
+
+</body>
+</html>
+

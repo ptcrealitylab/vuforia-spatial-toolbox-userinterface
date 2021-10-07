@@ -73,6 +73,13 @@ var globalStates = {
         whereWas: {},
         velocityOf: {}
     },
+    network: {
+        edgeServer:0,
+        cloudServer:"",
+        networkID: "",
+        networkSecret: "",
+        cloudState: 0
+    },
     craftingMoveDelay: 400,
     tempUuid: "0000",
     debug: false,

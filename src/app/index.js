@@ -472,6 +472,7 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
 realityEditor.app.callBack = function(callBack, callbackArguments){
     
     if (callbackArguments) {
+       // setTimeout(callBack.apply(null, callbackArguments),0);
         callBack.apply(null, callbackArguments);
     } else {
         callBack();

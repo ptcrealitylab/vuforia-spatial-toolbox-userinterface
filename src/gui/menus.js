@@ -95,7 +95,14 @@ createNameSpace("realityEditor.gui.menus");
         realityInfo : {},
         realityTag: {},
         realitySearch : {},
-        realityWork : {}
+        realityWork : {},
+        // new buttons
+        connectedCloud : {},
+        waitingForConnection : {},
+        connectedEdge : {},
+        searchCode : {},
+        programming : {},
+        tools : {}
     };
 
     /**
@@ -103,24 +110,24 @@ createNameSpace("realityEditor.gui.menus");
      * @type {Object.<string, Object.<string, string>>}
      */
     var menus = {
-        default: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-        main: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-        logic: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-        gui: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-        setting: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue"},
-        groundPlane: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", groundPlaneReset: "blue"},
-        editing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", commit: "blue", reset: "blue", unconstrained: "blue", distance: "blue"},
+        default: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue"},
+        main: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue"},
+        logic: {programming: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue"},
+        gui: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue"},
+        setting: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue"},
+        groundPlane: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue", groundPlaneReset: "blue"},
+        editing: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue", commit: "blue", reset: "blue", unconstrained: "blue", distance: "blue"},
         crafting: {back: "blue", logicPocket: "green", logicSetting: "blue", freeze: "blue"},
         bigTrash: {bigTrash: "red", distanceGreen: "green"},
         bigPocket: {bigPocket: "green"},
         trashOrSave: {halfTrash: "red", halfPocket: "green"},
-        locking: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue"},
-        lockingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue", distance: "blue"},
+        locking: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue", unlock:"blue", halflock:"blue", lock:"blue"},
+        lockingEditing: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue", unlock:"blue", halflock:"blue", lock:"blue", reset: "blue", unconstrained: "blue", distance: "blue"},
         realityInfo: {realityGui: "blue", realityInfo: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
         reality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
         settingReality: {realityGui: "blue", realityTag: "blue", realitySearch: "blue", setting:"blue", realityWork: "blue"},
-        videoRecording: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue"},
-        videoRecordingEditing: {gui: "blue", logic: "blue", pocket: "blue", setting: "blue", freeze: "blue", record:"blue", commit:"blue", reset: "blue", unconstrained: "blue", distance: "blue"}
+        videoRecording: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue", record:"blue"},
+        videoRecordingEditing: {tools: "blue", freeze: "blue", pocket: "blue", setting: "blue", searchCode: "blue", record:"blue", commit:"blue", reset: "blue", unconstrained: "blue", distance: "blue"}
     };
 
     /**
@@ -143,7 +150,9 @@ createNameSpace("realityEditor.gui.menus");
         var bgElement;
 
         // special case - logic and gui share one svgElement containing both buttons // TODO: change this, make each separate
-        if (buttonName === "logic" || buttonName === "gui") {
+        
+        // TODO check back tommor
+       if (buttonName === "logic" || buttonName === "gui") {
             svgElement = document.getElementById("mainButton");
             if (buttonName === "gui") {
                 bgElement = svgElement.getElementById("bg0");
@@ -255,13 +264,16 @@ createNameSpace("realityEditor.gui.menus");
      */
     function registerButtonCallbacks() {
 
-        realityEditor.gui.buttons.registerCallbackForButton('gui', function(params) {
+        realityEditor.gui.buttons.registerCallbackForButton('tools', function(params) {
             if (params.newButtonState === 'up') {
+                console.log("push tools button should change");
+                switchToMenu("logic", [], []);
                 // updates the button visuals to highlight only the GUI button
-                buttonOff(["logic","logicPocket","logicSetting","setting","pocket"]);
-                buttonOn(["gui"]);
-                // update the global gui state
-                globalStates.guiState = "ui";
+               // buttonOff(["programming","logicPocket","logicSetting","setting","pocket"]);
+               // buttonOn(["programming"]);
+               
+                // update the global  gui state
+                globalStates.guiState = "node";
 
                 if (DEBUG_DATACRAFTING) { // TODO: BEN DEBUG - turn off debugging!
                     // var logic = new Logic();
@@ -272,12 +284,12 @@ createNameSpace("realityEditor.gui.menus");
             }
         }.bind(this));
 
-        realityEditor.gui.buttons.registerCallbackForButton('logic', function(params) {
+        realityEditor.gui.buttons.registerCallbackForButton('programming', function(params) {
             if (params.newButtonState === 'up') {
-                buttonOff(["gui","logicPocket","logicSetting","setting","pocket"]);
-                buttonOn(["logic"]);
-
-                globalStates.guiState = "node";
+              //  buttonOff(["tools","logicPocket","logicSetting","setting","pocket"]);
+              //  buttonOn(["tools"]);
+               // switchToMenu("gui", null, null);
+                globalStates.guiState = "ui";
             }
         }.bind(this));
 
@@ -494,7 +506,7 @@ createNameSpace("realityEditor.gui.menus");
         if (realityEditor.device.environment.variables.overrideMenusAndButtons) {
             return;
         }
-
+        console.log(newMenuName)
         // handle null parameters gracefully
         buttonsToHighlight = buttonsToHighlight || [];
         buttonsToUnhighlight = buttonsToUnhighlight || [];
@@ -527,6 +539,20 @@ createNameSpace("realityEditor.gui.menus");
                 buttons[buttonName].overlay.style.visibility = "hidden";
             }
         }
+        
+        // Special cases for Tools and Programming Menu 
+        if(globalStates.guiState === "node"){
+            buttons["programming"].item.style.visibility = "visible";
+            buttons["programming"].overlay.style.visibility = "visible";
+            buttons["tools"].item.style.visibility = "hidden";
+            buttons["tools"].overlay.style.visibility = "hidden";
+        } else if(globalStates.guiState === "ui"){
+            buttons["programming"].item.style.visibility = "hidden";
+            buttons["programming"].overlay.style.visibility = "hidden";
+            buttons["tools"].item.style.visibility = "visible";
+            buttons["tools"].overlay.style.visibility = "visible";
+        }
+        
 
         // highlights any buttons included in buttonsToHighlight, 
         buttonsToHighlight.forEach( function(buttonName) {

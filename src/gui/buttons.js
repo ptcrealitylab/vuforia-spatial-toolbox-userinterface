@@ -95,7 +95,12 @@ createNameSpace("realityEditor.gui.buttons");
             REALITY_SEARCH: 'realitySearch',
             REALITY_WORK: 'realityWork',
             BACK: 'back',
-            GROUNDPLANE_RESET: 'groundPlaneReset'
+            CONNECTED_CLOUD: 'connectedCloud',
+            WAITING_FOR_CONNECTION: 'waitingForConnection',
+            CONNECTED_EDGE: 'connectedEdge',
+            SEARCH_CODE: 'searchCode',
+            PROGRAMMING: 'programming',
+            TOOLS: 'tools'
         });
 
     /**
