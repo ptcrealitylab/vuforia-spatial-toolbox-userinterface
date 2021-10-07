@@ -104,6 +104,16 @@ createNameSpace("realityEditor.sceneGraph.network");
         let worldObjectId = sceneGraph.getWorldId();
         let worldNode = sceneGraph.getSceneNodeById(worldObjectId);
         let relativeMatrix = sceneNode.getMatrixRelativeTo(worldNode);
+
+        // check if it's an origin object that matches a world object
+        if (object.type === 'origin') {
+            // if so, upload the originOffset instead of the position, so we can load it the next time the app opens
+            let matchingWorld = realityEditor.worldObjects.getMatchingWorldObject(sceneNode.id);
+            if (typeof matchingWorld.originOffset !== 'undefined') {
+                relativeMatrix = matchingWorld.originOffset;
+            }
+        }
+
         realityEditor.network.postObjectPosition(object.ip, sceneNode.id, relativeMatrix, worldObjectId);
 
         objectLocalizedCallbacks.forEach(function(callback) {

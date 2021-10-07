@@ -520,6 +520,22 @@ createNameSpace("realityEditor.sceneGraph");
         sceneNode.flagForRecompute(); // TODO: might not be necessary? just say e.g. data[new] = data[old]; delete data[old];
     }
 
+    function removeElementAndChildren(id) {
+        let sceneNode = getSceneNodeById(id);
+        if (sceneNode) {
+            // remove from parent
+            let parentNode = sceneNode.parent;
+            if (parentNode) {
+                let index = parentNode.children.indexOf(sceneNode);
+                if (index > -1) {
+                    parentNode.children.splice(index, 1);
+                }
+            }
+            // delete from graph
+            delete sceneGraph[id];
+        }
+    }
+
     /**
      * Gets the world object to which everything else is localized.
      * If it's the _WORLD_local then return null, since that isn't a permanent world.
@@ -656,6 +672,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.setLoyalty = setLoyalty;
     exports.changeParent = changeParent;
     exports.changeId = changeId;
+    exports.removeElementAndChildren = removeElementAndChildren;
 
     // public methods to compute calculations based on the sceneGraph
     exports.getDistanceToCamera = getDistanceToCamera;
