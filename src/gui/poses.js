@@ -41,9 +41,9 @@ const JOINT_CONNECTIONS = [
   [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.RIGHT_ANKLE],
 ];
 
-let lastDraw = performance.now();
+// let lastDraw = performance.now();
 
-exports.drawPoses = function(poses, coords, cameraPos) {
+exports.drawPoses = function(poses, _coords, _cameraPos) {
     let canvas = document.getElementById('supercooldebugcanvas');
     let gfx;
     if (!canvas) {
@@ -70,13 +70,13 @@ exports.drawPoses = function(poses, coords, cameraPos) {
     gfx.font = '32px sans-serif';
     gfx.strokeStyle = 'green';
 
-    function format(n) {
-        return Math.round(n * 100) / 100;
-    }
+    // function format(n) {
+    //     return Math.round(n * 100) / 100;
+    // }
     // gfx.fillText(`${format(cameraPos.x)} ${format(cameraPos.y)} ${format(cameraPos.z)}`, 16, 32);
 
     // gfx.fillText(`${format(performance.now() - lastDraw)}`, 16, 96);
-    lastDraw = performance.now();
+    // lastDraw = performance.now();
 
     const jointSize = 16;
     const pointWidth = 1920;
