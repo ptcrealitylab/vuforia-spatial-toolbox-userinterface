@@ -22,7 +22,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     let sessionObjectId = null;
     let targetUploadURL = null;
-    
+
     let hasFirstSeenInstantWorld = false;
 
     /**
@@ -78,23 +78,23 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             }
             detectedServers[serverIP] = true;
         });
-        
-        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
-           if (!sessionObjectId) { return; }
-           if (isScanning) { return; }
-           if (hasFirstSeenInstantWorld) { return; }
-           
-           if (typeof visibleObjects[sessionObjectId] !== 'undefined') {
-               hasFirstSeenInstantWorld = true;
 
-               getStatusTextfield().innerHTML = 'Successfully localized within new scan!'
-               getStatusTextfield().style.display = 'inline';
-               
-               setTimeout(function() {
-                   getStatusTextfield().innerHTML = '';
-                   getStatusTextfield().style.display = 'none';
-               }, 3000);
-           }
+        realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
+            if (!sessionObjectId) { return; }
+            if (isScanning) { return; }
+            if (hasFirstSeenInstantWorld) { return; }
+
+            if (typeof visibleObjects[sessionObjectId] !== 'undefined') {
+                hasFirstSeenInstantWorld = true;
+
+                getStatusTextfield().innerHTML = 'Successfully localized within new scan!'
+                getStatusTextfield().style.display = 'inline';
+
+                setTimeout(function() {
+                    getStatusTextfield().innerHTML = '';
+                    getStatusTextfield().style.display = 'none';
+                }, 3000);
+            }
         });
 
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
@@ -390,21 +390,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         loadingDialog.dismiss();
         loadingDialog = null;
 
-        // if (success) {
-        // let notification = realityEditor.gui.modal.showSimpleNotification(
-        //     headerText, descriptionText,function () {
-        //         console.log('closed...');
-        //     }, realityEditor.device.environment.variables.layoutUIForPortrait);
-
-        // let notification = realityEditor.gui.modal.showSimpleNotification()
-
-        showMessage('Success = ' + success + '. Error = ' + errorMessage, 3000);
-        // }
-
         if (success) {
-            // generateTarget();
-
-            // then call this
             realityEditor.app.areaTargetCaptureGenerate(targetUploadURL);
 
             setTimeout(function() {
@@ -414,10 +400,47 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                     loadingDialog.dismiss();
                     loadingDialog = null;
                     console.log("uploading target data timed out");
-                }, 2000);
-            }, 500);
 
+                    // objects aren't fully initialized until they have a target.jpg, so we upload a screenshot to be the "icon"
+                    realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
+                }, 1500);
+            }, 1000);
+
+            showMessage('Successful capture.', 2000);
+        } else {
+            showMessage('Error: ' + errorMessage, 2000);
         }
+    }
+
+    function onScreenshotReceived(base64String) {
+        var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
+        console.log('converted screenshot to blob', blob);
+        uploadScreenshot(blob);
+    }
+
+    function uploadScreenshot(blob) {
+        if (!targetUploadURL || !blob) {
+            return;
+        }
+
+        console.log('upload screenshot...');
+
+        const formData = new FormData();
+        formData.append('file', blob, 'screenshot-target.jpg');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', targetUploadURL, true);
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                showMessage('Successfully uploaded icon to new world object', 2000);
+            } else {
+                showMessage('Error uploading icon to new world object', 2000);
+            }
+        };
+
+        xhr.setRequestHeader('type', 'targetUpload');
+        xhr.send(formData);
     }
 
     function showMessage(message, lifetime) {
@@ -488,5 +511,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     exports.captureStatusHandler = captureStatusHandler;
     exports.onAreaTargetGenerateProgress = onAreaTargetGenerateProgress;
     exports.captureSuccessOrError = captureSuccessOrError;
+    exports.onScreenshotReceived = onScreenshotReceived;
 
 }(realityEditor.gui.ar.areaTargetScanner));
