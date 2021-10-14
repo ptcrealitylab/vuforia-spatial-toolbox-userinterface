@@ -73,7 +73,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             let gpRxId = gpId + realityEditor.sceneGraph.TAGS.ROTATE_X;
             let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpRxId);
             if (!groundPlaneSceneNode) {
-                // groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpId);
+                groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpId);
             }
 
             // Ground plane must exist.. if it doesn't reschedule this to happen later
