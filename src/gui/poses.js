@@ -21,6 +21,7 @@ const POSE_JOINTS = {
   LEFT_ANKLE: "left ankle",
   RIGHT_ANKLE: "right ankle",
 };
+exports.POSE_JOINTS = POSE_JOINTS;
 
 Object.keys(POSE_JOINTS).forEach((key, i) => {
   POSE_JOINTS[key] = i;
@@ -40,6 +41,7 @@ const JOINT_CONNECTIONS = [
   [POSE_JOINTS.RIGHT_HIP, POSE_JOINTS.RIGHT_KNEE],
   [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.RIGHT_ANKLE],
 ];
+exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
 
 // let lastDraw = performance.now();
 
