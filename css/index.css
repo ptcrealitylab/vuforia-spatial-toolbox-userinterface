@@ -811,7 +811,7 @@ body {
     background: transparent;
     pointer-events: none;
     -webkit-transform-style: preserve-3d;
-    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -30, 1);
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 }
 
 .ignorePointerEvents {
