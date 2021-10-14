@@ -69,7 +69,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     function startVisualization() {
         // add a scene node to the groundPlane's rotateX sceneGraph node
         if (!realityEditor.sceneGraph.getVisualElement(elementName)) {
-            let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById('GROUNDPLANE');
+            let gpId = realityEditor.sceneGraph.NAMES.GROUNDPLANE;
+            let gpRxId = gpId + realityEditor.sceneGraph.TAGS.ROTATE_X;
+            let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpRxId);
+            if (!groundPlaneSceneNode) {
+                // groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpId);
+            }
 
             // Ground plane must exist.. if it doesn't reschedule this to happen later
             if (!groundPlaneSceneNode) {
