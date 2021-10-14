@@ -77,6 +77,11 @@ createNameSpace("realityEditor.app.targetDownloader");
         });
 
     /**
+     * @type {Function?}
+     */
+    let createNavmeshCallback = null;
+
+    /**
      * Worker that generates navmeshes from upload area target meshes
      * @type {Worker}
      */
@@ -95,6 +100,9 @@ createNameSpace("realityEditor.app.targetDownloader");
         // let floorOffset = -1.55 * 1000;
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath, {x: -600, y: -floorOffset, z: -3300}, {x: 0, y: 2.661627109291353, z: 0});
 
+        if (createNavmeshCallback) {
+            createNavmeshCallback(navmesh);
+        }
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
@@ -317,11 +325,19 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].GLB = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
-        onTargetGLBAddress(fileName, objectID);
+        createNavmesh(fileName, objectID);
     }
 
-    function onTargetGLBAddress(fileName, objectID) {
+    /**
+     * @param {string} fileName - Full URL of GLB file
+     * @param {string} objectID
+     * @param {Function?} callback
+     */
+    function createNavmesh(fileName, objectID, callback) {
         console.log('got GLB address');
+        if (callback) {
+            createNavmeshCallback = callback;
+        }
         navmeshWorker.postMessage({fileName, objectID});
     }
 
@@ -713,6 +729,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.onTargetDATDownloaded = onTargetDATDownloaded;
     exports.onTargetJPGDownloaded = onTargetJPGDownloaded;
     exports.onTargetGLBDownloaded = onTargetGLBDownloaded;
+    exports.createNavmesh = createNavmesh;
     exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
     exports.onTargetFileDownloaded = onTargetFileDownloaded;
