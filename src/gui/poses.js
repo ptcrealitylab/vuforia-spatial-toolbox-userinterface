@@ -43,6 +43,27 @@ const JOINT_CONNECTIONS = [
 ];
 exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
 
+const JOINT_NEIGHBORS = {};
+const headJoints = [POSE_JOINTS.NOSE, POSE_JOINTS.LEFT_EYE,
+    POSE_JOINTS.RIGHT_EYE, POSE_JOINTS.LEFT_EAR, POSE_JOINTS.RIGHT_EAR];
+
+for (let headJoint of headJoints) {
+    JOINT_NEIGHBORS[headJoint] = headJoints.filter(j => j !== headJoint);
+}
+
+for (let jc of JOINT_CONNECTIONS) {
+    if (!JOINT_NEIGHBORS[jc[0]]) {
+        JOINT_NEIGHBORS[jc[0]] = [];
+    }
+    if (!JOINT_NEIGHBORS[jc[1]]) {
+        JOINT_NEIGHBORS[jc[1]] = [];
+    }
+
+    JOINT_NEIGHBORS[jc[0]].push(jc[1]);
+    JOINT_NEIGHBORS[jc[1]].push(jc[0]);
+}
+exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
+
 // let lastDraw = performance.now();
 
 exports.drawPoses = function(poses, _coords, _cameraPos) {
