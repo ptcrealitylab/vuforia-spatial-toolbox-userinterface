@@ -61,8 +61,8 @@ createNameSpace("realityEditor.sceneGraph");
 
         // create a node representing the ground plane coordinate system
         groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
-        groundPlaneNode.needsRotateX = true;
-        addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
+        // groundPlaneNode.needsRotateX = true;
+        // addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
 
         // also init the network service when this starts
