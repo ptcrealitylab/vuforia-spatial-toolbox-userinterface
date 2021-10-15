@@ -187,6 +187,19 @@ realityEditor.device.onload = function () {
         // }
     }).moveToDevelopMenu();
 
+    // Add a toggle to enable virtualization features
+    realityEditor.gui.settings.addToggle('Virtualization', 'enable virtualization and pose detection', 'enableVirtualization',  '../../../svg/object.svg', false, function(newValue) {
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+            return;
+        }
+        if (newValue) {
+            realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
+        } else {
+            realityEditor.app.appFunctionCall("disablePoseTracking", {});
+        }
+    }).moveToDevelopMenu();
+
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
     globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
