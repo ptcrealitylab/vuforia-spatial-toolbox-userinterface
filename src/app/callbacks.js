@@ -234,11 +234,13 @@ createNameSpace('realityEditor.app.callbacks');
         //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
         // }
 
-        for (let jc of realityEditor.gui.poses.JOINT_CONNECTIONS) {
-            let pointA = poses[jc[0]];
-            let pointB = poses[jc[1]];
-            if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
-                pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+        if (poses.length > 0) {
+            for (let jc of realityEditor.gui.poses.JOINT_CONNECTIONS) {
+                let pointA = poses[jc[0]];
+                let pointB = poses[jc[1]];
+                if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
+                    pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+                }
             }
         }
 
