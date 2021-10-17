@@ -102,7 +102,7 @@ function MemoryContainer(element) {
 
 MemoryContainer.prototype.set = function(obj) {
     this.obj = obj;
-    var urlBase = 'http://' + obj.ip + ':'+realityEditor.network.getPortByIp(obj.ip)+'/obj/' + obj.name + '/memory/';
+    var urlBase = realityEditor.network.getURL(obj.ip, realityEditor.network.getPortByIp(obj.ip), '/obj/' + obj.name + '/memory/');
     var image = urlBase + 'memory.jpg';
 
     this.backgroundImage = document.createElement('img');
@@ -656,7 +656,7 @@ function uploadImageToServer() {
     // Set up the request.
     var xhr = new XMLHttpRequest();
 
-    var postUrl = 'http://' + objects[currentMemory.id].ip + ':' + realityEditor.network.getPort(objects[currentMemory.id]) + '/object/' + currentMemory.id + "/memory";
+    var postUrl = realityEditor.network.getURL(objects[currentMemory.id].ip, realityEditor.network.getPort(objects[currentMemory.id]), '/object/' + currentMemory.id + "/memory");
 
     // Open the connection.
     xhr.open('POST', postUrl, true);

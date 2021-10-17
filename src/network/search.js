@@ -78,7 +78,7 @@ createNameSpace("realityEditor.network.search");
             this.addQueryParam(concatenated, specifiedValue);
         }
         perform(ip, port, callback) {
-            let baseUrl = 'http://' + ip + ':' + port + '/spatial/searchFrames' + this.stringifyQueryParams();
+            let baseUrl = realityEditor.network.getURL(ip, port, '/spatial/searchFrames' + this.stringifyQueryParams());
 
             realityEditor.network.getData(null,  null, null, baseUrl, function (_objectKey, _frameKey, _nodeKey, msg) {
                 if (msg && msg.validAddresses) {
@@ -90,7 +90,7 @@ createNameSpace("realityEditor.network.search");
         performAndForEachDownload(ip, port, callback) {
             this.perform(ip, port, function(validAddresses) {
                 validAddresses.forEach(function(address) {
-                    let downloadUrl = 'http://' + ip + ':' + port + '/object/' + address.objectId + '/frame/' + address.frameId;
+                    let downloadUrl = realityEditor.network.getURL(ip, port, '/object/' + address.objectId + '/frame/' + address.frameId);
                     realityEditor.network.getData(null,  null, null, downloadUrl, function (_objectKey, _frameKey, _nodeKey, msg) {
                         if (msg) {
                             console.log(msg);

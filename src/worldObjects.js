@@ -170,7 +170,7 @@ createNameSpace("realityEditor.worldObjects");
         }
         
         // REST endpoint for for downloading the world object for that server
-        var urlEndpoint = 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/worldObject/';
+        var urlEndpoint = realityEditor.network.getURL(serverIP, realityEditor.network.getPortByIp(serverIP), '/worldObject/');
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, msg) {
             console.log("did get world object for server: " + serverIP);
 

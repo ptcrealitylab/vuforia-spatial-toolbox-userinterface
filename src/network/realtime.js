@@ -73,7 +73,7 @@ createNameSpace("realityEditor.network.realtime");
         
         if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
 
-        var serverAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object);
+        var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
         var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
         if (socketsIps.indexOf(serverAddress) < 0) {
             // if we haven't already created a socket connection to that IP, create a new one,
@@ -190,7 +190,7 @@ createNameSpace("realityEditor.network.realtime");
             }
         });
         ipList.forEach(function(ip) {
-            var serverAddress = 'http://' + ip + ':' + realityEditor.network.getPortByIp(ip);
+            var serverAddress = realityEditor.network.getURL(ip, realityEditor.network.getPortByIp(ip), null);
             var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
             if (socketsIps.indexOf(serverAddress) < 0) {
                 // if we haven't already created a socket connection to that IP, create a new one,
