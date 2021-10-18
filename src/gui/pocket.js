@@ -201,7 +201,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             closestFrame.nodes[logicKey] = addedLogic;
 
             // render it
-            var nodeUrl = realityEditor.network.getURL(closestObject.ip, realityEditor.network.getPortByIp(closestObject.ip), "/nodes/logic/index.html");
+            var nodeUrl = realityEditor.network.getURL(closestObject.ip, realityEditor.network.getPort(closestObject), "/nodes/logic/index.html");
             realityEditor.gui.ar.draw.addElement(nodeUrl, closestObjectKey, closestFrameKey, logicKey, 'logic', addedLogic);
 
             var _thisNode = document.getElementById("iframe" + logicKey);
@@ -497,9 +497,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 container.dataset.src = '_PLACEHOLDER_';
             } else {
                 // var thisUrl = 'frames/' + element.name + '.html';
-                var thisUrl = realityEditor.network.getURL(realityElements[i].proxyIP, realityEditor.network.getPortByIp(realityElements[i].proxyIP), '/frames/' + element.name + '/index.html');
+                var thisUrl = realityEditor.network.getURL(realityElements[i].proxyIP, realityEditor.network.getPort(closestObject), '/frames/' + element.name + '/index.html');
                 // var gifUrl = 'frames/pocketAnimations/' + element.name + '.gif';
-                var gifUrl = realityEditor.network.getURL(realityElements[i].proxyIP, realityEditor.network.getPortByIp(realityElements[i].proxyIP), '/frames/' + element.name + '/icon.gif');
+                var gifUrl = realityEditor.network.getURL(realityElements[i].proxyIP, realityEditor.network.getPort(closestObject), '/frames/' + element.name + '/icon.gif');
                 container.dataset.src = thisUrl;
 
                 container.dataset.name = element.name;

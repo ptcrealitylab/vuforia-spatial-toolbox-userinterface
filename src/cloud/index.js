@@ -60,37 +60,21 @@ realityEditor.cloud.worker = new Worker("src/cloud/hrqrWorker.js");
 realityEditor.cloud.worker.onmessage = function(event) {
     let msg = event.data;
     if(msg["mode"] === "msg") {
-        let info = null;
-        try{
-            info = msg["msg"][0].msg
-            realityEditor.app.tap();
-            
-            info = info.replace(/[^a-zA-Z0-9:./]/gim,"");
-            info.trim();
-            
-            let networkIdentity = info.split("/");
-           
-            console.log(networkIdentity);
-            
-            if(networkIdentity[0] === "spatialtoolbox:" && networkIdentity[3].length === 20 && networkIdentity[4].length === 40){
-                if(true){
-                    globalStates.network.cloudServer = networkIdentity[2];
-                }
-
-                if(networkIdentity[3].length === 20){
-                    globalStates.network.networkID = networkIdentity[3];
-                }
-
-                if(networkIdentity[4].length === 40){
-                    globalStates.network.networkSecret = networkIdentity[3];
-                }
+      
+            let getLinkData = io.parseUrl(msg["msg"][0].msg, realityEditor.network.qrSchema);
+         
+            if(getLinkData.protocol === "spatialtoolbox") {
+                realityEditor.app.tap();
+                realityEditor.network.state.proxyProtocol = "https";
+                realityEditor.network.state.proxyPort = 443;
+                if(getLinkData.server) realityEditor.network.state.proxyUrl = getLinkData.server;
+                if(getLinkData.n) realityEditor.network.state.proxyNetwork = getLinkData.n;
+                if(getLinkData.s) realityEditor.network.state.proxySecret = getLinkData.s;
+                console.log("------------ ",getLinkData);
                 realityEditor.cloud.connectToCloud();
             }
-            
-            // todo check valid URL
-         
-            
-        } catch(e){
+
+        try{  } catch(e){
             console.log("this is not a msg")
         }
     }
@@ -99,56 +83,26 @@ realityEditor.cloud.socket = null;
 
 realityEditor.cloud.connectToCloud = function (){
     log("start connecting");
-    let serverPort = 52317;
-    let socketURL = 'ws://'+globalStates.network.cloudServer+':'+serverPort;
+    let serverPort = 443;
+    let socketURL = 'wss://'+realityEditor.network.state.proxyUrl+':'+realityEditor.network.state.proxyPort;
     
     if(realityEditor.cloud.socket) realityEditor.cloud.socket.close();
     
-    this.socket = new ToolSocket(socketURL,globalStates.network.networkID , "web");
+    this.socket = new ToolSocket(socketURL,realityEditor.network.state.proxyNetwork , "web");
 
     this.socket.on('beat', function (route, body) {
+        // todo validate for heardbeet
+        realityEditor.network.addHeartbeatObject(body);
         console.log(route, body);
     });
     
-    globalStates.network.edgeServer = connections;
+  //  globalStates.network.edgeServer = connections;
 }
 
 realityEditor.cloud.updateEdgeConnections = function (connections){
     globalStates.network.edgeServer = connections;
 }
 
-//realityEditor.cloud.worker.postMessage([myData,video.videoWidth, video.videoHeight]);
-/*
-setTimeout(
-setInterval(function (){
-   realityEditor.app.getScreenshot("S", function(){
-
-
-      var img = new window.Image();
-       // img.setAttribute("src", "data:image/jpeg;base64,"+image);
-      //  document.getElementById("canvas").getContext("2d").drawImage(img, 0, 0);
-        
-       // realityEditor.cloud.worker.postMessage(image);
-    });
-}, 1000),100000);
-*/
-
-realityEditor.cloud.workerL = {}
-
-hrqr = new HRQR();
-cv["onRuntimeInitialized"] = () => {
-   hrqr.init();
-};
-
-realityEditor.cloud.workerL.postMessage = function(msg){
-   let resp =  hrqr.render(msg.image);
-  
-   if(resp[0]){
-       realityEditor.app.tap();
-       console.log(resp[0].msg);
-   }
- 
-}
 let time;
 realityEditor.cloud.imageBuffer = new window.Image();
 setInterval(function (){
@@ -166,5 +120,3 @@ setInterval(function (){
        //console.log("total main thread time: ", Date.now()-time);
    });
 },2000);
-
-

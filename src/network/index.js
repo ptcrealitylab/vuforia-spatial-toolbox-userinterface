@@ -57,6 +57,35 @@ realityEditor.network.state = {
     proxySecret : null
 }
 
+realityEditor.network.urlSchema = {
+    "type": "object",
+    "items": {
+        "properties": {
+            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+            "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+        },
+        "required": ["n", "i"],
+        "expected": ["n", "i", "s"],
+    }
+}
+
+realityEditor.network.qrSchema = {
+    "type": "object",
+    "items": {
+        "properties": {
+            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+        },
+        "required": ["n", "server","protocol"],
+        "expected": ["n", "server", "protocol", "s"],
+    }
+}
+
 /**
  * @type {Array.<{messageName: string, callback: function}>}
  */
@@ -112,25 +141,14 @@ realityEditor.network.getURL = function(server, identifier, route){
 }
 
 realityEditor.network.getPort = function(object) {
-    let serverPort = defaultHttpPort;
-    if (object.hasOwnProperty("port")) {
-        serverPort = object.port;
-    }
-    return serverPort;
+    return object.port;
 };
 realityEditor.network.getPortByIp = function(ip) {
-    let serverPort = defaultHttpPort;
-    
-    let thisObject = null;
+    let serverPort = null;
     for(let key in objects){
         if(ip === objects[key].ip) {
-            thisObject = objects[key];
+            serverPort = objects[key].port;
             break;
-        }
-    }
-    if(thisObject !== null) {
-        if (thisObject.hasOwnProperty("port")) {
-            serverPort = thisObject.port;
         }
     }
     return serverPort;
@@ -440,16 +458,20 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
+    if(beat)
     if (beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
+            console.log(baseUrl);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
                     // add the object
                     objects[objectKey] = msg;
                     objects[objectKey].ip = beat.ip;
+                    if(beat.network) objects[objectKey].network = beat.network;
+                    if(beat.port) objects[objectKey].port = beat.port;
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
                     

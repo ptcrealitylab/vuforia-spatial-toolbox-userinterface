@@ -137,6 +137,7 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {string|object} message
      */
     function receivedUDPMessage(message) {
+        if(!acceptUDPBeats) return;
         if (typeof message !== 'object') {
             try {
                 message = JSON.parse(message);

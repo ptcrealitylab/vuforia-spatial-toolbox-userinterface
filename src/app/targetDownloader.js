@@ -661,9 +661,26 @@ createNameSpace("realityEditor.app.targetDownloader");
      * e.g. "http://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
      * @param {string} fileName
      */
+
+ let schema = {
+        "type": "object",
+        "items": {
+            "properties": {
+                "obj": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+                "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+            },
+            "required": ["server", "obj"],
+            "expected": ["server", "obj"],
+        }
+    }
+    
     function getObjectIDFromFilename(fileName) {
-        var ip = fileName.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/)[0];
-        var objectName = fileName.split('/')[4];
+        let urlObj = io.parseUrl(fileName, schema)
+        if(!urlObj)return; 
+        var ip = urlObj.server
+        var objectName = urlObj.obj
+        
+        console.log(urlObj)
 
         for (var objectKey in objects) {
             if (!objects.hasOwnProperty(objectKey)) continue;

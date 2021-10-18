@@ -102,7 +102,7 @@ function MemoryContainer(element) {
 
 MemoryContainer.prototype.set = function(obj) {
     this.obj = obj;
-    var urlBase = realityEditor.network.getURL(obj.ip, realityEditor.network.getPortByIp(obj.ip), '/obj/' + obj.name + '/memory/');
+    var urlBase = realityEditor.network.getURL(obj.ip, realityEditor.network.getPort(obj), '/obj/' + obj.name + '/memory/');
     var image = urlBase + 'memory.jpg';
 
     this.backgroundImage = document.createElement('img');

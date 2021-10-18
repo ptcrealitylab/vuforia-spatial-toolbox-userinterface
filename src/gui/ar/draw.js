@@ -396,7 +396,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                     this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
                 // if a DOM element hasn't been added for this frame yet, add it and load the correct src into an iframe
-                var frameUrl = realityEditor.network.getURL(this.activeObject.ip, realityEditor.network.getPortByIp(this.activeObject.ip), "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/");
+                var frameUrl = realityEditor.network.getURL(this.activeObject.ip, realityEditor.network.getPort(objects[objectKey]), "/obj/" + this.activeObject.name + "/frames/" + this.activeFrame.name + "/");
                 this.addElement(frameUrl, objectKey, frameKey, null, this.activeType, this.activeVehicle);
                 
                 // if we're not viewing frames (e.g. should be viewing nodes instead), hide the frame
@@ -425,7 +425,7 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                             this.activeObjectMatrix, this.matrix, this.finalMatrix, this.utilities, this.cout);
 
                         // if a DOM element hasn't been added for this node yet, add it and load the correct src into an iframe
-                        var nodeUrl = realityEditor.network.getURL(this.activeObject.ip, realityEditor.network.getPortByIp(this.activeObject.ip), "/nodes/" + this.activeType + "/index.html");
+                        var nodeUrl = realityEditor.network.getURL(this.activeObject.ip,realityEditor.network.getPort(objects[objectKey]), "/nodes/" + this.activeType + "/index.html");
                         this.addElement(nodeUrl, objectKey, frameKey, nodeKey, this.activeType, this.activeVehicle);
 
                     } else {

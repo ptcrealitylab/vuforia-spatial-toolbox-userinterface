@@ -186,18 +186,15 @@ createNameSpace("realityEditor.network.realtime");
         var ipList = [];
         realityEditor.forEachObject(function(object, _objectKey) {
             if (ipList.indexOf(object.ip) === -1) {
-                ipList.push(object.ip);
-            }
-        });
-        ipList.forEach(function(ip) {
-            var serverAddress = realityEditor.network.getURL(ip, realityEditor.network.getPortByIp(ip), null);
-            var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
-            if (socketsIps.indexOf(serverAddress) < 0) {
-                // if we haven't already created a socket connection to that IP, create a new one,
-                //   and register update listeners, and emit a /subscribe message so it can connect back to us
-                realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
-                sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
-                addServerUpdateListener(serverAddress);
+                var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
+                var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
+                if (socketsIps.indexOf(serverAddress) < 0) {
+                    // if we haven't already created a socket connection to that IP, create a new one,
+                    //   and register update listeners, and emit a /subscribe message so it can connect back to us
+                    realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
+                    sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+                    addServerUpdateListener(serverAddress);
+                }
             }
         });
     }
