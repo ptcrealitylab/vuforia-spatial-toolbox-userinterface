@@ -140,6 +140,27 @@ realityEditor.network.getURL = function(server, identifier, route){
     return returnUrl;
 }
 
+realityEditor.network.getIoTitle = function (identifier, title){
+    if(parseInt(Number(identifier))) {
+        return title;
+    } else {
+        let network = null;
+        let destinationIdentifier = null;
+        let secret = null;
+        let s = realityEditor.network.state;
+        if(s.proxyNetwork) network = s.proxyNetwork;
+        if(s.proxySecret) secret = s.proxySecret;
+        if(identifier) destinationIdentifier = identifier;
+
+        let returnUrl = "";
+        if(network) returnUrl += '/n/' + network;
+        if(destinationIdentifier) returnUrl += '/i/' + destinationIdentifier;
+        if(secret) returnUrl += '/s/' + secret;
+        if(title) returnUrl += title;
+        return returnUrl;
+    }
+}
+
 realityEditor.network.getPort = function(object) {
     return object.port;
 };
