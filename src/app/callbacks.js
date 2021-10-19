@@ -204,13 +204,13 @@ createNameSpace('realityEditor.app.callbacks');
         }
 
         let coolerPoses = [];
-        // let worldObject = realityEditor.worldObjects.getBestWorldObject();
-        // if (!worldObject) {
-        //     console.warn('okay I give up');
-        //     return;
-        // }
-        // let worldObjectId = worldObject.objectId;
-        // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!worldObject) {
+            console.warn('okay I give up');
+            return;
+        }
+        let worldObjectId = worldObject.objectId;
+        let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
         let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
         if (!gpNode) {
              gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
@@ -225,8 +225,9 @@ createNameSpace('realityEditor.app.callbacks');
         // if (!worldNode) {
         //     worldNode = gpNode;
         // }
-        let basisNode = gpNode;
-        // basisNode.updateWorldMatrix();
+        let basisNode = worldNode; // gpNode;
+        basisNode.updateWorldMatrix();
+        cameraNode.updateWorldMatrix();
         // cameraNode.setParent(gpNode);
         // realityEditor.sceneGraph.changeParent(cameraNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
         // if (!basisNode.parent) {
