@@ -94,6 +94,9 @@ createNameSpace('realityEditor.app.callbacks');
                 realityEditor.app.sendUDPMessage({action: 'ping'});
             }, 500 * i); // space out each message by 500ms
         }
+
+        // in case engine was started for the second time, add any targets back to engine from the first instance
+        realityEditor.app.targetDownloader.reinstatePreviouslyAddedTargets();
     }
 
     /**

@@ -20,7 +20,7 @@ createNameSpace("realityEditor.app.targetDownloader");
      */
 
     /**
-     * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, MARKER_ADDED: DownloadState}>}
+     * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, JPG: DownloadState, MARKER_ADDED: DownloadState, FILENAME: String}>}
      * Maps object names to the download states of their XML and DAT files, and whether the tracking engine has added the resulting marker
      */
     var targetDownloadStates = {};
@@ -275,6 +275,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             var xmlFileName = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.xml';
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = false;
 
             if (realityEditor.getObject(objectID).isWorldObject) {
@@ -356,6 +357,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
             realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = true;
         } else {
             console.log('failed to download JPG file: ' + fileName);
@@ -640,6 +642,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
                 realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
                 targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+                targetDownloadStates[objectID].FILENAME = xmlFileName;
 
             } else {
 
@@ -710,11 +713,31 @@ createNameSpace("realityEditor.app.targetDownloader");
         if (hasXML && hasDAT && markerNotAdded) {
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            targetDownloadStates[objectID].FILENAME = fileName;
 
             if (temporaryChecksumMap[objectID]) {
                 window.localStorage.setItem('realityEditor.objectChecksums.'+objectID, temporaryChecksumMap[objectID]);
             }
         }
+    }
+    
+    // if the vuforia engine gets hard-restarted during the session, we can use this to add the observers back to engine
+    function reinstatePreviouslyAddedTargets() {
+        console.log('>> reinstatePreviouslyAddedTargets');
+        Object.keys(targetDownloadStates).forEach(function(objectID) {
+            let states = targetDownloadStates[objectID];
+            if (states && states.MARKER_ADDED === DownloadState.SUCCEEDED && targetDownloadStates[objectID].FILENAME) {
+                if (states.JPG === DownloadState.SUCCEEDED && states.DAT !== DownloadState.SUCCEEDED) {
+                    console.log('>> add JPG target again: ' + objectID);
+                    let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
+                    realityEditor.app.addNewMarkerJPG(targetDownloadStates[objectID].FILENAME, objectID, targetWidth, moduleName + '.onMarkerAdded');
+                    targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+                } else if (states.DAT === DownloadState.SUCCEEDED) {
+                    console.log('>> add DAT target again: ' + objectID);
+                    realityEditor.app.addNewMarker(targetDownloadStates[objectID].FILENAME, moduleName + '.onMarkerAdded');
+                }
+            }
+        });
     }
 
     // These functions are the public API that should be called by other modules
@@ -723,6 +746,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.isObjectTargetInitialized = isObjectTargetInitialized;
     exports.isObjectReadyToRetryDownload = isObjectReadyToRetryDownload;
     exports.resetTargetDownloadCache = resetTargetDownloadCache;
+    exports.reinstatePreviouslyAddedTargets = reinstatePreviouslyAddedTargets;
 
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;

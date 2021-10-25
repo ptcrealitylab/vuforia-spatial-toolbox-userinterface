@@ -413,6 +413,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function onScreenshotReceived(base64String) {
+        if (base64String === "") {
+            console.log("got empty screenshot... try again later");
+            setTimeout(function() {
+                realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
+            }, 3000);
+            return;
+        }
         var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
         console.log('converted screenshot to blob', blob);
         uploadScreenshot(blob);
