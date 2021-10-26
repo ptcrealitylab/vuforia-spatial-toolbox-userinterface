@@ -45,7 +45,7 @@ createNameSpace("realityEditor.network.availableFrames");
      */
     function onNewServerDetected(serverIP) {
         console.log('availableFrames discovered server: ' + serverIP);
-        var urlEndpoint = 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/availableFrames/';
+        var urlEndpoint = realityEditor.network.getURL(serverIP, realityEditor.network.getPortByIp(serverIP), '/availableFrames/');
         realityEditor.network.getData(null, null, null, urlEndpoint, function (_nullObj, _nullFrame, _nullNode, response) {
             framesPerServer[serverIP] = response;
             downloadFramePocketAssets(serverIP); // preload the icons
@@ -313,7 +313,7 @@ createNameSpace("realityEditor.network.availableFrames");
      * @return {string} - image src path
      */
     function getFrameIconSrcByIP(serverIP, frameName) {
-        return 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/frames/' + frameName + '/icon.gif';
+        return realityEditor.network.getURL( serverIP, realityEditor.network.getPortByIp(serverIP), '/frames/' + frameName + '/icon.gif');
     }
 
     /**
@@ -324,7 +324,7 @@ createNameSpace("realityEditor.network.availableFrames");
      */
     function getFrameSrc(objectKey, frameName) {
         var serverIP = getServerIPForObjectFrames(objectKey);
-        return 'http://' + serverIP + ':' + realityEditor.network.getPort(objects[objectKey]) + '/frames/' + frameName + '/index.html';
+        return realityEditor.network.getURL(serverIP, realityEditor.network.getPort(objects[objectKey]), '/frames/' + frameName + '/index.html');
     }
     
     var serverFrameInfoUpdatedCallbacks = [];

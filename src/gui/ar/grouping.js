@@ -227,7 +227,7 @@ createNameSpace("realityEditor.gui.ar.grouping");
                 }
                 memberContent.lastEditor = globalStates.tempUuid;
                 
-                var memberUrlEndpoint = 'http://' + objects[frame.objectId].ip + ':' +  realityEditor.network.getPort(objects[frame.objectId]) + '/object/' + frame.objectId + "/frame/" + frame.uuid + "/node/null/size";
+                var memberUrlEndpoint = realityEditor.network.getURL(objects[frame.objectId].ip, realityEditor.network.getPort(objects[frame.objectId]), '/object/' + frame.objectId + "/frame/" + frame.uuid + "/node/null/size");
                 // + "/node/" + this.editingState.node + routeSuffix;
                 realityEditor.network.postData(memberUrlEndpoint, memberContent);
             }, false);

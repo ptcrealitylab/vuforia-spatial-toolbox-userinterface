@@ -49,6 +49,43 @@
 
 createNameSpace("realityEditor.network");
 
+realityEditor.network.state = {
+    proxyProtocol : null,
+    proxyUrl : null,
+    proxyPort : null,
+    proxyNetwork : null,
+    proxySecret : null
+}
+
+realityEditor.network.urlSchema = {
+    "type": "object",
+    "items": {
+        "properties": {
+            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+            "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+        },
+        "required": ["n", "i"],
+        "expected": ["n", "i", "s"],
+    }
+}
+
+realityEditor.network.qrSchema = {
+    "type": "object",
+    "items": {
+        "properties": {
+            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+        },
+        "required": ["n", "server","protocol"],
+        "expected": ["n", "server", "protocol", "s"],
+    }
+}
+
 /**
  * @type {Array.<{messageName: string, callback: function}>}
  */
@@ -67,26 +104,74 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
     });
 };
 
-realityEditor.network.getPort = function(object) {
-    let serverPort = defaultHttpPort;
-    if (object.hasOwnProperty("port")) {
-        serverPort = object.port;
+realityEditor.network.getURL = function(server, identifier, route){
+
+    let protocol = null;
+    let url = null;
+    let port = null;
+    let network = null;
+    let destinationIdentifier = null;
+    let secret = null;
+    
+    if(parseInt(Number(identifier))){
+        protocol = "http"
+        url = server;
+        port = identifier;
+        } else {
+        let s = realityEditor.network.state;
+        
+        if(s.proxyProtocol && s.proxyUrl && s.proxyPort) {
+            protocol = s.proxyProtocol;
+            url = s.proxyUrl;
+            port = s.proxyPort;
+        }
+        
+        if(s.proxyNetwork) network = s.proxyNetwork;
+        if(s.proxySecret) secret = s.proxySecret;
+        if(identifier) destinationIdentifier = identifier;
+        }
+        
+    // concatenate URL
+    let returnUrl = protocol + '://' + url + ':' + port;
+    if(network) returnUrl += '/n/' + network;
+    if(destinationIdentifier) returnUrl += '/i/' + destinationIdentifier;
+    if(secret) returnUrl += '/s/' + secret;
+    if(route) returnUrl += route;
+    return returnUrl;
+}
+
+realityEditor.network.getIoTitle = function (identifier, title){
+    if(parseInt(Number(identifier))) {
+        return title;
+    } else {
+        let network = null;
+        let destinationIdentifier = null;
+        let secret = null;
+        let s = realityEditor.network.state;
+        if(s.proxyNetwork) network = s.proxyNetwork;
+        if(s.proxySecret) secret = s.proxySecret;
+        if(identifier) destinationIdentifier = identifier;
+
+        let returnUrl = "";
+        if(network) returnUrl += '/n/' + network;
+        if(destinationIdentifier) returnUrl += '/i/' + destinationIdentifier;
+        if(secret) returnUrl += '/s/' + secret;
+        if(globalStates.tempUuid) returnUrl += '/editor/' + globalStates.tempUuid;
+        if(title.charAt(0) !== '/') returnUrl += '/';
+        if(title) returnUrl += title;
+        return returnUrl;
     }
-    return serverPort;
+}
+
+realityEditor.network.getPort = function(object) {
+    return object.port;
 };
 realityEditor.network.getPortByIp = function(ip) {
-    let serverPort = defaultHttpPort;
-    
-    let thisObject = null;
+    let serverPort = null;
     for(let key in objects){
         if(ip === objects[key].ip) {
-            thisObject = objects[key];
+            serverPort = objects[key].port;
             break;
-        }
-    }
-    if(thisObject !== null) {
-        if (thisObject.hasOwnProperty("port")) {
-            serverPort = thisObject.port;
         }
     }
     return serverPort;
@@ -396,16 +481,20 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
+    if(beat)
     if (beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
-            let baseUrl = 'http://' + beat.ip + ':' + realityEditor.network.getPort(beat) + '/object/' + beat.id;
+            let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
+            console.log(baseUrl);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
                     // add the object
                     objects[objectKey] = msg;
                     objects[objectKey].ip = beat.ip;
+                    if(beat.network) objects[objectKey].network = beat.network;
+                    if(beat.port) objects[objectKey].port = beat.port;
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
                     
@@ -731,7 +820,7 @@ realityEditor.network.onAction = function (action) {
         }
 
         if (thisAction.reloadLink.object in objects) {
-            let urlEndpoint = 'http://' + objects[thisAction.reloadLink.object].ip + ':' + realityEditor.network.getPort(objects[thisAction.reloadLink.object]) + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame;
+            let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadLink.object].ip, realityEditor.network.getPort(objects[thisAction.reloadLink.object]), '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame);
             this.getData(thisAction.reloadLink.object, thisAction.reloadLink.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
                 
             // });
@@ -785,7 +874,7 @@ realityEditor.network.onAction = function (action) {
 
         if (thisAction.reloadObject.object in objects) {
 
-            let urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + realityEditor.network.getPort(objects[thisAction.reloadObject.object]) + '/object/' + thisAction.reloadObject.object;
+            let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadObject.object].ip, realityEditor.network.getPort(objects[thisAction.reloadObject.object]), '/object/' + thisAction.reloadObject.object);
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
                 if (objects[objectKey].integerVersion < 170) {
@@ -818,7 +907,7 @@ realityEditor.network.onAction = function (action) {
         
         if (thisFrame) {
 
-            let urlEndpoint = 'http://' + objects[thisAction.reloadFrame.object].ip + ':' + realityEditor.network.getPort(objects[thisAction.reloadFrame.object]) + '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame;
+            let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadFrame.object].ip, realityEditor.network.getPort(objects[thisAction.reloadFrame.object]), '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame);
             this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
                 console.log('got frame');
                 
@@ -878,7 +967,7 @@ realityEditor.network.onAction = function (action) {
         if (thisFrame !== null) {
             // TODO: getData         webServer.get('/object/*/') ... instead of /object/node
 
-            let urlEndpoint = 'http://' + objects[thisAction.reloadNode.object].ip + ':' + realityEditor.network.getPort(objects[thisAction.reloadNode.object]) + '/object/' + thisAction.reloadNode.object + '/frame/' + thisAction.reloadNode.frame + '/node/' + thisAction.reloadNode.node + '/';
+            let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadNode.object].ip, realityEditor.network.getPort(objects[thisAction.reloadNode.object]), '/object/' + thisAction.reloadNode.object + '/frame/' + thisAction.reloadNode.frame + '/node/' + thisAction.reloadNode.node + '/');
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, thisAction.reloadObject.node, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
             // this.getData(
@@ -903,7 +992,7 @@ realityEditor.network.onAction = function (action) {
     
     if (thisAction.loadMemory) {
         var id = thisAction.loadMemory.object;
-        let urlEndpoint = 'http://' + thisAction.loadMemory.ip + ':' + realityEditor.network.getPort(objects[id]) + '/object/' + id;
+        let urlEndpoint = realityEditor.network.getURL(thisAction.loadMemory.ip, realityEditor.network.getPort(objects[id]), '/object/' + id);
         this.getData(id, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
             // this.getData(url, id, function (req, thisKey) {
@@ -1656,7 +1745,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             content.scale = positionData.scale;
 
             content.lastEditor = globalStates.tempUuid;
-            let urlEndpoint = 'http://' + objects[msgContent.object].ip + ':' + realityEditor.network.getPort(objects[msgContent.object]) + '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/";
+            let urlEndpoint = realityEditor.network.getURL(objects[msgContent.object].ip, realityEditor.network.getPort(objects[msgContent.object]), '/object/' + msgContent.object + "/frame/" + msgContent.frame + "/node/" + node.uuid + "/nodeSize/");
             realityEditor.network.postData(urlEndpoint, content);
         });
     }
@@ -2067,7 +2156,7 @@ realityEditor.network.setPinned = function(objectKey, frameKey, isPinned) {
             frame.pinned = isPinned;
 
             let port = realityEditor.network.getPort(object);
-            var urlEndpoint = 'http://' + object.ip + ':' + port + '/object/' + objectKey + '/frame/' + frameKey + '/pinned/';
+            var urlEndpoint = realityEditor.network.getURL(object.ip, port, '/object/' + objectKey + '/frame/' + frameKey + '/pinned/');
             let content = {
                 isPinned: isPinned
             };
@@ -2170,7 +2259,7 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
         lastEditor: globalStates.tempUuid
     };
 
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/", contents);
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/"), contents);
 };
 
 /**
@@ -2396,7 +2485,7 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
         console.log('cant tell if local or global... frame has already been deleted on editor');
     }
     var contents = {lastEditor: globalStates.tempUuid};
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frames/" + frameKey, contents);
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frames/" + frameKey), contents);
 };
 
 /**
@@ -2409,7 +2498,7 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
 realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback) {
     this.cout("I am adding a frame: " + ip);
     contents.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/addFrame/", contents, callback);
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/addFrame/"), contents, callback);
 };
 
 /**
@@ -2433,7 +2522,7 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
         matrix: oldFrame.ar.matrix
     };
     
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/", contents, function(err, response) {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/"), contents, function(err, response) {
         console.log(err);
         console.log(response);
         
@@ -2471,9 +2560,9 @@ realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, 
     this.cout("I am deleting a link: " + ip);
 
     if (this.testVersion(objectKey) > 162) {
-        this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/editor/" + globalStates.tempUuid + "/deleteLink/");
+        this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/editor/" + globalStates.tempUuid + "/deleteLink/"));
     } else {
-        this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/link/" + linkKey);
+        this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/link/" + linkKey));
     }
 };
 
@@ -2487,7 +2576,7 @@ realityEditor.network.deleteLinkFromObject = function (ip, objectKey, frameKey, 
 realityEditor.network.deleteNodeFromObject = function (ip, objectKey, frameKey, nodeKey) {
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a node: " + ip);
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/editor/" + globalStates.tempUuid + "/deleteLogicNode/");
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/editor/" + globalStates.tempUuid + "/deleteLogicNode/"));
 };
 
 /**
@@ -2502,7 +2591,7 @@ realityEditor.network.deleteBlockFromObject = function (ip, objectKey, frameKey,
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a block: " + ip);
     // /logic/*/*/block/*/
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/block/" + blockKey + "/editor/" + globalStates.tempUuid + "/deleteBlock/");
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/block/" + blockKey + "/editor/" + globalStates.tempUuid + "/deleteBlock/"));
 };
 
 /**
@@ -2517,7 +2606,7 @@ realityEditor.network.deleteBlockLinkFromObject = function (ip, objectKey, frame
     // generate action for all links to be reloaded after upload
     this.cout("I am deleting a block link: " + ip);
     // /logic/*/*/link/*/
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/link/" + linkKey + "/editor/" + globalStates.tempUuid + "/deleteBlockLink/");
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/link/" + linkKey + "/editor/" + globalStates.tempUuid + "/deleteBlockLink/"));
 };
 
 /**
@@ -2528,7 +2617,7 @@ realityEditor.network.deleteBlockLinkFromObject = function (ip, objectKey, frame
  * @param {string} nodeKey
  */
 realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, frameKey, nodeKey) {
-    var urlEndpoint = 'http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/node/" + nodeKey;
+    var urlEndpoint = realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/node/" + nodeKey);
     this.getData(objectKey, frameKey, nodeKey, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
         for (var blockKey in res.blocks) {
             if (!res.blocks.hasOwnProperty(blockKey)) continue;
@@ -2722,7 +2811,7 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
     // generate action for all links to be reloaded after upload
     thisLink.lastEditor = globalStates.tempUuid;
     this.cout("sending Link");
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + '/addLink/', thisLink, function (err, response) {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + '/addLink/'), thisLink, function (err, response) {
         console.log(response);
     });
 };
@@ -2737,7 +2826,7 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
  */
 realityEditor.network.postNewNode = function (ip, objectKey, frameKey, nodeKey, thisNode, callback) {
     thisNode.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode', thisNode, function (err, response) {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + '/frame/' + frameKey + '/node/' + nodeKey + '/addNode'), thisNode, function (err, response) {
         if (err) {
             console.log('postNewNode error:', err);
         } else if (callback) {
@@ -2761,7 +2850,7 @@ realityEditor.network.postNewBlockLink = function (ip, objectKey, frameKey, node
     var linkMessage = this.realityEditor.gui.crafting.utilities.convertBlockLinkToServerFormat(thisLink);
     linkMessage.lastEditor = globalStates.tempUuid;
     // /logic/*/*/link/*/
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/link/" + linkKey + "/addBlockLink/", linkMessage, function () {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/link/" + linkKey + "/addBlockLink/"), linkMessage, function () {
     });
 };
 
@@ -2779,7 +2868,7 @@ realityEditor.network.postNewLogicNode = function (ip, objectKey, frameKey, node
 
     var simpleLogic = this.realityEditor.gui.crafting.utilities.convertLogicToServerFormat(logic);
     simpleLogic.lastEditor = globalStates.tempUuid;
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/addLogicNode/", simpleLogic, function () {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/addLogicNode/"), simpleLogic, function () {
     });
 };
 
@@ -2800,7 +2889,7 @@ realityEditor.network.postNewBlockPosition = function (ip, objectKey, frameKey, 
     
     content.lastEditor = globalStates.tempUuid;
     if (typeof content.x === "number" && typeof content.y === "number") {
-        this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + logicKey + "/block/" + blockKey + "/blockPosition/", content, function () {
+        this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + logicKey + "/block/" + blockKey + "/blockPosition/"), content, function () {
         });
     }
 };
@@ -2819,7 +2908,7 @@ realityEditor.network.postNewBlock = function (ip, objectKey, frameKey, nodeKey,
     // /logic/*/*/block/*/
     block.lastEditor = globalStates.tempUuid;
 
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/block/" + blockKey + "/addBlock/", block, function () {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]),'/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/block/" + blockKey + "/addBlock/"), block, function () {
     });
 };
 
@@ -2928,9 +3017,9 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
         var urlEndpoint;
         if (type !== 'ui') {
-            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/nodeSize/";
+            urlEndpoint = realityEditor.network.getURL(objects[objectKey].ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/nodeSize/");
         } else {
-            urlEndpoint = 'http://' + objects[objectKey].ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/";
+            urlEndpoint = realityEditor.network.getURL(objects[objectKey].ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/size/");
         }
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
@@ -2943,7 +3032,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
  * @param {string} objectKey
  */
 realityEditor.network.sendSaveCommit = function (objectKey) {
-   var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/saveCommit/";
+   var urlEndpoint = realityEditor.network.getURL(objects[objectKey].ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/saveCommit/");
    var content = {};
    this.postData(urlEndpoint, content, function(){});
 };
@@ -2954,7 +3043,7 @@ realityEditor.network.sendSaveCommit = function (objectKey) {
  * @param {string} objectKey
  */
 realityEditor.network.sendResetToLastCommit = function (objectKey) {
-    var urlEndpoint = 'http://' + objects[objectKey].ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/resetToLastCommit/";
+    var urlEndpoint = realityEditor.network.getURL(objects[objectKey].ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/resetToLastCommit/");
     var content = {};
     this.postData(urlEndpoint, content, function(){});
 };
@@ -3089,7 +3178,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
  */
 realityEditor.network.postNewLockToNode = function (ip, objectKey, frameKey, nodeKey, content) {
     console.log("sending node lock (" + content.lockType + ")");
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/addLock/", content, function () {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/addLock/"), content, function () {
     });
 };
 
@@ -3106,7 +3195,7 @@ realityEditor.network.deleteLockFromNode = function (ip, objectKey, frameKey, no
 // generate action for all links to be reloaded after upload
     console.log("I am deleting a lock: " + ip);
     console.log("password is " + password);
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/password/" + password + "/deleteLock/");
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + nodeKey + "/password/" + password + "/deleteLock/"));
     //console.log("deleteLockFromObject");
 };
 
@@ -3122,7 +3211,7 @@ realityEditor.network.postNewLockToLink = function (ip, objectKey, frameKey, lin
 
 // generate action for all links to be reloaded after upload
     console.log("sending link lock (" + content.lockType + ")");
-    this.postData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/addLock/", content, function () {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/addLock/"), content, function () {
     });
     // postData('http://' +ip+ ':' + httpPort+"/", content);
     //console.log('post --- ' + 'http://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/link/lock/" + thisLinkKey);
@@ -3141,7 +3230,7 @@ realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, li
 // generate action for all links to be reloaded after upload
     console.log("I am deleting a link lock: " + ip);
     console.log("lockPassword is " + password);
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/password/" + password + "/deleteLock/");
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/password/" + password + "/deleteLock/"));
     //console.log('delete --- ' + 'http://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/link/lock/" + thisLinkKey + "/password/" + authenticatedUser);
 };
 
@@ -3156,7 +3245,7 @@ realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, li
  */
 realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKey, newVisualization, oldVisualizationPositionData) {
 
-    var urlEndpoint = 'http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/visualization/";
+    var urlEndpoint = realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/visualization/");
     var content = {
         visualization: newVisualization,
         oldVisualizationPositionData: oldVisualizationPositionData
@@ -3175,7 +3264,7 @@ realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKe
  * @param {string} frameKey
  */
 realityEditor.network.deletePublicData = function(ip, objectKey, frameKey) {
-    this.deleteData('http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/publicData");
+    this.deleteData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/publicData"));
 };
 
 /**
@@ -3188,7 +3277,7 @@ realityEditor.network.deletePublicData = function(ip, objectKey, frameKey) {
  */
 realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicData) {
 
-    var urlEndpoint = 'http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/publicData";
+    var urlEndpoint = realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/publicData");
     var content = {
         publicData: publicData,
         lastEditor: globalStates.tempUuid
@@ -3220,7 +3309,7 @@ realityEditor.network.postMessageIntoFrame = function(frameKey, message) {
  * @param {string|null} newGroupID - either groupId or null for none
  */
 realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGroupID) {
-    var urlEndpoint = 'http://' + ip + ':' + realityEditor.network.getPort(objects[objectKey]) + '/object/' + objectKey + "/frame/" + frameKey + "/group/";
+    var urlEndpoint = realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/group/");
     var content = {
         group: newGroupID,
         lastEditor: globalStates.tempUuid
@@ -3250,7 +3339,7 @@ realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix
 
         var endpointSuffix = realityEditor.isVehicleAFrame(activeVehicle) ? "/size/" : "/nodeSize/";
         var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-        var urlEndpoint = 'http://' + realityEditor.getObject(keys.objectKey).ip + ':' + realityEditor.network.getPort(realityEditor.getObject(keys.objectKey)) + '/object/' + keys.objectKey + "/frame/" + keys.frameKey + "/node/" + keys.nodeKey + endpointSuffix;
+        var urlEndpoint = realityEditor.network.getURL(realityEditor.getObject(keys.objectKey).ip, realityEditor.network.getPort(realityEditor.getObject(keys.objectKey)), '/object/' + keys.objectKey + "/frame/" + keys.frameKey + "/node/" + keys.nodeKey + endpointSuffix);
         realityEditor.network.postData(urlEndpoint, content);
     }
 };
@@ -3265,7 +3354,7 @@ realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix
  */
 realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, worldId) {
     let port = realityEditor.network.getPort(objects[objectKey]);
-    var urlEndpoint = 'http://' + ip + ':' + port + '/object/' + objectKey + "/matrix";
+    var urlEndpoint = realityEditor.network.getURL(ip, port, '/object/' + objectKey + "/matrix");
     let content = {
         matrix: matrix,
         worldId: worldId,

@@ -28,7 +28,7 @@ createNameSpace("realityEditor.humanObjects");
 
             // check if humanObject for this device exists on server?
             let worldObject = realityEditor.getObject(objectKey);
-            let downloadUrl = 'http://' + worldObject.ip + ':' + realityEditor.network.getPort(worldObject) + '/object/' + persistentClientId;
+            let downloadUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/object/' + persistentClientId);
 
             realityEditor.network.getData(null,  null, null, downloadUrl, function (_objectKey, _frameKey, _nodeKey, msg) {
                 if (msg) {
@@ -119,7 +119,7 @@ createNameSpace("realityEditor.humanObjects");
         let worldObject = realityEditor.getObject(worldId);
         if (!worldObject) { return; }
 
-        var postUrl = 'http://' + worldObject.ip + ':' + realityEditor.network.getPort(worldObject) + '/';
+        var postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
         var params = new URLSearchParams({action: 'new', name: clientId, isWorld: null, isHuman: true});
         fetch(postUrl, {
             method: 'POST',

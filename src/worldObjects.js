@@ -75,7 +75,7 @@ createNameSpace("realityEditor.worldObjects");
             }
             
             // backwards compatible with old servers - try downloading the local server's worldObject from http://ip:port/worldObject/
-            handleServerDiscovered(object.ip);
+            handleServerDiscovered(object);
         });
 
         tryLoadingLocalWorldObject();
@@ -84,7 +84,7 @@ createNameSpace("realityEditor.worldObjects");
         realityEditor.network.addUDPMessageHandler('worldObject', function(message) {
             console.log('interface discovered world object:', message);
             if (typeof message.worldObject.ip !== 'undefined') {
-                handleServerDiscovered(message.worldObject.ip)
+                handleServerDiscovered(message.worldObject)
             }
         });
     }
@@ -150,10 +150,11 @@ createNameSpace("realityEditor.worldObjects");
      * Determines if the discovered server is new and triggers the world object downloader if so
      * @param {string} serverIP
      */
-    function handleServerDiscovered(serverIP) {
-        if (discoveredServerIPs.indexOf(serverIP) < 0) {
-            discoveredServerIPs.push(serverIP);
-            onNewServerDiscovered(serverIP);
+    function handleServerDiscovered(object) {
+        
+        if (discoveredServerIPs.indexOf(object.ip) < 0) {
+            discoveredServerIPs.push(object.ip);
+            onNewServerDiscovered(object);
         }
     }
 
@@ -161,18 +162,18 @@ createNameSpace("realityEditor.worldObjects");
      * Downloads the world object from a newly detected server
      * @param {string} serverIP
      */
-    function onNewServerDiscovered(serverIP) {
+    function onNewServerDiscovered(object) {
 
         // regular world objects are discovered by UDP broadcast. but the _WORLD_local on localhost gets downloaded with the old REST API
         // TODO: there's probably a simpler implementation if we're making the assumption that we only need to download the localhost server this way
-        if (serverIP !== '127.0.0.1') {
+        if (object.ip !== '127.0.0.1') {
             return;
         }
         
         // REST endpoint for for downloading the world object for that server
-        var urlEndpoint = 'http://' + serverIP + ':' + realityEditor.network.getPortByIp(serverIP) + '/worldObject/';
+        var urlEndpoint = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object.port), '/worldObject/');
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, msg) {
-            console.log("did get world object for server: " + serverIP);
+            console.log("did get world object for server: " + object.ip);
 
             if (msg && Object.keys(msg).length > 0) {
                 console.log('found valid object');

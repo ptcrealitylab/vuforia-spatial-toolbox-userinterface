@@ -70,9 +70,14 @@
     <script src="thirdPartyCode/d3.min.js"></script>
     <script src="thirdPartyCode/p5.min.js"></script>
     <script src="thirdPartyCode/Tween.min.js"></script>
-    <script src="thirdPartyCode/socket.io.js"></script>
+    <!--<script src="thirdPartyCode/socket.io.js"></script>-->
+    <script src="thirdPartyCode/toolsocket.js"></script>
     <script src="thirdPartyCode/hull.js"></script>
     <script src="thirdPartyCode/stats.min.js"></script>
+
+    <script src="thirdPartyCode/opencv.js"></script>
+    <script src="thirdPartyCode/HRQRDecoder.js"></script>
+    
     <!-- three.js is imported as a module in src/gui/threejsScene.js rather than here -->
 
     <script src="src/constructors.js"></script>
@@ -109,6 +114,8 @@
     <script src="src/network/frameContentAPI.js"></script>
     <script src="src/network/availableFrames.js"></script>
     <script src="src/network/search.js"></script>
+
+    <script src="src/cloud/index.js"></script>
 
     <script src="src/sceneGraph/sceneNode.js"></script>
     <script src="src/sceneGraph/index.js"></script>
@@ -537,6 +544,7 @@
 <canvas class="Canvas" id="canvas"></canvas> <!--touch-action="none"-->
 <div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div> <!--touch-action="none"-->
 <canvas id="glcanvas"></canvas>
+<canvas class="Canvas" id="testcan" style="position: absolute; left: 0; top: 0; transform: scale(0.5); display: none"></canvas> <!--touch-action="none"-->
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink" id="groupLassoSVG" class="groupSVGElement">
     <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>

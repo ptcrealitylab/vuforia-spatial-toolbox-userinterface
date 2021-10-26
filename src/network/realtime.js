@@ -73,13 +73,13 @@ createNameSpace("realityEditor.network.realtime");
         
         if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
 
-        var serverAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object);
+        var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
         var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
         if (socketsIps.indexOf(serverAddress) < 0) {
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
             realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
-            sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+            sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
             addServerUpdateListener(serverAddress);
         }
     }
@@ -186,18 +186,15 @@ createNameSpace("realityEditor.network.realtime");
         var ipList = [];
         realityEditor.forEachObject(function(object, _objectKey) {
             if (ipList.indexOf(object.ip) === -1) {
-                ipList.push(object.ip);
-            }
-        });
-        ipList.forEach(function(ip) {
-            var serverAddress = 'http://' + ip + ':' + realityEditor.network.getPortByIp(ip);
-            var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
-            if (socketsIps.indexOf(serverAddress) < 0) {
-                // if we haven't already created a socket connection to that IP, create a new one,
-                //   and register update listeners, and emit a /subscribe message so it can connect back to us
-                realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
-                sockets['realityServers'][serverAddress].emit('/subscribe/realityEditorUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
-                addServerUpdateListener(serverAddress);
+                var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
+                var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
+                if (socketsIps.indexOf(serverAddress) < 0) {
+                    // if we haven't already created a socket connection to that IP, create a new one,
+                    //   and register update listeners, and emit a /subscribe message so it can connect back to us
+                    realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
+                    sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+                    addServerUpdateListener(serverAddress);
+                }
             }
         });
     }
@@ -210,8 +207,7 @@ createNameSpace("realityEditor.network.realtime");
     function addServerUpdateListener(serverAddress) {
 
         addServerSocketMessageListener(serverAddress, '/batchedUpdate', function(msg) {
-
-            var msgContent = JSON.parse(msg);
+            var msgContent = typeof msg === 'string' ? JSON.parse(msg) : msg;
             if (typeof msgContent.batchedUpdates === 'undefined') { return; }
             
             msgContent.batchedUpdates.forEach(function(update) {
@@ -277,7 +273,7 @@ createNameSpace("realityEditor.network.realtime");
                 messageBody.batchedUpdates.push(update.getMessageBody());
             });
 
-            serverSocket.emit('/batchedUpdate', JSON.stringify(messageBody));
+            serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port,'/batchedUpdate'), JSON.stringify(messageBody));
         }
     }
     
@@ -356,7 +352,7 @@ createNameSpace("realityEditor.network.realtime");
                 worldId: worldId,
                 editorId: globalStates.tempUuid
             };
-            serverSocket.emit('/update/object/matrix', JSON.stringify(messageBody));
+            serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/update/object/matrix'), JSON.stringify(messageBody));
         }
     }
     
@@ -366,7 +362,7 @@ createNameSpace("realityEditor.network.realtime");
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);
         if (serverSocket) {
-            serverSocket.emit('/subscribe/objectUpdates', JSON.stringify({editorId: globalStates.tempUuid}));
+            serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/objectUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
             serverSocket.on('/update/object/matrix', callback);
         }
     }

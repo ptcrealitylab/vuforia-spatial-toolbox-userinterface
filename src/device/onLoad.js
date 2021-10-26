@@ -208,6 +208,9 @@ realityEditor.device.onload = function () {
 
     realityEditor.device.environment.initService();
 
+    globalCanvas.canv23 = document.getElementById("testcan");
+    globalCanvas.ctx2333 = globalCanvas.canv23.getContext("2d");
+
     // adds touch handlers for each of the menu buttons
     if (!realityEditor.device.environment.variables.overrideMenusAndButtons) {
         realityEditor.gui.menus.init();
