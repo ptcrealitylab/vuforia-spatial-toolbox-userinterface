@@ -45,7 +45,8 @@ createNameSpace("realityEditor.device.environment");
         newFrameDistanceMultiplier: 1, // 10
         localServerPort: 49369, // the port where a local vuforia-spatial-edge-server can be expected
         // matrices
-        initialPocketToolRotation: null
+        initialPocketToolRotation: null,
+        supportsAreaTargetCapture: true
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property

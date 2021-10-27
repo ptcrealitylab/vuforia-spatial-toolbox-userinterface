@@ -29,7 +29,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
     function initService() {
-        console.log("TODO: implement areaTargetScanner");
+        if (!realityEditor.device.environment.variables.supportsAreaTargetCapture) {
+            console.log('This device doesn\'t support area target capture');
+            return;
+        }
 
         // wait until at least one server is detected
         // wait to see if any world objects are detected on that server
