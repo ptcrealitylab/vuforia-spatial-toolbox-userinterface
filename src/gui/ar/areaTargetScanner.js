@@ -29,7 +29,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
     function initService() {
-        console.log("TODO: implement areaTargetScanner");
+        if (!realityEditor.device.environment.variables.supportsAreaTargetCapture) {
+            console.log('This device doesn\'t support area target capture');
+            return;
+        }
 
         // wait until at least one server is detected
         // wait to see if any world objects are detected on that server
@@ -343,6 +346,12 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         console.log('capture statusInfo: ' + statusInfo);
         console.log('---');
 
+        if (status === 'PREPARING') {
+            getStopButton().classList.add('captureButtonInactive');
+        } else {
+            getStopButton().classList.remove('captureButtonInactive');
+        }
+
         feedbackString = status + '... (' + statusInfo + ')';
 
         if (globalStates.debugSpeechConsole) {
@@ -413,6 +422,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function onScreenshotReceived(base64String) {
+        if (base64String === "") {
+            console.log("got empty screenshot... try again later");
+            setTimeout(function() {
+                realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
+            }, 3000);
+            return;
+        }
         var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
         console.log('converted screenshot to blob', blob);
         uploadScreenshot(blob);

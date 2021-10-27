@@ -2221,15 +2221,14 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     if (activeVehicle.visibleCounter > 1) {
         activeVehicle.visibleCounter--;
     } else {
-        console.log("should remove frame ")
         activeVehicle.visibleCounter--;
         for (var activeFrameKey in activeVehicle.frames) {
             if (!activeVehicle.frames.hasOwnProperty(activeFrameKey)) continue;
+
             // don't kill inTransitionFrame or its nodes
             if (activeFrameKey === globalStates.inTransitionFrame) continue;
 
             try {
-                console.log("removing frame")
                 globalDOMCache["object" + activeFrameKey].parentNode.removeChild(globalDOMCache["object" + activeFrameKey]);
                 delete globalDOMCache["object" + activeFrameKey];
                 delete globalDOMCache["iframe" + activeFrameKey];
