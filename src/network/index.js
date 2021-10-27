@@ -156,7 +156,6 @@ realityEditor.network.getIoTitle = function (identifier, title){
         if(network) returnUrl += '/n/' + network;
         if(destinationIdentifier) returnUrl += '/i/' + destinationIdentifier;
         if(secret) returnUrl += '/s/' + secret;
-        if(globalStates.tempUuid) returnUrl += '/editor/' + globalStates.tempUuid;
         if(title.charAt(0) !== '/') returnUrl += '/';
         if(title) returnUrl += title;
         return returnUrl;
