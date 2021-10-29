@@ -61,6 +61,8 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
+    const skeletonDedupId = Math.floor(Math.random() * 10000);
+
     function onOrientationSet() {
         // start the AR framework in native iOS
         realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
@@ -295,7 +297,7 @@ createNameSpace('realityEditor.app.callbacks');
         sceneNode.updateWorldMatrix();
 
         let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
-        let msg = {time: Date.now(), pose: [{id: 1337, joints: coolerPoses}], camera: cameraMat};
+        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: coolerPoses}], camera: cameraMat};
 
         // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
         //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
