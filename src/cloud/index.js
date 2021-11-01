@@ -48,14 +48,60 @@
  */
 
 createNameSpace("realityEditor.cloud");
+realityEditor.cloud = {};
 
 realityEditor.cloud.state = {
     
 }
+realityEditor.cloud.socket = null;
+
+realityEditor.cloud.updateEdgeConnections = function (connections){
+    globalStates.network.edgeServer = connections;
+}
+
+realityEditor.cloud.connectToCloud = function (){
+    log("start connecting");
+    let serverPort = 443;
+    let socketURL = 'wss://'+realityEditor.network.state.proxyUrl+':'+realityEditor.network.state.proxyPort;
+
+    if(realityEditor.cloud.socket) realityEditor.cloud.socket.close();
+
+    this.socket = new ToolSocket(socketURL,realityEditor.network.state.proxyNetwork , "web");
+
+    this.socket.on('beat', function (route, body) {
+        // todo validate for heardbeet
+      //  realityEditor.network.addHeartbeatObject(body);
+        body.network = realityEditor.network.state.proxyNetwork;
+        realityEditor.app.callbacks.receivedUDPMessage(body)
+        console.log(route, body);
+    });
+
+    this.socket.on('action', function (route, body) {
+        // todo validate for heardbeet
+        console.log("get action")
+        body.network = realityEditor.network.state.proxyNetwork;
+        realityEditor.app.callbacks.receivedUDPMessage(body)
+       // realityEditor.network.addHeartbeatObject(body);
+        console.log(route, body);
+    });
+
+    //  globalStates.network.edgeServer = connections;
+}
+
+// load remote interface via dekstop interface
+let getDesktopLinkData = io.parseUrl(window.location.pathname, realityEditor.network.desktopURLSchema);
+if(getDesktopLinkData)
+if(getDesktopLinkData.n) {
+    realityEditor.network.state.proxyProtocol = "https";
+    realityEditor.network.state.proxyPort = 443;
+    if(window.location.host) realityEditor.network.state.proxyUrl = window.location.host;
+    if(getDesktopLinkData.n) realityEditor.network.state.proxyNetwork = getDesktopLinkData.n;
+    if(getDesktopLinkData.s) realityEditor.network.state.proxySecret = getDesktopLinkData.s;
+    console.log("------------ ",realityEditor.network.state);
+    realityEditor.cloud.connectToCloud();
+} else {
 
 realityEditor.cloud.worker = new Worker("src/cloud/hrqrWorker.js");
-
-
 
 realityEditor.cloud.worker.onmessage = function(event) {
     let msg = event.data;
@@ -74,34 +120,14 @@ realityEditor.cloud.worker.onmessage = function(event) {
                 realityEditor.cloud.connectToCloud();
             }
 
-        try{  } catch(e){
+        try {
+        } catch (e) {
             console.log("this is not a msg")
         }
     }
+}
 };
-realityEditor.cloud.socket = null;
-
-realityEditor.cloud.connectToCloud = function (){
-    log("start connecting");
-    let serverPort = 443;
-    let socketURL = 'wss://'+realityEditor.network.state.proxyUrl+':'+realityEditor.network.state.proxyPort;
     
-    if(realityEditor.cloud.socket) realityEditor.cloud.socket.close();
-    
-    this.socket = new ToolSocket(socketURL,realityEditor.network.state.proxyNetwork , "web");
-
-    this.socket.on('beat', function (route, body) {
-        // todo validate for heardbeet
-        realityEditor.network.addHeartbeatObject(body);
-        console.log(route, body);
-    });
-    
-  //  globalStates.network.edgeServer = connections;
-}
-
-realityEditor.cloud.updateEdgeConnections = function (connections){
-    globalStates.network.edgeServer = connections;
-}
 
 let time;
 realityEditor.cloud.imageBuffer = new window.Image();

@@ -278,7 +278,7 @@
       button.innerText = "Adding Object...";
 
       var postUrl = 'http://' + node.dataset.ip + ':' + node.dataset.port + '/';
-      var params = new URLSearchParams({action: 'new', name: objectName, isWorld: null});
+      var params = {action: 'new', name: objectName, isWorld: null};
       fetch(postUrl, {
           method: 'POST',
           body: params

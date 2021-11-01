@@ -73,6 +73,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         });
 
         realityEditor.network.onNewServerDetected(function(serverIP) {
+            console.log("--function-- onNewServerDetected");
             if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
                 return;
             }
@@ -297,7 +298,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // TODO: first create a new object and post it to the server
         let randomServerIP = Object.keys(detectedServers)[0]; // this is guaranteed to have at least one entry if we get here
         pendingAddedObjectName = "_WORLD_instantScan";
-        addObject(pendingAddedObjectName, randomServerIP, 8080); // TODO: get port programmatically
+        console.log(pendingAddedObjectName, randomServerIP, realityEditor.network.getPortByIp(randomServerIP))
+        addObject(pendingAddedObjectName, randomServerIP, realityEditor.network.getPortByIp(randomServerIP)); // TODO: get port programmatically
 
         showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
         setTimeout(function() {
@@ -331,11 +333,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function addObject(objectName, serverIp, serverPort) {
         var postUrl = realityEditor.network.getURL(serverIp, serverPort, '/')
-        var params = new URLSearchParams({action: 'new', name: objectName, isWorld: true});
-        fetch(postUrl, {
-            method: 'POST',
-            body: params
-        }).then((response) => {
+        var params = {action: 'new', name: objectName, isWorld: true};
+        console.log("xxccxx", postUrl, params);
+        realityEditor.network.postData(postUrl, params, function(response){
             console.log('added new object');
             console.log(response);
         });

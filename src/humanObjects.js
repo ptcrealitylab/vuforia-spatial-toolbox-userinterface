@@ -120,12 +120,9 @@ createNameSpace("realityEditor.humanObjects");
         if (!worldObject) { return; }
 
         var postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
-        var params = new URLSearchParams({action: 'new', name: clientId, isWorld: null, isHuman: true});
-        fetch(postUrl, {
-            method: 'POST',
-            body: params
-        }).then(response => response.json())
-          .then((data) => {
+        var params = {action: 'new', name: clientId, isWorld: null, isHuman: true};
+        realityEditor.network.postData(postUrl, params, function(data){
+            if(typeof data === "string") data = JSON.parse(data);
             console.log('added new human object', data);
             persistentClientId = data.id;
             window.localStorage.setItem('persistentClientId', persistentClientId);
