@@ -56,10 +56,19 @@ createNameSpace("realityEditor.network.realtime");
     }
     
     function loop() {
+        let frameRate = null 
+        if(updateFramerate)
+        {
+        setInterval(()=>{
+            sendBatchedUpdates();
+            batchedUpdates = {};
+        }, (1000/updateFramerate));
+        } else {
         sendBatchedUpdates();
         batchedUpdates = {};
         // check for realtime updates
         requestAnimationFrame(loop);
+    }
     }
 
     /**
@@ -78,9 +87,11 @@ createNameSpace("realityEditor.network.realtime");
         if (socketsIps.indexOf(serverAddress) < 0) {
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
-            realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress);
+            realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress, function (socket){
             sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
             addServerUpdateListener(serverAddress);
+            });
+     
         }
     }
 
@@ -362,6 +373,10 @@ createNameSpace("realityEditor.network.realtime");
         // get the server responsible for this vehicle and send it an update message. it will then message all connected clients
         var serverSocket = getServerSocketForObject(objectKey);
         if (serverSocket) {
+            // todo this is some hack to get it working
+            if(realityEditor.network.state.proxyNetwork) {
+                serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+            }
             serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/objectUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
             serverSocket.on('/update/object/matrix', callback);
         }
@@ -429,6 +444,7 @@ createNameSpace("realityEditor.network.realtime");
         var ioObject = io.connect(socketIP);
         console.log(ioObject);
         createSocketSet(setName);
+        if(!sockets[setName]) sockets[setName] = {};
         sockets[setName][socketIP] = ioObject;
         console.log('created [' + setName + '] socket to IP: ' + socketIP);
         

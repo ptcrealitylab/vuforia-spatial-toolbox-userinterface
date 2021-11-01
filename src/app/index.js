@@ -219,6 +219,7 @@ realityEditor.app.sendUDPMessage = function(message) {
         }
     } else {
     this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
+    }
 };
 
 /**
