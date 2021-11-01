@@ -145,7 +145,6 @@ createNameSpace('realityEditor.app.callbacks');
                 return;
             }}
         
-        console.log("--s--", message)
         if (typeof message !== 'object') {
             try {
                 message = JSON.parse(message);

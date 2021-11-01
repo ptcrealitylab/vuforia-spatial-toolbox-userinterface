@@ -334,7 +334,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     function addObject(objectName, serverIp, serverPort) {
         var postUrl = realityEditor.network.getURL(serverIp, serverPort, '/')
         var params = {action: 'new', name: objectName, isWorld: true};
-        console.log("xxccxx", postUrl, params);
         realityEditor.network.postData(postUrl, params, function(response){
             console.log('added new object');
             console.log(response);
