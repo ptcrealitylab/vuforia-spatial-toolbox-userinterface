@@ -178,9 +178,6 @@ createNameSpace("realityEditor.sceneGraph");
         // ensure all worldMatrix reflects latest localMatrix
         recomputeScene();
 
-        if(!cameraNode) return;
-        if(!cameraNode.needsRerender) return;
-        
         const didCameraUpdate = cameraNode.needsRerender;
 
         // update ground plane first, in case frames/nodes/etc are relative to it

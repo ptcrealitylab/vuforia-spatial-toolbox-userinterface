@@ -1643,3 +1643,8 @@ Logic Interface CSS
 .hiddenEnvelopeContents {
     display: none;
 }
+
+.captureButtonInactive {
+    opacity: 0.3;
+    pointer-events: none;
+}
