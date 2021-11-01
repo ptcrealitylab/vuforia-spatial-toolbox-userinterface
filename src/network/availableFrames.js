@@ -292,6 +292,7 @@ createNameSpace("realityEditor.network.availableFrames");
             // console.log('this object server doesnt have its own frames; load from localhost instead');
             serverIP = '127.0.0.1';
         }
+        console.log("--function-- getServerIPForObjectFrames");
         return serverIP;
     }
 

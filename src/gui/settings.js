@@ -177,6 +177,7 @@ SettingsToggle.prototype.moveToDevelopMenu = function() {
  * @param {boolean} newValue
  */
 SettingsToggle.prototype.setValue = function(newValue) {
+    console.log("--function-- setValue");
     realityEditor.gui.settings.toggleStates[this.propertyName] = newValue;
     let persistentStorageId = 'SETTINGS:' + this.propertyName;
     window.localStorage.setItem(persistentStorageId, newValue);
