@@ -70,6 +70,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         });
 
         realityEditor.network.onNewServerDetected(function(serverIP) {
+            console.log("--function-- onNewServerDetected");
             if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
                 return;
             }

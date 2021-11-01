@@ -495,3 +495,12 @@ realityEditor.getLinksToAndFromNode = function(nodeKey) {
         linksFromNode: linksFromNode
     };
 };
+
+function log(...args) {
+    if(printLog)
+        console.log('\x1b[35mAGENT-LOG: \x1b[0m' , ...args);
+}
+
+function print(...args) {
+    console.log('\x1b[35mAGENT: \x1b[0m' , ...args);
+}
