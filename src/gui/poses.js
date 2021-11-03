@@ -89,9 +89,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         gfx = canvas.getContext('2d');
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
-    gfx.fillStyle = 'green';
+    gfx.fillStyle = '#0077ff';
     gfx.font = '32px sans-serif';
-    gfx.strokeStyle = 'green';
+    gfx.strokeStyle = '#0077ff';
+    gfx.lineWidth = 2;
 
     // function format(n) {
     //     return Math.round(n * 100) / 100;
@@ -101,7 +102,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     // gfx.fillText(`${format(performance.now() - lastDraw)}`, 16, 96);
     // lastDraw = performance.now();
 
-    const jointSize = 16;
+    const jointSize = 6;
     const pointWidth = 1920;
     const pointHeight = 1080;
     let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
@@ -122,12 +123,15 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     for (let point of poses) {
-        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2 - jointSize / 2;
-        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2 - jointSize / 2;
-        gfx.fillRect(x, y, jointSize, jointSize);
+        gfx.beginPath();
+        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
+        gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
     }
 
+    gfx.beginPath();
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
@@ -135,11 +139,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         const ay = (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
         const bx = (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
         const by = (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
-        gfx.beginPath();
         gfx.moveTo(ax, ay);
         gfx.lineTo(bx, by);
-        gfx.stroke();
     }
+    gfx.stroke();
 };
 
 }(realityEditor.gui.poses));
