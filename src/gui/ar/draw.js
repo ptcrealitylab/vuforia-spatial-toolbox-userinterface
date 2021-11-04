@@ -1515,7 +1515,7 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  */
 realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, _isFullScreen) {
     // sticky frames need a special process to show and hide depending on guiState....
-    if (globalStates.guiState === 'node' && 
+    if (globalStates.guiState === 'node' &&
         (globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer') ||
             globalDOMCache['iframe' + activeKey].classList.contains('visibleFrame') ||
             globalDOMCache[activeKey].classList.contains('usePointerEvents'))) {
@@ -1533,8 +1533,10 @@ realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, _isFullScre
 
     } else if (globalStates.guiState === 'ui' &&
         (globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer') ||
+            globalDOMCache['object' + activeKey].classList.contains('outsideOfViewport') ||
             globalDOMCache['iframe' + activeKey].classList.contains('hiddenFrame') ||
             globalDOMCache[activeKey].classList.contains('ignorePointerEvents'))) {
+        globalDOMCache['object' + activeKey].classList.remove('outsideOfViewport');
 
         globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
         globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
