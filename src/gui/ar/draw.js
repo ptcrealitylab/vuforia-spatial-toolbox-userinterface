@@ -1246,6 +1246,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
             if (activeVehicle.fullScreen) {
                 let clientRect = globalDOMCache[activeKey].getClientRects()[0];
+                if (!clientRect) {
+                    let style = window.getComputedStyle(globalDOMCache[activeKey]);
+                    clientRect = {
+                        top: parseFloat(style.top),
+                        left: parseFloat(style.left),
+                        width: parseFloat(style.width),
+                        height: parseFloat(style.height),
+                    };
+                }
                 activeVehicle.screenX = clientRect.left + clientRect.width/2;
                 activeVehicle.screenY = clientRect.top + clientRect.height/2;
                 activeVehicle.screenZ = 500; // this gives it a good link line width
