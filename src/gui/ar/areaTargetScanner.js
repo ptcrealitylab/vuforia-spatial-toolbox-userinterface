@@ -59,7 +59,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             }
 
             // check if it's a world object
-            if (object && (object.isWorldObject || object.type === 'world')) {
+            if (object && !object.deactivated && (object.isWorldObject || object.type === 'world')) {
                 foundAnyWorldObjects = true;
                 console.log("world obj detected");
             } else {
@@ -101,6 +101,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         });
 
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
+
+        realityEditor.app.subscribeToAppMemoryEvents('realityEditor.gui.ar.areaTargetScanner.onAppMemoryEvent');
     }
 
     function showNotificationIfNeeded() {
@@ -345,7 +347,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         console.log('capture status: ' + status);
         console.log('capture statusInfo: ' + statusInfo);
         console.log('---');
-        
+
         if (status === 'PREPARING') {
             getStopButton().classList.add('captureButtonInactive');
         } else {
@@ -354,13 +356,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         feedbackString = status + '... (' + statusInfo + ')';
 
-        if (globalStates.debugSpeechConsole) {
-            let console = document.getElementById('speechConsole');
-            if (!console) { return; }
-            console.innerHTML =
-                'Status: ' + status + '<br>' +
-                'Info: ' + statusInfo;
-        }
+        // if (globalStates.debugSpeechConsole) {
+        //     let console = document.getElementById('speechConsole');
+        //     if (!console) { return; }
+        //     console.innerHTML =
+        //         'Status: ' + status + '<br>' +
+        //         'Info: ' + statusInfo;
+        // }
     }
 
     function printFeedback() {
@@ -523,10 +525,38 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // });
     }
 
+    /**
+     * Stop scanning if device is using too much memory
+     * @param {string} eventName - 'report_memory' happens every 1 second, 'UIApplicationDidReceiveMemoryWarningNotification' if problem
+     * @param {number} bytesUsed - int number of bytes used by app
+     * @param {number} percentOfDeviceUsedByApp - int number of bytes in total device RAM
+     */
+    function onAppMemoryEvent(eventName, bytesUsed, percentOfDeviceUsedByApp) {
+
+        let gigabytesUsed = bytesUsed ? bytesUsed / (1024 * 1024 * 1024) : 0;
+
+        if (globalStates.debugSpeechConsole) {
+            let console = document.getElementById('speechConsole');
+            if (!console) { return; }
+            console.innerHTML = eventName + ': using ' + gigabytesUsed.toFixed(3) + ' GB ... (' + (percentOfDeviceUsedByApp * 100).toFixed(2) + '%)';
+        }
+
+        if (!isScanning) { return; }
+
+        // UIApplicationDidReceiveMemoryWarningNotification happens too late in most cases, so we check more stringently
+        if (eventName === 'UIApplicationDidReceiveMemoryWarningNotification' || /*gigabytesUsed > 1.0 &&*/ percentOfDeviceUsedByApp > 0.33) {
+            stopScanning();
+            console.log("stopping scan due to memory usage");
+        }
+    }
+
     exports.initService = initService;
+
+    // make functions available to native app callbacks
     exports.captureStatusHandler = captureStatusHandler;
     exports.onAreaTargetGenerateProgress = onAreaTargetGenerateProgress;
     exports.captureSuccessOrError = captureSuccessOrError;
     exports.onScreenshotReceived = onScreenshotReceived;
+    exports.onAppMemoryEvent = onAppMemoryEvent;
 
 }(realityEditor.gui.ar.areaTargetScanner));
