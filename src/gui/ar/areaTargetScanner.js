@@ -369,14 +369,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         feedbackString = status + '... (' + statusInfo + ')';
-
-        // if (globalStates.debugSpeechConsole) {
-        //     let console = document.getElementById('speechConsole');
-        //     if (!console) { return; }
-        //     console.innerHTML =
-        //         'Status: ' + status + '<br>' +
-        //         'Info: ' + statusInfo;
-        // }
     }
 
     function printFeedback() {
