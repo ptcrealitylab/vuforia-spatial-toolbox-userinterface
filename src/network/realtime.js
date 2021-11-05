@@ -280,6 +280,32 @@ createNameSpace("realityEditor.network.realtime");
             serverSocket.emit('/batchedUpdate', JSON.stringify(messageBody));
         }
     }
+
+    function subscribeToCameraMatrices(objectKey, callback) {
+        let object = realityEditor.getObject(objectKey);
+        if (!object) { return; }
+        let serverSocket = getServerSocketForObject(objectKey);
+        if (!serverSocket) { return; }
+        let messageBody = {
+            editorId: globalStates.tempUuid
+        }
+
+        serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
+        serverSocket.on('/cameraMatrix', callback);
+    }
+
+    function sendCameraMatrix(objectKey, cameraMatrix) {
+        let object = realityEditor.getObject(objectKey);
+        if (!object) { return; }
+        let serverSocket = getServerSocketForObject(objectKey);
+        if (!serverSocket) { return; }
+        let messageBody = {
+            cameraMatrix: cameraMatrix,
+            editorId: globalStates.tempUuid
+        }
+
+        serverSocket.emit('/cameraMatrix', JSON.stringify(messageBody));
+    }
     
     class Update {
         constructor(objectKey, frameKey, nodeKey, propertyPath, newValue, editorId) {
@@ -496,5 +522,8 @@ createNameSpace("realityEditor.network.realtime");
     exports.getSocketIPsForSet = getSocketIPsForSet;
     exports.createSocketInSet = createSocketInSet;
     exports.sendMessageToSocketSet = sendMessageToSocketSet;
+
+    exports.sendCameraMatrix = sendCameraMatrix;
+    exports.subscribeToCameraMatrices = subscribeToCameraMatrices;
 
 }(realityEditor.network.realtime));

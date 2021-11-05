@@ -334,6 +334,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         return raycaster.intersectObjects( scene.children, true );
     }
 
+    function getObjectByName(name) {
+        return scene.getObjectByName(name);
+    }
+
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
@@ -445,5 +449,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getRaycastIntersects = getRaycastIntersects;
+    exports.getObjectByName = getObjectByName;
+    exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
 })(realityEditor.gui.threejsScene);
