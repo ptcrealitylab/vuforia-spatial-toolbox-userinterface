@@ -432,7 +432,25 @@ createNameSpace('realityEditor.app.callbacks');
                             if (globalStates.useGroundPlane) {
                                 // let rotated = [];
                                 // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
-                                realityEditor.sceneGraph.setGroundPlanePosition(worldOriginMatrix);
+                                let offset = [];
+                                let floorOffset = 0;
+                                try {
+                                    let navmesh = JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${worldObject.uuid}`));
+                                    floorOffset = navmesh.floorOffset * 1000;
+                                } catch (e) {
+                                    console.warn('No navmesh', worldObject, e);
+                                }
+                                let buffer = 100;
+                                floorOffset += buffer;
+                                let groundPlaneOffsetMatrix = [
+                                    1, 0, 0, 0,
+                                    0, 1, 0, 0,
+                                    0, 0, 1, 0,
+                                    0, floorOffset, 0, 1
+                                ];
+                                let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
+                                realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
+                                realityEditor.sceneGraph.setGroundPlanePosition(offset);
                             }
                         }
                     }
@@ -570,14 +588,20 @@ createNameSpace('realityEditor.app.callbacks');
                         realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                     } else {
                         let offset = [];
-                        let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
+                        let floorOffset = 0;
+                        try {
+                            let navmesh = JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${worldObject.uuid}`));
+                            floorOffset = navmesh.floorOffset * 1000;
+                        } catch (e) {
+                            console.warn('No navmesh', worldObject, e);
+                        }
                         let buffer = 100;
                         floorOffset += buffer;
                         let groundPlaneOffsetMatrix = [
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
-                            0, 0 * floorOffset, 0, 1
+                            0, floorOffset, 0, 1
                         ];
                         realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
                         realityEditor.sceneGraph.setGroundPlanePosition(offset);
