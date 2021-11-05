@@ -25,6 +25,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     let hasFirstSeenInstantWorld = false;
 
+    let limitScanRAM = false; // if true (toggled through menu), stop area target capture when device memory usage is high
+    let maximumPercentRAM = 0.33; // the app will stop scanning when it reaches this threshold of total device memory
+
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
@@ -103,6 +106,17 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
 
         realityEditor.app.subscribeToAppMemoryEvents('realityEditor.gui.ar.areaTargetScanner.onAppMemoryEvent');
+
+        realityEditor.gui.settings.addToggleWithText('Limit Scan RAM', 'area target scan stops at threshold (e.g. 0.33)', 'maximumRAM', '../../../svg/powerSave.svg', false, '0.33',
+            function(newValue) {
+                console.log('limitScanRAM was set to ' + newValue);
+                limitScanRAM = newValue;
+            },
+            function(newValue) {
+                console.log('zone text was set to ' + newValue);
+                maximumPercentRAM = parseFloat(newValue) || 0.33;
+            }
+        ).moveToDevelopMenu();
     }
 
     function showNotificationIfNeeded() {
@@ -544,7 +558,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (!isScanning) { return; }
 
         // UIApplicationDidReceiveMemoryWarningNotification happens too late in most cases, so we check more stringently
-        if (eventName === 'UIApplicationDidReceiveMemoryWarningNotification' || /*gigabytesUsed > 1.0 &&*/ percentOfDeviceUsedByApp > 0.33) {
+        if (eventName === 'UIApplicationDidReceiveMemoryWarningNotification' ||
+            (limitScanRAM && percentOfDeviceUsedByApp > maximumPercentRAM)) {
             stopScanning();
             console.log("stopping scan due to memory usage");
         }
