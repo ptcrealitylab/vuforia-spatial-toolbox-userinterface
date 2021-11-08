@@ -215,6 +215,11 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.frameEndListener = res;
             });
         }
+
+        remove() {
+            this.frameEndListener = null;
+            window.removeEventListener('message', this.onMessage);
+        }
     }
 
     let canvas;
@@ -387,6 +392,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         if (index !== -1) {
             proxies.splice(index, 1);
         }
+        proxy.remove();
         delete workerIds[toolId];
         delete toolIdToProxy[toolId];
     }
