@@ -209,6 +209,7 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         getFrameCommands() {
             this.buffering = true;
+            this.commandBuffer = [];
             this.worker.postMessage({name: 'frame', time: Date.now()}, '*');
             return new Promise((res) => {
                 this.frameEndListener = res;
