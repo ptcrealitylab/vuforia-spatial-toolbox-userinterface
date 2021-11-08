@@ -363,6 +363,10 @@ createNameSpace("realityEditor.gui.glRenderer");
     }
 
     function addWebGlProxy(toolId) {
+        if (toolIdToProxy.hasOwnProperty(toolId)) {
+            console.error('overwriting webglproxy for tool', toolId);
+            removeWebGlProxy(toolId);
+        }
         const worker = globalDOMCache['iframe' + toolId].contentWindow;
         let proxy = new WorkerGLProxy(worker, gl, generateWorkerIdForTool(toolId), toolId);
         proxies.push(proxy);
