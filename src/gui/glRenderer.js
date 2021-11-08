@@ -5,6 +5,7 @@ createNameSpace("realityEditor.gui.glRenderer");
     let nextWorkerId = 1;
     let toolIdToProxy = {};
     let proxies = [];
+    let rendering = false;
 
     const MAX_PROXIES = 32; // maximum number that can be safely rendered each frame
 
@@ -290,6 +291,11 @@ createNameSpace("realityEditor.gui.glRenderer");
     }
 
     async function renderFrame() {
+        if (rendering) {
+            console.error('renderFrame called during another renderFrame');
+            return;
+        }
+        rendering = true;
         let proxiesToConsider = [];
         function makeWatchdog() {
             return new Promise((res) => {
@@ -335,6 +341,7 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         requestAnimationFrame(renderFrame);
         lastRender = Date.now();
+        rendering = false;
     }
 
     function watchpuppy() {
