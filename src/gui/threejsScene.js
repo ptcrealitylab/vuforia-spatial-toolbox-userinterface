@@ -18,7 +18,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let raycaster;
     let mouse;
 
-    const DISPLAY_ORIGIN_BOX = true;
+    const DISPLAY_ORIGIN_BOX = false;
 
     let customMaterials;
 

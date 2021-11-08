@@ -225,6 +225,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.gui.ar.anchors.initService();
+    realityEditor.gui.ar.groundPlaneAnchors.initService();
     realityEditor.gui.ar.groundPlaneRenderer.initService();
     realityEditor.gui.ar.areaTargetScanner.initService();
     realityEditor.device.touchPropagation.initService();
