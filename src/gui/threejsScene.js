@@ -157,11 +157,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
-            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
-            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-            // const groundplaneMesh = new THREE.Mesh( geometry, material );
-            // threejsContainerObj.add(groundplaneMesh);
-            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         customMaterials.update();
