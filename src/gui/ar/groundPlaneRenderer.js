@@ -106,7 +106,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorCenterLine = new THREE.Color(0, 0.3, 0.3);
             const colorGrid = new THREE.Color(0, 1, 1);
             gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
-            // threejsContainerObj.add( gridHelper );
+            gridHelper.name = 'groundPlaneVisualizer';
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 

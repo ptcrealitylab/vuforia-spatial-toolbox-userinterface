@@ -268,6 +268,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         modelView : false,
         devicePose : false,
         groundPlane : false,
+        anchoredModelView: false,
         allObjects : false
     };
     thisObject.sendScreenPosition = false;
@@ -335,6 +336,7 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
         modelView : false,
         devicePose : false,
         groundPlane : false,
+        anchoredModelView: false,
         allObjects : false
     };
     thisFrame.sendScreenPosition = false;
@@ -354,6 +356,7 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
     }
 
     realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+    realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(objectKey, frameKey, thisFrame, positionData.matrix);
 
     for (let nodeKey in thisFrame.nodes) {
         var thisNode = thisFrame.nodes[nodeKey];
@@ -1001,6 +1004,7 @@ realityEditor.network.onAction = function (action) {
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,
+                anchoredModelView: false,
                 allObjects : false
             };
             frame.sendScreenPosition = false;
@@ -1264,6 +1268,17 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (tempThisObject.integerVersion >= 32) {
                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
                 tempThisObject.sendMatrices.groundPlane = true;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
+            }
+        }
+        if (msgContent.sendMatrices.anchoredModelView === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.anchoredModelView = true;
                 let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
                 if (activeKey === msgContent.frame) {
                     globalDOMCache["iframe" + activeKey].contentWindow.postMessage(

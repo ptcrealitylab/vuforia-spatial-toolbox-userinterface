@@ -808,6 +808,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             realityEditor.network.toBeInitialized[frameID] = true;
 
             realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
+            realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(frame.objectId, frameID, frame, frame.ar.matrix);
 
             console.log(frame);
             // send it to the server

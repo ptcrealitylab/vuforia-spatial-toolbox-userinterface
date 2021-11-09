@@ -17,6 +17,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     let raycaster;
     let mouse;
+    let distanceRaycastVector = new THREE.Vector3();
+    let distanceRaycastResultPosition = new THREE.Vector3();
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -101,6 +103,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         worldObjectIds.forEach(worldObjectId => {
             if (!worldObjectGroups[worldObjectId]) {
                 const group = new THREE.Group();
+                group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
@@ -323,7 +326,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     }
 
     // this module exports this utility so that other modules can perform hit tests
-    function getRaycastIntersects(clientX, clientY) {
+    // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
+    function getRaycastIntersects(clientX, clientY, objectsToCheck) {
         mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
 
@@ -331,7 +335,26 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         raycaster.setFromCamera( mouse, camera );
 
         //3. compute intersections
-        return raycaster.intersectObjects( scene.children, true );
+        return raycaster.intersectObjects( objectsToCheck || scene.children, true );
+    }
+
+    /**
+     * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
+     * @param {number} clientX - in screen pixels
+     * @param {number} clientY - in screen pixels
+     * @param {number} distance - in millimeters
+     * @returns {Vector3} - position relative to camera
+     */
+    function getPointAtDistanceFromCamera(clientX, clientY, distance) {
+        distanceRaycastVector.set(
+            ( clientX / window.innerWidth ) * 2 - 1,
+            - ( clientY / window.innerHeight ) * 2 + 1,
+            0
+        );
+        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.normalize();
+        distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
+        return distanceRaycastResultPosition;
     }
 
     function getObjectByName(name) {
@@ -449,6 +472,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getRaycastIntersects = getRaycastIntersects;
+    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
