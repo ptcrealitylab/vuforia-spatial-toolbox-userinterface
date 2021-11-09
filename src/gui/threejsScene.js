@@ -20,7 +20,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
 
-    const DISPLAY_ORIGIN_BOX = false;
+    const DISPLAY_ORIGIN_BOX = true;
 
     let customMaterials;
 
