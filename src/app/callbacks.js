@@ -241,12 +241,20 @@ createNameSpace('realityEditor.app.callbacks');
         // }
 
         if (poses.length > 0) {
-            for (let jc of realityEditor.gui.poses.JOINT_CONNECTIONS) {
-                let pointA = poses[jc[0]];
-                let pointB = poses[jc[1]];
-                if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
-                    pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+            for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
+                let pointA = poses[start];
+                let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
+                for (let other of others) {
+                    let pointB = poses[other];
+                    if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
+                        pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+                    }
                 }
+            }
+
+            let depths = Object.values(realityEditor.gui.poses.POSE_JOINTS_DEPTH);
+            for (let i = 0; i < depths.length; i++) {
+                poses[i].depth += depths[i];
             }
         }
 
