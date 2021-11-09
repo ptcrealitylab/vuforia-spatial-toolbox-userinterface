@@ -16,9 +16,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let isPositioningMode = false;
     let touchEventCatcher = null;
     let isPointerDown = false;
-
-    // let raycaster;// = new THREE.Raycaster();
-    // let mouseVector;// = new THREE.Vector2();
     
     let selectedGroupKey = null;
     let selectedMeshName = null;
@@ -30,14 +27,15 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let zBoxColor = 0x0000ff;
     let selectionColor = 0xffff00;
     let mouseCursorColor = 0xff00ff;
-    
-    let initialAnchorPosition = null;
-    
     let mouseCursorMesh = null;
-    var planeZ;
     
     function initService() {
-        console.log("init ground plane anchors");
+        // Note that, currently, positioningMode blocks touch events from reaching anything else, so it should be toggled off when not in use
+        realityEditor.gui.settings.addToggle('Reposition Ground Anchors', 'surface anchors can be dragged to move tools', 'repositionGroundAnchors',  '../../../svg/move.svg', false, function(newValue) {
+            if (isPositioningMode !== newValue) {
+                togglePositioningMode();
+            }
+        });
         
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
             try {
@@ -46,17 +44,19 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
                 console.warn(e);
             }
         });
+    }
 
-        realityEditor.gui.settings.addToggle('Reposition Ground Anchors', '', 'repositionGroundAnchors',  '../../../svg/move.svg', false, function(newValue) {
-            // only draw frame ghosts while in programming mode if we're not in power-save mode
-            if (isPositioningMode !== newValue) {
-                togglePositioningMode();
-            }
-        });
-
-        // const THREE = realityEditor.gui.threejsScene.THREE;
-        // raycaster = new THREE.Raycaster();
-        // mouseVector = new THREE.Vector2();
+    /**
+     * Public function that the APIs can use to retrieve the modelView of a tool's surface anchor
+     * @param {string} vehicleId
+     * @returns {Array.<number>}
+     */
+    function getMatrix(vehicleId) {
+        if (knownAnchorNodes[vehicleId]) {
+            // return knownAnchorNodes[vehicleId].worldMatrix;
+            return realityEditor.sceneGraph.getModelViewMatrix(knownAnchorNodes[vehicleId].id);
+        }
+        return null;
     }
     
     function update(visibleObjects) {
@@ -155,19 +155,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     function getElementName(frameKey) {
         return frameKey + '_groundPlaneAnchor';
     }
-
-    /**
-     * @param {string} vehicleId
-     * @returns {Array.<number>}
-     */
-    function getMatrix(vehicleId) {
-        if (knownAnchorNodes[vehicleId]) {
-            // return knownAnchorNodes[vehicleId].worldMatrix;
-            return realityEditor.sceneGraph.getModelViewMatrix(knownAnchorNodes[vehicleId].id);
-        }
-        return null;
-    }
     
+    // show and hide the anchors as well as the touch event catcher
     function togglePositioningMode() {
         isPositioningMode = !isPositioningMode;
         for (let key in threejsGroups) {
@@ -182,6 +171,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         }
     }
     
+    // ensures there's a div on top of everything that blocks touch events from reaching the tools when we're in this mode
     function getTouchEventCatcher() {
         if (!touchEventCatcher) {
             touchEventCatcher = document.createElement('div');
@@ -202,19 +192,15 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         }
         return touchEventCatcher;
     }
-    
+
+    // hit test threeJsScene to see if we hit any of the anchor threeJsGroups
+    // if we are, keep track of it so we can move it on pointermove. also give visual feedback
     function onPointerDown(e) {
         e.stopPropagation();
-        console.log('catcher pointer down');
         isPointerDown = true;
-        
-        // hit test threeJsScene to see if we hit any of the threeJsGroups
-        // if we are, keep track of it and so we can move it on pointermove
 
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY);
-        // console.log(intersects);
         
-        // let intersectedMesh = null;
         intersects.forEach(function(intersect) {
             if (selectedGroupKey) { return; }
             
@@ -232,15 +218,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             
             intersect.object.material.color.setHex(selectionColor);
             
-            initialAnchorPosition = getPositionXZ(threejsGroups[selectedGroupKey]);
+            // TODO: use this to update the position in realtime rather than waiting for pointerup
+            // initialAnchorPosition = getPositionXZ(threejsGroups[selectedGroupKey]);
         });
-        
-        if (selectedGroupKey) {
-            // threejsGroups[selectedGroupKey].children.forEach(function(child) {
-            //     child.material.color.setHex(0xffff00);
-            // });
-            console.log('selected: ' + selectedGroupKey);
-        }
     }
     
     function getPositionXZ(threeJsObject) {
@@ -251,10 +231,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         };
     }
     
-    
+    // when we touch up, move the selected anchor's tool to match the movement of the mouse cursor mesh relative to its anchor
     function onPointerUp(e) {
         e.stopPropagation();
-        console.log('catcher pointer up');
         isPointerDown = false;
         
         // reset mesh color
@@ -293,86 +272,35 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         
         getMouseCursorMesh().visible = false;
     }
-    
-    function getPlaneZ() {
-        const THREE = realityEditor.gui.threejsScene.THREE;
-        if (!planeZ) {
-            planeZ = new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
-        }
-        let groundPlaneModelView = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
-        if (groundPlaneModelView) {
-            planeZ.constant = -1000; //groundPlaneModelView[13];
-        }
-        return planeZ;
-    }
-    
+
+    // if we touched down on anything, calculate where to move mesh along its x-z plane so that it lines up with mouse position
     function onPointerMove(e) {
         e.stopPropagation();
         if (!isPointerDown) { return; }
-        
-        // if we touched down on anything...
-        // move getSceneNodeById(frameKey).localMatrix so that the anchorNode.worldMatrix will line up with mouse position
-
         if (!selectedGroupKey) { return; }
+        
         let thisGroup = threejsGroups[selectedGroupKey];
         let thisAnchorNode = knownAnchorNodes[selectedGroupKey];
-        
         if (!thisGroup || !thisAnchorNode) { return; }
         
         let mesh = getMouseCursorMesh();
-        // console.log(mesh);
         
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY);
-        // console.log(intersects);
         
         let areaTargetIntersect = null;
         intersects.forEach(function(intersect) {
             if (areaTargetIntersect) { return; }
+            // TODO: more reliably find the intersect with the groundplane if the area target mesh is unavailable
             if (intersect.object.name === 'mesh_0') {
                 areaTargetIntersect = intersect;
             }
-            
-            // console.log(intersect.object.name);
-            // console.log('checking intersect');
-            // console.log(intersect);
-            // let obj = JSON.parse(JSON.stringify(intersect.object));
-            // while (obj && obj.name) {
-            //     if ()
-            //     obj = obj.parent;
-            // }
-            // let meshName = intersect.object.name;
-            // let matchingKey = Object.keys(threejsGroups).find(function(key) {
-            //     return meshName.includes(key);
-            // });
-            // if (!matchingKey) { return; }
         });
         
         if (!areaTargetIntersect) { return; }
         
-        // let planeIntersect = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, getPlaneZ());
-        // console.log('planeIntersect', planeIntersect);
-        //
-        // let worldIntersectionPoint = areaTargetIntersect.object.localToWorld(areaTargetIntersect.point);
-        // console.log('pt', worldIntersectionPoint);
-        // let groundPlaneVisualizer = realityEditor.gui.threejsScene.getObjectByName('groundPlaneVisualizer');
-        // if (!groundPlaneVisualizer) { return; }
-        // let groundPlaneIntersect = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, groundPlaneVisualizer);
-        // console.log('groundPlaneIntersect', groundPlaneIntersect);
-        //
-        // let groundPlanePosition = groundPlaneVisualizer.worldToLocal(worldIntersectionPoint);
-        // console.log(groundPlanePosition);
+        let result = realityEditor.gui.threejsScene.getPointAtDistanceFromCamera(e.clientX, e.clientY, areaTargetIntersect.distance);
 
-        // this is the best one
-        // let anchorStartPosition = thisGroup.localToWorld(new realityEditor.gui.threejsScene.THREE.Vector3(0,0,0));
-
-        let result = realityEditor.gui.threejsScene.getGroundPlaneRaycast(e.clientX, e.clientY, areaTargetIntersect.distance);
-        // console.log('result', result);
-        
-        // let difference = result.sub(anchorStartPosition);
-
-        let relativePosition = thisGroup.worldToLocal(result); //thisGroup.worldToLocal(result);
-        // console.log(relativePosition);
-        
+        let relativePosition = thisGroup.worldToLocal(result);
         let anchorLocalPosition = getPositionXZ(thisGroup);
 
         let newX = constrainToZ ? anchorLocalPosition.x : relativePosition.x + anchorLocalPosition.x;
@@ -380,36 +308,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
 
         mesh.position.set(newX, 0, newZ);
         mesh.visible = true;
-
-        // var planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-        // var mv = new THREE.Vector3(
-        //     (clientX / window.innerWidth) * 2 - 1,
-        //     -(clientY / window.innerHeight) * 2 + 1,
-        //     0.5 );
-        // var raycaster = projector.pickingRay(mv, camera);
-        // var pos = raycaster.ray.intersectPlane(planeZ);
-        // console.log("x: " + pos.x + ", y: " + pos.y);
-
-        // // get world matrix of frame
-        // let frameNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey)
-        //
-        // // get world matrix of ground plane
-        // let groundPlaneNode = realityEditor.sceneGraph.getSceneNodeById('GROUNDPLANE');
-        //
-        // // calculate frame relative to ground plane
-        // let relativeMatrix = frameNode.getMatrixRelativeTo(groundPlaneNode);
-        // let anchoredMatrix = [
-        //     1, 0, 0, 0,
-        //     0, 1, 0, 0,
-        //     0, 0, 1, 0,
-        //     relativeMatrix[12], 0, relativeMatrix[14], 1
-        // ];
-        //
-        // // set the anchor matrix by taking the x, z position
-        // knownAnchorNodes[selectedGroupKey].setLocalMatrix(anchoredMatrix);
-        //
-        // // we use localMatrix, not world matrix, because mesh is already a child of the ground plane
-        // realityEditor.gui.threejsScene.setMatrixFromArray(threejsGroups[selectedGroupKey].matrix, knownAnchorNodes[selectedGroupKey].localMatrix);
     }
     
     exports.initService = initService;

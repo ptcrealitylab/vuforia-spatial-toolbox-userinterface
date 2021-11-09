@@ -17,6 +17,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     let raycaster;
     let mouse;
+    let distanceRaycastVector = new THREE.Vector3();
+    let distanceRaycastResultPosition = new THREE.Vector3();
 
     const DISPLAY_ORIGIN_BOX = false;
 
@@ -336,40 +338,23 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         return raycaster.intersectObjects( objectsToCheck || scene.children, true );
     }
 
-    let groundPlaneRaycastVector = new THREE.Vector3();
-    let groundPlaneRaycastPosition = new THREE.Vector3();
-
-    function getGroundPlaneRaycast(clientX, clientY, targetZ) {
-        // groundPlaneRaycastVector.set(
-        //     ( clientX / window.innerWidth ) * 2 - 1,
-        //     - ( clientY / window.innerHeight ) * 2 + 1,
-        //     0.5
-        // );
-        // groundPlaneRaycastVector.unproject(camera);
-        // groundPlaneRaycastVector.sub(camera.position).normalize();
-        // let distance = ( targetZ - camera.position.z ) / groundPlaneRaycastVector.z;
-        // groundPlaneRaycastPosition.copy(camera.position).add(groundPlaneRaycastVector.multiplyScalar(distance));
-        // return {
-        //     x: groundPlaneRaycastPosition.x,
-        //     y: groundPlaneRaycastPosition.y,
-        //     z: groundPlaneRaycastPosition.z
-        // };
-
-        groundPlaneRaycastVector.set(
+    /**
+     * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
+     * @param {number} clientX - in screen pixels
+     * @param {number} clientY - in screen pixels
+     * @param {number} distance - in millimeters
+     * @returns {Vector3} - position relative to camera
+     */
+    function getPointAtDistanceFromCamera(clientX, clientY, distance) {
+        distanceRaycastVector.set(
             ( clientX / window.innerWidth ) * 2 - 1,
             - ( clientY / window.innerHeight ) * 2 + 1,
             0
         );
-        groundPlaneRaycastVector.unproject(camera);
-        groundPlaneRaycastVector.normalize();
-        let distance = targetZ;
-        groundPlaneRaycastPosition.set(0, 0, 0).add(groundPlaneRaycastVector.multiplyScalar(distance));
-        // return {
-        //     x: groundPlaneRaycastPosition.x,
-        //     y: groundPlaneRaycastPosition.y,
-        //     z: groundPlaneRaycastPosition.z
-        // };
-        return groundPlaneRaycastPosition;
+        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.normalize();
+        distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
+        return distanceRaycastResultPosition;
     }
 
     function getObjectByName(name) {
@@ -487,7 +472,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getRaycastIntersects = getRaycastIntersects;
-    exports.getGroundPlaneRaycast = getGroundPlaneRaycast;
+    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
