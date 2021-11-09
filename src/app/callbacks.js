@@ -251,6 +251,11 @@ createNameSpace('realityEditor.app.callbacks');
                     }
                 }
             }
+
+            let depths = Object.values(realityEditor.gui.poses.POSE_JOINTS_DEPTH);
+            for (let i = 0; i < depths.length; i++) {
+                poses[i].depth += depths[i];
+            }
         }
 
         for (let point of poses) {
