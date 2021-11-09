@@ -291,7 +291,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         intersects.forEach(function(intersect) {
             if (areaTargetIntersect) { return; }
             // TODO: more reliably find the intersect with the groundplane if the area target mesh is unavailable
-            if (intersect.object.name === 'mesh_0') {
+            if (intersect.object.name === 'mesh_0' || intersect.object.name === 'groundPlaneElement') {
                 areaTargetIntersect = intersect;
             }
         });

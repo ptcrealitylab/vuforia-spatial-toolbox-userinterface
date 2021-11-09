@@ -45,16 +45,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
         scene.add(threejsContainerObj);
 
-        // const geometry = new THREE.PlaneGeometry( 10000, 10000 );
-        // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-        // const groundplaneMesh = new THREE.Mesh( geometry, material );
-        // threejsContainerObj.add(groundplaneMesh);
-        //
-        // const divisions = 10;
-        // const size = 1000 * divisions;
-        // const gridHelper = new THREE.GridHelper( size, divisions );
-        // threejsContainerObj.add( gridHelper );
-
         // light the scene with a combination of ambient and directional white light
         var ambLight = new THREE.AmbientLight(0xffffff);
         scene.add(ambLight);
@@ -82,7 +72,20 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         // threejsContainerObj.add( mesh );
         // mesh.position.setZ(150);
 
+        addGroundPlaneCollisionObject(); // invisible object for raycasting intersections with ground plane
+
         renderScene(); // update loop
+    }
+
+    function addGroundPlaneCollisionObject() {
+        const sceneSizeInMeters = 10;
+        const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        const material = new THREE.MeshBasicMaterial( {color: 0x00ffff, side: THREE.DoubleSide} );
+        const plane = new THREE.Mesh( geometry, material );
+        plane.rotateX(Math.PI/2);
+        plane.visible = false;
+        addToScene(plane, {occluded: true});
+        plane.name = 'groundPlaneElement';
     }
 
     function renderScene() {
