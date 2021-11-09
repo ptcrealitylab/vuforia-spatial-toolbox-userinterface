@@ -101,6 +101,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         worldObjectIds.forEach(worldObjectId => {
             if (!worldObjectGroups[worldObjectId]) {
                 const group = new THREE.Group();
+                group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
@@ -323,7 +324,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     }
 
     // this module exports this utility so that other modules can perform hit tests
-    function getRaycastIntersects(clientX, clientY) {
+    // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
+    function getRaycastIntersects(clientX, clientY, objectsToCheck) {
         mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
 
@@ -331,7 +333,43 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         raycaster.setFromCamera( mouse, camera );
 
         //3. compute intersections
-        return raycaster.intersectObjects( scene.children, true );
+        return raycaster.intersectObjects( objectsToCheck || scene.children, true );
+    }
+
+    let groundPlaneRaycastVector = new THREE.Vector3();
+    let groundPlaneRaycastPosition = new THREE.Vector3();
+
+    function getGroundPlaneRaycast(clientX, clientY, targetZ) {
+        // groundPlaneRaycastVector.set(
+        //     ( clientX / window.innerWidth ) * 2 - 1,
+        //     - ( clientY / window.innerHeight ) * 2 + 1,
+        //     0.5
+        // );
+        // groundPlaneRaycastVector.unproject(camera);
+        // groundPlaneRaycastVector.sub(camera.position).normalize();
+        // let distance = ( targetZ - camera.position.z ) / groundPlaneRaycastVector.z;
+        // groundPlaneRaycastPosition.copy(camera.position).add(groundPlaneRaycastVector.multiplyScalar(distance));
+        // return {
+        //     x: groundPlaneRaycastPosition.x,
+        //     y: groundPlaneRaycastPosition.y,
+        //     z: groundPlaneRaycastPosition.z
+        // };
+
+        groundPlaneRaycastVector.set(
+            ( clientX / window.innerWidth ) * 2 - 1,
+            - ( clientY / window.innerHeight ) * 2 + 1,
+            0
+        );
+        groundPlaneRaycastVector.unproject(camera);
+        groundPlaneRaycastVector.normalize();
+        let distance = targetZ;
+        groundPlaneRaycastPosition.set(0, 0, 0).add(groundPlaneRaycastVector.multiplyScalar(distance));
+        // return {
+        //     x: groundPlaneRaycastPosition.x,
+        //     y: groundPlaneRaycastPosition.y,
+        //     z: groundPlaneRaycastPosition.z
+        // };
+        return groundPlaneRaycastPosition;
     }
 
     function getObjectByName(name) {
@@ -449,6 +487,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getRaycastIntersects = getRaycastIntersects;
+    exports.getGroundPlaneRaycast = getGroundPlaneRaycast;
     exports.getObjectByName = getObjectByName;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;

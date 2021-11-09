@@ -327,7 +327,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
             let proxy = proxiesToBeRenderedThisFrame[i];
             if (!res[i]) {
-                console.warn('miscreant detected', proxy);
+                // console.warn('miscreant detected', proxy);
                 continue;
             }
             proxy.executeFrameCommands();

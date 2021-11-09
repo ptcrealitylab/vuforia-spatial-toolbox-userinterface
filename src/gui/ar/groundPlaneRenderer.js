@@ -106,8 +106,18 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorCenterLine = new THREE.Color(0, 0.3, 0.3);
             const colorGrid = new THREE.Color(0, 1, 1);
             gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
+            gridHelper.name = 'groundPlaneVisualizer';
             // threejsContainerObj.add( gridHelper );
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
+
+            // const THREE = realityEditor.gui.threejsScene.THREE;
+            // const geometry = new THREE.PlaneGeometry( 1000 * 5, 1000 * 5);
+            // const material = new THREE.MeshBasicMaterial( {color: 0x00ffff, side: THREE.DoubleSide} );
+            // const plane = new THREE.Mesh( geometry, material );
+            // plane.rotateX(Math.PI/2);
+            // realityEditor.gui.threejsScene.addToScene(plane, {occluded: true});
+            // plane.name = 'groundPlaneVisualizer';
+            
         }
 
         // add/activate the update loop
