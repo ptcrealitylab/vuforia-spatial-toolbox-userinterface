@@ -359,8 +359,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         mesh.position.set(newX, 0, newZ);
         mesh.visible = true;
 
-        // moveToMouseCursor();
-        // moveToMouseCursor();
+        moveToMouseCursor();
     }
 
     exports.initService = initService;
