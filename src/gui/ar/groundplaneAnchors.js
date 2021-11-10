@@ -21,6 +21,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let selectedMeshName = null;
     let constrainToX = false;
     let constrainToZ = false;
+    let initialAnchorPosition = null;
+    let initialLocalMatrix = null;
 
     let originColor = 0xffffff;
     let xBoxColor = 0xff0000;
@@ -28,6 +30,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let selectionColor = 0xffff00;
     let mouseCursorColor = 0xff00ff;
     let mouseCursorMesh = null;
+    let initialCalculationMesh = null;
 
     function initService() {
         // Note that, currently, positioningMode blocks touch events from reaching anything else, so it should be toggled off when not in use
@@ -53,7 +56,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
      */
     function getMatrix(vehicleId) {
         if (knownAnchorNodes[vehicleId]) {
-            // return knownAnchorNodes[vehicleId].worldMatrix;
             return realityEditor.sceneGraph.getModelViewMatrix(knownAnchorNodes[vehicleId].id);
         }
         return null;
@@ -125,6 +127,20 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             realityEditor.gui.threejsScene.addToScene(mouseCursorMesh); // this adds it to the ground plane group by default
         }
         return mouseCursorMesh;
+    }
+
+    function getInitialCalculationMesh() {
+        if (!initialCalculationMesh) {
+            const THREE = realityEditor.gui.threejsScene.THREE;
+            let size = 150;
+            initialCalculationMesh = new THREE.Mesh(new THREE.BoxGeometry(size, size, size),new THREE.MeshBasicMaterial({color: 0x00ffff}));
+            initialCalculationMesh.name = 'initialCalculationMesh';
+            // mouseCursorMesh.matrixAutoUpdate = false; // this is needed to position it directly with matrices
+            initialCalculationMesh.visible = isPositioningMode;
+            initialCalculationMesh.matrixAutoUpdate = false;
+            realityEditor.gui.threejsScene.addToScene(initialCalculationMesh); // this adds it to the ground plane group by default
+        }
+        return initialCalculationMesh;
     }
 
     function createAnchorGroup(frameKey) {
@@ -219,7 +235,16 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             intersect.object.material.color.setHex(selectionColor);
 
             // TODO: use this to update the position in realtime rather than waiting for pointerup
-            // initialAnchorPosition = getPositionXZ(threejsGroups[selectedGroupKey]);
+            initialAnchorPosition = getPositionXZ(threejsGroups[selectedGroupKey]);
+            let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey);
+            if (frameSceneNode) {
+                initialLocalMatrix = realityEditor.gui.ar.utilities.copyMatrix(frameSceneNode.localMatrix)
+            }
+
+            let initialMesh = getInitialCalculationMesh();
+            initialMesh.visible = true;
+            // initialMesh.position.set(initialAnchorPosition.x, 0, initialAnchorPosition.y);
+            realityEditor.gui.threejsScene.setMatrixFromArray(initialMesh.matrix, threejsGroups[selectedGroupKey].matrix.elements);
         });
     }
 
@@ -229,6 +254,23 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             x: threeJsObject.matrix.elements[12],
             z: threeJsObject.matrix.elements[14]
         };
+    }
+    
+    function moveToMouseCursor() {
+        if (!initialAnchorPosition || !initialLocalMatrix || !selectedGroupKey) { return; }
+        
+        // move tool to correct position
+        let oldAnchorLocalPosition = initialAnchorPosition; //getPositionXZ(group);
+        let newAnchorLocalPosition = getPositionXZ(getMouseCursorMesh());
+
+        let dx = newAnchorLocalPosition.x - oldAnchorLocalPosition.x;
+        let dz = newAnchorLocalPosition.z - oldAnchorLocalPosition.z;
+
+        let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey);
+        let localMatrix = realityEditor.gui.ar.utilities.copyMatrix(initialLocalMatrix); //frameSceneNode.localMatrix);
+        localMatrix[12] += dx;
+        localMatrix[14] += dz;
+        frameSceneNode.setLocalMatrix(localMatrix);
     }
 
     // when we touch up, move the selected anchor's tool to match the movement of the mouse cursor mesh relative to its anchor
@@ -250,18 +292,19 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
                 }
             }
 
-            // move tool to correct position
-            let oldAnchorLocalPosition = getPositionXZ(group);
-            let newAnchorLocalPosition = getPositionXZ(getMouseCursorMesh());
-
-            let dx = newAnchorLocalPosition.x - oldAnchorLocalPosition.x;
-            let dz = newAnchorLocalPosition.z - oldAnchorLocalPosition.z;
-
-            let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey);
-            let localMatrix = realityEditor.gui.ar.utilities.copyMatrix(frameSceneNode.localMatrix);
-            localMatrix[12] += dx;
-            localMatrix[14] += dz;
-            frameSceneNode.setLocalMatrix(localMatrix);
+            moveToMouseCursor();
+            // // move tool to correct position
+            // let oldAnchorLocalPosition = getPositionXZ(group);
+            // let newAnchorLocalPosition = getPositionXZ(getMouseCursorMesh());
+            //
+            // let dx = newAnchorLocalPosition.x - oldAnchorLocalPosition.x;
+            // let dz = newAnchorLocalPosition.z - oldAnchorLocalPosition.z;
+            //
+            // let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey);
+            // let localMatrix = realityEditor.gui.ar.utilities.copyMatrix(frameSceneNode.localMatrix);
+            // localMatrix[12] += dx;
+            // localMatrix[14] += dz;
+            // frameSceneNode.setLocalMatrix(localMatrix);
         }
 
         // reset any editing state
@@ -269,8 +312,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         selectedMeshName = null;
         constrainToX = false;
         constrainToZ = false;
+        initialAnchorPosition = null;
+        initialLocalMatrix = null;
 
         getMouseCursorMesh().visible = false;
+        getInitialCalculationMesh().visible = false;
     }
 
     // if we touched down on anything, calculate where to move mesh along its x-z plane so that it lines up with mouse position
@@ -299,15 +345,22 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         if (!areaTargetIntersect) { return; }
 
         let result = realityEditor.gui.threejsScene.getPointAtDistanceFromCamera(e.clientX, e.clientY, areaTargetIntersect.distance);
+        let relativePosition = getInitialCalculationMesh().worldToLocal(result);
+        let initialPosition = getPositionXZ(getInitialCalculationMesh());
+        // adjust relativePosition by the initial position
+        // relativePosition.x -= initialAnchorPosition.x;
+        // relativePosition.z -= initialAnchorPosition.z;
+        
+        // let anchorLocalPosition = getPositionXZ(thisGroup);
 
-        let relativePosition = thisGroup.worldToLocal(result);
-        let anchorLocalPosition = getPositionXZ(thisGroup);
-
-        let newX = constrainToZ ? anchorLocalPosition.x : relativePosition.x + anchorLocalPosition.x;
-        let newZ = constrainToX ? anchorLocalPosition.z : relativePosition.z + anchorLocalPosition.z;
+        let newX = constrainToZ ? initialPosition.x : relativePosition.x + initialPosition.x;
+        let newZ = constrainToX ? initialPosition.z : relativePosition.z + initialPosition.z;
 
         mesh.position.set(newX, 0, newZ);
         mesh.visible = true;
+
+        // moveToMouseCursor();
+        // moveToMouseCursor();
     }
 
     exports.initService = initService;
