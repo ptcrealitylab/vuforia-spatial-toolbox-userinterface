@@ -84,9 +84,17 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             }
         }
         
-        // for (let elt in destinationMatrices) {
-        //     let 
-        // }
+        for (let frameKey in destinationMatrices) {
+            const alpha = 0.5;
+            let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+            let currentMatrix = realityEditor.gui.ar.utilities.copyMatrix(frameSceneNode.localMatrix);
+            let destinationMatrix = destinationMatrices[frameKey];
+            let animatedMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+            for (let i = 0; i < currentMatrix.length; i++) {
+                animatedMatrix[i] = (destinationMatrix[i] * alpha) + (currentMatrix[i] * (1 - alpha));
+            }
+            frameSceneNode.setLocalMatrix(animatedMatrix);
+        }
         
     }
 
@@ -294,20 +302,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         localMatrix[12] += dx;
         localMatrix[14] += dz;
         
-        if (!animated) {
+        if (animated) {
+            destinationMatrices[selectedGroupKey] = localMatrix;
+        } else {
             frameSceneNode.setLocalMatrix(localMatrix);
-            return;
         }
-        
-        // if animated, tween the localMatrix based on an alpha factor
-        const alpha = 0.2;
-        let currentMatrix = realityEditor.gui.ar.utilities.copyMatrix(frameSceneNode.localMatrix);
-        let destinationMatrix = localMatrix;
-        let animatedMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-        for (let i = 0; i < currentMatrix.length; i++) {
-            animatedMatrix[i] = (destinationMatrix[i] * alpha) + (currentMatrix[i] * (1 - alpha));
-        }
-        frameSceneNode.setLocalMatrix(animatedMatrix);
     }
 
     // when we touch up, move the selected anchor's tool to match the movement of the mouse cursor mesh relative to its anchor
@@ -331,6 +330,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
 
             // move tool to correct position
             moveSelectedToolToMouseCursor(false);
+            delete destinationMatrices[selectedGroupKey];
         }
 
         // reset any editing state
@@ -380,7 +380,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         cursorMesh.visible = true;
 
         if (REALTIME_DRAG_UPDATE) {
-            moveSelectedToolToMouseCursor(false);
+            moveSelectedToolToMouseCursor(true);
         }
     }
 
