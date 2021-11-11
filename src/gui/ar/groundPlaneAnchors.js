@@ -39,7 +39,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let mouseCursorMesh = null;
     let initialCalculationMesh = null;
 
-    const REALTIME_DRAG_UPDATE = false; // TODO: this looks a bit jittery for now, turn on if we improve its performance
+    const REALTIME_DRAG_UPDATE = true; // TODO: this looks a bit jittery for now, turn on if we improve its performance
 
     let destinationMatrices = {};
 
