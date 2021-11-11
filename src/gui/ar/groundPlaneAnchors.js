@@ -37,7 +37,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let selectionColor = 0xffff00;
     let mouseCursorColor = 0xffffff;
     let mouseCursorMesh = null;
-    let mouseCursorLine = null;
     let initialCalculationMesh = null;
 
     const REALTIME_DRAG_UPDATE = false; // TODO: this looks a bit jittery for now, turn on if we improve its performance
@@ -155,20 +154,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         return mouseCursorMesh;
     }
 
-    function getMouseCursorLine() {
-        if (!mouseCursorLine) {
-            const THREE = realityEditor.gui.threejsScene.THREE;
-            
-            let pos = { x: getMouseCursorMesh().position.x, y: getMouseCursorMesh().position.y, z: getMouseCursorMesh().position.z };
-            let points = [new THREE.Vector3(pos.z, pos.y, pos.z), new THREE.Vector3(pos.x + 1000, pos.y + 1000, pos.z + 1000)];
-            mouseCursorLine = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({color: mouseCursorColor}));
-            mouseCursorLine.name = 'mouseCursorLine';
-            mouseCursorLine.visible = isPositioningMode;
-            realityEditor.gui.threejsScene.addToScene(mouseCursorLine); // this adds it to the ground plane group by default
-        }
-        return mouseCursorLine;
-    }
-
     // the initial calculation mesh stays in the location a tool's surface anchor was at when you first started dragging it. used for coordinate system calculations.
     function getInitialCalculationMesh() {
         if (!initialCalculationMesh) {
@@ -222,7 +207,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             threejsGroups[key].visible = isPositioningMode;
         }
         if (mouseCursorMesh) { mouseCursorMesh.visible = false; }
-        if (mouseCursorLine) { mouseCursorLine.visible = false; }
         if (initialCalculationMesh) { initialCalculationMesh.visible = false; }
 
         if (isPositioningMode) {
@@ -365,7 +349,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
 
         getMouseCursorMesh().visible = false;
         getInitialCalculationMesh().visible = false;
-        getMouseCursorLine().visible = false;
     }
 
     // if we touched down on anything, calculate where to move mesh along its x-z plane so that it lines up with mouse position
@@ -379,7 +362,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         if (!thisGroup || !thisAnchorNode) { return; }
 
         let cursorMesh = getMouseCursorMesh();
-        let cursorLine = getMouseCursorLine();
 
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY);
 
@@ -401,18 +383,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         let newZ = constrainToX ? initialPosition.z : relativePosition.z + initialPosition.z;
         cursorMesh.position.set(newX, 0, newZ);
         cursorMesh.visible = true;
-
-        // update line vertices
-        // let newPoints = [new THREE.Vector3(initialPosition.x, 0, initialPosition.z), new THREE.Vector3(newX, 0, newZ)];
-        // cursorLine.geometry.setFromPoints(newPoints);
-        // cursorLine.geometry.dynamic = true;
-        // cursorLine.geometry.vertices = newPoints;
-        // cursorLine.geometry.verticesNeedUpdate = true;
-
-        cursorLine.geometry.attributes.position.setXYZ(0, initialPosition.x, 0, initialPosition.z);
-        cursorLine.geometry.attributes.position.setXYZ(1, newX, 0, newZ);
-        cursorLine.geometry.attributes.position.needsUpdate = true;
-        cursorLine.visible = true;
 
         if (REALTIME_DRAG_UPDATE) {
             moveSelectedToolToMouseCursor(true);
