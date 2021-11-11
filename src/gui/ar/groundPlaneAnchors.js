@@ -35,12 +35,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let xBoxColor = 0xff0000;
     let zBoxColor = 0x0000ff;
     let selectionColor = 0xffff00;
-    let mouseCursorColor = 0xff00ff;
+    let mouseCursorColor = 0xffffff;
     let mouseCursorMesh = null;
     let initialCalculationMesh = null;
-    
-    const REALTIME_DRAG_UPDATE = true;
-    
+
+    const REALTIME_DRAG_UPDATE = false; // TODO: this looks a bit jittery for now, turn on if we improve its performance
+
     let destinationMatrices = {};
 
     function initService() {
@@ -83,7 +83,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
                 updateFrame(frameKey);
             }
         }
-        
+
         for (let frameKey in destinationMatrices) {
             const alpha = 0.5;
             let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
@@ -95,7 +95,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             }
             frameSceneNode.setLocalMatrix(animatedMatrix);
         }
-        
+
     }
 
     function updateFrame(frameKey) {
@@ -208,7 +208,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         }
         if (mouseCursorMesh) { mouseCursorMesh.visible = false; }
         if (initialCalculationMesh) { initialCalculationMesh.visible = false; }
-        
+
         if (isPositioningMode) {
             getTouchEventCatcher().style.display = '';
             getTouchEventCatcher().style.pointerEvents = 'auto';
@@ -227,7 +227,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             touchEventCatcher.style.top = '0';
             touchEventCatcher.style.width = '100vw';
             touchEventCatcher.style.height = '100vh';
-            let zIndex = 8000;
+            let zIndex = 2900;
             touchEventCatcher.style.zIndex = zIndex + 'px';
             touchEventCatcher.style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zIndex + ',1)';
             document.body.appendChild(touchEventCatcher);
@@ -243,7 +243,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     // hit test threeJsScene to see if we hit any of the anchor threeJsGroups
     // if we are, keep track of it so we can move it on pointermove. also give visual feedback
     function onPointerDown(e) {
-        e.stopPropagation();
         isPointerDown = true;
 
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY);
@@ -274,6 +273,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             let initialMesh = getInitialCalculationMesh();
             initialMesh.visible = true;
             realityEditor.gui.threejsScene.setMatrixFromArray(initialMesh.matrix, threejsGroups[selectedGroupKey].matrix.elements);
+
+            realityEditor.device.sendEditingStateToFrameContents(selectedGroupKey, true);
+
+            // stop propagation if we hit anything, otherwise pass the event on to the rest of the application
+            e.stopPropagation();
         });
     }
 
@@ -285,11 +289,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             z: threeJsObject.matrix.elements[14]
         };
     }
-    
+
     // sets the localMatrix of a tool's scene node such that its surface anchor will move to the mouseCursor mesh's position
     function moveSelectedToolToMouseCursor(animated) {
         if (!initialAnchorPosition || !initialLocalMatrix || !selectedGroupKey) { return; }
-        
+
         // move tool to correct position
         let oldAnchorLocalPosition = initialAnchorPosition;
         let newAnchorLocalPosition = getPositionXZ(getMouseCursorMesh());
@@ -301,7 +305,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         let localMatrix = realityEditor.gui.ar.utilities.copyMatrix(initialLocalMatrix);
         localMatrix[12] += dx;
         localMatrix[14] += dz;
-        
+
         if (animated) {
             destinationMatrices[selectedGroupKey] = localMatrix;
         } else {
@@ -310,8 +314,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     }
 
     // when we touch up, move the selected anchor's tool to match the movement of the mouse cursor mesh relative to its anchor
-    function onPointerUp(e) {
-        e.stopPropagation();
+    function onPointerUp(_e) {
+        // e.stopPropagation(); // we can propagate touch up/cancel events in case gui is stuck in state before catcher shows
         isPointerDown = false;
 
         // reset mesh color
@@ -331,6 +335,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             // move tool to correct position
             moveSelectedToolToMouseCursor(false);
             delete destinationMatrices[selectedGroupKey];
+
+            realityEditor.device.sendEditingStateToFrameContents(selectedGroupKey, false);
         }
 
         // reset any editing state
@@ -347,7 +353,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
 
     // if we touched down on anything, calculate where to move mesh along its x-z plane so that it lines up with mouse position
     function onPointerMove(e) {
-        e.stopPropagation();
+        // e.stopPropagation();
         if (!isPointerDown) { return; }
         if (!selectedGroupKey) { return; }
 
@@ -362,7 +368,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         let areaTargetIntersect = null;
         intersects.forEach(function(intersect) {
             if (areaTargetIntersect) { return; }
-            // TODO: more reliably find the intersect with the groundplane if the area target mesh is unavailable
             if (intersect.object.name === 'mesh_0' || intersect.object.name === 'groundPlaneElement') {
                 areaTargetIntersect = intersect;
             }
