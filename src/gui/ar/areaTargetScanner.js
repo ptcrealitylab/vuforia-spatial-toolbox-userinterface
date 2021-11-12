@@ -217,6 +217,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             div.style.textAlign = 'center';
             div.style.fontSize = '20px';
             div.style.verticalAlign = 'middle';
+            const zIndex = 2901;
+            div.style.zIndex = zIndex;
+            div.style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zIndex + ',1)';
             document.body.appendChild(div);
 
             div.innerHTML = 'Stop Scanning';
