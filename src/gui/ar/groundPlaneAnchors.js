@@ -39,7 +39,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let mouseCursorMesh = null;
     let initialCalculationMesh = null;
 
-    const REALTIME_DRAG_UPDATE = true; // TODO: this looks a bit jittery for now, turn on if we improve its performance
+    const REALTIME_DRAG_UPDATE = true;
 
     let destinationMatrices = {};
 
@@ -227,8 +227,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             touchEventCatcher.style.top = '0';
             touchEventCatcher.style.width = '100vw';
             touchEventCatcher.style.height = '100vh';
-            let zIndex = 2900;
-            touchEventCatcher.style.zIndex = zIndex + 'px';
+            let zIndex = 2900; // above scene elements, below pocket and menus
+            touchEventCatcher.style.zIndex = zIndex;
             touchEventCatcher.style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zIndex + ',1)';
             document.body.appendChild(touchEventCatcher);
 
