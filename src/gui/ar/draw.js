@@ -1167,6 +1167,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             var activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
             
             finalMatrix[14] = 200 + activeElementZIncrease + 1000000 / Math.max(10, activeVehicle.screenZ);
+            // on devices that make elements visible from further away, make sure the z value increases proportionally so it is > 0
+            if (realityEditor.device.environment.variables.distanceScaleFactor > 1) {
+                finalMatrix[14] += realityEditor.device.environment.variables.distanceScaleFactor * 1000;
+            }
             
             // put frames all the way in the back if you are in node view
             if (shouldRenderFramesInNodeView) {
@@ -1270,7 +1274,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (this.isLowFrequencyUpdateFrame && activeVehicle.fullScreen === true && realityEditor.isVehicleAFrame(activeVehicle)) {
                 // update z-order of fullscreen frames so that closest ones get put in front of further-back ones
                 let distanceToFullscreenFrame = realityEditor.sceneGraph.getDistanceToCamera(activeKey);
-                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : -5000 - distanceToFullscreenFrame;
+                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : globalStates.defaultFullscreenFrameZ - Math.log(distanceToFullscreenFrame);
                 globalDOMCache["object" + activeKey].style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zPosition + ',1)';
             }
             
