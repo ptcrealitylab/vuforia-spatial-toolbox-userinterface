@@ -1430,7 +1430,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
 
-            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
@@ -1489,7 +1489,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
 
-            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
