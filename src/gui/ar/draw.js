@@ -1167,6 +1167,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             var activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
             
             finalMatrix[14] = 200 + activeElementZIncrease + 1000000 / Math.max(10, activeVehicle.screenZ);
+            // on devices that make elements visible from further away, make sure the z value increases proportionally so it is > 0
+            if (realityEditor.device.environment.variables.distanceScaleFactor > 1) {
+                finalMatrix[14] += realityEditor.device.environment.variables.distanceScaleFactor * 1000;
+            }
             
             // put frames all the way in the back if you are in node view
             if (shouldRenderFramesInNodeView) {
@@ -1246,6 +1250,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
             if (activeVehicle.fullScreen) {
                 let clientRect = globalDOMCache[activeKey].getClientRects()[0];
+                if (!clientRect) {
+                    let style = window.getComputedStyle(globalDOMCache[activeKey]);
+                    clientRect = {
+                        top: parseFloat(style.top),
+                        left: parseFloat(style.left),
+                        width: parseFloat(style.width),
+                        height: parseFloat(style.height),
+                    };
+                }
                 activeVehicle.screenX = clientRect.left + clientRect.width/2;
                 activeVehicle.screenY = clientRect.top + clientRect.height/2;
                 activeVehicle.screenZ = 500; // this gives it a good link line width
@@ -1261,14 +1274,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (this.isLowFrequencyUpdateFrame && activeVehicle.fullScreen === true && realityEditor.isVehicleAFrame(activeVehicle)) {
                 // update z-order of fullscreen frames so that closest ones get put in front of further-back ones
                 let distanceToFullscreenFrame = realityEditor.sceneGraph.getDistanceToCamera(activeKey);
-                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : -5000 - distanceToFullscreenFrame;
+                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : globalStates.defaultFullscreenFrameZ - Math.log(distanceToFullscreenFrame);
                 globalDOMCache["object" + activeKey].style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zPosition + ',1)';
             }
             
             if (activeType === "ui") {
                 let sendMatrices = activeVehicle.sendMatrices;
                 if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition || activeVehicle.sendPositionInWorld || activeVehicle.sendDeviceDistance ||
-                    sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
+                    sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.anchoredModelView || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
 
                     var thisMsg = {};
 
@@ -1291,6 +1304,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (sendMatrices.groundPlane === true) {
                         thisMsg.groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+                    }
+
+                    if (sendMatrices.anchoredModelView === true) {
+                        thisMsg.anchoredModelView = realityEditor.gui.ar.groundPlaneAnchors.getMatrix(activeVehicle.uuid);
                     }
 
                     if (sendMatrices.allObjects === true) {
@@ -1515,7 +1532,7 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
  */
 realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, _isFullScreen) {
     // sticky frames need a special process to show and hide depending on guiState....
-    if (globalStates.guiState === 'node' && 
+    if (globalStates.guiState === 'node' &&
         (globalDOMCache['object' + activeKey].classList.contains('visibleFrameContainer') ||
             globalDOMCache['iframe' + activeKey].classList.contains('visibleFrame') ||
             globalDOMCache[activeKey].classList.contains('usePointerEvents'))) {
@@ -1533,8 +1550,10 @@ realityEditor.gui.ar.draw.updateStickyFrameCss = function(activeKey, _isFullScre
 
     } else if (globalStates.guiState === 'ui' &&
         (globalDOMCache['object' + activeKey].classList.contains('hiddenFrameContainer') ||
+            globalDOMCache['object' + activeKey].classList.contains('outsideOfViewport') ||
             globalDOMCache['iframe' + activeKey].classList.contains('hiddenFrame') ||
             globalDOMCache[activeKey].classList.contains('ignorePointerEvents'))) {
+        globalDOMCache['object' + activeKey].classList.remove('outsideOfViewport');
 
         globalDOMCache['object' + activeKey].classList.add('visibleFrameContainer');
         globalDOMCache['object' + activeKey].classList.remove('hiddenFrameContainer');
