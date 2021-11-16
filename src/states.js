@@ -179,8 +179,7 @@ var globalStates = {
 
     useGroundPlane: false,
     
-    defaultClientName: '_HUMAN_device',
-    defaultFullscreenFrameZ: 100
+    defaultClientName: '_HUMAN_device'
 };
 
 var globalCanvas = {};

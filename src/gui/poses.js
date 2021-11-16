@@ -27,27 +27,6 @@ Object.keys(POSE_JOINTS).forEach((key, i) => {
   POSE_JOINTS[key] = i;
 });
 
-const POSE_JOINTS_DEPTH = {
-  NOSE: 0,
-  LEFT_EYE: 0,
-  RIGHT_EYE: 0,
-  LEFT_EAR: 0.1,
-  RIGHT_EAR: 0.1,
-  LEFT_SHOULDER: 0.1,
-  RIGHT_SHOULDER: 0.1,
-  LEFT_ELBOW: 0.04,
-  RIGHT_ELBOW: 0.04,
-  LEFT_WRIST: 0.04,
-  RIGHT_WRIST: 0.04,
-  LEFT_HIP: 0.1,
-  RIGHT_HIP: 0.1,
-  LEFT_KNEE: 0.06,
-  RIGHT_KNEE: 0.06,
-  LEFT_ANKLE: 0.04,
-  RIGHT_ANKLE: 0.04,
-};
-exports.POSE_JOINTS_DEPTH = POSE_JOINTS_DEPTH;
-
 const JOINT_CONNECTIONS = [
   [POSE_JOINTS.LEFT_WRIST, POSE_JOINTS.LEFT_ELBOW],
   [POSE_JOINTS.LEFT_ELBOW, POSE_JOINTS.LEFT_SHOULDER],
@@ -68,21 +47,20 @@ const JOINT_NEIGHBORS = {};
 const headJoints = [POSE_JOINTS.NOSE, POSE_JOINTS.LEFT_EYE,
     POSE_JOINTS.RIGHT_EYE, POSE_JOINTS.LEFT_EAR, POSE_JOINTS.RIGHT_EAR];
 
-{
-    let nose = POSE_JOINTS.NOSE;
-    JOINT_NEIGHBORS[nose] = headJoints.filter(j => j !== nose);
+for (let headJoint of headJoints) {
+    JOINT_NEIGHBORS[headJoint] = headJoints.filter(j => j !== headJoint);
 }
 
 for (let jc of JOINT_CONNECTIONS) {
     if (!JOINT_NEIGHBORS[jc[0]]) {
         JOINT_NEIGHBORS[jc[0]] = [];
     }
-    // if (!JOINT_NEIGHBORS[jc[1]]) {
-    //     JOINT_NEIGHBORS[jc[1]] = [];
-    // }
+    if (!JOINT_NEIGHBORS[jc[1]]) {
+        JOINT_NEIGHBORS[jc[1]] = [];
+    }
 
     JOINT_NEIGHBORS[jc[0]].push(jc[1]);
-    // JOINT_NEIGHBORS[jc[1]].push(jc[0]);
+    JOINT_NEIGHBORS[jc[1]].push(jc[0]);
 }
 exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
 
@@ -111,10 +89,9 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         gfx = canvas.getContext('2d');
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
-    gfx.fillStyle = '#0077ff';
+    gfx.fillStyle = 'green';
     gfx.font = '32px sans-serif';
-    gfx.strokeStyle = '#0077ff';
-    gfx.lineWidth = 2;
+    gfx.strokeStyle = 'green';
 
     // function format(n) {
     //     return Math.round(n * 100) / 100;
@@ -124,7 +101,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     // gfx.fillText(`${format(performance.now() - lastDraw)}`, 16, 96);
     // lastDraw = performance.now();
 
-    const jointSize = 6;
+    const jointSize = 16;
     const pointWidth = 1920;
     const pointHeight = 1080;
     let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
@@ -145,15 +122,12 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     for (let point of poses) {
-        gfx.beginPath();
-        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2;
-        gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
-        gfx.fill();
+        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2 - jointSize / 2;
+        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2 - jointSize / 2;
+        gfx.fillRect(x, y, jointSize, jointSize);
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
     }
 
-    gfx.beginPath();
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
@@ -161,10 +135,11 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         const ay = (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
         const bx = (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
         const by = (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        gfx.beginPath();
         gfx.moveTo(ax, ay);
         gfx.lineTo(bx, by);
+        gfx.stroke();
     }
-    gfx.stroke();
 };
 
 }(realityEditor.gui.poses));

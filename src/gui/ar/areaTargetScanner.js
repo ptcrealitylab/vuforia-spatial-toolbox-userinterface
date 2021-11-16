@@ -25,9 +25,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     let hasFirstSeenInstantWorld = false;
 
-    let limitScanRAM = false; // if true (toggled through menu), stop area target capture when device memory usage is high
-    let maximumPercentRAM = 0.33; // the app will stop scanning when it reaches this threshold of total device memory
-
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
@@ -62,7 +59,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             }
 
             // check if it's a world object
-            if (object && !object.deactivated && (object.isWorldObject || object.type === 'world')) {
+            if (object && (object.isWorldObject || object.type === 'world')) {
                 foundAnyWorldObjects = true;
                 console.log("world obj detected");
             } else {
@@ -105,19 +102,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         });
 
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
-
-        realityEditor.app.subscribeToAppMemoryEvents('realityEditor.gui.ar.areaTargetScanner.onAppMemoryEvent');
-
-        realityEditor.gui.settings.addToggleWithText('Limit Scan RAM', 'area target scan stops at threshold (e.g. 0.33)', 'maximumRAM', '../../../svg/powerSave.svg', false, '0.33',
-            function(newValue) {
-                console.log('limitScanRAM was set to ' + newValue);
-                limitScanRAM = newValue;
-            },
-            function(newValue) {
-                console.log('zone text was set to ' + newValue);
-                maximumPercentRAM = parseFloat(newValue) || 0.33;
-            }
-        ).moveToDevelopMenu();
     }
 
     function showNotificationIfNeeded() {
@@ -218,9 +202,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             div.style.textAlign = 'center';
             div.style.fontSize = '20px';
             div.style.verticalAlign = 'middle';
-            const zIndex = 2901;
-            div.style.zIndex = zIndex;
-            div.style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zIndex + ',1)';
             document.body.appendChild(div);
 
             div.innerHTML = 'Stop Scanning';
@@ -373,6 +354,14 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         feedbackString = status + '... (' + statusInfo + ')';
+
+        if (globalStates.debugSpeechConsole) {
+            let console = document.getElementById('speechConsole');
+            if (!console) { return; }
+            console.innerHTML =
+                'Status: ' + status + '<br>' +
+                'Info: ' + statusInfo;
+        }
     }
 
     function printFeedback() {
@@ -535,39 +524,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // });
     }
 
-    /**
-     * Stop scanning if device is using too much memory
-     * @param {string} eventName - 'report_memory' happens every 1 second, 'UIApplicationDidReceiveMemoryWarningNotification' if problem
-     * @param {number} bytesUsed - int number of bytes used by app
-     * @param {number} percentOfDeviceUsedByApp - int number of bytes in total device RAM
-     */
-    function onAppMemoryEvent(eventName, bytesUsed, percentOfDeviceUsedByApp) {
-
-        let gigabytesUsed = bytesUsed ? bytesUsed / (1024 * 1024 * 1024) : 0;
-
-        if (globalStates.debugSpeechConsole) {
-            let console = document.getElementById('speechConsole');
-            if (!console) { return; }
-            console.innerHTML = eventName + ': using ' + gigabytesUsed.toFixed(3) + ' GB ... (' + (percentOfDeviceUsedByApp * 100).toFixed(2) + '%)';
-        }
-
-        if (!isScanning) { return; }
-
-        // UIApplicationDidReceiveMemoryWarningNotification happens too late in most cases, so we check more stringently
-        if (eventName === 'UIApplicationDidReceiveMemoryWarningNotification' ||
-            (limitScanRAM && percentOfDeviceUsedByApp > maximumPercentRAM)) {
-            stopScanning();
-            console.log("stopping scan due to memory usage");
-        }
-    }
-
     exports.initService = initService;
-
-    // make functions available to native app callbacks
     exports.captureStatusHandler = captureStatusHandler;
     exports.onAreaTargetGenerateProgress = onAreaTargetGenerateProgress;
     exports.captureSuccessOrError = captureSuccessOrError;
     exports.onScreenshotReceived = onScreenshotReceived;
-    exports.onAppMemoryEvent = onAppMemoryEvent;
 
 }(realityEditor.gui.ar.areaTargetScanner));

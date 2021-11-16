@@ -85,6 +85,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 return;
             }
             elementId = realityEditor.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
+
+            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+            // const groundplaneMesh = new THREE.Mesh( geometry, material );
+            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         // create the DOM element that should visualize it and add it to the scene
@@ -101,7 +106,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorCenterLine = new THREE.Color(0, 0.3, 0.3);
             const colorGrid = new THREE.Color(0, 1, 1);
             gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
-            gridHelper.name = 'groundPlaneVisualizer';
+            // threejsContainerObj.add( gridHelper );
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 

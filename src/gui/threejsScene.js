@@ -17,8 +17,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     let raycaster;
     let mouse;
-    let distanceRaycastVector = new THREE.Vector3();
-    let distanceRaycastResultPosition = new THREE.Vector3();
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -44,6 +42,16 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         threejsContainerObj = new THREE.Object3D();
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
         scene.add(threejsContainerObj);
+
+        // const geometry = new THREE.PlaneGeometry( 10000, 10000 );
+        // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+        // const groundplaneMesh = new THREE.Mesh( geometry, material );
+        // threejsContainerObj.add(groundplaneMesh);
+        //
+        // const divisions = 10;
+        // const size = 1000 * divisions;
+        // const gridHelper = new THREE.GridHelper( size, divisions );
+        // threejsContainerObj.add( gridHelper );
 
         // light the scene with a combination of ambient and directional white light
         var ambLight = new THREE.AmbientLight(0xffffff);
@@ -72,20 +80,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         // threejsContainerObj.add( mesh );
         // mesh.position.setZ(150);
 
-        addGroundPlaneCollisionObject(); // invisible object for raycasting intersections with ground plane
-
         renderScene(); // update loop
-    }
-
-    function addGroundPlaneCollisionObject() {
-        const sceneSizeInMeters = 10;
-        const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        const material = new THREE.MeshBasicMaterial( {color: 0x00ffff, side: THREE.DoubleSide} );
-        const plane = new THREE.Mesh( geometry, material );
-        plane.rotateX(Math.PI/2);
-        plane.visible = false;
-        addToScene(plane, {occluded: true});
-        plane.name = 'groundPlaneElement';
     }
 
     function renderScene() {
@@ -106,7 +101,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         worldObjectIds.forEach(worldObjectId => {
             if (!worldObjectGroups[worldObjectId]) {
                 const group = new THREE.Group();
-                group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
@@ -157,6 +151,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
+            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+            // const groundplaneMesh = new THREE.Mesh( geometry, material );
+            // threejsContainerObj.add(groundplaneMesh);
+            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         customMaterials.update();
@@ -324,8 +323,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     }
 
     // this module exports this utility so that other modules can perform hit tests
-    // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
-    function getRaycastIntersects(clientX, clientY, objectsToCheck) {
+    function getRaycastIntersects(clientX, clientY) {
         mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
 
@@ -333,30 +331,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         raycaster.setFromCamera( mouse, camera );
 
         //3. compute intersections
-        return raycaster.intersectObjects( objectsToCheck || scene.children, true );
-    }
-
-    /**
-     * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
-     * @param {number} clientX - in screen pixels
-     * @param {number} clientY - in screen pixels
-     * @param {number} distance - in millimeters
-     * @returns {Vector3} - position relative to camera
-     */
-    function getPointAtDistanceFromCamera(clientX, clientY, distance) {
-        distanceRaycastVector.set(
-            ( clientX / window.innerWidth ) * 2 - 1,
-            - ( clientY / window.innerHeight ) * 2 + 1,
-            0
-        );
-        distanceRaycastVector.unproject(camera);
-        distanceRaycastVector.normalize();
-        distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
-        return distanceRaycastResultPosition;
-    }
-
-    function getObjectByName(name) {
-        return scene.getObjectByName(name);
+        return raycaster.intersectObjects( scene.children, true );
     }
 
     class CustomMaterials {
@@ -470,8 +445,5 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getRaycastIntersects = getRaycastIntersects;
-    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
-    exports.getObjectByName = getObjectByName;
-    exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
 })(realityEditor.gui.threejsScene);

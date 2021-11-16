@@ -79,12 +79,15 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} objectKey
      */
     function addServerForObjectIfNeeded(object, _objectKey) {
-        
+        console.log("---sssss-w-w-w---- 11")
+        console.log("--function-- addServerForObjectIfNeeded");
         if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
-
+        console.log("---sssss-w-w-w---- 12")
         var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
         var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
+        console.log("---sssss-w-w-w---- 13", serverAddress)
         if (socketsIps.indexOf(serverAddress) < 0) {
+            console.log("---sssss-w-w-w---- 14")
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
             realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress, function (socket){
@@ -290,32 +293,6 @@ createNameSpace("realityEditor.network.realtime");
 
             serverSocket.emit(realityEditor.network.getIoTitle(objects[objectKey].port,'/batchedUpdate'), JSON.stringify(messageBody));
         }
-    }
-
-    function subscribeToCameraMatrices(objectKey, callback) {
-        let object = realityEditor.getObject(objectKey);
-        if (!object) { return; }
-        let serverSocket = getServerSocketForObject(objectKey);
-        if (!serverSocket) { return; }
-        let messageBody = {
-            editorId: globalStates.tempUuid
-        }
-
-        serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
-        serverSocket.on('/cameraMatrix', callback);
-    }
-
-    function sendCameraMatrix(objectKey, cameraMatrix) {
-        let object = realityEditor.getObject(objectKey);
-        if (!object) { return; }
-        let serverSocket = getServerSocketForObject(objectKey);
-        if (!serverSocket) { return; }
-        let messageBody = {
-            cameraMatrix: cameraMatrix,
-            editorId: globalStates.tempUuid
-        }
-
-        serverSocket.emit('/cameraMatrix', JSON.stringify(messageBody));
     }
     
     class Update {
@@ -541,8 +518,5 @@ createNameSpace("realityEditor.network.realtime");
     exports.getSocketIPsForSet = getSocketIPsForSet;
     exports.createSocketInSet = createSocketInSet;
     exports.sendMessageToSocketSet = sendMessageToSocketSet;
-
-    exports.sendCameraMatrix = sendCameraMatrix;
-    exports.subscribeToCameraMatrices = subscribeToCameraMatrices;
 
 }(realityEditor.network.realtime));

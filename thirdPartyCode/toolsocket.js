@@ -177,13 +177,6 @@ class MainToolboxSocket extends ToolboxUtilities {
             // user subscribes, pub message is forwarded to all subscribers. if socket ends or subscription ends
         }
         this.DataPackage = function (origin, network, method, route, body, id = null) {
-		if (id && id.includes('/')) {
-			throw new Error('no thanks');
-		}
-		if (body && body.i && body.i.includes('/')) {
-			console.log('this is trash', body);
-			throw new Error('no thanks');
-		}
             this.i = id;
             this.o = origin;
             this.n = network;
@@ -223,7 +216,6 @@ class MainToolboxSocket extends ToolboxUtilities {
         this.router = (msg) => {
             let msgLength = 0;
             let objBin = {obj: {}, bin: {}};
-	    // console.log('router', msg);
                 if(typeof msg !== "string") {
                     if(this.bufferLength){
                         this.binaryBuffer.push(msg);
@@ -261,7 +253,7 @@ class MainToolboxSocket extends ToolboxUtilities {
 
             if (!that.validate(objBin.obj, msgLength, this.dataPackageSchema)) {
                // console.log(objBin.obj.r,"not allowed");
-                console.log("datapackage validation failed", objBin);
+                console.log("not allowed");
                 return;
             }
             if (objBin.obj.m === 'ping') {
@@ -310,7 +302,7 @@ class MainToolboxSocket extends ToolboxUtilities {
             }
         }.bind(this), this.timetoRequestPackage);
 
-        this.message = this.new =this.delete = this.patch = this.io = this.put = this.post = this.get = this.action = this.keys = this.beat = this.ping = (route, body, callback) => { console.warn('unimplemented route', route); };
+        this.message = this.new =this.delete = this.patch = this.io = this.put = this.post = this.get = this.action = this.keys = this.beat = this.ping = (route, body, callback) => {};
 
         for (let value of this.dataPackageSchema.items.properties.m.enum) {
             this[value] = (route, body, callback, dataObject) => {
@@ -372,7 +364,6 @@ class MainToolboxSocket extends ToolboxUtilities {
                     objBin.obj.i = null;
             }
             if(objBin.bin) {
-		console.log('send binary', objBin);
                 if (objBin.bin.data) {
                     if(Array.isArray(objBin.bin.data)){
                         objBin.obj.f = objBin.bin.data.length;
@@ -386,8 +377,6 @@ class MainToolboxSocket extends ToolboxUtilities {
                     return;
                 }
             }
-		if (objBin.obj.i && objBin.obj.i.includes('/'))
-	    console.log('send normal', objBin);
             objBin.obj.f = null;
             this.socket.send(JSON.stringify(objBin.obj), {binary: false});
         }
