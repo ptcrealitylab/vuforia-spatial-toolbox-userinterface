@@ -400,6 +400,15 @@ realityEditor.app.setOrientation = function(orientationString, callBack) {
 };
 
 /**
+ * Triggers the callback whenever the app moves receives a high memory usage event
+ // * The callback has a single string argument of: "report_memory" or a warning, and an integer argument of bytesUsed
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.subscribeToAppMemoryEvents = function(callBack) {
+    this.appFunctionCall('subscribeToAppMemoryEvents', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__, __ARG3__])');
+}
+
+/**
  **************Debugging****************
  **/
 

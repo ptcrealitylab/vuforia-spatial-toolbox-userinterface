@@ -79,6 +79,7 @@ var realityEditor = realityEditor || {
             areaTargetScanner: {},
             draw: {},
             frameHistoryRenderer: {},
+            groundPlaneAnchors: {},
             groundPlaneRenderer: {},
             grouping: {},
             lines: {},

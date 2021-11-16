@@ -737,6 +737,25 @@ createNameSpace("realityEditor.app.targetDownloader");
             }
         }
     }
+    
+    // if the vuforia engine gets hard-restarted during the session, we can use this to add the observers back to engine
+    function reinstatePreviouslyAddedTargets() {
+        console.log('>> reinstatePreviouslyAddedTargets');
+        Object.keys(targetDownloadStates).forEach(function(objectID) {
+            let states = targetDownloadStates[objectID];
+            if (states && states.MARKER_ADDED === DownloadState.SUCCEEDED && targetDownloadStates[objectID].FILENAME) {
+                if (states.JPG === DownloadState.SUCCEEDED && states.DAT !== DownloadState.SUCCEEDED) {
+                    console.log('>> add JPG target again: ' + objectID);
+                    let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
+                    realityEditor.app.addNewMarkerJPG(targetDownloadStates[objectID].FILENAME, objectID, targetWidth, moduleName + '.onMarkerAdded');
+                    targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+                } else if (states.DAT === DownloadState.SUCCEEDED) {
+                    console.log('>> add DAT target again: ' + objectID);
+                    realityEditor.app.addNewMarker(targetDownloadStates[objectID].FILENAME, moduleName + '.onMarkerAdded');
+                }
+            }
+        });
+    }
 
     // if the vuforia engine gets hard-restarted during the session, we can use this to add the observers back to engine
     function reinstatePreviouslyAddedTargets() {
