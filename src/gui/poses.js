@@ -146,8 +146,8 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     for (let point of poses) {
         gfx.beginPath();
-        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const y = -(point.y - cy) / pointHeight * outHeight + gfx.height / 2;
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
@@ -157,10 +157,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
-        const ax = (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const ay = (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
-        const bx = (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const by = (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const ax = - (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const ay = - (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const bx = - (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const by = - (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
         gfx.moveTo(ax, ay);
         gfx.lineTo(bx, by);
     }
