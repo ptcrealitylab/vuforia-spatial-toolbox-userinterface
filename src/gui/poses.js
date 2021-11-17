@@ -111,10 +111,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         gfx = canvas.getContext('2d');
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
-    gfx.fillStyle = '#0077ff';
+    gfx.fillStyle = '#00ffff';
     gfx.font = '32px sans-serif';
-    gfx.strokeStyle = '#0077ff';
-    gfx.lineWidth = 2;
+    gfx.strokeStyle = '#00ffff';
+    gfx.lineWidth = 4;
 
     // function format(n) {
     //     return Math.round(n * 100) / 100;
@@ -124,13 +124,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     // gfx.fillText(`${format(performance.now() - lastDraw)}`, 16, 96);
     // lastDraw = performance.now();
 
-    const jointSize = 6;
-    const pointWidth = 1920;
-    const pointHeight = 1080;
-    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
-    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
-    const cx = pointWidth / 2;
-    const cy = pointHeight / 2;
+    const jointSize = 8;
 
     // if (window.outScaleX) {
     //     outWidth *= window.outScaleX;
@@ -142,6 +136,13 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     if (poses.length === 0) {
         return;
     }
+
+    const pointWidth = poses[0].width;
+    const pointHeight = poses[0].height;
+    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
+    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    const cx = pointWidth / 2;
+    const cy = pointHeight / 2;
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     for (let point of poses) {
