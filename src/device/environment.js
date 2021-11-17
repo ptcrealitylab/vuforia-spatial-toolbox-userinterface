@@ -46,7 +46,8 @@ createNameSpace("realityEditor.device.environment");
         localServerPort: 49369, // the port where a local vuforia-spatial-edge-server can be expected
         // matrices
         initialPocketToolRotation: null,
-        supportsAreaTargetCapture: true
+        supportsAreaTargetCapture: true,
+        hideOriginCube: false // explicitly don't show the 3d cubes at the world origin
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property
