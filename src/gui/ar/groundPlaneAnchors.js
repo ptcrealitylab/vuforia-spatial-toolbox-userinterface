@@ -347,6 +347,13 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             delete destinationMatrices[selectedGroupKey];
 
             realityEditor.device.sendEditingStateToFrameContents(selectedGroupKey, false);
+
+            // post its position to the server so it persists
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey);
+            if (sceneNode && sceneNode.linkedVehicle) {
+                realityEditor.network.postVehiclePosition(sceneNode.linkedVehicle);
+                console.log('post vehicle position');
+            }
         }
 
         // reset any editing state
