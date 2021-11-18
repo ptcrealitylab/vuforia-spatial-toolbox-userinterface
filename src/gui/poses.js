@@ -149,7 +149,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     const pointWidth = poses[0].width;
     let pointHeight = poses[0].height;
     if (globalStates.device.startsWith('iPad')) {
-        pointHeight *= (1668 / 2388) * (1920 / 1080);
+        pointHeight /= (1668 / 2388) * (1920 / 1080);
     }
     let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
     let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
