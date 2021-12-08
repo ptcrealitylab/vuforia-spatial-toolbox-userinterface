@@ -65,25 +65,34 @@ const JOINT_CONNECTIONS = [
 exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
 
 const JOINT_NEIGHBORS = {};
+
+JOINT_NEIGHBORS[POSE_JOINTS.LEFT_HIP] = [POSE_JOINTS.LEFT_HIP, POSE_JOINTS.RIGHT_HIP, POSE_JOINTS.LEFT_SHOULDER, POSE_JOINTS.RIGHT_SHOULDER];
+
 const headJoints = [POSE_JOINTS.NOSE, POSE_JOINTS.LEFT_EYE,
-    POSE_JOINTS.RIGHT_EYE, POSE_JOINTS.LEFT_EAR, POSE_JOINTS.RIGHT_EAR];
+    POSE_JOINTS.RIGHT_EYE, POSE_JOINTS.LEFT_EAR, POSE_JOINTS.RIGHT_EAR,
+    POSE_JOINTS.LEFT_SHOULDER, POSE_JOINTS.RIGHT_SHOULDER];
 
 {
     let nose = POSE_JOINTS.NOSE;
-    JOINT_NEIGHBORS[nose] = headJoints.filter(j => j !== nose);
+    JOINT_NEIGHBORS[nose] = headJoints; // .filter(j => j !== nose);
 }
 
-for (let jc of JOINT_CONNECTIONS) {
-    if (!JOINT_NEIGHBORS[jc[0]]) {
-        JOINT_NEIGHBORS[jc[0]] = [];
-    }
-    // if (!JOINT_NEIGHBORS[jc[1]]) {
-    //     JOINT_NEIGHBORS[jc[1]] = [];
-    // }
+JOINT_NEIGHBORS[POSE_JOINTS.LEFT_WRIST] = [POSE_JOINTS.LEFT_WRIST, POSE_JOINTS.LEFT_SHOULDER, POSE_JOINTS.LEFT_ELBOW];
+JOINT_NEIGHBORS[POSE_JOINTS.RIGHT_WRIST] = [POSE_JOINTS.RIGHT_WRIST, POSE_JOINTS.RIGHT_SHOULDER, POSE_JOINTS.RIGHT_ELBOW];
+JOINT_NEIGHBORS[POSE_JOINTS.LEFT_KNEE] = [POSE_JOINTS.LEFT_KNEE, POSE_JOINTS.LEFT_HIP, POSE_JOINTS.LEFT_ANKLE];
+JOINT_NEIGHBORS[POSE_JOINTS.RIGHT_KNEE] = [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.RIGHT_HIP, POSE_JOINTS.RIGHT_ANKLE];
 
-    JOINT_NEIGHBORS[jc[0]].push(jc[1]);
-    // JOINT_NEIGHBORS[jc[1]].push(jc[0]);
-}
+// for (let jc of JOINT_CONNECTIONS) {
+//     if (!JOINT_NEIGHBORS[jc[0]]) {
+//         JOINT_NEIGHBORS[jc[0]] = [jc[0]];
+//     }
+//     // if (!JOINT_NEIGHBORS[jc[1]]) {
+//     //     JOINT_NEIGHBORS[jc[1]] = [];
+//     // }
+//
+//     JOINT_NEIGHBORS[jc[0]].push(jc[1]);
+//     // JOINT_NEIGHBORS[jc[1]].push(jc[0]);
+// }
 exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
 
 // let lastDraw = performance.now();
@@ -111,10 +120,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         gfx = canvas.getContext('2d');
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
-    gfx.fillStyle = '#0077ff';
+    gfx.fillStyle = '#00ffff';
     gfx.font = '32px sans-serif';
-    gfx.strokeStyle = '#0077ff';
-    gfx.lineWidth = 2;
+    gfx.strokeStyle = '#00ffff';
+    gfx.lineWidth = 4;
 
     // function format(n) {
     //     return Math.round(n * 100) / 100;
@@ -124,13 +133,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     // gfx.fillText(`${format(performance.now() - lastDraw)}`, 16, 96);
     // lastDraw = performance.now();
 
-    const jointSize = 6;
-    const pointWidth = 1920;
-    const pointHeight = 1080;
-    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
-    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
-    const cx = pointWidth / 2;
-    const cy = pointHeight / 2;
+    const jointSize = 8;
 
     // if (window.outScaleX) {
     //     outWidth *= window.outScaleX;
@@ -143,11 +146,21 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         return;
     }
 
+    const pointWidth = poses[0].width;
+    const pointHeight = poses[0].height;
+    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
+    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    if (globalStates.device.startsWith('iPad')) {
+        outHeight = gfx.height;
+    }
+    const cx = pointWidth / 2;
+    const cy = pointHeight / 2;
+
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     for (let point of poses) {
         gfx.beginPath();
-        const x = (point.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const y = (point.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const y = -(point.y - cy) / pointHeight * outHeight + gfx.height / 2;
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
@@ -157,10 +170,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
-        const ax = (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const ay = (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
-        const bx = (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const by = (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const ax = - (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const ay = - (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const bx = - (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        const by = - (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
         gfx.moveTo(ax, ay);
         gfx.lineTo(bx, by);
     }

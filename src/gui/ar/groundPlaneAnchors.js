@@ -58,6 +58,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
                 console.warn(e);
             }
         });
+
+        realityEditor.gui.buttons.registerCallbackForButton('setting', function(_params) {
+            updatePositioningMode(); // check if positioning mode needs update due to settings menu state
+        });
     }
 
     /**
@@ -203,13 +207,19 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     // show and hide the anchors as well as the touch event catcher
     function togglePositioningMode() {
         isPositioningMode = !isPositioningMode;
+        updatePositioningMode(); // refreshes the effects of the current mode
+    }
+
+    // we only render everything if the settings menu isn't shown, so as not to interfere with settings touch events
+    // as a result, this needs to also be called every time the settings menu shows or hides
+    function updatePositioningMode() {
         for (let key in threejsGroups) {
-            threejsGroups[key].visible = isPositioningMode;
+            threejsGroups[key].visible = isPositioningMode && !globalStates.settingsButtonState;
         }
         if (mouseCursorMesh) { mouseCursorMesh.visible = false; }
         if (initialCalculationMesh) { initialCalculationMesh.visible = false; }
 
-        if (isPositioningMode) {
+        if (isPositioningMode && !globalStates.settingsButtonState) {
             getTouchEventCatcher().style.display = '';
             getTouchEventCatcher().style.pointerEvents = 'auto';
         } else {
@@ -337,6 +347,13 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             delete destinationMatrices[selectedGroupKey];
 
             realityEditor.device.sendEditingStateToFrameContents(selectedGroupKey, false);
+
+            // post its position to the server so it persists
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(selectedGroupKey);
+            if (sceneNode && sceneNode.linkedVehicle) {
+                realityEditor.network.postVehiclePosition(sceneNode.linkedVehicle);
+                console.log('post vehicle position');
+            }
         }
 
         // reset any editing state
