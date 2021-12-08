@@ -249,10 +249,25 @@ createNameSpace('realityEditor.app.callbacks');
             for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
                 let pointA = poses[start];
                 let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
+                let outlierPresent = false;
+                let minDepth = pointA.depth;
                 for (let other of others) {
                     let pointB = poses[other];
-                    if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
-                        pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+                    minDepth = Math.min(minDepth, pointB.depth);
+                }
+                for (let other of others) {
+                    let pointB = poses[other];
+                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
+                        outlierPresent = true;
+                    }
+                }
+                if (!outlierPresent) {
+                    continue;
+                }
+                for (let other of others) {
+                    let pointB = poses[other];
+                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
+                        pointB.depth = minDepth;
                     }
                 }
             }

@@ -112,7 +112,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 scene.add(group);
 
                 // Helps visualize world object origin point for debugging
-                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId()) {
+                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId() && !realityEditor.device.environment.variables.hideOriginCube) {
                     const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
                     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
                     const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
@@ -273,37 +273,51 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, callback) {
+    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
         const gltfLoader = new GLTFLoader();
 
         gltfLoader.load(pathToGltf, function(gltf) {
+            let wireMesh;
+            let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
+                wireframe: true,
+                color: 0x00ffff,
+            }), maxHeight, center, true, true);
 
             if (gltf.scene.children[0].geometry) {
                 if (typeof maxHeight !== 'undefined') {
-                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight, true);
+                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material, maxHeight, center, true);
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
+                wireMesh = new THREE.Mesh(gltf.scene.children[0].geometry, wireMaterial);
             } else {
                 gltf.scene.children[0].children.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
-                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight, true);
+                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
                     }
                 });
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
+                wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
+            wireMesh.scale.set(1000, 1000, 1000); // convert meters -> mm
             if (typeof originOffset !== 'undefined') {
                 gltf.scene.position.set(originOffset.x, originOffset.y, originOffset.z);
+                wireMesh.position.set(originOffset.x, originOffset.y, originOffset.z);
             }
             if (typeof originRotation !== 'undefined') {
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
+                wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
+            threejsContainerObj.add( wireMesh );
+            setTimeout(() => {
+                threejsContainerObj.remove(wireMesh);
+            }, 10000);
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
@@ -362,92 +376,220 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
+            this.lastUpdate = -1;
         }
-        areaTargetVertexShader() {
-            return `
-            precision highp float;
+        areaTargetVertexShader(center) {
+            return THREE.ShaderChunk.meshphysical_vert
+                .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+    vPosition = position;
+    len = length(vPosition - vec3(${center.x}, ${center.y}, ${center.z}));
+    vWorldPosition = (modelMatrix * vec4( transformed, 1.0 )).xyz;`).replace('#include <common>', `#include <common>
+    varying vec3 vPosition;
+    varying float len;
+    varying vec3 vWorldPosition;`);
 
-            uniform float sineTime;
-            uniform float time;
-
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-
-            attribute vec3 position;
-            attribute vec4 color;
-            attribute vec3 translate;
-            attribute vec2 uv;
-
-            varying vec3 vPosition;
-            varying vec4 vColor;
-            varying float vScale;
-            varying vec2 vUv;
-
-            void main(){
-
-                vPosition = position;
-                vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
-                float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
-                vScale = scale;
-
-                vColor = color;
-                vUv = uv;
-
-                gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
-
+            /*`
+            #define STANDARD
+varying vec3 vViewPosition;
+#ifdef USE_TRANSMISSION
+	varying vec3 vWorldPosition;
+#endif
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <normal_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+	#include <uv_vertex>
+	#include <uv2_vertex>
+	#include <color_vertex>
+	#include <beginnormal_vertex>
+	#include <morphnormal_vertex>
+	#include <skinbase_vertex>
+	#include <skinnormal_vertex>
+	#include <defaultnormal_vertex>
+	#include <normal_vertex>
+	#include <begin_vertex>
+	#include <morphtarget_vertex>
+	#include <skinning_vertex>
+	#include <displacementmap_vertex>
+	#include <project_vertex>
+	#include <logdepthbuf_vertex>
+	#include <clipping_planes_vertex>
+	vViewPosition = - mvPosition.xyz;
+	#include <worldpos_vertex>
+	#include <shadowmap_vertex>
+	#include <fog_vertex>
+#ifdef USE_TRANSMISSION
+	vWorldPosition = worldPosition.xyz;
+#endif
+}
+          `*/
+        }
+        areaTargetFragmentShader(inverted) {
+            let condition = 'if (len > maxHeight) discard;';
+            if (inverted) {
+                condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
             }
+            // let condition = 'if (vPosition.y > maxHeight) discard;';
+            // if (inverted) {
+            //     condition = 'if (vPosition.y < maxHeight) discard;';
+            // }
+            return `
+#define STANDARD
+#ifdef PHYSICAL
+	#define REFLECTIVITY
+	#define CLEARCOAT
+	#define TRANSMISSION
+#endif
+uniform vec3 diffuse;
+uniform vec3 emissive;
+uniform float roughness;
+uniform float metalness;
+uniform float opacity;
+uniform float maxHeight;
+#ifdef TRANSMISSION
+	uniform float transmission;
+#endif
+#ifdef REFLECTIVITY
+	uniform float reflectivity;
+#endif
+#ifdef CLEARCOAT
+	uniform float clearcoat;
+	uniform float clearcoatRoughness;
+#endif
+#ifdef USE_SHEEN
+	uniform vec3 sheen;
+#endif
+varying vec3 vWorldPosition;
+varying vec3 vPosition;
+varying float len;
+varying vec3 vViewPosition;
+#ifndef FLAT_SHADED
+	varying vec3 vNormal;
+	#ifdef USE_TANGENT
+		varying vec3 vTangent;
+		varying vec3 vBitangent;
+	#endif
+#endif
+#include <common>
+#include <packing>
+#include <dithering_pars_fragment>
+#include <color_pars_fragment>
+#include <uv_pars_fragment>
+#include <uv2_pars_fragment>
+#include <map_pars_fragment>
+#include <alphamap_pars_fragment>
+#include <aomap_pars_fragment>
+#include <lightmap_pars_fragment>
+#include <emissivemap_pars_fragment>
+#include <transmissionmap_pars_fragment>
+#include <bsdfs>
+#include <cube_uv_reflection_fragment>
+#include <envmap_common_pars_fragment>
+#include <envmap_physical_pars_fragment>
+#include <fog_pars_fragment>
+#include <lights_pars_begin>
+#include <lights_physical_pars_fragment>
+#include <shadowmap_pars_fragment>
+#include <bumpmap_pars_fragment>
+#include <normalmap_pars_fragment>
+#include <clearcoat_pars_fragment>
+#include <roughnessmap_pars_fragment>
+#include <metalnessmap_pars_fragment>
+#include <logdepthbuf_pars_fragment>
+#include <clipping_planes_pars_fragment>
+void main() {
+    ${condition}
+    // if (maxHeight > 0.5) discard;
+	#include <clipping_planes_fragment>
+	vec4 diffuseColor = vec4( diffuse, opacity );
+	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
+	vec3 totalEmissiveRadiance = emissive;
+	#ifdef TRANSMISSION
+		float totalTransmission = transmission;
+	#endif
+	#include <logdepthbuf_fragment>
+	#include <map_fragment>
+	#include <color_fragment>
+	#include <alphamap_fragment>
+	#include <alphatest_fragment>
+	#include <roughnessmap_fragment>
+	#include <metalnessmap_fragment>
+	#include <normal_fragment_begin>
+	#include <normal_fragment_maps>
+	#include <clearcoat_normal_fragment_begin>
+	#include <clearcoat_normal_fragment_maps>
+	#include <emissivemap_fragment>
+	#include <transmissionmap_fragment>
+	#include <lights_physical_fragment>
+	#include <lights_fragment_begin>
+	#include <lights_fragment_maps>
+	#include <lights_fragment_end>
+	#include <aomap_fragment>
+	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+	#ifdef TRANSMISSION
+		diffuseColor.a *= mix( saturate( 1. - totalTransmission + linearToRelativeLuminance( reflectedLight.directSpecular + reflectedLight.indirectSpecular ) ), 1.0, metalness );
+	#endif
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+	#include <tonemapping_fragment>
+	#include <encodings_fragment>
+	#include <fog_fragment>
+	#include <premultiplied_alpha_fragment>
+	#include <dithering_fragment>
+}
           `
         }
-        areaTargetFragmentShader() {
-            return `
-            precision highp float;
+        areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
+            let material = sourceMaterial.clone();
+            console.log(material);
+            material.uniforms = THREE.UniformsUtils.merge([
+                THREE.ShaderLib.standard.uniforms,
+                {
+                    maxHeight: {value: maxHeight},
+                }
+            ]);
 
-            uniform sampler2D map;
-            uniform float maxHeight;
-
-            varying vec2 vUv;
-            varying float vScale;
-            varying vec3 vPosition;
-
-            void main() {
-                gl_FragColor = texture2D( map, vUv );
-
-                if (vPosition.y > maxHeight) discard;
-            }
-          `
-        }
-        areaTargetMaterialWithTextureAndHeight(sourceTexture, maxHeight, animateOnLoad) {
-            let material = new THREE.RawShaderMaterial({
-                uniforms: {
-                    "time": {value: 1.0},
-                    "sineTime": {value: 1.0},
-                    "map": { value: sourceTexture },
-                    "maxHeight": {value: maxHeight}
-                },
-                vertexShader: this.areaTargetVertexShader(),
-                fragmentShader: this.areaTargetFragmentShader(),
-                side: THREE.FrontSide
-            });
+            material.vertexShader = this.areaTargetVertexShader(center);
+            material.fragmentShader = this.areaTargetFragmentShader(inverted);
 
             if (animateOnLoad) {
                 this.materialsToAnimate.push({
                     material: material,
-                    currentHeight: 0,
-                    maxHeight: maxHeight,
-                    animationSpeed: 0.02
+                    currentHeight: -10, // -maxHeight,
+                    maxHeight: maxHeight * 4,
+                    animationSpeed: 0.02 / 2
                 });
             }
+
+            material.type = 'thecoolermeshstandardmaterial';
+
+            material.needsUpdate = true;
 
             return material;
         }
         update() {
             if (this.materialsToAnimate.length === 0) { return; }
 
+            let now = window.performance.now();
+            if (this.lastUpdate < 0) {
+                this.lastUpdate = now;
+            }
+            let dt = now - this.lastUpdate;
+            this.lastUpdate = now;
+
             let indicesToRemove = [];
             this.materialsToAnimate.forEach(function(entry, index) {
                 let material = entry.material;
                 if (entry.currentHeight < entry.maxHeight) {
-                    entry.currentHeight += entry.animationSpeed;
+                    entry.currentHeight += entry.animationSpeed * dt;
                     material.uniforms['maxHeight'].value = entry.currentHeight;
                 } else {
                     indicesToRemove.push(index);
