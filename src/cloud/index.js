@@ -100,25 +100,25 @@ if(getDesktopLinkData.n) {
     console.log("------------ ",realityEditor.network.state);
     realityEditor.cloud.connectToCloud();
 } else {
-    
+
 realityEditor.cloud.worker = new Worker("src/cloud/hrqrWorker.js");
 
 realityEditor.cloud.worker.onmessage = function(event) {
     let msg = event.data;
-    if (msg["mode"] === "msg") {
-
-        let getLinkData = io.parseUrl(msg["msg"][0].msg, realityEditor.network.qrSchema);
-
-        if (getLinkData.protocol === "spatialtoolbox") {
-            realityEditor.app.tap();
-            realityEditor.network.state.proxyProtocol = "https";
-            realityEditor.network.state.proxyPort = 443;
-            if (getLinkData.server) realityEditor.network.state.proxyUrl = getLinkData.server;
-            if (getLinkData.n) realityEditor.network.state.proxyNetwork = getLinkData.n;
-            if (getLinkData.s) realityEditor.network.state.proxySecret = getLinkData.s;
-            console.log("------------ ", getLinkData);
-            realityEditor.cloud.connectToCloud();
-        }
+    if(msg["mode"] === "msg") {
+      
+            let getLinkData = io.parseUrl(msg["msg"][0].msg, realityEditor.network.qrSchema);
+         
+            if(getLinkData.protocol === "spatialtoolbox") {
+                realityEditor.app.tap();
+                realityEditor.network.state.proxyProtocol = "https";
+                realityEditor.network.state.proxyPort = 443;
+                if(getLinkData.server) realityEditor.network.state.proxyUrl = getLinkData.server;
+                if(getLinkData.n) realityEditor.network.state.proxyNetwork = getLinkData.n;
+                if(getLinkData.s) realityEditor.network.state.proxySecret = getLinkData.s;
+                console.log("------------ ",getLinkData);
+                realityEditor.cloud.connectToCloud();
+            }
 
         try {
         } catch (e) {
@@ -127,7 +127,7 @@ realityEditor.cloud.worker.onmessage = function(event) {
     }
 }
 };
-
+    
 
 let time;
 realityEditor.cloud.imageBuffer = new window.Image();

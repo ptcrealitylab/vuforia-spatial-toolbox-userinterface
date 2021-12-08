@@ -367,6 +367,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         modelView : false,
         devicePose : false,
         groundPlane : false,
+        anchoredModelView: false,
         allObjects : false
     };
     thisObject.sendScreenPosition = false;
@@ -434,6 +435,7 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
         modelView : false,
         devicePose : false,
         groundPlane : false,
+        anchoredModelView: false,
         allObjects : false
     };
     thisFrame.sendScreenPosition = false;
@@ -453,6 +455,7 @@ realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, 
     }
 
     realityEditor.sceneGraph.addFrame(objectKey, frameKey, thisFrame, positionData.matrix);
+    realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(objectKey, frameKey, thisFrame, positionData.matrix);
 
     for (let nodeKey in thisFrame.nodes) {
         var thisNode = thisFrame.nodes[nodeKey];
@@ -1104,6 +1107,7 @@ realityEditor.network.onAction = function (action) {
                 modelView : false,
                 devicePose : false,
                 groundPlane : false,
+                anchoredModelView: false,
                 allObjects : false
             };
             frame.sendScreenPosition = false;
@@ -1374,6 +1378,17 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 }
             }
         }
+        if (msgContent.sendMatrices.anchoredModelView === true) {
+            if (tempThisObject.integerVersion >= 32) {
+                if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
+                tempThisObject.sendMatrices.anchoredModelView = true;
+                let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
+                if (activeKey === msgContent.frame) {
+                    globalDOMCache["iframe" + activeKey].contentWindow.postMessage(
+                        '{"projectionMatrix":' + JSON.stringify(globalStates.realProjectionMatrix) + "}", '*');
+                }
+            }
+        }
         if (msgContent.sendMatrices.devicePose === true) {
             if (tempThisObject.integerVersion >= 32) {
                 if(!tempThisObject.sendMatrices) tempThisObject.sendMatrices = {};
@@ -1518,7 +1533,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
 
-            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
@@ -1577,7 +1592,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
 
-            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 

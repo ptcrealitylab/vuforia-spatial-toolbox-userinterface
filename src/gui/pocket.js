@@ -808,6 +808,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             realityEditor.network.toBeInitialized[frameID] = true;
 
             realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
+            realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(frame.objectId, frameID, frame, frame.ar.matrix);
 
             console.log(frame);
             // send it to the server
@@ -853,6 +854,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         function pocketButtonPressed(params) {
             if (params.newButtonState === 'up') {
+
+                document.activeElement.blur(); // reset focus in case our scrolling lost focus
                 
                 // show UI pocket by switching out of node view when the pocket button is tapped
                 var HACK_AUTO_SWITCH_TO_GUI = true;

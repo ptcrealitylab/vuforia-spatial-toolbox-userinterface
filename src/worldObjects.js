@@ -134,7 +134,7 @@ createNameSpace("realityEditor.worldObjects");
             pr: 'R2',
             tcs: null,
             zone: '' };
-        
+
         console.log("--function-- tryLoadingLocalWorldObject", realityEditor.network.state);
         if(!realityEditor.network.state.isCloudInterface)
         realityEditor.network.addHeartbeatObject(worldObjectBeat);

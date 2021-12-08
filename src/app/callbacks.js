@@ -61,6 +61,8 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
+    const skeletonDedupId = Math.floor(Math.random() * 10000);
+
     function onOrientationSet() {
         // start the AR framework in native iOS
         realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
@@ -145,7 +147,6 @@ createNameSpace('realityEditor.app.callbacks');
                 return;
             }}
         
-        console.log("--s--", message)
         if (typeof message !== 'object') {
             try {
                 message = JSON.parse(message);
@@ -245,12 +246,20 @@ createNameSpace('realityEditor.app.callbacks');
         // }
 
         if (poses.length > 0) {
-            for (let jc of realityEditor.gui.poses.JOINT_CONNECTIONS) {
-                let pointA = poses[jc[0]];
-                let pointB = poses[jc[1]];
-                if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
-                    pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+            for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
+                let pointA = poses[start];
+                let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
+                for (let other of others) {
+                    let pointB = poses[other];
+                    if (Math.abs(pointA.depth - pointB.depth) > 1.5) {
+                        pointB.depth = pointA.depth = Math.min(pointA.depth, pointB.depth);
+                    }
                 }
+            }
+
+            let depths = Object.values(realityEditor.gui.poses.POSE_JOINTS_DEPTH);
+            for (let i = 0; i < depths.length; i++) {
+                poses[i].depth += depths[i];
             }
         }
 
@@ -301,7 +310,7 @@ createNameSpace('realityEditor.app.callbacks');
         sceneNode.updateWorldMatrix();
 
         let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
-        let msg = {time: Date.now(), pose: [{id: 1337, joints: coolerPoses}], camera: cameraMat};
+        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: coolerPoses}], camera: cameraMat};
 
         // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
         //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
@@ -436,7 +445,25 @@ createNameSpace('realityEditor.app.callbacks');
                             if (globalStates.useGroundPlane) {
                                 // let rotated = [];
                                 // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
-                                realityEditor.sceneGraph.setGroundPlanePosition(worldOriginMatrix);
+                                let offset = [];
+                                let floorOffset = 0;
+                                try {
+                                    let navmesh = JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${worldObject.uuid}`));
+                                    floorOffset = navmesh.floorOffset * 1000;
+                                } catch (e) {
+                                    console.warn('No navmesh', worldObject, e);
+                                }
+                                let buffer = 100;
+                                floorOffset += buffer;
+                                let groundPlaneOffsetMatrix = [
+                                    1, 0, 0, 0,
+                                    0, 1, 0, 0,
+                                    0, 0, 1, 0,
+                                    0, floorOffset, 0, 1
+                                ];
+                                let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
+                                realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
+                                realityEditor.sceneGraph.setGroundPlanePosition(offset);
                             }
                         }
                     }
@@ -574,14 +601,20 @@ createNameSpace('realityEditor.app.callbacks');
                         realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                     } else {
                         let offset = [];
-                        let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
+                        let floorOffset = 0;
+                        try {
+                            let navmesh = JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${worldObject.uuid}`));
+                            floorOffset = navmesh.floorOffset * 1000;
+                        } catch (e) {
+                            console.warn('No navmesh', worldObject, e);
+                        }
                         let buffer = 100;
                         floorOffset += buffer;
                         let groundPlaneOffsetMatrix = [
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
-                            0, 0 * floorOffset, 0, 1
+                            0, floorOffset, 0, 1
                         ];
                         realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
                         realityEditor.sceneGraph.setGroundPlanePosition(offset);
