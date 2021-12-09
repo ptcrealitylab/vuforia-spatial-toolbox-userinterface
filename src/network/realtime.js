@@ -87,7 +87,7 @@ createNameSpace("realityEditor.network.realtime");
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
             realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress, function (socket){
-                socket.emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+                sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
                 addServerUpdateListener(serverAddress);
             });
      
