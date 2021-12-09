@@ -1,4 +1,5 @@
 createNameSpace("realityEditor.network.realtime");
+/* global updateFramerate */
 
 // TODO we have to check that this method only connects to the objects currently visible. Otherwise it will not scale.
 
@@ -56,13 +57,11 @@ createNameSpace("realityEditor.network.realtime");
     }
     
     function loop() {
-        let frameRate = null 
-        if(updateFramerate)
-        {
-        setInterval(()=>{
-            sendBatchedUpdates();
-            batchedUpdates = {};
-        }, (1000/updateFramerate));
+        if(typeof updateFramerate !== 'undefined') {
+            setInterval(() => {
+                sendBatchedUpdates();
+                batchedUpdates = {};
+            }, 1000 / updateFramerate);
         } else {
             sendBatchedUpdates();
             batchedUpdates = {};
@@ -305,7 +304,22 @@ createNameSpace("realityEditor.network.realtime");
         serverSocket.on('/cameraMatrix', callback);
     }
 
+    let lastCamera = null;
+    let lastCameraSend = 0;
     function sendCameraMatrix(objectKey, cameraMatrix) {
+        let targetDt = 100;
+        if (typeof updateFramerate !== 'undefined') {
+            targetDt = 1000 / updateFramerate;
+        }
+        if (Date.now() - lastCameraSend < targetDt) {
+            return;
+        }
+        let cameraMatStr = JSON.stringify(cameraMatrix);
+        if (cameraMatStr === lastCamera) {
+            return;
+        }
+        lastCamera = cameraMatStr;
+        lastCameraSend = Date.now();
         let object = realityEditor.getObject(objectKey);
         if (!object) { return; }
         let serverSocket = getServerSocketForObject(objectKey);
