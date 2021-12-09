@@ -260,6 +260,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     let selectedElement = null;
 
+    let lastPointerY = null;
+
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
@@ -275,11 +277,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         pocket.addEventListener('pointerup', function() {
             isPocketTapped = false;
+            lastPointerY = null;
         });
 
         // On touching an element-template, upload to currently visible object
         pocket.addEventListener('pointerdown', function(evt) {
             isPocketTapped = true;
+            lastPointerY = evt.clientY;
 
             if (!evt.target.classList.contains('element-template')) {
                 return;
@@ -307,6 +311,27 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 selectedElement = evt.target;
                 selectElement(evt.target);
             }
+        });
+
+        pocket.addEventListener('pointermove', function(evt) {
+            if (!isPocketTapped) { return; }
+            if (lastPointerY === null) { 
+                lastPointerY = evt.clientY; // shouldn't be necessary, but just in case
+                return;
+            }
+            
+            // scroll so that mouse's position on the screen matches it's last position
+            let dY = evt.clientY - lastPointerY;
+
+            var scrollContainer = document.getElementById('pocketScrollContainer');
+            scrollContainer.scrollTop = scrollContainer.scrollTop - dY; //(index + percentageBetween) * pageHeight;
+            
+            lastPointerY = evt.clientY;
+        });
+        
+        pocket.addEventListener('pointercancel', function(_evt) {
+            isPocketTapped = false;
+            lastPointerY = null;
         });
 
         // pocket.addEventListener('pointermove', function(evt) {
