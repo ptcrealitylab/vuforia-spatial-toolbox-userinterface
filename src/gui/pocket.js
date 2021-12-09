@@ -258,6 +258,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     // stores the JSON.stringified realityElements rendered the last time the pocket was built
     let previousPocketChecksum = null;
 
+    let selectedElement = null;
+
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
@@ -293,9 +295,18 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 return;
             }
             
-            createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
-            
-            pocketHide();
+            if (selectedElement && selectedElement.dataset.name === evt.target.dataset.name) {
+                createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
+                deselectElement(evt.target);
+                pocketHide();
+            } else {
+                if (selectedElement) {
+                    deselectElement(selectedElement);
+                    selectedElement = null;
+                }
+                selectedElement = evt.target;
+                selectElement(evt.target);
+            }
         });
 
         // pocket.addEventListener('pointermove', function(evt) {
@@ -333,6 +344,31 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 onClosestObjectChanged(currentClosestObjectKey, currentClosestObjectKey);
             });
         }
+    }
+    
+    function selectElement(pocketElement) {
+        pocketElement.classList.add('highlightedPocketElement');
+        let label = pocketElement.querySelector('.palette-element-label');
+        if (label) {
+            label.innerText = pocketElement.dataset.name;
+            label.style.bottom = '10px';
+        }
+
+        showTargetObjectLabel();
+        updateTargetObjectLabel(null, pocketElement.dataset.name);
+    }
+    
+    function deselectElement(pocketElement) {
+        if (!pocketElement) { return; }
+
+        pocketElement.classList.remove('highlightedPocketElement');
+        let label = pocketElement.querySelector('.palette-element-label');
+        if (label) {
+            label.innerText = '';
+            label.style.bottom = '';
+        }
+
+        hideTargetObjectLabel();
     }
 
     /**
@@ -379,7 +415,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             return; // also gets triggered by onServerFramesInfoUpdated, and it's possible that the currentClosestObjectKey might be null
         }
 
-        updateTargetObjectLabel(currentClosestObjectKey);
+        // if (selectedElement) {
+        //     updateTargetObjectLabel(currentClosestObjectKey, selectedElement.dataset.name);
+        // } else {
+        //     hideTargetObjectLabel();
+        // }
 
         rebuildAggregateFrames();
         
@@ -405,6 +445,23 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         finishStylingPocket();
         // }
+
+        if (selectedElement) { // re-select in case the closest object changed and the pocket was rebuilt
+            let elementName = selectedElement.dataset.name;
+            
+            deselectElement(selectedElement);
+            selectedElement = null;
+            hideTargetObjectLabel();
+
+            // try to find the same selected element
+            let elements = document.querySelectorAll('.element-template');
+            elements.forEach(function(elt) {
+                if (elt.dataset.name === elementName) {
+                    selectedElement = elt;
+                    selectElement(selectedElement);
+                }
+            });
+        }
     }
     
     function updateTargetObjectLabel(closestObjectKey, frameType) {
@@ -419,8 +476,26 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         // update the pocket target label
         let label = document.getElementById('pocketTargetObjectLabel');
         let object = realityEditor.getObject(closestObjectKey);
-        label.innerText = 'Adding tools to: ' + object.name + ' (' + frameType + ')';
-        // label.style.display = 'none';
+        
+        let processedObjectName = object.name.indexOf('_WORLD_') === 0 ?
+            object.name.split('_WORLD_')[1] :
+            object.name;
+        
+        let objectType = object.name.indexOf('_WORLD_') === 0 ? 'world object' : 'object';
+        
+        label.innerHTML = 'Add a <u style="color: white">' + frameType +
+            '</u> tool to the <u style="color: white">' + processedObjectName +
+            '</u> ' + objectType;
+    }
+    
+    function showTargetObjectLabel() {
+        let label = document.getElementById('pocketTargetObjectLabel');
+        label.style.display = '';
+    }
+    
+    function hideTargetObjectLabel() {
+        let label = document.getElementById('pocketTargetObjectLabel');
+        label.style.display = 'none';
     }
 
     /**
@@ -583,7 +658,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     container.appendChild(ipLabel);
                 }
 
-                addFrameIconHoverListeners(container, element.name);
+                // addFrameIconHoverListeners(container, element.name);
             }
 
             palette.appendChild(container);
@@ -598,7 +673,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             console.log('pointerenter', frameName);
             // update closest object label
 
-            updateTargetObjectLabel(null, frameName);
+            // updateTargetObjectLabel(null, frameName);
+            
+            // TODO: add very slight hover CSS
         });
 
         frameIconContainer.addEventListener('pointerleave', function(evt) {
@@ -1257,6 +1334,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         finishStylingPocket();
         
+        hideTargetObjectLabel();
+        
         // scroll to top if holding memory
         if (overlayDiv.classList.contains('overlayMemory')) {
             var scrollContainer = document.getElementById('pocketScrollContainer');
@@ -1268,6 +1347,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         pocket.classList.remove('pocketShown');
         realityEditor.gui.menus.buttonOff(['pocket']);
         isPocketTapped = false;
+        selectedElement = null;
     }
 
     function pocketShown() {
@@ -1380,6 +1460,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
                 scrollPocketForTouch(e);
+                
+                // deselect highlighted item
+                if (selectedElement) {
+                    deselectElement(selectedElement);
+                    hideTargetObjectLabel();
+                }
             });
             segmentButton.addEventListener('pointerup', function(e) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
@@ -1393,6 +1479,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 console.log('released segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
+
+                // deselect highlighted item
+                if (selectedElement) {
+                    deselectElement(selectedElement);
+                    hideTargetObjectLabel();
+                }
             });
             segmentButton.addEventListener('pointerleave', function(e) {
                 if (!pocketPointerDown) { return; }

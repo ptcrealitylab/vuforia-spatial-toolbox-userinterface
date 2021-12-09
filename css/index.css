@@ -1339,6 +1339,7 @@ Logic Interface CSS
     text-align: center;
     color: #01fffc;
     font-size: 10px;
+    pointer-events: none;
 }
 
 #speechConsole {
@@ -1401,6 +1402,9 @@ Logic Interface CSS
     bottom: 0;
     width: 100vw;
     height: 50px;
+    line-height: 50px;
+    text-align: center;
+    vertical-align: middle;
     background-color: rgba(0,0,0,0.5);
     color: rgba(0,255,255);
 }
