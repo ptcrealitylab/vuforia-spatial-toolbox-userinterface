@@ -259,6 +259,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     let previousPocketChecksum = null;
 
     let selectedElement = null;
+    let pointerDownOnElement = null;
 
     let lastPointerY = null;
 
@@ -270,6 +271,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
+        // palette.style.marginBottom = '-24px';
         nodeMemoryBar = document.querySelector('.nodeMemoryBar');
 
         const pocketScrollContainer = document.getElementById('pocketScrollContainer');
@@ -280,12 +282,19 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         addMenuButtonActions();
 
-        pocket.addEventListener('pointerup', function() {
+        pocket.addEventListener('pointerup', function(evt) {
             isPocketTapped = false;
             lastPointerY = null;
             scrollReleaseVelocity = scrollVelocity;
             scrollReleaseTime = Date.now();
             scrollResistance = 1;
+            
+            if (pointerDownOnElement && pointerDownOnElement.dataset.name === evt.target.dataset.name) {
+                selectedElement = evt.target;
+                selectElement(evt.target);
+            }
+
+            pointerDownOnElement = null;
         });
 
         // On touching an element-template, upload to currently visible object
@@ -312,12 +321,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 deselectElement(evt.target);
                 pocketHide();
             } else {
+                pointerDownOnElement = evt.target;
                 if (selectedElement) {
                     deselectElement(selectedElement);
                     selectedElement = null;
                 }
-                selectedElement = evt.target;
-                selectElement(evt.target);
             }
         });
 
@@ -332,17 +340,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             let dY = -1 * (evt.clientY - lastPointerY);
             
             let newVelocity = 1.2 * dY;
-            if (scrollVelocity === 0) {
+            // if (scrollVelocity === 0) {
                 scrollVelocity = newVelocity;
-            } else {
-                let alphaBlend = 0.8;
-                scrollVelocity = alphaBlend * newVelocity + (1 - alphaBlend) * scrollVelocity;
-            }
+            // } else {
+            //     let alphaBlend = 0.8;
+            //     scrollVelocity = alphaBlend * newVelocity + (1 - alphaBlend) * scrollVelocity;
+            // }
 
             var scrollContainer = document.getElementById('pocketScrollContainer');
             scrollContainer.scrollTop = scrollContainer.scrollTop + dY; //(index + percentageBetween) * pageHeight;
             
             lastPointerY = evt.clientY;
+
+            // cancel pointerDownOn if moves enough
+            // if (dY > 2) {
+                pointerDownOnElement = null;
+            // }
         });
         
         pocket.addEventListener('pointercancel', function(_evt) {
@@ -351,6 +364,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollReleaseVelocity = scrollVelocity;
             scrollReleaseTime = Date.now();
             scrollResistance = 1;
+            pointerDownOnElement = null;
         });
         
         function updateScroll() {
@@ -361,7 +375,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                         console.log('glide time');
                         var scrollContainer = document.getElementById('pocketScrollContainer');
                         
-                        scrollVelocity = scrollReleaseVelocity * scrollResistance * Math.cos((Date.now() - scrollReleaseTime) / (300 + 100 * Math.pow(Math.abs(scrollReleaseVelocity), 0.8)));
+                        scrollVelocity = scrollReleaseVelocity * scrollResistance * Math.cos((Date.now() - scrollReleaseTime) / (1000 + 100 * Math.pow(Math.abs(scrollReleaseVelocity), 0.5)));
                         
                         scrollContainer.scrollTop = scrollContainer.scrollTop + scrollVelocity;
                         // accelerationFactor = 0.8; // lose speed faster while held down
