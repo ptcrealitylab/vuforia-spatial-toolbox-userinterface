@@ -289,12 +289,17 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollReleaseTime = Date.now();
             scrollResistance = 1;
             
+            if (pointerDownOnElement) {
+                pointerDownOnElement.classList.remove('hoverPocketElement');
+            }
+            
             if (pointerDownOnElement && pointerDownOnElement.dataset.name === evt.target.dataset.name) {
                 selectedElement = evt.target;
                 selectElement(evt.target);
             }
 
             pointerDownOnElement = null;
+            console.log('null 1');
         });
 
         // On touching an element-template, upload to currently visible object
@@ -322,6 +327,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 pocketHide();
             } else {
                 pointerDownOnElement = evt.target;
+                console.log('target = ' + evt.target.dataset.name);
+                evt.target.classList.add('hoverPocketElement');
                 if (selectedElement) {
                     deselectElement(selectedElement);
                     selectedElement = null;
@@ -348,14 +355,17 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // }
 
             var scrollContainer = document.getElementById('pocketScrollContainer');
-            scrollContainer.scrollTop = scrollContainer.scrollTop + dY; //(index + percentageBetween) * pageHeight;
+            scrollContainer.scrollTop = scrollContainer.scrollTop + dY;
             
             lastPointerY = evt.clientY;
 
-            // cancel pointerDownOn if moves enough
-            // if (dY > 2) {
+            // cancel pointerDownOn when any scroll happens
+            if (pointerDownOnElement && Math.abs(dY) > 1) {
+                pointerDownOnElement.classList.remove('hoverPocketElement');
                 pointerDownOnElement = null;
-            // }
+                console.log('null 2', dY);
+            }
+            
         });
         
         pocket.addEventListener('pointercancel', function(_evt) {
@@ -365,6 +375,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollReleaseTime = Date.now();
             scrollResistance = 1;
             pointerDownOnElement = null;
+            
+            console.log('null 3');
         });
         
         function updateScroll() {
@@ -372,7 +384,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 if (pocketShown() && scrollVelocity !== 0) {
                     
                     if (!isPocketTapped) {
-                        console.log('glide time');
                         var scrollContainer = document.getElementById('pocketScrollContainer');
                         
                         scrollVelocity = scrollReleaseVelocity * scrollResistance * Math.cos((Date.now() - scrollReleaseTime) / (1000 + 100 * Math.pow(Math.abs(scrollReleaseVelocity), 0.5)));
@@ -386,7 +397,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                         scrollResistance *= accelerationFactor;
                     }
 
-                    console.log('updateScroll', scrollReleaseVelocity, scrollVelocity);
+                    // console.log('updateScroll', scrollReleaseVelocity, scrollVelocity);
 
                     // scrollVelocity *= accelerationFactor;
                     // scrollVelocity = Math.sqrt(scrollVelocity);
@@ -753,7 +764,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     container.appendChild(ipLabel);
                 }
 
-                // addFrameIconHoverListeners(container, element.name);
+                addFrameIconHoverListeners(container, element.name);
             }
 
             palette.appendChild(container);
@@ -765,16 +776,18 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     
     function addFrameIconHoverListeners(frameIconContainer, frameName) {
         frameIconContainer.addEventListener('pointerenter', function(evt) {
-            console.log('pointerenter', frameName);
+            // console.log('pointerenter', frameName);
             // update closest object label
-
             // updateTargetObjectLabel(null, frameName);
-            
-            // TODO: add very slight hover CSS
+
+            if (!isPocketTapped) {
+                evt.target.classList.add('hoverPocketElement');
+            }
         });
 
         frameIconContainer.addEventListener('pointerleave', function(evt) {
-            console.log('pointerleave', frameName);
+            // console.log('pointerleave', frameName);
+            evt.target.classList.remove('hoverPocketElement');
         });
     }
     

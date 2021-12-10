@@ -1516,8 +1516,19 @@ Logic Interface CSS
     z-index: 290;
 }
 
+.hoverPocketElement {
+    background-color: rgba(0,0,0,0.7);
+    /*border: 1px solid cyan;*/
+    /*padding: -1px;*/
+}
+
 .highlightedPocketElement {
     background-color: rgba(0,255,255,0.5);
+    border: 5px solid cyan;
+}
+
+.highlightedPocketElement:hover {
+    background-color: rgba(0,255,255,0.4);
     border: 5px solid cyan;
 }
 
