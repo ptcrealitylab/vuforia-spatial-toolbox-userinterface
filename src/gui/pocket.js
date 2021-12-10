@@ -452,12 +452,16 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
     }
     
+    const SHOW_NAME_LABEL = false;
     function selectElement(pocketElement) {
         pocketElement.classList.add('highlightedPocketElement');
-        let label = pocketElement.querySelector('.palette-element-label');
-        if (label) {
-            label.innerText = pocketElement.dataset.name;
-            label.style.bottom = '10px';
+        
+        if (SHOW_NAME_LABEL) {
+            let label = pocketElement.querySelector('.palette-element-label');
+            if (label) {
+                label.innerText = pocketElement.dataset.name;
+                label.style.bottom = '10px';
+            }
         }
 
         showTargetObjectLabel();
@@ -468,10 +472,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         if (!pocketElement) { return; }
 
         pocketElement.classList.remove('highlightedPocketElement');
-        let label = pocketElement.querySelector('.palette-element-label');
-        if (label) {
-            label.innerText = '';
-            label.style.bottom = '';
+        
+        if (SHOW_NAME_LABEL) {
+            let label = pocketElement.querySelector('.palette-element-label');
+            if (label) {
+                label.innerText = '';
+                label.style.bottom = '';
+            }
         }
 
         hideTargetObjectLabel();
