@@ -262,6 +262,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     let lastPointerY = null;
 
+    let scrollVelocity = 0;
+    let scrollReleaseVelocity = 0;
+    let scrollReleaseTime = 0;
+    let scrollResistance = 1;
+
     function pocketInit() {
         pocket = document.querySelector('.pocket');
         palette = document.querySelector('.palette');
@@ -278,6 +283,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         pocket.addEventListener('pointerup', function() {
             isPocketTapped = false;
             lastPointerY = null;
+            scrollReleaseVelocity = scrollVelocity;
+            scrollReleaseTime = Date.now();
+            scrollResistance = 1;
         });
 
         // On touching an element-template, upload to currently visible object
@@ -321,10 +329,18 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
             
             // scroll so that mouse's position on the screen matches it's last position
-            let dY = evt.clientY - lastPointerY;
+            let dY = -1 * (evt.clientY - lastPointerY);
+            
+            let newVelocity = 1.2 * dY;
+            if (scrollVelocity === 0) {
+                scrollVelocity = newVelocity;
+            } else {
+                let alphaBlend = 0.8;
+                scrollVelocity = alphaBlend * newVelocity + (1 - alphaBlend) * scrollVelocity;
+            }
 
             var scrollContainer = document.getElementById('pocketScrollContainer');
-            scrollContainer.scrollTop = scrollContainer.scrollTop - dY; //(index + percentageBetween) * pageHeight;
+            scrollContainer.scrollTop = scrollContainer.scrollTop + dY; //(index + percentageBetween) * pageHeight;
             
             lastPointerY = evt.clientY;
         });
@@ -332,7 +348,47 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         pocket.addEventListener('pointercancel', function(_evt) {
             isPocketTapped = false;
             lastPointerY = null;
+            scrollReleaseVelocity = scrollVelocity;
+            scrollReleaseTime = Date.now();
+            scrollResistance = 1;
         });
+        
+        function updateScroll() {
+            try {
+                if (pocketShown() && scrollVelocity !== 0) {
+                    
+                    if (!isPocketTapped) {
+                        console.log('glide time');
+                        var scrollContainer = document.getElementById('pocketScrollContainer');
+                        
+                        scrollVelocity = scrollReleaseVelocity * scrollResistance * Math.cos((Date.now() - scrollReleaseTime) / (300 + 100 * Math.pow(Math.abs(scrollReleaseVelocity), 0.8)));
+                        
+                        scrollContainer.scrollTop = scrollContainer.scrollTop + scrollVelocity;
+                        // accelerationFactor = 0.8; // lose speed faster while held down
+
+                        // sqrt(percentSlower) has very little effect until speed has dropped significantly already
+                        let accelerationFactor = 0.99 * Math.pow(Math.abs(scrollVelocity / scrollReleaseVelocity), 0.2);
+                        // the lower scrollVelocity gets, the more acceleration factor should drop
+                        scrollResistance *= accelerationFactor;
+                    }
+
+                    console.log('updateScroll', scrollReleaseVelocity, scrollVelocity);
+
+                    // scrollVelocity *= accelerationFactor;
+                    // scrollVelocity = Math.sqrt(scrollVelocity);
+                    
+                    // round to zero if low or swapped signs so it doesn't trail off indefinitely
+                    if (Math.abs(scrollVelocity) < 0.01 || (scrollVelocity * scrollReleaseVelocity < 0)) {
+                        scrollVelocity = 0;
+                    }
+                }
+            } catch (e) {
+                console.warn('error in updateScroll', e);
+            }
+            
+            requestAnimationFrame(updateScroll);
+        }
+        updateScroll(); // start the update loop
 
         // pocket.addEventListener('pointermove', function(evt) {
         //     if (!evt.target.classList.contains('element-template')) {
