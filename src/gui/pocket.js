@@ -260,6 +260,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
     let selectedElement = null;
     let pointerDownOnElement = null;
+    let scrollbarPointerDown = false;
 
     let lastPointerY = null;
 
@@ -337,7 +338,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
 
         pocket.addEventListener('pointermove', function(evt) {
-            if (!isPocketTapped) { return; }
+            if (!isPocketTapped || scrollbarPointerDown) { return; }
             if (lastPointerY === null) { 
                 lastPointerY = evt.clientY; // shouldn't be necessary, but just in case
                 return;
@@ -1551,6 +1552,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
         document.addEventListener('pointerup', function(_e) {
             pocketPointerDown = false;
+            scrollbarPointerDown = false;
             highlightAvailableMemoryContainers(false); // always un-highlight when release pointer
         });
 
@@ -1572,6 +1574,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
+                scrollbarPointerDown = true;
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
                 scrollPocketForTouch(e);
@@ -1611,7 +1614,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
             });
             segmentButton.addEventListener('pointermove', function(e) {
-                if (!pocketPointerDown) { return; }
+                if (!pocketPointerDown  || !scrollbarPointerDown) { return; }
                 scrollPocketForTouch(e);
             });
             segmentButton.addEventListener('gotpointercapture', function(evt) {
