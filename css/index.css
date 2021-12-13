@@ -1375,9 +1375,9 @@ Logic Interface CSS
     /*border: 3px solid cyan;*/
     border-radius: 5px;
     width: 70px;
-    height: calc(100vh - 15px);
+    height: calc(100vh - 30px);
     left: 0;
-    top: 0;
+    top: 15px;
     background-color: rgba(0,0,0,0.5);
 }
 

@@ -261,6 +261,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     let selectedElement = null;
     let pointerDownOnElement = null;
     let scrollbarPointerDown = false;
+    let scrollbarPointerDownY = 0;
+    let scrollbarHandleInitialOffset = 0;
 
     let lastPointerY = null;
 
@@ -831,7 +833,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         let scrollBarWidth = document.getElementById('pocketScrollBar').getClientRects()[0].width;
         let paletteWidth = realityEditor.gui.pocket.getWidth() - scrollBarWidth;
         document.getElementById('pocketScrollContainer').style.width = paletteWidth + 'px';
-        realityEditor.gui.pocket.createPocketScrollbar(); // update number of chapters to match scroll height
         
         // update the width of each tile
         let elements = document.getElementById('pocketScrollContainer').querySelectorAll('.element-template');
@@ -847,6 +848,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         memoryContainers.forEach(function(elt) {
             elt.style.width = (paletteWidth / 4 - (2 * margin)) + 'px';
         });
+
+        realityEditor.gui.pocket.createPocketScrollbar(); // update number of chapters to match scroll height
     }
 
     /**
@@ -1477,25 +1480,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * @todo: add a vertical margin between each row where we can label the frames with their names
      */
     function createPocketScrollbar() {
-        var numMemoryContainers = 4;
-        if (TEMP_DISABLE_MEMORIES) {
-            numMemoryContainers = 0;
-        }
-        var realityElements = getRealityElements();
-        var numFrames = realityElements.length + numMemoryContainers;
-        var pageHeight = window.innerHeight; //320;
-        var frameHeight = 360;
-        try {
-            frameHeight = Math.floor(parseFloat(window.getComputedStyle( document.querySelector('#pocket-element') ).width)) - 6;
-        } catch (e) {
-            console.warn('error parsing real pocket icon height from html elements, defaulting to 360px');
-        }
-        var paddingHeight = 6; //parseFloat(document.querySelector('#pocket-element').style.margin) * 2;
-        var framesPerRow = 4;
-        var numRows = Math.ceil(numFrames / framesPerRow);
-        // A "chapter" is a section/segment on the scroll bar that you can tap to jump to that section of frames
-        var numChapters = Math.max(1, Math.ceil( (numRows * (frameHeight + paddingHeight)) / pageHeight ) - 1); // minus one because we can scroll to end using previous bar segment
+        const pageHeight = window.innerHeight;
 
+        let numChapters = 1;
+        
         var scrollbar = document.getElementById('pocketScrollBar');
 
         if (scrollbar.children.length > 0) {
@@ -1512,9 +1500,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
-        var marginBetweenSegments = 10;
-        var scrollbarHeight = 320; // matches menu height of sidebar buttons
-        var scrollbarHeightDifference = globalStates.width - scrollbarHeight;
+        if (!document.querySelector('.palette') || document.querySelector('.palette').getClientRects().length === 0) {
+            return;
+        }
+
+        let paletteHeight = document.querySelector('.palette').getClientRects()[0].height;
 
         var allSegmentButtons = [];
         
@@ -1538,12 +1528,19 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             // don't scroll if holding a memory
             if (overlayDiv.classList.contains('overlayMemory')) { return; }
             
-            var index = parseInt(e.currentTarget.dataset.index);
-            var segmentTop = e.currentTarget.getClientRects()[0].top;
-            var segmentBottom = e.currentTarget.getClientRects()[0].bottom;
-            var percentageBetween = (e.clientY - segmentTop) / (segmentBottom - segmentTop);
+            let scrollbar = document.getElementById('pocketScrollBarSegment0');
+            let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
+
+            let amountMoved = e.pageY - scrollbarPointerDownY;
+            let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
+            handle.style.top = Math.max(10, Math.min(maximumScrollAmount, scrollbarHandleInitialOffset + amountMoved)) + 'px'; //(100 * percentageBetween) + 'px';
+
+            let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
+            
             var scrollContainer = document.getElementById('pocketScrollContainer');
-            scrollContainer.scrollTop = (index + percentageBetween) * pageHeight;
+            // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
+            let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
+            scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
         }
         
         var pocketPointerDown = false;
@@ -1560,8 +1557,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             var segmentButton = document.createElement('div');
             segmentButton.className = 'pocketScrollBarSegment';
             segmentButton.id = 'pocketScrollBarSegment' + i;
-            segmentButton.style.height = (scrollbarHeight / numChapters - marginBetweenSegments) + 'px';
-            segmentButton.style.top = (scrollbarHeightDifference/2 - marginBetweenSegments/2) + (i * scrollbarHeight / numChapters) + 'px';
+            // segmentButton.style.height = (scrollbarHeight / numChapters - marginBetweenSegments) + 'px';
+            // segmentButton.style.top = (scrollbarHeightDifference/2 - marginBetweenSegments/2) + (i * scrollbarHeight / numChapters) + 'px';
+            segmentButton.style.top = '10px';
             
             var segmentActiveDiv = document.createElement('div');
             segmentActiveDiv.className = 'pocketScrollBarSegmentActive';
@@ -1569,12 +1567,20 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 segmentActiveDiv.style.visibility = 'hidden';
             }
             segmentButton.appendChild(segmentActiveDiv);
+
+            segmentActiveDiv.style.height = 'calc(' + (100 * pageHeight / paletteHeight) + '% - 20px)';
             
             segmentButton.dataset.index = i;
             
             segmentButton.addEventListener('pointerdown', function(e) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
                 scrollbarPointerDown = true;
+                scrollbarPointerDownY = e.pageY;
+
+                let scrollbar = document.getElementById('pocketScrollBarSegment0');
+                let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
+                scrollbarHandleInitialOffset = parseFloat(handle.style.top) || 10;
+                
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
                 scrollPocketForTouch(e);
