@@ -791,7 +791,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         previousPocketChecksum = getChecksumForPocketElements(realityElements);
     }
     
-    function addFrameIconHoverListeners(frameIconContainer, frameName) {
+    function addFrameIconHoverListeners(frameIconContainer, _frameName) {
         frameIconContainer.addEventListener('pointerenter', function(evt) {
             // console.log('pointerenter', frameName);
             // update closest object label
