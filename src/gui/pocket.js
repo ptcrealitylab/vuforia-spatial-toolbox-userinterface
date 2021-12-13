@@ -359,6 +359,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             var scrollContainer = document.getElementById('pocketScrollContainer');
             scrollContainer.scrollTop = scrollContainer.scrollTop + dY;
+            updateScrollbarToMatchContainerScrollTop(scrollContainer.scrollTop);
             
             lastPointerY = evt.clientY;
 
@@ -393,6 +394,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                         
                         scrollContainer.scrollTop = scrollContainer.scrollTop + scrollVelocity;
                         // accelerationFactor = 0.8; // lose speed faster while held down
+
+                        updateScrollbarToMatchContainerScrollTop(scrollContainer.scrollTop);
 
                         // sqrt(percentSlower) has very little effect until speed has dropped significantly already
                         let accelerationFactor = 0.99 * Math.pow(Math.abs(scrollVelocity / scrollReleaseVelocity), 0.2);
@@ -599,9 +602,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         
         let objectType = object.name.indexOf('_WORLD_') === 0 ? 'world object' : 'object';
         
-        label.innerHTML = 'Add a <u style="color: white">' + frameType +
-            '</u> tool to the <u style="color: white">' + processedObjectName +
-            '</u> ' + objectType;
+        let destinationHTMLString = 'the <u style="color: white">' + processedObjectName + '</u> ' + objectType;
+        
+        if (closestObjectKey === realityEditor.worldObjects.getLocalWorldId()) {
+            destinationHTMLString = 'your temporary workspace';
+        }
+        
+        label.innerHTML = 'Add a <u style="color: white">' + frameType + '</u> tool to ' + destinationHTMLString;
     }
     
     function showTargetObjectLabel() {
@@ -1459,7 +1466,21 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         if (overlayDiv.classList.contains('overlayMemory')) {
             var scrollContainer = document.getElementById('pocketScrollContainer');
             scrollContainer.scrollTop = 0;
+            updateScrollbarToMatchContainerScrollTop(scrollContainer.scrollTop);
         }
+    }
+
+    function updateScrollbarToMatchContainerScrollTop(scrollTop) {
+        let scrollbar = document.getElementById('pocketScrollBarSegment0');
+        let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
+        let paletteHeight = document.querySelector('.palette').getClientRects()[0].height;
+        const pageHeight = window.innerHeight;
+
+        let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
+        let maxHandleScroll = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
+
+        let handleScrollTop = scrollTop * maxHandleScroll / maxScrollContainerScroll;
+        handle.style.top = Math.max(10, Math.min(maxHandleScroll, handleScrollTop)) + 'px';
     }
 
     function pocketHide() {
