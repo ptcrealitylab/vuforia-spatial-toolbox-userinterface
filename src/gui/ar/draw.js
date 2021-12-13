@@ -2075,7 +2075,7 @@ realityEditor.gui.ar.draw.doesAnythingUseGroundPlane = function() { // TODO: nar
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
         var frame = realityEditor.getFrame(objectKey, frameKey);
         if (typeof frame.sendMatrices !== 'undefined') {
-            if (frame.sendMatrices.groundPlane) {
+            if (frame.sendMatrices.groundPlane || frame.sendMatrices.anchoredModelView) {
                 isAnyFrameSubscribedToGroundPlane = true;
             }
         }
