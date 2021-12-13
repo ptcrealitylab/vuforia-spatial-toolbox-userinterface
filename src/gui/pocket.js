@@ -1543,6 +1543,28 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
         }
         
+        function jumpScrollbarToPosition(pageY) {
+            // move center of scrollbar handle to pageY (constrained within bounds)
+
+            // don't scroll if holding a memory
+            if (overlayDiv.classList.contains('overlayMemory')) { return; }
+
+            let scrollbar = document.getElementById('pocketScrollBarSegment0');
+            let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
+            
+            // for center to be on pageY, top needs to be at pageY - handleHeight/2
+            let calculatedTop = pageY - handle.getClientRects()[0].height/2 - 10;
+            let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
+            handle.style.top = Math.max(10, Math.min(maximumScrollAmount, calculatedTop)) + 'px'; //(100 * percentageBetween) + 'px';
+
+            let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
+
+            var scrollContainer = document.getElementById('pocketScrollContainer');
+            // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
+            let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
+            scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
+        }
+
         var pocketPointerDown = false;
         document.addEventListener('pointerdown', function(_e) {
             pocketPointerDown = true;
@@ -1576,10 +1598,18 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 console.log('tapped segment ' + e.currentTarget.dataset.index);
                 scrollbarPointerDown = true;
                 scrollbarPointerDownY = e.pageY;
+                
+                let tappedOnHandle = e.target.classList.contains('pocketScrollBarSegmentActive');
 
                 let scrollbar = document.getElementById('pocketScrollBarSegment0');
                 let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
-                scrollbarHandleInitialOffset = parseFloat(handle.style.top) || 10;
+                
+                if (tappedOnHandle) {
+                    scrollbarHandleInitialOffset = parseFloat(handle.style.top) || 10;
+                } else {
+                    jumpScrollbarToPosition(e.pageY);
+                    scrollbarHandleInitialOffset = parseFloat(handle.style.top) || 10;
+                }
                 
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
