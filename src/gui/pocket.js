@@ -327,6 +327,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             if (selectedElement && selectedElement.dataset.name === evt.target.dataset.name) {
                 createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
                 deselectElement(evt.target);
+                selectedElement = null;
                 pocketHide();
             } else {
                 pointerDownOnElement = evt.target;
@@ -1639,6 +1640,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // deselect highlighted item
                 if (selectedElement) {
                     deselectElement(selectedElement);
+                    selectedElement = null;
                     hideTargetObjectLabel();
                 }
             });
@@ -1658,6 +1660,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // deselect highlighted item
                 if (selectedElement) {
                     deselectElement(selectedElement);
+                    selectedElement = null;
                     hideTargetObjectLabel();
                 }
             });
