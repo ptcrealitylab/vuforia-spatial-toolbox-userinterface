@@ -1468,6 +1468,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             var scrollContainer = document.getElementById('pocketScrollContainer');
             scrollContainer.scrollTop = 0;
             updateScrollbarToMatchContainerScrollTop(scrollContainer.scrollTop);
+        } else {
+            // update container scrollTop to match scrollbar position
+            setContainerScrollToScrollbarPosition();
         }
     }
 
@@ -1482,6 +1485,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         let handleScrollTop = scrollTop * maxHandleScroll / maxScrollContainerScroll;
         handle.style.top = Math.max(10, Math.min(maxHandleScroll, handleScrollTop)) + 'px';
+    }
+
+    function setContainerScrollToScrollbarPosition() {
+        let scrollbar = document.getElementById('pocketScrollBarSegment0');
+        let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
+        let paletteHeight = document.querySelector('.palette').getClientRects()[0].height;
+        const pageHeight = window.innerHeight;
+
+        let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
+
+        let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
+
+        var scrollContainer = document.getElementById('pocketScrollContainer');
+        // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
+        let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
+        scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
     }
 
     function pocketHide() {
@@ -1556,13 +1575,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             let amountMoved = e.pageY - scrollbarPointerDownY;
             let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
             handle.style.top = Math.max(10, Math.min(maximumScrollAmount, scrollbarHandleInitialOffset + amountMoved)) + 'px'; //(100 * percentageBetween) + 'px';
-
-            let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
             
-            var scrollContainer = document.getElementById('pocketScrollContainer');
-            // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
-            let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
-            scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
+            setContainerScrollToScrollbarPosition();
         }
         
         function jumpScrollbarToPosition(pageY) {
@@ -1579,12 +1593,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
             handle.style.top = Math.max(10, Math.min(maximumScrollAmount, calculatedTop)) + 'px'; //(100 * percentageBetween) + 'px';
 
-            let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
-
-            var scrollContainer = document.getElementById('pocketScrollContainer');
-            // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
-            let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
-            scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
+            setContainerScrollToScrollbarPosition();
         }
 
         var pocketPointerDown = false;
