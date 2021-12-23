@@ -422,26 +422,36 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
         updateScroll(); // start the update loop
 
-        // pocket.addEventListener('pointermove', function(evt) {
-        //     if (!evt.target.classList.contains('element-template')) {
-        //         return;
-        //     }
-        //     console.log('pointermove', evt.target.classList);
-        // });
-        //
-        // pocket.addEventListener('pointerenter', function(evt) {
-        //     // if (!evt.target.classList.contains('element-template')) {
-        //     //     return;
-        //     // }
-        //     console.log('pointerenter', evt.target.classList);
-        // });
-        //
-        // pocket.addEventListener('pointerleave', function(evt) {
-        //     // if (!evt.target.classList.contains('element-template')) {
-        //     //     return;
-        //     // }
-        //     console.log('pointerleave', evt.target.classList);
-        // });
+        // on desktop, hovering over a palette element pre-selects it, so you don't need to double-click
+        pocket.addEventListener('pointermove', function(evt) {
+            if (!evt.target.classList.contains('element-template')) {
+
+                // deselect highlighted item
+                if (selectedElement) {
+                    deselectElement(selectedElement);
+                    selectedElement = null;
+                    hideTargetObjectLabel();
+                }
+                
+                return;
+            }
+
+            if (selectedElement) {
+                console.log(selectedElement.dataset.name, evt.target.dataset.name);
+                if (selectedElement.dataset.name !== evt.target.dataset.name) {
+                    deselectElement(selectedElement);
+                    selectedElement = null;
+                    hideTargetObjectLabel();
+                } else {
+                    return;
+                }
+            }
+            
+            // console.log('pointermove', evt.target.classList);
+
+            selectedElement = evt.target;
+            selectElement(evt.target);
+        });
         
         if (ONLY_CLOSEST_OBJECT) {
             realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged_OnlyClosest); // TODO: delete / cleanup old attempts
