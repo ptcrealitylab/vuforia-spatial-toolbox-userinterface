@@ -147,7 +147,7 @@ realityEditor.gui.memory.nodeMemories.renderMemories = function() {
         var memoryContainer = memoryBar.children[i];
         
         var memoryNode;
-        [].slice.call(memoryContainer.children).forEach(function(child) {
+        Array.from(memoryContainer.children).forEach(function(child) {
             if (child.classList.contains('memoryNode')) {
                 memoryNode = child;
             } else {
@@ -214,7 +214,7 @@ realityEditor.gui.memory.nodeMemories.resetEventHandlers = function() {
     var dragEventListeners = nodeMemories.states.dragEventListeners;
     var upEventListeners = nodeMemories.states.upEventListeners;
     
-    [].slice.call(memoryBar.children).forEach(function(memoryContainer, i) {
+    Array.from(memoryBar.children).forEach(function(memoryContainer, i) {
         
         if (dragEventListeners[i]) {
             memoryContainer.removeEventListener('pointermove', dragEventListeners[i], false);

@@ -1708,7 +1708,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * Adds blue corners to each pocket icon container
      */
     function finishStylingPocket() {
-        [].slice.call(document.querySelectorAll('.palette-element')).forEach(function(paletteElement) {
+        Array.from(document.querySelectorAll('.palette-element')).forEach(function(paletteElement) {
             // remove existing ones if needed, to ensure size is correct
             var cornersFound = paletteElement.querySelector('.corners');
             if (cornersFound) {

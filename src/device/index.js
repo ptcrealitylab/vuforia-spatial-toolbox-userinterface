@@ -1117,7 +1117,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
     cout("onDocumentMultiTouchStart");
     
-    [].slice.call(event.touches).forEach(function(touch) {
+    Array.from(event.touches).forEach(function(touch) {
         if (realityEditor.device.currentScreenTouches.map(function(elt) { return elt.identifier; }).indexOf(touch.identifier) === -1) {
             realityEditor.device.currentScreenTouches.push({
                 targetId: realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id), //touch.target.id.replace(/^(svg)/,""),
@@ -1174,7 +1174,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
     
-    [].slice.call(event.touches).forEach(function(touch) {
+    Array.from(event.touches).forEach(function(touch) {
         realityEditor.device.currentScreenTouches.filter(function(currentScreenTouch) {
             return touch.identifier === currentScreenTouch.identifier;
         }).forEach(function(currentScreenTouch) {
@@ -1244,7 +1244,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
                 } else {
                     // if you have two fingers on the screen (one on the frame, one on the canvas)
                     // make sure the scale event is centered around the frame
-                    [].slice.call(event.touches).forEach(function(touch){
+                    Array.from(event.touches).forEach(function(touch){
 
                         let targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
                         var didTouchOnFrame = targetId === activeVehicle.uuid;
@@ -1410,7 +1410,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     // if multitouch, stop tracking the touches that were removed but keep tracking the ones still there
     if (event.touches.length > 0) {
         // find which touch to remove from the currentScreenTouches
-        var remainingTouches = [].slice.call(event.touches).map(function(touch) {
+        var remainingTouches = Array.from(event.touches).map(function(touch) {
             return touch.identifier; //touch.target.id.replace(/^(svg)/,"")
         });
         
