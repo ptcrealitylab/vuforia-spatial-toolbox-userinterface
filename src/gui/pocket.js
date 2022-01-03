@@ -327,6 +327,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             if (selectedElement && selectedElement.dataset.name === evt.target.dataset.name) {
                 createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
                 deselectElement(evt.target);
+                selectedElement = null;
                 pocketHide();
             } else {
                 pointerDownOnElement = evt.target;
@@ -421,26 +422,36 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
         updateScroll(); // start the update loop
 
-        // pocket.addEventListener('pointermove', function(evt) {
-        //     if (!evt.target.classList.contains('element-template')) {
-        //         return;
-        //     }
-        //     console.log('pointermove', evt.target.classList);
-        // });
-        //
-        // pocket.addEventListener('pointerenter', function(evt) {
-        //     // if (!evt.target.classList.contains('element-template')) {
-        //     //     return;
-        //     // }
-        //     console.log('pointerenter', evt.target.classList);
-        // });
-        //
-        // pocket.addEventListener('pointerleave', function(evt) {
-        //     // if (!evt.target.classList.contains('element-template')) {
-        //     //     return;
-        //     // }
-        //     console.log('pointerleave', evt.target.classList);
-        // });
+        // on desktop, hovering over a palette element pre-selects it, so you don't need to double-click
+        pocket.addEventListener('pointermove', function(evt) {
+            if (!evt.target.classList.contains('element-template')) {
+
+                // deselect highlighted item
+                if (selectedElement) {
+                    deselectElement(selectedElement);
+                    selectedElement = null;
+                    hideTargetObjectLabel();
+                }
+                
+                return;
+            }
+
+            if (selectedElement) {
+                console.log(selectedElement.dataset.name, evt.target.dataset.name);
+                if (selectedElement.dataset.name !== evt.target.dataset.name) {
+                    deselectElement(selectedElement);
+                    selectedElement = null;
+                    hideTargetObjectLabel();
+                } else {
+                    return;
+                }
+            }
+            
+            // console.log('pointermove', evt.target.classList);
+
+            selectedElement = evt.target;
+            selectElement(evt.target);
+        });
         
         if (ONLY_CLOSEST_OBJECT) {
             realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged_OnlyClosest); // TODO: delete / cleanup old attempts
@@ -1467,6 +1478,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             var scrollContainer = document.getElementById('pocketScrollContainer');
             scrollContainer.scrollTop = 0;
             updateScrollbarToMatchContainerScrollTop(scrollContainer.scrollTop);
+        } else {
+            // update container scrollTop to match scrollbar position
+            setContainerScrollToScrollbarPosition();
         }
     }
 
@@ -1481,6 +1495,22 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         let handleScrollTop = scrollTop * maxHandleScroll / maxScrollContainerScroll;
         handle.style.top = Math.max(10, Math.min(maxHandleScroll, handleScrollTop)) + 'px';
+    }
+
+    function setContainerScrollToScrollbarPosition() {
+        let scrollbar = document.getElementById('pocketScrollBarSegment0');
+        let handle = scrollbar.querySelector('.pocketScrollBarSegmentActive');
+        let paletteHeight = document.querySelector('.palette').getClientRects()[0].height;
+        const pageHeight = window.innerHeight;
+
+        let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
+
+        let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
+
+        var scrollContainer = document.getElementById('pocketScrollContainer');
+        // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
+        let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
+        scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
     }
 
     function pocketHide() {
@@ -1555,13 +1585,8 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             let amountMoved = e.pageY - scrollbarPointerDownY;
             let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
             handle.style.top = Math.max(10, Math.min(maximumScrollAmount, scrollbarHandleInitialOffset + amountMoved)) + 'px'; //(100 * percentageBetween) + 'px';
-
-            let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
             
-            var scrollContainer = document.getElementById('pocketScrollContainer');
-            // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
-            let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
-            scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
+            setContainerScrollToScrollbarPosition();
         }
         
         function jumpScrollbarToPosition(pageY) {
@@ -1578,12 +1603,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             let maximumScrollAmount = scrollbar.getClientRects()[0].height - handle.getClientRects()[0].height - 10;
             handle.style.top = Math.max(10, Math.min(maximumScrollAmount, calculatedTop)) + 'px'; //(100 * percentageBetween) + 'px';
 
-            let percentageBetween = (parseFloat(handle.style.top) - 10) / (maximumScrollAmount - 10);
-
-            var scrollContainer = document.getElementById('pocketScrollContainer');
-            // not sure why I have to add 130 to the paletteHeight for this to work, but otherwise it won't fully scroll to the bottom
-            let maxScrollContainerScroll = ((paletteHeight + 130) - pageHeight);
-            scrollContainer.scrollTop = percentageBetween * maxScrollContainerScroll;
+            setContainerScrollToScrollbarPosition();
         }
 
         var pocketPointerDown = false;
@@ -1639,6 +1659,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // deselect highlighted item
                 if (selectedElement) {
                     deselectElement(selectedElement);
+                    selectedElement = null;
                     hideTargetObjectLabel();
                 }
             });
@@ -1658,6 +1679,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 // deselect highlighted item
                 if (selectedElement) {
                     deselectElement(selectedElement);
+                    selectedElement = null;
                     hideTargetObjectLabel();
                 }
             });
@@ -1686,7 +1708,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * Adds blue corners to each pocket icon container
      */
     function finishStylingPocket() {
-        [].slice.call(document.querySelectorAll('.palette-element')).forEach(function(paletteElement) {
+        Array.from(document.querySelectorAll('.palette-element')).forEach(function(paletteElement) {
             // remove existing ones if needed, to ensure size is correct
             var cornersFound = paletteElement.querySelector('.corners');
             if (cornersFound) {

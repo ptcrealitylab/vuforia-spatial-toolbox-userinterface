@@ -126,7 +126,7 @@ createNameSpace("realityEditor.device.touchPropagation");
      * Remove tag from frames that have been hidden for the current touch.
      */
     function stopHidingFramesForTouchDuration() {
-        [].slice.call(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
+        Array.from(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
             delete element.dataset.displayAfterTouch;
         });
     }
