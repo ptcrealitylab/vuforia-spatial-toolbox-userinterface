@@ -1211,8 +1211,6 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
                     x: event.pageX,
                     y: event.pageY
                 }
-                console.log('center: ', centerTouch);
-                console.log('outer: ', outerTouch);
                 realityEditor.gui.ar.positioning.scaleVehicle(activeVehicle, centerTouch, outerTouch);
 
             } else {
