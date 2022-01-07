@@ -253,6 +253,12 @@ createNameSpace("realityEditor.gui.glRenderer");
                 constants[key] = gl[key];
                 break;
             }
+            if (key === 'canvas') {
+                constants[key] = {
+                    width: gl[key].width,
+                    height: gl[key].height,
+                };
+            }
         }
 
         setTimeout(renderFrame, 500);
