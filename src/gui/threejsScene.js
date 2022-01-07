@@ -249,6 +249,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             //     geometry = new SimplifyModifier().modify(geometry, geometry.attributes.position.count * 0.2);
             // }
             geometry.computeVertexNormals();
+            geometry.computeBoundingSphere();
             const material = new THREE.MeshNormalMaterial();
             material.colorWrite = false; // Makes it invisible
             const mesh = new THREE.Mesh(geometry, material);
@@ -290,6 +291,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
+                gltf.scene.children[0].geometry.computeBoundingSphere();
                 wireMesh = new THREE.Mesh(gltf.scene.children[0].geometry, wireMaterial);
             } else {
                 gltf.scene.children[0].children.forEach(child => {
@@ -300,8 +302,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
+                mergedGeometry.computeBoundingSphere();
                 wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
+            wireMesh.name = 'gltf wire mesh';
+            gltf.scene.name = 'gltf normal mesh';
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
@@ -324,7 +329,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             console.log('loaded gltf', pathToGltf);
 
             if (callback) {
-              callback(gltf.scene);
+              callback(gltf.scene, wireMesh);
             }
         });
     }
