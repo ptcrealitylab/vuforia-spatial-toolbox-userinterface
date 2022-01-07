@@ -283,6 +283,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
                 wireframe: true,
                 color: 0x00ffff,
+                side: THREE.DoubleSide,
             }), maxHeight, center, true, true);
 
             if (gltf.scene.children[0].geometry) {
