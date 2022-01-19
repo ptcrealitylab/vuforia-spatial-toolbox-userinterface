@@ -314,10 +314,11 @@ realityEditor.gui.ar.lines.drawInteractionLines = function () {
         
         if(typeof nodeA.screenOpacity === 'undefined') nodeA.screenOpacity = 1.0;
         var speed = 1;
-        this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], nodeA.screenZ, 8, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
+        let lineWeight = nodeA.screenZ; // end of line will have same weight as start of line
+        this.drawLine(globalCanvas.context, [nodeA.screenX, nodeA.screenY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]], lineWeight, lineWeight, globalStates, timeCorrection, logicA, globalProgram.logicSelector, speed, nodeA.screenOpacity, 1);
     }
 
-    if (globalStates.drawDotLine) {
+    if (globalStates.drawDotLine) { // this is the cutting line
         this.drawDotLine(globalCanvas.context, [globalStates.drawDotLineX, globalStates.drawDotLineY], [globalStates.pointerPosition[0], globalStates.pointerPosition[1]]);
     }
 
