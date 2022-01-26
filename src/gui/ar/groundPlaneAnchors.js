@@ -214,7 +214,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     // as a result, this needs to also be called every time the settings menu shows or hides
     function updatePositioningMode() {
         for (let key in threejsGroups) {
-            threejsGroups[key].visible = isPositioningMode && !globalStates.settingsButtonState;
+            updateGroupVisibility(threejsGroups[key], key);
         }
         if (mouseCursorMesh) { mouseCursorMesh.visible = false; }
         if (initialCalculationMesh) { initialCalculationMesh.visible = false; }
@@ -225,6 +225,26 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         } else {
             getTouchEventCatcher().style.display = 'none';
             getTouchEventCatcher().style.pointerEvents = 'none';
+        }
+    }
+
+    function updateGroupVisibility(group, key) {
+        group.visible = isPositioningMode && !globalStates.settingsButtonState;
+
+        // hide if it belongs to a closed envelope
+        let hiddenInEnvelope = false;
+        let knownEnvelopes = realityEditor.envelopeManager.getKnownEnvelopes();
+        Object.keys(knownEnvelopes).forEach(function(envelopeKey) {
+            if (hiddenInEnvelope) { return; }
+            let envelopeInfo = knownEnvelopes[envelopeKey];
+            let containsThisGroup = envelopeInfo.containedFrameIds.includes(key);
+            if (containsThisGroup && !envelopeInfo.isOpen) {
+                hiddenInEnvelope = true;
+            }
+        });
+
+        if (hiddenInEnvelope) {
+            group.visible = false;
         }
     }
 

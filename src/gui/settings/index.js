@@ -151,9 +151,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             var existingElement = container.querySelector('#' + key);
 
             if (existingElement) {
-                console.log('found element for ' + key);
+                // console.log('found element for ' + key);
             } else {
-                console.log('need to create element for ' + key);
+                // console.log('need to create element for ' + key);
 
                 let newElement = document.createElement('li');
                 newElement.classList.add('table-view-cell');

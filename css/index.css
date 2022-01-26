@@ -567,13 +567,13 @@ body {
     padding: 0;
     box-sizing: border-box;
     border: 3px solid #00FFFF;
-    width: calc(20vw - 18px);
-    height: calc(20vw - 18px);
+    width: calc(18vw - 18px);
+    height: calc(18vw - 18px);
     overflow: hidden;
 }
 
 .memoryContainer {
-    height: calc(15vw - 18px);
+    height: calc(10vh + 10px);
     border: none;
     background-color: rgba(0,0,0,0.5);
 }
@@ -1339,6 +1339,7 @@ Logic Interface CSS
     text-align: center;
     color: #01fffc;
     font-size: 10px;
+    pointer-events: none;
 }
 
 #speechConsole {
@@ -1374,9 +1375,9 @@ Logic Interface CSS
     /*border: 3px solid cyan;*/
     border-radius: 5px;
     width: 70px;
-    height: calc(100vh - 15px);
+    height: calc(100vh - 30px);
     left: 0;
-    top: 0;
+    top: 15px;
     background-color: rgba(0,0,0,0.5);
 }
 
@@ -1393,6 +1394,19 @@ Logic Interface CSS
     width: calc(100% - 20px);
     height: calc(100% - 20px);
     background-color: rgba(0,255,255,0.6);
+}
+
+#pocketTargetObjectLabel {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    vertical-align: middle;
+    background-color: rgba(0,0,0,0.5);
+    color: rgba(0,255,255);
 }
 
 .snappableFrame {
@@ -1502,8 +1516,19 @@ Logic Interface CSS
     z-index: 290;
 }
 
+.hoverPocketElement {
+    background-color: rgba(0,0,0,0.7);
+    /*border: 1px solid cyan;*/
+    /*padding: -1px;*/
+}
+
 .highlightedPocketElement {
     background-color: rgba(0,255,255,0.5);
+    border: 5px solid cyan;
+}
+
+.highlightedPocketElement:hover {
+    background-color: rgba(0,255,255,0.4);
     border: 5px solid cyan;
 }
 

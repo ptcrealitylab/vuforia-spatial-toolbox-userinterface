@@ -217,7 +217,7 @@ createNameSpace("realityEditor.device.distanceScaling");
         // console.log(params.event);
 
         if (params.event.touches.length === 3) {
-            var touchTargets = [].slice.call(event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
+            var touchTargets = Array.from(params.event.touches).map(function(touch){return touch.target.id.replace(/^(svg)/,"")});
             if (touchTargets.indexOf(realityEditor.device.editingState.frame) > -1) {
                 // console.log('change distance');
                 isScalingDistance = true;

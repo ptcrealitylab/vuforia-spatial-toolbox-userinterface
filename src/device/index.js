@@ -93,6 +93,7 @@ realityEditor.device.currentScreenTouches = [];
  * @property {boolean} unconstrainedDisabled - iff unconstrained is temporarily disabled (e.g. if changing distance threshold)
  * @property {boolean} preDisabledUnconstrained - the unconstrained state before we disabled, so that we can go back to that when we're done
  * @property {boolean} pinchToScaleDisabled - iff pinch to scale is temporarily disabled (e.g. if changing distance threshold)
+ * @property {{startX: number, startY: number}} - if not null, drag gesture turns into pinch gesture with these start coordinates
  */
 
 /**
@@ -107,7 +108,10 @@ realityEditor.device.editingState = {
     initialCameraPosition: null,
     startingMatrix: null,
     startingTransform: null,
-    unconstrainedDisabled: false
+    unconstrainedDisabled: false,
+    preDisabledUnconstrained: undefined,
+    pinchToScaleDisabled: false,
+    syntheticPinchInfo: null
 };
 
 /**
@@ -357,6 +361,7 @@ realityEditor.device.resetEditingState = function() {
     this.editingState.initialCameraPosition = null;
     this.editingState.startingMatrix = null;
     this.editingState.startingTransform = null;
+    this.editingState.syntheticPinchInfo = null;
 
     this.previousPointerMove = null;
 
@@ -1112,7 +1117,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
     cout("onDocumentMultiTouchStart");
     
-    [].slice.call(event.touches).forEach(function(touch) {
+    Array.from(event.touches).forEach(function(touch) {
         if (realityEditor.device.currentScreenTouches.map(function(elt) { return elt.identifier; }).indexOf(touch.identifier) === -1) {
             realityEditor.device.currentScreenTouches.push({
                 targetId: realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id), //touch.target.id.replace(/^(svg)/,""),
@@ -1169,7 +1174,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
     
-    [].slice.call(event.touches).forEach(function(touch) {
+    Array.from(event.touches).forEach(function(touch) {
         realityEditor.device.currentScreenTouches.filter(function(currentScreenTouch) {
             return touch.identifier === currentScreenTouch.identifier;
         }).forEach(function(currentScreenTouch) {
@@ -1182,65 +1187,85 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     
     if (activeVehicle) {
 
+        let syntheticPinch = realityEditor.device.editingState.syntheticPinchInfo;
         // scale the element if you make a pinch gesture
-        if (event.touches.length === 2 && !realityEditor.device.editingState.pinchToScaleDisabled) {
+        if ((event.touches.length === 2 || syntheticPinch) && !realityEditor.device.editingState.pinchToScaleDisabled) {
 
-            // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
-            // also consider a touch that started on pocket-element to be on the frame element
-            var touchTargets = Array.from(event.touches).map(function(touch) {
-                var targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
-                if (targetId === 'pocket-element') {
-                    targetId = activeVehicle.uuid;
+            if (syntheticPinch) { // happens for example on remote operator, holding a keyboard key rather than 2-finger pinch
+
+                // try to center the pinch around center of tool in screen coordinates,
+                // but use the startX/Y from synthetic pinch event as a backup value
+                let centerTouch = {
+                    x: syntheticPinch.startX,
+                    y: syntheticPinch.startY
                 }
-                return targetId;
-            });
+                let bounds = globalDOMCache[activeVehicle.uuid].getClientRects()[0];
+                if (bounds) {
+                    centerTouch = {
+                        x: bounds.left + bounds.width / 2,
+                        y: bounds.top + bounds.height / 2
+                    };
+                }
 
-            var areBothOnElement = touchTargets[0] === touchTargets[1];
-
-            var centerTouch;
-            var outerTouch;
-
-            if (areBothOnElement) {
-
-                // if you do a pinch gesture with both fingers on the frame
-                // center the scale event around the first touch the user made
-                centerTouch = {
-                    x: event.touches[0].pageX,
-                    y: event.touches[0].pageY
-                };
-
-                outerTouch = {
-                    x: event.touches[1].pageX,
-                    y: event.touches[1].pageY
-                };
+                let outerTouch = {
+                    x: event.pageX,
+                    y: event.pageY
+                }
+                realityEditor.gui.ar.positioning.scaleVehicle(activeVehicle, centerTouch, outerTouch);
 
             } else {
 
-                // if you have two fingers on the screen (one on the frame, one on the canvas)
-                // make sure the scale event is centered around the frame
-                [].slice.call(event.touches).forEach(function(touch){
-
-                    let targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
-                    var didTouchOnFrame = targetId === activeVehicle.uuid;
-                    var didTouchOnNode = targetId === activeVehicle.frameId + activeVehicle.name;
-                    var didTouchOnPocketContainer = touch.target.className === "element-template";
-                    if (didTouchOnFrame || didTouchOnNode || didTouchOnPocketContainer) {
-                        centerTouch = {
-                            x: touch.pageX,
-                            y: touch.pageY
-                        };
-                    } else {
-                        outerTouch = {
-                            x: touch.pageX,
-                            y: touch.pageY
-                        };
+                // consider a touch on 'object__frameKey__' and 'svgobject__frameKey__' to be on the same target
+                // also consider a touch that started on pocket-element to be on the frame element
+                var touchTargets = Array.from(event.touches).map(function(touch) {
+                    var targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
+                    if (targetId === 'pocket-element') {
+                        targetId = activeVehicle.uuid;
                     }
+                    return targetId;
                 });
 
+                var areBothOnElement = touchTargets[0] === touchTargets[1];
+
+                var centerTouch;
+                var outerTouch;
+
+                if (areBothOnElement) {
+                    // if you do a pinch gesture with both fingers on the frame
+                    // center the scale event around the first touch the user made
+                    centerTouch = {
+                        x: event.touches[0].pageX,
+                        y: event.touches[0].pageY
+                    };
+                    outerTouch = {
+                        x: event.touches[1].pageX,
+                        y: event.touches[1].pageY
+                    };
+                } else {
+                    // if you have two fingers on the screen (one on the frame, one on the canvas)
+                    // make sure the scale event is centered around the frame
+                    Array.from(event.touches).forEach(function(touch){
+
+                        let targetId = realityEditor.device.utilities.getVehicleIdFromTargetId(touch.target.id);
+                        var didTouchOnFrame = targetId === activeVehicle.uuid;
+                        var didTouchOnNode = targetId === activeVehicle.frameId + activeVehicle.name;
+                        var didTouchOnPocketContainer = touch.target.className === "element-template";
+                        if (didTouchOnFrame || didTouchOnNode || didTouchOnPocketContainer) {
+                            centerTouch = {
+                                x: touch.pageX,
+                                y: touch.pageY
+                            };
+                        } else {
+                            outerTouch = {
+                                x: touch.pageX,
+                                y: touch.pageY
+                            };
+                        }
+                    });
+                }
+
+                realityEditor.gui.ar.positioning.scaleVehicle(activeVehicle, centerTouch, outerTouch);
             }
-
-            realityEditor.gui.ar.positioning.scaleVehicle(activeVehicle, centerTouch, outerTouch);
-
 
         // otherwise, if you just have one finger on the screen, move the frame you're on if you can
         } else if (event.touches.length === 1) {
@@ -1385,7 +1410,7 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
     // if multitouch, stop tracking the touches that were removed but keep tracking the ones still there
     if (event.touches.length > 0) {
         // find which touch to remove from the currentScreenTouches
-        var remainingTouches = [].slice.call(event.touches).map(function(touch) {
+        var remainingTouches = Array.from(event.touches).map(function(touch) {
             return touch.identifier; //touch.target.id.replace(/^(svg)/,"")
         });
         
