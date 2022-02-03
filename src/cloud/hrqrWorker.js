@@ -1,3 +1,5 @@
+/* global importScripts, HRQR, cv */
+
 importScripts("../../thirdPartyCode/opencv.js");
 importScripts("../../thirdPartyCode/HRQRDecoder.js");
 
