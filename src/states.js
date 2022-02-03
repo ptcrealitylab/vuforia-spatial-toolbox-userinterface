@@ -47,7 +47,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalFrameScaleAdjustment, globalNodeScaleAdjustment,, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING */
+/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalFrameScaleAdjustment, globalNodeScaleAdjustment,, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING,, acceptUDPBeats, updateFramerate */
 
 /**********************************************************************************************************************
  ******************************************** constant settings *******************************************************
@@ -59,8 +59,7 @@ var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording 
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 var acceptUDPBeats = true;
-var printLog = false;
-let updateFramerate = 20; // fps
+var updateFramerate = 20; // fps
 var TEMP_DISABLE_MEMORIES = false;
 
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
