@@ -305,6 +305,16 @@ realityEditor.gui.ar.objects = objects;
 
 realityEditor.gui.ar.MAX_DISTANCE = 10000000000;
 
+realityEditor.gui.ar.closestObjectFilters = [];
+
+/**
+ * Allows add-ons to check each objectKey in visible objects and reject them from being considered closest
+ * @param {function} filterFunction
+ */
+realityEditor.gui.ar.injectClosestObjectFilter = function(filterFunction) {
+    this.closestObjectFilters.push(filterFunction);
+}
+
 /**
  * This function returns the closest visible object relative to the camera.
  * Priority: 1) closest non-world objects. 2) closest world objects other than localWorld object. 3) local world object
@@ -321,6 +331,11 @@ realityEditor.gui.ar.getClosestObject = function (optionalFilter) {
     var info = this.closestVisibleObject(function(objectKey) {
         if (typeof optionalFilter !== 'undefined') {
             if (!optionalFilter(objectKey)) {
+                return false;
+            }
+        }
+        for (let i = 0; i < realityEditor.gui.ar.closestObjectFilters.length; i++) {
+            if (!realityEditor.gui.ar.closestObjectFilters[i](objectKey)) {
                 return false;
             }
         }

@@ -375,8 +375,13 @@ createNameSpace("realityEditor.sceneGraph");
         let relativePosition = relativeToCamera[activeKey];
         if (!relativePosition) {
             let objectSceneNode = getSceneNodeById(activeKey); // todo: error handle
-            relativeToCamera[activeKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
-            relativePosition = relativeToCamera[activeKey];
+            if (objectSceneNode) {
+                relativeToCamera[activeKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+                relativePosition = relativeToCamera[activeKey];
+            } else {
+                console.warn("Error, no scene node for " + activeKey);
+                return { x: 0, y: 0, z: 0 };
+            }
         }
         return {
             x: relativePosition[12]/relativePosition[15],
