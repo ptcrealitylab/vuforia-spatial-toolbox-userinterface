@@ -364,7 +364,7 @@ realityEditor.gui.ar.areaCreator.getUI = function () {
             realityEditor.gui.ar.areaCreator.lastPointerY = event.clientY;
         });
         this.UI.cancelButton = document.createElement('img');
-        this.UI.cancelButton.src = '/svg/areaCreator/cancelButton.svg';
+        this.UI.cancelButton.src = '../../../svg/areaCreator/cancelButton.svg';
         this.UI.cancelButton.style.position = 'absolute';
         this.UI.cancelButton.style.left = '0';
         this.UI.cancelButton.style.top = '0';
@@ -412,9 +412,9 @@ realityEditor.gui.ar.areaCreator.getUI = function () {
         this.UI.drawingModeMenu.style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + drawingModeMenuZIndex + ',1)';
 
         const freehandButton = document.createElement('img');
-        freehandButton.src = "/svg/areaCreator/freehandButton.svg";
+        freehandButton.src = "../../../svg/areaCreator/freehandButton.svg";
         const polygonButton = document.createElement('img');
-        polygonButton.src = "/svg/areaCreator/polygonButton.svg";
+        polygonButton.src = "../../../svg/areaCreator/polygonButton.svg";
         [freehandButton,polygonButton].forEach(button => {
             button.style.width = '50vh';
             button.style.height = '50vh';
@@ -433,7 +433,7 @@ realityEditor.gui.ar.areaCreator.getUI = function () {
         this.UI.areaCreationMenu.style.pointerEvents = 'none';
 
         this.UI.confirmAreaButton = document.createElement('img');
-        this.UI.confirmAreaButton.src = '/svg/areaCreator/confirmButton.svg';
+        this.UI.confirmAreaButton.src = '../../../svg/areaCreator/confirmButton.svg';
         this.UI.confirmAreaButton.style.position = 'absolute';
         this.UI.confirmAreaButton.style.left = '0';
         this.UI.confirmAreaButton.style.top = '15vh';
@@ -455,7 +455,7 @@ realityEditor.gui.ar.areaCreator.getUI = function () {
         this.UI.heightDefinitionMenu.style.pointerEvents = 'none';
 
         const confirmHeightButton = document.createElement('img');
-        confirmHeightButton.src = '/svg/areaCreator/confirmButton.svg';
+        confirmHeightButton.src = '../../../svg/areaCreator/confirmButton.svg';
         confirmHeightButton.style.position = 'absolute';
         confirmHeightButton.style.left = '0';
         confirmHeightButton.style.top = '15vh';
