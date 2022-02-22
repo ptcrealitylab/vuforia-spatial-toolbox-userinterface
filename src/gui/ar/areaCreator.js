@@ -73,7 +73,6 @@ realityEditor.gui.ar.areaCreator.getPrefabs = function() {
     }
 }.bind(realityEditor.gui.ar.areaCreator);
 
-// TODO: Fix result not being received by tool if tool loses focus
 realityEditor.gui.ar.areaCreator.promptForAreaHandler = function(msgData) {
     this.promptForArea(msgData.options).then(area => {
         realityEditor.network.postMessageIntoFrame(msgData.frameKey, {area: area, canceled: false});
