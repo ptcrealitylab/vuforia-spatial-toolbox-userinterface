@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128px" height="128px" viewBox="0 0 128 128" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>cancelButton</title>
+    <g id="cancelButton" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle" stroke="#F21679" stroke-width="8" fill-opacity="0.4" fill="#2E0417" x="4" y="4" width="120" height="120"></rect>
+        <line x1="37" y1="37" x2="91" y2="91" id="Line-2" stroke="#F21679" stroke-width="8" stroke-linecap="square"></line>
+        <line x1="37" y1="91" x2="91" y2="37" id="Line" stroke="#F21679" stroke-width="8" stroke-linecap="square"></line>
+    </g>
+</svg>

@@ -16,6 +16,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+    let groundPlane;
     let raycaster;
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
@@ -87,6 +88,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         plane.visible = false;
         addToScene(plane, {occluded: true});
         plane.name = 'groundPlaneElement';
+        groundPlane = plane;
     }
 
     function renderScene() {
@@ -373,6 +375,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     function getObjectByName(name) {
         return scene.getObjectByName(name);
     }
+    
+    function getGroundPlane() {
+        return groundPlane;
+    }
 
     class CustomMaterials {
         constructor() {
@@ -615,6 +621,7 @@ void main() {
     exports.getRaycastIntersects = getRaycastIntersects;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
+    exports.getGroundPlane = getGroundPlane;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;

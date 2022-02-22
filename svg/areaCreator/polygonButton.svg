@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512px" height="512px" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Polygon Button</title>
+    <g id="Polygon-Button" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle" stroke="#29FD2F" stroke-width="16" fill-opacity="0.4" fill="#073700" x="8" y="8" width="496" height="496"></rect>
+        <text id="POLYGON" font-family="HelveticaNeue-Bold, Helvetica Neue" font-size="36" font-weight="bold" fill="#29FD2F">
+            <tspan x="168" y="479">POLYGON</tspan>
+        </text>
+        <polygon id="Path" stroke="#29FD2F" stroke-width="4" points="89.5 286 209 225.5 436.5 296 287 330 188 416 62 403.5"></polygon>
+        <polygon id="Path-Copy" stroke="#29FD2F" stroke-width="4" points="89.5 136 209 75.5 436.5 146 287 180 188 266 62 253.5"></polygon>
+        <polygon id="Path-Copy-2" fill="#29FD2F" opacity="0.2" points="89.5 136 209 75.5 441.376166 147.09058 442.5 296.5 287 330 188 416 62 403.5 61.5 253.5"></polygon>
+        <line x1="60.5" y1="254.513605" x2="60.5" y2="404.486395" id="Line" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="442.5" y1="145.513605" x2="442.5" y2="295.486395" id="Line-Copy" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="287.5" y1="179.513605" x2="287.5" y2="329.486395" id="Line-Copy-2" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="88.5" y1="135.513605" x2="88.5" y2="285.486395" id="Line-Copy-3" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="209.5" y1="76.5136054" x2="209.5" y2="226.486395" id="Line-Copy-5" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="188.5" y1="265.513605" x2="188.5" y2="415.486395" id="Line-Copy-6" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+    </g>
+</svg>
