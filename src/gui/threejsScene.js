@@ -326,7 +326,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             console.log('loaded gltf', pathToGltf);
 
             if (callback) {
-              callback(gltf.scene);
+              callback(gltf.scene, wireMesh);
             }
         });
     }
