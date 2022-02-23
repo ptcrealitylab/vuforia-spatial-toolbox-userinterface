@@ -61,6 +61,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         realityEditor.gui.buttons.registerCallbackForButton('setting', function(_params) {
             updatePositioningMode(); // check if positioning mode needs update due to settings menu state
         });
+
+        updatePositioningMode();
     }
 
     /**
