@@ -71,6 +71,7 @@ realityEditor.cloud.connectToCloud = function (){
       //  realityEditor.network.addHeartbeatObject(body);
         body.network = realityEditor.network.state.proxyNetwork;
         realityEditor.app.callbacks.receivedUDPMessage(body)
+        // console.log(route, body);
     });
 
     this.socket.on('action', function (route, body) {
@@ -81,9 +82,8 @@ realityEditor.cloud.connectToCloud = function (){
        // realityEditor.network.addHeartbeatObject(body);
         console.log(route, body);
     });
-
     //  globalStates.network.edgeServer = connections;
-}
+}.bind(realityEditor.cloud);
 
 // load remote interface via dekstop interface
 let getDesktopLinkData = io.parseUrl(window.location.pathname, realityEditor.network.desktopURLSchema);
