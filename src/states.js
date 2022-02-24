@@ -58,8 +58,8 @@ var defaultHttpPort = 8080;
 var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording mode for video recording
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
-var acceptUDPBeats = true;
-var updateFramerate = 20; // fps
+var printLog = false;
+let updateFramerate = 20; // fps
 var TEMP_DISABLE_MEMORIES = false;
 
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)
