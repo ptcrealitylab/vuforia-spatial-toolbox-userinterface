@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512px" height="512px" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Freehand Button</title>
+    <g id="Freehand-Button" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle" stroke="#29FD2F" stroke-width="16" fill-opacity="0.4" fill="#073700" x="8" y="8" width="496" height="496"></rect>
+        <text id="FREEHAND" font-family="HelveticaNeue-Bold, Helvetica Neue" font-size="36" font-weight="bold" fill="#29FD2F">
+            <tspan x="157" y="479">FREEHAND</tspan>
+        </text>
+        <path d="M89.5,286 C114,251.5 182,225.5 229,225.5 C276,225.5 475,235.5 436.5,296 C398,356.5 322.5,337.5 287,330 C251.5,322.5 197.5,368 188,396 C178.5,424 99.5,409.5 82,403.5 C64.5,397.5 65,320.5 89.5,286 Z" id="Path" stroke="#29FD2F" stroke-width="4"></path>
+        <path d="M89.5,136 C114,101.5 182,75.5 229,75.5 C276,75.5 475,85.5 436.5,146 C398,206.5 322.5,187.5 287,180 C251.5,172.5 197.5,218 188,246 C178.5,274 99.5,259.5 82,253.5 C64.5,247.5 65,170.5 89.5,136 Z" id="Path-Copy" stroke="#29FD2F" stroke-width="4"></path>
+        <path d="M89.5,136 C114,101.5 182,75.5 229,75.5 C271.535158,75.5 438.563039,83.6903108 441.376166,130.09058 C441.425694,130.907492 442.50361,274.635128 442.50361,282.5 C442.50361,291 439.54394,291.216666 436.5,296 C398,356.5 322.5,337.5 287,330 C251.5,322.5 197.5,368 188,396 C178.5,424 99.5,409.5 82,403.5 C74.621577,400.970255 70,389 69.5,375.5 C69.344792,371.309385 69.8444558,212.6508 69.8651829,210.64612 C70.1281911,185.208422 76.364933,154.496319 89.5,136 Z" id="Path-Copy-2" fill="#29FD2F" opacity="0.2"></path>
+        <line x1="68.5" y1="212.513605" x2="68.5" y2="362.486395" id="Line" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="442.5" y1="132.513605" x2="442.5" y2="282.486395" id="Line-Copy" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="239.5" y1="194.513605" x2="239.5" y2="344.486395" id="Line-Copy-2" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="156.5" y1="89.5136054" x2="156.5" y2="239.486395" id="Line-Copy-3" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="344.5" y1="85.5136054" x2="344.5" y2="235.486395" id="Line-Copy-4" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="387.5" y1="182.513605" x2="387.5" y2="332.486395" id="Line-Copy-5" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+        <line x1="184.5" y1="253.513605" x2="184.5" y2="403.486395" id="Line-Copy-6" stroke="#29FD2F" stroke-width="2" stroke-linecap="square"></line>
+    </g>
+</svg>

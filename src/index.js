@@ -76,6 +76,7 @@ var realityEditor = realityEditor || {
     gui: {
         ar: {
             anchors: {},
+            areaCreator: {},
             areaTargetScanner: {},
             draw: {},
             frameHistoryRenderer: {},

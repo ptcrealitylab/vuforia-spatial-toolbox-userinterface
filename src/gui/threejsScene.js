@@ -1,7 +1,7 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js'; // eslint-disable-line no-unused-vars
+import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 
@@ -16,6 +16,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+    let groundPlane;
     let raycaster;
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
@@ -87,6 +88,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         plane.visible = false;
         addToScene(plane, {occluded: true});
         plane.name = 'groundPlaneElement';
+        groundPlane = plane;
     }
 
     function renderScene() {
@@ -249,7 +251,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             //     geometry = new SimplifyModifier().modify(geometry, geometry.attributes.position.count * 0.2);
             // }
             geometry.computeVertexNormals();
-            geometry.computeBoundingSphere();
             const material = new THREE.MeshNormalMaterial();
             material.colorWrite = false; // Makes it invisible
             const mesh = new THREE.Mesh(geometry, material);
@@ -283,7 +284,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
                 wireframe: true,
                 color: 0x00ffff,
-                side: THREE.DoubleSide,
             }), maxHeight, center, true, true);
 
             if (gltf.scene.children[0].geometry) {
@@ -292,7 +292,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
-                gltf.scene.children[0].geometry.computeBoundingSphere();
                 wireMesh = new THREE.Mesh(gltf.scene.children[0].geometry, wireMaterial);
             } else {
                 gltf.scene.children[0].children.forEach(child => {
@@ -303,11 +302,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
-                mergedGeometry.computeBoundingSphere();
                 wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
-            wireMesh.name = 'gltf wire mesh';
-            gltf.scene.name = 'gltf normal mesh';
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
@@ -378,6 +374,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 
     function getObjectByName(name) {
         return scene.getObjectByName(name);
+    }
+    
+    function getGroundPlane() {
+        return groundPlane;
     }
 
     class CustomMaterials {
@@ -621,6 +621,9 @@ void main() {
     exports.getRaycastIntersects = getRaycastIntersects;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
+    exports.getGroundPlane = getGroundPlane;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
+    exports.FBXLoader = FBXLoader;
+    exports.GLTFLoader = GLTFLoader;
 })(realityEditor.gui.threejsScene);

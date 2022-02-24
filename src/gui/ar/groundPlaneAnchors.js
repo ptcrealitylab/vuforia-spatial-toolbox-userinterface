@@ -21,7 +21,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let knownAnchorNodes = {};
     let threejsGroups = {};
     let isPositioningMode = false;
-    let touchEventCatcher = null;
     let isPointerDown = false;
 
     let selectedGroupKey = null;
@@ -62,6 +61,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         realityEditor.gui.buttons.registerCallbackForButton('setting', function(_params) {
             updatePositioningMode(); // check if positioning mode needs update due to settings menu state
         });
+
+        updatePositioningMode();
     }
 
     /**
@@ -219,12 +220,20 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         if (mouseCursorMesh) { mouseCursorMesh.visible = false; }
         if (initialCalculationMesh) { initialCalculationMesh.visible = false; }
 
+        let threejsCanvas = document.getElementById('mainThreejsCanvas');
+        if (!threejsCanvas) {
+            return;
+        }
         if (isPositioningMode && !globalStates.settingsButtonState) {
-            getTouchEventCatcher().style.display = '';
-            getTouchEventCatcher().style.pointerEvents = 'auto';
+            threejsCanvas.addEventListener('pointerdown', onPointerDown, false);
+            threejsCanvas.addEventListener('pointerup', onPointerUp, false);
+            threejsCanvas.addEventListener('pointercancel', onPointerUp, false);
+            threejsCanvas.addEventListener('pointermove', onPointerMove, false);
         } else {
-            getTouchEventCatcher().style.display = 'none';
-            getTouchEventCatcher().style.pointerEvents = 'none';
+            threejsCanvas.removeEventListener('pointerdown', onPointerDown, false);
+            threejsCanvas.removeEventListener('pointerup', onPointerUp, false);
+            threejsCanvas.removeEventListener('pointercancel', onPointerUp, false);
+            threejsCanvas.removeEventListener('pointermove', onPointerMove, false);
         }
     }
 
@@ -246,28 +255,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         if (hiddenInEnvelope) {
             group.visible = false;
         }
-    }
-
-    // ensures there's a div on top of everything that blocks touch events from reaching the tools when we're in this mode
-    function getTouchEventCatcher() {
-        if (!touchEventCatcher) {
-            touchEventCatcher = document.createElement('div');
-            touchEventCatcher.style.position = 'absolute';
-            touchEventCatcher.style.left = '0';
-            touchEventCatcher.style.top = '0';
-            touchEventCatcher.style.width = '100vw';
-            touchEventCatcher.style.height = '100vh';
-            let zIndex = 2900; // above scene elements, below pocket and menus
-            touchEventCatcher.style.zIndex = zIndex;
-            touchEventCatcher.style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zIndex + ',1)';
-            document.body.appendChild(touchEventCatcher);
-
-            touchEventCatcher.addEventListener('pointerdown', onPointerDown);
-            touchEventCatcher.addEventListener('pointerup', onPointerUp);
-            touchEventCatcher.addEventListener('pointercancel', onPointerUp);
-            touchEventCatcher.addEventListener('pointermove', onPointerMove);
-        }
-        return touchEventCatcher;
     }
 
     // hit test threeJsScene to see if we hit any of the anchor threeJsGroups
