@@ -121,18 +121,18 @@ if(getDesktopLinkData) {
 }
 
 realityEditor.cloud.imageBuffer = new window.Image();
-setInterval(function (){
-   // time = Date.now();
-   realityEditor.app.getScreenshot("MS", function(image){
-       let img = realityEditor.cloud.imageBuffer;
-           realityEditor.cloud.imageBuffer.onload = function() {
-           globalCanvas.canv23.width = img.width;
-           globalCanvas.canv23.height = img.height;
-           globalCanvas.ctx2333.drawImage(img, 0, 0,img.width,img.height);
-           let pixels = globalCanvas.ctx2333.getImageData(0, 0, img.width, img.height);
-           realityEditor.cloud.worker.postMessage({image: pixels}, [pixels.data.buffer]);
-       };
-       img.src = image;
-       //console.log("total main thread time: ", Date.now()-time);
-   });
-},2000);
+// setInterval(function (){
+//    // time = Date.now();
+//    realityEditor.app.getScreenshot("MS", function(image){
+//        let img = realityEditor.cloud.imageBuffer;
+//            realityEditor.cloud.imageBuffer.onload = function() {
+//            globalCanvas.canv23.width = img.width;
+//            globalCanvas.canv23.height = img.height;
+//            globalCanvas.ctx2333.drawImage(img, 0, 0,img.width,img.height);
+//            let pixels = globalCanvas.ctx2333.getImageData(0, 0, img.width, img.height);
+//            realityEditor.cloud.worker.postMessage({image: pixels}, [pixels.data.buffer]);
+//        };
+//        img.src = image;
+//        //console.log("total main thread time: ", Date.now()-time);
+//    });
+// },2000);
