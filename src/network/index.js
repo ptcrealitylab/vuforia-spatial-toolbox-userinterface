@@ -2945,6 +2945,10 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // adjust move-ability corner UI to match true width and height of frame contents
     if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
         setTimeout(function() {
+          if (!globalDOMCache.hasOwnProperty('iframe' + activeKey)) {
+            console.warn('iframe' + activeKey + ' has disappeared');
+            return;
+          }
             var trueSize = {
                 width: globalDOMCache['iframe' + activeKey].clientWidth,
                 height: globalDOMCache['iframe' + activeKey].clientHeight
