@@ -341,6 +341,26 @@ realityEditor.app.stopVideoRecording = function (videoId) {
 };
 
 /**
+ * If virtualizer mode is turned on and an edge server exists to do the point-cloud processing (with remote-operator-addon),
+ * tells the server to begin recording the 3D point-cloud video data
+ * @param {string} objectKey - the world object where the video should be localized against
+ * @param {string} objectIP
+ * @param {number} objectPort
+ */
+realityEditor.app.start3DVideoRecording = function (objectKey, objectIP, objectPort) {
+    console.log("startVideoRecording");
+    this.appFunctionCall('start3DVideoRecording', {objectKey: objectKey, objectIP: objectIP, objectPort: objectPort}, null);
+};
+
+/**
+ * Stops the point-cloud screen recording.
+ */
+realityEditor.app.stop3DVideoRecording = function () {
+    console.log("stopVideoRecording");
+    this.appFunctionCall('stop3DVideoRecording', null, null);
+};
+
+/**
  * Makes objects visible even when they move out of the camera view.
  * @deprecated - was implemented in native app, but negatively impacts performance if we want it to be
  *  backwards compatible, because of changes to the Vuforia SDK. It is intentionally internally disabled for now.
