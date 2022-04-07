@@ -203,7 +203,8 @@ createNameSpace('realityEditor.app.callbacks');
             if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
                 return;
             }
-            const url = `ws://${bestWorldObject.ip}:31337/`;
+            const wsPort = 31337;
+            const url = `ws://${bestWorldObject.ip}:${wsPort}/`;
             // const url = 'ws://10.10.10.166:31337/';
             window.rzvIo = new WebSocket(url);
         }
