@@ -75,6 +75,10 @@ realityEditor.network.getPort = function(object) {
     return serverPort;
 };
 realityEditor.network.getPortByIp = function(ip) {
+    if (ip === '127.0.0.1') {
+        return '49369';
+    }
+
     let serverPort = defaultHttpPort;
     
     let thisObject = null;
