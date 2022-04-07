@@ -36,6 +36,7 @@ createNameSpace("realityEditor.network.availableFrames");
                 onNewServerDetected(message.action.reloadAvailableFrames.serverIP);
             }
         });
+        onNewServerDetected('127.0.0.1');
     }
 
     /**
