@@ -225,6 +225,48 @@ realityEditor.device.onload = function () {
         }
     }).moveToDevelopMenu();
 
+    let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
+        function(newValue) {
+            console.log('user wants cloudConnection to be', newValue);
+        },
+        function(newValue) {
+            console.log('clodu url text was set to also delete this ' + newValue);
+        }
+    );
+    let _toggleNewNetworkId = realityEditor.gui.settings.addToggle('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, function(newValue) {
+        console.log('user wants newNetworkId to be', newValue);
+    });
+    let _toggleNewSecret = realityEditor.gui.settings.addToggle('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, function(newValue) {
+        console.log('user wants newSecret to be', newValue);
+    });
+
+    let cachedSettings = {};
+    setInterval(async () => {
+        let res = await fetch(`http://127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}/hardwareInterface/edgeAgent/settings`);
+        let settings = await res.json();
+        let anyChanged = false;
+        if (cachedSettings.isConnected !== settings.isConnected) {
+            toggleCloudUrl.onToggleCallback(settings.isConnected);
+            anyChanged = true;
+        }
+        if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+            (cachedSettings.networkUUID !== settings.networkUUID) ||
+            (cachedSettings.networkSecret !== settings.networkSecret)) {
+            anyChanged = true;
+            toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                                          `/n/${settings.networkUUID}` +
+                                          `/s/${settings.networkSecret}`);
+        }
+        cachedSettings = settings;
+        if (anyChanged) {
+            document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+            }), "*");
+        }
+    }, 1000);
+
+
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
     globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
