@@ -5,7 +5,8 @@ const InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
     TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
-    SLIDER: 'SLIDER'
+    URL: 'URL',
+    SLIDER: 'SLIDER',
 });
 
 let sliderDown = null;
@@ -16,7 +17,6 @@ realityEditor.gui.settings.setSettings = function (id, state) {
 
     // updates the toggle switch to display the current value
     if (id) {
-        
         let isSlider = document.getElementById(id).classList.contains('slider');
         if (isSlider) {
             setSliderValue(id, state);
@@ -29,7 +29,7 @@ realityEditor.gui.settings.setSettings = function (id, state) {
         } else {
             document.getElementById(id).classList.remove('active');
         }
-        
+
         // update associated text field if needed (for TOGGLE_WITH_FROZEN_TEXT)
         let textfield = document.getElementById(id).parentElement.querySelector('.settingTextField');
         if (textfield && textfield.classList.contains('frozen')) {
@@ -152,6 +152,9 @@ realityEditor.gui.settings.loadSettingsPost = function () {
 
             if (existingElement) {
                 // console.log('found element for ' + key);
+                if (settingInfo.settingType === InterfaceType.URL) {
+                    // TODO update
+                }
             } else {
                 // console.log('need to create element for ' + key);
 
@@ -193,6 +196,33 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                     });
 
                     newElement.appendChild(textField);
+                }
+
+                if (settingInfo.settingType === InterfaceType.URL) {
+                    let urlView = document.createElement('button');
+                    let iconShare = document.createElement('span');
+                    iconShare.classList.add('icon', 'icon-share');
+                    let urlText = document.createElement('span');
+                    urlText.innerHTML = '&nbsp;Share';
+                    urlView.appendChild(iconShare);
+                    urlView.appendChild(urlText);
+
+                    urlView.id = key;
+                    urlText.id = key + 'Text';
+                    urlView.classList.add('btn', 'btn-primary', 'pull-left', 'settingURLView');
+                    if (settingInfo.associatedText) {
+                        urlView.dataset.href = settingInfo.associatedText.value;
+                    }
+
+                    urlView.addEventListener('click', function() {
+                        navigator.share({
+                            title: 'Pop-up Metaverse Access',
+                            text: 'Pop-up Metaverse Access',
+                            url: urlView.dataset.href,
+                        });
+                    });
+
+                    newElement.appendChild(urlView);
                 }
 
                 if (settingInfo.settingType === InterfaceType.TOGGLE ||
