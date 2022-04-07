@@ -211,7 +211,7 @@ realityEditor.device.onload = function () {
                     } else {
                         recordButton.classList.add('pointCloudButtonActive');
                         recordButton.src = '../../../svg/recordButton3D-stop.svg';
-                        realityEditor.app.start3DVideoRecording(null, null, null);
+                        realityEditor.app.start3DVideoRecording();
                     }
                 });
             }

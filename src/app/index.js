@@ -343,13 +343,11 @@ realityEditor.app.stopVideoRecording = function (videoId) {
 /**
  * If virtualizer mode is turned on and an edge server exists to do the point-cloud processing (with remote-operator-addon),
  * tells the server to begin recording the 3D point-cloud video data
- * @param {string} objectKey - the world object where the video should be localized against
- * @param {string} objectIP
- * @param {number} objectPort
+ * TODO: should we pass the worldId as an argument so it saves which world it's localized against?
  */
-realityEditor.app.start3DVideoRecording = function (objectKey, objectIP, objectPort) {
+realityEditor.app.start3DVideoRecording = function () {
     console.log("startVideoRecording");
-    this.appFunctionCall('start3DVideoRecording', {objectKey: objectKey, objectIP: objectIP, objectPort: objectPort}, null);
+    this.appFunctionCall('start3DVideoRecording', null, null);
 };
 
 /**
