@@ -207,11 +207,11 @@ realityEditor.device.onload = function () {
                     if (recordButton.classList.contains('pointCloudButtonActive')) {
                         recordButton.classList.remove('pointCloudButtonActive');
                         recordButton.src = '../../../svg/recordButton3D-start.svg';
-                        realityEditor.app.stop3DVideoRecording();
+                        realityEditor.device.videoRecording.stop3DVideoRecording();
                     } else {
                         recordButton.classList.add('pointCloudButtonActive');
                         recordButton.src = '../../../svg/recordButton3D-stop.svg';
-                        realityEditor.app.start3DVideoRecording();
+                        realityEditor.device.videoRecording.start3DVideoRecording();
                     }
                 });
             }
