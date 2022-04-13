@@ -1187,6 +1187,7 @@ Logic Interface CSS
 }
 
 .blockIcon {
+    position: absolute;
   text-align: center;
     height: 100%;
     overflow: hidden;
@@ -1200,6 +1201,7 @@ Logic Interface CSS
 
 .blockIconPlaced {
     height: 106%;
+    width: 106%;
 }
 
 .blockBox {
