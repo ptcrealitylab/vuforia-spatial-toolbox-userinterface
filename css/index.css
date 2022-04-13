@@ -1675,3 +1675,14 @@ Logic Interface CSS
     opacity: 0.3;
     pointer-events: none;
 }
+
+#recordPointCloudsButton {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    left: 20px;
+    bottom: 20px;
+    z-index: 3000;
+    -webkit-transform-style: preserve-3d;
+    -webkit-transform: translateZ(3000px); /* Above web interfaces, below side buttons */
+}

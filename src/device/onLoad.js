@@ -195,8 +195,33 @@ realityEditor.device.onload = function () {
         }
         if (newValue) {
             realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
+
+            let recordButton = document.getElementById('recordPointCloudsButton');
+            if (!recordButton) {
+                recordButton = document.createElement('img');
+                recordButton.src = '../../../svg/recordButton3D-start.svg';
+                recordButton.id = 'recordPointCloudsButton';
+                document.body.appendChild(recordButton);
+
+                recordButton.addEventListener('pointerup', _e => {
+                    if (recordButton.classList.contains('pointCloudButtonActive')) {
+                        recordButton.classList.remove('pointCloudButtonActive');
+                        recordButton.src = '../../../svg/recordButton3D-start.svg';
+                        realityEditor.device.videoRecording.stop3DVideoRecording();
+                    } else {
+                        recordButton.classList.add('pointCloudButtonActive');
+                        recordButton.src = '../../../svg/recordButton3D-stop.svg';
+                        realityEditor.device.videoRecording.start3DVideoRecording();
+                    }
+                });
+            }
+            recordButton.classList.remove('hiddenButtons');
         } else {
             realityEditor.app.appFunctionCall("disablePoseTracking", {});
+            let recordButton = document.getElementById('recordPointCloudsButton');
+            if (recordButton) {
+                recordButton.classList.add('hiddenButtons');
+            }
         }
     }).moveToDevelopMenu();
 
