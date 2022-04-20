@@ -149,13 +149,31 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         const headerText = 'No scans of this space detected. Make a scan?';
-        const descriptionText = 'This will create a World Object on your edge server.'
+        let randomServerIP = Object.keys(detectedServers).filter(detectedServer => {
+            return !['127.0.0.1', 'localhost', '10.10.10.10', '10.10.10.20'].includes(detectedServer);
+        })[0]; // this is guaranteed to have at least one entry if we get here
+        let descriptionText = `This will create a World Object on your edge server.<br/>Selected IP: `;
+        descriptionText += `<select id="modalServerIp">`;
+        for (let ip of Object.keys(detectedServers)) {
+            if (ip === randomServerIP) {
+                descriptionText += `<option selected value="${ip}">${ip}</option>`;
+            } else {
+                descriptionText += `<option value="${ip}">${ip}</option>`;
+            }
+        }
+        descriptionText += '</select>';
         realityEditor.gui.modal.openClassicModal(headerText, descriptionText, 'Ignore', 'Begin Scan', function() {
             console.log('Ignore scan modal');
         }, function() {
+            let serverIp = randomServerIP;
+            let elt = document.getElementById('modalServerIp');
+            if (elt) {
+                serverIp = elt.value;
+            }
+
             console.log('Begin scan');
             // startScanning();
-            createPendingWorldObject();
+            createPendingWorldObject(serverIp);
         }, true);
 
         hasUserBeenNotified = true;
@@ -318,19 +336,30 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
     }
 
-    function createPendingWorldObject() {
+    function createPendingWorldObject(serverIp) {
         console.log('createPendingWorldObject()', detectedServers);
 
         // TODO: first create a new object and post it to the server
-        let randomServerIP = Object.keys(detectedServers)[0]; // this is guaranteed to have at least one entry if we get here
+        let serverIps = Object.keys(detectedServers);
+        if (!serverIps.includes(serverIp)) {
+            serverIp = serverIps.filter(detectedServer => {
+                return !['127.0.0.1', 'localhost'].includes(detectedServer);
+            })[0]; // this is guaranteed to have at least one entry if we get here
+        }
         pendingAddedObjectName = "_WORLD_instantScan";
-        const port = realityEditor.network.getPortByIp(randomServerIP);
-        addObject(pendingAddedObjectName, randomServerIP, port); // TODO: get port programmatically
+        const port = realityEditor.network.getPortByIp(serverIp);
+        addObject(pendingAddedObjectName, serverIp, port); // TODO: get port programmatically
 
         showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
-        // setTimeout(function() {
-        //     realityEditor.network.addHeartbeatObject(worldObjectBeat);
-        // }, 5000);
+        setTimeout(function() {
+            realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
+            setTimeout(function() {
+                realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
+                setTimeout(function() {
+                    realityEditor.app.sendUDPMessage({action: 'ping'}); // ping the servers to see if we get any new responses
+                }, 900);
+            }, 600);
+        }, 300);
 
         // wait for a response, wait til we have the objectID and know it exists
     }
@@ -362,6 +391,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             console.log(response);
             return response.json();
         }).then((object) => {
+            console.log('success', object);
+            if (serverIp !== '127.0.0.1') {
+                return;
+            }
             let baseWorldObjectBeat = {
                 ip: '127.0.0.1',
                 port: realityEditor.device.environment.getLocalServerPort(),
@@ -379,6 +412,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 }, delay);
                 delay *= 2;
             }
+        }).catch(e => {
+            console.error('addObject error', e);
         });
     }
 
