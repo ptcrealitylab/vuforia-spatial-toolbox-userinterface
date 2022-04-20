@@ -206,8 +206,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     }
 
     // show and hide the anchors as well as the touch event catcher
-    function togglePositioningMode() {
-        isPositioningMode = !isPositioningMode;
+    function togglePositioningMode(newPositioningMode) {
+        if (typeof newPositioningMode !== 'undefined') {
+            isPositioningMode = newPositioningMode;
+        } else {
+            isPositioningMode = !isPositioningMode;
+        }
         updatePositioningMode(); // refreshes the effects of the current mode
     }
 

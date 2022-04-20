@@ -440,7 +440,25 @@ realityEditor.network.addHeartbeatObject = function (beat) {
     }
 };
 
+/**
+ * Looks at a server heartbeat, and if the server hasn't been added yet adds its services
+ * @param {{ip: string, port: number, vn: number, zone: string, services: string[]}} beat - server heartbeat received via UDP
+ */
+realityEditor.network.processServerBeat = function (beat) {
+    let services = beat.services;
+    console.log('processing server beat from ' + beat.ip);
+    if (typeof this.serverServices[beat.ip] === 'undefined') {
+        this.serverServices[beat.ip] = beat.services;
+        console.log('server has services:', services);
+        this.checkIfNewServer(beat.ip); // trigger onNewServerDetected callbacks
+    } else if (JSON.stringify(this.serverServices[beat.ip]) !== JSON.stringify(beat.services)) {
+        this.serverServices[beat.ip] = beat.services;
+        console.log('update services:', services);
+    }
+}
+
 realityEditor.network.knownServers = []; // todo: make private to module
+realityEditor.network.serverServices = {};
 realityEditor.network.newServerDetectedCallbacks = [];
 
 /**
@@ -466,6 +484,7 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
     var foundExistingMatch = this.knownServers.indexOf(serverIP) > -1; // TODO: make robust against different formatting of "same" IP
     
     if (!foundExistingMatch) {
+        console.log('new server detected: ' + serverIP);
         this.knownServers.push(serverIP);
         
         // trigger callbacks

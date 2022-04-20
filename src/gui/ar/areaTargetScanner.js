@@ -28,6 +28,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     let limitScanRAM = false; // if true (toggled through menu), stop area target capture when device memory usage is high
     let maximumPercentRAM = 0.33; // the app will stop scanning when it reaches this threshold of total device memory
 
+    let serverUploadIP = null;
+
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
@@ -70,19 +72,32 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             }
 
             // wait 5 seconds after detecting an object to check the next step
-            setTimeout(function() {
-                showNotificationIfNeeded();
+            setTimeout(() => {
+                // ignore this server if it contains a service heartbeat that explicitly doesn't include 'world' support
+                let services = realityEditor.network.serverServices[object.ip];
+                if (!services || (services && services.includes('world'))) {
+                    showNotificationIfNeeded();
+                }
             }, 5000);
         });
 
         realityEditor.network.onNewServerDetected(function(serverIP) {
-            if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
+            if (serverIP === '127.0.0.1' || serverIP === 'localhost') { // ignore local phone server
                 return;
             }
             if (typeof detectedServers[serverIP] !== 'undefined') {
                 return;
             }
             detectedServers[serverIP] = true;
+
+            let services = realityEditor.network.serverServices[serverIP];
+            if (services && services.includes('world')) {
+                serverUploadIP = serverIP;
+                // wait 5 seconds after detecting an object to check the next step
+                setTimeout(function() {
+                    showNotificationIfNeeded();
+                }, 5000);
+            }
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
@@ -141,7 +156,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         const headerText = 'No scans of this space detected. Make a scan?';
-        const descriptionText = 'This will create a World Object on your edge server.'
+        const descriptionText = 'This will create a World Object on your edge server. (' + (serverUploadIP || 'random') + ')';
         realityEditor.gui.modal.openClassicModal(headerText, descriptionText, 'Ignore', 'Begin Scan', function() {
             console.log('Ignore scan modal');
         }, function() {
@@ -313,10 +328,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     function createPendingWorldObject() {
         console.log('createPendingWorldObject()');
 
-        // TODO: first create a new object and post it to the server
+        // first create a new object and post it to the server
+        // if we can't find a server that uses service heartbeats, default to a random discovered server
         let randomServerIP = Object.keys(detectedServers)[0]; // this is guaranteed to have at least one entry if we get here
+        let chosenIP = serverUploadIP || randomServerIP;
+
         pendingAddedObjectName = "_WORLD_instantScan";
-        addObject(pendingAddedObjectName, randomServerIP, 8080); // TODO: get port programmatically
+        addObject(pendingAddedObjectName, chosenIP, 8080); // TODO: get port programmatically
 
         showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
         setTimeout(function() {

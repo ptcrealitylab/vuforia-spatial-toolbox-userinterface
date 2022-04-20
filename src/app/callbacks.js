@@ -168,6 +168,10 @@ createNameSpace('realityEditor.app.callbacks');
             // forward the action message to the network module, to synchronize state across multiple clients
         } else if (typeof message.action !== 'undefined') {
             realityEditor.network.onAction(message.action);
+        
+        } else if (typeof message.ip !== 'undefined' && typeof message.services !== 'undefined') {
+            console.log('process server beat', message);
+            realityEditor.network.processServerBeat(message);
         }
 
         // forward the message to a generic message handler that various modules use to subscribe to different messages
