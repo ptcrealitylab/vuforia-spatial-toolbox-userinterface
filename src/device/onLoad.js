@@ -230,7 +230,7 @@ realityEditor.device.onload = function () {
             console.log('user wants cloudConnection to be', newValue);
         },
         function(newValue) {
-            console.log('clodu url text was set to also delete this ' + newValue);
+            console.log('cloud url text was set to', newValue);
         }
     );
     let _toggleNewNetworkId = realityEditor.gui.settings.addToggle('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, function(newValue) {

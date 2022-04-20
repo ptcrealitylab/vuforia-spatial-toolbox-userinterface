@@ -150,7 +150,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         const headerText = 'No scans of this space detected. Make a scan?';
         let randomServerIP = Object.keys(detectedServers).filter(detectedServer => {
-            return !['127.0.0.1', 'localhost', '10.10.10.10', '10.10.10.20'].includes(detectedServer);
+            return detectedServer !== '127.0.0.1';
         })[0]; // this is guaranteed to have at least one entry if we get here
         let descriptionText = `This will create a World Object on your edge server.<br/>Selected IP: `;
         descriptionText += `<select id="modalServerIp">`;
@@ -343,7 +343,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         let serverIps = Object.keys(detectedServers);
         if (!serverIps.includes(serverIp)) {
             serverIp = serverIps.filter(detectedServer => {
-                return !['127.0.0.1', 'localhost'].includes(detectedServer);
+                return detectedServer !== '127.0.0.1';
             })[0]; // this is guaranteed to have at least one entry if we get here
         }
         pendingAddedObjectName = "_WORLD_instantScan";
