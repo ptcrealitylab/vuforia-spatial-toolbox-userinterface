@@ -75,11 +75,11 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             // wait after detecting an object to check the next step
             let delay = 5000;
             if (object.ip === '127.0.0.1') {
-                delay = 15000;
+                delay = 7000;
             }
             setTimeout(function() {
                 showNotificationIfNeeded();
-            }, 5000);
+            }, delay);
         });
 
         realityEditor.network.onNewServerDetected(function(serverIP) {
