@@ -375,7 +375,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     function getObjectByName(name) {
         return scene.getObjectByName(name);
     }
-    
+
     function getGroundPlane() {
         return groundPlane;
     }
@@ -388,171 +388,26 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         areaTargetVertexShader(center) {
             return THREE.ShaderChunk.meshphysical_vert
                 .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-    vPosition = position;
-    len = length(vPosition - vec3(${center.x}, ${center.y}, ${center.z}));
-    vWorldPosition = (modelMatrix * vec4( transformed, 1.0 )).xyz;`).replace('#include <common>', `#include <common>
-    varying vec3 vPosition;
+    len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
+    `).replace('#include <common>', `#include <common>
     varying float len;
-    varying vec3 vWorldPosition;`);
-
-            /*`
-            #define STANDARD
-varying vec3 vViewPosition;
-#ifdef USE_TRANSMISSION
-	varying vec3 vWorldPosition;
-#endif
-#include <common>
-#include <uv_pars_vertex>
-#include <uv2_pars_vertex>
-#include <displacementmap_pars_vertex>
-#include <color_pars_vertex>
-#include <fog_pars_vertex>
-#include <normal_pars_vertex>
-#include <morphtarget_pars_vertex>
-#include <skinning_pars_vertex>
-#include <shadowmap_pars_vertex>
-#include <logdepthbuf_pars_vertex>
-#include <clipping_planes_pars_vertex>
-void main() {
-	#include <uv_vertex>
-	#include <uv2_vertex>
-	#include <color_vertex>
-	#include <beginnormal_vertex>
-	#include <morphnormal_vertex>
-	#include <skinbase_vertex>
-	#include <skinnormal_vertex>
-	#include <defaultnormal_vertex>
-	#include <normal_vertex>
-	#include <begin_vertex>
-	#include <morphtarget_vertex>
-	#include <skinning_vertex>
-	#include <displacementmap_vertex>
-	#include <project_vertex>
-	#include <logdepthbuf_vertex>
-	#include <clipping_planes_vertex>
-	vViewPosition = - mvPosition.xyz;
-	#include <worldpos_vertex>
-	#include <shadowmap_vertex>
-	#include <fog_vertex>
-#ifdef USE_TRANSMISSION
-	vWorldPosition = worldPosition.xyz;
-#endif
-}
-          `*/
+    `);
         }
         areaTargetFragmentShader(inverted) {
             let condition = 'if (len > maxHeight) discard;';
             if (inverted) {
                 condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
             }
-            // let condition = 'if (vPosition.y > maxHeight) discard;';
-            // if (inverted) {
-            //     condition = 'if (vPosition.y < maxHeight) discard;';
-            // }
-            return `
-#define STANDARD
-#ifdef PHYSICAL
-	#define REFLECTIVITY
-	#define CLEARCOAT
-	#define TRANSMISSION
-#endif
-uniform vec3 diffuse;
-uniform vec3 emissive;
-uniform float roughness;
-uniform float metalness;
-uniform float opacity;
-uniform float maxHeight;
-#ifdef TRANSMISSION
-	uniform float transmission;
-#endif
-#ifdef REFLECTIVITY
-	uniform float reflectivity;
-#endif
-#ifdef CLEARCOAT
-	uniform float clearcoat;
-	uniform float clearcoatRoughness;
-#endif
-#ifdef USE_SHEEN
-	uniform vec3 sheen;
-#endif
-varying vec3 vWorldPosition;
-varying vec3 vPosition;
-varying float len;
-varying vec3 vViewPosition;
-#ifndef FLAT_SHADED
-	varying vec3 vNormal;
-	#ifdef USE_TANGENT
-		varying vec3 vTangent;
-		varying vec3 vBitangent;
-	#endif
-#endif
-#include <common>
-#include <packing>
-#include <dithering_pars_fragment>
-#include <color_pars_fragment>
-#include <uv_pars_fragment>
-#include <uv2_pars_fragment>
-#include <map_pars_fragment>
-#include <alphamap_pars_fragment>
-#include <aomap_pars_fragment>
-#include <lightmap_pars_fragment>
-#include <emissivemap_pars_fragment>
-#include <transmissionmap_pars_fragment>
-#include <bsdfs>
-#include <cube_uv_reflection_fragment>
-#include <envmap_common_pars_fragment>
-#include <envmap_physical_pars_fragment>
-#include <fog_pars_fragment>
-#include <lights_pars_begin>
-#include <lights_physical_pars_fragment>
-#include <shadowmap_pars_fragment>
-#include <bumpmap_pars_fragment>
-#include <normalmap_pars_fragment>
-#include <clearcoat_pars_fragment>
-#include <roughnessmap_pars_fragment>
-#include <metalnessmap_pars_fragment>
-#include <logdepthbuf_pars_fragment>
-#include <clipping_planes_pars_fragment>
-void main() {
-    ${condition}
-    // if (maxHeight > 0.5) discard;
-	#include <clipping_planes_fragment>
-	vec4 diffuseColor = vec4( diffuse, opacity );
-	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
-	vec3 totalEmissiveRadiance = emissive;
-	#ifdef TRANSMISSION
-		float totalTransmission = transmission;
-	#endif
-	#include <logdepthbuf_fragment>
-	#include <map_fragment>
-	#include <color_fragment>
-	#include <alphamap_fragment>
-	#include <alphatest_fragment>
-	#include <roughnessmap_fragment>
-	#include <metalnessmap_fragment>
-	#include <normal_fragment_begin>
-	#include <normal_fragment_maps>
-	#include <clearcoat_normal_fragment_begin>
-	#include <clearcoat_normal_fragment_maps>
-	#include <emissivemap_fragment>
-	#include <transmissionmap_fragment>
-	#include <lights_physical_fragment>
-	#include <lights_fragment_begin>
-	#include <lights_fragment_maps>
-	#include <lights_fragment_end>
-	#include <aomap_fragment>
-	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-	#ifdef TRANSMISSION
-		diffuseColor.a *= mix( saturate( 1. - totalTransmission + linearToRelativeLuminance( reflectedLight.directSpecular + reflectedLight.indirectSpecular ) ), 1.0, metalness );
-	#endif
-	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-	#include <tonemapping_fragment>
-	#include <encodings_fragment>
-	#include <fog_fragment>
-	#include <premultiplied_alpha_fragment>
-	#include <dithering_fragment>
-}
-          `
+            return THREE.ShaderChunk.meshphysical_frag
+                .replace('#include <clipping_planes_fragment>', `
+                         ${condition}
+
+                         #include <clipping_planes_fragment>`)
+                .replace(`#include <common>`, `
+                         #include <common>
+                         varying float len;
+                         uniform float maxHeight;
+                         `);
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
