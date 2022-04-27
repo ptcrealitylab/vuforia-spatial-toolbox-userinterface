@@ -46,9 +46,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // OR -> show a modal with this info and the button to start. can dismiss and ignore completely.
 
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
-            if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
-                return; // ignore local world
-            }
+            // if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
+            //     return; // ignore local world
+            // }
+            console.log('areaTarget objectDiscoveredCallback', pendingAddedObjectName, object);
 
             if (typeof detectedObjects[objectKey] !== 'undefined') {
                 return;
@@ -62,24 +63,30 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             }
 
             // check if it's a world object
-            if (object && !object.deactivated && (object.isWorldObject || object.type === 'world')) {
+            if (object && !object.deactivated &&
+                (object.isWorldObject || object.type === 'world') &&
+                (objectKey !== realityEditor.worldObjects.getLocalWorldId())) {
                 foundAnyWorldObjects = true;
                 console.log("world obj detected");
             } else {
                 console.log("obj detected");
             }
 
-            // wait 5 seconds after detecting an object to check the next step
+            // wait after detecting an object to check the next step
+            let delay = 5000;
+            if (object.ip === '127.0.0.1') {
+                delay = 7000;
+            }
             setTimeout(function() {
                 showNotificationIfNeeded();
-            }, 5000);
+            }, delay);
         });
 
         realityEditor.network.onNewServerDetected(function(serverIP) {
-            console.log("--function-- onNewServerDetected");
-            if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
-                return;
-            }
+            console.log('areaTargetScanner onNewServerDetected', serverIP);
+            // if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
+            //     return;
+            // }
             if (typeof detectedServers[serverIP] !== 'undefined') {
                 return;
             }
@@ -142,13 +149,31 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         const headerText = 'No scans of this space detected. Make a scan?';
-        const descriptionText = 'This will create a World Object on your edge server.'
+        let randomServerIP = Object.keys(detectedServers).filter(detectedServer => {
+            return detectedServer !== '127.0.0.1';
+        })[0]; // this is guaranteed to have at least one entry if we get here
+        let descriptionText = `This will create a World Object on your edge server.<br/>Selected IP: `;
+        descriptionText += `<select id="modalServerIp">`;
+        for (let ip of Object.keys(detectedServers)) {
+            if (ip === randomServerIP) {
+                descriptionText += `<option selected value="${ip}">${ip}</option>`;
+            } else {
+                descriptionText += `<option value="${ip}">${ip}</option>`;
+            }
+        }
+        descriptionText += '</select>';
         realityEditor.gui.modal.openClassicModal(headerText, descriptionText, 'Ignore', 'Begin Scan', function() {
             console.log('Ignore scan modal');
         }, function() {
+            let serverIp = randomServerIP;
+            let elt = document.getElementById('modalServerIp');
+            if (elt) {
+                serverIp = elt.value;
+            }
+
             console.log('Begin scan');
             // startScanning();
-            createPendingWorldObject();
+            createPendingWorldObject(serverIp);
         }, true);
 
         hasUserBeenNotified = true;
@@ -311,13 +336,19 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
     }
 
-    function createPendingWorldObject() {
-        console.log('createPendingWorldObject()');
+    function createPendingWorldObject(serverIp) {
+        console.log('createPendingWorldObject()', detectedServers);
 
         // TODO: first create a new object and post it to the server
-        let randomServerIP = Object.keys(detectedServers)[0]; // this is guaranteed to have at least one entry if we get here
+        let serverIps = Object.keys(detectedServers);
+        if (!serverIps.includes(serverIp)) {
+            serverIp = serverIps.filter(detectedServer => {
+                return detectedServer !== '127.0.0.1';
+            })[0]; // this is guaranteed to have at least one entry if we get here
+        }
         pendingAddedObjectName = "_WORLD_instantScan";
-        addObject(pendingAddedObjectName, randomServerIP, 8080); // TODO: get port programmatically
+        const port = realityEditor.network.getPortByIp(serverIp);
+        addObject(pendingAddedObjectName, serverIp, port); // TODO: get port programmatically
 
         showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
         setTimeout(function() {
@@ -358,6 +389,31 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }).then((response) => {
             console.log('added new object');
             console.log(response);
+            return response.json();
+        }).then((object) => {
+            console.log('success', object);
+            if (serverIp !== '127.0.0.1') {
+                return;
+            }
+            let baseWorldObjectBeat = {
+                ip: '127.0.0.1',
+                port: realityEditor.device.environment.getLocalServerPort(),
+                vn: 320,
+                pr: 'R2',
+                tcs: null,
+                zone: '',
+            };
+
+            let delay = 1000;
+            for (let i = 0; i < 7; i++) {
+                setTimeout(() => {
+                    realityEditor.network.addHeartbeatObject(
+                        Object.assign(baseWorldObjectBeat, object));
+                }, delay);
+                delay *= 2;
+            }
+        }).catch(e => {
+            console.error('addObject error', e);
         });
     }
 

@@ -195,10 +195,77 @@ realityEditor.device.onload = function () {
         }
         if (newValue) {
             realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
+
+            let recordButton = document.getElementById('recordPointCloudsButton');
+            if (!recordButton) {
+                recordButton = document.createElement('img');
+                recordButton.src = '../../../svg/recordButton3D-start.svg';
+                recordButton.id = 'recordPointCloudsButton';
+                document.body.appendChild(recordButton);
+
+                recordButton.addEventListener('pointerup', _e => {
+                    if (recordButton.classList.contains('pointCloudButtonActive')) {
+                        recordButton.classList.remove('pointCloudButtonActive');
+                        recordButton.src = '../../../svg/recordButton3D-start.svg';
+                        realityEditor.device.videoRecording.stop3DVideoRecording();
+                    } else {
+                        recordButton.classList.add('pointCloudButtonActive');
+                        recordButton.src = '../../../svg/recordButton3D-stop.svg';
+                        realityEditor.device.videoRecording.start3DVideoRecording();
+                    }
+                });
+            }
+            recordButton.classList.remove('hiddenButtons');
         } else {
             realityEditor.app.appFunctionCall("disablePoseTracking", {});
+            let recordButton = document.getElementById('recordPointCloudsButton');
+            if (recordButton) {
+                recordButton.classList.add('hiddenButtons');
+            }
         }
     }).moveToDevelopMenu();
+
+    let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
+        function(newValue) {
+            console.log('user wants cloudConnection to be', newValue);
+        },
+        function(newValue) {
+            console.log('cloud url text was set to', newValue);
+        }
+    );
+    let _toggleNewNetworkId = realityEditor.gui.settings.addToggle('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, function(newValue) {
+        console.log('user wants newNetworkId to be', newValue);
+    });
+    let _toggleNewSecret = realityEditor.gui.settings.addToggle('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, function(newValue) {
+        console.log('user wants newSecret to be', newValue);
+    });
+
+    let cachedSettings = {};
+    setInterval(async () => {
+        let res = await fetch(`http://127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}/hardwareInterface/edgeAgent/settings`);
+        let settings = await res.json();
+        let anyChanged = false;
+        if (cachedSettings.isConnected !== settings.isConnected) {
+            toggleCloudUrl.onToggleCallback(settings.isConnected);
+            anyChanged = true;
+        }
+        if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+            (cachedSettings.networkUUID !== settings.networkUUID) ||
+            (cachedSettings.networkSecret !== settings.networkSecret)) {
+            anyChanged = true;
+            toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                                          `/n/${settings.networkUUID}` +
+                                          `/s/${settings.networkSecret}`);
+        }
+        cachedSettings = settings;
+        if (anyChanged) {
+            document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+            }), "*");
+        }
+    }, 1000);
+
 
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');

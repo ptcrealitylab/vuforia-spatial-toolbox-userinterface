@@ -274,6 +274,26 @@ createNameSpace("realityEditor.device.videoRecording");
     }
 
     //////////////////////////////////////////
+    //          3D Video Recording          //
+    //////////////////////////////////////////
+
+    const sendRzvIoMessage = (command, msg) => {
+        if (window.rzvIo && window.rzvIo.readyState === WebSocket.OPEN) {
+            window.rzvIo.send(JSON.stringify(Object.assign({
+                command: command
+            }, msg)));
+        }
+    }
+
+    function start3DVideoRecording() {
+        sendRzvIoMessage('/videoRecording/start');
+    }
+
+    function stop3DVideoRecording() {
+        sendRzvIoMessage('/videoRecording/stop');
+    }
+
+    //////////////////////////////////////////
 
     exports.initService = initService;
     exports.toggleRecording = toggleRecording;
@@ -282,5 +302,8 @@ createNameSpace("realityEditor.device.videoRecording");
 
     exports.startRecordingForFrame = startRecordingForFrame;
     exports.stopRecordingForFrame = stopRecordingForFrame;
+
+    exports.start3DVideoRecording = start3DVideoRecording;
+    exports.stop3DVideoRecording = stop3DVideoRecording;
     
 }(realityEditor.device.videoRecording));

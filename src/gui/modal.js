@@ -84,12 +84,12 @@ createNameSpace("realityEditor.gui.modal");
 
         // attach callbacks to button pointer events + delete/hide when done
         domElements.cancelButton.addEventListener('pointerup', function(event) {
-            hideModal(domElements);
             onCancelCallback(event);
+            hideModal(domElements);
         });
         domElements.submitButton.addEventListener('pointerup', function(event) {
-            hideModal(domElements);
             onSubmitCallback(event);
+            hideModal(domElements);
         });
 
         // disable touch actions elsewhere on the screen
