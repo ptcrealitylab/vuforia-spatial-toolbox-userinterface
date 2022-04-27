@@ -241,31 +241,33 @@ realityEditor.device.onload = function () {
     });
 
     let cachedSettings = {};
-    setInterval(async () => {
-        let res = await fetch(`http://127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}/hardwareInterface/edgeAgent/settings`);
-        let settings = await res.json();
-        let anyChanged = false;
-        if (cachedSettings.isConnected !== settings.isConnected) {
-            toggleCloudUrl.onToggleCallback(settings.isConnected);
-            anyChanged = true;
-        }
-        if ((cachedSettings.serverUrl !== settings.serverUrl) ||
-            (cachedSettings.networkUUID !== settings.networkUUID) ||
-            (cachedSettings.networkSecret !== settings.networkSecret)) {
-            anyChanged = true;
-            toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
-                                          `/n/${settings.networkUUID}` +
-                                          `/s/${settings.networkSecret}`);
-        }
-        cachedSettings = settings;
-        if (anyChanged) {
-            document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
-                getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
-                getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-            }), "*");
-        }
-    }, 1000);
-
+    const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+    if (window.location.host === localSettingsHost) {
+        setInterval(async () => {
+            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+            let settings = await res.json();
+            let anyChanged = false;
+            if (cachedSettings.isConnected !== settings.isConnected) {
+                toggleCloudUrl.onToggleCallback(settings.isConnected);
+                anyChanged = true;
+            }
+            if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+                (cachedSettings.networkUUID !== settings.networkUUID) ||
+                (cachedSettings.networkSecret !== settings.networkSecret)) {
+                anyChanged = true;
+                toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                                              `/n/${settings.networkUUID}` +
+                                              `/s/${settings.networkSecret}`);
+            }
+            cachedSettings = settings;
+            if (anyChanged) {
+                document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                    getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                    getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+                }), "*");
+            }
+        }, 1000);
+    }
 
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
