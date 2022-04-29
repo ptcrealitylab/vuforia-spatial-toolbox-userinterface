@@ -508,7 +508,11 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
         messageBody.callback = callbackString;
     }
     
-    window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    try {
+        window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    } catch (e) {
+        console.warn('appFunctionCall error', e, messageBody);
+    }
 };
 
 /**
