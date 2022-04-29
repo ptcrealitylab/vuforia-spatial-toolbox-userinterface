@@ -144,6 +144,7 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {string|object} message
      */
     function receivedUDPMessage(message) {
+        console.log('receivedUDPMessage', message);
         if (!exports.acceptUDPBeats && !message.network) {
             return;
         }

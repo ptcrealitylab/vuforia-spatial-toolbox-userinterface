@@ -504,6 +504,7 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
+    console.log('addHeartbeatObject', beat);
     if (beat && beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
