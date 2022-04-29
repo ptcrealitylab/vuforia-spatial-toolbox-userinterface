@@ -430,6 +430,7 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
 };
 
 realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, thisFrame) {
+    console.log('initializeDownloadedFrame', objectKey, frameKey, thisFrame);
     // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
     thisFrame.screenZ = 1000;
     thisFrame.fullScreen = false;
@@ -503,8 +504,7 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
-    if(beat)
-    if (beat.id) {
+    if (beat && beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
@@ -591,7 +591,7 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
-    console.log(origin, remote, objectKey);
+    console.log('updateObject', origin, remote, objectKey);
     
     origin.x = remote.x;
     origin.y = remote.y;
@@ -916,6 +916,7 @@ realityEditor.network.onAction = function (action) {
     }
     
     if (typeof thisAction.reloadFrame !== "undefined") {
+        console.log('reloadFrame', thisAction.reloadFrame);
         let thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
         if (!thisFrame) {
             console.log('this is a new frame... add it to the object...');
@@ -1061,7 +1062,7 @@ realityEditor.network.onAction = function (action) {
     
     
     if (thisAction.addFrame) {
-        console.log("addFrame");
+        console.log('addFrame', thisAction.addFrame);
         
         let thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
         
@@ -2455,8 +2456,7 @@ realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
     var portSuffix = (/(:[0-9]+)$/.test(serverUrl)) ? ('') : (':' + defaultHttpPort);
     var url = prefix + serverUrl + portSuffix + '/allObjects/';
     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
-        console.log('got all objects');
-        console.log(msg);
+        console.log('discoverObjectsFromServer got all objects', msg);
 
         msg.forEach(function(heartbeat) {
             console.log(heartbeat);
@@ -2532,7 +2532,7 @@ realityEditor.network.deleteFrameFromObject = function(ip, objectKey, frameKey) 
  * @param {function} callback
  */
 realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback) {
-    this.cout("I am adding a frame: " + ip);
+    console.log('postNewFrame', ip, objectKey, contents);
     contents.lastEditor = globalStates.tempUuid;
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/addFrame/"), contents, callback);
 };
@@ -2545,7 +2545,7 @@ realityEditor.network.postNewFrame = function(ip, objectKey, contents, callback)
  * @param {object|undefined} contents - currently doesn't need this, can exclude or pass in empty object {}
  */
 realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, contents) {
-    this.cout("I am adding a frame: " + ip);
+    console.log('createCopyOfFrame', ip, objectKey, frameKey, contents);
     contents = contents || {};
     contents.lastEditor = globalStates.tempUuid;
 
