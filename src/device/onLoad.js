@@ -57,6 +57,7 @@ createNameSpace("realityEditor.device");
 // add-ons can register a function to be called instead of getVuforiaReady
 realityEditor.device.initFunctions = [];
 
+realityEditor.device.loaded = false;
 /**
  * When the index.html first finishes loading, set up the:
  * Sidebar menu buttons,
@@ -415,6 +416,8 @@ realityEditor.device.onload = function () {
     }
 
     this.cout("onload");
+
+    realityEditor.device.loaded = true;
 };
 
 window.onload = realityEditor.device.onload;

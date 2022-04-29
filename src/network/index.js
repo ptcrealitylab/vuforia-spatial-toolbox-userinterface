@@ -505,6 +505,14 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
     console.log('addHeartbeatObject', beat);
+    if (!realityEditor.device.loaded) {
+        console.log('addHeartbeatObject called before init done', beat);
+        setTimeout(() => {
+            realityEditor.network.addHeartbeatObject(beat);
+        }, 500);
+        return;
+    }
+
     if (beat && beat.id) {
         if (!objects[beat.id]) {
             // download the object data from its server
