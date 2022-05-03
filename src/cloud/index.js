@@ -97,7 +97,7 @@ if(getDesktopLinkData) {
         console.log("------------ ",realityEditor.network.state);
         realityEditor.cloud.connectToCloud();
     } else {
-
+        /*
         realityEditor.cloud.worker = new Worker("src/cloud/hrqrWorker.js");
 
         realityEditor.cloud.worker.onmessage = function(event) {
@@ -117,6 +117,7 @@ if(getDesktopLinkData) {
                 }
             }
         }
+        */
     }
 }
 
