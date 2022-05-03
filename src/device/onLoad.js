@@ -233,10 +233,10 @@ realityEditor.device.onload = function () {
             console.log('cloud url text was set to', newValue);
         }
     );
-    let _toggleNewNetworkId = realityEditor.gui.settings.addToggle('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, function(newValue) {
+    let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
         console.log('user wants newNetworkId to be', newValue);
     });
-    let _toggleNewSecret = realityEditor.gui.settings.addToggle('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, function(newValue) {
+    let toggleNewSecret = realityEditor.gui.settings.addToggleWithText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
         console.log('user wants newSecret to be', newValue);
     });
 
@@ -256,6 +256,8 @@ realityEditor.device.onload = function () {
             toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
                                           `/n/${settings.networkUUID}` +
                                           `/s/${settings.networkSecret}`);
+            toggleNewNetworkId.onTextCallback(settings.networkUUID);
+            toggleNewSecret.onTextCallback(settings.networkSecret);
         }
         cachedSettings = settings;
         if (anyChanged) {
