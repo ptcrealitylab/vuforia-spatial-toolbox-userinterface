@@ -326,7 +326,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].GLB = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
-        // createNavmesh(fileName, objectID);
+        createNavmesh(fileName, objectID);
     }
 
     /**
@@ -770,6 +770,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.onTargetDATDownloaded = onTargetDATDownloaded;
     exports.onTargetJPGDownloaded = onTargetJPGDownloaded;
     exports.onTargetGLBDownloaded = onTargetGLBDownloaded;
+    exports.createNavmesh = createNavmesh;
     exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
     exports.onTargetFileDownloaded = onTargetFileDownloaded;
