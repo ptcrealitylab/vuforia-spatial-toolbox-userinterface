@@ -266,6 +266,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         });
     }
 
+    function getOcclusionObject(objectId) {
+        return worldOcclusionObjects[objectId];
+    }
+
     function isOcclusionActive(objectId) {
         return !!worldOcclusionObjects[objectId];
     }
@@ -478,6 +482,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.getObjectByName = getObjectByName;
     exports.getGroundPlane = getGroundPlane;
     exports.setMatrixFromArray = setMatrixFromArray;
+    exports.getOcclusionObject = getOcclusionObject;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;

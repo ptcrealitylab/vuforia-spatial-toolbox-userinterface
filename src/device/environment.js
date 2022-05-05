@@ -47,7 +47,8 @@ createNameSpace("realityEditor.device.environment");
         // matrices
         initialPocketToolRotation: null,
         supportsAreaTargetCapture: true,
-        hideOriginCube: false // explicitly don't show the 3d cubes at the world origin
+        hideOriginCube: false, // explicitly don't show the 3d cubes at the world origin
+        addOcclusionGltf: true // by default loads the occlusion mesh, but a VR viewer can disable this
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property

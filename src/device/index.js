@@ -307,14 +307,29 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     var iframe = document.getElementById('iframe' + (nodeKey || frameKey));
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
     if (newCoords) {
-        iframe.contentWindow.postMessage(JSON.stringify({
-            event: {
-                type: event.type,
-                pointerId: event.pointerId,
-                pointerType: event.pointerType,
-                x: newCoords.x,
-                y: newCoords.y
+        let projectedZ;
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            let occlusionObject = realityEditor.gui.threejsScene.getOcclusionObject(worldObject.objectId);
+            if (occlusionObject) {
+                let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [occlusionObject]);
+                if (raycastIntersects.length > 0) {
+                    projectedZ = raycastIntersects[0].distance;
+                }
             }
+        }
+        let eventData = {
+            type: event.type,
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            x: newCoords.x,
+            y: newCoords.y
+        }
+        if (typeof projectedZ !== 'undefined') {
+            eventData.projectedZ = projectedZ;
+        }
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: eventData
         }), '*');
     }
 };
