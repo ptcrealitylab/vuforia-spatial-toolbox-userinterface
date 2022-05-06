@@ -310,7 +310,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         let projectedZ;
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
-            let occlusionObject = realityEditor.gui.threejsScene.getOcclusionObject(worldObject.objectId);
+            let occlusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldObject.objectId);
             if (occlusionObject) {
                 let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [occlusionObject]);
                 if (raycastIntersects.length > 0) {
