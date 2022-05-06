@@ -308,6 +308,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
     if (newCoords) {
         let projectedZ;
+        let worldIntersectPoint;
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
             let occlusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldObject.objectId);
@@ -315,6 +316,18 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
                 let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [occlusionObject]);
                 if (raycastIntersects.length > 0) {
                     projectedZ = raycastIntersects[0].distance;
+
+                    // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
+                    let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                    realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                    inverseGroundPlaneMatrix.invert();
+                    raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+
+                    worldIntersectPoint = {
+                        x: raycastIntersects[0].point.x,
+                        y: raycastIntersects[0].point.y,
+                        z: raycastIntersects[0].point.z
+                    }
                 }
             }
         }
@@ -327,6 +340,9 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         }
         if (typeof projectedZ !== 'undefined') {
             eventData.projectedZ = projectedZ;
+        }
+        if (typeof worldIntersectPoint !== 'undefined') {
+            eventData.worldIntersectPoint = worldIntersectPoint;
         }
         iframe.contentWindow.postMessage(JSON.stringify({
             event: eventData
