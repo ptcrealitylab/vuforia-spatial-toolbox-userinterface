@@ -266,6 +266,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         });
     }
 
+    function getObjectForWorldRaycasts(objectId) {
+        return worldOcclusionObjects[objectId] || scene.getObjectByName('areaTargetMesh');
+    }
+
     function isOcclusionActive(objectId) {
         return !!worldOcclusionObjects[objectId];
     }
@@ -478,6 +482,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.getObjectByName = getObjectByName;
     exports.getGroundPlane = getGroundPlane;
     exports.setMatrixFromArray = setMatrixFromArray;
+    exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;

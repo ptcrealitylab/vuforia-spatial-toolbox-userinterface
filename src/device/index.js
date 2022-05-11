@@ -307,14 +307,54 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     var iframe = document.getElementById('iframe' + (nodeKey || frameKey));
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
     if (newCoords) {
-        iframe.contentWindow.postMessage(JSON.stringify({
-            event: {
-                type: event.type,
-                pointerId: event.pointerId,
-                pointerType: event.pointerType,
-                x: newCoords.x,
-                y: newCoords.y
+        let projectedZ;
+        let worldIntersectPoint;
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            let occlusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldObject.objectId);
+            if (occlusionObject) {
+                occlusionObject.updateMatrixWorld();
+                occlusionObject.children[0].geometry.computeFaceNormals()
+                occlusionObject.children[0].geometry.computeVertexNormals()
+
+                let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [occlusionObject]);
+                if (raycastIntersects.length > 0) {
+                    projectedZ = raycastIntersects[0].distance;
+
+                    // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
+                    let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                    realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                    inverseGroundPlaneMatrix.invert();
+                    raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+
+                    // transpose of the inverse of the ground-plane model-view matrix
+                    let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
+
+                    worldIntersectPoint = {
+                        x: raycastIntersects[0].point.x,
+                        y: raycastIntersects[0].point.y,
+                        z: raycastIntersects[0].point.z,
+                        // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
+                        normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize()
+                    };
+                }
             }
+        }
+        let eventData = {
+            type: event.type,
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            x: newCoords.x,
+            y: newCoords.y
+        }
+        if (typeof projectedZ !== 'undefined') {
+            eventData.projectedZ = projectedZ;
+        }
+        if (typeof worldIntersectPoint !== 'undefined') {
+            eventData.worldIntersectPoint = worldIntersectPoint;
+        }
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: eventData
         }), '*');
     }
 };

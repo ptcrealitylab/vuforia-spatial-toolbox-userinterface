@@ -91,10 +91,11 @@ createNameSpace("realityEditor.app.targetDownloader");
         const objectID = evt.data.objectID;
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
 
-        // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future
-        // let object = realityEditor.getObject(objectID);
-        // let gltfPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(objectID) + '/obj/' + object.name + '/target/target.glb';
-        // realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
+        if (realityEditor.device.environment.variables.addOcclusionGltf) {
+            let object = realityEditor.getObject(objectID);
+            let gltfPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(objectID) + '/obj/' + object.name + '/target/target.glb';
+            realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
+        }
 
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath);
         // let floorOffset = -1.55 * 1000;
