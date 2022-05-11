@@ -354,11 +354,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         raycaster.setFromCamera( mouse, camera );
 
         //3. compute intersections
-        let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
-        results.forEach(intersection => {
-            intersection.rayDirection = raycaster.ray.direction; //JSON.parse(JSON.stringify(raycaster.ray.direction));
-        });
-        return results;
+        return raycaster.intersectObjects( objectsToCheck || scene.children, true );
     }
 
     /**
