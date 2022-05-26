@@ -1688,3 +1688,8 @@ Logic Interface CSS
     -webkit-transform-style: preserve-3d;
     -webkit-transform: translateZ(3000px); /* Above web interfaces, below side buttons */
 }
+
+.suppressedRendering {
+    display: none;
+    visibility: hidden;
+}

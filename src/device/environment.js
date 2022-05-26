@@ -47,8 +47,12 @@ createNameSpace("realityEditor.device.environment");
         // matrices
         initialPocketToolRotation: null,
         supportsAreaTargetCapture: true,
+        automaticallyPromptForAreaTargetCapture: true,
         hideOriginCube: false, // explicitly don't show the 3d cubes at the world origin
-        addOcclusionGltf: true // by default loads the occlusion mesh, but a VR viewer can disable this
+        addOcclusionGltf: true, // by default loads the occlusion mesh, but a VR viewer can disable this
+        suppressObjectDetections: false, // temporarily toggle on to stop UDP messages from triggered object download
+        suppressObjectRendering: false, // temporarily toggle on to stop rendering objects/tools/nodes
+        overrideAreaTargetScanningUI: false // hide the default status textfield for the area target scanning
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property

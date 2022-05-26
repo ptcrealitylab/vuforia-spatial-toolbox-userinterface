@@ -247,6 +247,7 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
 };
 
 realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
+realityEditor.gui.ar.draw.prevSuppressedRendering = false;
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
@@ -254,6 +255,30 @@ realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
+    if (realityEditor.device.environment.variables.suppressObjectRendering) {
+        if (!this.prevSuppressedRendering) {
+            let toolContainer = document.getElementById('GUI');
+            let canvas = document.getElementById('canvas');
+            let glcanvas = document.getElementById('glcanvas');
+            let threejsCanvas = document.getElementById('mainThreejsCanvas');
+            [toolContainer, canvas, glcanvas, threejsCanvas].forEach(eltToHide => {
+                eltToHide.classList.add('suppressedRendering');
+            });
+        }
+        this.prevSuppressedRendering = true;
+        return; // ignore render loop while suppressing renderer
+    } else if (this.prevSuppressedRendering) {
+        this.prevSuppressedRendering = false;
+        // un-hide the hidden tools and canvases when suppressObjectRendering variable first changes
+        let toolContainer = document.getElementById('GUI');
+        let canvas = document.getElementById('canvas');
+        let glcanvas = document.getElementById('glcanvas');
+        let threejsCanvas = document.getElementById('mainThreejsCanvas');
+        [toolContainer, canvas, glcanvas, threejsCanvas].forEach(eltToHide => {
+            eltToHide.classList.remove('suppressedRendering');
+        });
+    }
+
     if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) { return; } // don't recompute multiple times between a single animation frames
     realityEditor.gui.ar.draw.frameNeedsToBeRendered = false; // gets set back to true by requestAnimationFrame code
     
