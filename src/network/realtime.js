@@ -452,16 +452,20 @@ createNameSpace("realityEditor.network.realtime");
     /**
      * Creates a new socket in the specified set. Creates the set if it doesn't already exist.
      * @param {string} setName
-     * @param {string} socketIP
-     * @param {function|undefined} onConnect - optional .on('connect') callback 
+     * @param {string} socketUrl - url of socket to connect to
+     * @param {function|undefined} onConnect - optional .on('connect') callback
      */
-    function createSocketInSet(setName, socketIP, onConnect) {
-        var ioObject = io.connect(socketIP);
-        console.log(ioObject);
+    function createSocketInSet(setName, socketUrl, onConnect) {
+        let ioObject;
+        if (socketUrl.includes(':8081')) {
+            ioObject = io.connect(socketUrl);
+        } else {
+            ioObject = toolsocketIo.connect(socketUrl);
+        }
         createSocketSet(setName);
-        sockets[setName][socketIP] = ioObject;
-        console.log('created [' + setName + '] socket to IP: ' + socketIP);
-        
+        sockets[setName][socketUrl] = ioObject;
+        console.log('created [' + setName + '] socket to address: ' + socketUrl, ioObject);
+
         if (onConnect) {
             ioObject.on('connect', function() {
                 onConnect(ioObject);
