@@ -33,7 +33,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         onCaptureStatus: [],
         onStopScanning: [],
         onCaptureSuccessOrError: []
-    }
+    };
 
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
@@ -708,33 +708,31 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
     }
 
-    exports.getDetectedServers = function() {
-        return detectedServers;
-    }
-
     exports.initService = initService;
 
     // allow external module to trigger the area target capture prompt
-    exports.showNotificationIfNeeded = showNotificationIfNeeded;
     exports.programmaticallyStartScan = programmaticallyStartScan;
     exports.onStartScanning = (callback) => {
         callbacks.onStartScanning.push(callback);
-    }
+    };
     exports.onStopScanning = (callback) => {
         callbacks.onStopScanning.push(callback);
-    }
+    };
     exports.onCaptureSuccessOrError = (callback) => {
         callbacks.onCaptureSuccessOrError.push(callback);
-    }
-    exports.didFindAnyWorldObjects = function() {
+    };
+    exports.didFindAnyWorldObjects = () => {
         let validWorlds = Object.keys(detectedObjects).map(key => objects[key]).filter(obj => {
             return (obj.isWorldObject || obj.type === 'world') && obj.ip !== '127.0.0.1';
         });
         return foundAnyWorldObjects && validWorlds.length > 0;
-    }
+    };
     exports.onCaptureStatus = (callback) => {
         callbacks.onCaptureStatus.push(callback);
-    }
+    };
+    exports.getDetectedServers = () => {
+        return detectedServers;
+    };
 
     // make functions available to native app callbacks
     exports.captureStatusHandler = captureStatusHandler;
