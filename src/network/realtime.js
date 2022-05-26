@@ -298,10 +298,10 @@ createNameSpace("realityEditor.network.realtime");
         if (!serverSocket) { return; }
         let messageBody = {
             editorId: globalStates.tempUuid
-        }
+        };
 
-        serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
-        serverSocket.on('/cameraMatrix', callback);
+        serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/subscribe/cameraMatrix'), JSON.stringify(messageBody));
+        serverSocket.on(realityEditor.network.getIoTitle(object.port, '/cameraMatrix'), callback);
     }
 
     let lastCamera = null;
