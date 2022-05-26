@@ -336,7 +336,8 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
                         z: raycastIntersects[0].point.z,
                         // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
                         normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
-                        rayDirection: raycastIntersects[0].rayDirection
+                        // the ray direction is just a vector, so we don't need the transpose matrix
+                        rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
                     };
                 }
             }
