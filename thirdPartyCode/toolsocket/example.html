@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="index.js"></script>
+</head>
+<body>
+<script>
+    let enc = new TextEncoder();
+    let dec = new TextDecoder();
+    let ioClient = io.connect("ws://localhost:12443/n/networkName");
+    ioClient.on("connect", () => {
+        ioClient.emit("/", "IO text client", {data: enc.encode("client bin")});
+        ioClient.emit("/", "only IO text client");
+        ioClient.on("/", (m, d) => {
+            if(d.data)
+                console.log("IO server: ", m, dec.decode(d.data))
+            else
+                console.log("IO server: ", m)
+        })
+    });
+</script>
+</body>
+</html>
