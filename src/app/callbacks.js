@@ -154,15 +154,17 @@ createNameSpace('realityEditor.app.callbacks');
         if (typeof message.id !== 'undefined' &&
             typeof message.ip !== 'undefined') {
 
-            if (typeof message.zone !== 'undefined' && message.zone !== '') {
-                if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
-                    // console.log('Added object from zone=' + message.zone);
+            if (!realityEditor.device.environment.variables.suppressObjectDetections) {
+                if (typeof message.zone !== 'undefined' && message.zone !== '') {
+                    if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
+                        // console.log('Added object from zone=' + message.zone);
+                        realityEditor.network.addHeartbeatObject(message);
+                    }
+
+                } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
+                    // console.log('Added object without zone');
                     realityEditor.network.addHeartbeatObject(message);
                 }
-
-            } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
-                // console.log('Added object without zone');
-                realityEditor.network.addHeartbeatObject(message);
             }
 
             // forward the action message to the network module, to synchronize state across multiple clients

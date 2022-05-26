@@ -28,6 +28,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     let limitScanRAM = false; // if true (toggled through menu), stop area target capture when device memory usage is high
     let maximumPercentRAM = 0.33; // the app will stop scanning when it reaches this threshold of total device memory
 
+    let callbacks = {
+        onStartScanning: [],
+        onCaptureStatus: [],
+        onStopScanning: [],
+        onCaptureSuccessOrError: []
+    }
+
     /**
      * Public init method to enable rendering ghosts of edited frames while in editing mode.
      */
@@ -44,6 +51,16 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // if no world objects are detected, show a notification "No spaces detected. Scan one to begin."
         // show "SCAN" button on bottom center of screen
         // OR -> show a modal with this info and the button to start. can dismiss and ignore completely.
+
+        realityEditor.network.addUDPMessageHandler('id', (message) => {
+            if (typeof message.id === 'undefined' || typeof message.ip === 'undefined') {
+                return;
+            }
+            if (typeof detectedServers[message.ip] !== 'undefined') {
+                return;
+            }
+            detectedServers[message.ip] = true;
+        });
 
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             // if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
@@ -78,7 +95,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 delay = 7000;
             }
             setTimeout(function() {
-                showNotificationIfNeeded();
+                if (realityEditor.device.environment.variables.automaticallyPromptForAreaTargetCapture) {
+                    showNotificationIfNeeded();
+                }
             }, delay);
         });
 
@@ -179,6 +198,18 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         hasUserBeenNotified = true;
     }
 
+    function programmaticallyStartScan(serverIp) {
+        if (typeof serverIp !== 'undefined') {
+            createPendingWorldObject(serverIp);
+        } else {
+            let randomServerIP = Object.keys(detectedServers);
+            //.filter(detectedServer => {
+            //    return detectedServer !== '127.0.0.1';
+            //})[0];
+            createPendingWorldObject(randomServerIP);
+        }
+    }
+
     function startScanning() {
         if (isScanning) {
             console.log('already scanning.. ignore.');
@@ -192,13 +223,19 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // TODO: turn app into scanning mode, disabling any AR rendering and other UI
 
         // add a stop button to the screen that can be pressed to trigger stopScanning
-        getRecordingIndicator().style.display = 'inline';
+        if (!realityEditor.device.environment.variables.overrideAreaTargetScanningUI) {
+            getRecordingIndicator().style.display = 'inline';
+        }
         getStopButton().style.display = 'inline';
         getTimerTextfield().style.display = 'inline';
 
         if (!feedbackInterval) {
             feedbackInterval = setInterval(printFeedback, 1000);
         }
+
+        callbacks.onStartScanning.forEach(cb => {
+            cb();
+        });
     }
 
     /**
@@ -307,6 +344,39 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         return div;
     }
 
+    function getProgressBar() {
+        let div = document.querySelector('#scanGenerateProgressBarContainer');
+        if (!div) {
+            div = document.createElement('div');
+            div.id = 'scanGenerateProgressBarContainer';
+            div.style.position = 'absolute';
+            div.style.left = '40px';
+            div.style.width = 'calc(100vw - 80px)';
+            if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+                div.style.bottom = 'calc(32vh - 25px)';
+            } else {
+                div.style.bottom = '30px';
+            }
+            div.style.height = '15px';
+            div.style.backgroundColor = 'rgba(255,255,255, 0.3)';
+            div.style.borderRadius = '15px';
+            div.style.overflow = 'hidden';
+            div.style.transform = 'translateZ(8991px)'; // in front of blurred modalFadeNotification
+            document.body.appendChild(div);
+
+            let bar = document.createElement('div');
+            bar.id = 'scanGenerateProgressBar';
+            bar.style.position = 'absolute';
+            bar.style.left = '0';
+            bar.style.top = '0';
+            bar.style.height = '100%';
+            bar.style.width = '0';
+            bar.style.backgroundColor = 'rgba(255,255,255, 0.9)'
+            div.appendChild(bar);
+        }
+        return div;
+    }
+
     function stopScanning() {
         if (!isScanning) {
             console.log('not scanning.. ignore.');
@@ -314,7 +384,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         realityEditor.app.areaTargetCaptureStop('realityEditor.gui.ar.areaTargetScanner.captureSuccessOrError');
 
-        getRecordingIndicator().style.display = 'none';
+        if (!realityEditor.device.environment.variables.overrideAreaTargetScanningUI) {
+            getRecordingIndicator().style.display = 'none';
+        }
         getStopButton().style.display = 'none';
         getTimerTextfield().style.display = 'none';
         getStatusTextfield().style.display = 'none';
@@ -334,6 +406,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         // show loading animation. hide when successOrError finishes.
         showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
+
+        callbacks.onStopScanning.forEach(cb => {
+            cb();
+        });
     }
 
     function createPendingWorldObject(serverIp) {
@@ -429,17 +505,23 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         feedbackString = status + '... (' + statusInfo + ')';
+
+        callbacks.onCaptureStatus.forEach(cb => {
+            cb(status, statusInfo);
+        });
     }
 
     function printFeedback() {
         if (!isScanning || !feedbackString) { return; }
 
-        let dots = '';
-        for (let i = 0; i < feedbackTick; i++) {
-            dots += '.';
+        if (!realityEditor.device.environment.variables.overrideAreaTargetScanningUI) {
+            let dots = '';
+            for (let i = 0; i < feedbackTick; i++) {
+                dots += '.';
+            }
+            getStatusTextfield().innerHTML = feedbackString + dots;
+            getStatusTextfield().style.display = 'inline';
         }
-        getStatusTextfield().innerHTML = feedbackString + dots;
-        getStatusTextfield().style.display = 'inline';
 
         feedbackTick += 1;
         feedbackTick = feedbackTick % 4;
@@ -456,6 +538,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     function onAreaTargetGenerateProgress(percentGenerated) {
         // onAreaTargetGenerateProgress
         console.log('Generated: ' + percentGenerated);
+        let progressBarContainer = getProgressBar();
+        progressBarContainer.style.display = '';
+        let bar = progressBarContainer.querySelector('#scanGenerateProgressBar');
+        bar.style.width = (percentGenerated * 100) + '%';
     }
 
     function captureSuccessOrError(success, errorMessage) {
@@ -471,6 +557,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             realityEditor.app.areaTargetCaptureGenerate(targetUploadURL);
 
             setTimeout(function() {
+                getProgressBar().style.display = 'none';
                 showLoadingDialog('Uploading Target Data...', 'Please wait. Uploading data to server.');
 
                 setTimeout(function() {
@@ -487,6 +574,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         } else {
             showMessage('Error: ' + errorMessage, 2000);
         }
+
+        callbacks.onCaptureSuccessOrError.forEach(cb => {
+            cb(success, errorMessage);
+        });
     }
 
     function onScreenshotReceived(base64String) {
@@ -617,7 +708,33 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
     }
 
+    exports.getDetectedServers = function() {
+        return detectedServers;
+    }
+
     exports.initService = initService;
+
+    // allow external module to trigger the area target capture prompt
+    exports.showNotificationIfNeeded = showNotificationIfNeeded;
+    exports.programmaticallyStartScan = programmaticallyStartScan;
+    exports.onStartScanning = (callback) => {
+        callbacks.onStartScanning.push(callback);
+    }
+    exports.onStopScanning = (callback) => {
+        callbacks.onStopScanning.push(callback);
+    }
+    exports.onCaptureSuccessOrError = (callback) => {
+        callbacks.onCaptureSuccessOrError.push(callback);
+    }
+    exports.didFindAnyWorldObjects = function() {
+        let validWorlds = Object.keys(detectedObjects).map(key => objects[key]).filter(obj => {
+            return (obj.isWorldObject || obj.type === 'world') && obj.ip !== '127.0.0.1';
+        });
+        return foundAnyWorldObjects && validWorlds.length > 0;
+    }
+    exports.onCaptureStatus = (callback) => {
+        callbacks.onCaptureStatus.push(callback);
+    }
 
     // make functions available to native app callbacks
     exports.captureStatusHandler = captureStatusHandler;
