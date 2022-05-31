@@ -11,7 +11,7 @@ createNameSpace("realityEditor.network.realtime");
 
     var desktopSocket;
     var sockets = {};
-    
+
     var hasBeenInitialized = false;
     let batchedUpdates = {};
 
@@ -29,14 +29,14 @@ createNameSpace("realityEditor.network.realtime");
 
         // don't initialize multiple times or if this feature is specifically turned off
         if (hasBeenInitialized || !(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) return;
-        
+
         console.log('actually initializing realtime services');
 
         if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
             desktopSocket = io.connect();
         }
         setupServerSockets();
-        
+
         // add server sockets for each already discovered object
         Object.keys(objects).forEach(function(objectKey) {
             var object = realityEditor.getObject(objectKey);
@@ -47,14 +47,14 @@ createNameSpace("realityEditor.network.realtime");
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             addServerForObjectIfNeeded(object, objectKey);
         });
-        
+
         // setInterval(setupServerSockets, 3000);
-        
+
         hasBeenInitialized = true;
 
         loop();
     }
-    
+
     function loop() {
         sendBatchedUpdates();
         batchedUpdates = {};
@@ -131,7 +131,7 @@ createNameSpace("realityEditor.network.realtime");
 
         setObjectValueAtPath(frame, msgContent.propertyPath, msgContent.newValue);
         // console.log('set frame (' + msgContent.frameKey + ').' + msgContent.propertyPath + ' to ' + msgContent.newValue);
-        
+
         if (msgContent.propertyPath === 'ar.matrix') {
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(msgContent.frameKey);
             sceneNode.dontBroadcastNext = true;
@@ -142,7 +142,7 @@ createNameSpace("realityEditor.network.realtime");
         if (msgContent.propertyPath === 'ar.x' || msgContent.propertyPath === 'ar.y') {
             realityEditor.sceneGraph.updatePositionData(msgContent.objectKey, true);
         }
-        
+
         // trigger secondary effects for certain properties
         if (msgContent.propertyPath === 'publicData') {
             if (globalDOMCache["iframe" + msgContent.frameKey]) {
@@ -213,7 +213,7 @@ createNameSpace("realityEditor.network.realtime");
 
             var msgContent = JSON.parse(msg);
             if (typeof msgContent.batchedUpdates === 'undefined') { return; }
-            
+
             msgContent.batchedUpdates.forEach(function(update) {
                 var objectKey;
                 var frameKey;
@@ -260,10 +260,10 @@ createNameSpace("realityEditor.network.realtime");
     function addServerSocketMessageListener(serverAddress, messageName, callback) {
         sockets['realityServers'][serverAddress].on(messageName, callback);
     }
-    
+
     function sendBatchedUpdates() {
         if (Object.keys(batchedUpdates).length === 0) { return; }
-        
+
         for (let objectKey in batchedUpdates) {
             let serverSocket = getServerSocketForObject(objectKey);
             if (!serverSocket) { continue; }
@@ -272,7 +272,7 @@ createNameSpace("realityEditor.network.realtime");
             let messageBody = {
                 batchedUpdates: []
             };
-            
+
             objectUpdates.forEach(function(update) {
                 messageBody.batchedUpdates.push(update.getMessageBody());
             });
@@ -306,7 +306,7 @@ createNameSpace("realityEditor.network.realtime");
 
         serverSocket.emit('/cameraMatrix', JSON.stringify(messageBody));
     }
-    
+
     class Update {
         constructor(objectKey, frameKey, nodeKey, propertyPath, newValue, editorId) {
             this.objectKey = objectKey;
@@ -341,9 +341,9 @@ createNameSpace("realityEditor.network.realtime");
      * @param {*} newValue
      */
     function broadcastUpdate(objectKey, frameKey, nodeKey, propertyPath, newValue) {
-        
+
         if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
-        
+
         if (typeof batchedUpdates[objectKey] === 'undefined') {
             batchedUpdates[objectKey] = [];
         }
@@ -385,7 +385,7 @@ createNameSpace("realityEditor.network.realtime");
             serverSocket.emit('/update/object/matrix', JSON.stringify(messageBody));
         }
     }
-    
+
     function subscribeToObjectMatrices(objectKey, callback) {
         if (!(realityEditor.gui.settings.toggleStates.realtimeEnabled || realityEditor.device.environment.variables.alwaysEnableRealtime)) { return; }
 
@@ -396,7 +396,7 @@ createNameSpace("realityEditor.network.realtime");
             serverSocket.on('/update/object/matrix', callback);
         }
     }
-    
+
     var objectSocketCache = {};
 
     /**
@@ -405,7 +405,7 @@ createNameSpace("realityEditor.network.realtime");
      * @return {null}
      */
     function getServerSocketForObject(objectKey) {
-        
+
         if (typeof objectSocketCache[objectKey] === 'undefined') {
             var object = realityEditor.getObject(objectKey);
             var serverIP = object.ip;
@@ -419,10 +419,10 @@ createNameSpace("realityEditor.network.realtime");
                     foundSocket = socketIP;
                 }
             });
-            
+
             objectSocketCache[objectKey] = (foundSocket) ? (sockets['realityServers'][foundSocket]) : undefined;
         }
-        
+
         return objectSocketCache[objectKey]; // don't need to recalculate each time
     }
 
@@ -485,7 +485,7 @@ createNameSpace("realityEditor.network.realtime");
             var ioObject = sockets[setName][socketIP];
             ioObject.emit(eventName, JSON.stringify(messageBody));
         });
-        
+
     }
 
     /**
@@ -509,7 +509,7 @@ createNameSpace("realityEditor.network.realtime");
             return setObjectValueAtPath(obj[propertyPath[0]], propertyPath.slice(1), newValue);
         }
     }
-    
+
     function pauseRealtime() {
         console.warn('TODO: implement pauseRealtime instead of requiring the user to restart the app');
     }
@@ -518,11 +518,11 @@ createNameSpace("realityEditor.network.realtime");
     exports.addDesktopSocketMessageListener = addDesktopSocketMessageListener;
     exports.pauseRealtime = pauseRealtime;
     exports.broadcastUpdate = broadcastUpdate;
-    
+
     // TODO: remove these and their invocations - these two are for deprecated reality zone demos
     exports.broadcastUpdateObjectMatrix = broadcastUpdateObjectMatrix;
     exports.subscribeToObjectMatrices = subscribeToObjectMatrices;
-    
+
     exports.getSocketIPsForSet = getSocketIPsForSet;
     exports.createSocketInSet = createSocketInSet;
     exports.sendMessageToSocketSet = sendMessageToSocketSet;
