@@ -274,6 +274,16 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         return !!worldOcclusionObjects[objectId];
     }
 
+    /**
+     * Key function for the remote operator. Loads and adds a GLTF model to the
+     * scene as a static reference mesh.
+     * @param {string} pathToGltf - url of gltf
+     * @param {{x: number, y: number, z: number}} originOffset - offset of model for ground plane being aligned with y=0
+     * @param {{x: number, y: number, z: number}} originRotation - rotation for up to be up
+     * @param {number} maxHeight - maximum (ceiling) height of model
+     * @param {{x: number, y: number, z: number}} center - center of model for loading animation
+     * @param {function} callback - Called on load with gltf's threejs object
+     *
     /* For my example area target:
         pathToGltf = './svg/BenApt1_authoring.glb' // put in arbitrary local directory to test
         originOffset = {x: -600, y: 0, z: -3300};
