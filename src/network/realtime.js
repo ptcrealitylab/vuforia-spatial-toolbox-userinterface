@@ -33,7 +33,7 @@ createNameSpace("realityEditor.network.realtime");
         console.log('actually initializing realtime services');
 
         if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
-            desktopSocket = io.connect();
+            desktopSocket = window._oldIo.connect();
         }
         setupServerSockets();
 
@@ -458,9 +458,9 @@ createNameSpace("realityEditor.network.realtime");
     function createSocketInSet(setName, socketUrl, onConnect) {
         let ioObject;
         if (socketUrl.includes(':8081')) {
-            ioObject = io.connect(socketUrl);
+            ioObject = window._oldIo.connect(socketUrl);
         } else {
-            ioObject = toolsocketIo.connect(socketUrl);
+            ioObject = io.connect(socketUrl);
         }
         createSocketSet(setName);
         sockets[setName][socketUrl] = ioObject;

@@ -828,9 +828,8 @@ ToolSocket.Io.Server = class Server extends ToolboxUtilities {
 if (typeof window === 'undefined') {
     module.exports = ToolSocket;
 } else {
-    if (!window.io) {
-        window.io = new ToolSocket.Io();
-    } else {
-        window.toolsocketIo = new ToolSocket.Io();
+    if (window.io) {
+        window._oldIo = window.io;
     }
+    window.io = new ToolSocket.Io();
 }
