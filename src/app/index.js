@@ -211,11 +211,8 @@ realityEditor.app.getUDPMessages = function(callBack) {
  */
 realityEditor.app.sendUDPMessage = function(message) {
     if(realityEditor.network.state.proxyNetwork) {
-        if(realityEditor.cloud.socket){
-            if(message.action){
-                console.log("send action: ", message)
-                realityEditor.cloud.socket.action("udp/action", message);  
-            }
+        if (realityEditor.cloud.socket && message.action) {
+            realityEditor.cloud.socket.action('udp/action', message);
         }
     } else {
         this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);

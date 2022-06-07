@@ -677,18 +677,20 @@ createNameSpace("realityEditor.app.targetDownloader");
             "expected": ["server", "obj"],
         }
     }
-    
+
     function getObjectIDFromFilename(fileName) {
         let urlObj = io.parseUrl(fileName, schema)
-        if(!urlObj)return; 
-        var ip = urlObj.server
-        var objectName = urlObj.obj
-        
-        console.log(urlObj)
+        if (!urlObj) {
+            console.warn('io.parseUrl failed', fileName);
+            return;
+        }
+        const ip = urlObj.server;
+        const objectName = urlObj.obj;
+
 
         for (var objectKey in objects) {
             if (!objects.hasOwnProperty(objectKey)) continue;
-            var object = realityEditor.getObject(objectKey);
+            const object = realityEditor.getObject(objectKey);
             if (object.ip === ip && object.name === objectName) {
                 return objectKey;
             }

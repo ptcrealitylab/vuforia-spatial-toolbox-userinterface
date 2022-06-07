@@ -120,32 +120,31 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
 };
 
 realityEditor.network.getURL = function(server, identifier, route){
-
     let protocol = null;
     let url = null;
     let port = null;
     let network = null;
     let destinationIdentifier = null;
     let secret = null;
-    
-    if(parseInt(Number(identifier))){
+
+    if (parseInt(Number(identifier))) {
         protocol = "http"
         url = server;
         port = identifier;
-        } else {
+    } else {
         let s = realityEditor.network.state;
-        
+
         if(s.proxyProtocol && s.proxyUrl && s.proxyPort) {
             protocol = s.proxyProtocol;
             url = s.proxyUrl;
             port = s.proxyPort;
         }
-        
+
         if(s.proxyNetwork) network = s.proxyNetwork;
         if(s.proxySecret) secret = s.proxySecret;
         if(identifier) destinationIdentifier = identifier;
-        }
-        
+    }
+
     // concatenate URL
     let returnUrl = protocol + '://' + url + ':' + port;
     if(network) returnUrl += '/n/' + network;
@@ -156,7 +155,7 @@ realityEditor.network.getURL = function(server, identifier, route){
 }
 
 realityEditor.network.getIoTitle = function (identifier, title){
-    if(parseInt(Number(identifier))) {
+    if (parseInt(Number(identifier))) {
         return title;
     } else {
         let network = null;
@@ -434,7 +433,6 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
 };
 
 realityEditor.network.initializeDownloadedFrame = function(objectKey, frameKey, thisFrame) {
-    console.log('initializeDownloadedFrame', objectKey, frameKey, thisFrame);
     // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
     thisFrame.screenZ = 1000;
     thisFrame.fullScreen = false;
@@ -508,9 +506,8 @@ realityEditor.network.initializeDownloadedNode = function(objectKey, frameKey, n
  * @param {{id: string, ip: string, vn: number, tcs: string, zone: string}} beat - object heartbeat received via UDP
  */
 realityEditor.network.addHeartbeatObject = function (beat) {
-    console.log('addHeartbeatObject', beat);
     if (!realityEditor.device.loaded) {
-        console.log('addHeartbeatObject called before init done', beat);
+        console.warn('addHeartbeatObject called before init done', beat);
         setTimeout(() => {
             realityEditor.network.addHeartbeatObject(beat);
         }, 500);
@@ -521,7 +518,6 @@ realityEditor.network.addHeartbeatObject = function (beat) {
         if (!objects[beat.id]) {
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
-            console.log(baseUrl);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
@@ -532,7 +528,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                     if(beat.port) objects[objectKey].port = beat.port;
                     // initialize temporary state and notify other modules
                     realityEditor.network.onNewObjectAdded(objectKey);
-                    
+
                     var doesDeviceSupportJPGTargets = true; // TODO: verify this somehow instead of always true
                     if (doesDeviceSupportJPGTargets) {
                         // this tries DAT first, then resorts to JPG if DAT not found
@@ -541,7 +537,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                         // download XML, DAT, and initialize tracker
                         realityEditor.app.targetDownloader.downloadTargetFilesForDiscoveredObject(beat);
                     }
-                    
+
                     // check if onNewServerDetected callbacks should be triggered
                     realityEditor.network.checkIfNewServer(beat.ip);//, objectKey);
                 }
@@ -572,7 +568,7 @@ realityEditor.network.newServerDetectedCallbacks = [];
 realityEditor.network.onNewServerDetected = function(callback) {
     // register callback for future detections
     this.newServerDetectedCallbacks.push(callback);
-    
+
     // immediate trigger for already known servers
     this.knownServers.forEach(function(serverIP) {
         callback(serverIP);
@@ -585,10 +581,10 @@ realityEditor.network.onNewServerDetected = function(callback) {
  */
 realityEditor.network.checkIfNewServer = function (serverIP) {
     var foundExistingMatch = this.knownServers.indexOf(serverIP) > -1; // TODO: make robust against different formatting of "same" IP
-    
+
     if (!foundExistingMatch) {
         this.knownServers.push(serverIP);
-        
+
         // trigger callbacks
         this.newServerDetectedCallbacks.forEach(function(callback) {
             callback(serverIP);
@@ -605,7 +601,7 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
     console.log('updateObject', origin, remote, objectKey);
-    
+
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -613,7 +609,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
     if (remote.matrix) {
         origin.matrix = remote.matrix;
     }
-    
+
     // update each frame in the object // TODO: create an updateFrame function, the same way we have an updateNode function
     for (let frameKey in remote.frames) {
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
@@ -622,23 +618,23 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
             origin.frames[frameKey].width = remote.frames[frameKey].width || 300;
             origin.frames[frameKey].height = remote.frames[frameKey].height || 300;
-            
+
             origin.frames[frameKey].uuid = frameKey;
 
             console.log('added new frame', origin.frames[frameKey]);
 
             realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
-            
+
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
             origin.frames[frameKey].ar = remote.frames[frameKey].ar;
             origin.frames[frameKey].screen = remote.frames[frameKey].screen;
             origin.frames[frameKey].name = remote.frames[frameKey].name;
-            
+
             // now update each node in the frame
             var remoteNodes = remote.frames[frameKey].nodes;
             var originNodes = origin.frames[frameKey].nodes;
-            
+
             for (let nodeKey in remoteNodes) {
                 if (!remoteNodes.hasOwnProperty(nodeKey)) continue;
 
@@ -654,14 +650,14 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
                     realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey, additionalInfo: {}});
                 }
             }
-            
+
         }
 
         origin.frames[frameKey].links = JSON.parse(JSON.stringify(remote.frames[frameKey].links));
 
         // TODO: invert dependency
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
-        
+
         if (globalDOMCache["iframe" + frameKey]) {
             if (globalDOMCache["iframe" + frameKey].getAttribute('loaded')) {
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
@@ -698,7 +694,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         realityEditor.gui.ar.draw.deleteNode(objectKey, frameKey, nodeKey);
 
         var thisNode = realityEditor.getNode(objectKey, frameKey, nodeKey);
-        
+
         if (thisNode) {
             delete objects[objectKey].frames[frameKey].nodes[nodeKey];
         }
@@ -736,7 +732,7 @@ realityEditor.network.updateNode = function (origin, remote, objectKey, frameKey
         origin.name = remote.name;
         origin.frameId = frameKey;
         origin.objectId = objectKey;
-        
+
         if (remote.text) {
             origin.text = remote.text;
         }
@@ -809,7 +805,7 @@ realityEditor.network.onUDPMessage = function(message) {
             // error parsing JSON
         }
     }
-    
+
     this.udpMessageHandlers.forEach(function(messageHandler) {
         if (typeof message[messageHandler.messageName] !== "undefined") {
             messageHandler.callback(message);
@@ -857,7 +853,7 @@ realityEditor.network.onAction = function (action) {
         if (thisAction.reloadLink.object in objects) {
             let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadLink.object].ip, realityEditor.network.getPort(objects[thisAction.reloadLink.object]), '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame);
             this.getData(thisAction.reloadLink.object, thisAction.reloadLink.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
-                
+
             // });
             // this.getData('http://' + objects[thisAction.reloadLink.object].ip + ':' + httpPort + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame, thisAction.reloadLink.object, function (req, thisKey, frameKey) {
 
@@ -917,7 +913,7 @@ realityEditor.network.onAction = function (action) {
                         res.nodes = res.objectValues;
                     }
                 }
-                
+
                 console.log("updateObject", objects[objectKey], res, objectKey);
 
                 realityEditor.network.updateObject(objects[objectKey], res, objectKey);
@@ -927,26 +923,24 @@ realityEditor.network.onAction = function (action) {
             });
         }
     }
-    
+
     if (typeof thisAction.reloadFrame !== "undefined") {
-        console.log('reloadFrame', thisAction.reloadFrame);
         let thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
         if (!thisFrame) {
-            console.log('this is a new frame... add it to the object...');
+            console.log('reloadFrame new frame', thisAction.reloadFrame);
 
             // actionSender({reloadFrame: {object: objectID, frame: frameID, propertiesToIgnore: propertiesToIgnore}, lastEditor: body.lastEditor});
             thisFrame = new Frame();
-            
+
             let thisObject = realityEditor.getObject(thisAction.reloadFrame.object);
             thisObject.frames[thisAction.reloadFrame.frame] = thisFrame;
         }
-        
+
         if (thisFrame) {
 
             let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadFrame.object].ip, realityEditor.network.getPort(objects[thisAction.reloadFrame.object]), '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame);
             this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
-                console.log('got frame');
-                
+
                 for (let thisKey in res) {
                     if (!res.hasOwnProperty(thisKey)) continue;
                     if (!thisFrame.hasOwnProperty(thisKey)) continue;
@@ -957,7 +951,7 @@ realityEditor.network.onAction = function (action) {
                         if (thisKey === 'ar' &&
                             thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
                             thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
-                            
+
                             // this wasn't scaled -> update the x and y but not the scale
                             if (thisFrame.ar.scale === res.ar.scale && !thisAction.reloadFrame.wasTriggeredFromEditor) {
                                 thisFrame.ar.x = res.ar.x;
@@ -968,7 +962,7 @@ realityEditor.network.onAction = function (action) {
                             }
                             continue;
                         }
-                        
+
                         // only rewrite existing properties of nodes, otherwise node.loaded gets removed and another element added
                         if (thisKey === 'nodes') {
                             for (let nodeKey in res.nodes) {
@@ -984,7 +978,7 @@ realityEditor.network.onAction = function (action) {
                             continue;
                         }
                     }
-                    
+
                     thisFrame[thisKey] = res[thisKey];
                 }
 
@@ -999,7 +993,7 @@ realityEditor.network.onAction = function (action) {
         console.log("gotdata: " + thisAction.reloadNode.object + " " + thisAction.reloadNode.frame+ " " + thisAction.reloadNode.node);
        // console.log('http://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + "/node/" + thisAction.reloadNode.node + "/");
        let thisFrame = realityEditor.getFrame(thisAction.reloadNode.object, thisAction.reloadNode.frame);
-       
+
         if (thisFrame !== null) {
             // TODO: getData         webServer.get('/object/*/') ... instead of /object/node
 
@@ -1019,13 +1013,13 @@ realityEditor.network.onAction = function (action) {
                     } else {
                         realityEditor.network.updateNode(thisFrame.nodes[nodeKey], res, objectKey, frameKey, nodeKey);
                     }
-                    
+
                     _this.cout("got object");
 
                 }, thisAction.reloadNode.node);
         }
     }
-    
+
     if (thisAction.loadMemory) {
         var id = thisAction.loadMemory.object;
         let urlEndpoint = realityEditor.network.getURL(thisAction.loadMemory.ip, realityEditor.network.getPort(objects[id]), '/object/' + id);
@@ -1036,11 +1030,11 @@ realityEditor.network.onAction = function (action) {
             objects[objectKey].memory = res.memory;
             objects[objectKey].memoryCameraMatrix = res.memoryCameraMatrix;
             objects[objectKey].memoryProjectionMatrix = res.memoryProjectionMatrix;
-            
+
             // _this.realityEditor.gui.memory.addObjectMemory(objects[objectKey]);
         });
     }
-    
+
     if (thisAction.loadLogicIcon) {
         this.loadLogicIcon(thisAction.loadLogicIcon);
     }
@@ -1059,30 +1053,30 @@ realityEditor.network.onAction = function (action) {
             if(action.whereWas){
                 spatial.whereWas[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.whereWas));
             }
-            
+
             if(action.howFarIs){
                 spatial.howFarIs[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.howFarIs));
             }
-            
+
             if(action.velocityOf){
                 spatial.velocityOf[thisAction.spatial.ip] = JSON.parse(JSON.stringify(action.velocityOf));
             }
-            
+
         }
         realityEditor.gui.spatial.checkState()
         //  console.log(globalStates.spatial);
     }
-    
-    
+
+
     if (thisAction.addFrame) {
         console.log('addFrame', thisAction.addFrame);
-        
+
         let thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
-        
+
         if (thisObject) {
-            
+
             var frame = new Frame();
-            
+
             frame.objectId = thisAction.addFrame.objectID;
             frame.name = thisAction.addFrame.name;
 
@@ -1094,12 +1088,12 @@ realityEditor.network.onAction = function (action) {
             frame.ar.scale = thisAction.addFrame.scale;
             frame.frameSizeX = thisAction.addFrame.frameSizeX;
             frame.frameSizeY = thisAction.addFrame.frameSizeY;
-            
+
             frame.location = thisAction.addFrame.location;
             frame.src = thisAction.addFrame.src;
-            
+
             // set other properties
-            
+
             frame.animationScale = 0;
             frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
             frame.width = frame.frameSizeX;
@@ -1133,7 +1127,7 @@ realityEditor.network.onAction = function (action) {
             frame.sendAcceleration = false;
             frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
             // thisFrame.visible = false;
-            
+
             var nodeNames = thisAction.addFrame.nodeNames;
             nodeNames.forEach(function(nodeName) {
                 var nodeUuid = frameID + nodeName;
@@ -1150,16 +1144,16 @@ realityEditor.network.onAction = function (action) {
                 addedNode.frameSizeY = 100;
 
             });
-            
+
             thisObject.frames[frameID] = frame;
-            
+
         }
-        
+
 
         // if (objects) {
         //     var thisObject = objects[thisAction.addFrame.objectID];
-        //    
-        //    
+        //
+        //
         //
         //     var urlEndpoint = 'http://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
         //     this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
@@ -1196,11 +1190,11 @@ realityEditor.network.onAction = function (action) {
  */
 realityEditor.network.onInternalPostMessage = function (e) {
     var msgContent = {};
-    
+
     // catch error when safari sends a misc event
     if (typeof e === 'object' && typeof e.data === 'object') {
         msgContent = e.data;
-        
+
     } else if (e.data && typeof e.data !== 'object') {
         msgContent = JSON.parse(e.data);
     } else {
@@ -1213,7 +1207,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             messageHandler.callback(msgContent[messageHandler.messageName], msgContent);
         }
     });
-    
+
     if (typeof msgContent.settings !== "undefined") {
         realityEditor.network.onSettingPostMessage(msgContent);
         return;
@@ -1223,7 +1217,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         realityEditor.network.onFoundObjectButtonMessage(msgContent);
         return;
     }
-    
+
     if (msgContent.resendOnElementLoad) {
         var elt = document.getElementById('iframe' + msgContent.nodeKey);
         if (elt) {
@@ -1243,13 +1237,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
         msgContent.frame = msgContent.obj;
         msgContent.node = msgContent.pos;
     }
-    
+
     // var thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
     // var thisNode = realityEditor.getNode(msgContent.node);
     // var activeVehicle = thisNode || thisFrame;
-    
+
     // var activeKey = null;
-    
+
     if (msgContent.node) {
         tempThisObject = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
     } else if (msgContent.frame) {
@@ -1257,7 +1251,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
     } else if (msgContent.object) {
         tempThisObject = realityEditor.getObject(msgContent.object);
     }
-    
+
     // make it work for pocket items too
     if (!tempThisObject && msgContent.object &&  msgContent.object in pocketItem) {
         if (msgContent.node && msgContent.frame) {
@@ -1273,12 +1267,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
         console.log('The tool that sent this message doesn\'t exist - ignore the message', msgContent);
         return;
     }
-    
+
     tempThisObject = tempThisObject || {};
-    
+
     if (msgContent.width && msgContent.height) {
         let activeKey = msgContent.node ? msgContent.node : msgContent.frame;
-        
+
         var overlay = document.getElementById(activeKey);
         var iFrame = document.getElementById('iframe' + activeKey);
         var svg = document.getElementById('svg' + activeKey);
@@ -1294,7 +1288,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         iFrame.style.height = msgContent.height;
         iFrame.style.top = top;
         iFrame.style.left = left;
-        
+
         let vehicle = realityEditor.getVehicle(msgContent.object, msgContent.frame, msgContent.node);
         if (vehicle) {
             vehicle.frameSizeX = msgContent.width;
@@ -1310,13 +1304,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.gui.ar.moveabilityOverlay.createSvg(svg);
         }
 
-        
+
         if (globalStates.editingMode || realityEditor.device.getEditingVehicle() === tempThisObject) {
             // svg.style.display = 'inline';
             // svg.classList.add('visibleEditingSVG');
 
             overlay.querySelector('.corners').style.visibility = 'visible';
-            
+
         } else {
             // svg.style.display = 'none';
             // svg.classList.remove('visibleEditingSVG');
@@ -1327,9 +1321,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     // Forward the touch events from the nodes to the overall touch event collector
-    
+
     if (typeof msgContent.eventObject !== "undefined") {
-        
+
         if(msgContent.eventObject.type === "touchstart"){
             realityEditor.device.touchInputs.screenTouchStart(msgContent.eventObject);
         } else if(msgContent.eventObject.type === "touchend"){
@@ -1343,7 +1337,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
     if (typeof msgContent.screenObject !== "undefined") {
         realityEditor.gui.screenExtension.receiveObject(msgContent.screenObject);
     }
-    
+
     if (typeof msgContent.sendScreenObject !== "undefined") {
         if(msgContent.sendScreenObject){
             realityEditor.gui.screenExtension.registeredScreenObjects[msgContent.frame] = {
@@ -1360,7 +1354,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             };
         }
     }
-    
+
     if (msgContent.sendMatrix === true) {
         if (tempThisObject.integerVersion >= 32) {
             tempThisObject.sendMatrix = true;
@@ -1445,13 +1439,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
             tempThisObject.sendScreenPosition = true;
         }
     }
-    
+
     if (msgContent.sendDeviceDistance) {
         tempThisObject.sendDeviceDistance = msgContent.sendDeviceDistance;
     }
-    
+
     if (msgContent.sendAcceleration === true) {
-        
+
         if (tempThisObject.integerVersion >= 32) {
 
             tempThisObject.sendAcceleration = true;
@@ -1517,12 +1511,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (msgContent.sendMessageToFrame) {
-        
+
         var iframe = globalDOMCache['iframe' + msgContent.sendMessageToFrame.destinationFrame];
         if (iframe) {
             iframe.contentWindow.postMessage(JSON.stringify(msgContent), '*');
         }
-        
+
         // var iframes = document.getElementsByTagName('iframe');
         // for (var i = 0; i < iframes.length; i++) {
         //
@@ -1543,10 +1537,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
         //     }
         // }
     }
-    
+
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
-            
+
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
 
@@ -1555,7 +1549,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
 
             let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
-            
+
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
@@ -1571,20 +1565,20 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
             globalDOMCache['iframe' + tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.left;
             globalDOMCache['iframe' + tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache['iframe' + tempThisObject.uuid].style.top;
-            
+
             globalDOMCache['iframe' + tempThisObject.uuid].style.left = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.top = '0';
             globalDOMCache['iframe' + tempThisObject.uuid].style.margin = '-2px';
-            
+
             globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
 
             globalDOMCache['object' + tempThisObject.uuid].style.zIndex = zIndex;
-            
+
             if (realityEditor.device.editingState.frame === msgContent.frame) {
                 realityEditor.device.resetEditingState();
                 realityEditor.device.clearTouchTimer();
             }
-            
+
             // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
             if (tempThisObject.isFullScreenExclusive) {
                 realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
@@ -1596,7 +1590,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame, msgContent.fullScreenAnimated);
             }
         }
-        
+
         // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
         let object = realityEditor.getObject(msgContent.object);
         if (object) {
@@ -1605,10 +1599,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     } else if(typeof msgContent.fullScreen === "string") {
         if (msgContent.fullScreen === "sticky") {
-            
+
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
-            
+
             if (msgContent.fullscreenZPosition) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
@@ -1626,7 +1620,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 envelopeAnimationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
                 envelopeAnimationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform; // start with same transform as the iframe
                 document.getElementById('GUI').appendChild(envelopeAnimationDiv);
-                
+
                 // wait a small delay so the transition CSS property applies
                 envelopeAnimationDiv.classList.add('animateAllProperties250ms');
                 setTimeout(function() {
@@ -1685,7 +1679,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
     if(typeof msgContent.stickiness === "boolean") {
         tempThisObject.stickiness = msgContent.stickiness;
     }
-    
+
     if (typeof msgContent.isFullScreenExclusive !== "undefined") {
         tempThisObject.isFullScreenExclusive = msgContent.isFullScreenExclusive;
 
@@ -1694,7 +1688,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
         }
     }
-    
+
     if (typeof msgContent.getIsExclusiveFullScreenOccupied !== "undefined") {
         if (globalDOMCache['iframe' + msgContent.frame]) {
             globalDOMCache['iframe' + msgContent.frame].contentWindow.postMessage(JSON.stringify({
@@ -1721,7 +1715,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.createNode !== "undefined") {
-        
+
         if (msgContent.createNode.noDuplicate) {
             // check if a node with this name already exists on this frame
             var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
@@ -1730,7 +1724,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 matchingNodeKey = nodeKey;
                 return frame.nodes[nodeKey].name;
             });
-            
+
             // ensure loyalty of this node is changed to groundplane even if it already exists
             if (msgContent.createNode.attachToGroundPlane && matchingNodeKey) {
                 realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, matchingNodeKey);
@@ -1741,7 +1735,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 return;
             }
         }
-        
+
         let node = new Node();
         node.name = msgContent.createNode.name;
         node.frameId = msgContent.frame;
@@ -1760,11 +1754,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
         } else {
             node.y = (-200 + Math.random() * 400);
         }
-        
+
         if (typeof msgContent.createNode.nodeType !== 'undefined') {
             node.type = msgContent.createNode.nodeType;
         }
-        
+
         thisFrame.nodes[nodeKey] = node;
 
         realityEditor.sceneGraph.addNode(node.objectId, node.frameId, nodeKey, node);
@@ -1772,13 +1766,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (msgContent.createNode.attachToGroundPlane) {
             realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
         }
-        
+
         realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
     }
-    
+
     if (typeof msgContent.moveNode !== "undefined") {
         let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-        
+
         // move each node within this frame with a matching name to the provided x,y coordinates
         Object.keys(thisFrame.nodes).map(function(nodeKey) {
             return thisFrame.nodes[nodeKey];
@@ -1787,7 +1781,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }).forEach(function(node) {
             node.x = (msgContent.moveNode.x) || 0;
             node.y = (msgContent.moveNode.y) || 0;
-            
+
             var positionData = realityEditor.gui.ar.positioning.getPositionData(node);
             var content = {};
             content.x = positionData.x;
@@ -1799,11 +1793,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.network.postData(urlEndpoint, content);
         });
     }
-    
+
     if (typeof msgContent.resetNodes !== "undefined") {
-        
+
         realityEditor.forEachNodeInFrame(msgContent.object, msgContent.frame, function(thisObjectKey, thisFrameKey, thisNodeKey) {
-            
+
             // delete links to and from the node
             realityEditor.forEachFrameInAllObjects(function(thatObjectKey, thatFrameKey) {
                 var thatFrame = realityEditor.getFrame(thatObjectKey, thatFrameKey);
@@ -1821,7 +1815,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.gui.ar.draw.deleteNode(thisObjectKey, thisFrameKey, thisNodeKey);
             // delete it from the server
             realityEditor.network.deleteNodeFromObject(objects[thisObjectKey].ip, thisObjectKey, thisFrameKey, thisNodeKey);
-            
+
         });
 
     }
@@ -1874,7 +1868,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (typeof msgContent.moveDelay !== "undefined") {
         let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
-        
+
         if (activeVehicle) {
             activeVehicle.moveDelay = msgContent.moveDelay;
         }
@@ -1883,16 +1877,16 @@ realityEditor.network.onInternalPostMessage = function (e) {
     if (msgContent.loadLogicIcon) {
         this.loadLogicIcon(msgContent);
     }
-    
+
     if (msgContent.loadLogicName) {
         this.loadLogicName(msgContent);
     }
-    
+
     if (typeof msgContent.publicData !== "undefined") {
-        
+
         let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
         let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
-        
+
         if (frame && node) {
             if (!publicDataCache.hasOwnProperty(msgContent.frame)) {
                 publicDataCache[msgContent.frame] = {};
@@ -1901,15 +1895,15 @@ realityEditor.network.onInternalPostMessage = function (e) {
             //console.log('set public data of ' + msgContent.frame + ', ' + node.name + ' to: ' + msgContent.publicData);
             frame.publicData = msgContent.publicData;
             node.publicData = JSON.parse(JSON.stringify(msgContent.publicData));
-            
+
             var TEMP_DISABLE_REALTIME_PUBLIC_DATA = true;
-            
+
             if (!TEMP_DISABLE_REALTIME_PUBLIC_DATA) {
                 var keys = realityEditor.getKeysFromVehicle(frame);
                 realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, 'publicData', msgContent.publicData);
             }
         }
-        
+
     }
 
     if (typeof msgContent.videoRecording !== "undefined") {
@@ -1919,9 +1913,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
         } else {
             realityEditor.device.videoRecording.stopRecordingForFrame(msgContent.object, msgContent.frame);
         }
-        
+
     }
-    
+
     if (typeof msgContent.getScreenshotBase64 !== "undefined") {
         realityEditor.network.frameIdForScreenshot = msgContent.frame;
         realityEditor.app.getScreenshot("S", function(base64String) {
@@ -1940,12 +1934,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
             realityEditor.device.keyboardEvents.closeKeyboard();
         }
     }
-    
+
     if (typeof msgContent.ignoreAllTouches !== "undefined") {
         let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
         frame.ignoreAllTouches = msgContent.ignoreAllTouches;
     }
-    
+
     if (typeof msgContent.getScreenDimensions !== "undefined") {
         globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify({
             screenDimensions: {
@@ -1954,7 +1948,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }), '*');
     }
-    
+
     // adjusts the iframe and touch overlay size based on a message from the iframe about the size of its contents changing
     if (typeof msgContent.changeFrameSize !== 'undefined') {
         let width = msgContent.changeFrameSize.width;
@@ -2100,7 +2094,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(response), '*');
         }
     }
-    
+
     if (typeof msgContent.errorNotification !== 'undefined') {
         let errorMessageText = msgContent.errorNotification;
         let messageTime = 5000;
@@ -2289,7 +2283,7 @@ realityEditor.network.loadLogicName = function(data) {
     //         }
     //     });
     // }
-    
+
     // upload name to server
     var object = realityEditor.getObject(data.object);
     this.postNewNodeName(object.ip, data.object, data.frame, data.node, logicNode.name);
@@ -2334,7 +2328,7 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
     if (msgContent.settings.getMainDynamicSettings) {
         self.contentWindow.postMessage(JSON.stringify({
             getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-        }), "*"); 
+        }), "*");
     }
 
     if (msgContent.settings.getDevelopDynamicSettings) {
@@ -2393,10 +2387,10 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 }
             }
         }
-        
+
         self.contentWindow.postMessage(JSON.stringify({getObjects: thisObjects}), "*");
     }
-    
+
     /**
      * This is where all the setters are placed for the Settings menu
      */
@@ -2415,9 +2409,9 @@ realityEditor.network.onSettingPostMessage = function (msgContent) {
                 toggle.onTextCallback(msgContent.settings.setSettings[toggle.propertyName + 'Text']);
             }
         });
-        
+
     }
-    
+
     // can directly trigger native app APIs with message of correct format @todo: figure out if this is currently used?
     if (msgContent.settings.functionName) {
         realityEditor.app.appFunctionCall(msgContent.settings.functionName, msgContent.settings.messageBody, null);
@@ -2570,11 +2564,11 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
         scale: oldFrame.ar.scale,
         matrix: oldFrame.ar.matrix
     };
-    
+
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frames/" + frameKey  + "/copyFrame/"), contents, function(err, response) {
         console.log(err);
         console.log(response);
-        
+
         if (err) {
             console.warn('unable to make copy of frame ' + frameKey);
         } else {
@@ -2585,7 +2579,7 @@ realityEditor.network.createCopyOfFrame = function(ip, objectKey, frameKey, cont
                 newFrame[propertyKey] = responseFrame[propertyKey];
             }
             var thisObject = realityEditor.getObject(objectKey);
-            
+
             // make this staticCopy so it replaces the old static copy
             newFrame.staticCopy = true;
 
@@ -2644,7 +2638,7 @@ realityEditor.network.deleteBlockFromObject = function (ip, objectKey, frameKey,
 };
 
 /**
- * 
+ *
  * @param {string} ip
  * @param {string} objectKey
  * @param {string} frameKey
@@ -2659,7 +2653,7 @@ realityEditor.network.deleteBlockLinkFromObject = function (ip, objectKey, frame
 };
 
 /**
- * 
+ *
  * @param {string} ip
  * @param {string} objectKey
  * @param {string} frameKey
@@ -2771,9 +2765,9 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
     var localWorldObjectKey = realityEditor.worldObjects.getLocalWorldId();
     var isBetweenLocalWorldAndOtherServer = (thisLink.objectA === localWorldObjectKey && thisLink.objectB !== localWorldObjectKey) ||
         (thisLink.objectA !== localWorldObjectKey && thisLink.objectB === localWorldObjectKey);
-    
+
     var okForNewLink = this.checkForNetworkLoop(thisLink.objectA, thisLink.frameA, thisLink.nodeA, thisLink.logicA, thisLink.objectB, thisLink.frameB, thisLink.nodeB, thisLink.logicB) && !isBetweenLocalWorldAndOtherServer;
-    
+
     if (okForNewLink) {
         var linkKey = this.realityEditor.device.utilities.uuidTimeShort();
         if (existingLinkKey) {
@@ -2796,7 +2790,7 @@ realityEditor.network.postLinkToServer = function (thisLink, existingLinkKey) {
         }
 
         if (thisLink.logicB !== false) {
-            
+
             if (thisLink.logicB === 0) color = "BLUE";
             if (thisLink.logicB === 1) color = "GREEN";
             if (thisLink.logicB === 2) color = "YELLOW";
@@ -2935,7 +2929,7 @@ realityEditor.network.postNewBlockPosition = function (ip, objectKey, frameKey, 
     // generate action for all links to be reloaded after upload
     this.cout("I am moving a block: " + ip);
     // /logic/*/*/block/*/
-    
+
     content.lastEditor = globalStates.tempUuid;
     if (typeof content.x === "number" && typeof content.y === "number") {
         this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/node/" + logicKey + "/block/" + blockKey + "/blockPosition/"), content, function () {
@@ -3048,9 +3042,9 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         console.warn("Can't reset content of undefined object", objectKey, frameKey, nodeKey, type);
         return;
     }
-    
+
     var positionData = realityEditor.gui.ar.positioning.getPositionData(tempThisObject);
-    
+
     var content = {};
     content.x = positionData.x;
     content.y = positionData.y;
@@ -3061,7 +3055,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
     }
 
     content.lastEditor = globalStates.tempUuid;
-    
+
     if (typeof content.x === "number" && typeof content.y === "number" && typeof content.scale === "number") {
         realityEditor.gui.ar.utilities.setAverageScale(objects[objectKey]);
         var urlEndpoint;
@@ -3073,7 +3067,7 @@ realityEditor.network.sendResetContent = function (objectKey, frameKey, nodeKey,
         console.log('url endpoint = ' + urlEndpoint);
         this.postData(urlEndpoint, content);
     }
-    
+
 };
 
 /**
@@ -3116,9 +3110,9 @@ realityEditor.network.isFirstInitialization = function(objectKey, frameKey, node
  * @param nodeKey
  */
 realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
-    
+
     realityEditor.gui.ar.draw.notLoading = false;
-    
+
     if (nodeKey === "null") nodeKey = null;
 
     var version = 170;
@@ -3160,7 +3154,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         };
     }
     let activeKey = nodeKey || frameKey;
-    
+
     // if (globalDOMCache['svg' + activeKey]) {
     //     realityEditor.gui.ar.moveabilityOverlay.createSvg(globalDOMCache['svg' + activeKey]);
     // }
@@ -3181,7 +3175,7 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
             }
         });
     }
-    
+
     // adjust move-ability corner UI to match true width and height of frame contents
     if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
         setTimeout(function() {
@@ -3290,7 +3284,7 @@ realityEditor.network.deleteLockFromLink = function (ip, objectKey, frameKey, li
  * @param {string} objectKey
  * @param {string} frameKey
  * @param {string} newVisualization - (either 'ar' or 'screen') the new visualization mode you want to change to
- * @param {{x: number, y: number, scale: number, matrix: Array.<number>}|null} oldVisualizationPositionData - optionally sync the other position data to the server before changing visualization modes. In practice, when we push into a screen we reset the AR frame's positionData to the origin 
+ * @param {{x: number, y: number, scale: number, matrix: Array.<number>}|null} oldVisualizationPositionData - optionally sync the other position data to the server before changing visualization modes. In practice, when we push into a screen we reset the AR frame's positionData to the origin
  */
 realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKey, newVisualization, oldVisualizationPositionData) {
 
@@ -3421,8 +3415,10 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
 realityEditor.network.searchAndDownloadUnpinnedFrames = function (ip, port) {
     realityEditor.network.search.searchFrames(ip, port, {src: 'communication'}, function(matchingFrame) {
         let object = realityEditor.getObject(matchingFrame.objectId);
-        if (!object) { return; }
-        
+        if (!object) {
+            return;
+        }
+
         if (typeof object.unpinnedFrameKeys !== 'undefined' && typeof object.frames[matchingFrame.uuid] === 'undefined') {
             let index = object.unpinnedFrameKeys.indexOf(matchingFrame.uuid);
             if (index > -1) {
