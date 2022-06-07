@@ -420,7 +420,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     function captureStatusHandler(status, statusInfo) {
         console.log('capture status: ' + status);
         console.log('capture statusInfo: ' + statusInfo);
-        console.log('---');
 
         if (status === 'PREPARING') {
             getStopButton().classList.add('captureButtonInactive');

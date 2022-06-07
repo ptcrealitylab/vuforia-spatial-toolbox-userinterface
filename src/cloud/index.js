@@ -75,12 +75,11 @@ realityEditor.cloud.connectToCloud = function (){
     });
 
     this.socket.on('action', function (route, body) {
-        // todo validate for heardbeet
-        console.log("get action")
+        // todo validate for heartbeat
+        console.log('get action', route, body)
         body.network = realityEditor.network.state.proxyNetwork;
         realityEditor.app.callbacks.receivedUDPMessage(body)
        // realityEditor.network.addHeartbeatObject(body);
-        console.log(route, body);
     });
     //  globalStates.network.edgeServer = connections;
 }.bind(realityEditor.cloud);
@@ -94,7 +93,6 @@ if(getDesktopLinkData) {
         if(window.location.host) realityEditor.network.state.proxyUrl = window.location.host;
         if(getDesktopLinkData.n) realityEditor.network.state.proxyNetwork = getDesktopLinkData.n;
         if(getDesktopLinkData.s) realityEditor.network.state.proxySecret = getDesktopLinkData.s;
-        console.log("------------ ",realityEditor.network.state);
         realityEditor.cloud.connectToCloud();
     } else {
         /*
@@ -112,7 +110,6 @@ if(getDesktopLinkData) {
                     if(getLinkData.server) realityEditor.network.state.proxyUrl = getLinkData.server;
                     if(getLinkData.n) realityEditor.network.state.proxyNetwork = getLinkData.n;
                     if(getLinkData.s) realityEditor.network.state.proxySecret = getLinkData.s;
-                    console.log("------------ ",getLinkData);
                     realityEditor.cloud.connectToCloud();
                 }
             }
