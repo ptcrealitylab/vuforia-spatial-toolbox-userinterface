@@ -259,6 +259,8 @@ realityEditor.device.onload = function () {
                 toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
                                               `/n/${settings.networkUUID}` +
                                               `/s/${settings.networkSecret}`);
+                toggleNewNetworkId.onTextCallback(settings.networkUUID);
+                toggleNewSecret.onTextCallback(settings.networkSecret);
             }
             cachedSettings = settings;
             if (anyChanged) {
