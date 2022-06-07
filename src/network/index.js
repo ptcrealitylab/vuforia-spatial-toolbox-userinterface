@@ -178,6 +178,10 @@ realityEditor.network.getIoTitle = function (identifier, title){
 }
 
 realityEditor.network.getPort = function(object) {
+    if (typeof object === 'string') {
+        console.warn('DEPRECATED getPort', new Error().stack);
+        return objects[object].port;
+    }
     return object.port;
 };
 realityEditor.network.getPortByIp = function(ip) {
