@@ -487,7 +487,7 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
-    console.log(origin, remote, objectKey);
+    console.log('updateObject', origin, remote, objectKey);
     
     origin.x = remote.x;
     origin.y = remote.y;
@@ -957,7 +957,7 @@ realityEditor.network.onAction = function (action) {
     
     
     if (thisAction.addFrame) {
-        console.log("addFrame");
+        console.log('addFrame', thisAction.addFrame);
         
         let thisObject = realityEditor.getObject(thisAction.addFrame.objectID);
         

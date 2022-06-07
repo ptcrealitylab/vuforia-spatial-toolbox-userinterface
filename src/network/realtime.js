@@ -246,8 +246,12 @@ createNameSpace("realityEditor.network.realtime");
      * @param {function} callback
      */
     function addDesktopSocketMessageListener(messageName, callback) {
+        console.log('realtime addDesktopSocketMessageListener', desktopSocket, messageName);
         if (desktopSocket) {
-            desktopSocket.on(messageName, callback);
+            desktopSocket.on(messageName, function() {
+                console.log('addDesktopSocketMessageListener received', messageName, Array.from(arguments));
+                callback.apply(this, arguments);
+            });
         }
     }
 
@@ -258,7 +262,10 @@ createNameSpace("realityEditor.network.realtime");
      * @param {function} callback
      */
     function addServerSocketMessageListener(serverAddress, messageName, callback) {
-        sockets['realityServers'][serverAddress].on(messageName, callback);
+        sockets['realityServers'][serverAddress].on(messageName, function() {
+            console.log('addDesktopSocketMessageListener received', messageName, Array.from(arguments));
+            callback.apply(this, arguments);
+        });
     }
 
     function sendBatchedUpdates() {
@@ -290,6 +297,7 @@ createNameSpace("realityEditor.network.realtime");
             editorId: globalStates.tempUuid
         }
 
+        console.log('someone cares about subscribeToCameraMatrices', objectKey);
         serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
         serverSocket.on('/cameraMatrix', callback);
     }
@@ -304,6 +312,7 @@ createNameSpace("realityEditor.network.realtime");
             editorId: globalStates.tempUuid
         }
 
+        // console.log('sending camera matrix to', object, serverSocket);
         serverSocket.emit('/cameraMatrix', JSON.stringify(messageBody));
     }
 
