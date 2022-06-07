@@ -210,7 +210,17 @@ realityEditor.app.getUDPMessages = function(callBack) {
  * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
-    this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
+    if(realityEditor.network.state.proxyNetwork) {
+        if(realityEditor.cloud.socket){
+            if(message.action){
+                console.log("send action: ", message)
+                realityEditor.cloud.socket.action("udp/action", message);  
+            }
+        }
+    } else {
+        this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
+
+    }
 };
 
 /**
@@ -498,7 +508,11 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
         messageBody.callback = callbackString;
     }
     
-    window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    try {
+        window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    } catch (e) {
+        console.warn('appFunctionCall error', e, messageBody);
+    }
 };
 
 /**

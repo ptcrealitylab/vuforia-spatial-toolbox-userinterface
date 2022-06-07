@@ -57,6 +57,7 @@ createNameSpace("realityEditor.device");
 // add-ons can register a function to be called instead of getVuforiaReady
 realityEditor.device.initFunctions = [];
 
+realityEditor.device.loaded = false;
 /**
  * When the index.html first finishes loading, set up the:
  * Sidebar menu buttons,
@@ -241,39 +242,33 @@ realityEditor.device.onload = function () {
     });
 
     let cachedSettings = {};
-    setInterval(async () => {
-        let settings;
-        try {
-            let res = await fetch(`http://127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}/hardwareInterface/edgeAgent/settings`);
-            settings = await res.json();
-        } catch (e) {
-            return;
-        }
-
-        let anyChanged = false;
-        if (cachedSettings.isConnected !== settings.isConnected) {
-            toggleCloudUrl.onToggleCallback(settings.isConnected);
-            anyChanged = true;
-        }
-        if ((cachedSettings.serverUrl !== settings.serverUrl) ||
-            (cachedSettings.networkUUID !== settings.networkUUID) ||
-            (cachedSettings.networkSecret !== settings.networkSecret)) {
-            anyChanged = true;
-            toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
-                                          `/n/${settings.networkUUID}` +
-                                          `/s/${settings.networkSecret}`);
-            toggleNewNetworkId.onTextCallback(settings.networkUUID);
-            toggleNewSecret.onTextCallback(settings.networkSecret);
-        }
-        cachedSettings = settings;
-        if (anyChanged) {
-            document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
-                getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
-                getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-            }), "*");
-        }
-    }, 1000);
-
+    const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+    if (window.location.host === localSettingsHost) {
+        setInterval(async () => {
+            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+            let settings = await res.json();
+            let anyChanged = false;
+            if (cachedSettings.isConnected !== settings.isConnected) {
+                toggleCloudUrl.onToggleCallback(settings.isConnected);
+                anyChanged = true;
+            }
+            if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+                (cachedSettings.networkUUID !== settings.networkUUID) ||
+                (cachedSettings.networkSecret !== settings.networkSecret)) {
+                anyChanged = true;
+                toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                                              `/n/${settings.networkUUID}` +
+                                              `/s/${settings.networkSecret}`);
+            }
+            cachedSettings = settings;
+            if (anyChanged) {
+                document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                    getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                    getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+                }), "*");
+            }
+        }, 1000);
+    }
 
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
@@ -282,6 +277,9 @@ realityEditor.device.onload = function () {
     globalCanvas.context = globalCanvas.canvas.getContext('2d');
 
     realityEditor.device.environment.initService();
+
+    globalCanvas.canv23 = document.getElementById("testcan");
+    globalCanvas.ctx2333 = globalCanvas.canv23.getContext("2d");
 
     // adds touch handlers for each of the menu buttons
     if (!realityEditor.device.environment.variables.overrideMenusAndButtons) {
@@ -418,6 +416,8 @@ realityEditor.device.onload = function () {
     }
 
     this.cout("onload");
+
+    realityEditor.device.loaded = true;
 };
 
 window.onload = realityEditor.device.onload;

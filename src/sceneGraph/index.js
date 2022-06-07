@@ -21,6 +21,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     let utils = realityEditor.gui.ar.utilities;
     let sceneGraph = {};
+    const DEBUG = false;
     const DEBUG_SCENE_GRAPH = true;
     if (DEBUG_SCENE_GRAPH) {
         window.globalSceneGraph = sceneGraph;
@@ -203,9 +204,15 @@ createNameSpace("realityEditor.sceneGraph");
         // ...... calculate and store where it is relative to camera
         // ...... multiply by projection matrix etc to get CSS matrix
 
-        visibleObjectIds.forEach( function(objectKey) {
+        visibleObjectIds.forEach(function(objectKey) {
             let object = realityEditor.getObject(objectKey);
             let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
+            if (!object || !objectSceneNode) {
+                if (DEBUG) {
+                    console.warn('missing sceneNode', objectKey, object, objectSceneNode);
+                }
+                return;
+            }
 
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);

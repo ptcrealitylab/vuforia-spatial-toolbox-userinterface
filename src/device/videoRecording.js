@@ -151,7 +151,7 @@ createNameSpace("realityEditor.device.videoRecording");
         frame.integerVersion = 300;
 
         // add each node with a non-empty name
-        var videoPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/videos/' + videoId + '.mp4';
+        var videoPath = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/videos/' + videoId + '.mp4');
 
         var nodes = [
             {name: 'play', type: 'node', x: 40, y: 0},
@@ -268,7 +268,7 @@ createNameSpace("realityEditor.device.videoRecording");
         realityEditor.app.stopVideoRecording(videoId);
         var object = realityEditor.getObject(objectKey);
         var thisMsg = {
-            videoFilePath: 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/videos/' + videoId + '.mp4'
+            videoFilePath: realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/videos/' + videoId + '.mp4')
         };
         globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
     }

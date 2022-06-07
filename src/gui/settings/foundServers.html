@@ -202,6 +202,7 @@
      */
     realityEditor.gui.settings.getObjectsFunction = function (msg) {
         // don't re-render if nothing has changed
+        console.log("--function-- getObjectsFunction");
         var msgServers = Object.keys(msg).map(objKey => objectToServer(msg[objKey]));
         msgServers = removeServerDuplicates(msgServers);
         if (previousFoundServers && JSON.stringify(previousFoundServers) === JSON.stringify(msgServers)) {

@@ -375,13 +375,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         let objectName = realityEditor.getObject(objectKey).name;
         sessionObjectId = objectKey;
-        targetUploadURL = 'http://' + serverIp + ':' + serverPort + '/content/' + objectName;
+        targetUploadURL = realityEditor.network.getURL(serverIp, serverPort, '/content/' + objectName)
 
         startScanning();
     }
 
     function addObject(objectName, serverIp, serverPort) {
-        var postUrl = 'http://' + serverIp + ':' + serverPort + '/';
+        var postUrl = realityEditor.network.getURL(serverIp, serverPort, '/')
         var params = new URLSearchParams({action: 'new', name: objectName, isWorld: true});
         fetch(postUrl, {
             method: 'POST',

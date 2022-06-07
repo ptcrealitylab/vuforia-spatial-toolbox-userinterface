@@ -134,6 +134,8 @@ createNameSpace('realityEditor.app.callbacks');
         realityEditor.gui.ar.setProjectionMatrix(matrix);
     }
 
+    exports.acceptUDPBeats = true;
+
     /**
      * Callback for realityEditor.app.getUDPMessages
      * Handles any UDP messages received by the app.
@@ -142,6 +144,11 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {string|object} message
      */
     function receivedUDPMessage(message) {
+        console.log('receivedUDPMessage', message);
+        if (!exports.acceptUDPBeats && !message.network) {
+            return;
+        }
+
         if (typeof message !== 'object') {
             try {
                 message = JSON.parse(message);
