@@ -372,6 +372,7 @@
     }
     
     function getSrcForCustomIcon() {
+        // todo this needs be conform with remote interface
         return 'http://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/logicNodeIcon/' + logicNodeData.objectName + "/" + logicNodeData.nodeKey + ".jpg";
     }
     
@@ -433,7 +434,7 @@
 
         // Set up the request.
         var xhr = new XMLHttpRequest();
-        
+        // todo this needs to be conform with remote interface
         var postUrl = 'http://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/object/' + logicNodeData.objectKey + "/frame/" + logicNodeData.frameKey + "/node/" + logicNodeData.nodeKey + "/uploadIconImage/";
 
         // Open the connection.
