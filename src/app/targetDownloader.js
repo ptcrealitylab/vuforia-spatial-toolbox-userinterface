@@ -93,7 +93,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
             let object = realityEditor.getObject(objectID);
-            let gltfPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(objectID) + '/obj/' + object.name + '/target/target.glb';
+            let gltfPath = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.glb');
             realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
         }
 
