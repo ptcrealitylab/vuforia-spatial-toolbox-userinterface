@@ -72,7 +72,8 @@ realityEditor.gui.settings.InterfaceType = Object.freeze({
     TOGGLE: 'TOGGLE',
     TOGGLE_WITH_TEXT: 'TOGGLE_WITH_TEXT',
     TOGGLE_WITH_FROZEN_TEXT: 'TOGGLE_WITH_FROZEN_TEXT',
-    SLIDER: 'SLIDER'
+    URL: 'URL',
+    SLIDER: 'SLIDER',
 });
 
 /**
@@ -136,7 +137,8 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
 
     this.onTextCallback = function() {};
     if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT ||
-        settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+        settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT ||
+        settingType === realityEditor.gui.settings.InterfaceType.URL) {
         // set up the property containing the value in the setting text box
         let savedValue = window.localStorage.getItem(persistentStorageId + '_TEXT');
         if (savedValue !== null) {
@@ -243,6 +245,23 @@ realityEditor.gui.settings.addToggleWithFrozenText = function(title, description
 
 /**
  * Creates a new entry that will added to the settings menu, including the associated property and persistent storage.
+ * This type of entry is a frozen view of a URL
+ * @param {string} title
+ * @param {string} description
+ * @param {string} propertyName
+ * @param {string} iconSrc
+ * @param {boolean} defaultValue
+ * @param {string} placeholderText
+ * @return {SettingsToggle}
+ */
+realityEditor.gui.settings.addURLView = function(title, description, propertyName, iconSrc, defaultValue, placeholderText) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.URL, propertyName, iconSrc, defaultValue, placeholderText);
+    realityEditor.gui.settings.addedToggles.push(newToggle);
+    return newToggle;
+};
+
+/**
+ * Creates a new entry that will added to the settings menu, including the associated property and persistent storage.
  * This type of entry has a toggle switch UI, and a text box UI.
  * The toggle can only turn on if there is text. While active, the text cannot be edited
  * @param {string} title
@@ -300,7 +319,8 @@ realityEditor.gui.settings.generateDynamicSettingsJsonMessage = function(menuNam
             settingType: toggle.settingType
         };
         if (toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT ||
-            toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+            toggle.settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT ||
+            toggle.settingType === realityEditor.gui.settings.InterfaceType.URL) {
             defaultMessage[toggle.propertyName].associatedText = {
                 propertyName: toggle.propertyName + 'Text',
                 value: this.toggleStates[toggle.propertyName + 'Text'],

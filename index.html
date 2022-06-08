@@ -71,8 +71,15 @@
     <script src="thirdPartyCode/p5.min.js"></script>
     <script src="thirdPartyCode/Tween.min.js"></script>
     <script src="thirdPartyCode/socket.io.js"></script>
+    <script src="thirdPartyCode/toolsocket/index.js"></script>
     <script src="thirdPartyCode/hull.js"></script>
     <script src="thirdPartyCode/stats.min.js"></script>
+
+    <!--
+        <script src="thirdPartyCode/opencv.js"></script>
+        <script src="thirdPartyCode/HRQRDecoder.js"></script>
+    -->
+
     <!-- three.js is imported as a module in src/gui/threejsScene.js rather than here -->
 
     <script src="src/constructors.js"></script>
@@ -110,6 +117,8 @@
     <script src="src/network/availableFrames.js"></script>
     <script src="src/network/search.js"></script>
 
+    <script src="src/cloud/index.js"></script>
+
     <script src="src/sceneGraph/sceneNode.js"></script>
     <script src="src/sceneGraph/index.js"></script>
     <script src="src/sceneGraph/network.js"></script>
@@ -124,6 +133,7 @@
     <script src="src/gui/glRenderer.js"></script>
     <script src="src/gui/navigation.js"></script>
     <script src="src/gui/threejsScene.js" type="module"></script>
+    <script src="src/gui/poses.js"></script>
 
     <script src="src/gui/ar/index.js"></script>
     <script src="src/gui/ar/utilities.js"></script>
@@ -133,8 +143,11 @@
     <script src="src/gui/ar/grouping.js"></script>
     <script src="src/gui/ar/moveabilityOverlay.js"></script>
     <script src="src/gui/ar/frameHistoryRenderer.js"></script>
+    <script src="src/gui/ar/groundPlaneAnchors.js"></script>
     <script src="src/gui/ar/groundPlaneRenderer.js"></script>
     <script src="src/gui/ar/anchors.js"></script>
+    <script src="src/gui/ar/areaTargetScanner.js"></script>
+    <script src="src/gui/ar/areaCreator.js"></script>
 
     <script src="src/gui/spatial/index.js"></script>
     <script src="src/gui/spatial/timeRecorder.js"></script>
@@ -518,7 +531,7 @@
 <div class="memoryDragContainer">
 </div>
 
-<div id="speechConsole" touch-action="none">Test transcript for the speech</div>
+<div id="speechConsole" touch-action="none">Debug Console</div>
 
 <div class="pocket">
     <div class="centerVertically" id="pocketScrollContainer">
@@ -530,6 +543,7 @@
         </div>
     </div>
     <div id="pocketScrollBar"></div>
+    <div id="pocketTargetObjectLabel">Adding Tools to:</div>
 </div>
 
 <canvas class="Canvas" id="canvas"></canvas> <!--touch-action="none"-->

@@ -20,7 +20,7 @@ createNameSpace("realityEditor.app.targetDownloader");
      */
 
     /**
-     * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, MARKER_ADDED: DownloadState}>}
+     * @type {Object.<string, {XML: DownloadState, DAT: DownloadState, JPG: DownloadState, MARKER_ADDED: DownloadState, FILENAME: String}>}
      * Maps object names to the download states of their XML and DAT files, and whether the tracking engine has added the resulting marker
      */
     var targetDownloadStates = {};
@@ -77,6 +77,11 @@ createNameSpace("realityEditor.app.targetDownloader");
         });
 
     /**
+     * @type {Function?}
+     */
+    let createNavmeshCallback = null;
+
+    /**
      * Worker that generates navmeshes from upload area target meshes
      * @type {Worker}
      */
@@ -86,15 +91,19 @@ createNameSpace("realityEditor.app.targetDownloader");
         const objectID = evt.data.objectID;
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
 
-        // Occlusion removed in favor of distance-based fading, but could be re-enabled in the future
-        // let object = realityEditor.getObject(objectID);
-        // let gltfPath = 'http://' + object.ip + ':' + realityEditor.network.getPort(objectID) + '/obj/' + object.name + '/target/target.glb';
-        // realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
+        if (realityEditor.device.environment.variables.addOcclusionGltf) {
+            let object = realityEditor.getObject(objectID);
+            let gltfPath = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.glb');
+            realityEditor.gui.threejsScene.addOcclusionGltf(gltfPath, objectID);
+        }
 
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath);
         // let floorOffset = -1.55 * 1000;
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath, {x: -600, y: -floorOffset, z: -3300}, {x: 0, y: 2.661627109291353, z: 0});
 
+        if (createNavmeshCallback) {
+            createNavmeshCallback(navmesh);
+        }
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
@@ -152,7 +161,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             GLB: DownloadState.NOT_STARTED,
             MARKER_ADDED: DownloadState.NOT_STARTED
         };
-        var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
+        var xmlAddress = realityEditor.network.getURL(objectHeartbeat.ip, realityEditor.network.getPort(objectHeartbeat), '/obj/' + objectName + '/target/target.xml');
 
         // regardless of previous conditions, don't proceed with any downloads if this is an anchor object
         if (realityEditor.gui.ar.anchors.isAnchorHeartbeat(objectHeartbeat)) {
@@ -227,7 +236,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully downloaded XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
 
-            var datAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.dat';
+            var datAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.dat');
 
             // don't download again if already stored the same checksum version
             if (isAlreadyDownloaded(objectID, 'DAT')) {
@@ -257,20 +266,21 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
         var object = realityEditor.getObject(objectID);
 
-        const jpgAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.jpg';
+        const jpgAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.jpg');
 
         if (success) {
 
             console.log('successfully downloaded DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
 
-            var xmlFileName = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.xml';
+            var xmlFileName = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.xml');
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = false;
 
             if (realityEditor.getObject(objectID).isWorldObject) {
-              var glbAddress = 'http://' + object.ip + ':' + realityEditor.network.getPort(object) + '/obj/' + object.name + '/target/target.glb';
+              var glbAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.glb');
 
               // don't download again if already stored the same checksum version
               if (isAlreadyDownloaded(objectID, 'GLB')) {
@@ -317,11 +327,19 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].GLB = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
-        onTargetGLBAddress(fileName, objectID);
+        createNavmesh(fileName, objectID);
     }
 
-    function onTargetGLBAddress(fileName, objectID) {
+    /**
+     * @param {string} fileName - Full URL of GLB file
+     * @param {string} objectID
+     * @param {Function?} callback
+     */
+    function createNavmesh(fileName, objectID, callback) {
         console.log('got GLB address');
+        if (callback) {
+            createNavmeshCallback = callback;
+        }
         navmeshWorker.postMessage({fileName, objectID});
     }
 
@@ -340,6 +358,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
             realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = true;
         } else {
             console.log('failed to download JPG file: ' + fileName);
@@ -556,8 +575,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('new checksum is ' + newChecksum);
             if (newChecksum === storedChecksum) {
                 // check that the files still exist in the app's temporary storage
-   var xmlFileName = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
-                var datFileName = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.dat';
+   var xmlFileName = realityEditor.network.getURL(objectHeartbeat.ip, realityEditor.network.getPort(objectHeartbeat), '/obj/' + objectName + '/target/target.xml');
+                var datFileName = realityEditor.network.getURL(objectHeartbeat.ip, realityEditor.network.getPort(objectHeartbeat), '/obj/' + objectName + '/target/target.dat');
 
                 realityEditor.app.getFilesExist([xmlFileName, datFileName], moduleName + '.doTargetFilesExist');
                 return;
@@ -587,14 +606,14 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         // downloads the vuforia target.xml file if it doesn't have it yet
         if (needsXML) {
-            var xmlAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.xml';
+            var xmlAddress = realityEditor.network.getURL(objectHeartbeat.ip, realityEditor.network.getPort(objectHeartbeat), '/obj/' + objectName + '/target/target.xml');
             realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetFileDownloaded');
             targetDownloadStates[objectID].XML = DownloadState.STARTED;
         }
 
         // downloads the vuforia target.dat file it it doesn't have it yet
         if (needsDAT) {
-            var datAddress = 'http://' + objectHeartbeat.ip + ':' + realityEditor.network.getPort(objectHeartbeat) + '/obj/' + objectName + '/target/target.dat';
+            var datAddress = realityEditor.network.getURL(objectHeartbeat.ip, realityEditor.network.getPort(objectHeartbeat), '/obj/' + objectName + '/target/target.dat');
             realityEditor.app.downloadFile(datAddress, moduleName + '.onTargetFileDownloaded');
             targetDownloadStates[objectID].DAT = DownloadState.STARTED;
         }
@@ -624,6 +643,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
                 realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
                 targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+                targetDownloadStates[objectID].FILENAME = xmlFileName;
 
             } else {
 
@@ -645,13 +665,32 @@ createNameSpace("realityEditor.app.targetDownloader");
      * e.g. "http://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
      * @param {string} fileName
      */
+
+ let schema = {
+        "type": "object",
+        "items": {
+            "properties": {
+                "obj": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+                "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+            },
+            "required": ["server", "obj"],
+            "expected": ["server", "obj"],
+        }
+    }
+
     function getObjectIDFromFilename(fileName) {
-        var ip = fileName.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/)[0];
-        var objectName = fileName.split('/')[4];
+        let urlObj = io.parseUrl(fileName, schema)
+        if (!urlObj) {
+            console.warn('io.parseUrl failed', fileName);
+            return;
+        }
+        const ip = urlObj.server;
+        const objectName = urlObj.obj;
+
 
         for (var objectKey in objects) {
             if (!objects.hasOwnProperty(objectKey)) continue;
-            var object = realityEditor.getObject(objectKey);
+            const object = realityEditor.getObject(objectKey);
             if (object.ip === ip && object.name === objectName) {
                 return objectKey;
             }
@@ -694,11 +733,31 @@ createNameSpace("realityEditor.app.targetDownloader");
         if (hasXML && hasDAT && markerNotAdded) {
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+            targetDownloadStates[objectID].FILENAME = fileName;
 
             if (temporaryChecksumMap[objectID]) {
                 window.localStorage.setItem('realityEditor.objectChecksums.'+objectID, temporaryChecksumMap[objectID]);
             }
         }
+    }
+
+    // if the vuforia engine gets hard-restarted during the session, we can use this to add the observers back to engine
+    function reinstatePreviouslyAddedTargets() {
+        console.log('>> reinstatePreviouslyAddedTargets');
+        Object.keys(targetDownloadStates).forEach(function(objectID) {
+            let states = targetDownloadStates[objectID];
+            if (states && states.MARKER_ADDED === DownloadState.SUCCEEDED && targetDownloadStates[objectID].FILENAME) {
+                if (states.JPG === DownloadState.SUCCEEDED && states.DAT !== DownloadState.SUCCEEDED) {
+                    console.log('>> add JPG target again: ' + objectID);
+                    let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
+                    realityEditor.app.addNewMarkerJPG(targetDownloadStates[objectID].FILENAME, objectID, targetWidth, moduleName + '.onMarkerAdded');
+                    targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
+                } else if (states.DAT === DownloadState.SUCCEEDED) {
+                    console.log('>> add DAT target again: ' + objectID);
+                    realityEditor.app.addNewMarker(targetDownloadStates[objectID].FILENAME, moduleName + '.onMarkerAdded');
+                }
+            }
+        });
     }
 
     // These functions are the public API that should be called by other modules
@@ -707,12 +766,14 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.isObjectTargetInitialized = isObjectTargetInitialized;
     exports.isObjectReadyToRetryDownload = isObjectReadyToRetryDownload;
     exports.resetTargetDownloadCache = resetTargetDownloadCache;
+    exports.reinstatePreviouslyAddedTargets = reinstatePreviouslyAddedTargets;
 
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;
     exports.onTargetDATDownloaded = onTargetDATDownloaded;
     exports.onTargetJPGDownloaded = onTargetJPGDownloaded;
     exports.onTargetGLBDownloaded = onTargetGLBDownloaded;
+    exports.createNavmesh = createNavmesh;
     exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
     exports.onTargetFileDownloaded = onTargetFileDownloaded;

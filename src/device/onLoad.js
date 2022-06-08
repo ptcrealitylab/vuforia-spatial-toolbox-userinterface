@@ -57,6 +57,7 @@ createNameSpace("realityEditor.device");
 // add-ons can register a function to be called instead of getVuforiaReady
 realityEditor.device.initFunctions = [];
 
+realityEditor.device.loaded = false;
 /**
  * When the index.html first finishes loading, set up the:
  * Sidebar menu buttons,
@@ -187,6 +188,90 @@ realityEditor.device.onload = function () {
         // }
     }).moveToDevelopMenu();
 
+    // Add a toggle to enable virtualization features
+    realityEditor.gui.settings.addToggle('Virtualization', 'enable virtualization and pose detection', 'enableVirtualization',  '../../../svg/object.svg', false, function(newValue) {
+        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+            return;
+        }
+        if (newValue) {
+            realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
+
+            let recordButton = document.getElementById('recordPointCloudsButton');
+            if (!recordButton) {
+                recordButton = document.createElement('img');
+                recordButton.src = '../../../svg/recordButton3D-start.svg';
+                recordButton.id = 'recordPointCloudsButton';
+                document.body.appendChild(recordButton);
+
+                recordButton.addEventListener('pointerup', _e => {
+                    if (recordButton.classList.contains('pointCloudButtonActive')) {
+                        recordButton.classList.remove('pointCloudButtonActive');
+                        recordButton.src = '../../../svg/recordButton3D-start.svg';
+                        realityEditor.device.videoRecording.stop3DVideoRecording();
+                    } else {
+                        recordButton.classList.add('pointCloudButtonActive');
+                        recordButton.src = '../../../svg/recordButton3D-stop.svg';
+                        realityEditor.device.videoRecording.start3DVideoRecording();
+                    }
+                });
+            }
+            recordButton.classList.remove('hiddenButtons');
+        } else {
+            realityEditor.app.appFunctionCall("disablePoseTracking", {});
+            let recordButton = document.getElementById('recordPointCloudsButton');
+            if (recordButton) {
+                recordButton.classList.add('hiddenButtons');
+            }
+        }
+    }).moveToDevelopMenu();
+
+    let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
+        function(newValue) {
+            console.log('user wants cloudConnection to be', newValue);
+        },
+        function(newValue) {
+            console.log('cloud url text was set to', newValue);
+        }
+    );
+    let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
+        console.log('user wants newNetworkId to be', newValue);
+    });
+    let toggleNewSecret = realityEditor.gui.settings.addToggleWithText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
+        console.log('user wants newSecret to be', newValue);
+    });
+
+    let cachedSettings = {};
+    const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+    if (window.location.host === localSettingsHost) {
+        setInterval(async () => {
+            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+            let settings = await res.json();
+            let anyChanged = false;
+            if (cachedSettings.isConnected !== settings.isConnected) {
+                toggleCloudUrl.onToggleCallback(settings.isConnected);
+                anyChanged = true;
+            }
+            if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+                (cachedSettings.networkUUID !== settings.networkUUID) ||
+                (cachedSettings.networkSecret !== settings.networkSecret)) {
+                anyChanged = true;
+                toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                                              `/n/${settings.networkUUID}` +
+                                              `/s/${settings.networkSecret}`);
+                toggleNewNetworkId.onTextCallback(settings.networkUUID);
+                toggleNewSecret.onTextCallback(settings.networkSecret);
+            }
+            cachedSettings = settings;
+            if (anyChanged) {
+                document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                    getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                    getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+                }), "*");
+            }
+        }, 1000);
+    }
+
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
     globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
@@ -212,7 +297,10 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.frameHistoryRenderer.initService();
     realityEditor.gui.ar.grouping.initService();
     realityEditor.gui.ar.anchors.initService();
+    realityEditor.gui.ar.groundPlaneAnchors.initService();
     realityEditor.gui.ar.groundPlaneRenderer.initService();
+    realityEditor.gui.ar.areaTargetScanner.initService();
+    realityEditor.gui.ar.areaCreator.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.realtime.initService();
     realityEditor.gui.crafting.initService();
@@ -327,6 +415,8 @@ realityEditor.device.onload = function () {
     }
 
     this.cout("onload");
+
+    realityEditor.device.loaded = true;
 };
 
 window.onload = realityEditor.device.onload;

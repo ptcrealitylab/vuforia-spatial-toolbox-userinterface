@@ -114,6 +114,14 @@ realityEditor.app.getMatrixStream = function(callBack) {
 };
 
 /**
+ * Sets up a callback for the coordinates of any poses the phone finds
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getPosesStream = function(callBack) {
+    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  * Sets up a callback for the positional device tracker, reporting the pose of the camera at every frame.
  * Callback will have the cameraMatrix (which is the inverse of the view matrix) as a parameter.
  * @param {FunctionName} callBack
@@ -202,7 +210,14 @@ realityEditor.app.getUDPMessages = function(callBack) {
  * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
-    this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
+    if(realityEditor.network.state.proxyNetwork) {
+        if (realityEditor.cloud.socket && message.action) {
+            realityEditor.cloud.socket.action('udp/action', message);
+        }
+    } else {
+        this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
+
+    }
 };
 
 /**
@@ -382,6 +397,15 @@ realityEditor.app.setOrientation = function(orientationString, callBack) {
 };
 
 /**
+ * Triggers the callback whenever the app moves receives a high memory usage event
+ // * The callback has a single string argument of: "report_memory" or a warning, and an integer argument of bytesUsed
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.subscribeToAppMemoryEvents = function(callBack) {
+    this.appFunctionCall('subscribeToAppMemoryEvents', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__, __ARG3__])');
+}
+
+/**
  **************Debugging****************
  **/
 
@@ -438,6 +462,26 @@ realityEditor.app.setAspectRatio = function(ratio) {
 }
 
 /**
+ ************** AREA TARGET CAPTURE API ****************
+ */
+
+realityEditor.app.areaTargetCaptureStart = function (objectId, callBack) {
+    realityEditor.app.appFunctionCall("areaTargetCaptureStart", {objectId: objectId}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+}
+
+realityEditor.app.areaTargetCaptureStop = function (callBack) {
+    realityEditor.app.appFunctionCall("areaTargetCaptureStop", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+}
+
+realityEditor.app.areaTargetCaptureGenerate = function (targetUploadURL) {
+    realityEditor.app.appFunctionCall("areaTargetCaptureGenerate", {targetUploadURL: targetUploadURL}, null);
+}
+
+realityEditor.app.onAreaTargetGenerateProgress = function (callBack) {
+    realityEditor.app.appFunctionCall("onAreaTargetGenerateProgress", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+}
+
+/**
  **************UTILITIES****************
  **/
 
@@ -461,7 +505,11 @@ realityEditor.app.appFunctionCall = function(functionName, functionArguments, ca
         messageBody.callback = callbackString;
     }
     
-    window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    try {
+        window.webkit.messageHandlers.realityEditor.postMessage(messageBody);
+    } catch (e) {
+        console.warn('appFunctionCall error', e, messageBody);
+    }
 };
 
 /**

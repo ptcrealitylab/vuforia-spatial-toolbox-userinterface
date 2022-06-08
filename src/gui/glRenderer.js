@@ -5,6 +5,7 @@ createNameSpace("realityEditor.gui.glRenderer");
     let nextWorkerId = 1;
     let toolIdToProxy = {};
     let proxies = [];
+    let rendering = false;
 
     const MAX_PROXIES = 32; // maximum number that can be safely rendered each frame
 
@@ -208,10 +209,16 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         getFrameCommands() {
             this.buffering = true;
+            this.commandBuffer = [];
             this.worker.postMessage({name: 'frame', time: Date.now()}, '*');
             return new Promise((res) => {
                 this.frameEndListener = res;
             });
+        }
+
+        remove() {
+            this.frameEndListener = null;
+            window.removeEventListener('message', this.onMessage);
         }
     }
 
@@ -245,6 +252,12 @@ createNameSpace("realityEditor.gui.glRenderer");
             case 'number':
                 constants[key] = gl[key];
                 break;
+            }
+            if (key === 'canvas') {
+                constants[key] = {
+                    width: gl[key].width,
+                    height: gl[key].height,
+                };
             }
         }
 
@@ -290,6 +303,11 @@ createNameSpace("realityEditor.gui.glRenderer");
     }
 
     async function renderFrame() {
+        if (rendering) {
+            console.error('renderFrame called during another renderFrame');
+            return;
+        }
+        rendering = true;
         let proxiesToConsider = [];
         function makeWatchdog() {
             return new Promise((res) => {
@@ -328,13 +346,13 @@ createNameSpace("realityEditor.gui.glRenderer");
             let proxy = proxiesToBeRenderedThisFrame[i];
             if (!res[i]) {
                 console.warn('miscreant detected', proxy);
-                continue;
             }
             proxy.executeFrameCommands();
         }
 
         requestAnimationFrame(renderFrame);
         lastRender = Date.now();
+        rendering = false;
     }
 
     function watchpuppy() {
@@ -351,6 +369,10 @@ createNameSpace("realityEditor.gui.glRenderer");
     }
 
     function addWebGlProxy(toolId) {
+        if (toolIdToProxy.hasOwnProperty(toolId)) {
+            console.error('overwriting webglproxy for tool', toolId);
+            removeWebGlProxy(toolId);
+        }
         const worker = globalDOMCache['iframe' + toolId].contentWindow;
         let proxy = new WorkerGLProxy(worker, gl, generateWorkerIdForTool(toolId), toolId);
         proxies.push(proxy);
@@ -379,6 +401,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         if (index !== -1) {
             proxies.splice(index, 1);
         }
+        proxy.remove();
         delete workerIds[toolId];
         delete toolIdToProxy[toolId];
     }

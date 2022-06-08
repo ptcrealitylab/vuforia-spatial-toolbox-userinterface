@@ -10,6 +10,7 @@ createNameSpace("realityEditor.addons");
         for (const source of addonSources) {
             const scriptNode = document.createElement('script');
             scriptNode.src = source;
+            scriptNode.type = 'module';
             document.head.appendChild(scriptNode);
         }
     });

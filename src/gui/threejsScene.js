@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 
@@ -15,8 +16,11 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+    let groundPlane;
     let raycaster;
     let mouse;
+    let distanceRaycastVector = new THREE.Vector3();
+    let distanceRaycastResultPosition = new THREE.Vector3();
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -42,16 +46,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         threejsContainerObj = new THREE.Object3D();
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
         scene.add(threejsContainerObj);
-
-        // const geometry = new THREE.PlaneGeometry( 10000, 10000 );
-        // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-        // const groundplaneMesh = new THREE.Mesh( geometry, material );
-        // threejsContainerObj.add(groundplaneMesh);
-        //
-        // const divisions = 10;
-        // const size = 1000 * divisions;
-        // const gridHelper = new THREE.GridHelper( size, divisions );
-        // threejsContainerObj.add( gridHelper );
 
         // light the scene with a combination of ambient and directional white light
         var ambLight = new THREE.AmbientLight(0xffffff);
@@ -80,7 +74,21 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         // threejsContainerObj.add( mesh );
         // mesh.position.setZ(150);
 
+        addGroundPlaneCollisionObject(); // invisible object for raycasting intersections with ground plane
+
         renderScene(); // update loop
+    }
+
+    function addGroundPlaneCollisionObject() {
+        const sceneSizeInMeters = 10;
+        const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        const material = new THREE.MeshBasicMaterial( {color: 0x00ffff, side: THREE.DoubleSide} );
+        const plane = new THREE.Mesh( geometry, material );
+        plane.rotateX(Math.PI/2);
+        plane.visible = false;
+        addToScene(plane, {occluded: true});
+        plane.name = 'groundPlaneElement';
+        groundPlane = plane;
     }
 
     function renderScene() {
@@ -101,12 +109,13 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         worldObjectIds.forEach(worldObjectId => {
             if (!worldObjectGroups[worldObjectId]) {
                 const group = new THREE.Group();
+                group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
                 scene.add(group);
 
                 // Helps visualize world object origin point for debugging
-                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId()) {
+                if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId() && !realityEditor.device.environment.variables.hideOriginCube) {
                     const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
                     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
                     const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
@@ -151,11 +160,6 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
         if (rootModelViewMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
-            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
-            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-            // const groundplaneMesh = new THREE.Mesh( geometry, material );
-            // threejsContainerObj.add(groundplaneMesh);
-            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         customMaterials.update();
@@ -262,53 +266,81 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         });
     }
 
+    function getObjectForWorldRaycasts(objectId) {
+        return worldOcclusionObjects[objectId] || scene.getObjectByName('areaTargetMesh');
+    }
+
     function isOcclusionActive(objectId) {
         return !!worldOcclusionObjects[objectId];
     }
 
+    /**
+     * Key function for the remote operator. Loads and adds a GLTF model to the
+     * scene as a static reference mesh.
+     * @param {string} pathToGltf - url of gltf
+     * @param {{x: number, y: number, z: number}} originOffset - offset of model for ground plane being aligned with y=0
+     * @param {{x: number, y: number, z: number}} originRotation - rotation for up to be up
+     * @param {number} maxHeight - maximum (ceiling) height of model
+     * @param {{x: number, y: number, z: number}} center - center of model for loading animation
+     * @param {function} callback - Called on load with gltf's threejs object
+     *
     /* For my example area target:
         pathToGltf = './svg/BenApt1_authoring.glb' // put in arbitrary local directory to test
         originOffset = {x: -600, y: 0, z: -3300};
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, callback) {
+    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
         const gltfLoader = new GLTFLoader();
 
         gltfLoader.load(pathToGltf, function(gltf) {
+            let wireMesh;
+            let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
+                wireframe: true,
+                color: 0x00ffff,
+            }), maxHeight, center, true, true);
 
             if (gltf.scene.children[0].geometry) {
                 if (typeof maxHeight !== 'undefined') {
-                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material.map, maxHeight, true);
+                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material, maxHeight, center, true);
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
+                wireMesh = new THREE.Mesh(gltf.scene.children[0].geometry, wireMaterial);
             } else {
                 gltf.scene.children[0].children.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
-                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material.map, maxHeight, true);
+                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
                     }
                 });
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
+                wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
+            wireMesh.scale.set(1000, 1000, 1000); // convert meters -> mm
             if (typeof originOffset !== 'undefined') {
                 gltf.scene.position.set(originOffset.x, originOffset.y, originOffset.z);
+                wireMesh.position.set(originOffset.x, originOffset.y, originOffset.z);
             }
             if (typeof originRotation !== 'undefined') {
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
+                wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
+            threejsContainerObj.add( wireMesh );
+            setTimeout(() => {
+                threejsContainerObj.remove(wireMesh);
+            }, 10000);
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
 
             if (callback) {
-              callback(gltf.scene);
+              callback(gltf.scene, wireMesh);
             }
         });
     }
@@ -323,7 +355,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     }
 
     // this module exports this utility so that other modules can perform hit tests
-    function getRaycastIntersects(clientX, clientY) {
+    // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
+    function getRaycastIntersects(clientX, clientY, objectsToCheck) {
         mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
 
@@ -331,98 +364,112 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         raycaster.setFromCamera( mouse, camera );
 
         //3. compute intersections
-        return raycaster.intersectObjects( scene.children, true );
+        let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
+        results.forEach(intersection => {
+            intersection.rayDirection = raycaster.ray.direction;
+        });
+        return results;
+    }
+
+    /**
+     * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
+     * @param {number} clientX - in screen pixels
+     * @param {number} clientY - in screen pixels
+     * @param {number} distance - in millimeters
+     * @returns {Vector3} - position relative to camera
+     */
+    function getPointAtDistanceFromCamera(clientX, clientY, distance) {
+        distanceRaycastVector.set(
+            ( clientX / window.innerWidth ) * 2 - 1,
+            - ( clientY / window.innerHeight ) * 2 + 1,
+            0
+        );
+        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.normalize();
+        distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
+        return distanceRaycastResultPosition;
+    }
+
+    function getObjectByName(name) {
+        return scene.getObjectByName(name);
+    }
+
+    function getGroundPlane() {
+        return groundPlane;
     }
 
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
+            this.lastUpdate = -1;
         }
-        areaTargetVertexShader() {
-            return `
-            precision highp float;
-
-            uniform float sineTime;
-            uniform float time;
-
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-
-            attribute vec3 position;
-            attribute vec4 color;
-            attribute vec3 translate;
-            attribute vec2 uv;
-
-            varying vec3 vPosition;
-            varying vec4 vColor;
-            varying float vScale;
-            varying vec2 vUv;
-
-            void main(){
-
-                vPosition = position;
-                vec3 trTime = vec3(translate.x + time,translate.y + time,translate.z + time);
-                float scale =  sin( trTime.x * 2.1 ) + sin( trTime.y * 3.2 ) + sin( trTime.z * 4.3 );
-                vScale = scale;
-
-                vColor = color;
-                vUv = uv;
-
-                gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
-
+        areaTargetVertexShader(center) {
+            return THREE.ShaderChunk.meshphysical_vert
+                .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+    len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
+    `).replace('#include <common>', `#include <common>
+    varying float len;
+    `);
+        }
+        areaTargetFragmentShader(inverted) {
+            let condition = 'if (len > maxHeight) discard;';
+            if (inverted) {
+                condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
             }
-          `
+            return THREE.ShaderChunk.meshphysical_frag
+                .replace('#include <clipping_planes_fragment>', `
+                         ${condition}
+
+                         #include <clipping_planes_fragment>`)
+                .replace(`#include <common>`, `
+                         #include <common>
+                         varying float len;
+                         uniform float maxHeight;
+                         `);
         }
-        areaTargetFragmentShader() {
-            return `
-            precision highp float;
+        areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
+            let material = sourceMaterial.clone();
+            console.log(material);
+            material.uniforms = THREE.UniformsUtils.merge([
+                THREE.ShaderLib.standard.uniforms,
+                {
+                    maxHeight: {value: maxHeight},
+                }
+            ]);
 
-            uniform sampler2D map;
-            uniform float maxHeight;
-
-            varying vec2 vUv;
-            varying float vScale;
-            varying vec3 vPosition;
-
-            void main() {
-                gl_FragColor = texture2D( map, vUv );
-
-                if (vPosition.y > maxHeight) discard;
-            }
-          `
-        }
-        areaTargetMaterialWithTextureAndHeight(sourceTexture, maxHeight, animateOnLoad) {
-            let material = new THREE.RawShaderMaterial({
-                uniforms: {
-                    "time": {value: 1.0},
-                    "sineTime": {value: 1.0},
-                    "map": { value: sourceTexture },
-                    "maxHeight": {value: maxHeight}
-                },
-                vertexShader: this.areaTargetVertexShader(),
-                fragmentShader: this.areaTargetFragmentShader(),
-                side: THREE.FrontSide
-            });
+            material.vertexShader = this.areaTargetVertexShader(center);
+            material.fragmentShader = this.areaTargetFragmentShader(inverted);
 
             if (animateOnLoad) {
                 this.materialsToAnimate.push({
                     material: material,
-                    currentHeight: 0,
-                    maxHeight: maxHeight,
-                    animationSpeed: 0.02
+                    currentHeight: -10, // -maxHeight,
+                    maxHeight: maxHeight * 4,
+                    animationSpeed: 0.02 / 2
                 });
             }
+
+            material.type = 'thecoolermeshstandardmaterial';
+
+            material.needsUpdate = true;
 
             return material;
         }
         update() {
             if (this.materialsToAnimate.length === 0) { return; }
 
+            let now = window.performance.now();
+            if (this.lastUpdate < 0) {
+                this.lastUpdate = now;
+            }
+            let dt = now - this.lastUpdate;
+            this.lastUpdate = now;
+
             let indicesToRemove = [];
             this.materialsToAnimate.forEach(function(entry, index) {
                 let material = entry.material;
                 if (entry.currentHeight < entry.maxHeight) {
-                    entry.currentHeight += entry.animationSpeed;
+                    entry.currentHeight += entry.animationSpeed * dt;
                     material.uniforms['maxHeight'].value = entry.currentHeight;
                 } else {
                     indicesToRemove.push(index);
@@ -445,5 +492,12 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
     exports.getRaycastIntersects = getRaycastIntersects;
+    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
+    exports.getObjectByName = getObjectByName;
+    exports.getGroundPlane = getGroundPlane;
+    exports.setMatrixFromArray = setMatrixFromArray;
+    exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.THREE = THREE;
+    exports.FBXLoader = FBXLoader;
+    exports.GLTFLoader = GLTFLoader;
 })(realityEditor.gui.threejsScene);

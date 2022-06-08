@@ -21,6 +21,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     let utils = realityEditor.gui.ar.utilities;
     let sceneGraph = {};
+    const DEBUG = false;
     const DEBUG_SCENE_GRAPH = true;
     if (DEBUG_SCENE_GRAPH) {
         window.globalSceneGraph = sceneGraph;
@@ -48,6 +49,7 @@ createNameSpace("realityEditor.sceneGraph");
         NODE: 'node',
         ROTATE_X: 'rotateX'
     });
+    exports.TAGS = TAGS;
 
     function initService() {
         // create root node for scene located at phone's (0,0,0) coordinate system
@@ -60,8 +62,8 @@ createNameSpace("realityEditor.sceneGraph");
 
         // create a node representing the ground plane coordinate system
         groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
-        groundPlaneNode.needsRotateX = true;
-        addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
+        // groundPlaneNode.needsRotateX = true;
+        // addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
 
         // also init the network service when this starts
@@ -206,9 +208,15 @@ createNameSpace("realityEditor.sceneGraph");
         // ...... calculate and store where it is relative to camera
         // ...... multiply by projection matrix etc to get CSS matrix
 
-        visibleObjectIds.forEach( function(objectKey) {
+        visibleObjectIds.forEach(function(objectKey) {
             let object = realityEditor.getObject(objectKey);
             let objectSceneNode = getSceneNodeById(objectKey); // todo: error handle
+            if (!object || !objectSceneNode) {
+                if (DEBUG) {
+                    console.warn('missing sceneNode', objectKey, object, objectSceneNode);
+                }
+                return;
+            }
 
             if (didCameraUpdate || objectSceneNode.needsRerender) {
                 relativeToCamera[objectKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
@@ -378,8 +386,13 @@ createNameSpace("realityEditor.sceneGraph");
         let relativePosition = relativeToCamera[activeKey];
         if (!relativePosition) {
             let objectSceneNode = getSceneNodeById(activeKey); // todo: error handle
-            relativeToCamera[activeKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
-            relativePosition = relativeToCamera[activeKey];
+            if (objectSceneNode) {
+                relativeToCamera[activeKey] = objectSceneNode.getMatrixRelativeTo(cameraNode);
+                relativePosition = relativeToCamera[activeKey];
+            } else {
+                console.warn("Error, no scene node for " + activeKey);
+                return { x: 0, y: 0, z: 0 };
+            }
         }
         return {
             x: relativePosition[12]/relativePosition[15],
@@ -393,6 +406,10 @@ createNameSpace("realityEditor.sceneGraph");
     }
 
     function getGroundPlaneModelViewMatrix() {
+        let gpRX = getSceneNodeById(NAMES.GROUNDPLANE + TAGS.ROTATE_X);
+        if (gpRX) {
+            return gpRX.getMatrixRelativeTo(cameraNode);
+        }
         return relativeToCamera[NAMES.GROUNDPLANE];
     }
 

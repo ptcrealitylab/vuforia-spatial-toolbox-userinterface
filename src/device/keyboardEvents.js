@@ -9,6 +9,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
 (function(exports) {
     
     var callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/keyboardEvents');
+    let keyboardCurrentlyOpen = false;
 
     /**
      * Public init method sets up module and registers callbacks in other modules
@@ -99,6 +100,8 @@ createNameSpace("realityEditor.device.keyboardEvents");
         // closeKeyboard(); // this almost works (if you also add a setTimeout on the focus(), but it cancels the current iframe's focus, too)
 
         document.getElementById('keyboardInput').focus();
+
+        keyboardCurrentlyOpen = true;
     }
 
     /**
@@ -118,11 +121,18 @@ createNameSpace("realityEditor.device.keyboardEvents");
             document.getElementById('keyboardInput').removeAttribute('readonly');
             document.getElementById('keyboardInput').removeAttribute('disabled');
         }, 100);
+
+        keyboardCurrentlyOpen = false;
+    }
+
+    function isKeyboardActive() {
+        return keyboardCurrentlyOpen;
     }
 
     exports.initService = initService;
     exports.registerCallback = registerCallback;
     exports.openKeyboard = openKeyboard;
     exports.closeKeyboard = closeKeyboard;
+    exports.isKeyboardActive = isKeyboardActive;
 
 })(realityEditor.device.keyboardEvents);

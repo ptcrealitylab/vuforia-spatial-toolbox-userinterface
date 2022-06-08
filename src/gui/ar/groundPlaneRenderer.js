@@ -69,7 +69,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     function startVisualization() {
         // add a scene node to the groundPlane's rotateX sceneGraph node
         if (!realityEditor.sceneGraph.getVisualElement(elementName)) {
-            let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById('GROUNDPLANE');
+            let gpId = realityEditor.sceneGraph.NAMES.GROUNDPLANE;
+            let gpRxId = gpId + realityEditor.sceneGraph.TAGS.ROTATE_X;
+            let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpRxId);
+            if (!groundPlaneSceneNode) {
+                groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpId);
+            }
 
             // Ground plane must exist.. if it doesn't reschedule this to happen later
             if (!groundPlaneSceneNode) {
@@ -80,11 +85,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 return;
             }
             elementId = realityEditor.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
-
-            // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
-            // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-            // const groundplaneMesh = new THREE.Mesh( geometry, material );
-            // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
         }
 
         // create the DOM element that should visualize it and add it to the scene
@@ -101,7 +101,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorCenterLine = new THREE.Color(0, 0.3, 0.3);
             const colorGrid = new THREE.Color(0, 1, 1);
             gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
-            // threejsContainerObj.add( gridHelper );
+            gridHelper.name = 'groundPlaneVisualizer';
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 

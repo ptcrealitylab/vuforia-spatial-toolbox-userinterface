@@ -61,6 +61,8 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
+    const skeletonDedupId = Math.floor(Math.random() * 10000);
+
     function onOrientationSet() {
         // start the AR framework in native iOS
         realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
@@ -82,6 +84,9 @@ createNameSpace('realityEditor.app.callbacks');
         // subscribe to the camera matrix from the positional device tracker
         realityEditor.app.getCameraMatrixStream('realityEditor.app.callbacks.receiveCameraMatricesFromAR');
 
+        // Subscribe to poses if available
+        realityEditor.app.getPosesStream('realityEditor.app.callbacks.receivePoses');
+
         // add heartbeat listener for UDP object discovery
         realityEditor.app.getUDPMessages('realityEditor.app.callbacks.receivedUDPMessage');
 
@@ -91,6 +96,9 @@ createNameSpace('realityEditor.app.callbacks');
                 realityEditor.app.sendUDPMessage({action: 'ping'});
             }, 500 * i); // space out each message by 500ms
         }
+
+        // in case engine was started for the second time, add any targets back to engine from the first instance
+        realityEditor.app.targetDownloader.reinstatePreviouslyAddedTargets();
     }
 
     /**
@@ -122,9 +130,11 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} matrix
      */
     function receivedProjectionMatrix(matrix) {
-        console.log('got projection matrix!', matrix);
+        // console.log('got projection matrix!', matrix);
         realityEditor.gui.ar.setProjectionMatrix(matrix);
     }
+
+    exports.acceptUDPBeats = true;
 
     /**
      * Callback for realityEditor.app.getUDPMessages
@@ -134,6 +144,10 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {string|object} message
      */
     function receivedUDPMessage(message) {
+        if (!exports.acceptUDPBeats && !message.network) {
+            return;
+        }
+
         if (typeof message !== 'object') {
             try {
                 message = JSON.parse(message);
@@ -146,15 +160,17 @@ createNameSpace('realityEditor.app.callbacks');
         if (typeof message.id !== 'undefined' &&
             typeof message.ip !== 'undefined') {
 
-            if (typeof message.zone !== 'undefined' && message.zone !== '') {
-                if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
-                    // console.log('Added object from zone=' + message.zone);
+            if (!realityEditor.device.environment.variables.suppressObjectDetections) {
+                if (typeof message.zone !== 'undefined' && message.zone !== '') {
+                    if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
+                        // console.log('Added object from zone=' + message.zone);
+                        realityEditor.network.addHeartbeatObject(message);
+                    }
+
+                } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
+                    // console.log('Added object without zone');
                     realityEditor.network.addHeartbeatObject(message);
                 }
-
-            } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
-                // console.log('Added object without zone');
-                realityEditor.network.addHeartbeatObject(message);
             }
 
             // forward the action message to the network module, to synchronize state across multiple clients
@@ -178,6 +194,162 @@ createNameSpace('realityEditor.app.callbacks');
         globalStates.device = deviceName;
         console.log('The Reality Editor is loaded on a ' + globalStates.device);
         realityEditor.device.layout.adjustForDevice(deviceName);
+    }
+
+    /**
+     * Callback for realityEditor.app.getPosesStream
+     * @param {Array<Object>} poses
+     */
+    function receivePoses(poses) {
+        if (!window.rzvIo) {
+            // window.rzvIo = io('http://jhobin0ml.local:31337');
+            // window.rzvIo = io('http://10.10.10.166:31337');
+            // window.rzvIo = io('http://192.168.0.106:31337');
+            // window.rzvIo = io('http://192.168.50.98:31337');
+
+            let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+            if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+                return;
+            }
+            const wsPort = 31337;
+            const url = `ws://${bestWorldObject.ip}:${wsPort}/`;
+            // const url = 'ws://10.10.10.166:31337/';
+            window.rzvIo = new WebSocket(url);
+        }
+
+        let coolerPoses = [];
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!worldObject) {
+            console.warn('okay I give up');
+            return;
+        }
+        let worldObjectId = worldObject.objectId;
+        let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+        let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
+        if (!gpNode) {
+             gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+        }
+        let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
+        // let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName;
+        // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(persistentClientId);
+        let sceneNode = new realityEditor.sceneGraph.SceneNode('posePixel');
+        sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT'));
+        // realityEditor.sceneGraph.changeParent(sceneNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
+        // let gpNode = sceneNode.parent;
+        // if (!worldNode) {
+        //     worldNode = gpNode;
+        // }
+        let basisNode = worldNode; // gpNode;
+        basisNode.updateWorldMatrix();
+        cameraNode.updateWorldMatrix();
+        // cameraNode.setParent(gpNode);
+        // realityEditor.sceneGraph.changeParent(cameraNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
+        // if (!basisNode.parent) {
+        //     console.log('updating basis parent');
+        //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
+        // }
+
+        if (poses.length > 0) {
+            for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
+                let pointA = poses[start];
+                let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
+                let outlierPresent = false;
+                let minDepth = pointA.depth;
+                for (let other of others) {
+                    let pointB = poses[other];
+                    minDepth = Math.min(minDepth, pointB.depth);
+                }
+                for (let other of others) {
+                    let pointB = poses[other];
+                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
+                        outlierPresent = true;
+                    }
+                }
+                if (!outlierPresent) {
+                    continue;
+                }
+                for (let other of others) {
+                    let pointB = poses[other];
+                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
+                        pointB.depth = minDepth;
+                    }
+                }
+            }
+
+            let depths = Object.values(realityEditor.gui.poses.POSE_JOINTS_DEPTH);
+            for (let i = 0; i < depths.length; i++) {
+                poses[i].depth += depths[i];
+            }
+        }
+
+        for (let point of poses) {
+            // place it in front of the camera, facing towards the camera
+            // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
+
+            const THREE = realityEditor.gui.threejsScene.THREE;
+            let vec = new THREE.Vector3(0, 0, point.depth * 1000);
+            vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
+            let initialVehicleMatrix = [
+                -1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, -1, 0,
+                vec.x, vec.y, -vec.z, 1
+            ];
+
+            // needs to be flipped in some environments with different camera systems
+            if (realityEditor.device.environment.isCameraOrientationFlipped()) {
+                initialVehicleMatrix[0] *= -1;
+                initialVehicleMatrix[5] *= -1;
+                initialVehicleMatrix[10] *= -1;
+            }
+
+            sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+            sceneNode.updateWorldMatrix();
+
+            let mat = sceneNode.getMatrixRelativeTo(basisNode);
+
+            let worldX = mat[12];
+            let worldY = mat[13];
+            let worldZ = mat[14];
+            coolerPoses.push({
+                x: worldX / 1000,
+                y: worldY / 1000,
+                z: worldZ / 1000,
+            });
+        }
+
+        let initialVehicleMatrix = [
+            -1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, -1, 0,
+            0, 0, 0, 1
+        ];
+
+        sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
+        sceneNode.updateWorldMatrix();
+
+        let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
+        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: coolerPoses}], camera: cameraMat};
+
+        // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
+        //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
+        //         window.lastPosesLen = coolerPoses.length;
+        //     }
+        if (window.rzvIo.readyState === WebSocket.OPEN) {
+            window.rzvIo.send(JSON.stringify(Object.assign({
+                command: '/update/humanPoses'
+            }, msg)));
+        }
+        // }
+
+        let camX = cameraMat[12];
+        let camY = cameraMat[13];
+        let camZ = cameraMat[14];
+        realityEditor.gui.poses.drawPoses(poses, coolerPoses, {
+            x: camX / 1000,
+            y: camY / 1000,
+            z: camZ / 1000,
+        });
     }
 
     /**
@@ -292,7 +464,25 @@ createNameSpace('realityEditor.app.callbacks');
                             if (globalStates.useGroundPlane) {
                                 // let rotated = [];
                                 // realityEditor.gui.ar.utilities.multiplyMatrix(this.rotationXMatrix, worldOriginMatrix, rotated);
-                                realityEditor.sceneGraph.setGroundPlanePosition(worldOriginMatrix);
+                                let offset = [];
+                                let floorOffset = 0;
+                                try {
+                                    let navmesh = JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${worldObject.uuid}`));
+                                    floorOffset = navmesh.floorOffset * 1000;
+                                } catch (e) {
+                                    console.warn('No navmesh', worldObject, e);
+                                }
+                                let buffer = 100;
+                                floorOffset += buffer;
+                                let groundPlaneOffsetMatrix = [
+                                    1, 0, 0, 0,
+                                    0, 1, 0, 0,
+                                    0, 0, 1, 0,
+                                    0, floorOffset, 0, 1
+                                ];
+                                let worldObjectSceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObject.uuid);
+                                realityEditor.gui.ar.utilities.multiplyMatrix(groundPlaneOffsetMatrix, worldObjectSceneNode.localMatrix, offset);
+                                realityEditor.sceneGraph.setGroundPlanePosition(offset);
                             }
                         }
                     }
@@ -430,7 +620,13 @@ createNameSpace('realityEditor.app.callbacks');
                         realityEditor.sceneGraph.setGroundPlanePosition(worldObjectSceneNode.localMatrix);
                     } else {
                         let offset = [];
-                        let floorOffset = (-1.5009218056996663 + 0.77) * 1000; // meters -> mm // -1.5009218056996663
+                        let floorOffset = 0;
+                        try {
+                            let navmesh = JSON.parse(window.localStorage.getItem(`realityEditor.navmesh.${worldObject.uuid}`));
+                            floorOffset = navmesh.floorOffset * 1000;
+                        } catch (e) {
+                            console.warn('No navmesh', worldObject, e);
+                        }
                         let buffer = 100;
                         floorOffset += buffer;
                         let groundPlaneOffsetMatrix = [
@@ -483,6 +679,7 @@ createNameSpace('realityEditor.app.callbacks');
     exports.getDeviceReady = getDeviceReady;
     exports.receiveGroundPlaneMatricesFromAR = receiveGroundPlaneMatricesFromAR;
     exports.receiveMatricesFromAR = receiveMatricesFromAR;
+    exports.receivePoses = receivePoses;
     exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
 
     exports.startGroundPlaneTrackerIfNeeded = startGroundPlaneTrackerIfNeeded;
