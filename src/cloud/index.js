@@ -66,7 +66,6 @@ realityEditor.cloud.connectToCloud = function (){
     this.socket = new ToolSocket(socketURL,realityEditor.network.state.proxyNetwork , "web");
 
     this.socket.on('beat', function (route, body) {
-        console.log('received beat', route, body);
         // todo validate for heartbeat
       //  realityEditor.network.addHeartbeatObject(body);
         body.network = realityEditor.network.state.proxyNetwork;
