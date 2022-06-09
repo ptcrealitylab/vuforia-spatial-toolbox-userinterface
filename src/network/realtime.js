@@ -39,7 +39,11 @@ createNameSpace("realityEditor.network.realtime");
         }
 
         if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
-            desktopSocket = window._oldIo.connect();
+            if (window.location.host === 'toolboxedge.net') {
+                desktopSocket = io.connect();
+            } else {
+                desktopSocket = window._oldIo.connect();
+            }
         }
         setupServerSockets();
 
