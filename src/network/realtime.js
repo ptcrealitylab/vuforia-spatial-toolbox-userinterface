@@ -354,7 +354,7 @@ createNameSpace("realityEditor.network.realtime");
         }
 
         // console.log('sending camera matrix to', object, serverSocket);
-        serverSocket.emit('/cameraMatrix', JSON.stringify(messageBody));
+        serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/cameraMatrix'), JSON.stringify(messageBody));
     }
 
     class Update {
