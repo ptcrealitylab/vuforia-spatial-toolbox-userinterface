@@ -33,7 +33,9 @@ class ToolboxUtilities {
     }
 
     emitInt(e, ...args) {
-        console.log('emitInt', e, args);
+        if (e !== 'pong' && e !== 'beat') {
+            console.log('emitInt', e, args);
+        }
         if (!this.eCb[e]) {
             return;
         }
@@ -544,12 +546,17 @@ class MainToolboxSocket extends ToolboxUtilities {
 
             if (this.envNode) {
                 this.socket.onmessage = (msg) => {
-                    console.log('onmessage confirmed', msg);
                     that.router(msg.data);
                 };
             } else {
                 this.socket.onmessage = async (msg) => {
-                    console.log('onmessage2 confirmed', msg);
+                    try {
+                        let data = JSON.parse(msg.data);
+                        if (data.r !== 'action/ping' && data.r !== '/udp/beat') {
+                            console.log('onmessage2 confirmed', data);
+                        }
+                    } catch (e) {
+                    }
                     if (typeof msg.data !== "string")
                         that.router(new Uint8Array(await msg.data.arrayBuffer()));
                     else
