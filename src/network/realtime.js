@@ -325,7 +325,9 @@ createNameSpace("realityEditor.network.realtime");
             console.log('someone cares about subscribeToCameraMatrices', objectKey);
         }
         serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/subscribe/cameraMatrix'), JSON.stringify(messageBody));
+        serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
         serverSocket.on(realityEditor.network.getIoTitle(object.port, '/cameraMatrix'), callback);
+        serverSocket.on('/cameraMatrix', callback); // TODO(hobinjk): figure out why this is called instead of the iotitle one
     }
 
     let lastCamera = null;
