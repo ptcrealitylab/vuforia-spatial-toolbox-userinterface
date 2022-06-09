@@ -33,9 +33,9 @@ class ToolboxUtilities {
     }
 
     emitInt(e, ...args) {
-        if (e !== 'pong' && e !== 'beat') {
-            console.log('emitInt', e, args);
-        }
+        // if (e !== 'pong' && e !== 'beat') {
+        //     console.log('emitInt', e, args);
+        // }
         if (!this.eCb[e]) {
             return;
         }
@@ -552,9 +552,9 @@ class MainToolboxSocket extends ToolboxUtilities {
                 this.socket.onmessage = async (msg) => {
                     try {
                         let data = JSON.parse(msg.data);
-                        if (data.r !== 'action/ping' && data.r !== '/udp/beat') {
-                            console.log('onmessage2 confirmed', data);
-                        }
+                        // if (data.r !== 'action/ping' && data.r !== '/udp/beat') {
+                        //     console.log('onmessage2 confirmed', data);
+                        // }
                     } catch (e) {
                     }
                     if (typeof msg.data !== "string")
