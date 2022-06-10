@@ -791,7 +791,7 @@ body {
     -webkit-transform-style: preserve-3d;
     margin: 0;
     padding: 0;
-    z-index: 0;
+    z-index: 20;
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 20, 1);
     pointer-events: none;
 }
@@ -802,6 +802,7 @@ body {
     top: 0;
     background: transparent;
     pointer-events: none;
+    z-index: 5;
     transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1);
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1);
 }
