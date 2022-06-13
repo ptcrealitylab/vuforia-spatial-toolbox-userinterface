@@ -14,6 +14,46 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let allConnectedCameras = {};
     let isCameraSubscriptionActiveForObject = {};
 
+    const wireVertex = `
+        attribute vec3 center;
+        varying vec3 vCenter;
+        void main() {
+            vCenter = center;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `;
+
+    const wireFragment = `
+        uniform float thickness;
+        uniform vec3 color;
+        varying vec3 vCenter;
+
+        void main() {
+            vec3 afwidth = fwidth(vCenter.xyz);
+            vec3 edge3 = smoothstep((thickness - 1.0) * afwidth, thickness * afwidth, vCenter.xyz);
+            float edge = 1.0 - min(min(edge3.x, edge3.y), edge3.z);
+            gl_FragColor.rgb = gl_FrontFacing ? color : (color * 0.5);
+            gl_FragColor.a = edge;
+        }
+    `;
+
+    const wireMat = new THREE.ShaderMaterial({
+        uniforms: {
+            thickness: {
+                value: 5.0,
+            },
+            color: {
+                value: new THREE.Color(0.9, 0.9, 1.0),
+            },
+        },
+        vertexShader: wireVertex,
+        fragmentShader: wireFragment,
+        side: THREE.DoubleSide,
+        alphaToCoverage: true,
+    });
+    wireMat.extensions.derivatives = true;
+    window.wireMat = wireMat;
+
     function initService() {
         // if (!realityEditor.device.desktopAdapter.isDesktop()) { return; }
         console.log('multiclientUI it begins');
@@ -68,9 +108,65 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     // each client gets a random but consistent color based on their editorId
                     let id = Math.abs(hashCode(editorId));
                     const color = `hsl(${(id % Math.PI) * 360 / Math.PI}, 100%, 50%)`;
-                    const geo = new THREE.BoxGeometry(150, 150, 150);
-                    const mat = new THREE.MeshBasicMaterial({color: color});
-                    existingMesh = new THREE.Mesh(geo, mat);
+                    const geo = new THREE.IcosahedronBufferGeometry(100);
+                    geo.deleteAttribute('normal');
+                    geo.deleteAttribute('uv');
+
+                    const vectors = [
+                      new THREE.Vector3(1, 0, 0),
+                      new THREE.Vector3(0, 1, 0),
+                      new THREE.Vector3(0, 0, 1)
+                    ];
+
+                    const position = geo.attributes.position;
+                    const centers = new Float32Array(position.count * 3);
+
+                    for (let i = 0, l = position.count; i < l; i ++) {
+                      vectors[i % 3].toArray(centers, i * 3);
+                    }
+
+                    geo.setAttribute('center', new THREE.BufferAttribute(centers, 3));
+
+                    const mat = wireMat.clone();
+                    mat.uniforms.color.value = new THREE.Color(color);
+                    const mesh = new THREE.Mesh(geo, mat);
+
+                    const fov = 0.1 * Math.PI;
+                    const points = [
+                      // new THREE.Vector2(100 * Math.sin(fov), 100 * Math.cos(fov)),
+                      new THREE.Vector2(0, 0),
+                      new THREE.Vector2(15 * 1000 * Math.sin(fov), 15 * 1000 * Math.cos(fov)),
+                    ];
+                    const coneGeo = new THREE.LatheGeometry(points, 4);
+                    const coneMesh = new THREE.Mesh(
+                      coneGeo,
+                      new THREE.MeshBasicMaterial({
+                        color: new THREE.Color(color),
+                        transparent: true,
+                        opacity: 0.05,
+                      })
+                    );
+                    coneMesh.rotation.x = -Math.PI / 2;
+                    coneMesh.rotation.y = Math.PI / 4;
+                    coneMesh.position.z = 0; // 7.5 * 1000;
+
+                    const coneMesh2 = new THREE.Mesh(
+                      coneGeo,
+                      new THREE.MeshBasicMaterial({
+                        color: new THREE.Color(color),
+                        wireframe: true,
+                      })
+                    );
+                    coneMesh2.rotation.x = -Math.PI / 2;
+                    coneMesh2.rotation.y = Math.PI / 4;
+                    coneMesh2.position.z = 0; // 7.5 * 1000;
+
+
+                    existingMesh = new THREE.Group();
+                    existingMesh.add(coneMesh);
+                    existingMesh.add(coneMesh2);
+                    existingMesh.add(mesh);
+
                     existingMesh.name = 'camera_' + editorId;
                     existingMesh.matrixAutoUpdate = false;
                     realityEditor.gui.threejsScene.addToScene(existingMesh);
