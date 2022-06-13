@@ -44,6 +44,7 @@ createNameSpace("realityEditor.device.environment");
         distanceScaleFactor: 1, // 10
         newFrameDistanceMultiplier: 1, // 10
         localServerPort: 49369, // the port where a local vuforia-spatial-edge-server can be expected
+        screenTopOffset: 0, // if there's a menubar on the top, increase this
         // matrices
         initialPocketToolRotation: null,
         supportsAreaTargetCapture: true,
