@@ -32,6 +32,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             vec3 afwidth = fwidth(vCenter.xyz);
             vec3 edge3 = smoothstep((thickness - 1.0) * afwidth, thickness * afwidth, vCenter.xyz);
             float edge = 1.0 - min(min(edge3.x, edge3.y), edge3.z);
+            if (edge < 0.99) {
+                discard;
+            }
             gl_FragColor.rgb = gl_FrontFacing ? color : (color * 0.5);
             gl_FragColor.a = edge;
         }
@@ -49,7 +52,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         vertexShader: wireVertex,
         fragmentShader: wireFragment,
         side: THREE.DoubleSide,
-        alphaToCoverage: true,
     });
     wireMat.extensions.derivatives = true;
     window.wireMat = wireMat;

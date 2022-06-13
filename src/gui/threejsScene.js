@@ -32,7 +32,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 
     function initService() {
         // create a fullscreen webgl renderer for the threejs content and add to the dom
-        renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+        renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( rendererWidth, rendererHeight );
         renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
