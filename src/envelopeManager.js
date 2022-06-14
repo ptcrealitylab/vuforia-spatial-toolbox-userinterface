@@ -212,6 +212,7 @@ createNameSpace("realityEditor.envelopeManager");
                 exitButton = document.createElement('img');
                 exitButton.src = 'svg/menu/exit.svg';
                 exitButton.id = 'exitEnvelopeButton';
+                exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
                 document.body.appendChild(exitButton);
                 
                 exitButton.addEventListener('pointerup', function() {
