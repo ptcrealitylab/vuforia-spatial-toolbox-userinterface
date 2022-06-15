@@ -88,7 +88,10 @@ createNameSpace("realityEditor.network.realtime");
      */
     function addServerForObjectIfNeeded(object, _objectKey) {
         
-        if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+        // if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+        // Note that we still create a localhost socket even though we don't
+        // subscribe to it since it will be used to send messages to the local
+        // server
 
         var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
         var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
@@ -96,6 +99,7 @@ createNameSpace("realityEditor.network.realtime");
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
             realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress, function(_socket) {
+                if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
                 sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
                 addServerUpdateListener(serverAddress);
             });
@@ -468,9 +472,9 @@ createNameSpace("realityEditor.network.realtime");
         if (typeof objectSocketCache[objectKey] === 'undefined') {
             var object = realityEditor.getObject(objectKey);
             var serverIP = object.ip;
-            if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
-                return null;
-            }
+            // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
+            //     return null;
+            // }
             var possibleSocketIPs = getSocketIPsForSet('realityServers');
             var foundSocket = null;
             possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
