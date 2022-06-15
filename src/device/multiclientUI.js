@@ -32,7 +32,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             vec3 afwidth = fwidth(vCenter.xyz);
             vec3 edge3 = smoothstep((thickness - 1.0) * afwidth, thickness * afwidth, vCenter.xyz);
             float edge = 1.0 - min(min(edge3.x, edge3.y), edge3.z);
-            if (edge < 0.99) {
+            if (edge < 0.5) {
                 discard;
             }
             gl_FragColor.rgb = gl_FrontFacing ? color : (color * 0.5);
@@ -133,24 +133,29 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     mat.uniforms.color.value = new THREE.Color(color);
                     const mesh = new THREE.Mesh(geo, mat);
 
-                    const fov = 0.1 * Math.PI;
-                    const points = [
-                      // new THREE.Vector2(100 * Math.sin(fov), 100 * Math.cos(fov)),
-                      new THREE.Vector2(0, 0),
-                      new THREE.Vector2(15 * 1000 * Math.sin(fov), 15 * 1000 * Math.cos(fov)),
-                    ];
-                    const coneGeo = new THREE.LatheGeometry(points, 4);
+                    // const fov = 0.1 * Math.PI;
+                    // const points = [
+                    //   // new THREE.Vector2(100 * Math.sin(fov), 100 * Math.cos(fov)),
+                    //   new THREE.Vector2(0, 0),
+                    //   new THREE.Vector2(15 * 1000 * Math.sin(fov), 15 * 1000 * Math.cos(fov)),
+                    // ];
+                    // const coneGeo = new THREE.LatheGeometry(points, 4);
+                    const coneGeo = new THREE.ConeGeometry(7.5 * 1000, 15 * 1000, 4);
                     const coneMesh = new THREE.Mesh(
                       coneGeo,
                       new THREE.MeshBasicMaterial({
                         color: new THREE.Color(color),
                         transparent: true,
                         opacity: 0.05,
+                        side: THREE.DoubleSide,
                       })
                     );
-                    coneMesh.rotation.x = -Math.PI / 2;
+                    // coneMesh.rotation.x = -Math.PI / 2;
+                    // coneMesh.rotation.y = Math.PI / 4;
+                    // coneMesh.position.z = 0; // 7.5 * 1000;
+                    coneMesh.rotation.x = Math.PI / 2;
                     coneMesh.rotation.y = Math.PI / 4;
-                    coneMesh.position.z = 0; // 7.5 * 1000;
+                    coneMesh.position.z = -7.5 * 1000;
 
                     const coneMesh2 = new THREE.Mesh(
                       coneGeo,
