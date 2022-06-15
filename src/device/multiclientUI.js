@@ -58,14 +58,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     function initService() {
         // if (!realityEditor.device.desktopAdapter.isDesktop()) { return; }
-        console.log('multiclientUI it begins');
-
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             setTimeout(function() {
                 setupWorldSocketSubscriptionsIfNeeded(objectKey);
             }, 100); // give time for bestWorldObject to update before checking
         });
-
 
         update();
     }
@@ -86,7 +83,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function onCameraMatrix(data) {
-        console.log('multiclientUI onCameraMatrix', data);
         let msgData = JSON.parse(data);
         if (typeof msgData.cameraMatrix !== 'undefined' && typeof msgData.editorId !== 'undefined') {
             allConnectedCameras[msgData.editorId] = msgData.cameraMatrix;

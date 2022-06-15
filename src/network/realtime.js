@@ -286,7 +286,7 @@ createNameSpace("realityEditor.network.realtime");
     function addServerSocketMessageListener(serverAddress, messageName, callback) {
         sockets['realityServers'][serverAddress].on(messageName, function() {
             if (DEBUG) {
-                console.log('addDesktopSocketMessageListener received', messageName, Array.from(arguments));
+                console.log('addServerSocketMessageListener received', messageName, Array.from(arguments));
             }
             callback.apply(this, arguments);
         });
@@ -314,15 +314,19 @@ createNameSpace("realityEditor.network.realtime");
 
     function subscribeToCameraMatrices(objectKey, callback) {
         let object = realityEditor.getObject(objectKey);
-        if (!object) { return; }
+        if (!object) {
+            return;
+        }
         let serverSocket = getServerSocketForObject(objectKey);
-        if (!serverSocket) { return; }
+        if (!serverSocket) {
+            return;
+        }
         let messageBody = {
             editorId: globalStates.tempUuid
         };
 
         if (DEBUG) {
-            console.log('someone cares about subscribeToCameraMatrices', objectKey);
+            console.log('someone cares about subscribeToCameraMatrices', objectKey, object);
         }
         serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/subscribe/cameraMatrix'), JSON.stringify(messageBody));
         serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
