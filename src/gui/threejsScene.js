@@ -37,7 +37,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         renderer.setSize( rendererWidth, rendererHeight );
         renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
         document.body.appendChild( renderer.domElement );
-        camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
+        camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 ); // FoV gets overwritten by projection matrix
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 

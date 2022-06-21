@@ -2449,6 +2449,19 @@ realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
         let objectKey = msgContent.foundObjectsButton.snapAnchorToScreen;
         realityEditor.gui.ar.anchors.snapAnchorToScreen(objectKey);
     }
+    
+    if (msgContent.foundObjectsButton.deleteObject) {
+        let objectKey = msgContent.foundObjectsButton.deleteObject;
+        console.log('delete object: ' + objectKey);
+
+        let object = realityEditor.getObject(objectKey);
+        if (!object) { return; }
+        
+        let url = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/');
+        this.postData(url, { action: 'delete', name: object.name, frame: '' }, (err, response) => {
+            console.log(err, response);
+        });
+    }
 };
 
 /**

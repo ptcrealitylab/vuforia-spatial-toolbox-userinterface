@@ -165,6 +165,9 @@
                 <div class="occlusionText" hidden>
                     <span>Occlusion Active</span>
                 </div>
+                <div>
+                    <span class="objectButton deleteButton">Delete Object</span>
+                </div>
             </div>
         </div>
     </template>
@@ -324,9 +327,12 @@
         if (!buttonRow) {
             buttonRow = document.getElementsByTagName('template')['buttonRow'].content.cloneNode(true);
 
+            let needsDeleteButton = false;
             // all objects get a locate button to navigate to it, but it will be greyed out if not localized
             if (isLocalized === false) { // explicit check for false so regular objects (undefined) not affected
                 buttonRow.querySelector('.locateButton').classList.add('buttonGreyedOut');
+                needsDeleteButton = true;
+                
             } else {
                 buttonRow.querySelector('.locateButton').classList.remove('buttonGreyedOut');
                 buttonRow.querySelector('.locateButton').addEventListener('pointerup', function() {
@@ -340,6 +346,25 @@
 
                     sendButtonMessage(message); // actually triggers the locate action in the app
                 });
+                
+                if (!isLocalized) {
+                    needsDeleteButton = true;
+                }
+            }
+            
+            if (needsDeleteButton && objectKey === '_WORLD_local') {
+                needsDeleteButton = false;
+            }
+            
+            if (needsDeleteButton) {
+                buttonRow.querySelector('.deleteButton').addEventListener('pointerup', function() {
+                    let message = {
+                        deleteObject: objectKey
+                    };
+                    sendButtonMessage(message); // actually triggers the locate action in the app
+                });
+            } else {
+                buttonRow.querySelector('.deleteButton').remove();
             }
 
             // anchor objects get button to snap to screen
