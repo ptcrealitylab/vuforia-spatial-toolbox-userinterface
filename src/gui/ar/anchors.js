@@ -34,7 +34,8 @@ createNameSpace("realityEditor.gui.ar.anchors");
      */
     function isAnchorHeartbeat(heartbeat) {
         let checksumIsZero = heartbeat.tcs === 0;
-        let jsonIsAnchor = realityEditor.getObject(heartbeat.id).isAnchor;
+        let object = realityEditor.getObject(heartbeat.id);
+        let jsonIsAnchor = object ? object.isAnchor : false;
         return checksumIsZero && jsonIsAnchor;
     }
 

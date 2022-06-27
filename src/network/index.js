@@ -909,7 +909,14 @@ realityEditor.network.onAction = function (action) {
         if (thisAction.reloadObject.object in objects) {
 
             let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadObject.object].ip, realityEditor.network.getPort(objects[thisAction.reloadObject.object]), '/object/' + thisAction.reloadObject.object);
+
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
+
+                if (!res) {
+                    delete objects[objectKey];
+                    // TODO: perhaps we need to add onObjectDeleted callbacks that would be triggered here
+                    return;
+                }
 
                 if (objects[objectKey].integerVersion < 170) {
                     if (typeof res.objectValues !== "undefined") {
