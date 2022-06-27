@@ -373,6 +373,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         
         this.activeObject = realityEditor.getObject(objectKey);
         if (!this.activeObject) { continue; }
+
+        // for now, totally ignore avatar objects in the rendering engine
+        // TODO: if we want to render tools relative to each avatar, we can remove this and add them to the visibleObjects list
+        if (this.activeObject.type === 'avatar') { continue; }
         
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
