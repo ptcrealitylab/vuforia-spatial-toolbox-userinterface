@@ -176,8 +176,6 @@ var globalStates = {
     interface: "gui",
 
     useGroundPlane: false,
-    
-    defaultClientName: '_HUMAN_device',
     defaultFullscreenFrameZ: 100
 };
 

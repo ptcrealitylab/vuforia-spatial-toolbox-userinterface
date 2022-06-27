@@ -516,11 +516,14 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
     if (beat && beat.id) {
         if (!objects[beat.id]) {
+            console.log('got heartbeat for new object ' + beat.id);
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
+                    console.log('instantiating new object with server data' + beat.id, msg);
+                    
                     // add the object
                     objects[objectKey] = msg;
                     objects[objectKey].ip = beat.ip;

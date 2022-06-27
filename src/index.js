@@ -134,7 +134,7 @@ var realityEditor = realityEditor || {
     envelopeManager: {},
     moduleCallbacks: {},
     worldObjects: {},
-    humanObjects: {}
+    avatarObjects: {}
 };
 
 /**
