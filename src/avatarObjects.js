@@ -51,9 +51,8 @@ createNameSpace("realityEditor.avatarObjects");
                 // add to the internal world objects
                 if (typeof avatarObjects[objectKey] === 'undefined') {
                     avatarObjects[objectKey] = object;
+                    // TODO: further initialize discovered avatar objects?
                 }
-                // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
-                initializeAvatarObject(object);
             }
         });
 
@@ -94,25 +93,47 @@ createNameSpace("realityEditor.avatarObjects");
 
             avatarSceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
             avatarSceneNode.updateWorldMatrix();
+            // avatarSceneNode.needsUploadToServer = true;
+            
 
-            let dontBroadcast = true;
+            let worldObjectId = realityEditor.sceneGraph.getWorldId();
+            let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+            let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
+
+            if (avatarObject.matrix.length !== 16) { avatarObject.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
+            let totalDifference = sumOfElementDifferences(avatarObject.matrix, relativeMatrix);
+            if (totalDifference < 0.00001) {
+                return; // don't update if matrix hasn't really changed
+            }
+
+            // already gets uploaded to server but isn't set locally yet
+            avatarObject.matrix = relativeMatrix;
+
+            console.log('avatar position = ' + avatarSceneNode.worldMatrix);
+
+            // sceneGraph uploads it to server every 1 second via REST, but we can stream updates in realtime here
+            let dontBroadcast = false;
             if (!dontBroadcast) {
-
                 // if it's an object, post object position relative to a world object
-                let worldObjectId = realityEditor.sceneGraph.getWorldId();
-                let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-                let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
+                // let worldObjectId = realityEditor.sceneGraph.getWorldId();
+                // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+                // let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
                 realityEditor.network.realtime.broadcastUpdate(initializedId, null, null, 'matrix', relativeMatrix);
             }
         });
     }
 
-    function getAvatarName() {
-        return idPrefix + globalStates.tempUuid;
+    function sumOfElementDifferences(M1, M2) {
+        // assumes M1 and M2 are of equal length
+        let sum = 0;
+        for (let i = 0; i < M1.length; i++) {
+            sum += Math.abs(M1[i] - M2[i]);
+        }
+        return sum;
     }
 
-    function initializeAvatarObject(_object) {
-        console.log('todo: implement initializeAvatarObject');
+    function getAvatarName() {
+        return idPrefix + globalStates.tempUuid;
     }
 
     /**
