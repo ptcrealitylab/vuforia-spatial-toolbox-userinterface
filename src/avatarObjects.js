@@ -237,7 +237,7 @@ createNameSpace("realityEditor.avatarObjects");
         if (!worldObject) { return; }
 
         let postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
-        let params = new URLSearchParams({action: 'new', name: clientId, isAvatar: true});
+        let params = new URLSearchParams({action: 'new', name: clientId, isAvatar: true, worldId: worldId});
         fetch(postUrl, {
             method: 'POST',
             body: params
