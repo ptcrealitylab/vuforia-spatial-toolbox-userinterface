@@ -11,6 +11,7 @@ createNameSpace("realityEditor.avatarObjects");
 
     const idPrefix = '_AVATAR_'
     let initializedId = null;
+    let myAvatarObject = null;
     let avatarObjectInitialized = false;
     var avatarObjects = {}; // avatar objects are stored in the regular global "objects" variable, but also in here
 
@@ -26,7 +27,7 @@ createNameSpace("realityEditor.avatarObjects");
             }
 
             console.log('avatarObjects module onLocalizedWithinWorld: ' + worldObjectKey);
-            
+
             let thisAvatarName = getAvatarName();
 
             // check if avatarObject for this device exists on server?
@@ -47,14 +48,31 @@ createNameSpace("realityEditor.avatarObjects");
 
         // when an object is detected, check if we need to add a world object for its server
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
+            console.log('avatar: handling newly loaded object');
+            handleDiscoveredObject(object, objectKey);
+        });
+
+        for (let [key, object] of Object.entries(objects)) {
+            console.log('avatar: handling previously loaded object');
+            handleDiscoveredObject(object, key);
+        }
+
+        function handleDiscoveredObject(object, objectKey) {
             if (object.type === 'avatar') {
                 // add to the internal world objects
                 if (typeof avatarObjects[objectKey] === 'undefined') {
                     avatarObjects[objectKey] = object;
                     // TODO: further initialize discovered avatar objects?
+
+                    if (objectKey === initializedId) {
+                        myAvatarObject = object;
+                        onMyAvatarInitialized();
+                    } else {
+                        onOtherAvatarInitialized(object);
+                    }
                 }
             }
-        });
+        }
 
         realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
             if (!avatarObjectInitialized || globalStates.freezeButtonState) { return; }
@@ -94,7 +112,7 @@ createNameSpace("realityEditor.avatarObjects");
             avatarSceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
             avatarSceneNode.updateWorldMatrix();
             // avatarSceneNode.needsUploadToServer = true;
-            
+
 
             let worldObjectId = realityEditor.sceneGraph.getWorldId();
             let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
@@ -109,7 +127,7 @@ createNameSpace("realityEditor.avatarObjects");
             // already gets uploaded to server but isn't set locally yet
             avatarObject.matrix = relativeMatrix;
 
-            console.log('avatar position = ' + avatarSceneNode.worldMatrix);
+            // console.log('avatar position = ' + avatarSceneNode.worldMatrix);
 
             // sceneGraph uploads it to server every 1 second via REST, but we can stream updates in realtime here
             let dontBroadcast = false;
@@ -136,6 +154,78 @@ createNameSpace("realityEditor.avatarObjects");
         return idPrefix + globalStates.tempUuid;
     }
 
+    function onOtherAvatarInitialized(thatAvatarObject) {
+        const TOOL_NAME = 'Avatar'; // these need to match the way the server intializes the tool and node
+        const NODE_NAME = 'storage';
+
+        let avatarObjectKey = thatAvatarObject.objectId;
+        let avatarFrameKey = Object.keys(thatAvatarObject.frames).find(name => name.includes(TOOL_NAME));
+        let thatAvatarTool = realityEditor.getFrame(avatarObjectKey, avatarFrameKey);
+        let avatarNodeKey = Object.keys(thatAvatarTool.nodes).find(name => name.includes(NODE_NAME));
+
+        console.log('subscribe to publicData from ' + avatarObjectKey);
+
+        realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', (msg) => {
+            let msgContent = JSON.parse(msg);
+            console.log('avatarObjects.js received publicData', msgContent);
+        });
+    }
+
+    function onMyAvatarInitialized() {
+        console.log('add touch subscriptions to write screenX, screenY to publicData');
+
+        const TOOL_NAME = 'Avatar'; // these need to match the way the server intializes the tool and node
+        const NODE_NAME = 'storage';
+
+        let avatarObjectKey = myAvatarObject.objectId;
+        let avatarFrameKey = Object.keys(myAvatarObject.frames).find(name => name.includes(TOOL_NAME));
+        let myAvatarTool = realityEditor.getFrame(avatarObjectKey, avatarFrameKey);
+        let avatarNodeKey = Object.keys(myAvatarTool.nodes).find(name => name.includes(NODE_NAME));
+
+        let isPointerDown = false;
+        document.body.addEventListener('pointerdown', (e) => {
+            console.log('document.body.pointerdown', e.pageX, e.pageY);
+            isPointerDown = true;
+
+            let touchState = {
+                isPointerDown: isPointerDown,
+                screenX: e.pageX,
+                screenY: e.pageY
+            }
+
+            realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
+        });
+
+        let pointerUpHandler = (e) => {
+            console.log('document.body.pointerup', e.pageX, e.pageY);
+            isPointerDown = false;
+
+            let touchState = {
+                isPointerDown: isPointerDown,
+                screenX: e.pageX,
+                screenY: e.pageY
+            }
+
+            realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
+        }
+        document.body.addEventListener('pointerup', pointerUpHandler);
+        document.body.addEventListener('pointercancel', pointerUpHandler);
+        document.body.addEventListener('pointerleave', pointerUpHandler);
+
+        document.body.addEventListener('pointermove', (e) => {
+            if (!isPointerDown) { return; }
+            console.log('document.body.pointermove', e.pageX, e.pageY);
+
+            let touchState = {
+                isPointerDown: isPointerDown,
+                screenX: e.pageX,
+                screenY: e.pageY
+            }
+
+            realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
+        });
+    }
+
     /**
      * Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
      * @param {string} worldId
@@ -152,11 +242,11 @@ createNameSpace("realityEditor.avatarObjects");
             method: 'POST',
             body: params
         }).then(response => response.json())
-          .then((data) => {
-            console.log('added new avatar object', data);
-            initializedId = data.id;
-            avatarObjectInitialized = true;
-        });
+            .then((data) => {
+                console.log('added new avatar object', data);
+                initializedId = data.id;
+                avatarObjectInitialized = true;
+            });
         return false;
     }
 
