@@ -13,7 +13,9 @@ createNameSpace("realityEditor.avatarObjects");
     let initializedId = null;
     let myAvatarObject = null;
     let avatarObjectInitialized = false;
-    var avatarObjects = {}; // avatar objects are stored in the regular global "objects" variable, but also in here
+    let avatarObjects = {}; // avatar objects are stored in the regular global "objects" variable, but also in here
+    let allAvatarStates = {};
+    let avatarMeshes = {};
 
     /**
      * Init avatar object module
@@ -77,6 +79,111 @@ createNameSpace("realityEditor.avatarObjects");
         realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
             if (!avatarObjectInitialized || globalStates.freezeButtonState) { return; }
 
+            try {
+                renderOtherAvatars();
+            } catch (e) {
+                console.warn('error rendering other avatars', e);
+            }
+            
+            try {
+                updateMyAvatar();
+            } catch (e) {
+                console.warn('error updating my avatar', e);
+            }
+        });
+
+        function renderOtherAvatars() {
+            for (const [objectKey, avatarState] of Object.entries(allAvatarStates)) {
+                let touchState = avatarState.publicData.touchState;
+                if (!touchState) { continue; }
+                
+                if (touchState.isPointerDown) {
+                    // show a threejs cube at the avatar's matrix
+                    if (typeof avatarMeshes[objectKey] === 'undefined') {
+                        // const THREE = realityEditor.gui.threejsScene.THREE;
+
+                        avatarMeshes[objectKey] = {
+                            device: boxMesh('#ffff00', objectKey + 'device'),
+                            pointer: boxMesh('#ff00ff', objectKey + 'pointer')
+                            // beam: cylinderMesh(THREE.Vector3(0, 0, 0), THREE.Vector3(1000, 0, 0), '#ff00ff')
+                        }
+                        avatarMeshes[objectKey].device.matrixAutoUpdate = false;
+                        // avatarMeshes[objectKey].pointer.matrixAutoUpdate = true; // true by default
+                        realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].device);
+                        realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].pointer);
+                    }
+
+                    avatarMeshes[objectKey].device.visible = true;
+                    avatarMeshes[objectKey].pointer.visible = true;
+
+                    // let thatAvatarObject = realityEditor.getObject(objectKey);
+                    // TODO: check if sceneGraph is updating the avatar matrices even though they're not part of the visibleObjects
+                    let thatAvatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                    // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                    let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                    let relativeMatrix = thatAvatarSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                    // let matrix = thatAvatarSceneNode.worldMatrix;
+                    // avatarMeshes[objectKey].position.set(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
+
+                    realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].device.matrix, relativeMatrix);
+                    
+                    // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].pointer.matrix)
+                    avatarMeshes[objectKey].pointer.position.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+
+                } else {
+                    // hide the three.js cube
+                    if (avatarMeshes[objectKey]) {
+                        avatarMeshes[objectKey].device.visible = false;
+                        avatarMeshes[objectKey].pointer.visible = false;
+                    }
+                }
+            }
+            
+            // allAvatarStates._AVATAR_Dk1mqddd_Qctecqyvrj1.publicData.touchState.isPointerDown
+        }
+
+        const boxMesh = function(color, name) {
+            const THREE = realityEditor.gui.threejsScene.THREE;
+
+            const geo = new THREE.BoxGeometry(100, 100, 100);
+            const mat = new THREE.MeshBasicMaterial({color: color});
+            const box = new THREE.Mesh(geo, mat);
+            box.name = name;
+
+            return box;
+        }
+
+        const cylinderMesh = function (pointX, pointY, color) {
+            const THREE = realityEditor.gui.threejsScene.THREE;
+            // edge from X to Y
+            console.log(pointY, pointX);
+            let length = 0;
+            if (pointX && pointY) {
+                let direction = new THREE.Vector3().subVectors(pointY, pointX);
+                length = direction.length();
+            }
+            const material = new THREE.MeshBasicMaterial({ color: (color || 0xff0000) });
+            // Make the geometry (of "direction" length)
+            var geometry = new THREE.CylinderGeometry(10, 10, length, 6, 2, false);
+            // shift it so one end rests on the origin
+            geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, length / 2, 0));
+            // rotate it the right way for lookAt to work
+            geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
+            // Make a mesh with the geometry
+            var mesh = new THREE.Mesh(geometry, material);
+            if (pointX) {
+                // Position it where we want
+                mesh.position.copy(pointX);
+            }
+            if (pointY) {
+                // And make it point to where we want
+                mesh.lookAt(pointY);
+            }
+
+            return mesh;
+        }
+
+        function updateMyAvatar() {
             // update the avatar object to match the camera position each frame (if it exists)
             let avatarObject = realityEditor.getObject(initializedId);
             if (!avatarObject) { return; }
@@ -95,24 +202,9 @@ createNameSpace("realityEditor.avatarObjects");
                 0, 0, -1 * distanceInFrontOfCamera, 1
             ];
 
-            // let additionalRotation = realityEditor.device.environment.getInitialPocketToolRotation();
-            // if (additionalRotation) {
-            //     let temp = [];
-            //     realityEditor.gui.ar.utilities.multiplyMatrix(additionalRotation, initialVehicleMatrix, temp);
-            //     initialVehicleMatrix = temp;
-            // }
-            //
-            // // needs to be flipped in some environments with different camera systems
-            // if (realityEditor.device.environment.isCameraOrientationFlipped()) {
-            //     initialVehicleMatrix[0] *= -1;
-            //     initialVehicleMatrix[5] *= -1;
-            //     initialVehicleMatrix[10] *= -1;
-            // }
-
             avatarSceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
             avatarSceneNode.updateWorldMatrix();
             // avatarSceneNode.needsUploadToServer = true;
-
 
             let worldObjectId = realityEditor.sceneGraph.getWorldId();
             let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
@@ -132,13 +224,9 @@ createNameSpace("realityEditor.avatarObjects");
             // sceneGraph uploads it to server every 1 second via REST, but we can stream updates in realtime here
             let dontBroadcast = false;
             if (!dontBroadcast) {
-                // if it's an object, post object position relative to a world object
-                // let worldObjectId = realityEditor.sceneGraph.getWorldId();
-                // let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-                // let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
                 realityEditor.network.realtime.broadcastUpdate(initializedId, null, null, 'matrix', relativeMatrix);
             }
-        });
+        }
     }
 
     function sumOfElementDifferences(M1, M2) {
@@ -168,7 +256,46 @@ createNameSpace("realityEditor.avatarObjects");
         realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', (msg) => {
             let msgContent = JSON.parse(msg);
             console.log('avatarObjects.js received publicData', msgContent);
+            
+            allAvatarStates[avatarObjectKey] = msgContent;
         });
+    }
+
+    let cachedWorldObject = null;
+    let cachedOcclusionObject = null;
+    
+    function getRaycastCoordinates(screenX, screenY) {
+        let worldIntersectPoint = null;
+        // let cameraWorldPoint = null;
+
+        if (!cachedWorldObject) {
+            cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        }
+        if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+            cachedWorldObject = null; // don't accept the local world object
+        }
+        if (cachedWorldObject && !cachedOcclusionObject) {
+            cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
+        }
+
+        if (cachedWorldObject && cachedOcclusionObject) {
+            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [cachedOcclusionObject]);
+            if (raycastIntersects.length > 0) {
+                // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
+                let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                inverseGroundPlaneMatrix.invert();
+                raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+                worldIntersectPoint = raycastIntersects[0].point;
+
+                // // calculate the camera position in the correct coordinate system
+                // let cameraPos = realityEditor.sceneGraph.getWorldPosition(realityEditor.sceneGraph.NAMES.CAMERA);
+                // cameraWorldPoint = new realityEditor.gui.threejsScene.THREE.Vector3(cameraPos.x, cameraPos.y, cameraPos.z);
+                // // cameraWorldPoint.applyMatrix4(inverseGroundPlaneMatrix);
+            }
+        }
+
+        return worldIntersectPoint;
     }
 
     function onMyAvatarInitialized() {
@@ -190,7 +317,8 @@ createNameSpace("realityEditor.avatarObjects");
             let touchState = {
                 isPointerDown: isPointerDown,
                 screenX: e.pageX,
-                screenY: e.pageY
+                screenY: e.pageY,
+                worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY)
             }
 
             realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
@@ -203,7 +331,8 @@ createNameSpace("realityEditor.avatarObjects");
             let touchState = {
                 isPointerDown: isPointerDown,
                 screenX: e.pageX,
-                screenY: e.pageY
+                screenY: e.pageY,
+                worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY)
             }
 
             realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
@@ -219,7 +348,8 @@ createNameSpace("realityEditor.avatarObjects");
             let touchState = {
                 isPointerDown: isPointerDown,
                 screenX: e.pageX,
-                screenY: e.pageY
+                screenY: e.pageY,
+                worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY)
             }
 
             realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
