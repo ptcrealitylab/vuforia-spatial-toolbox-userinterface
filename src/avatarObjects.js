@@ -98,23 +98,28 @@ createNameSpace("realityEditor.avatarObjects");
                 if (!touchState) { continue; }
                 
                 if (touchState.isPointerDown) {
+                    const THREE = realityEditor.gui.threejsScene.THREE;
+
                     // show a threejs cube at the avatar's matrix
                     if (typeof avatarMeshes[objectKey] === 'undefined') {
-                        // const THREE = realityEditor.gui.threejsScene.THREE;
-
                         avatarMeshes[objectKey] = {
                             device: boxMesh('#ffff00', objectKey + 'device'),
-                            pointer: boxMesh('#ff00ff', objectKey + 'pointer')
-                            // beam: cylinderMesh(THREE.Vector3(0, 0, 0), THREE.Vector3(1000, 0, 0), '#ff00ff')
+                            pointer: boxMesh('#ff00ff', objectKey + 'pointer'),
+                            beam: cylinderMesh(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1000, 0, 0), '#ff00ff')
                         }
                         avatarMeshes[objectKey].device.matrixAutoUpdate = false;
                         // avatarMeshes[objectKey].pointer.matrixAutoUpdate = true; // true by default
+                        
+                        avatarMeshes[objectKey].beam.name = objectKey + 'beam';
+                        
                         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].device);
                         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].pointer);
+                        realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
                     }
 
                     avatarMeshes[objectKey].device.visible = true;
                     avatarMeshes[objectKey].pointer.visible = true;
+                    avatarMeshes[objectKey].beam.visible = true;
 
                     // let thatAvatarObject = realityEditor.getObject(objectKey);
                     // TODO: check if sceneGraph is updating the avatar matrices even though they're not part of the visibleObjects
@@ -130,11 +135,17 @@ createNameSpace("realityEditor.avatarObjects");
                     // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].pointer.matrix)
                     avatarMeshes[objectKey].pointer.position.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
 
+                    let startPosition = new THREE.Vector3(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
+                    let endPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                    avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, '#ff00ff');
+                    avatarMeshes[objectKey].beam.name = objectKey + 'beam';
+                    realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
                 } else {
                     // hide the three.js cube
                     if (avatarMeshes[objectKey]) {
                         avatarMeshes[objectKey].device.visible = false;
                         avatarMeshes[objectKey].pointer.visible = false;
+                        avatarMeshes[objectKey].beam.visible = false;
                     }
                 }
             }
@@ -153,13 +164,13 @@ createNameSpace("realityEditor.avatarObjects");
             return box;
         }
 
-        const cylinderMesh = function (pointX, pointY, color) {
+        const cylinderMesh = function (startPoint, endPoint, color) {
             const THREE = realityEditor.gui.threejsScene.THREE;
             // edge from X to Y
-            console.log(pointY, pointX);
+            console.log(endPoint, startPoint);
             let length = 0;
-            if (pointX && pointY) {
-                let direction = new THREE.Vector3().subVectors(pointY, pointX);
+            if (startPoint && endPoint) {
+                let direction = new THREE.Vector3().subVectors(endPoint, startPoint);
                 length = direction.length();
             }
             const material = new THREE.MeshBasicMaterial({ color: (color || 0xff0000) });
@@ -171,18 +182,26 @@ createNameSpace("realityEditor.avatarObjects");
             geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
             // Make a mesh with the geometry
             var mesh = new THREE.Mesh(geometry, material);
-            if (pointX) {
+            if (startPoint) {
                 // Position it where we want
-                mesh.position.copy(pointX);
+                mesh.position.copy(startPoint);
             }
-            if (pointY) {
+            if (endPoint) {
                 // And make it point to where we want
-                mesh.lookAt(pointY);
+                mesh.lookAt(endPoint);
             }
 
             return mesh;
         }
 
+        const updateCylinderMesh = function (obj, startPoint, endPoint, color) {
+            obj.geometry.dispose();
+            obj.material.dispose();
+
+            realityEditor.gui.threejsScene.removeFromScene(obj);
+            return cylinderMesh(startPoint, endPoint, color);
+        }
+        
         function updateMyAvatar() {
             // update the avatar object to match the camera position each frame (if it exists)
             let avatarObject = realityEditor.getObject(initializedId);
