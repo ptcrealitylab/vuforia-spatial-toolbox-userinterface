@@ -33,7 +33,7 @@ class ToolboxUtilities {
     }
 
     emitInt(e, ...args) {
-        console.log('emitInt', e, args);
+        // console.log('emitInt', e, args);
         if (!this.eCb[e]) {
             return;
         }
@@ -549,7 +549,7 @@ class MainToolboxSocket extends ToolboxUtilities {
                 };
             } else {
                 this.socket.onmessage = async (msg) => {
-                    console.log('onmessage2 confirmed', msg);
+                    // console.log('onmessage2 confirmed', msg);
                     if (typeof msg.data !== "string")
                         that.router(new Uint8Array(await msg.data.arrayBuffer()));
                     else

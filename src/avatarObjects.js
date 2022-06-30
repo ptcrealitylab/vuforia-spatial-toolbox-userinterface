@@ -326,13 +326,16 @@ createNameSpace("realityEditor.avatarObjects");
                 // raycastIntersects[0].point is in the groundPlane coordinate system
                 // we want to convert it to the world coordinate system
 
-                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-                let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-                // let worldRelativeToGroundOldCalculations = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
-                let worldRelativeToGround = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
-                let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldRelativeToGround);
-                raycastIntersects[0].point.applyMatrix4(matrix);
+                ///////////////////////////////////
+                // This is the one that is working!
+                // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                // let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                // // let worldRelativeToGroundOldCalculations = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                // let worldRelativeToGround = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
+                // let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                // realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldRelativeToGround);
+                // raycastIntersects[0].point.applyMatrix4(matrix);
+                ///////////////////////////////////
 
                 // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
                 // let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
