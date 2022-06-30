@@ -277,6 +277,41 @@ realityEditor.device.onload = function () {
         }, 1000);
     }
 
+    fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
+        console.log('offline check', Array.from(res.headers.entries()));
+        if (!res.headers.has('X-Offline-Cache')) {
+            return;
+        }
+
+        let message = 'Network Offline. Showing last known state';
+        let lifetime = 5000;
+
+        // create UI
+        let notificationUI = document.createElement('div');
+        notificationUI.classList.add('statusBar');
+        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+            notificationUI.classList.add('statusBarPortrait');
+        }
+        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        document.body.appendChild(notificationUI);
+
+        let notificationTextContainer = document.createElement('div');
+        notificationUI.classList.add('statusBarText');
+        notificationUI.appendChild(notificationTextContainer);
+
+        // show and populate with message
+        notificationUI.classList.add('statusBar');
+        notificationUI.classList.remove('statusBarHidden');
+        notificationTextContainer.innerHTML = message;
+
+        setTimeout(function() {
+            if (!notificationUI) {
+                return;
+            } // no need to hide it if it doesn't exist
+            notificationUI.parentElement.removeChild(notificationUI);
+        }, lifetime);
+    });
+
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
     globalCanvas.canvas.width = globalStates.height; // TODO: fix width vs height mismatch once and for all
