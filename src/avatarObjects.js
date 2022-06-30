@@ -97,7 +97,7 @@ createNameSpace("realityEditor.avatarObjects");
                 let touchState = avatarState.publicData.touchState;
                 if (!touchState) { continue; }
 
-                if (touchState.isPointerDown) {
+                // if (touchState.isPointerDown) {
                     const THREE = realityEditor.gui.threejsScene.THREE;
 
                     // show a three.js cube at the avatar's matrix
@@ -134,22 +134,43 @@ createNameSpace("realityEditor.avatarObjects");
 
                     realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].device.matrix, relativeMatrix);
 
-                    // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].pointer.matrix)
-                    avatarMeshes[objectKey].pointer.position.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                    if (touchState.isPointerDown) {
+                        
+                        // worldIntersectPoint was converted to world coordinates
+                        // need to convert back to groundPlane coordinates in this system
+                        
+                        let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                        let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                        // let groundPlaneRelativeToWorld = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
+                        let groundPlaneRelativeToWorld = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                        let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                        realityEditor.gui.threejsScene.setMatrixFromArray(matrix, groundPlaneRelativeToWorld);
+                        let convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                        convertedEndPosition.applyMatrix4(matrix);
 
-                    let startPosition = new THREE.Vector3(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
-                    let endPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
-                    avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, '#ff00ff');
-                    avatarMeshes[objectKey].beam.name = objectKey + 'beam';
-                    realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
-                } else {
+                        avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+
+                        // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].pointer.matrix)
+                        // avatarMeshes[objectKey].pointer.position.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+
+                        let startPosition = new THREE.Vector3(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
+                        // let endPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                        let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+                        avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, '#ff00ff');
+                        avatarMeshes[objectKey].beam.name = objectKey + 'beam';
+                        realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
+                    }
+
+                // } else {
                     // hide the three.js cube
                     if (avatarMeshes[objectKey]) {
-                        avatarMeshes[objectKey].device.visible = false;
-                        avatarMeshes[objectKey].pointer.visible = false;
-                        avatarMeshes[objectKey].beam.visible = false;
+                        // avatarMeshes[objectKey].device.visible = false;
+                        if (!touchState.isPointerDown) {
+                            avatarMeshes[objectKey].pointer.visible = false;
+                            avatarMeshes[objectKey].beam.visible = false;
+                        }
                     }
-                }
+                // }
             }
 
             // allAvatarStates._AVATAR_Dk1mqddd_Qctecqyvrj1.publicData.touchState.isPointerDown
@@ -169,7 +190,7 @@ createNameSpace("realityEditor.avatarObjects");
         const cylinderMesh = function (startPoint, endPoint, color) {
             const THREE = realityEditor.gui.threejsScene.THREE;
             // edge from X to Y
-            console.log(endPoint, startPoint);
+            // console.log(endPoint, startPoint);
             let length = 0;
             if (startPoint && endPoint) {
                 let direction = new THREE.Vector3().subVectors(endPoint, startPoint);
@@ -276,9 +297,9 @@ createNameSpace("realityEditor.avatarObjects");
 
         realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', (msg) => {
             let msgContent = JSON.parse(msg);
-            console.log('avatarObjects.js received publicData', msgContent);
+            // console.log('avatarObjects.js received publicData', msgContent);
 
-            allAvatarStates[avatarObjectKey] = msgContent;
+            allAvatarStates[msgContent.object] = msgContent;
         });
     }
 
@@ -302,19 +323,30 @@ createNameSpace("realityEditor.avatarObjects");
         if (cachedWorldObject && cachedOcclusionObject) {
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [cachedOcclusionObject]);
             if (raycastIntersects.length > 0) {
+                // raycastIntersects[0].point is in the groundPlane coordinate system
+                // we want to convert it to the world coordinate system
+
+                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                // let worldRelativeToGroundOldCalculations = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                let worldRelativeToGround = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
+                let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldRelativeToGround);
+                raycastIntersects[0].point.applyMatrix4(matrix);
+
                 // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
-                let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                // realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
-                let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneNode.worldMatrix);
-                inverseGroundPlaneMatrix.invert();
+                // let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                // // realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                // let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                // realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneNode.worldMatrix);
+                // inverseGroundPlaneMatrix.invert();
 
                 // let inverseWorldMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                 // realityEditor.gui.threejsScene.setMatrixFromArray(inverseWorldMatrix, worldSceneNode.worldMatrix);
                 // inverseWorldMatrix.invert();
 
-                raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+                // raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
                 // raycastIntersects[0].point.applyMatrix4(inverseWorldMatrix);
                 worldIntersectPoint = raycastIntersects[0].point;
 
@@ -325,7 +357,7 @@ createNameSpace("realityEditor.avatarObjects");
             }
         }
 
-        return worldIntersectPoint;
+        return worldIntersectPoint; // these are relative to the world object
     }
 
     function onMyAvatarInitialized() {
