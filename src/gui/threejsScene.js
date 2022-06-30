@@ -48,15 +48,33 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         scene.add(threejsContainerObj);
 
         // light the scene with a combination of ambient and directional white light
-        var ambLight = new THREE.AmbientLight(0xffffff);
+        let ambLight = new THREE.AmbientLight(0xffffff);
         scene.add(ambLight);
-        var dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(-10, -10, 1000);
-        scene.add(dirLight);
-        var spotLight = new THREE.SpotLight(0xffffff);
-        spotLight.position.set(-30, -30, 150);
-        spotLight.castShadow = true;
-        scene.add(spotLight);
+
+        let dirLightY = new THREE.DirectionalLight(0xffffff, 2);
+        dirLightY.position.set(0, 1, 0); // top-down
+        scene.add(dirLightY);
+        
+        let dirLightX1 = new THREE.DirectionalLight(0xffffff, 1);
+        dirLightX1.position.set(1, 0, 0);
+        scene.add(dirLightX1);
+
+        let dirLightX2 = new THREE.DirectionalLight(0xffffff, 1);
+        dirLightX2.position.set(-1, 0, 0);
+        scene.add(dirLightX2);
+
+        let dirLightZ1 = new THREE.DirectionalLight(0xffffff, 1);
+        dirLightZ1.position.set(0, 0, 1);
+        scene.add(dirLightZ1);
+
+        let dirLightZ2 = new THREE.DirectionalLight(0xffffff, 1);
+        dirLightZ2.position.set(0, 0, -1);
+        scene.add(dirLightZ2);
+        
+        // var spotLight = new THREE.SpotLight(0xffffff, 4, 0, Math.PI/2, 0, 1);
+        // spotLight.position.set(0, 10000, 0);
+        // // spotLight.castShadow = true;
+        // scene.add(spotLight);
 
         customMaterials = new CustomMaterials();
 
@@ -139,13 +157,18 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 }
             }
             const group = worldObjectGroups[worldObjectId];
-            const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
-            if (modelViewMatrix) {
-                setMatrixFromArray(group.matrix, modelViewMatrix);
+            // const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
+            const worldMatrix = realityEditor.sceneGraph.getSceneNodeById(worldObjectId).worldMatrix;
+            
+            // if (modelViewMatrix) {
+            if (worldMatrix) {
+                // setMatrixFromArray(group.matrix, modelViewMatrix);
+                setMatrixFromArray(group.matrix, worldMatrix);
                 group.visible = true;
 
                 if (worldOcclusionObjects[worldObjectId]) {
-                    setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
+                    // setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
+                    setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, worldMatrix);
                     worldOcclusionObjects[worldObjectId].visible = true;
                 }
             } else {
@@ -157,10 +180,15 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             }
         });
 
-        const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
-        if (rootModelViewMatrix) {
-            setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+        const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+        if (rootMatrix) {
+            setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
         }
+        
+        // const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+        // if (rootModelViewMatrix) {
+        //     setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+        // }
 
         customMaterials.update();
 
@@ -483,7 +511,13 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         }
     }
 
+    function setCameraPosition(matrix) {
+        camera.matrixAutoUpdate = false;
+        setMatrixFromArray(camera.matrix, matrix);
+    }
+
     exports.initService = initService;
+    exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
     exports.isOcclusionActive = isOcclusionActive;
     exports.addGltfToScene = addGltfToScene;

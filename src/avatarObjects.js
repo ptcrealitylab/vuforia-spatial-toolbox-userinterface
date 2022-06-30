@@ -77,14 +77,14 @@ createNameSpace("realityEditor.avatarObjects");
         }
 
         realityEditor.gui.ar.draw.addUpdateListener(function(_visibleObjects) {
-            if (!avatarObjectInitialized || globalStates.freezeButtonState) { return; }
-
             try {
                 renderOtherAvatars();
             } catch (e) {
                 console.warn('error rendering other avatars', e);
             }
-            
+
+            if (!avatarObjectInitialized || globalStates.freezeButtonState) { return; }
+
             try {
                 updateMyAvatar();
             } catch (e) {
@@ -96,11 +96,11 @@ createNameSpace("realityEditor.avatarObjects");
             for (const [objectKey, avatarState] of Object.entries(allAvatarStates)) {
                 let touchState = avatarState.publicData.touchState;
                 if (!touchState) { continue; }
-                
+
                 if (touchState.isPointerDown) {
                     const THREE = realityEditor.gui.threejsScene.THREE;
 
-                    // show a threejs cube at the avatar's matrix
+                    // show a three.js cube at the avatar's matrix
                     if (typeof avatarMeshes[objectKey] === 'undefined') {
                         avatarMeshes[objectKey] = {
                             device: boxMesh('#ffff00', objectKey + 'device'),
@@ -109,9 +109,9 @@ createNameSpace("realityEditor.avatarObjects");
                         }
                         avatarMeshes[objectKey].device.matrixAutoUpdate = false;
                         // avatarMeshes[objectKey].pointer.matrixAutoUpdate = true; // true by default
-                        
+
                         avatarMeshes[objectKey].beam.name = objectKey + 'beam';
-                        
+
                         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].device);
                         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].pointer);
                         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
@@ -127,11 +127,13 @@ createNameSpace("realityEditor.avatarObjects");
                     // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                     let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
                     let relativeMatrix = thatAvatarSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                    // let relativeMatrix = thatAvatarSceneNode.getMatrixRelativeTo(worldSceneNode);
                     // let matrix = thatAvatarSceneNode.worldMatrix;
                     // avatarMeshes[objectKey].position.set(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
+                    // let groundplaneRelativeToWorld = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
 
                     realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].device.matrix, relativeMatrix);
-                    
+
                     // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].pointer.matrix)
                     avatarMeshes[objectKey].pointer.position.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
 
@@ -149,7 +151,7 @@ createNameSpace("realityEditor.avatarObjects");
                     }
                 }
             }
-            
+
             // allAvatarStates._AVATAR_Dk1mqddd_Qctecqyvrj1.publicData.touchState.isPointerDown
         }
 
@@ -201,7 +203,7 @@ createNameSpace("realityEditor.avatarObjects");
             realityEditor.gui.threejsScene.removeFromScene(obj);
             return cylinderMesh(startPoint, endPoint, color);
         }
-        
+
         function updateMyAvatar() {
             // update the avatar object to match the camera position each frame (if it exists)
             let avatarObject = realityEditor.getObject(initializedId);
@@ -275,14 +277,14 @@ createNameSpace("realityEditor.avatarObjects");
         realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', (msg) => {
             let msgContent = JSON.parse(msg);
             console.log('avatarObjects.js received publicData', msgContent);
-            
+
             allAvatarStates[avatarObjectKey] = msgContent;
         });
     }
 
     let cachedWorldObject = null;
     let cachedOcclusionObject = null;
-    
+
     function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
         // let cameraWorldPoint = null;
@@ -302,9 +304,18 @@ createNameSpace("realityEditor.avatarObjects");
             if (raycastIntersects.length > 0) {
                 // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
                 let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                // realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneNode.worldMatrix);
                 inverseGroundPlaneMatrix.invert();
+
+                // let inverseWorldMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                // realityEditor.gui.threejsScene.setMatrixFromArray(inverseWorldMatrix, worldSceneNode.worldMatrix);
+                // inverseWorldMatrix.invert();
+
                 raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+                // raycastIntersects[0].point.applyMatrix4(inverseWorldMatrix);
                 worldIntersectPoint = raycastIntersects[0].point;
 
                 // // calculate the camera position in the correct coordinate system
