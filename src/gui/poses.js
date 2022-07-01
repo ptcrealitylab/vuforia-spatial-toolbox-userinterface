@@ -148,9 +148,17 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
 
     const pointWidth = poses[0].width;
     const pointHeight = poses[0].height;
-    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
-    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    const portrait = false;
+    let outWidth, outHeight;
+    if (!portrait) {
+        outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
+        outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    } else {
+        outHeight = gfx.height;
+        outWidth = gfx.height / pointHeight * pointWidth;
+    }
     if (globalStates.device.startsWith('iPad')) {
+        outWidth = gfx.width;
         outHeight = gfx.height;
     }
     const cx = pointWidth / 2;
