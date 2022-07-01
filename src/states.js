@@ -59,6 +59,7 @@ var timeForContentLoaded = 100; // temporary set to 10000 with the UI Recording 
 var timeCorrection = {delta: 0, now: 0, then: 0};
 var boundListeners = {};
 let updateFramerate = 10; // fps
+// let updateFramerate = 3; // fps
 var TEMP_DISABLE_MEMORIES = false;
 
 // noinspection JSSuspiciousNameCombination - (width is based on innerHeight and vice versa)

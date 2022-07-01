@@ -124,21 +124,48 @@ createNameSpace("realityEditor.avatarObjects");
                     // let thatAvatarObject = realityEditor.getObject(objectKey);
                     // TODO: check if sceneGraph is updating the avatar matrices even though they're not part of the visibleObjects
                     let thatAvatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
-                    // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                    let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                    let worldMatrix = new THREE.Matrix4();
+                    realityEditor.gui.threejsScene.setMatrixFromArray(worldMatrix, worldSceneNode.worldMatrix);
+                    let avatarObjectMatrix = new THREE.Matrix4();
+                    realityEditor.gui.threejsScene.setMatrixFromArray(avatarObjectMatrix, thatAvatarSceneNode.worldMatrix);
+                    avatarObjectMatrix.premultiply(worldMatrix);
+                    
                     let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-                    let relativeMatrix = thatAvatarSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                    let groundPlaneMatrix = new THREE.Matrix4();
+                    realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneMatrix, groundPlaneSceneNode.worldMatrix);
+
+                    avatarObjectMatrix.premultiply(groundPlaneMatrix.invert());
+                    // avatarMeshes[objectKey].device.setMatrix(avatarObjectMatrix);
+
+                    avatarMeshes[objectKey].device.matrixAutoUpdate = false
+                    avatarMeshes[objectKey].device.matrix.copy(avatarObjectMatrix);
+                    // avatarMeshes[objectKey].device.updateMatrix();
+                    
+                    // let relativeMatrix = thatAvatarSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                    
                     // let relativeMatrix = thatAvatarSceneNode.getMatrixRelativeTo(worldSceneNode);
                     // let matrix = thatAvatarSceneNode.worldMatrix;
                     // avatarMeshes[objectKey].position.set(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
                     // let groundplaneRelativeToWorld = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
 
-                    realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].device.matrix, relativeMatrix);
+                    // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].device.matrix, relativeMatrix);
 
-                    if (touchState.isPointerDown) {
+                    if (touchState.isPointerDown && touchState.worldIntersectPoint) {
                         
                         // worldIntersectPoint was converted to world coordinates
                         // need to convert back to groundPlane coordinates in this system
                         
+                        // THIS WORKS:
+                        // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                        // let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+                        // // let groundPlaneRelativeToWorld = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
+                        // let groundPlaneRelativeToWorld = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                        // let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                        // realityEditor.gui.threejsScene.setMatrixFromArray(matrix, groundPlaneRelativeToWorld);
+                        // let convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                        // convertedEndPosition.applyMatrix4(matrix);
+
                         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                         let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
                         // let groundPlaneRelativeToWorld = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
@@ -153,13 +180,17 @@ createNameSpace("realityEditor.avatarObjects");
                         // realityEditor.gui.threejsScene.setMatrixFromArray(avatarMeshes[objectKey].pointer.matrix)
                         // avatarMeshes[objectKey].pointer.position.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
 
-                        let startPosition = new THREE.Vector3(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
+                        // let startPosition = new THREE.Vector3(relativeMatrix[12], relativeMatrix[13], relativeMatrix[14]);
+                        let startPosition = new THREE.Vector3(avatarObjectMatrix.elements[12], avatarObjectMatrix.elements[13], avatarObjectMatrix.elements[14]);
                         // let endPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
                         let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
                         avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, '#ff00ff');
                         avatarMeshes[objectKey].beam.name = objectKey + 'beam';
                         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
                     }
+                    // else if (!touchState.worldIntersectPoint) {
+                    //     console.warn('touchState didnt have a worldIntersectPoint');
+                    // }
 
                 // } else {
                     // hide the three.js cube
@@ -225,6 +256,7 @@ createNameSpace("realityEditor.avatarObjects");
             return cylinderMesh(startPoint, endPoint, color);
         }
 
+        let lastPositionUpdate = Date.now();
         function updateMyAvatar() {
             // update the avatar object to match the camera position each frame (if it exists)
             let avatarObject = realityEditor.getObject(initializedId);
@@ -264,10 +296,15 @@ createNameSpace("realityEditor.avatarObjects");
             // console.log('avatar position = ' + avatarSceneNode.worldMatrix);
 
             // sceneGraph uploads it to server every 1 second via REST, but we can stream updates in realtime here
-            let dontBroadcast = false;
-            if (!dontBroadcast) {
-                realityEditor.network.realtime.broadcastUpdate(initializedId, null, null, 'matrix', relativeMatrix);
+            // let dontBroadcast = false;
+            // if (!dontBroadcast) {
+            if (Date.now() - lastPositionUpdate < 100) { // limit to 10
+                return;
             }
+            realityEditor.network.realtime.broadcastUpdate(initializedId, null, null, 'matrix', relativeMatrix);
+            // }
+
+            lastPositionUpdate = Date.now();
         }
     }
 
@@ -326,16 +363,21 @@ createNameSpace("realityEditor.avatarObjects");
                 // raycastIntersects[0].point is in the groundPlane coordinate system
                 // we want to convert it to the world coordinate system
 
-                ///////////////////////////////////
+                // TODO: BEN – the remote operator only sends the right coordinates if we comment this out. (otherwise 1286mm too low)
+                // TODO:     - but the iOS app only sends the right coordinates if we leave it in. (otherwise totally wrong)
+                // TODO:     - figure out how to make both work – do we just multiply by inverse ground plane, or inverse world, rather than include both?
+                ///////////////////////////////
                 // This is the one that is working!
-                // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                 // let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-                // // let worldRelativeToGroundOldCalculations = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                // let worldRelativeToGroundOldCalculations = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
                 // let worldRelativeToGround = groundPlaneSceneNode.getMatrixRelativeTo(worldSceneNode);
-                // let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 // realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldRelativeToGround);
-                // raycastIntersects[0].point.applyMatrix4(matrix);
-                ///////////////////////////////////
+                realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
+                matrix.invert();
+                raycastIntersects[0].point.applyMatrix4(matrix);
+                ///////////////////////////////
 
                 // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
                 // let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
@@ -363,6 +405,7 @@ createNameSpace("realityEditor.avatarObjects");
         return worldIntersectPoint; // these are relative to the world object
     }
 
+    let lastUpdate = Date.now();
     function onMyAvatarInitialized() {
         console.log('add touch subscriptions to write screenX, screenY to publicData');
 
@@ -385,6 +428,8 @@ createNameSpace("realityEditor.avatarObjects");
                 screenY: e.pageY,
                 worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY)
             }
+            
+            if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
 
             realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
         });
@@ -400,6 +445,8 @@ createNameSpace("realityEditor.avatarObjects");
                 worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY)
             }
 
+            // if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
+
             realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
         }
         document.body.addEventListener('pointerup', pointerUpHandler);
@@ -408,6 +455,11 @@ createNameSpace("realityEditor.avatarObjects");
 
         document.body.addEventListener('pointermove', (e) => {
             if (!isPointerDown) { return; }
+            
+            if (Date.now() - lastUpdate < 100) { // limit to 10 FPS
+                return;
+            }
+            
             console.log('document.body.pointermove', e.pageX, e.pageY);
 
             let touchState = {
@@ -417,7 +469,10 @@ createNameSpace("realityEditor.avatarObjects");
                 worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY)
             }
 
+            if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
+
             realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
+            lastUpdate = Date.now();
         });
     }
 
