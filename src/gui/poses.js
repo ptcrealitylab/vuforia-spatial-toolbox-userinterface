@@ -121,7 +121,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
     gfx.fillStyle = '#00ffff';
-    gfx.font = '32px sans-serif';
+    gfx.font = '16px sans-serif';
     gfx.strokeStyle = '#00ffff';
     gfx.lineWidth = 4;
 
@@ -165,6 +165,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     const cy = pointHeight / 2;
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
+    let debug = false;
     for (let point of poses) {
         gfx.beginPath();
         const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
@@ -172,6 +173,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
+        if (debug) {
+            gfx.fillText(`${Math.round(point.x)} ${Math.round(point.y)}`, x + jointSize, y - jointSize);
+            debug = false;
+        }
     }
 
     gfx.beginPath();
