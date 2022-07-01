@@ -245,9 +245,14 @@ realityEditor.device.onload = function () {
     const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
     if (window.location.host === localSettingsHost) {
         setInterval(async () => {
-            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
-            let settings = await res.json();
-            let anyChanged = false;
+            let settings;
+            try {
+                let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+                settings = await res.json();
+            } catch (_e) {
+                return;
+            }
+            let anyChanged = Math.random() < 0.1;
             if (cachedSettings.isConnected !== settings.isConnected) {
                 toggleCloudUrl.onToggleCallback(settings.isConnected);
                 anyChanged = true;
