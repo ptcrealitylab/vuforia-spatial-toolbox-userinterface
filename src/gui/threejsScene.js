@@ -56,19 +56,19 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
         dirLightY.position.set(0, 1, 0); // top-down
         scene.add(dirLightY);
         
-        let dirLightX1 = new THREE.DirectionalLight(0xffffff, 1);
+        let dirLightX1 = new THREE.DirectionalLight(0xffffff, 0.5);
         dirLightX1.position.set(1, 0, 0);
         scene.add(dirLightX1);
 
-        let dirLightX2 = new THREE.DirectionalLight(0xffffff, 1);
+        let dirLightX2 = new THREE.DirectionalLight(0xffffff, 0.5);
         dirLightX2.position.set(-1, 0, 0);
         scene.add(dirLightX2);
 
-        let dirLightZ1 = new THREE.DirectionalLight(0xffffff, 1);
+        let dirLightZ1 = new THREE.DirectionalLight(0xffffff, 0.5);
         dirLightZ1.position.set(0, 0, 1);
         scene.add(dirLightZ1);
 
-        let dirLightZ2 = new THREE.DirectionalLight(0xffffff, 1);
+        let dirLightZ2 = new THREE.DirectionalLight(0xffffff, 0.5);
         dirLightZ2.position.set(0, 0, -1);
         scene.add(dirLightZ2);
         
