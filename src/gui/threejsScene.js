@@ -4,6 +4,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
+import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 
 (function(exports) {
 
@@ -59,6 +60,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
         scene.add(spotLight);
 
         customMaterials = new CustomMaterials();
+
+        // Add the BVH optimized raycast function from three-mesh-bvh.module.js
+        // Assumes the BVH is available on the `boundsTree` variable
+        THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -251,6 +256,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
             //     geometry = new SimplifyModifier().modify(geometry, geometry.attributes.position.count * 0.2);
             // }
             geometry.computeVertexNormals();
+
+            // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
+            geometry.boundsTree = new MeshBVH( geometry );
+
             const material = new THREE.MeshNormalMaterial();
             material.colorWrite = false; // Makes it invisible
             const mesh = new THREE.Mesh(geometry, material);
@@ -306,6 +315,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 }
                 gltf.scene.children[0].geometry.computeVertexNormals();
                 gltf.scene.children[0].geometry.computeBoundingBox();
+
+                // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
+                gltf.scene.children[0].geometry.boundsTree = new MeshBVH( gltf.scene.children[0].geometry );
+
                 wireMesh = new THREE.Mesh(gltf.scene.children[0].geometry, wireMaterial);
             } else {
                 gltf.scene.children[0].children.forEach(child => {
@@ -316,6 +329,10 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
                 const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
+
+                // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
+                mergedGeometry.boundsTree = new MeshBVH( mergedGeometry );
+
                 wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
 
@@ -362,6 +379,8 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 
         //2. set the picking ray from the camera position and mouse coordinates
         raycaster.setFromCamera( mouse, camera );
+
+        raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
 
         //3. compute intersections
         let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
