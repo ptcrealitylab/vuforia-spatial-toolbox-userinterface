@@ -346,6 +346,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             type: event.type,
             pointerId: event.pointerId,
             pointerType: event.pointerType,
+            button: event.button,
             x: newCoords.x,
             y: newCoords.y
         }
@@ -588,12 +589,24 @@ realityEditor.device.disablePinchToScale = function() {
 };
 
 /**
+ * @return {boolean} If the event is intended to control the camera and not the
+ *   AR elements
+ */
+realityEditor.device.isMouseEventCameraControl = function(event) {
+  // If mouse events are enabled ignore right clicks and middle clicks
+  return realityEditor.device.environment.requiresMouseEvents() &&
+    (event.button === 2 || event.button === 1);
+};
+
+/**
  * Begin the touchTimer to enable editing mode if the user doesn't move too much before it finishes.
  * Also set point A of the globalProgram so we can start creating a link if this is a node.
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchDown = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     var activeVehicle = realityEditor.getVehicle(target.objectId, target.frameId, target.nodeId);
@@ -663,7 +676,9 @@ realityEditor.device.onElementTouchDown = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchMove = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     if (this.previousPointerMove && this.previousPointerMove.x === event.pageX && this.previousPointerMove.y === event.pageY) {
         return; // ensure that we ignore supposed "move" events if position didn't change
@@ -698,7 +713,9 @@ realityEditor.device.onElementTouchMove = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchEnter = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     
@@ -740,7 +757,9 @@ realityEditor.device.onElementTouchEnter = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchOut = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     if (target.type !== "ui") {
@@ -778,7 +797,9 @@ realityEditor.device.onElementTouchOut = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchUp = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     var activeVehicle = this.getEditingVehicle();
@@ -982,8 +1003,10 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerDown = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
-    
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
+
     globalStates.pointerPosition = [event.clientX, event.clientY];
 
     overlayDiv.style.display = "inline";
@@ -1018,7 +1041,9 @@ realityEditor.device.onDocumentPointerDown = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerMove = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     event.preventDefault(); //TODO: why is this here but not in other document events?
 
@@ -1042,7 +1067,9 @@ realityEditor.device.onDocumentPointerMove = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerUp = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     // add the pocket node to the closest frame
     if (realityEditor.gui.buttons.getButtonState('pocket') === 'down') {
@@ -1153,7 +1180,9 @@ function modifyTouchEventIfDesktop(event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
@@ -1210,7 +1239,9 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchMove = function (event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
@@ -1437,7 +1468,9 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchEnd = function (event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchend", realityEditor.device.touchInputs.screenTouchEnd);
