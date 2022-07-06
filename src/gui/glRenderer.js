@@ -91,7 +91,7 @@ createNameSpace("realityEditor.gui.glRenderer");
                 return;
             }
 
-            if (message.name === 'clear') {
+            if (message.name === 'clear') { //  || message.name === 'clearDepth'
                 return;
             }
 
@@ -266,6 +266,8 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
+
+        realityEditor.gui.threejsScene.initService(gl);
     }
 
     /**
@@ -333,13 +335,15 @@ createNameSpace("realityEditor.gui.glRenderer");
             return;
         }
 
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
-        gl.clearDepth(1.0);                 // Clear everything
-        gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-        gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+        // gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
+        // gl.clearDepth(1.0);                 // Clear everything
+        // gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+        // gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
 
-        // Clear the canvas before we start drawing on it.
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // // Clear the canvas before we start drawing on it.
+        // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        realityEditor.gui.threejsScene.renderScene();
 
         // Execute all pending commands for this frame
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {

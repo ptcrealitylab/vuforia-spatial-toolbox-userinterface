@@ -31,13 +31,17 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
     // todo: in future, move three.js camera instead of moving the scene
     var threejsContainerObj;
 
-    function initService() {
+    function initService(gl) {
         // create a fullscreen webgl renderer for the threejs content and add to the dom
-        renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( rendererWidth, rendererHeight );
-        renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
-        document.body.appendChild( renderer.domElement );
+        if (gl) {
+            renderer = new THREE.WebGLRenderer({alpha: true, antialias: false, context: gl});
+        } else {
+            renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
+            renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( rendererWidth, rendererHeight );
+            document.body.appendChild( renderer.domElement );
+        }
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
@@ -81,7 +85,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
 
         addGroundPlaneCollisionObject(); // invisible object for raycasting intersections with ground plane
 
-        renderScene(); // update loop
+        // renderScene(); // update loop
     }
 
     function addGroundPlaneCollisionObject() {
@@ -174,7 +178,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
             renderer.render( scene, camera );
         }
 
-        requestAnimationFrame(renderScene);
+        // requestAnimationFrame(renderScene);
     }
 
     function addToScene(obj, parameters) {
@@ -519,4 +523,5 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
+    exports.renderScene = renderScene;
 })(realityEditor.gui.threejsScene);

@@ -353,7 +353,7 @@ realityEditor.device.onload = function () {
     realityEditor.network.search.initService();
     realityEditor.sceneGraph.initService();
     realityEditor.gui.glRenderer.initService();
-    realityEditor.gui.threejsScene.initService();
+    // realityEditor.gui.threejsScene.initService();
     // realityEditor.device.multiclientUI.initService();
     realityEditor.humanObjects.initService();
 
