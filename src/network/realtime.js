@@ -411,6 +411,7 @@ createNameSpace("realityEditor.network.realtime");
 
     let didSubscribeToPublicData = false;
     let publicDataCallbacks = {};
+
     function subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback) {
         console.log('subscribe to public data for node ' + nodeKey);
 
@@ -432,13 +433,19 @@ createNameSpace("realityEditor.network.realtime");
             didSubscribeToPublicData = true;
             let publicDataTitle = realityEditor.network.getIoTitle(objects[objectKey].port, 'object/publicData');
             serverSocket.on(publicDataTitle, (msg) => {
-                handlePublicDataFromServer(msg, objectKey, publicDataKey);
+                let msgData = JSON.parse(msg);
+                Object.keys(msgData.publicData).forEach(dataKey => {
+                    // attempt triggering callbacks for all keys in the publicData.
+                    // only ones with registered callbacks will do anything
+                    handlePublicDataFromServer(msg, msgData.object, dataKey);
+                });
             });
         }
     }
 
     function handlePublicDataFromServer(msg, objectKey, publicDataKey) {
         let callbacks = publicDataCallbacks[objectKey][publicDataKey];
+        if (!callbacks) { return; }
         callbacks.forEach(cb => {
             cb(msg);
         });
