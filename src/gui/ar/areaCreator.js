@@ -308,23 +308,21 @@ realityEditor.gui.ar.areaCreator.didAreaUpdate = function() {
 }.bind(realityEditor.gui.ar.areaCreator);
 
 realityEditor.gui.ar.areaCreator.calculateGroundPlaneIntersection = function(event) {
-    const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.clientX, event.clientY);
     const groundPlane = realityEditor.gui.threejsScene.getGroundPlane();
-    const intersect = intersects.find(intersect => intersect.object === groundPlane);
-    if (intersect) {
-        const point = realityEditor.gui.threejsScene.getPointAtDistanceFromCamera(event.clientX, event.clientY, intersect.distance);
-        const worldObjectToolboxMatrix = realityEditor.sceneGraph.getModelViewMatrix(realityEditor.sceneGraph.getWorldId());
+    const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.clientX, event.clientY, [groundPlane]);
+    if (intersects.length > 0) {
+        let worldObjectToolboxMatrix = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
         const worldObjectThreeMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
         realityEditor.gui.threejsScene.setMatrixFromArray(worldObjectThreeMatrix, worldObjectToolboxMatrix);
-        return point.applyMatrix4(worldObjectThreeMatrix.invert());
+        return intersects[0].point.applyMatrix4(worldObjectThreeMatrix.invert());
     }
 }
 
 realityEditor.gui.ar.areaCreator.calculateFloorOffset = function() {
-    const worldObjectToolboxMatrix = realityEditor.sceneGraph.getModelViewMatrix(realityEditor.sceneGraph.getWorldId());
+    const worldObjectToolboxMatrix = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
     const worldObjectThreeMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
     realityEditor.gui.threejsScene.setMatrixFromArray(worldObjectThreeMatrix, worldObjectToolboxMatrix);
-    const groundPlaneToolboxMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+    const groundPlaneToolboxMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
     const groundPlaneThreeMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
     realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneThreeMatrix, groundPlaneToolboxMatrix);
     const groundToWorldMatrix = groundPlaneThreeMatrix.clone().invert().multiply(worldObjectThreeMatrix);
