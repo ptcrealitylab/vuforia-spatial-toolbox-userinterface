@@ -27,6 +27,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let originColor = 0xffffff;
     let mouseCursorMesh = null;
     let initialCalculationMesh = null;
+    let transformControls = {};
 
     function initService() {
         // Note that, currently, positioningMode blocks touch events from reaching anything else, so it should be toggled off when not in use
@@ -99,9 +100,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         // set the anchor matrix by taking the x, z position
         knownAnchorNodes[frameKey].setLocalMatrix(anchoredMatrix);
 
-        // we use localMatrix, not world matrix, because mesh is already a child of the ground plane
-        // realityEditor.gui.threejsScene.setMatrixFromArray(threejsGroups[frameKey].matrix, knownAnchorNodes[frameKey].localMatrix);
-        
         threejsGroups[frameKey].position.set(relativeMatrix[12], 0, relativeMatrix[14]);
     }
 
@@ -144,14 +142,20 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         group.name = getElementName(frameKey) + '_group';
         group.visible = isPositioningMode;
 
-        // let transformControls = realityEditor.gui.threejsScene.addTransformControlsTo(originBox, true, false, true, 0.2, (e) => {
-        let transformControls = realityEditor.gui.threejsScene.addTransformControlsTo(group, true, false, true, 0.2, (e) => {
+        let transformControl = realityEditor.gui.threejsScene.addTransformControlsTo(group, true, false, true, 0.2, (e) => {
             onChange(e);
         }, (e) => {
             onDraggingChanged(e);
         });
-        transformControls.attachedGroupName = group.name;
-        transformControls.attachedFrameKey = frameKey;
+        transformControl.attachedGroupName = group.name;
+        transformControl.attachedFrameKey = frameKey;
+
+        transformControls[frameKey] = transformControl;
+
+        if (!isPositioningMode || globalStates.settingsButtonState) {
+            group.visible = false;
+            transformControl.visible = false;
+        }
 
         return group;
     }
@@ -195,6 +199,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         if (hiddenInEnvelope) {
             group.visible = false;
         }
+
+        transformControls[key].visible = group.visible;
     }
 
     // helper function to get the x,z coords of a threejs object based on its matrix
