@@ -14,6 +14,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
 (function(exports) {
 
+    const sceneSize = 30; // meters
+
     let shouldVisualize = false;
     var isUpdateListenerRegistered = false;
 
@@ -95,10 +97,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         document.getElementById('GUI').appendChild(origin);
         
         if (!gridHelper) {
-            const divisions = 10 * 2;
+            const divisions = sceneSize * 2;
             const size = (1000 / 2) * divisions;
             const THREE = realityEditor.gui.threejsScene.THREE;
-            const colorCenterLine = new THREE.Color(0, 0.3, 0.3);
+            const colorCenterLine = new THREE.Color(1, 1, 1);
             const colorGrid = new THREE.Color(0, 1, 1);
             gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
             gridHelper.name = 'groundPlaneVisualizer';
