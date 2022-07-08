@@ -110,6 +110,11 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         setMatrixFromArray(camera.matrix, matrix);
     }
 
+    // returns the {x, y, z} position of the camera, for calculating distance of threejs objects to the viewer
+    function getCameraPosition() {
+        return new THREE.Vector3(camera.matrix.elements[12], camera.matrix.elements[13], camera.matrix.elements[14]);
+    }
+
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollisionObject() {
@@ -525,20 +530,34 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         }
     }
 
-    function addTransformControlsTo(object, showX, showY, showZ, size, onChange, onDraggingChanged) {
+    /**
+     * @param object {THREE.Mesh}
+     * @param options {{size: number?, hideX: boolean?, hideY: boolean?, hideZ: boolean?}}
+     * @param onChange {function?}
+     * @param onDraggingChanged {function?}
+     * @returns {TransformControls}
+     */
+    function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
         let transformControls = new TransformControls(camera, renderer.domElement);
-        transformControls.showX = showX;
-        transformControls.showY = showY;
-        transformControls.showZ = showZ;
+        if (options && typeof options.hideX !== 'undefined') {
+            transformControls.showX = !options.hideX;
+        }
+        if (options && typeof options.hideY !== 'undefined') {
+            transformControls.showY = !options.hideY;
+        }
+        if (options && typeof options.hideZ !== 'undefined') {
+            transformControls.showZ = !options.hideZ;
+        }
+        if (options && typeof options.size !== 'undefined') {
+            transformControls.size = options.size;
+        }
         transformControls.attach(object);
-        transformControls.size = size;
         scene.add(transformControls);
-        console.log('added transform controls', transformControls);
 
-        if (onChange) {
+        if (typeof onChange === 'function') {
             transformControls.addEventListener('change', onChange);
         }
-        if (onDraggingChanged) {
+        if (typeof onDraggingChanged === 'function') {
             transformControls.addEventListener('dragging-changed', onDraggingChanged)
         }
         return transformControls;
@@ -546,6 +565,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
 
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
+    exports.getCameraPosition = getCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
     exports.isOcclusionActive = isOcclusionActive;
     exports.addGltfToScene = addGltfToScene;

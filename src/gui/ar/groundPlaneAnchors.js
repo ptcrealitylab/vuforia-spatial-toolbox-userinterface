@@ -101,6 +101,15 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         knownAnchorNodes[frameKey].setLocalMatrix(anchoredMatrix);
 
         threejsGroups[frameKey].position.set(relativeMatrix[12], 0, relativeMatrix[14]);
+
+        // update the size of the anchor based on the inverse of its distance to the camera
+        // such that it matches the size of the transformControls gizmos
+        let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+        // need localToWorld to convert anchor position into same reference frame as camera position
+        let anchorPosition = threejsGroups[frameKey].localToWorld(threejsGroups[frameKey].position.clone());
+        let distance = cameraPosition.distanceTo(anchorPosition);
+        let scale = distance/6000;
+        threejsGroups[frameKey].scale.set(scale, scale, scale);
     }
 
     // when we add a sceneNode for a tool, also add one to the groundplane that is associated with it
@@ -120,7 +129,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         threejsGroups[frameKey] = group;
     }
 
-    // // the initial calculation mesh stays in the location a tool's surface anchor was at when you first started dragging it. used for coordinate system calculations.
+    // the initial calculation mesh stays in the location a tool's surface anchor was at when you first started dragging it.
     function getInitialCalculationMesh() {
         if (!initialCalculationMesh) {
             const THREE = realityEditor.gui.threejsScene.THREE;
@@ -142,8 +151,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         group.name = getElementName(frameKey) + '_group';
         group.visible = isPositioningMode;
 
-        let size = realityEditor.device.environment.variables.transformControlsSize || 1;
-        let transformControl = realityEditor.gui.threejsScene.addTransformControlsTo(group, true, false, true, size, (e) => {
+        const options = {
+            size: realityEditor.device.environment.variables.transformControlsSize || 1,
+            hideY: true
+        }
+
+        let transformControl = realityEditor.gui.threejsScene.addTransformControlsTo(group, options, (e) => {
             onChange(e);
         }, (e) => {
             onDraggingChanged(e);
