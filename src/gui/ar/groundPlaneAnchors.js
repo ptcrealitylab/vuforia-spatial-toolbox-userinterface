@@ -101,15 +101,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         knownAnchorNodes[frameKey].setLocalMatrix(anchoredMatrix);
 
         threejsGroups[frameKey].position.set(relativeMatrix[12], 0, relativeMatrix[14]);
-
-        // update the size of the anchor based on the inverse of its distance to the camera
-        // such that it matches the size of the transformControls gizmos
-        let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
-        // need localToWorld to convert anchor position into same reference frame as camera position
-        let anchorPosition = threejsGroups[frameKey].localToWorld(threejsGroups[frameKey].position.clone());
-        let distance = cameraPosition.distanceTo(anchorPosition);
-        let scale = distance/6000;
-        threejsGroups[frameKey].scale.set(scale, scale, scale);
     }
 
     // when we add a sceneNode for a tool, also add one to the groundplane that is associated with it

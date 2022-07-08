@@ -43,7 +43,7 @@ createNameSpace("realityEditor.device.environment");
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
         newFrameDistanceMultiplier: 1, // 10
-        transformControlsSize: 0.5, // on remote operator, we can scale down the gizmo size for moving groundplane anchors
+        transformControlsSize: 1, // on remote operator, we can scale down the gizmo size for moving groundplane anchors
         localServerPort: 49369, // the port where a local vuforia-spatial-edge-server can be expected
         screenTopOffset: 0, // if there's a menubar on the top, increase this
         // matrices

@@ -110,11 +110,6 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         setMatrixFromArray(camera.matrix, matrix);
     }
 
-    // returns the {x, y, z} position of the camera, for calculating distance of threejs objects to the viewer
-    function getCameraPosition() {
-        return new THREE.Vector3(camera.matrix.elements[12], camera.matrix.elements[13], camera.matrix.elements[14]);
-    }
-
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollisionObject() {
@@ -565,7 +560,6 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
 
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
-    exports.getCameraPosition = getCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
     exports.isOcclusionActive = isOcclusionActive;
     exports.addGltfToScene = addGltfToScene;
