@@ -147,6 +147,9 @@ createNameSpace("realityEditor.sceneGraph");
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
         cameraNode.setLocalMatrix(cameraMatrix);
+        if (realityEditor.gui.threejsScene.setCameraPosition) {
+            realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix);
+        }
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {

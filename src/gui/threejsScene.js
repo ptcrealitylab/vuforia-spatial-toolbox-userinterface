@@ -5,6 +5,7 @@ import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
+import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 
 (function(exports) {
 
@@ -39,6 +40,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
         renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
         document.body.appendChild( renderer.domElement );
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
+        camera.matrixAutoUpdate = false;
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
@@ -48,16 +50,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
         scene.add(threejsContainerObj);
 
-        // light the scene with a combination of ambient and directional white light
-        var ambLight = new THREE.AmbientLight(0xffffff);
-        scene.add(ambLight);
-        var dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(-10, -10, 1000);
-        scene.add(dirLight);
-        var spotLight = new THREE.SpotLight(0xffffff);
-        spotLight.position.set(-30, -30, 150);
-        spotLight.castShadow = true;
-        scene.add(spotLight);
+        setupLighting();
 
         customMaterials = new CustomMaterials();
 
@@ -84,8 +77,43 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
         renderScene(); // update loop
     }
 
+    // light the scene with a combination of ambient and directional white light
+    function setupLighting() {
+        // This doesn't seem to work with the area target model material, but adding it for everything else
+        let ambLight = new THREE.AmbientLight(0xffffff);
+        scene.add(ambLight);
+
+        // attempts to light the scene evenly with directional lights from each side, but mostly from the top
+        let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 2);
+        dirLightTopDown.position.set(0, 1, 0); // top-down
+        scene.add(dirLightTopDown);
+
+        let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLightXLeft.position.set(1, 0, 0);
+        scene.add(dirLightXLeft);
+
+        let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLightXRight.position.set(-1, 0, 0);
+        scene.add(dirLightXRight);
+
+        let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLightZLeft.position.set(0, 0, 1);
+        scene.add(dirLightZLeft);
+
+        let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLightZRight.position.set(0, 0, -1);
+        scene.add(dirLightZRight);
+    }
+
+    // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
+    function setCameraPosition(matrix) {
+        setMatrixFromArray(camera.matrix, matrix);
+    }
+
+    // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
+    // this is different from the ground plane visualizer element
     function addGroundPlaneCollisionObject() {
-        const sceneSizeInMeters = 10;
+        const sceneSizeInMeters = 30;
         const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
         const material = new THREE.MeshBasicMaterial( {color: 0x00ffff, side: THREE.DoubleSide} );
         const plane = new THREE.Mesh( geometry, material );
@@ -133,24 +161,18 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
                     originBox.add(xBox);
                     originBox.add(yBox);
                     originBox.add(zBox);
-
-                    // const plane =
-
-                    // const geometry = new THREE.PlaneGeometry( 1000, 1000 );
-                    // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-                    // const groundplaneMesh = new THREE.Mesh( geometry, material );
-                    // group.add(groundplaneMesh);
-                    // // realityEditor.gui.threejsScene.addToScene(groundplaneMesh, {attach: true});
                 }
             }
+
+            // each of the world object containers has its origin set to the origin matrix of that world object
             const group = worldObjectGroups[worldObjectId];
-            const modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(worldObjectId);
-            if (modelViewMatrix) {
-                setMatrixFromArray(group.matrix, modelViewMatrix);
+            const worldMatrix = realityEditor.sceneGraph.getSceneNodeById(worldObjectId).worldMatrix;
+            if (worldMatrix) {
+                setMatrixFromArray(group.matrix, worldMatrix);
                 group.visible = true;
 
                 if (worldOcclusionObjects[worldObjectId]) {
-                    setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, modelViewMatrix);
+                    setMatrixFromArray(worldOcclusionObjects[worldObjectId].matrix, worldMatrix);
                     worldOcclusionObjects[worldObjectId].visible = true;
                 }
             } else {
@@ -162,9 +184,10 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
             }
         });
 
-        const rootModelViewMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
-        if (rootModelViewMatrix) {
-            setMatrixFromArray(threejsContainerObj.matrix, rootModelViewMatrix);
+        // the main three.js container object has its origin set to the ground plane origin
+        const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+        if (rootMatrix) {
+            setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
         }
 
         customMaterials.update();
@@ -502,7 +525,41 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
         }
     }
 
+    /**
+     * @param object {THREE.Mesh}
+     * @param options {{size: number?, hideX: boolean?, hideY: boolean?, hideZ: boolean?}}
+     * @param onChange {function?}
+     * @param onDraggingChanged {function?}
+     * @returns {TransformControls}
+     */
+    function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
+        let transformControls = new TransformControls(camera, renderer.domElement);
+        if (options && typeof options.hideX !== 'undefined') {
+            transformControls.showX = !options.hideX;
+        }
+        if (options && typeof options.hideY !== 'undefined') {
+            transformControls.showY = !options.hideY;
+        }
+        if (options && typeof options.hideZ !== 'undefined') {
+            transformControls.showZ = !options.hideZ;
+        }
+        if (options && typeof options.size !== 'undefined') {
+            transformControls.size = options.size;
+        }
+        transformControls.attach(object);
+        scene.add(transformControls);
+
+        if (typeof onChange === 'function') {
+            transformControls.addEventListener('change', onChange);
+        }
+        if (typeof onDraggingChanged === 'function') {
+            transformControls.addEventListener('dragging-changed', onDraggingChanged)
+        }
+        return transformControls;
+    }
+
     exports.initService = initService;
+    exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
     exports.isOcclusionActive = isOcclusionActive;
     exports.addGltfToScene = addGltfToScene;
@@ -516,6 +573,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
     exports.getGroundPlane = getGroundPlane;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
+    exports.addTransformControlsTo = addTransformControlsTo;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
