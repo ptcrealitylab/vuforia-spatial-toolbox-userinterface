@@ -147,11 +147,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
             hideY: true
         }
 
-        let transformControl = realityEditor.gui.threejsScene.addTransformControlsTo(group, options, (e) => {
-            onChange(e);
-        }, (e) => {
-            onDraggingChanged(e);
-        });
+        let transformControl = realityEditor.gui.threejsScene.addTransformControlsTo(group, options, onChange, onDraggingChanged);
         transformControl.attachedGroupName = group.name;
         transformControl.attachedFrameKey = frameKey;
 
