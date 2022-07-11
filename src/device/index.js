@@ -80,6 +80,16 @@ realityEditor.device.defaultMoveDelay = 400;
 realityEditor.device.currentScreenTouches = [];
 
 /**
+ * @type {THREE.Mesh} Area target GLTF to raycast against
+ */
+realityEditor.device.cachedOcclusionObject = null;
+
+/**
+ * @type {Object} cached result of getBestWorldObject(), corresponding to the cachedOcclusionObject
+ */
+realityEditor.device.cachedWorldObject = null;
+
+/**
  * @typedef {Object} EditingState
  * @desc All the necessary state about what's currently being repositioned. Everything else can be calculated from these.
  * @property {string|null} object - objectId of the selected vehicle
@@ -306,59 +316,64 @@ realityEditor.device.shouldPostEventsIntoIframe = function() {
 realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     var iframe = document.getElementById('iframe' + (nodeKey || frameKey));
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
-    if (newCoords) {
-        let projectedZ;
-        let worldIntersectPoint;
-        let worldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (worldObject) {
-            let occlusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldObject.objectId);
-            if (occlusionObject) {
-                occlusionObject.updateMatrixWorld();
-                occlusionObject.children[0].geometry.computeFaceNormals()
-                occlusionObject.children[0].geometry.computeVertexNormals()
+    if (!newCoords) { return }
 
-                let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [occlusionObject]);
-                if (raycastIntersects.length > 0) {
-                    projectedZ = raycastIntersects[0].distance;
+    let projectedZ;
+    let worldIntersectPoint;
 
-                    // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
-                    let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                    realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
-                    inverseGroundPlaneMatrix.invert();
-                    raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
-
-                    // transpose of the inverse of the ground-plane model-view matrix
-                    let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
-
-                    worldIntersectPoint = {
-                        x: raycastIntersects[0].point.x,
-                        y: raycastIntersects[0].point.y,
-                        z: raycastIntersects[0].point.z,
-                        // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
-                        normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
-                        // the ray direction is just a vector, so we don't need the transpose matrix
-                        rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
-                    };
-                }
-            }
-        }
-        let eventData = {
-            type: event.type,
-            pointerId: event.pointerId,
-            pointerType: event.pointerType,
-            x: newCoords.x,
-            y: newCoords.y
-        }
-        if (typeof projectedZ !== 'undefined') {
-            eventData.projectedZ = projectedZ;
-        }
-        if (typeof worldIntersectPoint !== 'undefined') {
-            eventData.worldIntersectPoint = worldIntersectPoint;
-        }
-        iframe.contentWindow.postMessage(JSON.stringify({
-            event: eventData
-        }), '*');
+    if (!this.cachedWorldObject) {
+        this.cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
     }
+
+    if (this.cachedWorldObject && !this.cachedOcclusionObject) {
+        this.cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(this.cachedWorldObject.objectId);
+        this.cachedOcclusionObject.updateMatrixWorld();
+        this.cachedOcclusionObject.children[0].geometry.computeFaceNormals()
+        this.cachedOcclusionObject.children[0].geometry.computeVertexNormals()
+    }
+
+    if (this.cachedWorldObject && this.cachedOcclusionObject) {
+        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [this.cachedOcclusionObject]);
+        if (raycastIntersects.length > 0) {
+            projectedZ = raycastIntersects[0].distance;
+
+            // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
+            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+            inverseGroundPlaneMatrix.invert();
+            raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+
+            // transpose of the inverse of the ground-plane model-view matrix
+            let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
+
+            worldIntersectPoint = {
+                x: raycastIntersects[0].point.x,
+                y: raycastIntersects[0].point.y,
+                z: raycastIntersects[0].point.z,
+                // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
+                normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
+                // the ray direction is just a vector, so we don't need the transpose matrix
+                rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
+            };
+        }
+    }
+    let eventData = {
+        type: event.type,
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        button: event.button,
+        x: newCoords.x,
+        y: newCoords.y
+    }
+    if (typeof projectedZ !== 'undefined') {
+        eventData.projectedZ = projectedZ;
+    }
+    if (typeof worldIntersectPoint !== 'undefined') {
+        eventData.worldIntersectPoint = worldIntersectPoint;
+    }
+    iframe.contentWindow.postMessage(JSON.stringify({
+        event: eventData
+    }), '*');
 };
 
 /**
@@ -588,12 +603,24 @@ realityEditor.device.disablePinchToScale = function() {
 };
 
 /**
+ * @return {boolean} If the event is intended to control the camera and not the
+ *   AR elements
+ */
+realityEditor.device.isMouseEventCameraControl = function(event) {
+  // If mouse events are enabled ignore right clicks and middle clicks
+  return realityEditor.device.environment.requiresMouseEvents() &&
+    (event.button === 2 || event.button === 1);
+};
+
+/**
  * Begin the touchTimer to enable editing mode if the user doesn't move too much before it finishes.
  * Also set point A of the globalProgram so we can start creating a link if this is a node.
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchDown = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     var activeVehicle = realityEditor.getVehicle(target.objectId, target.frameId, target.nodeId);
@@ -663,7 +690,9 @@ realityEditor.device.onElementTouchDown = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchMove = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     if (this.previousPointerMove && this.previousPointerMove.x === event.pageX && this.previousPointerMove.y === event.pageY) {
         return; // ensure that we ignore supposed "move" events if position didn't change
@@ -698,7 +727,9 @@ realityEditor.device.onElementTouchMove = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchEnter = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     
@@ -740,7 +771,9 @@ realityEditor.device.onElementTouchEnter = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchOut = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     if (target.type !== "ui") {
@@ -778,7 +811,9 @@ realityEditor.device.onElementTouchOut = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onElementTouchUp = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     var target = event.currentTarget;
     var activeVehicle = this.getEditingVehicle();
@@ -982,8 +1017,10 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerDown = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
-    
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
+
     globalStates.pointerPosition = [event.clientX, event.clientY];
 
     overlayDiv.style.display = "inline";
@@ -1018,7 +1055,9 @@ realityEditor.device.onDocumentPointerDown = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerMove = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     event.preventDefault(); //TODO: why is this here but not in other document events?
 
@@ -1042,7 +1081,9 @@ realityEditor.device.onDocumentPointerMove = function(event) {
  * @param {PointerEvent} event
  */
 realityEditor.device.onDocumentPointerUp = function(event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
 
     // add the pocket node to the closest frame
     if (realityEditor.gui.buttons.getButtonState('pocket') === 'down') {
@@ -1153,7 +1194,9 @@ function modifyTouchEventIfDesktop(event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchStart = function (event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
@@ -1210,7 +1253,9 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchMove = function (event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
@@ -1437,7 +1482,9 @@ realityEditor.device.checkIfFramePulledIntoUnconstrained = function(activeVehicl
  * @param {TouchEvent} event
  */
 realityEditor.device.onDocumentMultiTouchEnd = function (event) {
-    if (realityEditor.device.environment.requiresMouseEvents() && event.button === 2) { return; } // ignore right-clicks
+    if (realityEditor.device.isMouseEventCameraControl(event)) {
+      return;
+    }
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchend", realityEditor.device.touchInputs.screenTouchEnd);

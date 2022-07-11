@@ -245,9 +245,14 @@ realityEditor.device.onload = function () {
     const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
     if (window.location.host === localSettingsHost) {
         setInterval(async () => {
-            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
-            let settings = await res.json();
-            let anyChanged = false;
+            let settings;
+            try {
+                let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+                settings = await res.json();
+            } catch (_e) {
+                return;
+            }
+            let anyChanged = Math.random() < 0.1;
             if (cachedSettings.isConnected !== settings.isConnected) {
                 toggleCloudUrl.onToggleCallback(settings.isConnected);
                 anyChanged = true;
@@ -271,6 +276,41 @@ realityEditor.device.onload = function () {
             }
         }, 1000);
     }
+
+    fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
+        console.log('offline check', Array.from(res.headers.entries()));
+        if (!res.headers.has('X-Offline-Cache')) {
+            return;
+        }
+
+        let message = 'Network Offline. Showing last known state';
+        let lifetime = 5000;
+
+        // create UI
+        let notificationUI = document.createElement('div');
+        notificationUI.classList.add('statusBar');
+        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+            notificationUI.classList.add('statusBarPortrait');
+        }
+        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        document.body.appendChild(notificationUI);
+
+        let notificationTextContainer = document.createElement('div');
+        notificationUI.classList.add('statusBarText');
+        notificationUI.appendChild(notificationTextContainer);
+
+        // show and populate with message
+        notificationUI.classList.add('statusBar');
+        notificationUI.classList.remove('statusBarHidden');
+        notificationTextContainer.innerHTML = message;
+
+        setTimeout(function() {
+            if (!notificationUI) {
+                return;
+            } // no need to hide it if it doesn't exist
+            notificationUI.parentElement.removeChild(notificationUI);
+        }, lifetime);
+    });
 
     // set up the global canvas for drawing the links
     globalCanvas.canvas = document.getElementById('canvas');
@@ -314,6 +354,7 @@ realityEditor.device.onload = function () {
     realityEditor.sceneGraph.initService();
     realityEditor.gui.glRenderer.initService();
     realityEditor.gui.threejsScene.initService();
+    // realityEditor.device.multiclientUI.initService();
     realityEditor.avatarObjects.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');

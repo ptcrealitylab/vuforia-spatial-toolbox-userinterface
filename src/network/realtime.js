@@ -39,7 +39,11 @@ createNameSpace("realityEditor.network.realtime");
         }
 
         if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
-            desktopSocket = window._oldIo.connect();
+            if (window.location.host === 'toolboxedge.net') {
+                desktopSocket = io.connect();
+            } else {
+                desktopSocket = window._oldIo.connect();
+            }
         }
         setupServerSockets();
 
@@ -83,8 +87,11 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} objectKey
      */
     function addServerForObjectIfNeeded(object, _objectKey) {
-
-        if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+        
+        // if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
+        // Note that we still create a localhost socket even though we don't
+        // subscribe to it since it will be used to send messages to the local
+        // server
 
         var serverAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), null);
         var socketsIps = realityEditor.network.realtime.getSocketIPsForSet('realityServers');
@@ -92,6 +99,7 @@ createNameSpace("realityEditor.network.realtime");
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
             realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress, function(_socket) {
+                if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
                 sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
                 addServerUpdateListener(serverAddress);
             });
@@ -282,7 +290,7 @@ createNameSpace("realityEditor.network.realtime");
     function addServerSocketMessageListener(serverAddress, messageName, callback) {
         sockets['realityServers'][serverAddress].on(messageName, function() {
             if (DEBUG) {
-                console.log('addDesktopSocketMessageListener received', messageName, Array.from(arguments));
+                console.log('addServerSocketMessageListener received', messageName, Array.from(arguments));
             }
             callback.apply(this, arguments);
         });
@@ -310,18 +318,24 @@ createNameSpace("realityEditor.network.realtime");
 
     function subscribeToCameraMatrices(objectKey, callback) {
         let object = realityEditor.getObject(objectKey);
-        if (!object) { return; }
+        if (!object) {
+            return;
+        }
         let serverSocket = getServerSocketForObject(objectKey);
-        if (!serverSocket) { return; }
+        if (!serverSocket) {
+            return;
+        }
         let messageBody = {
             editorId: globalStates.tempUuid
         };
 
         if (DEBUG) {
-            console.log('someone cares about subscribeToCameraMatrices', objectKey);
+            console.log('someone cares about subscribeToCameraMatrices', objectKey, object);
         }
         serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/subscribe/cameraMatrix'), JSON.stringify(messageBody));
+        serverSocket.emit('/subscribe/cameraMatrix', JSON.stringify(messageBody));
         serverSocket.on(realityEditor.network.getIoTitle(object.port, '/cameraMatrix'), callback);
+        serverSocket.on('/cameraMatrix', callback); // TODO(hobinjk): figure out why this is called instead of the iotitle one
     }
 
     let lastCamera = null;
@@ -350,7 +364,7 @@ createNameSpace("realityEditor.network.realtime");
         }
 
         // console.log('sending camera matrix to', object, serverSocket);
-        serverSocket.emit('/cameraMatrix', JSON.stringify(messageBody));
+        serverSocket.emit(realityEditor.network.getIoTitle(object.port, '/cameraMatrix'), JSON.stringify(messageBody));
     }
 
     class Update {
@@ -521,9 +535,9 @@ createNameSpace("realityEditor.network.realtime");
         if (typeof objectSocketCache[objectKey] === 'undefined') {
             var object = realityEditor.getObject(objectKey);
             var serverIP = object.ip;
-            if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
-                return null;
-            }
+            // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
+            //     return null;
+            // }
             var possibleSocketIPs = getSocketIPsForSet('realityServers');
             var foundSocket = null;
             possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP

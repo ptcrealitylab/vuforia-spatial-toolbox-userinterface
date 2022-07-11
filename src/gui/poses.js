@@ -121,7 +121,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     }
     gfx.clearRect(0, 0, gfx.width, gfx.height);
     gfx.fillStyle = '#00ffff';
-    gfx.font = '32px sans-serif';
+    gfx.font = '16px sans-serif';
     gfx.strokeStyle = '#00ffff';
     gfx.lineWidth = 4;
 
@@ -148,15 +148,24 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
 
     const pointWidth = poses[0].width;
     const pointHeight = poses[0].height;
-    let outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
-    let outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    const portrait = false;
+    let outWidth, outHeight;
+    if (!portrait) {
+        outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
+        outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
+    } else {
+        outHeight = gfx.height;
+        outWidth = gfx.height / pointHeight * pointWidth;
+    }
     if (globalStates.device.startsWith('iPad')) {
+        outWidth = gfx.width;
         outHeight = gfx.height;
     }
     const cx = pointWidth / 2;
     const cy = pointHeight / 2;
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
+    let debug = false;
     for (let point of poses) {
         gfx.beginPath();
         const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
@@ -164,6 +173,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
+        if (debug) {
+            gfx.fillText(`${Math.round(point.x)} ${Math.round(point.y)}`, x + jointSize, y - jointSize);
+            debug = false;
+        }
     }
 
     gfx.beginPath();

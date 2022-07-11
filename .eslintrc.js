@@ -82,7 +82,7 @@ module.exports = {
         ],
     },
     "overrides": [{
-        "files": "src/gui/threejsScene.js",
+        "files": ["src/gui/threejsScene.js", "src/device/multiclientUI.js"],
         "parserOptions": {
             "ecmaVersion": 2018,
             "sourceType": "module"
