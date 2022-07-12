@@ -140,7 +140,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     /**
      * Compute where this node is relative to the scene origin
-     * @param {Array.<number>} parentWorldMatrix
+     * @param {Array.<number>} [parentWorldMatrix] - optional
      */
     SceneNode.prototype.updateWorldMatrix = function(parentWorldMatrix) {
         if (this.needsRecompute) {

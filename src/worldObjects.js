@@ -49,7 +49,7 @@ createNameSpace("realityEditor.worldObjects");
             if (object.isWorldObject) {
                 
                 var IGNORE_HUMAN_POSE_OBJECTS = true;
-                if (!(IGNORE_HUMAN_POSE_OBJECTS && object.isHumanPose)) {
+                if (!(IGNORE_HUMAN_POSE_OBJECTS && (object.isHumanPose || object.type === 'human'))) {
 
                     // add to the internal world objects
                     if (typeof worldObjects[objectKey] === 'undefined') {
