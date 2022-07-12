@@ -26,6 +26,11 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.toolId = toolId;
 
             this.uncloneables = {};
+            /**
+             * Retrieve the VAO extension. Because extVao has its own methods
+             * we use the prefix 'extVao-' to distinguish method calls intended
+             * for this.extVao instead of this.gl
+             */
             this.extVao = this.gl.getExtension('OES_vertex_array_object');
 
             this.commandBuffer = [];
@@ -105,6 +110,8 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
 
             const targettedBinds = {
+                // Note that all targetted binds should be stored using a VAO
+
                 // bindAttribLocation: true,
                 // bindBuffer: true,
                 // bindFramebuffer: true,
