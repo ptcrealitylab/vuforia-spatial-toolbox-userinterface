@@ -110,6 +110,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         canvas.height = canvas.style.height = window.innerHeight;
         canvas.style.margin = 0;
         canvas.style.padding = 0;
+        canvas.style.pointerEvents = 'none';
         document.body.appendChild(canvas);
         gfx = canvas.getContext('2d');
         gfx.width = window.innerWidth;
