@@ -722,7 +722,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     };
     exports.didFindAnyWorldObjects = () => {
         let validWorlds = Object.keys(detectedObjects).map(key => objects[key]).filter(obj => {
-            return (obj.isWorldObject || obj.type === 'world') && obj.ip !== '127.0.0.1';
+            return (obj.isWorldObject || obj.type === 'world') && obj.objectId !== realityEditor.worldObjects.getLocalWorldId();
         });
         return foundAnyWorldObjects && validWorlds.length > 0;
     };
