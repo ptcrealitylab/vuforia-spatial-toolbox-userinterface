@@ -86,6 +86,12 @@ realityEditor.gui.settings.MenuPages = Object.freeze({
 });
 
 /**
+ * @typedef {Object} ToggleOptions
+ * @property {boolean|undefined} ignoreOnload
+ * @property {boolean|undefined} dontPersist
+ */
+
+/**
  * @TODO: rename "toggle" to something more general
  * @constructor
  * An object that defines a particular setting in the settings menu that is dynamically added.
@@ -101,9 +107,9 @@ realityEditor.gui.settings.MenuPages = Object.freeze({
  * @param {string|undefined} placeholderText - if TOGGLE_WITH_TEXT, placeholder text for the UI text box
  * @param {function} onToggleCallback - gets triggered when the switch is toggled
  * @param {function|undefined} onTextCallback - if TOGGLE_WITH_TEXT, gets triggered every time the text box changes
- * @param {boolean|undefined} ignoreOnload - don't trigger the callback once automatically when it loads, only when UI adjusted
+ * @param {ToggleOptions|undefined} options
  */
-function SettingsToggle(title, description, settingType, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, ignoreOnload) {
+function SettingsToggle(title, description, settingType, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, options) {
     this.title = title;
     this.description = description;
     this.propertyName = propertyName;
@@ -112,9 +118,12 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
     this.settingType = settingType;
     this.placeholderText = placeholderText;
     this.menuName = realityEditor.gui.settings.MenuPages.MAIN; // defaults to main menu. use moveToDevelopMenu to change.
+
+    const ignoreOnload = options ? options.ignoreOnload : false; // don't trigger the callback once automatically when it loads, only when UI adjusted
+    this.dontPersist = options ? options.dontPersist : false;
     
     // try loading the value from persistent storage to see what its default value should be
-    let savedValue = window.localStorage.getItem(persistentStorageId);
+    let savedValue = this.dontPersist ? defaultValue : window.localStorage.getItem(persistentStorageId);
     try {
         savedValue = JSON.parse(savedValue);
     } catch (e) {
@@ -125,7 +134,9 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
     // update the property value, save it persistently, and then trigger the added callback when the switch is toggled
     this.onToggleCallback = function(newValue) {
         realityEditor.gui.settings.toggleStates[propertyName] = newValue;
-        window.localStorage.setItem(persistentStorageId, newValue);
+        if (!this.dontPersist) {
+            window.localStorage.setItem(persistentStorageId, newValue);
+        }
         if (onToggleCallback) {
             if (settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT || settingType === realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT) {
                 onToggleCallback(newValue, realityEditor.gui.settings.toggleStates[propertyName + 'Text']); // trigger additional side effects
@@ -150,7 +161,9 @@ function SettingsToggle(title, description, settingType, propertyName, iconSrc, 
         // anytime a new character is typed into the text box, this will trigger
         this.onTextCallback = function(newValue) {
             realityEditor.gui.settings.toggleStates[propertyName + 'Text'] = newValue;
-            window.localStorage.setItem(persistentStorageId + '_TEXT', newValue);
+            if (!this.dontPersist) {
+                window.localStorage.setItem(persistentStorageId + '_TEXT', newValue);
+            }
             if (onTextCallback) {
                 onTextCallback(newValue);
             }
@@ -181,7 +194,9 @@ SettingsToggle.prototype.moveToDevelopMenu = function() {
 SettingsToggle.prototype.setValue = function(newValue) {
     realityEditor.gui.settings.toggleStates[this.propertyName] = newValue;
     let persistentStorageId = 'SETTINGS:' + this.propertyName;
-    window.localStorage.setItem(persistentStorageId, newValue);
+    if (!this.dontPersist) {
+        window.localStorage.setItem(persistentStorageId, newValue);
+    }
     return this;
 };
 
@@ -194,11 +209,11 @@ SettingsToggle.prototype.setValue = function(newValue) {
  * @param {string} iconSrc
  * @param {boolean} defaultValue
  * @param {function<boolean>} onToggleCallback - gets triggered when the switch is toggled
- * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the toggle is added
+ * @param {ToggleOptions|undefined} options
  * @return {SettingsToggle}
  */
-realityEditor.gui.settings.addToggle = function(title, description, propertyName, iconSrc, defaultValue, onToggleCallback, ignoreOnload) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE, propertyName, iconSrc, defaultValue, undefined, onToggleCallback, undefined, ignoreOnload);
+realityEditor.gui.settings.addToggle = function(title, description, propertyName, iconSrc, defaultValue, onToggleCallback, options) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE, propertyName, iconSrc, defaultValue, undefined, onToggleCallback, undefined, options);
     realityEditor.gui.settings.addedToggles.push(newToggle);
     return newToggle;
 };
@@ -214,11 +229,11 @@ realityEditor.gui.settings.addToggle = function(title, description, propertyName
  * @param {string} placeholderText
  * @param {function<boolean>} onToggleCallback - gets triggered when the switch is toggled
  * @param onTextCallback - gets triggered every time the text box changes
- * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the toggle is added
+ * @param {ToggleOptions|undefined} options
  * @return {SettingsToggle}
  */
-realityEditor.gui.settings.addToggleWithText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, ignoreOnload) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, ignoreOnload);
+realityEditor.gui.settings.addToggleWithText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, options) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, onTextCallback, options);
     realityEditor.gui.settings.addedToggles.push(newToggle);
     return newToggle;
 };
@@ -235,10 +250,11 @@ realityEditor.gui.settings.addToggleWithText = function(title, description, prop
  * @param {string} placeholderText
  * @param {function<boolean, string>} onToggleCallback - gets triggered when the switch is toggled. includes the textbox value
  * @param {boolean} ignoreOnload - ignore the first callback that gets triggered automatically when the toggle is added
+ * @param {ToggleOptions|undefined} options
  * @return {SettingsToggle}
  */
-realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, ignoreOnload) {
-    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, undefined, ignoreOnload);
+realityEditor.gui.settings.addToggleWithFrozenText = function(title, description, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, options) {
+    let newToggle = new SettingsToggle(title, description, realityEditor.gui.settings.InterfaceType.TOGGLE_WITH_FROZEN_TEXT, propertyName, iconSrc, defaultValue, placeholderText, onToggleCallback, undefined, options);
     realityEditor.gui.settings.addedToggles.push(newToggle);
     return newToggle;
 };

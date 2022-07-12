@@ -23,6 +23,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
+    let originBoxes = {};
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -75,6 +76,12 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         addGroundPlaneCollisionObject(); // invisible object for raycasting intersections with ground plane
 
         renderScene(); // update loop
+
+        if (DISPLAY_ORIGIN_BOX) {
+            realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
+                toggleDisplayOriginBoxes(newValue);
+            }, { dontPersist: true });
+        }
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -161,6 +168,11 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
                     originBox.add(xBox);
                     originBox.add(yBox);
                     originBox.add(zBox);
+
+                    originBoxes[worldObjectId] = originBox;
+                    if (typeof realityEditor.gui.settings.toggleStates.displayOriginCubes !== 'undefined') {
+                        originBox.visible = realityEditor.gui.settings.toggleStates.displayOriginCubes;
+                    }
                 }
             }
 
@@ -198,6 +210,12 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         }
 
         requestAnimationFrame(renderScene);
+    }
+
+    function toggleDisplayOriginBoxes(newValue) {
+        Object.values(originBoxes).forEach((box) => {
+            box.visible = newValue;
+        });
     }
 
     function addToScene(obj, parameters) {
@@ -574,6 +592,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.addTransformControlsTo = addTransformControlsTo;
+    exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
