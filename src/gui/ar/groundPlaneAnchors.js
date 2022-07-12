@@ -156,6 +156,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         if (!isPositioningMode || globalStates.settingsButtonState) {
             group.visible = false;
             transformControl.visible = false;
+            transformControl.enabled = false;
         }
 
         return group;
@@ -202,6 +203,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
         }
 
         transformControls[key].visible = group.visible;
+        transformControls[key].enabled = group.visible;
     }
 
     // helper function to get the x,z coords of a threejs object based on its matrix
