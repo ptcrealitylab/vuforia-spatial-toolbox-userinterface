@@ -9,6 +9,8 @@ createNameSpace("realityEditor.avatarObjects");
 
 (function(exports) {
 
+    const UPDATE_FPS = 10;
+
     const idPrefix = '_AVATAR_';
     let initializedId = null;
     let myAvatarObject = null;
@@ -16,6 +18,7 @@ createNameSpace("realityEditor.avatarObjects");
     let avatarObjects = {}; // avatar objects are stored in the regular global "objects" variable, but also in here
     let allAvatarStates = {};
     let avatarMeshes = {};
+    let isPointerDown = false;
 
     let sendTimeout = null;
     let receiveTimeout = null;
@@ -40,36 +43,7 @@ createNameSpace("realityEditor.avatarObjects");
         didJustSend: false
     }
     
-    function renderConnectionStatus() {
-        let gui = document.getElementById('avatarConnectionStatus');
-        if (!gui) {
-            gui = document.createElement('div');
-            gui.id = 'avatarConnectionStatus';
-            gui.style.position = 'absolute';
-            gui.style.width = '100vw';
-            gui.style.height = '100px';
-            gui.style.left = '0';
-            gui.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-            gui.style.zIndex = '3000';
-            gui.style.transform = 'translateZ(3000px)';
-            document.body.appendChild(gui);
-        }
-        let sendText = connectionStatus.didSendAnything && connectionStatus.didJustSend ? 'TRUE' : connectionStatus.didSendAnything ? 'true' : 'false';
-        let receiveText = connectionStatus.didReceiveAnything && connectionStatus.didJustReceive ? 'TRUE' : connectionStatus.didReceiveAnything ? 'true' : 'false';
-        
-        gui.innerHTML = 'Localized? (' + connectionStatus.isLocalized +').  ' +
-                        'Created? (' + connectionStatus.isMyAvatarCreated + ').' +
-                        '<br/>' +
-                        'Verified? (' + connectionStatus.isMyAvatarInitialized + ').  ' +
-                        'Occlusion? (' + connectionStatus.isWorldOcclusionObjectAdded + ').' +
-                        '<br/>' +
-                        'Subscribed? (' + connectionStatus.subscribedToHowMany + ').  ' +
-                        '<br/>' +
-                        'Did Send? (' + sendText + ').  ' +
-                        'Did Receive? (' + receiveText + ')' +
-                        '<br/>' +
-                        'My ID: ' + (myAvatarObject ? myAvatarObject.objectId : 'null');
-    }
+    const DEBUG_CONNECTION_STATUS = false;
 
     function initService() {
         console.log('initService: avatar objects');
@@ -373,7 +347,7 @@ createNameSpace("realityEditor.avatarObjects");
         // sceneGraph uploads it to server every 1 second via REST, but we can stream updates in realtime here
         // let dontBroadcast = false;
         // if (!dontBroadcast) {
-        if (Date.now() - lastBroadcastPositionTimestamp < 100) { // limit to 10
+        if (Date.now() - lastBroadcastPositionTimestamp < (1000 / UPDATE_FPS)) { // limit to 10
             return;
         }
         realityEditor.network.realtime.broadcastUpdate(initializedId, null, null, 'matrix', relativeMatrix);
@@ -535,74 +509,14 @@ createNameSpace("realityEditor.avatarObjects");
         connectionStatus.isMyAvatarInitialized = true;
         renderConnectionStatus();
 
-        const TOOL_NAME = 'Avatar'; // these need to match the way the server intializes the tool and node
-        const NODE_NAME = 'storage';
-
-        let avatarObjectKey = myAvatarObject.objectId;
-        let avatarFrameKey = Object.keys(myAvatarObject.frames).find(name => name.includes(TOOL_NAME));
-        let myAvatarTool = realityEditor.getFrame(avatarObjectKey, avatarFrameKey);
-        let avatarNodeKey = Object.keys(myAvatarTool.nodes).find(name => name.includes(NODE_NAME));
-
-        let isPointerDown = false;
         document.body.addEventListener('pointerdown', (e) => {
-            // if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
-
-            console.log('document.body.pointerdown', e.pageX, e.pageY);
-            isPointerDown = true;
-
-            let touchState = {
-                isPointerDown: isPointerDown,
-                screenX: e.pageX,
-                screenY: e.pageY,
-                worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY),
-                timestamp: Date.now()
-            }
-            
-            if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
-
-            realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
-            
-            sendConnectionStatus();
+            if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
+            setBeamOn(e.pageX, e.pageY);
         });
-        
-        function sendConnectionStatus() {
-            if (!connectionStatus.didSendAnything) {
-                connectionStatus.didSendAnything = true;
-                renderConnectionStatus();
-            }
-            if (!connectionStatus.didJustSend && !sendTimeout) {
-                connectionStatus.didJustSend = true;
-                renderConnectionStatus();
-
-                sendTimeout = setTimeout(() => {
-                    connectionStatus.didJustSend = false;
-                    renderConnectionStatus();
-                    clearTimeout(sendTimeout);
-                    sendTimeout = null;
-                }, 1000);
-            }
-        }
 
         let pointerUpHandler = (e) => {
-            // if (!isPointerDown) { return; }
-            // if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
-
-            console.log('document.body.pointerup', e.pageX, e.pageY);
-            isPointerDown = false;
-
-            let touchState = {
-                isPointerDown: isPointerDown,
-                screenX: e.pageX,
-                screenY: e.pageY,
-                worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY),
-                timestamp: Date.now()
-            }
-
-            // if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
-
-            realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
-            
-            sendConnectionStatus();
+            if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
+            setBeamOff();
         }
         document.body.addEventListener('pointerup', pointerUpHandler);
         document.body.addEventListener('pointercancel', pointerUpHandler);
@@ -610,30 +524,34 @@ createNameSpace("realityEditor.avatarObjects");
 
         document.body.addEventListener('pointermove', (e) => {
             if (!isPointerDown) { return; }
-            // if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
+            if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
 
-            if (Date.now() - lastWritePublicDataTimestamp < 100) { // limit to 10 FPS
+            if (Date.now() - lastWritePublicDataTimestamp < (1000 / UPDATE_FPS)) { // limit to 10 FPS
                 return;
             }
-            
-            console.log('document.body.pointermove', e.pageX, e.pageY);
 
-            let touchState = {
-                isPointerDown: isPointerDown,
-                screenX: e.pageX,
-                screenY: e.pageY,
-                worldIntersectPoint: getRaycastCoordinates(e.pageX, e.pageY),
-                timestamp: Date.now()
-            }
+            setBeamOn(e.pageX, e.pageY); // updates the beam position
 
-            if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
-
-            realityEditor.network.realtime.writePublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', touchState);
-
-            sendConnectionStatus();
-            
             lastWritePublicDataTimestamp = Date.now();
         });
+    }
+
+    function refreshConnectionStatus() {
+        if (!connectionStatus.didSendAnything) {
+            connectionStatus.didSendAnything = true;
+            renderConnectionStatus();
+        }
+        if (!connectionStatus.didJustSend && !sendTimeout) {
+            connectionStatus.didJustSend = true;
+            renderConnectionStatus();
+
+            sendTimeout = setTimeout(() => {
+                connectionStatus.didJustSend = false;
+                renderConnectionStatus();
+                clearTimeout(sendTimeout);
+                sendTimeout = null;
+            }, 1000);
+        }
     }
 
     /**
@@ -666,8 +584,113 @@ createNameSpace("realityEditor.avatarObjects");
     function getAvatarObjects() {
         return avatarObjects;
     }
+    
+    function getAvatarNodeInfo() {
+        if (!myAvatarObject) { return null; }
+
+        const TOOL_NAME = 'Avatar'; // these need to match the way the server intializes the tool and node
+        const NODE_NAME = 'storage';
+
+        let avatarObjectKey = myAvatarObject.objectId;
+        let avatarFrameKey = Object.keys(myAvatarObject.frames).find(name => name.includes(TOOL_NAME));
+        let myAvatarTool = realityEditor.getFrame(avatarObjectKey, avatarFrameKey);
+        if (!myAvatarTool) { return null; }
+
+        let avatarNodeKey = Object.keys(myAvatarTool.nodes).find(name => name.includes(NODE_NAME));
+        if (!avatarNodeKey) { return null; }
+
+        return {
+            objectKey: avatarObjectKey,
+            frameKey: avatarFrameKey,
+            nodeKey: avatarNodeKey
+        }
+    }
+    
+    function setBeamOn(screenX, screenY) {
+        // console.log('document.body.pointerdown', screenX, screenY);
+        isPointerDown = true;
+
+        let touchState = {
+            isPointerDown: isPointerDown,
+            screenX: screenX,
+            screenY: screenY,
+            worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
+            timestamp: Date.now()
+        }
+
+        if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
+
+        let info = getAvatarNodeInfo();
+        if (info) {
+            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'touchState', touchState);
+        }
+
+        refreshConnectionStatus();
+    }
+    
+    function sendBeamPosition() {
+        
+    }
+    
+    function setBeamOff(screenX, screenY) {
+        // console.log('document.body.pointerup', screenX, screenY);
+        isPointerDown = false;
+
+        let touchState = {
+            isPointerDown: isPointerDown,
+            screenX: screenX,
+            screenY: screenY,
+            worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
+            timestamp: Date.now()
+        }
+
+        // we still send if click on nothing, as opposed to setBeamOn which uncomments:
+        // if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; }
+
+        let info = getAvatarNodeInfo();
+        if (info) {
+            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'touchState', touchState);
+        }
+
+        refreshConnectionStatus();
+    }
+
+    function renderConnectionStatus() {
+        if (!DEBUG_CONNECTION_STATUS) { return; }
+
+        let gui = document.getElementById('avatarConnectionStatus');
+        if (!gui) {
+            gui = document.createElement('div');
+            gui.id = 'avatarConnectionStatus';
+            gui.style.position = 'absolute';
+            gui.style.width = '100vw';
+            gui.style.height = '100px';
+            gui.style.left = '0';
+            gui.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+            gui.style.zIndex = '3000';
+            gui.style.transform = 'translateZ(3000px)';
+            document.body.appendChild(gui);
+        }
+        let sendText = connectionStatus.didSendAnything && connectionStatus.didJustSend ? 'TRUE' : connectionStatus.didSendAnything ? 'true' : 'false';
+        let receiveText = connectionStatus.didReceiveAnything && connectionStatus.didJustReceive ? 'TRUE' : connectionStatus.didReceiveAnything ? 'true' : 'false';
+
+        gui.innerHTML = 'Localized? (' + connectionStatus.isLocalized +').  ' +
+            'Created? (' + connectionStatus.isMyAvatarCreated + ').' +
+            '<br/>' +
+            'Verified? (' + connectionStatus.isMyAvatarInitialized + ').  ' +
+            'Occlusion? (' + connectionStatus.isWorldOcclusionObjectAdded + ').' +
+            '<br/>' +
+            'Subscribed? (' + connectionStatus.subscribedToHowMany + ').  ' +
+            '<br/>' +
+            'Did Send? (' + sendText + ').  ' +
+            'Did Receive? (' + receiveText + ')' +
+            '<br/>' +
+            'My ID: ' + (myAvatarObject ? myAvatarObject.objectId : 'null');
+    }
 
     exports.initService = initService;
     exports.getAvatarObjects = getAvatarObjects;
+    exports.setBeamOn = setBeamOn;
+    exports.setBeamOff = setBeamOff;
 
 }(realityEditor.avatarObjects));
