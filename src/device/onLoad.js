@@ -151,7 +151,7 @@ realityEditor.device.onload = function () {
             }.bind(this), 1000);
         }
 
-    }, true).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1')); // default value is based on the current source
+    }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1')); // default value is based on the current source
 
     realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
         console.log('discovery state set to ' + newValue + ' with text ' + textValue);
@@ -171,7 +171,7 @@ realityEditor.device.onload = function () {
         } else {
             realityEditor.app.setAspectRatio(16/9);
         }
-    }, true).moveToDevelopMenu();
+    }, { ignoreOnload: true }).moveToDevelopMenu();
 
     // Add a debug toggle to the develop menu that forces the targetDownloader to re-download each time instead of using the cache
     realityEditor.gui.settings.addToggle('Reset Target Cache', 'clear cache of downloaded target data', 'resetTargetCache',  '../../../svg/object.svg', false, function(newValue) {

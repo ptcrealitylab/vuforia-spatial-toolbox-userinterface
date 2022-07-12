@@ -30,12 +30,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     let transformControls = {};
 
     function initService() {
-        // Note that, currently, positioningMode blocks touch events from reaching anything else, so it should be toggled off when not in use
         realityEditor.gui.settings.addToggle('Reposition Ground Anchors', 'surface anchors can be dragged to move tools', 'repositionGroundAnchors',  '../../../svg/move.svg', false, function(newValue) {
-            if (isPositioningMode !== newValue) {
-                togglePositioningMode();
-            }
-        });
+            togglePositioningMode(newValue);
+        }, { dontPersist: true });
 
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
             try {
@@ -168,8 +165,12 @@ createNameSpace("realityEditor.gui.ar.groundPlaneAnchors");
     }
 
     // show and hide the anchors as well as the touch event catcher
-    function togglePositioningMode() {
-        isPositioningMode = !isPositioningMode;
+    function togglePositioningMode(newValue) {
+        if (typeof newValue !== 'undefined') {
+            isPositioningMode = newValue;
+        } else {
+            isPositioningMode = !isPositioningMode;
+        }
         updatePositioningMode(); // refreshes the effects of the current mode
     }
 
