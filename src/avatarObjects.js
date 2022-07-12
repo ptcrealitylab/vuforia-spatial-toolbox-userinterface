@@ -10,6 +10,7 @@ createNameSpace("realityEditor.avatarObjects");
 (function(exports) {
 
     const UPDATE_FPS = 10;
+    const DEBUG_CONNECTION_STATUS = false;
 
     const idPrefix = '_AVATAR_';
     let initializedId = null;
@@ -42,8 +43,6 @@ createNameSpace("realityEditor.avatarObjects");
         didSendAnything: false,
         didJustSend: false
     }
-    
-    const DEBUG_CONNECTION_STATUS = false;
 
     function initService() {
         console.log('initService: avatar objects');
@@ -623,15 +622,13 @@ createNameSpace("realityEditor.avatarObjects");
         let info = getAvatarNodeInfo();
         if (info) {
             realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'touchState', touchState);
+            renderCursorOverlay(true, screenX, screenY);
         }
 
         refreshConnectionStatus();
+
     }
-    
-    function sendBeamPosition() {
-        
-    }
-    
+
     function setBeamOff(screenX, screenY) {
         // console.log('document.body.pointerup', screenX, screenY);
         isPointerDown = false;
@@ -650,6 +647,7 @@ createNameSpace("realityEditor.avatarObjects");
         let info = getAvatarNodeInfo();
         if (info) {
             realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'touchState', touchState);
+            renderCursorOverlay(false, screenX, screenY);
         }
 
         refreshConnectionStatus();
@@ -686,6 +684,27 @@ createNameSpace("realityEditor.avatarObjects");
             'Did Receive? (' + receiveText + ')' +
             '<br/>' +
             'My ID: ' + (myAvatarObject ? myAvatarObject.objectId : 'null');
+    }
+    
+    // when sending a beam, highlight your cursor
+    function renderCursorOverlay(isVisible, screenX, screenY) {
+        let overlay = document.getElementById('beamOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'beamOverlay';
+            overlay.style.position = 'absolute';
+            overlay.style.left = '-10px';
+            overlay.style.top = '-10px';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.width = '20px';
+            overlay.style.height = '20px';
+            overlay.style.borderRadius = '10px';
+            overlay.style.backgroundColor = getColor(myAvatarObject);
+            overlay.style.opacity = '0.5';
+            document.body.appendChild(overlay);
+        }
+        overlay.style.transform = 'translate3d(' + screenX + 'px, ' + screenY + 'px, 1201px)';
+        overlay.style.display = isVisible ? 'inline' : 'none';
     }
 
     exports.initService = initService;
