@@ -26,6 +26,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.toolId = toolId;
 
             this.uncloneables = {};
+            this.extVao = this.gl.getExtension('OES_vertex_array_object');
 
             this.commandBuffer = [];
             this.lastUseProgram = null;
@@ -87,7 +88,7 @@ createNameSpace("realityEditor.gui.glRenderer");
                 }
             }
 
-            if (!this.gl[message.name]) {
+            if (!this.gl[message.name] && !message.name.startsWith('extVao-')) {
                 return;
             }
 
@@ -104,10 +105,11 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
 
             const targettedBinds = {
-                bindAttribLocation: true,
-                bindBuffer: true,
-                bindFramebuffer: true,
-                bindRenderbuffer: true,
+                // bindAttribLocation: true,
+                // bindBuffer: true,
+                // bindFramebuffer: true,
+                // bindRenderbuffer: true,
+
                 // bindTexture: true, // can't be here because of activeTexture nonsense
                 // pixelStorei: true,
                 // texParameterf: true, // 2 hmm
@@ -126,7 +128,14 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
             }
 
-            let res = this.gl[message.name].apply(this.gl, message.args);
+            let res;
+
+            if (message.name.startsWith('extVao-')) {
+                res = this.extVao[message.name.split('-')[1]].apply(this.extVao, message.args);
+            } else {
+                res = this.gl[message.name].apply(this.gl, message.args);
+            }
+
             if (typeof res === 'object') {
                 this.uncloneables[message.id] = res;
                 res = {fakeClone: true, index: message.id};
