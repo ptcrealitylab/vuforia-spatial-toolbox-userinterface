@@ -36,6 +36,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
         renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( rendererWidth, rendererHeight );
+        renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
         document.body.appendChild( renderer.domElement );
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
