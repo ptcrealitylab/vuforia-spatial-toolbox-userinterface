@@ -23,7 +23,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
 
-    const DISPLAY_ORIGIN_BOX = true;
+    const DISPLAY_ORIGIN_BOX = false;
 
     let customMaterials;
 
