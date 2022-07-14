@@ -32,6 +32,7 @@ createNameSpace("realityEditor.gui.glRenderer");
              * for this.extVao instead of this.gl
              */
             this.extVao = this.gl.getExtension('OES_vertex_array_object');
+            this.gl.getExtension('OES_texture_float');
 
             this.commandBuffer = [];
             this.lastUseProgram = null;
