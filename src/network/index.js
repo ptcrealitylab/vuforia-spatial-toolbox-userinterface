@@ -2694,7 +2694,6 @@ realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, fra
 realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback) {
     if (!nodeKey) nodeKey = null;
     if (!frameKey) frameKey = null;
-    var _this = this;
     var req = new XMLHttpRequest();
     try {
         req.open('GET', url, true);
@@ -2703,14 +2702,25 @@ realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, cal
             if (req.readyState === 4) {
                 if (req.status >= 200 && req.status <= 299) {
                     // JSON.parse(req.responseText) etc.
-                    if (req.responseText)
+                    if (req.responseText) {
                         callback(objectKey, frameKey, nodeKey, JSON.parse(req.responseText));
+                    } else {
+                        callback(objectKey, frameKey, nodeKey, req.responseText);
+                    }
                 } else {
                     // Handle error case
                     console.log("could not load content for GET:" + url);
                 }
             }
         };
+
+        req.onerror = (e) => {
+          console.error('realityEditor.network.getData xhr error', url, e);
+        };
+        req.ontimeout = (e) => {
+          console.error('realityEditor.network.getData xhr timeout', url, e);
+        };
+
         req.send();
 
     }
