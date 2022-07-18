@@ -7,8 +7,11 @@ createNameSpace("realityEditor.addons");
     }).then((addonSources) => {
         // Inject all scripts, counting on them to load asynchronously and add
         // their own callbacks
-        for (const source of addonSources) {
+        for (let source of addonSources) {
             const scriptNode = document.createElement('script');
+            if (source.startsWith('/')) {
+              source = '.' + source;
+            }
             scriptNode.src = source;
             scriptNode.type = 'module';
             document.head.appendChild(scriptNode);
