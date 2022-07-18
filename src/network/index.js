@@ -2701,7 +2701,7 @@ realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, cal
         // Just like regular ol' XHR
         req.onreadystatechange = function () {
             if (req.readyState === 4) {
-                if (req.status === 200) {
+                if (req.status >= 200 && req.status <= 299) {
                     // JSON.parse(req.responseText) etc.
                     if (req.responseText)
                         callback(objectKey, frameKey, nodeKey, JSON.parse(req.responseText));
@@ -2737,7 +2737,7 @@ realityEditor.network.postData = function (url, body, callback) {
             return;
         }
 
-        if (request.status === 200) {
+        if (request.status >= 200 && request.status <= 299) {
             try {
                 callback(null, JSON.parse(request.responseText));
             } catch (e) {
