@@ -110,6 +110,9 @@ createNameSpace("realityEditor.avatarObjects");
             if (!cachedWorldObject) {
                 cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
             }
+            if (!cachedWorldObject) {
+                return;
+            }
             if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
                 cachedWorldObject = null; // don't accept the local world object
             }
@@ -561,11 +564,14 @@ createNameSpace("realityEditor.avatarObjects");
      */
     function addAvatarObject(worldId, clientId) {
         let worldObject = realityEditor.getObject(worldId);
-        if (!worldObject) { return; }
+        if (!worldObject) {
+            console.warn('Unable to add avatar object', worldId);
+            return;
+        }
 
         let postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
         let params = new URLSearchParams({action: 'new', name: clientId, isAvatar: true, worldId: worldId});
-        fetch(postUrl, {
+        return fetch(postUrl, {
             method: 'POST',
             body: params
         }).then(response => response.json())
@@ -576,8 +582,9 @@ createNameSpace("realityEditor.avatarObjects");
 
                 connectionStatus.isMyAvatarCreated = true;
                 renderConnectionStatus();
-            });
-        return false;
+        }).catch(e => {
+            console.error('Unable to add avatar object', e);
+        });
     }
 
     function getAvatarObjects() {
