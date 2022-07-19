@@ -155,7 +155,7 @@ createNameSpace("realityEditor.avatarObjects");
                     avatarMeshes[objectKey].pointer.visible = false;
                     avatarMeshes[objectKey].beam.visible = false;
                 }
-                return;
+                continue;
             }
 
             const THREE = realityEditor.gui.threejsScene.THREE;
