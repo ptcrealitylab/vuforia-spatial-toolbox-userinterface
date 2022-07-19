@@ -39,6 +39,9 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( rendererWidth, rendererHeight );
         renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.outputEncoding = THREE.sRGBEncoding;
         document.body.appendChild( renderer.domElement );
         camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
         camera.matrixAutoUpdate = false;
