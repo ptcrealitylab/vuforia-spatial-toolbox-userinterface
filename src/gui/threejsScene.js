@@ -6,6 +6,7 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
+import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 
 (function(exports) {
 
@@ -18,7 +19,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    let groundPlane;
+    let groundPlaneCollider;
     let raycaster;
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
@@ -73,7 +74,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         // threejsContainerObj.add( mesh );
         // mesh.position.setZ(150);
 
-        addGroundPlaneCollisionObject(); // invisible object for raycasting intersections with ground plane
+        addGroundPlaneCollider(); // invisible object for raycasting intersections with ground plane
 
         renderScene(); // update loop
 
@@ -119,16 +120,16 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
     // this is different from the ground plane visualizer element
-    function addGroundPlaneCollisionObject() {
-        const sceneSizeInMeters = 30;
+    function addGroundPlaneCollider() {
+        const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
         const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        const material = new THREE.MeshBasicMaterial( {color: 0x00ffff, side: THREE.DoubleSide} );
+        const material = new THREE.MeshBasicMaterial( {color: 0x88ffff, side: THREE.DoubleSide} );
         const plane = new THREE.Mesh( geometry, material );
         plane.rotateX(Math.PI/2);
         plane.visible = false;
         addToScene(plane, {occluded: true});
-        plane.name = 'groundPlaneElement';
-        groundPlane = plane;
+        plane.name = 'groundPlaneCollider';
+        groundPlaneCollider = plane;
     }
 
     function renderScene() {
@@ -414,6 +415,8 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
 
     // this module exports this utility so that other modules can perform hit tests
     // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
+    // NOTE: returns the coordinates in threejs scene world coordinates:
+    //       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
     function getRaycastIntersects(clientX, clientY, objectsToCheck) {
         mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
@@ -454,8 +457,8 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         return scene.getObjectByName(name);
     }
 
-    function getGroundPlane() {
-        return groundPlane;
+    function getGroundPlaneCollider() {
+        return groundPlaneCollider;
     }
 
     class CustomMaterials {
@@ -576,6 +579,10 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
         return transformControls;
     }
 
+    exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
+        return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance)
+    }
+
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -588,7 +595,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
     exports.getRaycastIntersects = getRaycastIntersects;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
-    exports.getGroundPlane = getGroundPlane;
+    exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.addTransformControlsTo = addTransformControlsTo;

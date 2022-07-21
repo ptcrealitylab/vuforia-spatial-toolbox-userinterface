@@ -39,6 +39,7 @@ createNameSpace("realityEditor.device.environment");
         listenForDeviceOrientationChanges: true,
         enableViewFrustumCulling: true,
         layoutUIForPortrait: false,
+        defaultShowGroundPlane: false,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
@@ -54,7 +55,9 @@ createNameSpace("realityEditor.device.environment");
         addOcclusionGltf: true, // by default loads the occlusion mesh, but a VR viewer can disable this
         suppressObjectDetections: false, // temporarily toggle on to stop UDP messages from triggered object download
         suppressObjectRendering: false, // temporarily toggle on to stop rendering objects/tools/nodes
-        overrideAreaTargetScanningUI: false // hide the default status textfield for the area target scanning
+        overrideAreaTargetScanningUI: false, // hide the default status textfield for the area target scanning
+        // colors
+        groundWireframeColor: 'rgb(0, 255, 255)',
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property
