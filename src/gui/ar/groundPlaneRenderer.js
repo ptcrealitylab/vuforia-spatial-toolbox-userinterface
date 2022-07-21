@@ -14,23 +14,17 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
 (function(exports) {
 
-    const sceneSize = 30; // meters
+    const maxVisibilityDistanceInMm = 50000; // grid fades into distance 50 meters away from camera
+    const gridSquareSizeInMm = 500;
+    const gridRegionSizeInMm = gridSquareSizeInMm * 10; // each 10 grid squares are grouped by a thicker line
 
     let shouldVisualize = false;
     var isUpdateListenerRegistered = false;
 
-    let elementName = 'groundPlaneVisualization';
-    let elementId = null;
-
-    let originName = 'groundPlaneOrigin';
-    let originId = originName;
-    
-    let gridHelper = null;
-
-    let elementPositionData = {
-        x: 0,
-        y: 0
-    };
+    let gridHelper = null; // this is the actual groundplane (THREE.InfiniteGridHelper)
+    let origin = null; // a small cube that is placed on the groundplane origin
+    let target = null; // this is where the center of the screen raycasts against the groundplane
+    let cachedGroundPlaneCollider = null;
 
     let centerPoint = new WebKitPoint(globalStates.height/2, globalStates.width/2);
 
@@ -39,7 +33,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
      */
     function initService() {
 
-        realityEditor.gui.settings.addToggle('Visualize Ground Plane', 'shows detected ground plane', 'visualizeGroundPlane',  '../../../svg/powerSave.svg', false, function(newValue) {
+        let defaultShow = realityEditor.device.environment.variables.defaultShowGroundPlane;
+        realityEditor.gui.settings.addToggle('Visualize Ground Plane', 'shows detected ground plane', 'visualizeGroundPlane',  '../../../svg/powerSave.svg', defaultShow, function(newValue) {
             // only draw frame ghosts while in programming mode if we're not in power-save mode
             shouldVisualize = newValue;
 
@@ -51,9 +46,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 stopVisualization();
                 realityEditor.gui.menus.switchToMenu('main');
             }
-        });
+        }, { dontPersist: true });
 
-        // // register callbacks to various buttons to perform commits
+        // register callbacks to various buttons to perform commits
         realityEditor.gui.buttons.registerCallbackForButton('groundPlaneReset', function(params) {
             if (params.newButtonState === 'down') {
                 // search for groundplane when button is pressed
@@ -69,8 +64,8 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     }
 
     function startVisualization() {
-        // add a scene node to the groundPlane's rotateX sceneGraph node
-        if (!realityEditor.sceneGraph.getVisualElement(elementName)) {
+        if (!gridHelper) {
+            // check that the ground plane exists before we start the visualization
             let gpId = realityEditor.sceneGraph.NAMES.GROUNDPLANE;
             let gpRxId = gpId + realityEditor.sceneGraph.TAGS.ROTATE_X;
             let groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpRxId);
@@ -78,7 +73,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 groundPlaneSceneNode = realityEditor.sceneGraph.getSceneNodeById(gpId);
             }
 
-            // Ground plane must exist.. if it doesn't reschedule this to happen later
+            // Ground plane must exist... if it doesn't reschedule this to happen later
             if (!groundPlaneSceneNode) {
                 setTimeout(function() {
                     console.log('waiting for groundPlane sceneGraph before starting visualization');
@@ -86,25 +81,70 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
                 }, 100);
                 return;
             }
-            elementId = realityEditor.sceneGraph.addVisualElement(elementName, groundPlaneSceneNode);
         }
 
-        // create the DOM element that should visualize it and add it to the scene
-        let element = getVisualizerElement();
-        document.getElementById('GUI').appendChild(element);
+        const THREE = realityEditor.gui.threejsScene.THREE;
 
-        let origin = getOriginElement();
-        document.getElementById('GUI').appendChild(origin);
-        
+        // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
-            const divisions = sceneSize * 2;
-            const size = (1000 / 2) * divisions;
-            const THREE = realityEditor.gui.threejsScene.THREE;
-            const colorCenterLine = new THREE.Color(1, 1, 1);
-            const colorGrid = new THREE.Color(0, 1, 1);
-            gridHelper = new THREE.GridHelper( size, divisions, colorCenterLine, colorGrid );
+            const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
+            gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
+        }
+
+        // don't show origin on devices that don't support AR tracking, because it's to help debug the groundplane tracker
+        if (!origin && realityEditor.device.environment.variables.waitForARTracking) {
+            origin = new THREE.Group();
+            const length = 100;
+            const height = 10;
+            const crossHairColor = 0xffffff;
+
+            let horizontal = new THREE.Mesh(new THREE.BoxGeometry(length,height,height), new THREE.MeshBasicMaterial({color: crossHairColor}));
+            origin.add(horizontal);
+            let vertical = new THREE.Mesh(new THREE.BoxGeometry(height,height,length), new THREE.MeshBasicMaterial({color: crossHairColor}));
+            origin.add(vertical);
+
+            realityEditor.gui.threejsScene.addToScene(origin, {occluded: false});
+        }
+
+        // create a moving panel on the ground with four corners (using 8 boxes for the lines) and a center dot
+        if (!target && realityEditor.device.environment.variables.waitForARTracking) {
+            target = new THREE.Group();
+            realityEditor.gui.threejsScene.addToScene(target, {occluded: true});
+
+            const halfWidth = 64;
+            const cornerSize = halfWidth/4;
+            const cornerHeight = cornerSize/4;
+            const cornerColor = 0x00ffff;
+
+            // add a dot in the middle that is similarly sized to each of the corners
+            let center = new THREE.Mesh(new THREE.BoxGeometry(cornerSize,cornerHeight,cornerSize), new THREE.MeshBasicMaterial({color:0x00ffff}));
+            target.add(center);
+
+            // x and z position the corner origin
+            // dx and dz adjust the position of each of the two crossbars that form that corner
+            let corners = {
+                topLeft: { x: -1, z: -1, rot: 0 },
+                bottomLeft: { x: -1, z: 1, rot: Math.PI/2 },
+                bottomRight: { x: 1, z: 1, rot: Math.PI },
+                topRight: { x: 1, z: -1, rot: Math.PI*3/2 }
+            };
+
+            Object.values(corners).forEach(info => {
+                let corner = new THREE.Group();
+                corner.position.set(info.x * halfWidth, 0, info.z * halfWidth);
+                corner.rotateY(info.rot);
+                target.add(corner);
+
+                let horizontal = new THREE.Mesh(new THREE.BoxGeometry(cornerHeight,cornerHeight,cornerSize), new THREE.MeshBasicMaterial({color: cornerColor}));
+                horizontal.position.set(-cornerSize/2, 0, 0);
+                corner.add(horizontal);
+
+                let vertical = new THREE.Mesh(new THREE.BoxGeometry(cornerSize,cornerHeight,cornerHeight), new THREE.MeshBasicMaterial({color: cornerColor}));
+                vertical.position.set(0, 0, -cornerSize/2);
+                corner.add(vertical);
+            });
         }
 
         // add/activate the update loop
@@ -116,18 +156,17 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     }
 
     function stopVisualization() {
-        let element = getVisualizerElement();
-        if (element && element.parentNode) {
-            element.parentNode.removeChild(element);
-        }
-        element = getOriginElement();
-        if (element && element.parentNode) {
-            element.parentNode.removeChild(element);
-        }
-        
         if (gridHelper) {
             realityEditor.gui.threejsScene.removeFromScene(gridHelper);
             gridHelper = null;
+        }
+        if (target) {
+            realityEditor.gui.threejsScene.removeFromScene(target);
+            target = null;
+        }
+        if (origin) {
+            realityEditor.gui.threejsScene.removeFromScene(origin);
+            origin = null;
         }
     }
 
@@ -135,96 +174,23 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         // render the ground plane visualizer
         if (!shouldVisualize) { return; } // TODO: actively unsubscribe on stop, so we don't have to ignore loop here
 
-        // raycast from screen coordinates (center of screen) onto groundplane
-        // move the visualizer element to the resulting (x,y)
-
-        // this gets used for the origin and the moving visualizer
-        let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrix(elementId);
-
-        let origin = getOriginElement();
-        untransformedMatrix[14] = 10;
-        origin.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
-
-        // use the origin DOM element to convert the screen coordinate to the coordinate system of the plane
-        elementPositionData = webkitConvertPointFromPageToNode(origin, centerPoint);
-
-        let transform = [1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            elementPositionData.x, elementPositionData.y, 0, 1];
-
-        let finalMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(transform, untransformedMatrix, finalMatrix);
-
-        let element = getVisualizerElement();
-        element.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
-    }
-
-    const visualizerContentSize = 100;
-
-    function getVisualizerElement() {
-        if (!globalDOMCache[elementId]) {
-            // create if it doesn't exist
-            // first create a container with the width and height of the screen. then add to that
-
-            // TODO: fiX the offset of the ground plane element so that it stays centered on the screen
-            // let offsetContainer = document.createElement('div');
-            // offsetContainer.classList.add('main');
-            // offsetContainer.id = 'offset' + elementId;
-
-            let visualizerContainer = document.createElement('div');
-            visualizerContainer.id = elementId;
-            visualizerContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
-            // IMPORTANT NOTE: the container size must be the size of the screen for the 3d math to work
-            visualizerContainer.style.width = globalStates.height + 'px';
-            visualizerContainer.style.height = globalStates.width + 'px';
-
-            // the contents are a different size than the screen, so we add another div and center it
-            let visualizerContents = document.createElement('img');
-            visualizerContents.src = '../../../svg/groundplane-corners.svg';
-            visualizerContents.id = 'visualizerContents' + elementId;
-            visualizerContents.classList.add('groundPlaneVisualizer', 'usePointerEvents');
-            visualizerContents.style.left = (globalStates.height/2 - visualizerContentSize/2) + 'px';
-            visualizerContents.style.top = (globalStates.width/2 - visualizerContentSize/2) + 'px';
-
-            // offsetContainer.appendChild(visualizerContainer);
-            visualizerContainer.appendChild(visualizerContents);
-
-            globalDOMCache[elementId] = visualizerContainer;
-            globalDOMCache['visualizerContents' + elementId] = visualizerContents;
-            // globalDOMCache['offset' + elementId] = offsetContainer;
+        if (!cachedGroundPlaneCollider) {
+            cachedGroundPlaneCollider = realityEditor.gui.threejsScene.getGroundPlaneCollider(); // grid helper has holes so use plane collider
+        }
+        if (!cachedGroundPlaneCollider) {
+            return;
         }
 
-        return globalDOMCache[elementId];
-    }
+        if (target) {
+            // raycast from center of screen onto groundplane and move the visualizer to the resulting (x,y)
+            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(centerPoint.x, centerPoint.y, [cachedGroundPlaneCollider]);
+            if (raycastIntersects.length === 0) { return; }
 
-    function getOriginElement() {
-        if (!globalDOMCache[originId]) {
-            // create if it doesn't exist
-            // first create a container with the width and height of the screen. then add to that
+            // transform the world coordinate into the groundplane coordinate system
+            gridHelper.worldToLocal(raycastIntersects[0].point);
 
-            let originContainer = document.createElement('div');
-            originContainer.id = originId;
-            originContainer.classList.add('ignorePointerEvents', 'main', 'visibleFrameContainer');
-            // IMPORTANT NOTE: the container size must be the size of the screen for the 3d math to work
-            originContainer.style.width = globalStates.height + 'px';
-            originContainer.style.height = globalStates.width + 'px';
-
-            // the contents are a different size than the screen, so we add another div and center it
-            let visualizerContents = document.createElement('img');
-            visualizerContents.src = '../../../svg/groundplane-crosshair.svg';
-            visualizerContents.id = 'visualizerContents' + elementId;
-            visualizerContents.classList.add('groundPlaneOrigin', 'usePointerEvents');
-            visualizerContents.style.left = (globalStates.height/2 - visualizerContentSize/2) + 'px';
-            visualizerContents.style.top = (globalStates.width/2 - visualizerContentSize/2) + 'px';
-
-            originContainer.appendChild(visualizerContents);
-
-            globalDOMCache[originId] = originContainer;
-            globalDOMCache['visualizerContents' + originId] = visualizerContents;
+            target.position.set(raycastIntersects[0].point.x, 0, raycastIntersects[0].point.z);
         }
-
-        return globalDOMCache[originId];
     }
 
     exports.initService = initService;
