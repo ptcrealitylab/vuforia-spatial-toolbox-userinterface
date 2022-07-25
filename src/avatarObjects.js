@@ -131,7 +131,7 @@ createNameSpace("realityEditor.avatarObjects");
     }
 
     function handleDiscoveredObject(object, objectKey) {
-        if (object.type === 'avatar') {
+        if (isAvatarObject(object)) {
             if (typeof avatarObjects[objectKey] === 'undefined') {
                 avatarObjects[objectKey] = object;
                 
@@ -714,9 +714,14 @@ createNameSpace("realityEditor.avatarObjects");
         overlay.style.display = isVisible ? 'inline' : 'none';
     }
 
+    function isAvatarObject(object) {
+        return object.type === 'avatar' || object.objectId.indexOf('_AVATAR_') === 0;
+    }
+
     exports.initService = initService;
     exports.getAvatarObjects = getAvatarObjects;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
+    exports.isAvatarObject = isAvatarObject;
 
 }(realityEditor.avatarObjects));
