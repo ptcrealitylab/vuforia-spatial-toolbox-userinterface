@@ -296,8 +296,10 @@ realityEditor.device.utilities.diffArrays = function(oldArray, newArray) {
  * @return {boolean}
  */
 realityEditor.device.utilities.isEventHittingBackground = function(event) {
-    var activeVehicle = realityEditor.device.getEditingVehicle();
-    return (event.target.tagName === 'BODY' || event.target.id === 'canvas' || event.target.id === 'groupSVG' || event.target.className === 'memoryBackground') && !activeVehicle;
+    let activeVehicle = realityEditor.device.getEditingVehicle();
+    return (event.target.tagName === 'BODY' || event.target.id === 'mainThreejsCanvas' ||
+        event.target.id === 'canvas' || event.target.id === 'groupSVG' ||
+        event.target.className === 'memoryBackground') && !activeVehicle;
 };
 
 /**

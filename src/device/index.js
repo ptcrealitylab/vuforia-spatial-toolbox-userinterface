@@ -1026,10 +1026,7 @@ realityEditor.device.onDocumentPointerDown = function(event) {
     overlayDiv.style.display = "inline";
     // Translate up 6px to be above pocket layer
     overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
-    
-    // var activeVehicle = this.getEditingVehicle();
-    
-    // If the event is hitting the background and it isn't the multi-touch to scale an object
+
     if (realityEditor.device.utilities.isEventHittingBackground(event)) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
@@ -1214,8 +1211,6 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             });
         }
     });
-
-    // var activeVehicle = this.getEditingVehicle();
 
     // If the event is hitting the background and it isn't the multi-touch to scale an object
     if (realityEditor.device.utilities.isEventHittingBackground(event)) {

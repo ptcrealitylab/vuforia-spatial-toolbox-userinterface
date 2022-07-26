@@ -513,7 +513,10 @@ createNameSpace("realityEditor.avatarObjects");
 
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.environment.requiresMouseEvents() && (e.button === 2 || e.button === 1)) { return; } // ignore right-clicks
-            setBeamOn(e.pageX, e.pageY);
+
+            if (realityEditor.device.utilities.isEventHittingBackground(e)) {
+                setBeamOn(e.pageX, e.pageY);
+            }
         });
 
         let pointerUpHandler = (e) => {
