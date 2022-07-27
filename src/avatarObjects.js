@@ -10,7 +10,8 @@ createNameSpace("realityEditor.avatarObjects");
 (function(exports) {
 
     const UPDATE_FPS = 10;
-    const DEBUG_CONNECTION_STATUS = false;
+    let debugMode = false; // can be toggled from menu
+    let debugUI = null;
 
     const idPrefix = '_AVATAR_';
     let initializedId = null;
@@ -171,7 +172,7 @@ createNameSpace("realityEditor.avatarObjects");
             if (typeof avatarMeshes[objectKey] === 'undefined') {
                 avatarMeshes[objectKey] = {
                     // device: boxMesh('#ffff00', objectKey + 'device'),
-                    pointer: sphereMesh(color, objectKey + 'pointer', 25),
+                    pointer: sphereMesh(color, objectKey + 'pointer', 50),
                     beam: cylinderMesh(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(1, 0, 0), color)
                 }
                 if (RENDER_DEVICE_CUBE) {
@@ -664,25 +665,29 @@ createNameSpace("realityEditor.avatarObjects");
     }
 
     function renderConnectionStatus() {
-        if (!DEBUG_CONNECTION_STATUS) { return; }
+        if (!debugMode) {
+            if (debugUI) { debugUI.style.display = 'none'; }
+            return;
+        }
 
-        let gui = document.getElementById('avatarConnectionStatus');
-        if (!gui) {
-            gui = document.createElement('div');
-            gui.id = 'avatarConnectionStatus';
-            gui.style.position = 'absolute';
-            gui.style.width = '100vw';
-            gui.style.height = '100px';
-            gui.style.left = '0';
-            gui.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-            gui.style.zIndex = '3000';
-            gui.style.transform = 'translateZ(3000px)';
-            document.body.appendChild(gui);
+        if (!debugUI) {
+            debugUI = document.createElement('div');
+            debugUI.id = 'avatarConnectionStatus';
+            debugUI.style.pointerEvents = 'none';
+            debugUI.style.position = 'absolute';
+            debugUI.style.width = '100vw';
+            debugUI.style.height = '100px';
+            debugUI.style.left = '0';
+            debugUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+            debugUI.style.zIndex = '3000';
+            debugUI.style.transform = 'translateZ(3000px)';
+            document.body.appendChild(debugUI);
         }
         let sendText = connectionStatus.didSendAnything && connectionStatus.didJustSend ? 'TRUE' : connectionStatus.didSendAnything ? 'true' : 'false';
         let receiveText = connectionStatus.didReceiveAnything && connectionStatus.didJustReceive ? 'TRUE' : connectionStatus.didReceiveAnything ? 'true' : 'false';
 
-        gui.innerHTML = 'Localized? (' + connectionStatus.isLocalized +').  ' +
+        debugUI.style.display = '';
+        debugUI.innerHTML = 'Localized? (' + connectionStatus.isLocalized +').  ' +
             'Created? (' + connectionStatus.isMyAvatarCreated + ').' +
             '<br/>' +
             'Verified? (' + connectionStatus.isMyAvatarInitialized + ').  ' +
@@ -721,10 +726,16 @@ createNameSpace("realityEditor.avatarObjects");
         return object.type === 'avatar' || object.objectId.indexOf('_AVATAR_') === 0;
     }
 
+    function toggleDebugMode(showDebug) {
+        debugMode = showDebug;
+        renderConnectionStatus();
+    }
+
     exports.initService = initService;
     exports.getAvatarObjects = getAvatarObjects;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.isAvatarObject = isAvatarObject;
+    exports.toggleDebugMode = toggleDebugMode;
 
 }(realityEditor.avatarObjects));
