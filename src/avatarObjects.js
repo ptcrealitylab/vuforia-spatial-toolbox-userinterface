@@ -10,7 +10,7 @@ createNameSpace("realityEditor.avatarObjects");
 (function(exports) {
 
     const UPDATE_FPS = 10;
-    const DEBUG_CONNECTION_STATUS = false;
+    let debugMode = false; // can be toggled from menu
 
     const idPrefix = '_AVATAR_';
     let initializedId = null;
@@ -664,12 +664,17 @@ createNameSpace("realityEditor.avatarObjects");
     }
 
     function renderConnectionStatus() {
-        if (!DEBUG_CONNECTION_STATUS) { return; }
-
         let gui = document.getElementById('avatarConnectionStatus');
+
+        if (!debugMode) {
+            if (gui) { gui.style.display = 'none'; }
+            return;
+        }
+
         if (!gui) {
             gui = document.createElement('div');
             gui.id = 'avatarConnectionStatus';
+            gui.style.pointerEvents = 'none';
             gui.style.position = 'absolute';
             gui.style.width = '100vw';
             gui.style.height = '100px';
@@ -682,6 +687,7 @@ createNameSpace("realityEditor.avatarObjects");
         let sendText = connectionStatus.didSendAnything && connectionStatus.didJustSend ? 'TRUE' : connectionStatus.didSendAnything ? 'true' : 'false';
         let receiveText = connectionStatus.didReceiveAnything && connectionStatus.didJustReceive ? 'TRUE' : connectionStatus.didReceiveAnything ? 'true' : 'false';
 
+        gui.style.display = '';
         gui.innerHTML = 'Localized? (' + connectionStatus.isLocalized +').  ' +
             'Created? (' + connectionStatus.isMyAvatarCreated + ').' +
             '<br/>' +
@@ -721,10 +727,16 @@ createNameSpace("realityEditor.avatarObjects");
         return object.type === 'avatar' || object.objectId.indexOf('_AVATAR_') === 0;
     }
 
+    function toggleDebugMode(showDebug) {
+        debugMode = showDebug;
+        renderConnectionStatus();
+    }
+
     exports.initService = initService;
     exports.getAvatarObjects = getAvatarObjects;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.isAvatarObject = isAvatarObject;
+    exports.toggleDebugMode = toggleDebugMode;
 
 }(realityEditor.avatarObjects));
