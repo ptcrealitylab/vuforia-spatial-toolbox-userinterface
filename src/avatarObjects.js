@@ -9,8 +9,8 @@ createNameSpace("realityEditor.avatarObjects");
 
 (function(exports) {
 
-    const UPDATE_FPS = 10;
-    let debugMode = false; // can be toggled from menu
+    const UPDATE_FPS = 30;
+    let debugMode = true; // can be toggled from menu
     let debugUI = null;
 
     const idPrefix = '_AVATAR_';
@@ -170,10 +170,31 @@ createNameSpace("realityEditor.avatarObjects");
 
             // show a three.js cube at the avatar's matrix, and a beam that goes from the device to its destination point
             if (typeof avatarMeshes[objectKey] === 'undefined') {
+
+                let pointerGroup = new THREE.Group();
+                let pointerSphere = sphereMesh(color, objectKey + 'pointer', 50);
+                pointerGroup.add(pointerSphere);
+                // let pointerTextGeometry = realityEditor.gui.threejsScene.createTextGeometry('BR', {});
+                // if (pointerTextGeometry) {
+                    // let materials = [
+                    //     new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0 } ),
+                    //     new THREE.MeshBasicMaterial( { color: 0x000000, shading: THREE.FlatShading, wireframe: true, transparent: true } )
+                    // ];
+                    // mesh = THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
+                    // let textMat = new THREE.MeshBasicMaterial({color: '#ffffff'});
+                    // let pointerText = new THREE.Mesh(pointerTextGeometry, textMat);
+                    // let pointerText = THREE.SceneUtils.createMultiMaterialObject(pointerTextGeometry, materials);
+                    
+                    let pointerText = realityEditor.gui.threejsScene.createTextMesh('BR', {});
+                    pointerGroup.add(pointerText);
+                    pointerText.position.x = 100;
+                // }
+
                 avatarMeshes[objectKey] = {
                     // device: boxMesh('#ffff00', objectKey + 'device'),
-                    pointer: sphereMesh(color, objectKey + 'pointer', 50),
-                    beam: cylinderMesh(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(1, 0, 0), color)
+                    pointer: pointerGroup,
+                    beam: cylinderMesh(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(1, 0, 0), color),
+                    textLabel: createTextLabel(objectKey)
                 }
                 if (RENDER_DEVICE_CUBE) {
                     avatarMeshes[objectKey].device = boxMesh(color, objectKey + 'device')
@@ -220,6 +241,12 @@ createNameSpace("realityEditor.avatarObjects");
                 convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
 
                 avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+                // get the 2D screen coordinates of the pointer, and render a text bubble next to it with the name of the sender
+                let screenCoords = realityEditor.gui.threejsScene.getScreenXY(avatarMeshes[objectKey].pointer.getWorldPosition());
+                console.log(screenCoords);
+                avatarMeshes[objectKey].textLabel.style.display = 'inline';
+                avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + 'px';
+                avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + 'px';
 
                 let startPosition = new THREE.Vector3(avatarObjectMatrixThree.elements[12], avatarObjectMatrixThree.elements[13], avatarObjectMatrixThree.elements[14]);
                 let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
@@ -228,6 +255,13 @@ createNameSpace("realityEditor.avatarObjects");
                 realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
             }
         }
+    }
+    
+    function createTextLabel(objectKey) {
+        let label = document.createElement('div');
+        label.id = 'avatarBeamLabel_' + objectKey;
+        label.classList.add('avatarBeamLabel');
+        return label;
     }
 
     // helper function to generate an integer hash from a string (https://stackoverflow.com/a/15710692)

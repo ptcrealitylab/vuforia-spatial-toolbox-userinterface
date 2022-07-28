@@ -1693,3 +1693,11 @@ Logic Interface CSS
     display: none;
     visibility: hidden;
 }
+
+.avatarBeamLabel {
+    position: absolute;
+    display: none;
+    color: white;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-size: 32px;
+}

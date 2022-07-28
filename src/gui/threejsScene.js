@@ -1,3 +1,5 @@
+import {TextGeometry} from "../../thirdPartyCode/three/three.module.js";
+
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
@@ -6,6 +8,7 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
+import { SceneUtils } from '../../thirdPartyCode/three/SceneUtils.js';
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 
 (function(exports) {
@@ -25,6 +28,9 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
+    let fonts = {
+        helveticaNeue: null // set in fontLoader callback
+    };
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -86,6 +92,8 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
+        
+        loadFonts();
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -584,6 +592,71 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 
     exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
         return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance)
+    }
+
+    function loadFonts() {
+        const fontLoader = new THREE.FontLoader();
+        fontLoader.load(
+            // resource URL
+            '../../fonts/HelveticaNeue_Medium.json',
+
+            // onLoad callback
+            function ( font ) {
+                // do something with the font
+                console.log( font );
+                fonts.helveticaNeue = font;
+            },
+
+            // onProgress callback
+            function ( xhr ) {
+                console.log( 'font is ' + (xhr.loaded / xhr.total * 100) + '% loaded' );
+            },
+
+            // onError callback
+            function ( err ) {
+                console.log( 'An error happened', err );
+            }
+        );
+    }
+    
+    exports.createTextMesh = function(text, options) {
+        if (!fonts.helveticaNeue) {
+            console.warn('still loading font... try again');
+            return;
+        }
+        if (!options) { options = {}; }
+
+        let geometry = new TextGeometry(text, {
+            font: fonts.helveticaNeue,
+            size: options.size || 80,
+            height: options.height || 5,
+            // curveSegments: options.curveSegments || 12,
+            // bevelEnabled: options.bevelEnabled || true,
+            // bevelThickness: options.bevelThickness || 10,
+            // bevelSize: options.bevelSize || 8,
+            // bevelOffset: options.bevelOffset || 0,
+            // bevelSegments: options.bevelSegments || 5
+        });
+
+        let materials = [
+            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0 } ),
+            new THREE.MeshBasicMaterial( { color: 0x000000, shading: THREE.FlatShading, wireframe: true, transparent: true } )
+        ];
+
+        return SceneUtils.createMultiMaterialObject(geometry, materials);
+    }
+
+    // source: https://github.com/mrdoob/three.js/issues/78
+    exports.getScreenXY = function(meshPosition) {
+        let pos = meshPosition.clone();
+        let projScreenMat = new THREE.Matrix4();
+        projScreenMat.multiply( camera.projectionMatrix, camera.matrixWorldInverse );
+        projScreenMat.multiplyVector3( pos );
+
+        return {
+            x: ( pos.x + 1 ) * window.innerWidth / 2,
+            y: ( -pos.y + 1) * window.innerHeight / 2
+        };
     }
 
     exports.initService = initService;
