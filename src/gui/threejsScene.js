@@ -650,8 +650,8 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
     exports.getScreenXY = function(meshPosition) {
         let pos = meshPosition.clone();
         let projScreenMat = new THREE.Matrix4();
-        projScreenMat.multiply( camera.projectionMatrix, camera.matrixWorldInverse );
-        projScreenMat.multiplyVector3( pos );
+        projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        pos.applyMatrix4(projScreenMat);
 
         return {
             x: ( pos.x + 1 ) * window.innerWidth / 2,

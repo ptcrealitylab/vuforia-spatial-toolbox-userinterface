@@ -21,6 +21,14 @@ createNameSpace("realityEditor.avatarObjects");
     let allAvatarStates = {};
     let avatarMeshes = {};
     let isPointerDown = false;
+    let isUsernameActive = false;
+    let currentUsername = null;
+    let otherAvatarNames = {};
+    
+    const DATA_KEYS = {
+        touchState: 'touchState',
+        username: 'username'
+    };
 
     let sendTimeout = null;
     let receiveTimeout = null;
@@ -191,11 +199,17 @@ createNameSpace("realityEditor.avatarObjects");
                     // pointerText.position.x = 100;
                 // }
 
+                let initials = null;
+                if (otherAvatarNames[objectKey]) {
+                    let name = otherAvatarNames[objectKey].name;
+                    initials = getInitialsFromName(name);
+                }
+
                 avatarMeshes[objectKey] = {
                     // device: boxMesh('#ffff00', objectKey + 'device'),
                     pointer: pointerGroup,
                     beam: cylinderMesh(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(1, 0, 0), color),
-                    textLabel: createTextLabel(objectKey)
+                    textLabel: createTextLabel(objectKey, initials)
                 }
                 if (RENDER_DEVICE_CUBE) {
                     avatarMeshes[objectKey].device = boxMesh(color, objectKey + 'device')
@@ -243,9 +257,12 @@ createNameSpace("realityEditor.avatarObjects");
 
                 avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
                 // get the 2D screen coordinates of the pointer, and render a text bubble next to it with the name of the sender
-                let screenCoords = realityEditor.gui.threejsScene.getScreenXY(avatarMeshes[objectKey].pointer.getWorldPosition());
-                console.log(screenCoords);
-                avatarMeshes[objectKey].textLabel.style.display = 'inline';
+                let pointerWorldPosition = new THREE.Vector3();
+                avatarMeshes[objectKey].pointer.getWorldPosition(pointerWorldPosition);
+                let screenCoords = realityEditor.gui.threejsScene.getScreenXY(pointerWorldPosition);
+                if (otherAvatarNames[objectKey]) {
+                    avatarMeshes[objectKey].textLabel.style.display = 'inline';
+                }
                 const LEFT_MARGIN = 0;
                 const TOP_MARGIN = 0;
                 // calculate distance from convertedEndPosition to camera. scale a bit based on this and adjust
@@ -270,35 +287,43 @@ createNameSpace("realityEditor.avatarObjects");
         }
     }
     
-    function createTextLabel(objectKey) {
+    function createTextLabel(objectKey, initials) {
         let labelContainer = document.createElement('div');
-        labelContainer.id = 'avatarBeamLabel_' + objectKey;
+        labelContainer.id = 'avatarBeamLabelContainer_' + objectKey;
         labelContainer.classList.add('avatarBeamLabel');
         document.body.appendChild(labelContainer);
 
         let label = document.createElement('div');
+        label.id = 'avatarBeamLabel_' + objectKey;
         labelContainer.appendChild(label);
-        label.innerText = makeInitials(objectKey); //'BR';
+
+        if (initials) {
+            label.innerText = initials; //makeRandomInitials(objectKey); //'BR';
+            labelContainer.classList.remove('displayNone');
+        } else {
+            label.innerText = initials;
+            labelContainer.classList.add('displayNone');
+        }
 
         return labelContainer;
     }
 
-    function makeInitials(avatarObjectKey) {
-        let editorId = avatarObjectKey.split('_AVATAR_')[1].split('_')[0];
-        let id1 = Math.abs(hashCode(editorId));
-        let id2 = Math.abs(hashCode(editorId+'asdf'));
-
-        let text = '';
-        let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-        text += possible.charAt(id1 % possible.length);
-        text += possible.charAt(id2 % possible.length);
-
-        // for (var i = 0; i < 5; i++)
-        //     text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-        return text;
-    }
+    // function makeRandomInitials(avatarObjectKey) {
+    //     let editorId = avatarObjectKey.split('_AVATAR_')[1].split('_')[0];
+    //     let id1 = Math.abs(hashCode(editorId));
+    //     let id2 = Math.abs(hashCode(editorId+'asdf'));
+    //
+    //     let text = '';
+    //     let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    //
+    //     text += possible.charAt(id1 % possible.length);
+    //     text += possible.charAt(id2 % possible.length);
+    //
+    //     // for (var i = 0; i < 5; i++)
+    //     //     text += possible.charAt(Math.floor(Math.random() * possible.length));
+    //
+    //     return text;
+    // }
 
     // helper function to generate an integer hash from a string (https://stackoverflow.com/a/15710692)
     function hashCode(s) {
@@ -486,7 +511,7 @@ createNameSpace("realityEditor.avatarObjects");
         connectionStatus.subscribedToHowMany += 1;
         renderConnectionStatus();
 
-        realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, 'touchState', (msg) => {
+        realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, DATA_KEYS.touchState, (msg) => {
             let msgContent = JSON.parse(msg);
             // console.log('avatarObjects.js received publicData', msgContent);
 
@@ -508,6 +533,39 @@ createNameSpace("realityEditor.avatarObjects");
                 }, 1000);
             }
         });
+
+        realityEditor.network.realtime.subscribeToPublicData(avatarObjectKey, avatarFrameKey, avatarNodeKey, DATA_KEYS.username, (msg) => {
+            let msgContent = JSON.parse(msg);
+            let name = msgContent.publicData.username.name;
+            console.log('got new name: ' + name);
+            otherAvatarNames[msgContent.object] = name;
+            // update the laserbeam label text if available
+            let matchingTextLabel = document.getElementById('avatarBeamLabel_' + msgContent.object);
+            if (matchingTextLabel) {
+                let initials = getInitialsFromName(name);
+                if (initials) {
+                    matchingTextLabel.innerText = initials;
+                    matchingTextLabel.parentElement.classList.remove('displayNone');
+                } else {
+                    matchingTextLabel.innerText = '';
+                    matchingTextLabel.parentElement.classList.add('displayNone');
+                }
+            }
+        });
+    }
+
+    function getInitialsFromName(name) {
+        if (!name) { return null; }
+        // https://stackoverflow.com/a/63763497
+        return name.match(/(\b\S)?/g).join("").match(/(^\S|\S$)?/g).join("").toUpperCase();
+
+        // // https://stackoverflow.com/a/33076482
+        // let rgx = new RegExp(/(\p{L}{1})\p{L}+/, 'gu');
+        // let initials = [...name.matchAll(rgx)] || [];
+        // initials = (
+        //     (initials.shift()?.[1] || '') + (initials.pop()?.[1] || '')
+        // ).toUpperCase();
+        // return initials;
     }
 
     function getRaycastCoordinates(screenX, screenY) {
@@ -610,6 +668,31 @@ createNameSpace("realityEditor.avatarObjects");
 
             lastWritePublicDataTimestamp = Date.now();
         });
+
+        realityEditor.gui.settings.addToggleWithText('User Name', 'toggle on to show name to other users', 'myUserName',  '../../../svg/object.svg', false, '', (isToggled) => {
+            console.log('user name toggled', isToggled);
+            isUsernameActive = isToggled;
+            if (isToggled) {
+                writeUsername(currentUsername);
+            } else {
+                writeUsername(null);
+            }
+        }, (text) => {
+            currentUsername = text;
+            if (!isUsernameActive) { return; }
+            writeUsername(currentUsername);
+        });
+    }
+
+    function writeUsername(name) {
+        // add a settings menu item for your name
+        let info = getAvatarNodeInfo();
+        if (info) {
+            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'username', {
+                name: name
+            });
+            renderCursorOverlay(true, screenX, screenY);
+        }
     }
 
     function refreshConnectionStatus() {
@@ -702,7 +785,7 @@ createNameSpace("realityEditor.avatarObjects");
 
         let info = getAvatarNodeInfo();
         if (info) {
-            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'touchState', touchState);
+            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, DATA_KEYS.touchState, touchState);
             renderCursorOverlay(true, screenX, screenY);
         }
 
@@ -727,7 +810,7 @@ createNameSpace("realityEditor.avatarObjects");
 
         let info = getAvatarNodeInfo();
         if (info) {
-            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, 'touchState', touchState);
+            realityEditor.network.realtime.writePublicData(info.objectKey, info.frameKey, info.nodeKey, DATA_KEYS.touchState, touchState);
             renderCursorOverlay(false, screenX, screenY);
         }
 
