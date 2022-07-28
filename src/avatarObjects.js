@@ -10,7 +10,7 @@ createNameSpace("realityEditor.avatarObjects");
 (function(exports) {
 
     const UPDATE_FPS = 30;
-    let debugMode = true; // can be toggled from menu
+    let debugMode = false; // can be toggled from menu
     let debugUI = null;
 
     const idPrefix = '_AVATAR_';
@@ -158,6 +158,7 @@ createNameSpace("realityEditor.avatarObjects");
                     // avatarMeshes[objectKey].device.visible = false;
                     avatarMeshes[objectKey].pointer.visible = false;
                     avatarMeshes[objectKey].beam.visible = false;
+                    avatarMeshes[objectKey].textLabel.style.display = 'none';
                 }
                 continue;
             }
@@ -185,9 +186,9 @@ createNameSpace("realityEditor.avatarObjects");
                     // let pointerText = new THREE.Mesh(pointerTextGeometry, textMat);
                     // let pointerText = THREE.SceneUtils.createMultiMaterialObject(pointerTextGeometry, materials);
                     
-                    let pointerText = realityEditor.gui.threejsScene.createTextMesh('BR', {});
-                    pointerGroup.add(pointerText);
-                    pointerText.position.x = 100;
+                    // let pointerText = realityEditor.gui.threejsScene.createTextMesh('BR', {});
+                    // pointerGroup.add(pointerText);
+                    // pointerText.position.x = 100;
                 // }
 
                 avatarMeshes[objectKey] = {
@@ -245,8 +246,20 @@ createNameSpace("realityEditor.avatarObjects");
                 let screenCoords = realityEditor.gui.threejsScene.getScreenXY(avatarMeshes[objectKey].pointer.getWorldPosition());
                 console.log(screenCoords);
                 avatarMeshes[objectKey].textLabel.style.display = 'inline';
-                avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + 'px';
-                avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + 'px';
+                const LEFT_MARGIN = 0;
+                const TOP_MARGIN = 0;
+                // calculate distance from convertedEndPosition to camera. scale a bit based on this and adjust
+                let camPos = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+                let delta = {
+                    x: camPos.x - convertedEndPosition.x,
+                    y: camPos.y - convertedEndPosition.y,
+                    z: camPos.z - convertedEndPosition.z
+                };
+                let distanceToCamera = Math.max(0.001, Math.sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z));
+                let scale = Math.max(0.5, Math.min(2, 2000 / distanceToCamera));
+                avatarMeshes[objectKey].textLabel.style.transform = 'translateX(-50%) translateY(-50%) translateZ(3000px) scale(' + scale + ')';
+                avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + LEFT_MARGIN + 'px';
+                avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + TOP_MARGIN + 'px';
 
                 let startPosition = new THREE.Vector3(avatarObjectMatrixThree.elements[12], avatarObjectMatrixThree.elements[13], avatarObjectMatrixThree.elements[14]);
                 let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
@@ -258,10 +271,33 @@ createNameSpace("realityEditor.avatarObjects");
     }
     
     function createTextLabel(objectKey) {
+        let labelContainer = document.createElement('div');
+        labelContainer.id = 'avatarBeamLabel_' + objectKey;
+        labelContainer.classList.add('avatarBeamLabel');
+        document.body.appendChild(labelContainer);
+
         let label = document.createElement('div');
-        label.id = 'avatarBeamLabel_' + objectKey;
-        label.classList.add('avatarBeamLabel');
-        return label;
+        labelContainer.appendChild(label);
+        label.innerText = makeInitials(objectKey); //'BR';
+
+        return labelContainer;
+    }
+
+    function makeInitials(avatarObjectKey) {
+        let editorId = avatarObjectKey.split('_AVATAR_')[1].split('_')[0];
+        let id1 = Math.abs(hashCode(editorId));
+        let id2 = Math.abs(hashCode(editorId+'asdf'));
+
+        let text = '';
+        let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        text += possible.charAt(id1 % possible.length);
+        text += possible.charAt(id2 % possible.length);
+
+        // for (var i = 0; i < 5; i++)
+        //     text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
     }
 
     // helper function to generate an integer hash from a string (https://stackoverflow.com/a/15710692)
