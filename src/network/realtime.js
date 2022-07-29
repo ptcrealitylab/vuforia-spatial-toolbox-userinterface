@@ -475,7 +475,6 @@ createNameSpace("realityEditor.network.realtime");
 
         // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
         if (stringifiedData === cachedPublicData[objectKey][publicDataKey]) {
-            console.log('skipping update for ' + publicDataKey + ' listener');
             return;
         }
 
