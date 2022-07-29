@@ -2,15 +2,15 @@ createNameSpace("realityEditor.avatar.network");
 
 (function(exports) {
     const DATA_SEND_FPS_LIMIT = 60;
+    let occlusionDownloadInterval = null;
+    let cachedOcclusionObject = null;
+    let cachedWorldObject = null;
+    let lastBroadcastPositionTimestamp = Date.now();
+    let lastWritePublicDataTimestamp = Date.now();
+    let pendingSubscriptions = {};
 
-    /**
-     * Check if an object with this name exists on the server
-     * @param {Objects} serverWorldObject
-     * @param {string} objectName
-     * @param {function} onDoesntExist
-     * @param {function} onExists
-     */
-    exports.verifyObjectNameNotOnWorldServer = function(serverWorldObject, objectName, onDoesntExist, onExists) {
+    // Check if an object with this name exists on the server
+    function verifyObjectNameNotOnWorldServer(serverWorldObject, objectName, onDoesntExist, onExists) {
         let downloadUrl = realityEditor.network.getURL(serverWorldObject.ip, realityEditor.network.getPort(serverWorldObject), '/object/' + objectName);
         realityEditor.network.getData(null, null, null, downloadUrl, (objectKey, _frameKey, _nodeKey, msg) => {
             if (msg) {
@@ -21,14 +21,8 @@ createNameSpace("realityEditor.avatar.network");
         });
     }
 
-    /**
-    * Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
-    * @param {string} worldId
-    * @param {string} clientId
-    * @param {function} onSuccess
-    * @param {function} onError
-    */
-    exports.addAvatarObject = function(worldId, clientId, onSuccess, onError) {
+    // Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
+    function addAvatarObject(worldId, clientId, onSuccess, onError) {
         let worldObject = realityEditor.getObject(worldId);
         if (!worldObject) {
             console.warn('Unable to add avatar object because no world with ID: ' + worldId);
@@ -44,18 +38,19 @@ createNameSpace("realityEditor.avatar.network");
             .then(data => {
                 onSuccess(data);
             }).catch(err => {
-                onError(err);
-            });
+            onError(err);
+        });
     }
-    
-    exports.onAvatarDiscovered = function(callback) {
+
+    // helper function that will trigger the callback for each avatar object previously or in-future discovered
+    function onAvatarDiscovered(callback) {
         // first check if any previously discovered objects are avatars
         for (let [objectKey, object] of Object.entries(objects)) {
             if (realityEditor.avatar.utils.isAvatarObject(object)) {
                 callback(object, objectKey);
             }
         }
-        
+
         // next, listen to newly discovered objects
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             if (realityEditor.avatar.utils.isAvatarObject(object)) {
@@ -63,11 +58,9 @@ createNameSpace("realityEditor.avatar.network");
             }
         });
     }
-    
-    let occlusionDownloadInterval = null;
-    let cachedOcclusionObject = null;
-    let cachedWorldObject = null;
-    exports.onLoadOcclusionObject = function(callback) {
+
+    // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
+    function onLoadOcclusionObject(callback) {
         occlusionDownloadInterval = setInterval(() => {
             if (!cachedWorldObject) {
                 cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -90,9 +83,8 @@ createNameSpace("realityEditor.avatar.network");
         }, 1000);
     }
 
-    let lastBroadcastPositionTimestamp = Date.now();
-    let lastWritePublicDataTimestamp = Date.now();
-    exports.realtimeSendAvatarPosition = function(avatarObject, matrix) {
+    // if the object has moved at all, and enough time has passed (FPS_LIMIT), realtime broadcast the new avatar matrix
+    function realtimeSendAvatarPosition(avatarObject, matrix) {
         // only send a data update if the matrix has changed since last time
         if (avatarObject.matrix.length !== 16) { avatarObject.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
         let totalDifference = realityEditor.avatar.utils.sumOfElementDifferences(avatarObject.matrix, matrix);
@@ -111,24 +103,24 @@ createNameSpace("realityEditor.avatar.network");
         lastBroadcastPositionTimestamp = Date.now();
     }
 
-    exports.sendTouchState = function(keys, touchState, options) {
+    // write the touchState into the avatar object's storage node
+    function sendTouchState(keys, touchState, options) {
         let sendData = !(options && options.limitToFps) || (Date.now() - lastWritePublicDataTimestamp > (1000 / DATA_SEND_FPS_LIMIT));
         if (sendData) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.touchState, touchState);
             lastWritePublicDataTimestamp = Date.now();
         }
     }
-    
-    exports.sendUserName = function(keys, name) {
+
+    // write the username into the avatar object's storage node
+    function sendUserName(keys, name) {
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.username, {
             name: name
         });
     }
 
-    let pendingSubscriptions = {};
-
     // if we discover other avatar objects before we're localized in a world, queue them up to be initialized later
-    exports.checkPendingAvatarSubscriptions = function(connectionStatus, cachedWorldObject, callback) {
+    function checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, callback) {
         if (!connectionStatus.isLocalized || !cachedWorldObject) {
             return; // don't process until we're properly localized
         }
@@ -144,21 +136,21 @@ createNameSpace("realityEditor.avatar.network");
             }
         }
     }
-    
-    exports.addPendingAvatarSubscription = function(worldId, objectId) {
+
+    // remember this object so that if we localize against this world in the future, we can subscribe to its node's public data
+    function addPendingAvatarSubscription(worldId, objectId) {
         if (typeof pendingSubscriptions[worldId] === 'undefined') {
             pendingSubscriptions[worldId] = [];
         }
         pendingSubscriptions[worldId].push(objectId);
-        console.log('added pending subscription for ' + objectId);
     }
-    
-    exports.subscribeToAvatarPublicData = function(avatarObject, subscriptionCallbacks) {
+
+    function subscribeToAvatarPublicData(avatarObject, subscriptionCallbacks) {
         let avatarObjectKey = avatarObject.objectId;
         let avatarFrameKey = Object.keys(avatarObject.frames).find(name => name.includes(realityEditor.avatar.utils.TOOL_NAME));
         let thatAvatarTool = realityEditor.getFrame(avatarObjectKey, avatarFrameKey);
         let avatarNodeKey = Object.keys(thatAvatarTool.nodes).find(name => name.includes(realityEditor.avatar.utils.NODE_NAME));
-        
+
         Object.keys(subscriptionCallbacks).forEach((publicDataKey) => {
             let callback = subscriptionCallbacks[publicDataKey];
 
@@ -167,5 +159,16 @@ createNameSpace("realityEditor.avatar.network");
             });
         });
     }
+
+    exports.verifyObjectNameNotOnWorldServer = verifyObjectNameNotOnWorldServer
+    exports.addAvatarObject = addAvatarObject;
+    exports.onAvatarDiscovered = onAvatarDiscovered;
+    exports.onLoadOcclusionObject = onLoadOcclusionObject;
+    exports.realtimeSendAvatarPosition = realtimeSendAvatarPosition;
+    exports.sendTouchState = sendTouchState;
+    exports.sendUserName = sendUserName;
+    exports.checkPendingAvatarSubscriptions = checkPendingAvatarSubscriptions;
+    exports.addPendingAvatarSubscription = addPendingAvatarSubscription;
+    exports.subscribeToAvatarPublicData = subscribeToAvatarPublicData;
 
 }(realityEditor.avatar.network));

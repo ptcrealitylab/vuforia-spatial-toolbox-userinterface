@@ -164,20 +164,6 @@ createNameSpace("realityEditor.avatar");
     function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
 
-        // if (!cachedWorldObject) {
-        //     cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
-        // }
-        // if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-        //     cachedWorldObject = null; // don't accept the local world object
-        // }
-        // if (cachedWorldObject && !cachedOcclusionObject) {
-        //     cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
-        //     if (cachedOcclusionObject) {
-        //         connectionStatus.isWorldOcclusionObjectAdded = true;
-        //         refreshDebugUI();
-        //     }
-        // }
-
         if (cachedWorldObject && cachedOcclusionObject) {
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [cachedOcclusionObject]);
             if (raycastIntersects.length > 0) {
@@ -265,7 +251,6 @@ createNameSpace("realityEditor.avatar");
     }
 
     function setBeamOff(screenX, screenY) {
-        // console.log('document.body.pointerup', screenX, screenY);
         isPointerDown = false;
 
         let touchState = {
