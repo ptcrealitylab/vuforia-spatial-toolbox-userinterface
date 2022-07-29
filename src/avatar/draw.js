@@ -80,6 +80,7 @@ createNameSpace("realityEditor.avatar.draw");
             avatarMeshes[objectKey].device.matrix.copy(avatarObjectMatrixThree);
         }
         avatarMeshes[objectKey].pointer.visible = true;
+        let wasBeamVisible = avatarMeshes[objectKey].beam.visible;
         avatarMeshes[objectKey].beam.visible = true;
 
         if (touchState.worldIntersectPoint) {
@@ -116,6 +117,24 @@ createNameSpace("realityEditor.avatar.draw");
 
             let startPosition = new THREE.Vector3(avatarObjectMatrixThree.elements[12], avatarObjectMatrixThree.elements[13], avatarObjectMatrixThree.elements[14]);
             let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+
+            const ANIMATE = false;
+            if (ANIMATE && wasBeamVisible) { // animate start position if already visible
+                let currentStartPosition = [
+                    avatarMeshes[objectKey].beam.position.x,
+                    avatarMeshes[objectKey].beam.position.y,
+                    avatarMeshes[objectKey].beam.position.z
+                ];
+                let newStartPosition = [
+                    avatarObjectMatrixThree.elements[12],
+                    avatarObjectMatrixThree.elements[13],
+                    avatarObjectMatrixThree.elements[14]
+                ];
+                // let animatedStartPosition = realityEditor.gui.ar.utilities.tweenMatrix(currentStartPosition, newStartPosition, 0.05);
+                let animatedStartPosition = realityEditor.gui.ar.utilities.animationVectorLinear(currentStartPosition, newStartPosition, 30);
+                startPosition = new THREE.Vector3(animatedStartPosition[0], animatedStartPosition[1], animatedStartPosition[2]);
+            }
+
             avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
             avatarMeshes[objectKey].beam.name = objectKey + 'beam';
             realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);

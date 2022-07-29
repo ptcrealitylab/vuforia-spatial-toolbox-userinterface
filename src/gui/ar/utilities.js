@@ -1198,6 +1198,56 @@ realityEditor.gui.ar.utilities.convertMatrixHandedness = function(matrix) {
     return m2;
 };
 
+realityEditor.gui.ar.utilities.tweenMatrix = function(currentMatrix, destination, tweenSpeed) {
+    if (typeof tweenSpeed === 'undefined') { tweenSpeed = 0.5; } // default value
+
+    if (currentMatrix.length !== destination.length) {
+        console.warn('matrices are inequal lengths. cannot be tweened so just assigning current=destination');
+        return realityEditor.gui.ar.utilities.copyMatrix(destination);
+    }
+    if (tweenSpeed <= 0 || tweenSpeed >= 1) {
+        return realityEditor.gui.ar.utilities.copyMatrix(destination);
+    }
+
+    let m = [];
+    for (let i = 0; i < currentMatrix.length; i++) {
+        m[i] = destination[i] * tweenSpeed + currentMatrix[i] * (1.0 - tweenSpeed);
+    }
+    return m;
+}
+
+realityEditor.gui.ar.utilities.animationVectorLinear = function(currentVector, newVector, maxSpeed) {
+    if (typeof maxSpeed === 'undefined') { maxSpeed = 100; } // default value
+
+    if (currentVector.length !== newVector.length) {
+        console.warn('matrices are inequal lengths. cannot be tweened so just assigning current=destination');
+        return JSON.parse(JSON.stringify(newVector));
+    }
+    if (maxSpeed <= 0) {
+        return JSON.parse(JSON.stringify(currentVector));
+    }
+
+    let diff = [];
+    for (let i = 0; i < currentVector.length; i++) {
+        diff[i] = newVector[i] - currentVector[i];
+    }
+    let distanceSquared = 0;
+    for (let i = 0; i < diff.length; i++) {
+        distanceSquared += diff[i] * diff[i];
+    }
+    let distance = Math.sqrt(distanceSquared);
+    if (distance === 0) {
+        return JSON.parse(JSON.stringify(currentVector));
+    }
+    
+    let percentMotion = Math.max(0, Math.min(1, maxSpeed / distance));
+    let result = [];
+    for (let i = 0; i < currentVector.length; i++) {
+        result[i] = newVector[i] * percentMotion + currentVector[i] * (1.0 - percentMotion);
+    }
+    return result;
+}
+
 /**
  * Simple, custom made Matrix data structure for working with transformation matrices
  * 
