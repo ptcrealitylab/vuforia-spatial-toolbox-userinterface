@@ -1,7 +1,7 @@
 createNameSpace("realityEditor.avatar.utils");
 
 (function(exports) {
-    const idPrefix = '_AVATAR_';
+    exports.AVATAR_ID_PREFIX = '_AVATAR_';
     exports.TOOL_NAME = 'Avatar'; // these need to match the way the server intializes the tool and node
     exports.NODE_NAME = 'storage';
     exports.PUBLIC_DATA_KEYS = {
@@ -9,10 +9,12 @@ createNameSpace("realityEditor.avatar.utils");
         username: 'username'
     };
 
+    // other modules in the project can use this to reliably check whether an object is an avatar
     exports.isAvatarObject = function(object) {
         return object.type === 'avatar' || object.objectId.indexOf('_AVATAR_') === 0;
     }
-    
+
+    // returns a random but consistent color for a provided avatar object's editorId
     exports.getColor = function(avatarObject) {
         let editorId = avatarObject.objectId.split('_AVATAR_')[1].split('_')[0];
         let id = Math.abs(this.hashCode(editorId));
@@ -29,7 +31,8 @@ createNameSpace("realityEditor.avatar.utils");
         if (!name) { return null; }
         return name.match(/(\b\S)?/g).join("").match(/(^\S|\S$)?/g).join("").toUpperCase();
     }
-    
+
+    // helper to calculate if the matrices are identical by returning a simple sum of how different they are
     exports.sumOfElementDifferences = function(M1, M2) {
         // assumes M1 and M2 are of equal length
         let sum = 0;
@@ -38,12 +41,15 @@ createNameSpace("realityEditor.avatar.utils");
         }
         return sum;
     }
-    
+
+    // generates a unique id for this avatar, based on this client's editorId (aka. tempUuid)
     exports.getAvatarName = function() {
+        // TODO: we may need to use different criteria in the future to categorize devices, although this is only to help with debugging for now
         const deviceSuffix = realityEditor.device.environment.variables.supportsAreaTargetCapture ? '_iOS' : '_desktop';
-        return idPrefix + globalStates.tempUuid + deviceSuffix;
+        return this.AVATAR_ID_PREFIX + globalStates.tempUuid + deviceSuffix;
     }
 
+    // returns the {objectKey, frameKey, nodeKey} address of the avatar storeData node on this avatar object
     exports.getAvatarNodeInfo = function (avatarObject) {
         if (!avatarObject) { return null; }
 

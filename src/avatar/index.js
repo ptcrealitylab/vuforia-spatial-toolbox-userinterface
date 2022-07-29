@@ -4,7 +4,8 @@ createNameSpace("realityEditor.avatar");
  * @fileOverview realityEditor.avatar
  * When the app successfully localizes within a world, checks if this device has a "avatar" representation saved on that
  * world object's server. If not, create one. Continuously updates this object's position in the scene graph to match
- * the camera position, and broadcasts that position over the realtime sockets.
+ * the camera position, and broadcasts that position over the realtime sockets. On click-and-drag, sends this avatar's
+ * touchState to other clients via the avatar's node's publicData, and renders laser beams coming from other avatars.
  */
 
 (function(exports) {

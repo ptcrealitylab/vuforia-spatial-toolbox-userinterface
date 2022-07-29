@@ -131,8 +131,7 @@ createNameSpace("realityEditor.avatar.network");
         while (objectIdList.length > 0) {
             let thatAvatarObject = realityEditor.getObject(objectIdList.pop());
             if (thatAvatarObject) {
-                // onOtherAvatarInitialized(thatAvatarObject); // subscribe to the publicData of its avatar node
-                callback(thatAvatarObject); // subscribe to the publicData of its avatar node
+                callback(thatAvatarObject); // callback can be used to initialize and subscribe to the publicData of the avatar
             }
         }
     }
@@ -145,6 +144,7 @@ createNameSpace("realityEditor.avatar.network");
         pendingSubscriptions[worldId].push(objectId);
     }
 
+    // given a data structure of { PUBLIC_DATA_KEYS: callbacks }, adds the callback provided for each key
     function subscribeToAvatarPublicData(avatarObject, subscriptionCallbacks) {
         let avatarObjectKey = avatarObject.objectId;
         let avatarFrameKey = Object.keys(avatarObject.frames).find(name => name.includes(realityEditor.avatar.utils.TOOL_NAME));
