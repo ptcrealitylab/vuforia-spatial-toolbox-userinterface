@@ -9,58 +9,66 @@ createNameSpace("realityEditor.avatar");
 
 (function(exports) {
 
-    let debugMode = false; // can be toggled from menu
+    let network, draw, utils; // shortcuts to access realityEditor.avatar._____
 
-    let initializedId = null;
+    let myAvatarId = null;
     let myAvatarObject = null;
-    let avatarObjectInitialized = false;
-    let avatarObjects = {}; // avatar objects are stored in the regular global "objects" variable, but also in here
-    let avatarTouchStates = {};
-    let otherAvatarNames = {};
+    let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
+    let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
+    let otherAvatarNames = {}; // data received from avatars' username property in their storage node
     let isPointerDown = false;
+
+    // if you set your name, and other clients will see your initials near the endpoint of your laser beam
     let isUsernameActive = false;
-    let currentUsername = null;
+    let myUsername = null;
 
-    let sendTimeout = null;
-    let receiveTimeout = null;
-
+    // these are used for raycasting against the environment when sending laser beams
     let cachedWorldObject = null;
     let cachedOcclusionObject = null;
 
+    // these are used to establish a connection and create the avatar object
     let connectionStatus = {
-        // these are used to establish a connection and create the avatar object:
         isLocalized: false,
         isMyAvatarCreated: false,
         isMyAvatarInitialized: false,
-        isWorldOcclusionObjectAdded: false,
-        // the rest are just used for debugging purposes:
+        isWorldOcclusionObjectAdded: false
+    }
+
+    // these are just used for debugging purposes
+    let DEBUG_MODE = false; // can be toggled from remote operator's Develop menu
+    let debugSendTimeout = null;
+    let debugReceiveTimeout = null;
+    let debugConnectionStatus = {
         subscribedToHowMany: 0,
         didReceiveAnything: false,
-        didJustReceive: false,
+        didRecentlyReceive: false,
         didSendAnything: false,
-        didJustSend: false
+        didRecentlySend: false
     }
 
     function initService() {
+        network = realityEditor.avatar.network;
+        draw = realityEditor.avatar.draw;
+        utils = realityEditor.avatar.utils;
+
         // begin creating our own avatar object when we localize within a world object
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
             if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
 
             connectionStatus.isLocalized = true;
-            realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
-            realityEditor.avatar.network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
+            refreshDebugUI();
+            network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
 
             // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
-            let thisAvatarName = realityEditor.avatar.utils.getAvatarName();
+            let thisAvatarName = utils.getAvatarName();
             let worldObject = realityEditor.getObject(worldObjectKey);
 
-            realityEditor.avatar.network.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
-                realityEditor.avatar.network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
+            network.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
+                network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
                     console.log('added new avatar object', data);
-                    initializedId = data.id;
-                    avatarObjectInitialized = true;
+                    myAvatarId = data.id;
                     connectionStatus.isMyAvatarCreated = true;
-                    realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+                    refreshDebugUI();
                 }, (err) => {
                     console.warn('unable to add avatar object to server', err);
                 });
@@ -68,15 +76,15 @@ createNameSpace("realityEditor.avatar");
                 console.warn('avatar already exists on server');
             });
         });
-        
-        realityEditor.avatar.network.onAvatarDiscovered((object, objectKey) => {
+
+        network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
-            realityEditor.avatar.draw.renderOtherAvatars(avatarTouchStates, otherAvatarNames);
+            draw.renderOtherAvatars(avatarTouchStates, otherAvatarNames);
 
-            if (!avatarObjectInitialized || globalStates.freezeButtonState) { return; }
+            if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
             try {
                 updateMyAvatar();
@@ -84,25 +92,25 @@ createNameSpace("realityEditor.avatar");
                 console.warn('error updating my avatar', e);
             }
         });
-        
-        realityEditor.avatar.network.onLoadOcclusionObject((worldObject, occlusionObject) => {
+
+        network.onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
 
             connectionStatus.isWorldOcclusionObjectAdded = true;
-            realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+            refreshDebugUI();
 
             // we have a cachedWorldObject here, so it's also a good point to check pending subscriptions for that world
-            realityEditor.avatar.network.checkPendingAvatarSubscriptions();
+            network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
         });
     }
 
     function handleDiscoveredObject(object, objectKey) {
-        if (!realityEditor.avatar.utils.isAvatarObject(object)) { return; }
+        if (!utils.isAvatarObject(object)) { return; }
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
 
-        if (objectKey === initializedId) {
+        if (objectKey === myAvatarId) {
             myAvatarObject = object;
             onMyAvatarInitialized();
         } else {
@@ -112,10 +120,7 @@ createNameSpace("realityEditor.avatar");
 
     // update the avatar object to match the camera position each frame (if it exists), and realtime broadcast to others
     function updateMyAvatar() {
-        let avatarObject = realityEditor.getObject(initializedId);
-        if (!avatarObject) { return; }
-
-        let avatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(initializedId);
+        let avatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(myAvatarId);
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
         if (!avatarSceneNode || !cameraNode) { return; }
 
@@ -126,34 +131,34 @@ createNameSpace("realityEditor.avatar");
         let worldObjectId = realityEditor.sceneGraph.getWorldId();
         let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
         let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
-        
-        realityEditor.avatar.network.realtimeSendAvatarPosition(avatarObject, relativeMatrix);
+
+        network.realtimeSendAvatarPosition(myAvatarObject, relativeMatrix);
     }
 
     function onOtherAvatarInitialized(thatAvatarObject) {
         if (!connectionStatus.isLocalized || !cachedWorldObject) {
-            realityEditor.avatar.network.addPendingAvatarSubscription(thatAvatarObject.worldId, thatAvatarObject.objectId);
+            network.addPendingAvatarSubscription(thatAvatarObject.worldId, thatAvatarObject.objectId);
             return;
         }
 
         let subscriptionCallbacks = {};
 
-        subscriptionCallbacks[realityEditor.avatar.utils.PUBLIC_DATA_KEYS.touchState] = (msgContent) => {
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.touchState] = (msgContent) => {
             avatarTouchStates[msgContent.object] = msgContent.publicData.touchState;
             debugDataReceived();
         };
 
-        subscriptionCallbacks[realityEditor.avatar.utils.PUBLIC_DATA_KEYS.username] = (msgContent) => {
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.username] = (msgContent) => {
             let name = msgContent.publicData.username.name;
             otherAvatarNames[msgContent.object] = name;
-            realityEditor.avatar.draw.updateAvatarName(msgContent.object, name);
+            draw.updateAvatarName(msgContent.object, name);
             debugDataReceived();
         };
 
-        realityEditor.avatar.network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
+        network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
 
-        connectionStatus.subscribedToHowMany += 1;
-        realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        debugConnectionStatus.subscribedToHowMany += 1;
+        refreshDebugUI();
     }
 
     function getRaycastCoordinates(screenX, screenY) {
@@ -169,7 +174,7 @@ createNameSpace("realityEditor.avatar");
         //     cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
         //     if (cachedOcclusionObject) {
         //         connectionStatus.isWorldOcclusionObjectAdded = true;
-        //         realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        //         refreshDebugUI();
         //     }
         // }
 
@@ -191,7 +196,7 @@ createNameSpace("realityEditor.avatar");
 
     function onMyAvatarInitialized() {
         connectionStatus.isMyAvatarInitialized = true;
-        realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        refreshDebugUI();
 
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
@@ -213,30 +218,27 @@ createNameSpace("realityEditor.avatar");
             setBeamOn(e.pageX, e.pageY);
         });
 
+        // TODO: should this be added at the beginning, or only when done initializing avatar?
         realityEditor.gui.settings.addToggleWithText('User Name', 'toggle on to show name to other users', 'myUserName',  '../../../svg/object.svg', false, '', (isToggled) => {
             console.log('user name toggled', isToggled);
             isUsernameActive = isToggled;
             if (isToggled) {
-                writeUsername(currentUsername);
+                writeUsername(myUsername);
             } else {
                 writeUsername(null);
             }
         }, (text) => {
-            currentUsername = text;
+            myUsername = text;
             if (!isUsernameActive) { return; }
-            writeUsername(currentUsername);
+            writeUsername(myUsername);
         });
     }
 
     function writeUsername(name) {
-        let info = realityEditor.avatar.utils.getAvatarNodeInfo(myAvatarObject);
+        let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            realityEditor.avatar.network.sendUserName(info, name);
+            network.sendUserName(info, name);
         }
-    }
-
-    function getAvatarObjects() {
-        return avatarObjects;
     }
 
     function setBeamOn(screenX, screenY) {
@@ -253,10 +255,10 @@ createNameSpace("realityEditor.avatar");
         // TODO: change this so we still send if click on nothing (the other side just renders an infinite beam in that direction or raycast against the groundplane)
         if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
 
-        let info = realityEditor.avatar.utils.getAvatarNodeInfo();
+        let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            realityEditor.avatar.draw.renderCursorOverlay(true, screenX, screenY, realityEditor.avatar.utils.getColor(myAvatarObject));
-            realityEditor.avatar.network.sendTouchState(info, touchState, { limitToFps: true });
+            draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
+            network.sendTouchState(info, touchState, { limitToFps: true });
         }
 
         debugDataSent();
@@ -274,62 +276,63 @@ createNameSpace("realityEditor.avatar");
             timestamp: Date.now()
         }
 
-        // we still send if click on nothing, as opposed to setBeamOn which uncomments:
-        // if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; }
-
-        let info = getAvatarNodeInfo();
+        let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            realityEditor.avatar.draw.renderCursorOverlay(false, screenX, screenY, realityEditor.avatar.utils.getColor(myAvatarObject));
-            realityEditor.avatar.network.sendTouchState(info, touchState);
+            draw.renderCursorOverlay(false, screenX, screenY, utils.getColor(myAvatarObject));
+            network.sendTouchState(info, touchState);
         }
 
         debugDataSent();
     }
 
     function toggleDebugMode(showDebug) {
-        debugMode = showDebug;
-        realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        DEBUG_MODE = showDebug;
+        refreshDebugUI();
     }
 
+    // highlight the debugText for 1 second upon receiving data
     function debugDataReceived() {
-        // this is just for debugMode, could be removed to simplify a lot
-        if (!connectionStatus.didReceiveAnything) {
-            connectionStatus.didReceiveAnything = true;
-            realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        if (!debugConnectionStatus.didReceiveAnything) {
+            debugConnectionStatus.didReceiveAnything = true;
+            refreshDebugUI();
         }
-        if (!connectionStatus.didJustReceive && !receiveTimeout) {
-            connectionStatus.didJustReceive = true;
-            realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        if (!debugConnectionStatus.didRecentlyReceive && !debugReceiveTimeout) {
+            debugConnectionStatus.didRecentlyReceive = true;
+            refreshDebugUI();
 
-            receiveTimeout = setTimeout(() => {
-                connectionStatus.didJustReceive = false;
-                realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
-                clearTimeout(receiveTimeout);
-                receiveTimeout = null;
+            debugReceiveTimeout = setTimeout(() => {
+                debugConnectionStatus.didRecentlyReceive = false;
+                clearTimeout(debugReceiveTimeout);
+                debugReceiveTimeout = null;
+                refreshDebugUI();
             }, 1000);
         }
     }
 
+    // highlight the debugText for 1 second upon sending data
     function debugDataSent() {
-        if (!connectionStatus.didSendAnything) {
-            connectionStatus.didSendAnything = true;
-            realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        if (!debugConnectionStatus.didSendAnything) {
+            debugConnectionStatus.didSendAnything = true;
+            refreshDebugUI();
         }
-        if (!connectionStatus.didJustSend && !sendTimeout) {
-            connectionStatus.didJustSend = true;
-            realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
+        if (!debugConnectionStatus.didRecentlySend && !debugSendTimeout) {
+            debugConnectionStatus.didRecentlySend = true;
+            refreshDebugUI();
 
-            sendTimeout = setTimeout(() => {
-                connectionStatus.didJustSend = false;
-                realityEditor.avatar.draw.renderConnectionStatus(connectionStatus, debugMode);
-                clearTimeout(sendTimeout);
-                sendTimeout = null;
+            debugSendTimeout = setTimeout(() => {
+                debugConnectionStatus.didRecentlySend = false;
+                clearTimeout(debugSendTimeout);
+                debugSendTimeout = null;
+                refreshDebugUI();
             }, 1000);
         }
+    }
+
+    function refreshDebugUI() {
+        draw.renderConnectionStatus(connectionStatus, debugConnectionStatus, myAvatarId, DEBUG_MODE);
     }
 
     exports.initService = initService;
-    exports.getAvatarObjects = getAvatarObjects;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.toggleDebugMode = toggleDebugMode;

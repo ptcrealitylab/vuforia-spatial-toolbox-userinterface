@@ -11,7 +11,7 @@ createNameSpace("realityEditor.avatar.draw");
     let avatarMeshes = {};
     let debugUI = null;
     
-    exports.renderConnectionStatus = function(connectionStatus, debugMode) {
+    exports.renderConnectionStatus = function(connectionStatus, debugConnectionStatus, myId, debugMode) {
         if (!debugMode) {
             if (debugUI) { debugUI.style.display = 'none'; }
             return;
@@ -30,8 +30,8 @@ createNameSpace("realityEditor.avatar.draw");
             debugUI.style.transform = 'translateZ(3000px)';
             document.body.appendChild(debugUI);
         }
-        let sendText = connectionStatus.didSendAnything && connectionStatus.didJustSend ? 'TRUE' : connectionStatus.didSendAnything ? 'true' : 'false';
-        let receiveText = connectionStatus.didReceiveAnything && connectionStatus.didJustReceive ? 'TRUE' : connectionStatus.didReceiveAnything ? 'true' : 'false';
+        let sendText = debugConnectionStatus.didSendAnything && debugConnectionStatus.didRecentlySend ? 'TRUE' : debugConnectionStatus.didSendAnything ? 'true' : 'false';
+        let receiveText = debugConnectionStatus.didReceiveAnything && debugConnectionStatus.didRecentlyReceive ? 'TRUE' : debugConnectionStatus.didReceiveAnything ? 'true' : 'false';
 
         debugUI.style.display = '';
         debugUI.innerHTML = 'Localized? (' + connectionStatus.isLocalized +').  ' +
@@ -40,12 +40,12 @@ createNameSpace("realityEditor.avatar.draw");
             'Verified? (' + connectionStatus.isMyAvatarInitialized + ').  ' +
             'Occlusion? (' + connectionStatus.isWorldOcclusionObjectAdded + ').' +
             '<br/>' +
-            'Subscribed? (' + connectionStatus.subscribedToHowMany + ').  ' +
+            'Subscribed? (' + debugConnectionStatus.subscribedToHowMany + ').  ' +
             '<br/>' +
             'Did Send? (' + sendText + ').  ' +
             'Did Receive? (' + receiveText + ')' +
             '<br/>' +
-            'My ID: ' + (myAvatarObject ? myAvatarObject.objectId : 'null');
+            'My ID: ' + (myId ? myId : 'null');
     }
 
     exports.renderOtherAvatars = function(avatarTouchStates, avatarNames) {
@@ -183,7 +183,7 @@ createNameSpace("realityEditor.avatar.draw");
     function sphereMesh(color, name, radius) {
         const THREE = realityEditor.gui.threejsScene.THREE;
 
-        const geo = new THREE.SphereGeometry((radius || 50), 8, 6, 0, Math.PI, 0, Math.PI);
+        const geo = new THREE.SphereGeometry((radius || 50), 8, 6, 0, 2 * Math.PI, 0, Math.PI);
         const mat = new THREE.MeshBasicMaterial({color: color});
         const sphere = new THREE.Mesh(geo, mat);
         sphere.name = name;

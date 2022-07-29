@@ -1,7 +1,7 @@
 createNameSpace("realityEditor.avatar.network");
 
 (function(exports) {
-    const DATA_SEND_FPS_LIMIT = 30;
+    const DATA_SEND_FPS_LIMIT = 60;
 
     /**
      * Check if an object with this name exists on the server
@@ -36,13 +36,16 @@ createNameSpace("realityEditor.avatar.network");
         }
 
         let postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
-        let params = {action: 'new', name: clientId, isAvatar: true, worldId: worldId};
+        let params = new URLSearchParams({action: 'new', name: clientId, isAvatar: true, worldId: worldId});
         fetch(postUrl, {
             method: 'POST',
             body: params
         }).then(response => response.json())
-            .then(onSuccess)
-            .catch(onError);
+            .then(data => {
+                onSuccess(data);
+            }).catch(err => {
+                onError(err);
+            });
     }
     
     exports.onAvatarDiscovered = function(callback) {
@@ -112,8 +115,8 @@ createNameSpace("realityEditor.avatar.network");
         let sendData = !(options && options.limitToFps) || (Date.now() - lastWritePublicDataTimestamp > (1000 / DATA_SEND_FPS_LIMIT));
         if (sendData) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.touchState, touchState);
+            lastWritePublicDataTimestamp = Date.now();
         }
-        lastWritePublicDataTimestamp = Date.now();
     }
     
     exports.sendUserName = function(keys, name) {
