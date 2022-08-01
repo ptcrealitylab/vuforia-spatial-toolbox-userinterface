@@ -57,7 +57,7 @@ createNameSpace("realityEditor.avatar");
             if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
 
             connectionStatus.isLocalized = true;
-            refreshDebugUI();
+            refreshStatusUI();
             network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
 
             // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
@@ -69,7 +69,7 @@ createNameSpace("realityEditor.avatar");
                     console.log('added new avatar object', data);
                     myAvatarId = data.id;
                     connectionStatus.isMyAvatarCreated = true;
-                    refreshDebugUI();
+                    refreshStatusUI();
                 }, (err) => {
                     console.warn('unable to add avatar object to server', err);
                 });
@@ -99,7 +99,7 @@ createNameSpace("realityEditor.avatar");
             cachedOcclusionObject = occlusionObject;
 
             connectionStatus.isWorldOcclusionObjectAdded = true;
-            refreshDebugUI();
+            refreshStatusUI();
 
             // we have a cachedWorldObject here, so it's also a good point to check pending subscriptions for that world
             network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
@@ -159,7 +159,7 @@ createNameSpace("realityEditor.avatar");
         network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
 
         debugConnectionStatus.subscribedToHowMany += 1;
-        refreshDebugUI();
+        refreshStatusUI();
     }
 
     function getRaycastCoordinates(screenX, screenY) {
@@ -183,7 +183,7 @@ createNameSpace("realityEditor.avatar");
 
     function onMyAvatarInitialized() {
         connectionStatus.isMyAvatarInitialized = true;
-        refreshDebugUI();
+        refreshStatusUI();
 
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
@@ -273,24 +273,24 @@ createNameSpace("realityEditor.avatar");
 
     function toggleDebugMode(showDebug) {
         DEBUG_MODE = showDebug;
-        refreshDebugUI();
+        refreshStatusUI();
     }
 
     // highlight the debugText for 1 second upon receiving data
     function debugDataReceived() {
         if (!debugConnectionStatus.didReceiveAnything) {
             debugConnectionStatus.didReceiveAnything = true;
-            refreshDebugUI();
+            refreshStatusUI();
         }
         if (!debugConnectionStatus.didRecentlyReceive && !debugReceiveTimeout) {
             debugConnectionStatus.didRecentlyReceive = true;
-            refreshDebugUI();
+            refreshStatusUI();
 
             debugReceiveTimeout = setTimeout(() => {
                 debugConnectionStatus.didRecentlyReceive = false;
                 clearTimeout(debugReceiveTimeout);
                 debugReceiveTimeout = null;
-                refreshDebugUI();
+                refreshStatusUI();
             }, 1000);
         }
     }
@@ -299,23 +299,31 @@ createNameSpace("realityEditor.avatar");
     function debugDataSent() {
         if (!debugConnectionStatus.didSendAnything) {
             debugConnectionStatus.didSendAnything = true;
-            refreshDebugUI();
+            refreshStatusUI();
         }
         if (!debugConnectionStatus.didRecentlySend && !debugSendTimeout) {
             debugConnectionStatus.didRecentlySend = true;
-            refreshDebugUI();
+            refreshStatusUI();
 
             debugSendTimeout = setTimeout(() => {
                 debugConnectionStatus.didRecentlySend = false;
                 clearTimeout(debugSendTimeout);
                 debugSendTimeout = null;
-                refreshDebugUI();
+                refreshStatusUI();
             }, 1000);
         }
     }
 
-    function refreshDebugUI() {
-        draw.renderConnectionStatus(connectionStatus, debugConnectionStatus, myAvatarId, DEBUG_MODE);
+    function refreshStatusUI() {
+        // render the debug info
+        draw.renderConnectionDebugInfo(connectionStatus, debugConnectionStatus, myAvatarId, DEBUG_MODE);
+
+        // render a simple UI to show when we fully establish the avatar
+        let isConnectionReady = connectionStatus.isLocalized &&
+            connectionStatus.isMyAvatarCreated &&
+            connectionStatus.isMyAvatarInitialized &&
+            connectionStatus.isWorldOcclusionObjectAdded && myAvatarId;
+        draw.renderConnectionFeedback(isConnectionReady);
     }
 
     exports.initService = initService;

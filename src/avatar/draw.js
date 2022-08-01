@@ -4,6 +4,7 @@ createNameSpace("realityEditor.avatar.draw");
     const RENDER_DEVICE_CUBE = false; // turn on to show a cube at each of the avatar positions, in addition to the beams
     let avatarMeshes = {};
     let debugUI = null;
+    let statusUI = null;
 
     function renderOtherAvatars(avatarTouchStates, avatarNames) {
         try {
@@ -259,8 +260,40 @@ createNameSpace("realityEditor.avatar.draw");
         overlay.style.display = isVisible ? 'inline' : 'none';
     }
 
+    let hasConnectionFeedbackBeenShown = false;
+    function renderConnectionFeedback(isConnected) {
+        if (!statusUI) {
+            statusUI = document.createElement('div');
+            statusUI.id = 'avatarStatus';
+            statusUI.style.pointerEvents = 'none';
+            statusUI.style.opacity = '0.5';
+            statusUI.style.position = 'absolute';
+            statusUI.style.width = '100vw';
+            statusUI.style.height = '100px';
+            statusUI.style.left = '5px';
+            statusUI.style.top = (realityEditor.device.environment.variables.screenTopOffset + 5) + 'px';
+            statusUI.style.zIndex = '3000';
+            statusUI.style.transform = 'translateZ(3000px)';
+            document.body.appendChild(statusUI);
+        }
+        if (hasConnectionFeedbackBeenShown) { return; }
+        if (isConnected) {
+            hasConnectionFeedbackBeenShown = true;
+            statusUI.innerText = '';
+            setTimeout(() => {
+                statusUI.innerText = 'Avatar Connected!';
+                setTimeout(() => {
+                    statusUI.innerText = '';
+                    statusUI.style.display = 'none';
+                }, 2000);
+            }, 300);
+        } else {
+            statusUI.innerText = 'Establishing Avatar Connection...'
+        }
+    }
+
     // show some debug text fields in the top left corner of the screen to track data connections and transmission
-    function renderConnectionStatus(connectionStatus, debugConnectionStatus, myId, debugMode) {
+    function renderConnectionDebugInfo(connectionStatus, debugConnectionStatus, myId, debugMode) {
         if (!debugMode) {
             if (debugUI) { debugUI.style.display = 'none'; }
             return;
@@ -300,6 +333,9 @@ createNameSpace("realityEditor.avatar.draw");
     exports.renderOtherAvatars = renderOtherAvatars;
     exports.updateAvatarName = updateAvatarName;
     exports.renderCursorOverlay = renderCursorOverlay;
-    exports.renderConnectionStatus = renderConnectionStatus;
+    // this one is for nice visual feedback
+    exports.renderConnectionFeedback = renderConnectionFeedback;
+    // this one is just for debugging
+    exports.renderConnectionDebugInfo = renderConnectionDebugInfo;
 
 }(realityEditor.avatar.draw));

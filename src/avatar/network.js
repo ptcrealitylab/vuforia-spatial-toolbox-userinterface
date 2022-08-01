@@ -149,6 +149,10 @@ createNameSpace("realityEditor.avatar.network");
         let avatarObjectKey = avatarObject.objectId;
         let avatarFrameKey = Object.keys(avatarObject.frames).find(name => name.includes(realityEditor.avatar.utils.TOOL_NAME));
         let thatAvatarTool = realityEditor.getFrame(avatarObjectKey, avatarFrameKey);
+        if (!thatAvatarTool) {
+            console.warn('cannot find Avatar tool on Avatar object named ' + avatarObjectKey);
+            return;
+        }
         let avatarNodeKey = Object.keys(thatAvatarTool.nodes).find(name => name.includes(realityEditor.avatar.utils.NODE_NAME));
 
         Object.keys(subscriptionCallbacks).forEach((publicDataKey) => {
