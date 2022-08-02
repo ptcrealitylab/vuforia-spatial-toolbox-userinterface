@@ -1,7 +1,7 @@
 createNameSpace("realityEditor.avatar.utils");
 
 /**
- * @fileOverview realityEditor.avatar.draw
+ * @fileOverview realityEditor.avatar.utils
  * Miscellaneous helper functions for avatars
  */
 

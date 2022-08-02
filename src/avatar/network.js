@@ -1,7 +1,7 @@
 createNameSpace("realityEditor.avatar.network");
 
 /**
- * @fileOverview realityEditor.avatar.draw
+ * @fileOverview realityEditor.avatar.network
  * Contains a variety of helper functions for avatar/index.js to create and discover avatar objects,
  * realtime broadcast my avatar's state, and subscribe to the state of other avatars
  */

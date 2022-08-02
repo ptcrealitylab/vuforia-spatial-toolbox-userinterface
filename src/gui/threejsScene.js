@@ -28,11 +28,13 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
+
+    const DISPLAY_ORIGIN_BOX = true;
+
+    const ENABLE_TEXT_GEOMETRY = false;
     let fonts = {
         helveticaNeue: null // set in fontLoader callback
     };
-
-    const DISPLAY_ORIGIN_BOX = true;
 
     let customMaterials;
 
@@ -93,7 +95,9 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
             }, { dontPersist: true });
         }
         
-        loadFonts();
+        if (ENABLE_TEXT_GEOMETRY) {
+            loadFonts();
+        }
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -620,6 +624,10 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
     }
     
     exports.createTextMesh = function(text, options) {
+        if (!ENABLE_TEXT_GEOMETRY) {
+            console.warn('ENABLE_TEXT_GEOMETRY is disabled, cannot createTextMesh');
+            return;
+        }
         if (!fonts.helveticaNeue) {
             console.warn('still loading font... try again');
             return;
@@ -630,12 +638,6 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
             font: fonts.helveticaNeue,
             size: options.size || 80,
             height: options.height || 5,
-            // curveSegments: options.curveSegments || 12,
-            // bevelEnabled: options.bevelEnabled || true,
-            // bevelThickness: options.bevelThickness || 10,
-            // bevelSize: options.bevelSize || 8,
-            // bevelOffset: options.bevelOffset || 0,
-            // bevelSegments: options.bevelSegments || 5
         });
 
         let materials = [
