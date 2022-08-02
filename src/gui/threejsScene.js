@@ -1,5 +1,3 @@
-import {TextGeometry} from "../../thirdPartyCode/three/three.module.js";
-
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
@@ -9,6 +7,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 import { SceneUtils } from '../../thirdPartyCode/three/SceneUtils.js';
+import {TextGeometry} from "../../thirdPartyCode/three/three.module.js";
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 
 (function(exports) {
