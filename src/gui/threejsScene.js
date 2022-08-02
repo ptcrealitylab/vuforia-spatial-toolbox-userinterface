@@ -6,8 +6,6 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
-import { SceneUtils } from '../../thirdPartyCode/three/SceneUtils.js';
-import {TextGeometry} from "../../thirdPartyCode/three/three.module.js";
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 
 (function(exports) {
@@ -30,15 +28,9 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 
     const DISPLAY_ORIGIN_BOX = true;
 
-    const ENABLE_TEXT_GEOMETRY = false;
-    let fonts = {
-        helveticaNeue: null // set in fontLoader callback
-    };
-
     let customMaterials;
 
     // for now, this contains everything not attached to a specific world object
-    // todo: in future, move three.js camera instead of moving the scene
     var threejsContainerObj;
 
     function initService() {
@@ -92,10 +84,6 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
             realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
-        }
-        
-        if (ENABLE_TEXT_GEOMETRY) {
-            loadFonts();
         }
     }
 
@@ -595,56 +583,6 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 
     exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
         return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance)
-    }
-
-    function loadFonts() {
-        const fontLoader = new THREE.FontLoader();
-        fontLoader.load(
-            // resource URL
-            '../../fonts/HelveticaNeue_Medium.json',
-
-            // onLoad callback
-            function ( font ) {
-                // do something with the font
-                console.log( font );
-                fonts.helveticaNeue = font;
-            },
-
-            // onProgress callback
-            function ( xhr ) {
-                console.log( 'font is ' + (xhr.loaded / xhr.total * 100) + '% loaded' );
-            },
-
-            // onError callback
-            function ( err ) {
-                console.log( 'An error happened', err );
-            }
-        );
-    }
-    
-    exports.createTextMesh = function(text, options) {
-        if (!ENABLE_TEXT_GEOMETRY) {
-            console.warn('ENABLE_TEXT_GEOMETRY is disabled, cannot createTextMesh');
-            return;
-        }
-        if (!fonts.helveticaNeue) {
-            console.warn('still loading font... try again');
-            return;
-        }
-        if (!options) { options = {}; }
-
-        let geometry = new TextGeometry(text, {
-            font: fonts.helveticaNeue,
-            size: options.size || 80,
-            height: options.height || 5,
-        });
-
-        let materials = [
-            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors, shininess: 0 } ),
-            new THREE.MeshBasicMaterial( { color: 0x000000, shading: THREE.FlatShading, wireframe: true, transparent: true } )
-        ];
-
-        return SceneUtils.createMultiMaterialObject(geometry, materials);
     }
 
     // source: https://github.com/mrdoob/three.js/issues/78

@@ -7,7 +7,7 @@ createNameSpace("realityEditor.avatar.network");
  */
 
 (function(exports) {
-    const DATA_SEND_FPS_LIMIT = 60;
+    const DATA_SEND_FPS_LIMIT = 30;
     let occlusionDownloadInterval = null;
     let cachedOcclusionObject = null;
     let cachedWorldObject = null;

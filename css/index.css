@@ -1715,3 +1715,14 @@ Logic Interface CSS
     /* in JS, we can adjust its size using scale (since it's centered) */
     transform: translateX(-50%) translateY(-50%) translateZ(3000px);
 }
+
+.topLeftInfoText {
+    pointer-events: none;
+    position: absolute;
+    width: 100vw;
+    height: 100px;
+    left: 0;
+    top: 0;
+    z-index: 3000;
+    transform: translateZ(3000px);
+}

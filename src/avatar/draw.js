@@ -281,15 +281,10 @@ createNameSpace("realityEditor.avatar.draw");
         if (!statusUI) {
             statusUI = document.createElement('div');
             statusUI.id = 'avatarStatus';
-            statusUI.style.pointerEvents = 'none';
+            statusUI.classList.add('topLeftInfoText');
             statusUI.style.opacity = '0.5';
-            statusUI.style.position = 'absolute';
-            statusUI.style.width = '100vw';
-            statusUI.style.height = '100px';
             statusUI.style.left = '5px';
             statusUI.style.top = (realityEditor.device.environment.variables.screenTopOffset + 5) + 'px';
-            statusUI.style.zIndex = '3000';
-            statusUI.style.transform = 'translateZ(3000px)';
             document.body.appendChild(statusUI);
         }
         if (hasConnectionFeedbackBeenShown) { return; }
@@ -318,14 +313,8 @@ createNameSpace("realityEditor.avatar.draw");
         if (!debugUI) {
             debugUI = document.createElement('div');
             debugUI.id = 'avatarConnectionStatus';
-            debugUI.style.pointerEvents = 'none';
-            debugUI.style.position = 'absolute';
-            debugUI.style.width = '100vw';
-            debugUI.style.height = '100px';
-            debugUI.style.left = '0';
+            debugUI.classList.add('topLeftInfoText');
             debugUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-            debugUI.style.zIndex = '3000';
-            debugUI.style.transform = 'translateZ(3000px)';
             document.body.appendChild(debugUI);
         }
         let sendText = debugConnectionStatus.didSendAnything && debugConnectionStatus.didRecentlySend ? 'TRUE' : debugConnectionStatus.didSendAnything ? 'true' : 'false';
