@@ -16,7 +16,7 @@ createNameSpace("realityEditor.avatar");
     let myAvatarObject = null;
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
     let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
-    let otherAvatarNames = {}; // data received from avatars' username property in their storage node
+    let avatarUserProfiles = {}; // data received from avatars' userProfile property in their storage node
     let isPointerDown = false;
 
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
@@ -58,12 +58,11 @@ createNameSpace("realityEditor.avatar");
 
             connectionStatus.isLocalized = true;
             refreshStatusUI();
-            network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
+            network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
 
             // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
             let thisAvatarName = utils.getAvatarName();
             let worldObject = realityEditor.getObject(worldObjectKey);
-
             network.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
                 network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
                     console.log('added new avatar object', data);
@@ -83,7 +82,7 @@ createNameSpace("realityEditor.avatar");
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
-            draw.renderOtherAvatars(avatarTouchStates, otherAvatarNames);
+            draw.renderOtherAvatars(avatarTouchStates, avatarUserProfiles);
 
             if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
@@ -102,10 +101,11 @@ createNameSpace("realityEditor.avatar");
             refreshStatusUI();
 
             // we have a cachedWorldObject here, so it's also a good point to check pending subscriptions for that world
-            network.checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
+            network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
         });
     }
 
+    // initialize the avatar object representing my own device, and those representing other devices
     function handleDiscoveredObject(object, objectKey) {
         if (!utils.isAvatarObject(object)) { return; }
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
@@ -136,9 +136,10 @@ createNameSpace("realityEditor.avatar");
         network.realtimeSendAvatarPosition(myAvatarObject, relativeMatrix);
     }
 
+    // subscribe to the node's public data of a newly discovered avatar
     function onOtherAvatarInitialized(thatAvatarObject) {
         if (!connectionStatus.isLocalized || !cachedWorldObject) {
-            network.addPendingAvatarSubscription(thatAvatarObject.worldId, thatAvatarObject.objectId);
+            network.addPendingAvatarInitialization(thatAvatarObject.worldId, thatAvatarObject.objectId);
             return;
         }
 
@@ -149,9 +150,9 @@ createNameSpace("realityEditor.avatar");
             debugDataReceived();
         };
 
-        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.username] = (msgContent) => {
-            let name = msgContent.publicData.username.name;
-            otherAvatarNames[msgContent.object] = name;
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
+            let name = msgContent.publicData.userProfile.name;
+            avatarUserProfiles[msgContent.object] = name;
             draw.updateAvatarName(msgContent.object, name);
             debugDataReceived();
         };
@@ -162,11 +163,20 @@ createNameSpace("realityEditor.avatar");
         refreshStatusUI();
     }
 
+    // checks where the click intersects with the area target, or the groundplane, and returns {x,y,z} relative to the world object origin 
     function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
 
-        if (cachedWorldObject && cachedOcclusionObject) {
-            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [cachedOcclusionObject]);
+        let objectsToCheck = [];
+        if (cachedOcclusionObject) {
+            objectsToCheck.push(cachedOcclusionObject);
+        }
+        if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
+            objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
+        }
+        if (cachedWorldObject && objectsToCheck.length > 0) {
+            // by default, three.js raycast returns coordinates in the top-level scene coordinate system
+            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
                 // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
                 let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
@@ -181,6 +191,7 @@ createNameSpace("realityEditor.avatar");
         return worldIntersectPoint; // these are relative to the world object
     }
 
+    // add pointer events to turn on and off my own avatar's laser beam (therefore sending my touchState to other users)
     function onMyAvatarInitialized() {
         connectionStatus.isMyAvatarInitialized = true;
         refreshStatusUI();
@@ -206,6 +217,7 @@ createNameSpace("realityEditor.avatar");
         });
 
         // TODO: should this be added at the beginning, or only when done initializing avatar?
+        // (default value only gets written to avatar if we add it after the avatar exists, but might find a workaround)
         realityEditor.gui.settings.addToggleWithText('User Name', 'toggle on to show name to other users', 'myUserName',  '../../../svg/object.svg', false, '', (isToggled) => {
             console.log('user name toggled', isToggled);
             isUsernameActive = isToggled;
@@ -224,10 +236,11 @@ createNameSpace("realityEditor.avatar");
     function writeUsername(name) {
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            network.sendUserName(info, name);
+            network.sendUserProfile(info, name);
         }
     }
 
+    // send touch intersect to other users via the public data node, and show visual feedback on your cursor
     function setBeamOn(screenX, screenY) {
         isPointerDown = true;
 
@@ -239,7 +252,6 @@ createNameSpace("realityEditor.avatar");
             timestamp: Date.now()
         }
 
-        // TODO: change this so we still send if click on nothing (the other side just renders an infinite beam in that direction or raycast against the groundplane)
         if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
@@ -251,6 +263,7 @@ createNameSpace("realityEditor.avatar");
         debugDataSent();
     }
 
+    // send touchState: {isPointerDown: false} to other users, so they'll stop showing this avatar's laser beam
     function setBeamOff(screenX, screenY) {
         isPointerDown = false;
 
@@ -271,6 +284,7 @@ createNameSpace("realityEditor.avatar");
         debugDataSent();
     }
 
+    // settings menu can toggle this if desired
     function toggleDebugMode(showDebug) {
         DEBUG_MODE = showDebug;
         refreshStatusUI();
@@ -314,16 +328,18 @@ createNameSpace("realityEditor.avatar");
         }
     }
 
+    // update the simple UI that shows "connecting..." --> "connected!" (and update debug text if DEBUG_MODE is true)
     function refreshStatusUI() {
-        // render the debug info
         draw.renderConnectionDebugInfo(connectionStatus, debugConnectionStatus, myAvatarId, DEBUG_MODE);
 
-        // render a simple UI to show when we fully establish the avatar
-        let isConnectionReady = connectionStatus.isLocalized &&
-            connectionStatus.isMyAvatarCreated &&
-            connectionStatus.isMyAvatarInitialized &&
-            connectionStatus.isWorldOcclusionObjectAdded && myAvatarId;
-        draw.renderConnectionFeedback(isConnectionReady);
+        // render a simple UI to show while we establish the avatar (only show after we've connected to a world)
+        if (connectionStatus.isLocalized) {
+            let isConnectionReady = connectionStatus.isLocalized &&
+                connectionStatus.isMyAvatarCreated &&
+                connectionStatus.isMyAvatarInitialized &&
+                connectionStatus.isWorldOcclusionObjectAdded && myAvatarId;
+            draw.renderConnectionFeedback(isConnectionReady);
+        }
     }
 
     exports.initService = initService;

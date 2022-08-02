@@ -1,11 +1,23 @@
 createNameSpace("realityEditor.avatar.draw");
 
+/**
+ * @fileOverview realityEditor.avatar.draw
+ * Contains a variety of helper functions for avatar/index.js to render all visuals related to avatars
+ */
+
 (function(exports) {
     const RENDER_DEVICE_CUBE = false; // turn on to show a cube at each of the avatar positions, in addition to the beams
+    const SMOOTH_AVATAR_POSITIONS = false; // try to animate the positions of the avatars – doesn't work too well yet
+
+    // main data structure that stores the various visual elements for each avatar objectKey (beam, pointer, textLabel)
     let avatarMeshes = {};
+
+    // 2D UI for keeping track of the connection status
     let debugUI = null;
     let statusUI = null;
+    let hasConnectionFeedbackBeenShown = false; // ensures we only show the "Connected!" UI one time
 
+    // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
     function renderOtherAvatars(avatarTouchStates, avatarNames) {
         try {
             for (const [objectKey, avatarTouchState] of Object.entries(avatarTouchStates)) {
@@ -16,7 +28,7 @@ createNameSpace("realityEditor.avatar.draw");
         }
     }
 
-    // main rendering function – creates a beam, a sphere at the endpoint, and a text label if a name is provided
+    // main rendering function for a single avatar – creates a beam, a sphere at the endpoint, and a text label if a name is provided
     function renderAvatar(objectKey, touchState, avatarName) {
         if (!touchState) { return; }
 
@@ -33,7 +45,7 @@ createNameSpace("realityEditor.avatar.draw");
         const THREE = realityEditor.gui.threejsScene.THREE;
         const color = realityEditor.avatar.utils.getColor(realityEditor.getObject(objectKey)) || '#ffff00';
 
-        // show a three.js cylinder that goes from the device to its destination point, and a text label at the destination
+        // lazy-create the meshes and text label if they don't exist yet
         if (typeof avatarMeshes[objectKey] === 'undefined') {
 
             let pointerGroup = new THREE.Group();
@@ -50,7 +62,7 @@ createNameSpace("realityEditor.avatar.draw");
                 beam: cylinderMesh(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(1, 0, 0), color),
                 textLabel: createTextLabel(objectKey, initials)
             }
-            if (RENDER_DEVICE_CUBE) {
+            if (RENDER_DEVICE_CUBE) { // debug option to show where the avatars are located
                 avatarMeshes[objectKey].device = boxMesh(color, objectKey + 'device')
                 avatarMeshes[objectKey].device.matrixAutoUpdate = false;
                 realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].device);
@@ -60,7 +72,7 @@ createNameSpace("realityEditor.avatar.draw");
             realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
         }
 
-        // get the real position of the avatar by multiplying the avatar matrix (which is relative to world) by the world origin matrix
+        // get the scene position of the avatar by multiplying the avatar matrix (which is relative to world) by the world origin matrix
         let thatAvatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
         let worldMatrixThree = new THREE.Matrix4();
@@ -75,71 +87,74 @@ createNameSpace("realityEditor.avatar.draw");
         realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneMatrix, groundPlaneSceneNode.worldMatrix);
         avatarObjectMatrixThree.premultiply(groundPlaneMatrix.invert());
 
+        // show all the meshes, etc, for this avatar
+        avatarMeshes[objectKey].pointer.visible = true;
+        let wasBeamVisible = avatarMeshes[objectKey].beam.visible; // animate differently if just made visible
+        avatarMeshes[objectKey].beam.visible = true;
         if (RENDER_DEVICE_CUBE) {
             avatarMeshes[objectKey].device.visible = true;
             avatarMeshes[objectKey].device.matrixAutoUpdate = false
             avatarMeshes[objectKey].device.matrix.copy(avatarObjectMatrixThree);
         }
-        avatarMeshes[objectKey].pointer.visible = true;
-        let wasBeamVisible = avatarMeshes[objectKey].beam.visible;
-        avatarMeshes[objectKey].beam.visible = true;
 
-        if (touchState.worldIntersectPoint) {
-            // worldIntersectPoint was converted to world coordinates
-            // need to convert back to groundPlane coordinates in this system
-            let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-            let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-            let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
-            let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
-            realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
-            let convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
-            convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
-            avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+        if (!touchState.worldIntersectPoint) { return; }
 
-            // get the 2D screen coordinates of the pointer, and render a text bubble centered on it with the name of the sender
-            let pointerWorldPosition = new THREE.Vector3();
-            avatarMeshes[objectKey].pointer.getWorldPosition(pointerWorldPosition);
-            let screenCoords = realityEditor.gui.threejsScene.getScreenXY(pointerWorldPosition);
-            if (avatarName) {
-                avatarMeshes[objectKey].textLabel.style.display = 'inline';
-            }
-            // calculate distance from convertedEndPosition to camera. scale a bit based on this and adjust
-            let camPos = realityEditor.sceneGraph.getWorldPosition('CAMERA');
-            let delta = {
-                x: camPos.x - convertedEndPosition.x,
-                y: camPos.y - convertedEndPosition.y,
-                z: camPos.z - convertedEndPosition.z
-            };
-            let distanceToCamera = Math.max(0.001, Math.sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z));
-            let scale = Math.max(0.5, Math.min(2, 2000 / distanceToCamera));
-            avatarMeshes[objectKey].textLabel.style.transform = 'translateX(-50%) translateY(-50%) translateZ(3000px) scale(' + scale + ')';
-            avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + 'px';
-            avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + 'px';
+        // worldIntersectPoint was converted to world coordinates. need to convert back to groundPlane coordinates in this system
+        let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+        let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
+        realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
+        let convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+        convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
+        // move the pointer sphere to the raycast intersect position
+        avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
 
-            let startPosition = new THREE.Vector3(avatarObjectMatrixThree.elements[12], avatarObjectMatrixThree.elements[13], avatarObjectMatrixThree.elements[14]);
-            let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
-
-            const ANIMATE = false;
-            if (ANIMATE && wasBeamVisible) { // animate start position if already visible
-                let currentStartPosition = [
-                    avatarMeshes[objectKey].beam.position.x,
-                    avatarMeshes[objectKey].beam.position.y,
-                    avatarMeshes[objectKey].beam.position.z
-                ];
-                let newStartPosition = [
-                    avatarObjectMatrixThree.elements[12],
-                    avatarObjectMatrixThree.elements[13],
-                    avatarObjectMatrixThree.elements[14]
-                ];
-                // let animatedStartPosition = realityEditor.gui.ar.utilities.tweenMatrix(currentStartPosition, newStartPosition, 0.05);
-                let animatedStartPosition = realityEditor.gui.ar.utilities.animationVectorLinear(currentStartPosition, newStartPosition, 30);
-                startPosition = new THREE.Vector3(animatedStartPosition[0], animatedStartPosition[1], animatedStartPosition[2]);
-            }
-
-            avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
-            avatarMeshes[objectKey].beam.name = objectKey + 'beam';
-            realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
+        // get the 2D screen coordinates of the pointer, and render a text bubble centered on it with the name of the sender
+        let pointerWorldPosition = new THREE.Vector3();
+        avatarMeshes[objectKey].pointer.getWorldPosition(pointerWorldPosition);
+        let screenCoords = realityEditor.gui.threejsScene.getScreenXY(pointerWorldPosition);
+        if (avatarName) {
+            avatarMeshes[objectKey].textLabel.style.display = 'inline';
         }
+        // scale the name textLabel based on distance from convertedEndPosition to camera
+        let camPos = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+        let delta = {
+            x: camPos.x - convertedEndPosition.x,
+            y: camPos.y - convertedEndPosition.y,
+            z: camPos.z - convertedEndPosition.z
+        };
+        let distanceToCamera = Math.max(0.001, Math.sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z));
+        let scale = Math.max(0.5, Math.min(2, 2000 / distanceToCamera)); // biggest when <1m, smallest when >4m
+        avatarMeshes[objectKey].textLabel.style.transform = 'translateX(-50%) translateY(-50%) translateZ(3000px) scale(' + scale + ')';
+        avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + 'px'; // position it centered on the pointer sphere
+        avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + 'px';
+
+        // the position of the avatar in space
+        let startPosition = new THREE.Vector3(avatarObjectMatrixThree.elements[12], avatarObjectMatrixThree.elements[13], avatarObjectMatrixThree.elements[14]);
+        // the position of the destination of the laser pointer (where that clicked on the environment)
+        let endPosition = new THREE.Vector3(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+
+        if (SMOOTH_AVATAR_POSITIONS && wasBeamVisible) { // animate start position if already visible
+            let currentStartPosition = [
+                avatarMeshes[objectKey].beam.position.x,
+                avatarMeshes[objectKey].beam.position.y,
+                avatarMeshes[objectKey].beam.position.z
+            ];
+            let newStartPosition = [
+                avatarObjectMatrixThree.elements[12],
+                avatarObjectMatrixThree.elements[13],
+                avatarObjectMatrixThree.elements[14]
+            ];
+            // animation option 1: move the cursor faster the further away it is from the new position, so it eases out
+            // let animatedStartPosition = realityEditor.gui.ar.utilities.tweenMatrix(currentStartPosition, newStartPosition, 0.05);
+            // animation option 2: move the cursor linearly at 30*[FPS] millimeters per second
+            let animatedStartPosition = realityEditor.gui.ar.utilities.animationVectorLinear(currentStartPosition, newStartPosition, 30);
+            startPosition = new THREE.Vector3(animatedStartPosition[0], animatedStartPosition[1], animatedStartPosition[2]);
+        }
+
+        // replace the old laser beam cylinder with a new one that goes from the avatar position to the beam destination
+        avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
+        avatarMeshes[objectKey].beam.name = objectKey + 'beam';
+        realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
     }
 
     // helper to create a box mesh
@@ -203,6 +218,7 @@ createNameSpace("realityEditor.avatar.draw");
         return cylinderMesh(startPoint, endPoint, color);
     }
 
+    // adds a circular label with enough space for two initials, e.g. "BR" (but hides it if no initials provided)
     function createTextLabel(objectKey, initials) {
         let labelContainer = document.createElement('div');
         labelContainer.id = 'avatarBeamLabelContainer_' + objectKey;
@@ -214,7 +230,7 @@ createNameSpace("realityEditor.avatar.draw");
         labelContainer.appendChild(label);
 
         if (initials) {
-            label.innerText = initials; //makeRandomInitials(objectKey); //'BR';
+            label.innerText = initials;
             labelContainer.classList.remove('displayNone');
         } else {
             label.innerText = initials;
@@ -223,9 +239,9 @@ createNameSpace("realityEditor.avatar.draw");
 
         return labelContainer;
     }
-    
+
+    // update the laser beam text label with this name's initials
     function updateAvatarName(objectKey, name) {
-        // update the laserbeam label text if available
         let matchingTextLabel = document.getElementById('avatarBeamLabel_' + objectKey);
         if (matchingTextLabel) {
             let initials = realityEditor.avatar.utils.getInitialsFromName(name);
@@ -260,7 +276,7 @@ createNameSpace("realityEditor.avatar.draw");
         overlay.style.display = isVisible ? 'inline' : 'none';
     }
 
-    let hasConnectionFeedbackBeenShown = false;
+    // Shows an "Establishing Connection..." --> "Connected!" label in the top left
     function renderConnectionFeedback(isConnected) {
         if (!statusUI) {
             statusUI = document.createElement('div');
@@ -333,9 +349,7 @@ createNameSpace("realityEditor.avatar.draw");
     exports.renderOtherAvatars = renderOtherAvatars;
     exports.updateAvatarName = updateAvatarName;
     exports.renderCursorOverlay = renderCursorOverlay;
-    // this one is for nice visual feedback
     exports.renderConnectionFeedback = renderConnectionFeedback;
-    // this one is just for debugging
     exports.renderConnectionDebugInfo = renderConnectionDebugInfo;
 
 }(realityEditor.avatar.draw));

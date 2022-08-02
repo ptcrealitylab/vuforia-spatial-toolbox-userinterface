@@ -1,12 +1,17 @@
 createNameSpace("realityEditor.avatar.utils");
 
+/**
+ * @fileOverview realityEditor.avatar.draw
+ * Miscellaneous helper functions for avatars
+ */
+
 (function(exports) {
     exports.AVATAR_ID_PREFIX = '_AVATAR_';
     exports.TOOL_NAME = 'Avatar'; // these need to match the way the server intializes the tool and node
     exports.NODE_NAME = 'storage';
     exports.PUBLIC_DATA_KEYS = {
         touchState: 'touchState',
-        username: 'username'
+        userProfile: 'userProfile'
     };
 
     // other modules in the project can use this to reliably check whether an object is an avatar

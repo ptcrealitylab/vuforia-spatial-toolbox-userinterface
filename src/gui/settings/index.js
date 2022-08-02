@@ -263,6 +263,11 @@ realityEditor.gui.settings.loadSettingsPost = function () {
             }
         }
 
+        for (let key in dynamicSettings) {
+            let settingInfo = dynamicSettings[key];
+            this.setSettings(key, settingInfo.value);
+        }
+
     }.bind(realityEditor.gui.settings);
 
     var onGetEnvironmentVaribles = function (environmentVariables) {

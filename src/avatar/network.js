@@ -1,5 +1,11 @@
 createNameSpace("realityEditor.avatar.network");
 
+/**
+ * @fileOverview realityEditor.avatar.draw
+ * Contains a variety of helper functions for avatar/index.js to create and discover avatar objects,
+ * realtime broadcast my avatar's state, and subscribe to the state of other avatars
+ */
+
 (function(exports) {
     const DATA_SEND_FPS_LIMIT = 60;
     let occlusionDownloadInterval = null;
@@ -7,7 +13,7 @@ createNameSpace("realityEditor.avatar.network");
     let cachedWorldObject = null;
     let lastBroadcastPositionTimestamp = Date.now();
     let lastWritePublicDataTimestamp = Date.now();
-    let pendingSubscriptions = {};
+    let pendingAvatarInitializations = {};
 
     // Check if an object with this name exists on the server
     function verifyObjectNameNotOnWorldServer(serverWorldObject, objectName, onDoesntExist, onExists) {
@@ -103,7 +109,7 @@ createNameSpace("realityEditor.avatar.network");
         lastBroadcastPositionTimestamp = Date.now();
     }
 
-    // write the touchState into the avatar object's storage node
+    // write the touchState into the avatar object's storage node (internally limits data rate to FPS_LIMIT)
     function sendTouchState(keys, touchState, options) {
         let sendData = !(options && options.limitToFps) || (Date.now() - lastWritePublicDataTimestamp > (1000 / DATA_SEND_FPS_LIMIT));
         if (sendData) {
@@ -113,19 +119,19 @@ createNameSpace("realityEditor.avatar.network");
     }
 
     // write the username into the avatar object's storage node
-    function sendUserName(keys, name) {
-        realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.username, {
+    function sendUserProfile(keys, name) {
+        realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.userProfile, {
             name: name
         });
     }
 
     // if we discover other avatar objects before we're localized in a world, queue them up to be initialized later
-    function checkPendingAvatarSubscriptions(connectionStatus, cachedWorldObject, callback) {
+    function processPendingAvatarInitializations(connectionStatus, cachedWorldObject, callback) {
         if (!connectionStatus.isLocalized || !cachedWorldObject) {
             return; // don't process until we're properly localized
         }
 
-        let objectIdList = pendingSubscriptions[cachedWorldObject.objectId];
+        let objectIdList = pendingAvatarInitializations[cachedWorldObject.objectId];
         if (!(objectIdList && objectIdList.length > 0)) { return; }
 
         while (objectIdList.length > 0) {
@@ -137,14 +143,15 @@ createNameSpace("realityEditor.avatar.network");
     }
 
     // remember this object so that if we localize against this world in the future, we can subscribe to its node's public data
-    function addPendingAvatarSubscription(worldId, objectId) {
-        if (typeof pendingSubscriptions[worldId] === 'undefined') {
-            pendingSubscriptions[worldId] = [];
+    function addPendingAvatarInitialization(worldId, objectId) {
+        if (typeof pendingAvatarInitializations[worldId] === 'undefined') {
+            pendingAvatarInitializations[worldId] = [];
         }
-        pendingSubscriptions[worldId].push(objectId);
+        pendingAvatarInitializations[worldId].push(objectId);
     }
 
-    // given a data structure of { PUBLIC_DATA_KEYS: callbacks }, adds the callback provided for each key
+    // given a data structure of { PUBLIC_DATA_KEYS: callbacks }, adds the callbacks to the provided avatarObject's avatar node,
+    // so that the corresponding callback will be triggered iff the corresponding data key is changed by another user
     function subscribeToAvatarPublicData(avatarObject, subscriptionCallbacks) {
         let avatarObjectKey = avatarObject.objectId;
         let avatarFrameKey = Object.keys(avatarObject.frames).find(name => name.includes(realityEditor.avatar.utils.TOOL_NAME));
@@ -170,9 +177,9 @@ createNameSpace("realityEditor.avatar.network");
     exports.onLoadOcclusionObject = onLoadOcclusionObject;
     exports.realtimeSendAvatarPosition = realtimeSendAvatarPosition;
     exports.sendTouchState = sendTouchState;
-    exports.sendUserName = sendUserName;
-    exports.checkPendingAvatarSubscriptions = checkPendingAvatarSubscriptions;
-    exports.addPendingAvatarSubscription = addPendingAvatarSubscription;
+    exports.sendUserProfile = sendUserProfile;
+    exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
+    exports.addPendingAvatarInitialization = addPendingAvatarInitialization;
     exports.subscribeToAvatarPublicData = subscribeToAvatarPublicData;
 
 }(realityEditor.avatar.network));
