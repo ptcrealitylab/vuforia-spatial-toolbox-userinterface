@@ -31,7 +31,6 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
     let customMaterials;
 
     // for now, this contains everything not attached to a specific world object
-    // todo: in future, move three.js camera instead of moving the scene
     var threejsContainerObj;
 
     function initService() {
@@ -584,6 +583,19 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 
     exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
         return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance)
+    }
+
+    // source: https://github.com/mrdoob/three.js/issues/78
+    exports.getScreenXY = function(meshPosition) {
+        let pos = meshPosition.clone();
+        let projScreenMat = new THREE.Matrix4();
+        projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        pos.applyMatrix4(projScreenMat);
+
+        return {
+            x: ( pos.x + 1 ) * window.innerWidth / 2,
+            y: ( -pos.y + 1) * window.innerHeight / 2
+        };
     }
 
     exports.initService = initService;

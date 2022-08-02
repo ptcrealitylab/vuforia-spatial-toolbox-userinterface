@@ -17,6 +17,8 @@ createNameSpace("realityEditor.network.realtime");
     var hasBeenInitialized = false;
     let batchedUpdates = {};
 
+    let cachedPublicData = {}; // check to only trigger callbacks for property keys with changes
+
     /**
      * Public init function that sets up the sockets for realtime updates.
      */
@@ -438,7 +440,11 @@ createNameSpace("realityEditor.network.realtime");
 
         if (typeof publicDataCallbacks[objectKey] === 'undefined') {
             publicDataCallbacks[objectKey] = {};
+            cachedPublicData[objectKey] = {};
+        }
+        if (typeof publicDataCallbacks[objectKey][publicDataKey] === 'undefined') {
             publicDataCallbacks[objectKey][publicDataKey] = [];
+            cachedPublicData[objectKey][publicDataKey] = null;
         }
         publicDataCallbacks[objectKey][publicDataKey].push(callback);
 
@@ -460,11 +466,23 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     function handlePublicDataFromServer(msg, objectKey, publicDataKey) {
-        let callbacks = publicDataCallbacks[objectKey][publicDataKey];
+        let allCallbacks = publicDataCallbacks[objectKey];
+        if (!allCallbacks) { return; }
+        let callbacks = allCallbacks[publicDataKey];
         if (!callbacks) { return; }
+
+        let stringifiedData = JSON.stringify(JSON.parse(msg).publicData[publicDataKey]);
+
+        // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
+        if (stringifiedData === cachedPublicData[objectKey][publicDataKey]) {
+            return;
+        }
+
         callbacks.forEach(cb => {
             cb(msg);
         });
+
+        cachedPublicData[objectKey][publicDataKey] = stringifiedData;
     }
 
     function writePublicData(objectKey, frameKey, nodeKey, publicDataKey, publicDataValue) {

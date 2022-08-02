@@ -134,7 +134,11 @@ var realityEditor = realityEditor || {
     envelopeManager: {},
     moduleCallbacks: {},
     worldObjects: {},
-    avatarObjects: {}
+    avatar: {
+        network: {},
+        draw: {},
+        utils: {}
+    }
 };
 
 /**
