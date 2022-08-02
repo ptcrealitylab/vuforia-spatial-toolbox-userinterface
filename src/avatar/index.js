@@ -103,6 +103,21 @@ createNameSpace("realityEditor.avatar");
             // we have a cachedWorldObject here, so it's also a good point to check pending subscriptions for that world
             network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
         });
+
+        const description = 'toggle on to show name to other users';
+        const propertyName = 'myUserName';
+        const iconSrc = '../../../svg/object.svg';
+        const defaultValue = false;
+        const placeholderText = '';
+        realityEditor.gui.settings.addToggleWithText('User Name', description, propertyName, iconSrc, defaultValue, placeholderText, (isToggled) => {
+            isUsernameActive = isToggled;
+            writeUsername(isToggled ? myUsername : null);
+        }, (text) => {
+            myUsername = text;
+            if (isUsernameActive) {
+                writeUsername(myUsername);
+            }
+        });
     }
 
     // initialize the avatar object representing my own device, and those representing other devices
@@ -196,6 +211,10 @@ createNameSpace("realityEditor.avatar");
         connectionStatus.isMyAvatarInitialized = true;
         refreshStatusUI();
 
+        if (isUsernameActive && myUsername) {
+            writeUsername(myUsername);
+        }
+
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (realityEditor.device.utilities.isEventHittingBackground(e)) {
@@ -215,25 +234,11 @@ createNameSpace("realityEditor.avatar");
             // update the beam position even if not hitting background, as long as we started on the background
             setBeamOn(e.pageX, e.pageY);
         });
-
-        // TODO: should this be added at the beginning, or only when done initializing avatar?
-        // (default value only gets written to avatar if we add it after the avatar exists, but might find a workaround)
-        realityEditor.gui.settings.addToggleWithText('User Name', 'toggle on to show name to other users', 'myUserName',  '../../../svg/object.svg', false, '', (isToggled) => {
-            console.log('user name toggled', isToggled);
-            isUsernameActive = isToggled;
-            if (isToggled) {
-                writeUsername(myUsername);
-            } else {
-                writeUsername(null);
-            }
-        }, (text) => {
-            myUsername = text;
-            if (!isUsernameActive) { return; }
-            writeUsername(myUsername);
-        });
     }
 
+    // name is one property within the avatar node's userProfile public data 
     function writeUsername(name) {
+        if (!myAvatarObject) { return; }
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
             network.sendUserProfile(info, name);

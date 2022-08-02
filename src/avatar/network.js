@@ -121,6 +121,7 @@ createNameSpace("realityEditor.avatar.network");
     // write the username into the avatar object's storage node
     function sendUserProfile(keys, name) {
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.userProfile, {
+            // right now the profile only contains a name, but this can be extended in the future
             name: name
         });
     }
