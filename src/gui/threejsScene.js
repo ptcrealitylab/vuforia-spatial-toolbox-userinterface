@@ -293,12 +293,18 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         const gltfLoader = new GLTFLoader();
         console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
-            let geometry;
-            if (gltf.scene.children[0].geometry) {
-                geometry = gltf.scene.children[0].geometry;
-            } else {
-                const geometries = gltf.scene.children[0].children.map(child=>child.geometry);
-                geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+            const geometries = [];
+            gltf.scene.traverse(obj => {
+                if (obj.geometry) {
+                    obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
+                    geometries.push(obj.geometry);
+                }
+            });
+
+            let geometry = geometries[0];
+            if (geometries.length > 1) {
+                const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+                geometry = mergedGeometry;
             }
 
             // SimplifyModifier seems to freeze app
