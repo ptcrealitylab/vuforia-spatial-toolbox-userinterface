@@ -7,6 +7,7 @@ import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUt
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
+import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 
 (function(exports) {
 
@@ -78,6 +79,12 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 
         addGroundPlaneCollider(); // invisible object for raycasting intersections with ground plane
 
+        let pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+
+        let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
+        scene.environment = neutralEnvironment;
+
         renderScene(); // update loop
 
         if (DISPLAY_ORIGIN_BOX) {
@@ -90,29 +97,30 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
     // light the scene with a combination of ambient and directional white light
     function setupLighting() {
         // This doesn't seem to work with the area target model material, but adding it for everything else
-        let ambLight = new THREE.AmbientLight(0xffffff);
+        let ambLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambLight);
 
         // attempts to light the scene evenly with directional lights from each side, but mostly from the top
         let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 2);
         dirLightTopDown.position.set(0, 1, 0); // top-down
+        dirLightTopDown.lookAt(0, 0, 0);
         scene.add(dirLightTopDown);
 
-        let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLightXLeft.position.set(1, 0, 0);
-        scene.add(dirLightXLeft);
+        // let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
+        // dirLightXLeft.position.set(1, 0, 0);
+        // scene.add(dirLightXLeft);
 
-        let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLightXRight.position.set(-1, 0, 0);
-        scene.add(dirLightXRight);
+        // let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
+        // dirLightXRight.position.set(-1, 0, 0);
+        // scene.add(dirLightXRight);
 
-        let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLightZLeft.position.set(0, 0, 1);
-        scene.add(dirLightZLeft);
+        // let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
+        // dirLightZLeft.position.set(0, 0, 1);
+        // scene.add(dirLightZLeft);
 
-        let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLightZRight.position.set(0, 0, -1);
-        scene.add(dirLightZRight);
+        // let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
+        // dirLightZRight.position.set(0, 0, -1);
+        // scene.add(dirLightZRight);
     }
 
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
