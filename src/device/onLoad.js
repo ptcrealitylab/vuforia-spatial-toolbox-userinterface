@@ -188,36 +188,45 @@ realityEditor.device.onload = function () {
         // }
     }).moveToDevelopMenu();
 
+    let enablePoseTrackingTimeout = null;
     // Add a toggle to enable virtualization features
     realityEditor.gui.settings.addToggle('Virtualization', 'enable virtualization and pose detection', 'enableVirtualization',  '../../../svg/object.svg', false, function(newValue) {
-        let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-            return;
-        }
         if (newValue) {
-            realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
+            function enablePoseTracking() {
+                let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+                if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+                    enablePoseTrackingTimeout = setTimeout(enablePoseTracking, 100);
+                    return;
+                }
+                realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
 
-            let recordButton = document.getElementById('recordPointCloudsButton');
-            if (!recordButton) {
-                recordButton = document.createElement('img');
-                recordButton.src = '../../../svg/recordButton3D-start.svg';
-                recordButton.id = 'recordPointCloudsButton';
-                document.body.appendChild(recordButton);
+                let recordButton = document.getElementById('recordPointCloudsButton');
+                if (!recordButton) {
+                    recordButton = document.createElement('img');
+                    recordButton.src = '../../../svg/recordButton3D-start.svg';
+                    recordButton.id = 'recordPointCloudsButton';
+                    document.body.appendChild(recordButton);
 
-                recordButton.addEventListener('pointerup', _e => {
-                    if (recordButton.classList.contains('pointCloudButtonActive')) {
-                        recordButton.classList.remove('pointCloudButtonActive');
-                        recordButton.src = '../../../svg/recordButton3D-start.svg';
-                        realityEditor.device.videoRecording.stop3DVideoRecording();
-                    } else {
-                        recordButton.classList.add('pointCloudButtonActive');
-                        recordButton.src = '../../../svg/recordButton3D-stop.svg';
-                        realityEditor.device.videoRecording.start3DVideoRecording();
-                    }
-                });
+                    recordButton.addEventListener('pointerup', _e => {
+                        if (recordButton.classList.contains('pointCloudButtonActive')) {
+                            recordButton.classList.remove('pointCloudButtonActive');
+                            recordButton.src = '../../../svg/recordButton3D-start.svg';
+                            realityEditor.device.videoRecording.stop3DVideoRecording();
+                        } else {
+                            recordButton.classList.add('pointCloudButtonActive');
+                            recordButton.src = '../../../svg/recordButton3D-stop.svg';
+                            realityEditor.device.videoRecording.start3DVideoRecording();
+                        }
+                    });
+                }
+                recordButton.classList.remove('hiddenButtons');
             }
-            recordButton.classList.remove('hiddenButtons');
+            enablePoseTracking();
         } else {
+            if (enablePoseTrackingTimeout) {
+                clearTimeout(enablePoseTrackingTimeout);
+                enablePoseTrackingTimeout = null;
+            }
             realityEditor.app.appFunctionCall("disablePoseTracking", {});
             let recordButton = document.getElementById('recordPointCloudsButton');
             if (recordButton) {
