@@ -154,6 +154,21 @@ realityEditor.gui.settings.loadSettingsPost = function () {
                 // console.log('found element for ' + key);
                 if (settingInfo.settingType === InterfaceType.URL) {
                     // TODO update
+                    const urlView = container.querySelector('#' + key + 'Text');
+                    if (urlView) {
+                        urlView.dataset.href = settingInfo.associatedText.value;
+                    }
+                }
+
+                if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_TEXT) {
+                    // TODO update if not modified by user
+                }
+
+                if (settingInfo.settingType === InterfaceType.TOGGLE_WITH_FROZEN_TEXT) {
+                    const textField = container.querySelector('#' + key + 'Text');
+                    if (textField) {
+                        textField.value = settingInfo.associatedText.value;
+                    }
                 }
             } else {
                 // console.log('need to create element for ' + key);
