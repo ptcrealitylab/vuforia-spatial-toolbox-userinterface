@@ -224,7 +224,7 @@ realityEditor.device.onload = function () {
                 recordButton.classList.add('hiddenButtons');
             }
         }
-    }).moveToDevelopMenu();
+    }, {ignoreOnload: true, dontPersist: true}).moveToDevelopMenu();
 
     let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
         function(newValue) {
