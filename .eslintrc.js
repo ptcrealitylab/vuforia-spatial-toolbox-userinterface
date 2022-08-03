@@ -80,6 +80,7 @@ module.exports = {
             "argsIgnorePattern": "^_",
           },
         ],
+        "no-inner-declarations": "off",
     },
     "overrides": [{
         "files": ["src/gui/threejsScene.js", "src/device/multiclientUI.js"],
