@@ -39,15 +39,19 @@ onmessage = function(evt) {
 const createNavmeshFromFile = (fileName) => {
   return new Promise(resolve => {
     gltfLoader.load(fileName, (gltf) => {
-      // TODO: Make this more robust to edited GLBs that accidentally left other objects in (like default lights in Blender)
-      // One approach is to just merge all geometry in the scene among all scene children
-      // Doesn't really cause any issues unless someone manually edits a mesh
-      if (gltf.scene.children[0].geometry) {
-        resolve(createNavmesh(gltf.scene.children[0].geometry, heatmapResolution));
-      } else {
-        const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
-        resolve(createNavmesh(mergedGeometry, heatmapResolution));
-      }
+        const geometries = [];
+        gltf.scene.traverse(obj => {
+            if (obj.geometry) {
+                obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
+                geometries.push(obj.geometry);
+            }
+        });
+        if (geometries.length === 1) {
+            resolve(createNavmesh(geometries[0], heatmapResolution));
+        } else {
+            const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+            resolve(createNavmesh(mergedGeometry, heatmapResolution));
+        }
     });
   });
 }
