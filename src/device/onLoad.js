@@ -243,7 +243,7 @@ realityEditor.device.onload = function () {
 
     let cachedSettings = {};
     const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
-    if (window.location.host === localSettingsHost) {
+    if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
         setInterval(async () => {
             let settings;
             try {
