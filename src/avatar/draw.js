@@ -28,6 +28,59 @@ createNameSpace("realityEditor.avatar.draw");
         }
     }
 
+    let renderedNames = null;
+    function renderAvatarIconList(connectedAvatars) {
+        if (JSON.stringify(connectedAvatars) === renderedNames) {
+            return;
+        }
+
+        console.log('updated  names: ', connectedAvatars);
+        
+        let iconContainer = document.getElementById('avatarIconContainer');
+        if (!iconContainer) {
+            iconContainer = document.createElement('div');
+            iconContainer.id = 'avatarIconContainer';
+            iconContainer.classList.add('avatarIconContainerScaleAdjustment')
+            iconContainer.style.position = 'absolute';
+            iconContainer.style.top = (realityEditor.device.environment.variables.screenTopOffset + 20) + 'px';
+            iconContainer.style.left = '50vw';
+            iconContainer.style.transform = 'translateX(-50%)';
+            document.body.appendChild(iconContainer)
+        }
+        
+        while (iconContainer.hasChildNodes()) {
+            iconContainer.removeChild(iconContainer.lastChild);
+        }
+        
+        if (Object.keys(connectedAvatars).length < 2) {
+            renderedNames = JSON.stringify(connectedAvatars); // TODO: show invite button instead?
+            return;
+        }
+
+        // TODO: add initials to each icon that has them
+        // TODO: add hover pointerevents to show full name
+        // TODO: if more than 3-5 icons, show a "... +1" at the end and limit how many icons
+        // TODO: treat your own icon differently
+        let index = 0;
+        for (const [_objectKey, info] of Object.entries(connectedAvatars)) {
+            let initials = realityEditor.avatar.utils.getInitialsFromName(info.name) || '';
+            console.log(initials);
+            
+            let icon = document.createElement('img');
+            icon.classList.add('avatarListIcon', 'avatarListIconVerticalAdjustment');
+            icon.src = '../../../svg/avatar-placeholder-icon.svg';
+            icon.style.left = (40 * index) + 'px';
+            iconContainer.appendChild(icon);
+            
+            index++;
+        }
+        let iconsWidth = (index * 30) + ((index-1) * 10);
+        iconContainer.style.width = iconsWidth + 'px';
+
+        renderedNames = JSON.stringify(connectedAvatars);
+    }
+    exports.renderAvatarIconList = renderAvatarIconList;
+
     // main rendering function for a single avatar – creates a beam, a sphere at the endpoint, and a text label if a name is provided
     function renderAvatar(objectKey, touchState, avatarName) {
         if (!touchState) { return; }

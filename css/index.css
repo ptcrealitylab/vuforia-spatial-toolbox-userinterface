@@ -1726,3 +1726,9 @@ Logic Interface CSS
     z-index: 3000;
     transform: translateZ(3000px);
 }
+
+.avatarListIcon {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+}
