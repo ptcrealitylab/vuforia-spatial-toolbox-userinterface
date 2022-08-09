@@ -82,4 +82,13 @@ createNameSpace("realityEditor.avatar.utils");
         }
     }
 
+    // sort the list of connected avatars. currently moves yourself to the front.
+    // in future could also sort by join time or recent activity
+    exports.sortAvatarList = function(connectedAvatars) {
+        let keys = Object.keys(connectedAvatars);
+        let first = this.getAvatarName(); // move yourself to the font of the list
+        keys.sort(function(x,y){ return x.includes(first) ? -1 : y.includes(first) ? 1 : 0; });
+        return keys;
+    }
+
 }(realityEditor.avatar.utils));
