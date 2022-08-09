@@ -41,10 +41,7 @@ createNameSpace("realityEditor.avatar.draw");
             iconContainer = document.createElement('div');
             iconContainer.id = 'avatarIconContainer';
             iconContainer.classList.add('avatarIconContainerScaleAdjustment')
-            iconContainer.style.position = 'absolute';
             iconContainer.style.top = (realityEditor.device.environment.variables.screenTopOffset + 20) + 'px';
-            iconContainer.style.left = '50vw';
-            iconContainer.style.transform = 'translateX(-50%)';
             document.body.appendChild(iconContainer)
         }
         
@@ -57,29 +54,143 @@ createNameSpace("realityEditor.avatar.draw");
             return;
         }
 
-        // TODO: add initials to each icon that has them
-        // TODO: add hover pointerevents to show full name
-        // TODO: if more than 3-5 icons, show a "... +1" at the end and limit how many icons
-        // TODO: treat your own icon differently
-        let index = 0;
-        for (const [_objectKey, info] of Object.entries(connectedAvatars)) {
+        let keys = Object.keys(connectedAvatars);
+        let first = realityEditor.avatar.utils.getAvatarName(); // move yourself to the font of the list
+        keys.sort(function(x,y){ return x.includes(first) ? -1 : y.includes(first) ? 1 : 0; });
+
+        const ICON_WIDTH = 30;
+        const ICON_GAP = 10;
+        // if too many collaborators, show a "+N" at the end and limit how many icons
+        const MAX_ICONS = realityEditor.device.environment.variables.maxAvatarIcons || 3;
+        const ADDITIONAL_NAMES = 2; // will list out this many extra names with commas when hovering over the ellipsis
+
+        keys.forEach((objectKey, index) => {
+            let isEllipsis = index === (MAX_ICONS); // the next one after the last turns into an ellipsis
+            if (index > MAX_ICONS) { return; } // after the ellipsis, we ignore the rest
+
+            let info = connectedAvatars[objectKey];
             let initials = realityEditor.avatar.utils.getInitialsFromName(info.name) || '';
-            console.log(initials);
+            if (isEllipsis) {
+                initials = '+' + (keys.length - index);
+            }
+
+            let iconDiv = document.createElement('div');
+            iconDiv.classList.add('avatarListIcon', 'avatarListIconVerticalAdjustment');
+            iconDiv.style.left = ((ICON_WIDTH + ICON_GAP) * index) + 'px';
+            iconContainer.appendChild(iconDiv);
+
+            let iconImg = document.createElement('img');
+            iconImg.classList.add('avatarListIconImage');
+            iconDiv.appendChild(iconImg);
+
+            let isMyIcon = objectKey.includes(realityEditor.avatar.utils.getAvatarName());
+            if (initials) {
+                iconImg.src = '../../../svg/avatar-initials-background-dark.svg';
+
+                let iconInitials = document.createElement('div');
+                iconInitials.classList.add('avatarListIconInitials');
+                iconInitials.innerText = initials;
+                iconDiv.appendChild(iconInitials);
+                iconImg.title = isEllipsis ? 'Additional Avatars' : info.name;
+            } else {
+                if (isMyIcon) {
+                    iconImg.src = '../../../svg/avatar-placeholder-icon.svg';
+                } else {
+                    iconImg.src = '../../../svg/avatar-placeholder-icon-dark.svg';
+                }
+            }
+
+            let color = realityEditor.avatar.utils.getColor(realityEditor.getObject(objectKey));
+            let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey));
+            if (color && lightColor) {
+                if (isMyIcon) {
+                    iconImg.style.border = '2px solid white';
+                    iconImg.style.backgroundColor = color;
+                } else if (!isEllipsis) {
+                    iconImg.style.border = '2px solid ' + lightColor;
+                    iconImg.style.backgroundColor = lightColor;
+                } else {
+                    iconImg.style.border = '2px solid black';
+                    iconImg.style.backgroundColor = 'rgb(95, 95, 95)';
+                }
+                iconImg.style.borderRadius = '20px';
+            }
             
-            let icon = document.createElement('img');
-            icon.classList.add('avatarListIcon', 'avatarListIconVerticalAdjustment');
-            icon.src = '../../../svg/avatar-placeholder-icon.svg';
-            icon.style.left = (40 * index) + 'px';
-            iconContainer.appendChild(icon);
-            
-            index++;
-        }
-        let iconsWidth = (index * 30) + ((index-1) * 10);
+            // show full name when hovering over the icon
+            iconDiv.addEventListener('pointerover', () => {
+                let tooltipName = info.name;
+                if (isEllipsis) {
+                    let remainingKeys = keys.slice(-1 * (keys.length - index));
+                    let names = remainingKeys.map(key => connectedAvatars[key].name).filter(name => !!name);
+                    names = names.slice(0, ADDITIONAL_NAMES); // limit number of comma-separated names
+                    let additional = (keys.length - index) - names.length; // number of anonymous and beyond-additional
+                    tooltipName = names.join(', ');
+                    if (additional > 0) {
+                        tooltipName += ' and ' + additional + ' more';
+                    }
+                }
+                // let fullName = !isEllipsis ? info.name : ('and ' + (keys.length - index) + ' more');
+                showIconName(iconDiv, tooltipName, isMyIcon, isEllipsis);
+            });
+            ['pointerout', 'pointercancel', 'pointerup'].forEach((eventName) => {
+                iconDiv.addEventListener(eventName, hideIconName);
+            });
+        });
+        
+        let iconsWidth = keys.length * (ICON_WIDTH + ICON_GAP) - ICON_GAP; // e.g. [ICON] __GAP__ [ICON] __GAP__ [ICON]
         iconContainer.style.width = iconsWidth + 'px';
 
         renderedNames = JSON.stringify(connectedAvatars);
     }
     exports.renderAvatarIconList = renderAvatarIconList;
+    
+    // shows a tooltip that either says the name, or "You" or "Anonymous" if no name is provided
+    function showIconName(element, name, isMyAvatar) {
+        let container = document.getElementById('avatarListHoverName');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'avatarListHoverName';
+            container.classList.add('avatarListIconVerticalAdjustment');
+            element.parentElement.appendChild(container);
+        }
+
+        let nameDiv = document.getElementById('avatarListHoverNameText');
+        if (!nameDiv) {
+            nameDiv = document.createElement('div');
+            nameDiv.id = 'avatarListHoverNameText';
+            container.appendChild(nameDiv);
+        }
+
+        let tooltipArrow = document.getElementById('avatarListTooltipArrow');
+        if (!tooltipArrow) {
+            let tooltipArrow = document.createElement('img');
+            tooltipArrow.id = 'avatarListTooltipArrow';
+            tooltipArrow.src = '../../../svg/tooltip-arrow-up.svg';
+            container.appendChild(tooltipArrow);
+        }
+        
+        if (name) {
+            nameDiv.innerText = isMyAvatar ? name + ' (you)' : name;
+        } else {
+            nameDiv.innerText = isMyAvatar ? 'You (Anonymous)' : 'Anonymous';
+        }
+        let width = Math.max(120, (nameDiv.innerText.length) * 12);
+        nameDiv.style.width = width + 'px';
+        container.style.width = width + 'px;'
+
+        container.style.display = ''; //'inline-block';
+        
+        let iconRelativeLeft = element.getBoundingClientRect().left - element.parentElement.getBoundingClientRect().left;
+        let iconHalfWidth = element.getBoundingClientRect().width / 2;
+        container.style.left = (iconRelativeLeft + iconHalfWidth) + 'px';
+    }
+    
+    function hideIconName() {
+        let nameDiv = document.getElementById('avatarListHoverName');
+        if (nameDiv) {
+            nameDiv.style.display = 'none';
+        }
+    }
 
     // main rendering function for a single avatar – creates a beam, a sphere at the endpoint, and a text label if a name is provided
     function renderAvatar(objectKey, touchState, avatarName) {

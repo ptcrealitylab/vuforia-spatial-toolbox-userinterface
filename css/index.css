@@ -1727,8 +1727,57 @@ Logic Interface CSS
     transform: translateZ(3000px);
 }
 
+
+#avatarIconContainer {
+    position: absolute;
+    left: 50vw;
+    transform: translateX(-50%);
+}
+
 .avatarListIcon {
     position: absolute;
     width: 30px;
     height: 30px;
+}
+
+.avatarListIconImage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+}
+
+.avatarListIconInitials {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 30px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+
+#avatarListHoverName {
+    position: absolute;
+    left: 0;
+    top: 40px;
+    height: 30px;
+    background-color: rgb(0, 0, 0);
+    border-radius: 5px;
+    text-align: center;
+    line-height: 30px;
+    vertical-align: middle;
+    transform: translateX(-50%);
+    opacity: 0.7;
+}
+
+#avatarListTooltipArrow {
+    position: absolute;
+    left: 50%;
+    top: 2px;
+    transform: translateX(-50%) translateY(-100%);
+    width: 16px;
+    height: 8px;
 }
