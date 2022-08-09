@@ -50,7 +50,7 @@ createNameSpace("realityEditor.avatar.draw");
         const ADDITIONAL_NAMES = 2; // list out this many extra names with commas when hovering over the ellipsis
 
         sortedKeys.forEach((objectKey, index) => {
-            let isEllipsis = index === (MAX_ICONS - 1) && sortedKeys.length > MAX_ICONS; // the next one after the last turns into an ellipsis
+            let isEllipsis = index === (MAX_ICONS - 1) && sortedKeys.length > MAX_ICONS; // last one turns into "+2", "+3", etc
             let numTooMany = sortedKeys.length - (MAX_ICONS - 1);
             if (index >= MAX_ICONS) { return; } // after the ellipsis, we ignore the rest
 
@@ -82,7 +82,7 @@ createNameSpace("realityEditor.avatar.draw");
                 showFullNameTooltip(iconDiv, tooltipText, isMyIcon, isEllipsis);
             });
             ['pointerout', 'pointercancel', 'pointerup'].forEach((eventName) => {
-                iconDiv.addEventListener(eventName, hideIconName);
+                iconDiv.addEventListener(eventName, hideFullNameTooltip);
             });
         });
 
@@ -184,7 +184,7 @@ createNameSpace("realityEditor.avatar.draw");
         container.style.display = '';
     }
 
-    function hideIconName() {
+    function hideFullNameTooltip() {
         let nameDiv = document.getElementById('avatarListHoverName');
         if (nameDiv) {
             nameDiv.style.display = 'none';
