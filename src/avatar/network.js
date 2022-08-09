@@ -65,6 +65,12 @@ createNameSpace("realityEditor.avatar.network");
         });
     }
 
+    function onAvatarDeleted(callback) {
+        realityEditor.network.registerCallback('objectDeleted', (params) => {
+            callback(params.objectKey);
+        });
+    }
+
     // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
     function onLoadOcclusionObject(callback) {
         occlusionDownloadInterval = setInterval(() => {
@@ -175,6 +181,7 @@ createNameSpace("realityEditor.avatar.network");
     exports.verifyObjectNameNotOnWorldServer = verifyObjectNameNotOnWorldServer
     exports.addAvatarObject = addAvatarObject;
     exports.onAvatarDiscovered = onAvatarDiscovered;
+    exports.onAvatarDeleted = onAvatarDeleted;
     exports.onLoadOcclusionObject = onLoadOcclusionObject;
     exports.realtimeSendAvatarPosition = realtimeSendAvatarPosition;
     exports.sendTouchState = sendTouchState;

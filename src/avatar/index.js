@@ -17,6 +17,7 @@ createNameSpace("realityEditor.avatar");
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
     let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
     let avatarUserProfiles = {}; // data received from avatars' userProfile property in their storage node
+    let connectedAvatarNames = {}; // similar to avatarObjects, but maps objectKey -> name or null
     let isPointerDown = false;
 
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
@@ -79,6 +80,13 @@ createNameSpace("realityEditor.avatar");
 
         network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
+            draw.renderAvatarIconList(connectedAvatarNames);
+        });
+
+        network.onAvatarDeleted((objectKey) => {
+            delete avatarObjects[objectKey];
+            delete connectedAvatarNames[objectKey];
+            draw.renderAvatarIconList(connectedAvatarNames);
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
@@ -125,6 +133,7 @@ createNameSpace("realityEditor.avatar");
         if (!utils.isAvatarObject(object)) { return; }
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
+        connectedAvatarNames[objectKey] = { name: null };
 
         if (objectKey === myAvatarId) {
             myAvatarObject = object;
@@ -168,7 +177,9 @@ createNameSpace("realityEditor.avatar");
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
             let name = msgContent.publicData.userProfile.name;
             avatarUserProfiles[msgContent.object] = name;
+            connectedAvatarNames[msgContent.object].name = name;
             draw.updateAvatarName(msgContent.object, name);
+            draw.renderAvatarIconList(connectedAvatarNames);
             debugDataReceived();
         };
 

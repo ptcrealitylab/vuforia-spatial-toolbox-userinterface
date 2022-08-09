@@ -914,7 +914,7 @@ realityEditor.network.onAction = function (action) {
 
                 if (!res) {
                     delete objects[objectKey];
-                    console.warn('TODO: we need to trigger onObjectDeleted callbacks here');
+                    realityEditor.network.callbackHandler.triggerCallbacks('objectDeleted', {objectKey: objectKey});
                     return;
                 }
 
