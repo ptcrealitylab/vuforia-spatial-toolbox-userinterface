@@ -26,13 +26,6 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.toolId = toolId;
 
             this.uncloneables = {};
-            /**
-             * Retrieve the VAO extension. Because extVao has its own methods
-             * we use the prefix 'extVao-' to distinguish method calls intended
-             * for this.extVao instead of this.gl
-             */
-            this.extVao = this.gl.getExtension('OES_vertex_array_object');
-            this.gl.getExtension('OES_texture_float');
 
             this.commandBuffer = [];
             this.lastUseProgram = null;
@@ -139,7 +132,9 @@ createNameSpace("realityEditor.gui.glRenderer");
             let res;
 
             if (message.name.startsWith('extVao-')) {
-                res = this.extVao[message.name.split('-')[1]].apply(this.extVao, message.args);
+                let fnName = message.name.split('-')[1]; // e.g. createVertexArrayOES
+                fnName = fnName.replace(/OES$/, '');
+                res = this.gl[fnName].apply(this.gl, message.args);
             } else {
                 res = this.gl[message.name].apply(this.gl, message.args);
             }
@@ -252,12 +247,12 @@ createNameSpace("realityEditor.gui.glRenderer");
         canvas.height = globalStates.width;
         canvas.style.width = canvas.width + 'px';
         canvas.style.height = canvas.height + 'px';
-        gl = canvas.getContext('webgl');
+        gl = canvas.getContext('webgl2');
 
         // If we don't have a GL context, give up now
 
         if (!gl) {
-            alert('Unable to initialize WebGL. Your browser or machine may not support it.');
+            alert('Unable to initialize WebGL2. Your browser or machine may not support it.');
             return;
         }
 
