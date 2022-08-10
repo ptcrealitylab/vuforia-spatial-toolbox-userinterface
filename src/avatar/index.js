@@ -250,6 +250,10 @@ createNameSpace("realityEditor.avatar");
     // name is one property within the avatar node's userProfile public data 
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
+        connectedAvatarNames[myAvatarId].name = name;
+        draw.updateAvatarName(myAvatarId, name);
+        draw.renderAvatarIconList(connectedAvatarNames);
+
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
             network.sendUserProfile(info, name);

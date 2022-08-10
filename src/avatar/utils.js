@@ -21,9 +21,18 @@ createNameSpace("realityEditor.avatar.utils");
 
     // returns a random but consistent color for a provided avatar object's editorId
     exports.getColor = function(avatarObject) {
+        if (!this.isAvatarObject(avatarObject)) { return null; }
         let editorId = avatarObject.objectId.split('_AVATAR_')[1].split('_')[0];
         let id = Math.abs(this.hashCode(editorId));
         return `hsl(${(id % Math.PI) * 360 / Math.PI}, 100%, 50%)`;
+    }
+    
+    exports.getColorLighter = function(avatarObject) {
+        let defaultColor = this.getColor(avatarObject);
+        if (defaultColor) {
+            return defaultColor.replace('50%', '70%'); // increase the HSL lightness to 70%
+        }
+        return null;
     }
 
     // helper function to generate an integer hash from a string (https://stackoverflow.com/a/15710692)
@@ -71,6 +80,15 @@ createNameSpace("realityEditor.avatar.utils");
             frameKey: avatarFrameKey,
             nodeKey: avatarNodeKey
         }
+    }
+
+    // sort the list of connected avatars. currently moves yourself to the front.
+    // in future could also sort by join time or recent activity
+    exports.sortAvatarList = function(connectedAvatars) {
+        let keys = Object.keys(connectedAvatars);
+        let first = this.getAvatarName(); // move yourself to the font of the list
+        keys.sort(function(x,y){ return x.includes(first) ? -1 : y.includes(first) ? 1 : 0; });
+        return keys;
     }
 
 }(realityEditor.avatar.utils));
