@@ -74,7 +74,20 @@ createNameSpace('realityEditor.app.callbacks');
      * Retrieves the projection matrix and starts streaming the model matrices, camera matrix, and groundplane matrix.
      * Also starts the object discovery and download process.
      */
-    function vuforiaIsReady() {
+    function vuforiaIsReady(success) {
+        if (typeof success !== 'undefined' && !success) {
+            trackingStartedCallbacks.forEach(cb => cb()); // dismiss the intializing pop-up that was waiting
+            
+            let headerText = 'Needs camera access';
+            let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and restart this app.';
+
+            let notification = realityEditor.gui.modal.showSimpleNotification(
+                headerText, descriptionText,function () {
+                    console.log('closed...');
+                }, realityEditor.device.environment.variables.layoutUIForPortrait);
+            notification.domElements.fade.style.backgroundColor = 'rgba(55,55,55,0.5)';
+            return;
+        }
         // projection matrix only needs to be retrieved once
         realityEditor.app.getProjectionMatrix('realityEditor.app.callbacks.receivedProjectionMatrix');
 
@@ -135,6 +148,29 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     exports.acceptUDPBeats = true;
+    
+    let exceptions = [];
+    let queuedHeartbeats = [];
+    let heartbeatsPaused = false;
+
+    exports.enableObjectDetections = () => {
+        heartbeatsPaused = false;
+        processNextQueuedHeartbeat();
+    }
+    
+    function processNextQueuedHeartbeat() {
+        if (queuedHeartbeats.length === 0) { return; }
+        let message = queuedHeartbeats.pop();
+        receivedUDPMessage(message);
+        setTimeout(processNextQueuedHeartbeat, 10);
+    }
+    
+    exports.pauseObjectDetections = () => {
+        heartbeatsPaused = true;
+    }
+    exports.addExceptionToPausedObjectDetections = (objectName) => {
+        exceptions.push(objectName);
+    }
 
     /**
      * Callback for realityEditor.app.getUDPMessages
@@ -160,7 +196,12 @@ createNameSpace('realityEditor.app.callbacks');
         if (typeof message.id !== 'undefined' &&
             typeof message.ip !== 'undefined') {
 
-            if (!realityEditor.device.environment.variables.suppressObjectDetections) {
+            let ignoreFromPause = false;
+            if (heartbeatsPaused) {
+                ignoreFromPause = !exceptions.some(name => message.id.includes(name));
+            }
+            
+            if (!realityEditor.device.environment.variables.suppressObjectDetections && !ignoreFromPause) {
                 if (typeof message.zone !== 'undefined' && message.zone !== '') {
                     if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
                         // console.log('Added object from zone=' + message.zone);
@@ -171,6 +212,8 @@ createNameSpace('realityEditor.app.callbacks');
                     // console.log('Added object without zone');
                     realityEditor.network.addHeartbeatObject(message);
                 }
+            } else {
+                queuedHeartbeats.push(message);
             }
 
             // forward the action message to the network module, to synchronize state across multiple clients

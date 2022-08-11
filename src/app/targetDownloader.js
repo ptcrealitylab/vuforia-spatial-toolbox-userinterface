@@ -76,10 +76,10 @@ createNameSpace("realityEditor.app.targetDownloader");
             SUCCEEDED: 3
         });
 
-    /**
-     * @type {Function?}
-     */
-    let createNavmeshCallback = null;
+    let callbacks = {
+        onCreateNavmesh: [],
+        onMarkerAdded: []
+    }
 
     /**
      * Worker that generates navmeshes from upload area target meshes
@@ -101,9 +101,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         // let floorOffset = -1.55 * 1000;
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath, {x: -600, y: -floorOffset, z: -3300}, {x: 0, y: 2.661627109291353, z: 0});
 
-        if (createNavmeshCallback) {
-            createNavmeshCallback(navmesh);
-        }
+        callbacks.onCreateNavmesh.forEach(cb => cb(navmesh));
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
@@ -338,7 +336,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     function createNavmesh(fileName, objectID, callback) {
         console.log('got GLB address');
         if (callback) {
-            createNavmeshCallback = callback;
+            callbacks.onCreateNavmesh.push(callback);
         }
         navmeshWorker.postMessage({fileName, objectID});
     }
@@ -381,6 +379,15 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully added marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.SUCCEEDED;
             saveDownloadInfo(objectID); // only caches the target images after we confirm that they work
+
+            console.log('watermelon: onMarkerAdded (targetDownloader): ' + fileName + ', ' + objectID);
+            callbacks.onMarkerAdded.forEach(listener => {
+                if (listener.objectId === objectID) {
+                    console.log('watermelon: onMarkerAdded (targetDownloader) matched listener objectId');
+
+                    listener.callback(targetDownloadStates[objectID]);
+                }
+            });
         } else {
             console.log('failed to add marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
@@ -757,6 +764,15 @@ createNameSpace("realityEditor.app.targetDownloader");
                     realityEditor.app.addNewMarker(targetDownloadStates[objectID].FILENAME, moduleName + '.onMarkerAdded');
                 }
             }
+        });
+    }
+    
+    exports.addMarkerAddedCallback = function(objectId, callback) {
+        console.log('watermelon: addMarkerAddedCallback (targetDownloader)', objectId);
+
+        callbacks.onMarkerAdded.push({
+            objectId: objectId,
+            callback: callback
         });
     }
 

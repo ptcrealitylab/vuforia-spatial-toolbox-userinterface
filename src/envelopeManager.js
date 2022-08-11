@@ -210,7 +210,7 @@ createNameSpace("realityEditor.envelopeManager");
             let exitButton = document.getElementById('exitEnvelopeButton');
             if (!exitButton) {
                 exitButton = document.createElement('img');
-                exitButton.src = 'svg/menu/exit.svg';
+                exitButton.src = 'svg/envelope-x-button.svg';
                 exitButton.id = 'exitEnvelopeButton';
                 exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
                 document.body.appendChild(exitButton);

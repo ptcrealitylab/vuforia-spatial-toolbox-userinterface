@@ -35,6 +35,7 @@ createNameSpace("realityEditor.avatar.draw");
     function renderAvatarIconList(connectedAvatars) {
         let iconContainer = document.getElementById('avatarIconContainer');
         if (!iconContainer) { createIconContainer(); }
+        if (!iconContainer) { return; }
         while (iconContainer.hasChildNodes()) {
             iconContainer.removeChild(iconContainer.lastChild);
         }

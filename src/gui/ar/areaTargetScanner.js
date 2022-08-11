@@ -423,6 +423,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             })[0]; // this is guaranteed to have at least one entry if we get here
         }
         pendingAddedObjectName = "_WORLD_instantScan";
+
+        realityEditor.app.callbacks.addExceptionToPausedObjectDetections(pendingAddedObjectName);
+
         const port = realityEditor.network.getPortByIp(serverIp);
         addObject(pendingAddedObjectName, serverIp, port); // TODO: get port programmatically
 
@@ -732,6 +735,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     exports.getDetectedServers = () => {
         return detectedServers;
     };
+    exports.getSessionObjectId = () => {
+        return sessionObjectId;
+    }
 
     // make functions available to native app callbacks
     exports.captureStatusHandler = captureStatusHandler;
