@@ -424,7 +424,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
         pendingAddedObjectName = "_WORLD_instantScan";
 
-        realityEditor.app.callbacks.addExceptionToPausedObjectDetections(pendingAddedObjectName);
+        realityEditor.network.discovery.addExceptionToPausedObjectDetections(pendingAddedObjectName);
 
         const port = realityEditor.network.getPortByIp(serverIp);
         addObject(pendingAddedObjectName, serverIp, port); // TODO: get port programmatically

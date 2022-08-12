@@ -25,6 +25,11 @@ createNameSpace("realityEditor.envelopeManager");
      */
     var knownEnvelopes = {};
     
+    let callbacks = {
+        onExitButtonShown: [],
+        onExitButtonHidden: []
+    };
+    
     /**
      * Init envelope manager module
      */
@@ -204,6 +209,7 @@ createNameSpace("realityEditor.envelopeManager");
             let exitButton = document.getElementById('exitEnvelopeButton');
             if (exitButton) {
                 exitButton.style.display = 'none';
+                callbacks.onExitButtonHidden.forEach(cb => cb(exitButton));
             }
         } else {
             // show (create if needed) exit button
@@ -223,7 +229,16 @@ createNameSpace("realityEditor.envelopeManager");
                 });
             }
             exitButton.style.display = 'inline';
+            callbacks.onExitButtonShown.forEach(cb => cb(exitButton));
         }
+    }
+    
+    exports.onExitButtonHidden = (callback) => {
+        callbacks.onExitButtonHidden.push(callback);
+    }
+
+    exports.onExitButtonShown = (callback) => {
+        callbacks.onExitButtonShown.push(callback);
     }
 
     /**

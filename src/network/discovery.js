@@ -5,7 +5,7 @@ createNameSpace("realityEditor.network.discovery");
     /* Structure:
     {
         '10.10.10.10': {
-            'feeder01_lkjh0987: { heartbeat }
+            'feeder01_lkjh0987: { heartbeat: {}, metadata: {} }
         },
         '192.168.0.10: {
             'testObject_asdf1234': { heartbeat },
@@ -67,10 +67,27 @@ createNameSpace("realityEditor.network.discovery");
             callbacks.onServerDetected.forEach(cb => cb(message.ip));
         }
         if (typeof discoveryMap[message.ip][message.id] === 'undefined') {
-            callbacks.onObjectDetected.forEach(cb => cb(message.ip));
-            discoveryMap[message.ip][message.id] = message;
+            discoveryMap[message.ip][message.id] = {
+                heartbeat: message,
+                metadata: null
+            };
+            processNewObjectDiscovery(message.ip, realityEditor.network.getPort(message), message.id);
         }
         // TODO: should this module concern itself with the heartbeat checksum? probably not, we are only concerned about presence
+    }
+    
+    // independently from adding the json to the objects data structure, we query the server for some important metadata about this heartbeat
+    function processNewObjectDiscovery(ip, port, id) {
+        let url = realityEditor.network.getURL(ip, port, '/object/' + id);
+        realityEditor.network.getData(id,  null, null, url, function (objectKey, frameKey, nodeKey, msg) {
+            if (typeof discoveryMap[ip][id] !== 'undefined') {
+                discoveryMap[ip][id].metadata = {
+                    name: msg.name,
+                    type: msg.type
+                }
+                callbacks.onObjectDetected.forEach(cb => cb(discoveryMap[ip][id]));
+            }
+        });
     }
 
     // This should be directly triggered by whatever is listening for UDP messages
@@ -114,6 +131,20 @@ createNameSpace("realityEditor.network.discovery");
 
     exports.getDetectedObjectIDs = () => {
         return Object.values(discoveryMap).map(serverContents => Object.keys(serverContents)).flat();
+    }
+    
+    exports.getDetectedObjectsOfType = (type) => {
+        let serverContents = Object.values(discoveryMap); // array of [{id1: info}, { id2: info, id3: info }]
+        let matchingObjects = [];
+        serverContents.forEach(serverInfo => {
+            Object.keys(serverInfo).forEach(objectId => {
+                let objectInfo = serverInfo[objectId];
+                if (objectInfo.metadata.type === type) {
+                    matchingObjects.push(objectInfo);
+                }
+            });
+        })
+        return matchingObjects;
     }
 
     exports.initService = initService;
