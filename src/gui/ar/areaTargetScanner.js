@@ -667,21 +667,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             loadingDialog = null;
         }
 
-        // // hide all AR elements and canvas lines
-        // document.getElementById('GUI').classList.add('hiddenWhileLoading');
-        // document.getElementById('canvas').classList.add('hiddenWhileLoading');
-
         loadingDialog = realityEditor.gui.modal.showSimpleNotification(
-            headerText, descriptionText,function () {
+            headerText, descriptionText, function () {
                 console.log('closed...');
             }, realityEditor.device.environment.variables.layoutUIForPortrait);
-
-        // realityEditor.app.callbacks.onTrackingInitialized(function() {
-        //     document.getElementById('GUI').classList.remove('hiddenWhileLoading');
-        //     document.getElementById('canvas').classList.remove('hiddenWhileLoading');
-        //
-        //     notification.dismiss();
-        // });
     }
 
     /**

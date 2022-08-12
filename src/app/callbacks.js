@@ -86,7 +86,7 @@ createNameSpace('realityEditor.app.callbacks');
             let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and try again.';
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
-                headerText, descriptionText,function () {
+                headerText, descriptionText, function () {
                     console.log('closed...');
                 }, realityEditor.device.environment.variables.layoutUIForPortrait);
             notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
