@@ -422,7 +422,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 return detectedServer !== '127.0.0.1';
             })[0]; // this is guaranteed to have at least one entry if we get here
         }
-        pendingAddedObjectName = "_WORLD_instantScan";
+        pendingAddedObjectName = "_WORLD_instantScan" + globalStates.tempUuid;
 
         realityEditor.network.discovery.addExceptionToPausedObjectDetections(pendingAddedObjectName);
 
