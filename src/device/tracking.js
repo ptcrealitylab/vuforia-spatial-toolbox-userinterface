@@ -41,16 +41,18 @@ createNameSpace("realityEditor.device.tracking");
         let descriptionText = noDescriptionText ? '' : 'Move your camera around to speed up the process';
         
         let notification = realityEditor.gui.modal.showSimpleNotification(
-            headerText, descriptionText,function () {
+            headerText, descriptionText, function () {
                 console.log('closed...');
             }, realityEditor.device.environment.variables.layoutUIForPortrait);
 
-        realityEditor.app.callbacks.onTrackingInitialized(function() {
+        const dismissNotification = () => {
             document.getElementById('GUI').classList.remove('hiddenWhileLoading');
             document.getElementById('canvas').classList.remove('hiddenWhileLoading');
-
             notification.dismiss();
-        });
+        };
+
+        realityEditor.app.callbacks.onTrackingInitialized(dismissNotification);
+        realityEditor.app.callbacks.onVuforiaInitFailure(dismissNotification);
     }
 
     function onAppLifeCycleEvent(eventName) {

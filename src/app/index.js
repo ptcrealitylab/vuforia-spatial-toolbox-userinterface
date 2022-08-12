@@ -70,7 +70,7 @@ realityEditor.app.getDeviceReady = function(callBack) {
  * @param {FunctionName} callBack
  */
 realityEditor.app.getVuforiaReady = function(callBack){
-    this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+')');
+    this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**

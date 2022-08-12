@@ -423,6 +423,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             })[0]; // this is guaranteed to have at least one entry if we get here
         }
         pendingAddedObjectName = "_WORLD_instantScan";
+
+        realityEditor.app.callbacks.addExceptionToPausedObjectDetections(pendingAddedObjectName);
+
         const port = realityEditor.network.getPortByIp(serverIp);
         addObject(pendingAddedObjectName, serverIp, port); // TODO: get port programmatically
 
@@ -664,21 +667,10 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             loadingDialog = null;
         }
 
-        // // hide all AR elements and canvas lines
-        // document.getElementById('GUI').classList.add('hiddenWhileLoading');
-        // document.getElementById('canvas').classList.add('hiddenWhileLoading');
-
         loadingDialog = realityEditor.gui.modal.showSimpleNotification(
-            headerText, descriptionText,function () {
+            headerText, descriptionText, function () {
                 console.log('closed...');
             }, realityEditor.device.environment.variables.layoutUIForPortrait);
-
-        // realityEditor.app.callbacks.onTrackingInitialized(function() {
-        //     document.getElementById('GUI').classList.remove('hiddenWhileLoading');
-        //     document.getElementById('canvas').classList.remove('hiddenWhileLoading');
-        //
-        //     notification.dismiss();
-        // });
     }
 
     /**
@@ -732,6 +724,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     exports.getDetectedServers = () => {
         return detectedServers;
     };
+    exports.getSessionObjectId = () => {
+        return sessionObjectId;
+    }
 
     // make functions available to native app callbacks
     exports.captureStatusHandler = captureStatusHandler;
