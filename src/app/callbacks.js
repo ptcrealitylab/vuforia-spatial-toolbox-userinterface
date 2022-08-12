@@ -152,32 +152,6 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     exports.acceptUDPBeats = true;
-    
-    // Allows us to pause object discovery from the time the app loads until we have finished scanning
-    // TODO: refactor these and the logic inside receivedUDPMessage into a network/discovery.js module
-    let exceptions = []; // when scanning a world object, we add its name to the exceptions so we can still load it
-    let queuedHeartbeats = []; // heartbeats received while paused will be processed after resuming
-    let heartbeatsPaused = false;
-
-    exports.pauseObjectDetections = () => {
-        heartbeatsPaused = true;
-    }
-
-    exports.resumeObjectDetections = () => {
-        heartbeatsPaused = false;
-        processNextQueuedHeartbeat();
-    }
-
-    function processNextQueuedHeartbeat() {
-        if (queuedHeartbeats.length === 0) { return; }
-        let message = queuedHeartbeats.pop();
-        receivedUDPMessage(message);
-        setTimeout(processNextQueuedHeartbeat, 10); // process async to avoid overwhelming all at once
-    }
-
-    exports.addExceptionToPausedObjectDetections = (objectName) => {
-        exceptions.push(objectName);
-    }
 
     /**
      * Callback for realityEditor.app.getUDPMessages
@@ -202,26 +176,28 @@ createNameSpace('realityEditor.app.callbacks');
         // upon a new object discovery message, add the object and download its target files
         if (typeof message.id !== 'undefined' &&
             typeof message.ip !== 'undefined') {
-
-            let ignoreFromPause = false;
-            if (heartbeatsPaused) {
-                ignoreFromPause = !exceptions.some(name => message.id.includes(name));
-            }
             
-            if (!realityEditor.device.environment.variables.suppressObjectDetections && !ignoreFromPause) {
-                if (typeof message.zone !== 'undefined' && message.zone !== '') {
-                    if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
-                        // console.log('Added object from zone=' + message.zone);
-                        realityEditor.network.addHeartbeatObject(message);
-                    }
+            realityEditor.network.discovery.processHeartbeat(message);
 
-                } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
-                    // console.log('Added object without zone');
-                    realityEditor.network.addHeartbeatObject(message);
-                }
-            } else {
-                queuedHeartbeats.push(message);
-            }
+            // let ignoreFromPause = false;
+            // if (heartbeatsPaused) {
+            //     ignoreFromPause = !exceptions.some(name => message.id.includes(name));
+            // }
+            //
+            // if (!realityEditor.device.environment.variables.suppressObjectDetections && !ignoreFromPause) {
+            //     if (typeof message.zone !== 'undefined' && message.zone !== '') {
+            //         if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
+            //             // console.log('Added object from zone=' + message.zone);
+            //             realityEditor.network.addHeartbeatObject(message);
+            //         }
+            //
+            //     } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
+            //         // console.log('Added object without zone');
+            //         realityEditor.network.addHeartbeatObject(message);
+            //     }
+            // } else {
+            //     queuedHeartbeats.push(message);
+            // }
 
             // forward the action message to the network module, to synchronize state across multiple clients
         } else if (typeof message.action !== 'undefined') {

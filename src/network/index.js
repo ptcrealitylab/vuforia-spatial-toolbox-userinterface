@@ -908,13 +908,14 @@ realityEditor.network.onAction = function (action) {
 
         if (thisAction.reloadObject.object in objects) {
 
-            let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadObject.object].ip, realityEditor.network.getPort(objects[thisAction.reloadObject.object]), '/object/' + thisAction.reloadObject.object);
+            let objectIP = objects[thisAction.reloadObject.object].ip;
+            let urlEndpoint = realityEditor.network.getURL(objectIP, realityEditor.network.getPort(objects[thisAction.reloadObject.object]), '/object/' + thisAction.reloadObject.object);
 
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
                 if (!res) {
                     delete objects[objectKey];
-                    realityEditor.network.callbackHandler.triggerCallbacks('objectDeleted', {objectKey: objectKey});
+                    realityEditor.network.callbackHandler.triggerCallbacks('objectDeleted', { objectKey: objectKey, objectIP: objectIP });
                     return;
                 }
 
