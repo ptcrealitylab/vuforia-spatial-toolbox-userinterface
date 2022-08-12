@@ -34,7 +34,9 @@ createNameSpace("realityEditor.avatar.draw");
     // show a list of circular icons, one per avatar, with the (random) color and (chosen) initials of that user
     function renderAvatarIconList(connectedAvatars) {
         let iconContainer = document.getElementById('avatarIconContainer');
-        if (!iconContainer) { createIconContainer(); }
+        if (!iconContainer) {
+            iconContainer = createIconContainer();
+        }
         while (iconContainer.hasChildNodes()) {
             iconContainer.removeChild(iconContainer.lastChild);
         }
