@@ -76,16 +76,20 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function vuforiaIsReady(success) {
         if (typeof success !== 'undefined' && !success) {
-            trackingStartedCallbacks.forEach(cb => cb()); // dismiss the intializing pop-up that was waiting
+
+            while (listeners.onVuforiaInitFailure.length > 0) { // dismiss the intializing pop-up that was waiting
+                let callback = listeners.onVuforiaInitFailure.pop();
+                callback();
+            }
             
             let headerText = 'Needs camera access';
-            let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and restart this app.';
+            let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and try again.';
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
                 headerText, descriptionText,function () {
                     console.log('closed...');
                 }, realityEditor.device.environment.variables.layoutUIForPortrait);
-            notification.domElements.fade.style.backgroundColor = 'rgba(55,55,55,0.5)';
+            notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
             return;
         }
         // projection matrix only needs to be retrieved once
@@ -149,25 +153,28 @@ createNameSpace('realityEditor.app.callbacks');
 
     exports.acceptUDPBeats = true;
     
-    let exceptions = [];
-    let queuedHeartbeats = [];
+    // Allows us to pause object discovery from the time the app loads until we have finished scanning
+    // TODO: refactor these and the logic inside receivedUDPMessage into a network/discovery.js module
+    let exceptions = []; // when scanning a world object, we add its name to the exceptions so we can still load it
+    let queuedHeartbeats = []; // heartbeats received while paused will be processed after resuming
     let heartbeatsPaused = false;
 
-    exports.enableObjectDetections = () => {
+    exports.pauseObjectDetections = () => {
+        heartbeatsPaused = true;
+    }
+
+    exports.resumeObjectDetections = () => {
         heartbeatsPaused = false;
         processNextQueuedHeartbeat();
     }
-    
+
     function processNextQueuedHeartbeat() {
         if (queuedHeartbeats.length === 0) { return; }
         let message = queuedHeartbeats.pop();
         receivedUDPMessage(message);
-        setTimeout(processNextQueuedHeartbeat, 10);
+        setTimeout(processNextQueuedHeartbeat, 10); // process async to avoid overwhelming all at once
     }
-    
-    exports.pauseObjectDetections = () => {
-        heartbeatsPaused = true;
-    }
+
     exports.addExceptionToPausedObjectDetections = (objectName) => {
         exceptions.push(objectName);
     }
@@ -589,16 +596,15 @@ createNameSpace('realityEditor.app.callbacks');
             let trackingStatusInfo = cameraInfo.statusInfo;
             // console.log('camera : ' + trackingStatus + ' : ' + trackingStatusInfo);
 
-            trackingStatusCallbacks.forEach(function(callback) {
+            listeners.onDeviceTrackingStatus.forEach(function(callback) {
                 callback(trackingStatus, trackingStatusInfo);
             });
 
             realityEditor.sceneGraph.setCameraPosition(cameraMatrix);
 
-            if (anyPendingCallbacks) {
-                let callback = trackingStartedCallbacks.pop();
+            while (listeners.onTrackingStarted.length > 0) {
+                let callback = listeners.onTrackingStarted.pop();
                 callback();
-                anyPendingCallbacks = trackingStartedCallbacks.length > 0;
             }
         }
     }
@@ -691,27 +697,34 @@ createNameSpace('realityEditor.app.callbacks');
         }
     }
 
-    let trackingStartedCallbacks = [];
-    let anyPendingCallbacks = false;
+    let listeners = {
+        onVuforiaInitFailure: [], // triggers when vuforia is first initialized
+        onTrackingStarted: [], // triggers when we first get a device position (again each time we lose and regain tracking)
+        onDeviceTrackingStatus: [] // constantly receive the camera's tracking status and statusInfo
+    }
 
     /**
      * Adds a callback that will trigger one time when tracking resumes (when the camera reports a new position)
      * The callback will be discarded afterwards.
      * @param {function} callback
      */
-    function onTrackingInitialized(callback) {
-        trackingStartedCallbacks.push(callback);
-        anyPendingCallbacks = true;
+    exports.onTrackingInitialized = function(callback) {
+        listeners.onTrackingStarted.push(callback);
     }
-
-    let trackingStatusCallbacks = [];
 
     /**
      * Adds an event handler which will constantly receive the camera's tracking status and statusInfo
      * @param {function} callback
      */
-    function handleDeviceTrackingStatus(callback) {
-        trackingStatusCallbacks.push(callback);
+    exports.handleDeviceTrackingStatus = function(callback) {
+        listeners.onDeviceTrackingStatus.push(callback);
+    }
+
+    /**
+     * @param {function} callback
+     */
+    exports.onVuforiaInitFailure = function(callback) {
+        listeners.onVuforiaInitFailure.push(callback);
     }
 
     // public methods (anything triggered by a native app callback needs to be public
@@ -726,7 +739,5 @@ createNameSpace('realityEditor.app.callbacks');
     exports.receiveCameraMatricesFromAR = receiveCameraMatricesFromAR;
 
     exports.startGroundPlaneTrackerIfNeeded = startGroundPlaneTrackerIfNeeded;
-    exports.onTrackingInitialized = onTrackingInitialized;
-    exports.handleDeviceTrackingStatus = handleDeviceTrackingStatus;
 
 })(realityEditor.app.callbacks);

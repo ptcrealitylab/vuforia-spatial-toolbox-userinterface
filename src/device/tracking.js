@@ -45,12 +45,14 @@ createNameSpace("realityEditor.device.tracking");
                 console.log('closed...');
             }, realityEditor.device.environment.variables.layoutUIForPortrait);
 
-        realityEditor.app.callbacks.onTrackingInitialized(function() {
+        const dismissNotification = () => {
             document.getElementById('GUI').classList.remove('hiddenWhileLoading');
             document.getElementById('canvas').classList.remove('hiddenWhileLoading');
-
             notification.dismiss();
-        });
+        };
+
+        realityEditor.app.callbacks.onTrackingInitialized(dismissNotification);
+        realityEditor.app.callbacks.onVuforiaInitFailure(dismissNotification);
     }
 
     function onAppLifeCycleEvent(eventName) {

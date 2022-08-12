@@ -1510,7 +1510,6 @@ Logic Interface CSS
     position: absolute;
     left: 0;
     top: 0;
-    /*border: 2px solid cyan;*/
     width: 60px;
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/

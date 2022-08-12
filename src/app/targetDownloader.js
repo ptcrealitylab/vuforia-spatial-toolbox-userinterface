@@ -380,11 +380,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.SUCCEEDED;
             saveDownloadInfo(objectID); // only caches the target images after we confirm that they work
 
-            console.log('watermelon: onMarkerAdded (targetDownloader): ' + fileName + ', ' + objectID);
             callbacks.onMarkerAdded.forEach(listener => {
                 if (listener.objectId === objectID) {
-                    console.log('watermelon: onMarkerAdded (targetDownloader) matched listener objectId');
-
                     listener.callback(targetDownloadStates[objectID]);
                 }
             });
@@ -768,8 +765,6 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
     
     exports.addMarkerAddedCallback = function(objectId, callback) {
-        console.log('watermelon: addMarkerAddedCallback (targetDownloader)', objectId);
-
         callbacks.onMarkerAdded.push({
             objectId: objectId,
             callback: callback
