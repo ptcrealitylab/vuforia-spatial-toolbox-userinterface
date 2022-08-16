@@ -114,7 +114,7 @@ createNameSpace("realityEditor.avatar.draw");
         iconDiv.appendChild(iconImg);
 
         if (initials) {
-            iconImg.src = '../../../svg/avatar-initials-background-dark.svg';
+            iconImg.src = 'svg/avatar-initials-background-dark.svg';
 
             let iconInitials = document.createElement('div');
             iconInitials.classList.add('avatarListIconInitials');
@@ -122,9 +122,9 @@ createNameSpace("realityEditor.avatar.draw");
             iconDiv.appendChild(iconInitials);
         } else {
             if (isMyIcon) {
-                iconImg.src = '../../../svg/avatar-placeholder-icon.svg';
+                iconImg.src = 'svg/avatar-placeholder-icon.svg';
             } else {
-                iconImg.src = '../../../svg/avatar-placeholder-icon-dark.svg';
+                iconImg.src = 'svg/avatar-placeholder-icon-dark.svg';
             }
         }
 
@@ -166,7 +166,7 @@ createNameSpace("realityEditor.avatar.draw");
         if (!tooltipArrow) {
             let tooltipArrow = document.createElement('img');
             tooltipArrow.id = 'avatarListTooltipArrow';
-            tooltipArrow.src = '../../../svg/tooltip-arrow-up.svg';
+            tooltipArrow.src = 'svg/tooltip-arrow-up.svg';
             container.appendChild(tooltipArrow);
         }
 
