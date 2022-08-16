@@ -28,6 +28,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.uncloneables = {};
 
             this.commandBuffer = [];
+            this.previousCommandBuffer = [];
             this.lastUseProgram = null;
             this.lastActiveTexture = {
                 name: 'activeTexture',
@@ -234,12 +235,17 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.executeCommand(message);
             }
             // this.logCommandBuffer();
+            this.previousCommandBuffer = this.commandBuffer;
             this.commandBuffer = [];
         }
 
-        dropFrameCommands() {
-            this.buffering = false;
-            this.commandBuffer = [];
+        /**
+         * Execute last successful frame's command buffer
+         */
+        executePreviousFrameCommands() {
+            for (let message of this.previousCommandBuffer) {
+                this.executeCommand(message);
+            }
         }
 
         getFrameCommands() {
@@ -380,7 +386,9 @@ createNameSpace("realityEditor.gui.glRenderer");
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
             let proxy = proxiesToBeRenderedThisFrame[i];
             if (!res[i]) {
-                console.warn('miscreant detected', proxy);
+                console.warn('dropped proxy frame due to large delay', proxy);
+                proxy.executePreviousFrameCommands();
+                continue;
             }
             proxy.executeFrameCommands();
         }
