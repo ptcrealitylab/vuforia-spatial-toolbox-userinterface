@@ -80,7 +80,7 @@ createNameSpace("realityEditor.device.touchPropagation");
         // (in case there are multiple fullscreen frames)
         var overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y);
         overlappingDivs.filter(function(elt) {
-            return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
+            return (elt.parentNode && typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
         }).forEach(function(elt) {
             elt.parentNode.style.display = 'none'; // TODO: instead of changing display, maybe just change pointerevents css to none
         });
@@ -94,7 +94,7 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // re-show each tagged element
         overlappingDivs.filter(function(elt) {
-            return (typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
+            return (elt.parentNode && typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
         }).forEach(function(elt) {
             elt.parentNode.style.display = elt.parentNode.dataset.displayAfterTouch;
         });
