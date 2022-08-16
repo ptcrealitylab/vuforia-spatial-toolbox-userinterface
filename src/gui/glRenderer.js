@@ -35,6 +35,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             };
             this.lastTargettedBinds = {};
             this.lastTextureBinds = {};
+            this.lastCapabilities = {};
             this.buffering = false;
 
             this.onMessage = this.onMessage.bind(this);
@@ -117,6 +118,20 @@ createNameSpace("realityEditor.gui.glRenderer");
                 // texParameteri: true, // 2
                 // texImage2D: true,
             };
+
+            if (message.name === 'disable' || message.name === 'enable') {
+                let capaId = message.args[0];
+                if (!this.lastCapabilities.hasOwnProperty(capaId)) {
+                    let isEnabled = this.gl.isEnabled(capaId);
+                    this.lastCapabilities[capaId] = isEnabled;
+                }
+                let isReturnToDefault =
+                    (this.lastCapabilities[capaId] && message.name === 'enable') ||
+                    ((!this.lastCapabilities[capaId]) && message.name === 'disable');
+                if (isReturnToDefault) {
+                    delete this.lastCapabilities[capaId];
+                }
+            }
 
             if (targettedBinds.hasOwnProperty(message.name)) {
                 this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
@@ -205,7 +220,15 @@ createNameSpace("realityEditor.gui.glRenderer");
                     setup.push(command);
                 }
             }
-            this.commandBuffer = setup.concat(this.commandBuffer);
+            let teardown = [];
+            for (let capaId in this.lastCapabilities) {
+                let val = this.lastCapabilities[capaId];
+                teardown.push({
+                    name: val ? 'enable' : 'disable',
+                    args: [parseInt(capaId)],
+                });
+            }
+            this.commandBuffer = setup.concat(this.commandBuffer).concat(teardown);
 
             for (let message of this.commandBuffer) {
                 this.executeCommand(message);
