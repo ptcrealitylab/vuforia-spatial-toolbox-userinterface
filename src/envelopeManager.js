@@ -205,17 +205,22 @@ createNameSpace("realityEditor.envelopeManager");
     function updateExitButton() {
         var numberOfOpenEnvelopes = getOpenEnvelopes().length;
         if (numberOfOpenEnvelopes === 0) {
-            // hide exit button
+            // hide exit and minimize buttons
+            let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+            if (minimizeButton) {
+                minimizeButton.style.display = 'none';
+            }
             let exitButton = document.getElementById('exitEnvelopeButton');
             if (exitButton) {
                 exitButton.style.display = 'none';
-                callbacks.onExitButtonHidden.forEach(cb => cb(exitButton));
             }
+            callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
         } else {
             // show (create if needed) exit button
             let exitButton = document.getElementById('exitEnvelopeButton');
             if (!exitButton) {
                 exitButton = document.createElement('img');
+                exitButton.classList.add('envelopeMenuButton');
                 exitButton.src = 'svg/envelope-x-button.svg';
                 exitButton.id = 'exitEnvelopeButton';
                 exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
@@ -229,7 +234,19 @@ createNameSpace("realityEditor.envelopeManager");
                 });
             }
             exitButton.style.display = 'inline';
-            callbacks.onExitButtonShown.forEach(cb => cb(exitButton));
+
+            let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+            if (!minimizeButton) {
+                minimizeButton = document.createElement('img');
+                minimizeButton.classList.add('envelopeMenuButton');
+                minimizeButton.src = 'svg/envelope-minimize-button.svg';
+                minimizeButton.id = 'minimizeEnvelopeButton';
+                minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+                document.body.appendChild(minimizeButton);
+            }
+            minimizeButton.style.display = 'inline';
+
+            callbacks.onExitButtonShown.forEach(cb => cb(exitButton, minimizeButton));
         }
     }
     
