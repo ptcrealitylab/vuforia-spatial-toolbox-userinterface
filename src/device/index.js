@@ -684,7 +684,8 @@ realityEditor.device.onElementTouchDown = function(event) {
 };
 
 // Tracks pointer move events with no buttons pressed to limit their frequency
-realityEditor.device.moveLiftedLimit = 0;
+realityEditor.device.moveLiftedLast = 0;
+realityEditor.device.moveLiftedMsLimit = 100;
 
 /**
  * When touch move that originated on a frame or node, do any of the following:
@@ -697,11 +698,10 @@ realityEditor.device.onElementTouchMove = function(event) {
         return;
     }
     if (event.button === -1) {
-        realityEditor.device.moveLiftedLimit =
-            (realityEditor.device.moveLiftedLimit + 1) % 3;
-        if (realityEditor.device.moveLiftedLimit !== 0) {
+        if (Date.now() - realityEditor.device.moveLiftedLast < realityEditor.device.moveLiftedMsLimit) {
             return;
         }
+        realityEditor.device.moveLiftedLast = Date.now();
     }
 
     if (this.previousPointerMove && this.previousPointerMove.x === event.pageX && this.previousPointerMove.y === event.pageY) {
