@@ -231,6 +231,7 @@ createNameSpace("realityEditor.envelopeManager");
                     getOpenEnvelopes().forEach(function(envelope) {
                         closeEnvelope(envelope.frame);
                     });
+                    // TODO: send a message to the tool to make it lose focus (or have a sessionManager or focusManager to handle it)
                 });
             }
             exitButton.style.display = 'inline';
@@ -243,6 +244,13 @@ createNameSpace("realityEditor.envelopeManager");
                 minimizeButton.id = 'minimizeEnvelopeButton';
                 minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
                 document.body.appendChild(minimizeButton);
+
+                minimizeButton.addEventListener('pointerup', function() {
+                    // TODO: only minimize the envelope that has focus, not all of them
+                    getOpenEnvelopes().forEach(function(envelope) {
+                        closeEnvelope(envelope.frame);
+                    });
+                });
             }
             minimizeButton.style.display = 'inline';
 
