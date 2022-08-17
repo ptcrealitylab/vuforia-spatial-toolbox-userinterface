@@ -28,6 +28,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.uncloneables = {};
 
             this.commandBuffer = [];
+            this.previousCommandBuffer = [];
             this.lastUseProgram = null;
             this.lastActiveTexture = {
                 name: 'activeTexture',
@@ -35,6 +36,7 @@ createNameSpace("realityEditor.gui.glRenderer");
             };
             this.lastTargettedBinds = {};
             this.lastTextureBinds = {};
+            this.lastCapabilities = {};
             this.buffering = false;
 
             this.onMessage = this.onMessage.bind(this);
@@ -117,6 +119,20 @@ createNameSpace("realityEditor.gui.glRenderer");
                 // texParameteri: true, // 2
                 // texImage2D: true,
             };
+
+            if (message.name === 'disable' || message.name === 'enable') {
+                let capaId = message.args[0];
+                if (!this.lastCapabilities.hasOwnProperty(capaId)) {
+                    let isEnabled = this.gl.isEnabled(capaId);
+                    this.lastCapabilities[capaId] = isEnabled;
+                }
+                let isReturnToDefault =
+                    (this.lastCapabilities[capaId] && message.name === 'enable') ||
+                    ((!this.lastCapabilities[capaId]) && message.name === 'disable');
+                if (isReturnToDefault) {
+                    delete this.lastCapabilities[capaId];
+                }
+            }
 
             if (targettedBinds.hasOwnProperty(message.name)) {
                 this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
@@ -205,18 +221,31 @@ createNameSpace("realityEditor.gui.glRenderer");
                     setup.push(command);
                 }
             }
-            this.commandBuffer = setup.concat(this.commandBuffer);
+            let teardown = [];
+            for (let capaId in this.lastCapabilities) {
+                let val = this.lastCapabilities[capaId];
+                teardown.push({
+                    name: val ? 'enable' : 'disable',
+                    args: [parseInt(capaId)],
+                });
+            }
+            this.commandBuffer = setup.concat(this.commandBuffer).concat(teardown);
 
             for (let message of this.commandBuffer) {
                 this.executeCommand(message);
             }
             // this.logCommandBuffer();
+            this.previousCommandBuffer = this.commandBuffer;
             this.commandBuffer = [];
         }
 
-        dropFrameCommands() {
-            this.buffering = false;
-            this.commandBuffer = [];
+        /**
+         * Execute last successful frame's command buffer
+         */
+        executePreviousFrameCommands() {
+            for (let message of this.previousCommandBuffer) {
+                this.executeCommand(message);
+            }
         }
 
         getFrameCommands() {
@@ -357,7 +386,9 @@ createNameSpace("realityEditor.gui.glRenderer");
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
             let proxy = proxiesToBeRenderedThisFrame[i];
             if (!res[i]) {
-                console.warn('miscreant detected', proxy);
+                console.warn('dropped proxy frame due to large delay', proxy);
+                proxy.executePreviousFrameCommands();
+                continue;
             }
             proxy.executeFrameCommands();
         }
