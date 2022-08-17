@@ -683,6 +683,9 @@ realityEditor.device.onElementTouchDown = function(event) {
     cout("onElementTouchDown");
 };
 
+// Tracks pointer move events with no buttons pressed to limit their frequency
+realityEditor.device.moveLiftedLimit = 0;
+
 /**
  * When touch move that originated on a frame or node, do any of the following:
  * 1. show visual feedback if you move over the trash
@@ -691,7 +694,14 @@ realityEditor.device.onElementTouchDown = function(event) {
  */
 realityEditor.device.onElementTouchMove = function(event) {
     if (realityEditor.device.isMouseEventCameraControl(event)) {
-      return;
+        return;
+    }
+    if (event.button === -1) {
+        realityEditor.device.moveLiftedLimit =
+            (realityEditor.device.moveLiftedLimit + 1) % 3;
+        if (realityEditor.device.moveLiftedLimit !== 0) {
+            return;
+        }
     }
 
     if (this.previousPointerMove && this.previousPointerMove.x === event.pageX && this.previousPointerMove.y === event.pageY) {
