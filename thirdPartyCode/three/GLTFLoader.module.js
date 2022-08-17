@@ -2604,7 +2604,7 @@ class GLTFParser {
 			if ( textureDef.name ) texture.name = textureDef.name;
 
 			// When there is definitely no alpha channel in the texture, set RGBFormat to save space.
-			if ( ! hasAlpha ) texture.format = RGBFormat;
+			// if ( ! hasAlpha ) texture.format = RGBFormat;
 
 			const samplers = json.samplers || {};
 			const sampler = samplers[ textureDef.sampler ] || {};
