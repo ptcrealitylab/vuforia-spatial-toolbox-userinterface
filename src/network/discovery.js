@@ -2,49 +2,19 @@ createNameSpace("realityEditor.network.discovery");
 
 (function(exports) {
 
-    /* Structure:
-    {
-        '10.10.10.10': {
-            'feeder01_lkjh0987: { heartbeat: {}, metadata: {} }
-        },
-        '192.168.0.10: {
-            'testObject_asdf1234': { heartbeat },
-            '_WORLD_test_qwer2345: { heartbeat }
-        }
-    }
-    */
+    // discoveryMap[serverIp][objectId] = { heartbeat: { id, ip, port, vn, tcs }, metadata: { name, type } }
     let discoveryMap = {};
-
-    let callbacks = {
-        onServerDetected: [],
-        onObjectDetected: []
-    };
 
     // Allows us to pause object discovery from the time the app loads until we have finished scanning
     let exceptions = []; // when scanning a world object, we add its name to the exceptions so we can still load it
     let queuedHeartbeats = []; // heartbeats received while paused will be processed after resuming
     let heartbeatsPaused = false;
-    let isSystemInitializing = true; // pause heartbeats for the first second while everything is still initializing
+    let isSystemInitializing = true; // pause heartbeats for the first instant while everything is still initializing
 
-    exports.pauseObjectDetections = () => {
-        heartbeatsPaused = true;
-    }
-
-    exports.resumeObjectDetections = () => {
-        heartbeatsPaused = false;
-        processNextQueuedHeartbeat();
-    }
-
-    function processNextQueuedHeartbeat() {
-        if (queuedHeartbeats.length === 0) { return; }
-        let message = queuedHeartbeats.pop();
-        processHeartbeat(message);
-        setTimeout(processNextQueuedHeartbeat, 10); // process async to avoid overwhelming all at once
-    }
-
-    exports.addExceptionToPausedObjectDetections = (objectName) => {
-        exceptions.push(objectName);
-    }
+    let callbacks = {
+        onServerDetected: [],
+        onObjectDetected: []
+    };
 
     function initService() {
         console.log('init network/discovery.js');
@@ -52,11 +22,20 @@ createNameSpace("realityEditor.network.discovery");
         realityEditor.network.registerCallback('objectDeleted', (params) => {
             deleteFromDiscoveryMap(params.objectIP, params.objectID);
         });
-        
+
         setTimeout(() => {
             isSystemInitializing = false;
             processNextQueuedHeartbeat();
         }, 1000);
+        // 1 second is very generous... could be replaced in future by a more robust
+        // way to tell when all of the addons have finished initializing
+    }
+
+    function processNextQueuedHeartbeat() {
+        if (queuedHeartbeats.length === 0) { return; }
+        let message = queuedHeartbeats.pop();
+        processHeartbeat(message);
+        setTimeout(processNextQueuedHeartbeat, 10); // process async to avoid overwhelming all at once
     }
 
     function deleteFromDiscoveryMap(ip, id) {
@@ -81,7 +60,7 @@ createNameSpace("realityEditor.network.discovery");
         }
         // TODO: should this module concern itself with the heartbeat checksum? probably not, we are only concerned about presence
     }
-    
+
     // independently from adding the json to the objects data structure, we query the server for some important metadata about this heartbeat
     function processNewObjectDiscovery(ip, port, id) {
         let url = realityEditor.network.getURL(ip, port, '/object/' + id);
@@ -123,6 +102,27 @@ createNameSpace("realityEditor.network.discovery");
         }
     }
 
+    exports.pauseObjectDetections = () => {
+        heartbeatsPaused = true;
+    }
+
+    exports.resumeObjectDetections = () => {
+        heartbeatsPaused = false;
+        processNextQueuedHeartbeat();
+    }
+
+    exports.addExceptionToPausedObjectDetections = (objectName) => {
+        exceptions.push(objectName);
+    }
+
+    exports.deleteObject = (ip, id) => {
+        deleteFromDiscoveryMap(ip, id);
+
+        queuedHeartbeats = queuedHeartbeats.filter(message => {
+            return message.id !== id && message.ip !== ip;
+        });
+    }
+
     exports.onServerDetected = (callback) => {
         callbacks.onServerDetected.push(callback);
     }
@@ -138,7 +138,7 @@ createNameSpace("realityEditor.network.discovery");
     exports.getDetectedObjectIDs = () => {
         return Object.values(discoveryMap).map(serverContents => Object.keys(serverContents)).flat();
     }
-    
+
     exports.getDetectedObjectsOfType = (type) => {
         let serverContents = Object.values(discoveryMap); // array of [{id1: info}, { id2: info, id3: info }]
         let matchingObjects = [];
@@ -152,20 +152,8 @@ createNameSpace("realityEditor.network.discovery");
         })
         return matchingObjects;
     }
-    
-    function deleteObject(ip, id) {
-        // remove from discovery map
-        if (typeof discoveryMap[ip] !== 'undefined') {
-            delete discoveryMap[ip][id];
-        }
-        queuedHeartbeats = queuedHeartbeats.filter(message => {
-            return message.id !== id && message.ip !== ip;
-        });
-        console.log(discoveryMap, queuedHeartbeats);
-    }
 
     exports.initService = initService;
     exports.processHeartbeat = processHeartbeat;
-    exports.deleteObject = deleteObject;
 
 })(realityEditor.network.discovery);
