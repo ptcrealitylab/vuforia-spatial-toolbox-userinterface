@@ -505,7 +505,8 @@ createNameSpace("realityEditor.network.realtime");
         }
         publicDataCache[frameKey][nodeKey] = node.publicData;
     }
-    
+
+    // trigger this before doing window.location.reload() to ensure avatar is deleted (required if world is on local server)
     function sendDisconnectMessage(worldId) {
         if (!worldId || !objects[worldId]) { return; }
         let ioTitle = realityEditor.network.getIoTitle(objects[worldId].port, '/disconnectEditor');
@@ -695,6 +696,6 @@ createNameSpace("realityEditor.network.realtime");
     exports.writePublicData = writePublicData;
     exports.subscribeToPublicData = subscribeToPublicData;
     
-    exports.sendDisconnectMessage = sendDisconnectMessage; // trigger this when app closes / exits to menu to ensure avatar is deleted
+    exports.sendDisconnectMessage = sendDisconnectMessage;
 
 }(realityEditor.network.realtime));

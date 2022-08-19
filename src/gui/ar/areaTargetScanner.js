@@ -405,7 +405,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         // show loading animation. hide when successOrError finishes.
-        showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
+        showLoadingDialog('Generating Dataset...', 'Please wait.'); // Converting scan into AR target files.');
 
         callbacks.onStopScanning.forEach(cb => {
             cb();
@@ -538,12 +538,25 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function onAreaTargetGenerateProgress(percentGenerated) {
-        // onAreaTargetGenerateProgress
         console.log('Generated: ' + percentGenerated);
         let progressBarContainer = getProgressBar();
         progressBarContainer.style.display = '';
         let bar = progressBarContainer.querySelector('#scanGenerateProgressBar');
         bar.style.width = (percentGenerated * 100) + '%';
+
+        if (loadingDialog) {
+            let description = 'Please wait. Preparing scan.';
+            if (percentGenerated > 0.05 && percentGenerated < 0.4) {
+                description = 'Please wait. Fusing depth data.';
+            } else if (percentGenerated < 0.7) {
+                description = 'Please wait. Generating textures.';
+            } else if (percentGenerated < 0.9) {
+                description = 'Please wait. Generating Vuforia dataset.';
+            } else if (percentGenerated >= 0.9) {
+                description = 'Please wait. Finalizing files for upload.';
+            }
+            loadingDialog.domElements.description.innerHTML = description;
+        }
     }
 
     function captureSuccessOrError(success, errorMessage) {

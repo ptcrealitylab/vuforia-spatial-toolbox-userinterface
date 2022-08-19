@@ -57,6 +57,10 @@ createNameSpace("realityEditor.avatar");
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
             if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
 
+            // todo: for now, we don't create a new avatar object for each world we see, but in future we may want to
+            //       migrate our existing avatar to the server hosting the current world object that we're looking at
+            if (myAvatarObject || myAvatarId) { return; }
+
             connectionStatus.isLocalized = true;
             refreshStatusUI();
             network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
