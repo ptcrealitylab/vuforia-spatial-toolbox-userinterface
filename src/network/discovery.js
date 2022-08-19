@@ -146,8 +146,20 @@ createNameSpace("realityEditor.network.discovery");
         })
         return matchingObjects;
     }
+    
+    function deleteObject(ip, id) {
+        // remove from discovery map
+        if (typeof discoveryMap[ip] !== 'undefined') {
+            delete discoveryMap[ip][id];
+        }
+        queuedHeartbeats = queuedHeartbeats.filter(message => {
+            return message.id !== id && message.ip !== ip;
+        });
+        console.log(discoveryMap, queuedHeartbeats);
+    }
 
     exports.initService = initService;
     exports.processHeartbeat = processHeartbeat;
+    exports.deleteObject = deleteObject;
 
 })(realityEditor.network.discovery);
