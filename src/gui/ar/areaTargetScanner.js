@@ -562,11 +562,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 getProgressBar().style.display = 'none';
                 showLoadingDialog('Uploading Target Data...', 'Please wait. Uploading data to server.');
                 
-                setTimeout(() => {
-                    loadingDialog.dismiss();
-                    loadingDialog = null;
-                }, 1500);
-                
                 let alreadyProcessed = false;
                 realityEditor.app.targetDownloader.addTargetStateCallback(sessionObjectId, (targetDownloadState) => {
                     if (alreadyProcessed) { return; }
@@ -577,19 +572,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                     if (targetDownloadState.XML === SUCCEEDED && targetDownloadState.DAT === SUCCEEDED) {
                         alreadyProcessed = true;
 
+                        loadingDialog.dismiss();
+                        loadingDialog = null;
+
                         // objects aren't fully initialized until they have a target.jpg, so we upload a screenshot to be the "icon"
                         realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
                     }
-                })
-
-                // setTimeout(function() {
-                //     loadingDialog.dismiss();
-                //     loadingDialog = null;
-                //     console.log("uploading target data timed out");
-                //
-                //     // objects aren't fully initialized until they have a target.jpg, so we upload a screenshot to be the "icon"
-                //     realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
-                // }, 1500);
+                });
             }, 1000);
 
             showMessage('Successful capture.', 2000);

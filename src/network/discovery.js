@@ -24,6 +24,7 @@ createNameSpace("realityEditor.network.discovery");
     let exceptions = []; // when scanning a world object, we add its name to the exceptions so we can still load it
     let queuedHeartbeats = []; // heartbeats received while paused will be processed after resuming
     let heartbeatsPaused = false;
+    let isSystemInitializing = true; // pause heartbeats for the first second while everything is still initializing
 
     exports.pauseObjectDetections = () => {
         heartbeatsPaused = true;
@@ -51,6 +52,11 @@ createNameSpace("realityEditor.network.discovery");
         realityEditor.network.registerCallback('objectDeleted', (params) => {
             deleteFromDiscoveryMap(params.objectIP, params.objectID);
         });
+        
+        setTimeout(() => {
+            isSystemInitializing = false;
+            processNextQueuedHeartbeat();
+        }, 1000);
     }
 
     function deleteFromDiscoveryMap(ip, id) {
@@ -104,7 +110,7 @@ createNameSpace("realityEditor.network.discovery");
             ignoreFromPause = !exceptions.some(name => message.id.includes(name));
         }
 
-        if (realityEditor.device.environment.variables.suppressObjectDetections || ignoreFromPause) {
+        if (realityEditor.device.environment.variables.suppressObjectDetections || ignoreFromPause || isSystemInitializing) {
             queuedHeartbeats.push(message);
         } else {
             if (typeof message.zone !== 'undefined' && message.zone !== '') {

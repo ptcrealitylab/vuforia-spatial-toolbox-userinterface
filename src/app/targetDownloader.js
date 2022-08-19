@@ -790,7 +790,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
     
     exports.addTargetStateCallback = function(objectId, callback) {
-        callbacks.onMarkerAdded.push({
+        callbacks.onTargetState.push({
             objectId: objectId,
             callback: callback
         });
