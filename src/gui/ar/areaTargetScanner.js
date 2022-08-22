@@ -405,7 +405,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         // show loading animation. hide when successOrError finishes.
-        showLoadingDialog('Generating Dataset...', 'Please wait. Converting scan into AR target files.');
+        showLoadingDialog('Generating Dataset...', 'Please wait.'); // Converting scan into AR target files.');
 
         callbacks.onStopScanning.forEach(cb => {
             cb();
@@ -415,19 +415,19 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     function createPendingWorldObject(serverIp) {
         console.log('createPendingWorldObject()', detectedServers);
 
-        // TODO: first create a new object and post it to the server
+        // default to a random available server if the provided serverIp hasn't been seen yet
         let serverIps = Object.keys(detectedServers);
         if (!serverIps.includes(serverIp)) {
             serverIp = serverIps.filter(detectedServer => {
                 return detectedServer !== '127.0.0.1';
             })[0]; // this is guaranteed to have at least one entry if we get here
         }
-        pendingAddedObjectName = "_WORLD_instantScan";
+        pendingAddedObjectName = "_WORLD_instantScan" + globalStates.tempUuid;
 
-        realityEditor.app.callbacks.addExceptionToPausedObjectDetections(pendingAddedObjectName);
+        realityEditor.network.discovery.addExceptionToPausedObjectDetections(pendingAddedObjectName);
 
         const port = realityEditor.network.getPortByIp(serverIp);
-        addObject(pendingAddedObjectName, serverIp, port); // TODO: get port programmatically
+        addObject(pendingAddedObjectName, serverIp, port);
 
         showLoadingDialog('Creating World Object...', 'Please wait. Generating object on server.');
         setTimeout(function() {
@@ -538,12 +538,25 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function onAreaTargetGenerateProgress(percentGenerated) {
-        // onAreaTargetGenerateProgress
         console.log('Generated: ' + percentGenerated);
         let progressBarContainer = getProgressBar();
         progressBarContainer.style.display = '';
         let bar = progressBarContainer.querySelector('#scanGenerateProgressBar');
         bar.style.width = (percentGenerated * 100) + '%';
+
+        if (loadingDialog) {
+            let description = 'Please wait. Preparing scan.';
+            if (percentGenerated > 0.05 && percentGenerated < 0.4) {
+                description = 'Please wait. Fusing depth data.';
+            } else if (percentGenerated < 0.7) {
+                description = 'Please wait. Generating textures.';
+            } else if (percentGenerated < 0.9) {
+                description = 'Please wait. Generating Vuforia dataset.';
+            } else if (percentGenerated >= 0.9) {
+                description = 'Please wait. Finalizing files for upload.';
+            }
+            loadingDialog.domElements.description.innerHTML = description;
+        }
     }
 
     function captureSuccessOrError(success, errorMessage) {
@@ -561,15 +574,24 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             setTimeout(function() {
                 getProgressBar().style.display = 'none';
                 showLoadingDialog('Uploading Target Data...', 'Please wait. Uploading data to server.');
+                
+                let alreadyProcessed = false;
+                realityEditor.app.targetDownloader.addTargetStateCallback(sessionObjectId, (targetDownloadState) => {
+                    if (alreadyProcessed) { return; }
+                    
+                    console.log('new targetDownloadState for pending world object', targetDownloadState)
+                    
+                    let SUCCEEDED = realityEditor.app.targetDownloader.DownloadState.SUCCEEDED;
+                    if (targetDownloadState.XML === SUCCEEDED && targetDownloadState.DAT === SUCCEEDED) {
+                        alreadyProcessed = true;
 
-                setTimeout(function() {
-                    loadingDialog.dismiss();
-                    loadingDialog = null;
-                    console.log("uploading target data timed out");
+                        loadingDialog.dismiss();
+                        loadingDialog = null;
 
-                    // objects aren't fully initialized until they have a target.jpg, so we upload a screenshot to be the "icon"
-                    realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
-                }, 1500);
+                        // objects aren't fully initialized until they have a target.jpg, so we upload a screenshot to be the "icon"
+                        realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
+                    }
+                });
             }, 1000);
 
             showMessage('Successful capture.', 2000);

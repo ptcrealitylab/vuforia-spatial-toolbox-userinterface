@@ -121,6 +121,7 @@ var realityEditor = realityEditor || {
         utilities: {}
     },
     network: {
+        discovery: {},
         frameContentAPI: {},
         availableFrames: {},
         realtime: {},

@@ -25,6 +25,11 @@ createNameSpace("realityEditor.envelopeManager");
      */
     var knownEnvelopes = {};
     
+    let callbacks = {
+        onExitButtonShown: [],
+        onExitButtonHidden: []
+    };
+    
     /**
      * Init envelope manager module
      */
@@ -200,16 +205,22 @@ createNameSpace("realityEditor.envelopeManager");
     function updateExitButton() {
         var numberOfOpenEnvelopes = getOpenEnvelopes().length;
         if (numberOfOpenEnvelopes === 0) {
-            // hide exit button
+            // hide exit and minimize buttons
+            let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+            if (minimizeButton) {
+                minimizeButton.style.display = 'none';
+            }
             let exitButton = document.getElementById('exitEnvelopeButton');
             if (exitButton) {
                 exitButton.style.display = 'none';
             }
+            callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
         } else {
             // show (create if needed) exit button
             let exitButton = document.getElementById('exitEnvelopeButton');
             if (!exitButton) {
                 exitButton = document.createElement('img');
+                exitButton.classList.add('envelopeMenuButton');
                 exitButton.src = 'svg/envelope-x-button.svg';
                 exitButton.id = 'exitEnvelopeButton';
                 exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
@@ -220,10 +231,39 @@ createNameSpace("realityEditor.envelopeManager");
                     getOpenEnvelopes().forEach(function(envelope) {
                         closeEnvelope(envelope.frame);
                     });
+                    // TODO: send a message to the tool to make it lose focus (or have a sessionManager or focusManager to handle it)
                 });
             }
             exitButton.style.display = 'inline';
+
+            let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+            if (!minimizeButton) {
+                minimizeButton = document.createElement('img');
+                minimizeButton.classList.add('envelopeMenuButton');
+                minimizeButton.src = 'svg/envelope-minimize-button.svg';
+                minimizeButton.id = 'minimizeEnvelopeButton';
+                minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+                document.body.appendChild(minimizeButton);
+
+                minimizeButton.addEventListener('pointerup', function() {
+                    // TODO: only minimize the envelope that has focus, not all of them
+                    getOpenEnvelopes().forEach(function(envelope) {
+                        closeEnvelope(envelope.frame);
+                    });
+                });
+            }
+            minimizeButton.style.display = 'inline';
+
+            callbacks.onExitButtonShown.forEach(cb => cb(exitButton, minimizeButton));
         }
+    }
+    
+    exports.onExitButtonHidden = (callback) => {
+        callbacks.onExitButtonHidden.push(callback);
+    }
+
+    exports.onExitButtonShown = (callback) => {
+        callbacks.onExitButtonShown.push(callback);
     }
 
     /**

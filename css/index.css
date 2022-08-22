@@ -1506,15 +1506,23 @@ Logic Interface CSS
     border: 2px solid cyan;
 }
 
-#exitEnvelopeButton {
+.envelopeMenuButton {
     position: absolute;
-    left: 0;
-    top: 0;
     width: 60px;
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
     z-index: 290;
+}
+
+#exitEnvelopeButton {
+    left: 10px;
+    top: 0;
+}
+
+#minimizeEnvelopeButton {
+    left: 70px;
+    top: 0;
 }
 
 .hoverPocketElement {

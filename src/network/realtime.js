@@ -506,6 +506,17 @@ createNameSpace("realityEditor.network.realtime");
         publicDataCache[frameKey][nodeKey] = node.publicData;
     }
 
+    // trigger this before doing window.location.reload() to ensure avatar is deleted (required if world is on local server)
+    function sendDisconnectMessage(worldId) {
+        if (!worldId || !objects[worldId]) { return; }
+        let ioTitle = realityEditor.network.getIoTitle(objects[worldId].port, '/disconnectEditor');
+        let serverSocket = getServerSocketForObject(worldId);
+        if (!serverSocket) { return; }
+        serverSocket.emit(ioTitle, JSON.stringify({
+            editorId: globalStates.tempUuid
+        }));
+    }
+
     /**
      * Updates an object property on the server (and synchronizes all other clients if necessary) using a websocket
      * @param {string} objectKey
@@ -684,5 +695,7 @@ createNameSpace("realityEditor.network.realtime");
 
     exports.writePublicData = writePublicData;
     exports.subscribeToPublicData = subscribeToPublicData;
+    
+    exports.sendDisconnectMessage = sendDisconnectMessage;
 
 }(realityEditor.network.realtime));

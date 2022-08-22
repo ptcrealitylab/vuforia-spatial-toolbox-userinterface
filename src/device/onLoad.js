@@ -351,6 +351,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.areaTargetScanner.initService();
     realityEditor.gui.ar.areaCreator.initService();
     realityEditor.device.touchPropagation.initService();
+    realityEditor.network.discovery.initService();
     realityEditor.network.realtime.initService();
     realityEditor.gui.crafting.initService();
     realityEditor.worldObjects.initService();

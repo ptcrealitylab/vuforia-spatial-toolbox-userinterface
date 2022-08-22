@@ -78,7 +78,8 @@ createNameSpace("realityEditor.app.targetDownloader");
 
     let callbacks = {
         onCreateNavmesh: [],
-        onMarkerAdded: []
+        onMarkerAdded: [],
+        onTargetState: []
     }
 
     /**
@@ -233,6 +234,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
             console.log('successfully downloaded XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
+            triggerDownloadStateCallbacks(objectID);
 
             var datAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.dat');
 
@@ -250,6 +252,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             console.log('failed to download XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.FAILED;
+            triggerDownloadStateCallbacks(objectID);
             onDownloadFailed(objectID);
         }
     }
@@ -270,6 +273,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
             console.log('successfully downloaded DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
+            triggerDownloadStateCallbacks(objectID);
 
             var xmlFileName = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.xml');
             realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
@@ -295,6 +299,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         } else {
             console.log('failed to download DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.FAILED;
+            triggerDownloadStateCallbacks(objectID);
 
             if (isAlreadyDownloaded(objectID, 'JPG')) {
                 onTargetJPGDownloaded(true, jpgAddress); // just directly trigger onTargetXMLDownloaded
@@ -326,6 +331,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             onDownloadFailed(objectID);
         }
         createNavmesh(fileName, objectID);
+
+        triggerDownloadStateCallbacks(objectID);
     }
 
     /**
@@ -363,6 +370,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].JPG = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
+
+        triggerDownloadStateCallbacks(objectID);
     }
 
     /**
@@ -379,17 +388,19 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully added marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.SUCCEEDED;
             saveDownloadInfo(objectID); // only caches the target images after we confirm that they work
-
-            callbacks.onMarkerAdded.forEach(listener => {
-                if (listener.objectId === objectID) {
-                    listener.callback(targetDownloadStates[objectID]);
-                }
-            });
         } else {
             console.log('failed to add marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
+
+        triggerDownloadStateCallbacks(objectID);
+
+        callbacks.onMarkerAdded.forEach(listener => {
+            if (listener.objectId === objectID) {
+                listener.callback(success, targetDownloadStates[objectID]);
+            }
+        });
     }
 
     /**
@@ -674,7 +685,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         "type": "object",
         "items": {
             "properties": {
-                "obj": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+                "obj": {"type": "string", "minLength": 1, "maxLength": 50, "pattern": "^[A-Za-z0-9_]*$"},
                 "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
             },
             "required": ["server", "obj"],
@@ -685,7 +696,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     function getObjectIDFromFilename(fileName) {
         let urlObj = io.parseUrl(fileName, schema)
         if (!urlObj) {
-            console.warn('io.parseUrl failed', fileName);
+            console.warn('io.parseUrl failed. this may cause targets not to download', fileName);
             return;
         }
         const ip = urlObj.server;
@@ -769,6 +780,33 @@ createNameSpace("realityEditor.app.targetDownloader");
             objectId: objectId,
             callback: callback
         });
+        
+        if (typeof targetDownloadStates[objectId] !== 'undefined') {
+            if (targetDownloadStates[objectId].MARKER_ADDED === DownloadState.SUCCEEDED) {
+                // process any previously added targets in case we added the listener too late
+                callback(true, targetDownloadStates[objectId]);
+            }
+        }
+    }
+    
+    exports.addTargetStateCallback = function(objectId, callback) {
+        callbacks.onTargetState.push({
+            objectId: objectId,
+            callback: callback
+        });
+
+        if (typeof targetDownloadStates[objectId] !== 'undefined') {
+            // process any previously added targets in case we added the listener too late
+            callback(targetDownloadStates[objectId]);
+        }
+    }
+
+    function triggerDownloadStateCallbacks(objectID) {
+        callbacks.onTargetState.forEach(listener => {
+            if (listener.objectId === objectID) {
+                listener.callback(targetDownloadStates[objectID]);
+            }
+        });
     }
 
     // These functions are the public API that should be called by other modules
@@ -778,6 +816,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.isObjectReadyToRetryDownload = isObjectReadyToRetryDownload;
     exports.resetTargetDownloadCache = resetTargetDownloadCache;
     exports.reinstatePreviouslyAddedTargets = reinstatePreviouslyAddedTargets;
+    exports.DownloadState = DownloadState;
 
     // These functions are public only because they need to be triggered by native app callbacks
     exports.onTargetXMLDownloaded = onTargetXMLDownloaded;
