@@ -10,6 +10,7 @@ createNameSpace("realityEditor.network.realtime");
 
 (function(exports) {
     const DEBUG = false;
+    const PROXY = /(\w+\.)?toolboxedge.net/.test(window.location.host);
 
     var desktopSocket;
     var sockets = {};
@@ -41,7 +42,7 @@ createNameSpace("realityEditor.network.realtime");
         }
 
         if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
-            if (window.location.host === 'toolboxedge.net') {
+            if (PROXY) {
                 desktopSocket = io.connect();
             } else {
                 desktopSocket = window._oldIo.connect();
