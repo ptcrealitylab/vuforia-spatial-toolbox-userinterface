@@ -79,7 +79,7 @@ createNameSpace("realityEditor.device.environment");
     }
 
     exports.isObjectRenderingSuppressed = () => {
-        return Object.keys(suppressedRenderingFlags).length > 0 || realityEditor.device.environment.variables.suppressObjectRendering;
+        return Object.keys(suppressedRenderingFlags).length > 0 || variables.suppressObjectRendering;
     }
 
     /**
