@@ -66,6 +66,22 @@ createNameSpace("realityEditor.device.environment");
     // however, rather than reading these variables directly, it is preferred to use the getters:
     // this is for compatibility with future plans which will add more logic to the variables
 
+    // using variables.suppressObjectRendering allows any module to overwrite any other module's preferences
+    // but a module can add a flag, and rendering will only re-enable when all flags are cleared
+    let suppressedRenderingFlags = {};
+
+    exports.addSuppressedObjectRenderingFlag = (flagName) => {
+        suppressedRenderingFlags[flagName] = true;
+    };
+
+    exports.clearSuppressedObjectRenderingFlag = (flagName) => {
+        delete suppressedRenderingFlags[flagName];
+    }
+
+    exports.isObjectRenderingSuppressed = () => {
+        return Object.keys(suppressedRenderingFlags).length > 0 || variables.suppressObjectRendering;
+    }
+
     /**
      * Whether the environment contains a service that will trigger gui.ar.draw.update
      * If not, the editor will keep the update loop running while frozen to drive line animations.

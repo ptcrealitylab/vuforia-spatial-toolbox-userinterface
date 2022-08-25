@@ -255,7 +255,7 @@ realityEditor.gui.ar.draw.prevSuppressedRendering = false;
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
-    if (realityEditor.device.environment.variables.suppressObjectRendering) {
+    if (realityEditor.device.environment.isObjectRenderingSuppressed()) {
         if (!this.prevSuppressedRendering) {
             let toolContainer = document.getElementById('GUI');
             let canvas = document.getElementById('canvas');
