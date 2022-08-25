@@ -78,7 +78,7 @@ createNameSpace("realityEditor.device.environment");
         delete suppressedRenderingFlags[flagName];
     }
 
-    exports.suppressObjectRendering = () => {
+    exports.isObjectRenderingSuppressed = () => {
         return Object.keys(suppressedRenderingFlags).length > 0 || realityEditor.device.environment.variables.suppressObjectRendering;
     }
 
