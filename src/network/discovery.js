@@ -102,17 +102,17 @@ createNameSpace("realityEditor.network.discovery");
         }
     }
     
-    let exclusiveWorld = null;
+    let primaryWorld = null;
 
-    exports.setExclusiveWorld = (ip, id) => {
-        exclusiveWorld = {
+    exports.setPrimaryWorld = (ip, id) => {
+        primaryWorld = {
             ip: ip,
             id: id
         };
     }
 
-    exports.getExclusiveWorldInfo = () => {
-        return exclusiveWorld;
+    exports.getPrimaryWorldInfo = () => {
+        return primaryWorld;
     }
 
     exports.pauseObjectDetections = () => {

@@ -523,13 +523,13 @@ realityEditor.network.addHeartbeatObject = function (beat) {
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
 
-                    // ignore this object if it's a world object and the exclusiveWorld is set but not equal to this one
-                    let exclusiveWorldInfo = realityEditor.network.discovery.getExclusiveWorldInfo();
+                    // ignore this object if it's a world object and the primaryWorld is set but not equal to this one
+                    let primaryWorldInfo = realityEditor.network.discovery.getPrimaryWorldInfo();
                     let isLocalWorld = beat.id === realityEditor.worldObjects.getLocalWorldId();
-                    if (exclusiveWorldInfo && (msg.isWorldObject || msg.type === 'world') && !isLocalWorld) {
-                        let hasIpInfo = exclusiveWorldInfo.ip;
-                        if (beat.id !== exclusiveWorldInfo.id || (hasIpInfo && beat.ip !== exclusiveWorldInfo.ip)) {
-                            console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match exclusive world ' + exclusiveWorldInfo.id);
+                    if (primaryWorldInfo && (msg.isWorldObject || msg.type === 'world') && !isLocalWorld) {
+                        let hasIpInfo = primaryWorldInfo.ip;
+                        if (beat.id !== primaryWorldInfo.id || (hasIpInfo && beat.ip !== primaryWorldInfo.ip)) {
+                            console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match primary world ' + primaryWorldInfo.id);
                             return;
                         }
                     }
