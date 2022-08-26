@@ -11,6 +11,8 @@ createNameSpace("realityEditor.network.discovery");
     let heartbeatsPaused = false;
     let isSystemInitializing = true; // pause heartbeats for the first instant while everything is still initializing
 
+    let primaryWorld = null; // if set, we will ignore processing all world heartbeats except for the primary world
+
     let callbacks = {
         onServerDetected: [],
         onObjectDetected: []
@@ -101,8 +103,6 @@ createNameSpace("realityEditor.network.discovery");
             }
         }
     }
-    
-    let primaryWorld = null;
 
     exports.setPrimaryWorld = (ip, id) => {
         primaryWorld = {

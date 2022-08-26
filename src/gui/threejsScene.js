@@ -126,7 +126,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
         setMatrixFromArray(camera.matrix, matrix);
-        // renderScene(true);
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
@@ -143,7 +142,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         groundPlaneCollider = plane;
     }
 
-    function renderScene(oneTimeOnly) {
+    function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
@@ -221,9 +220,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             renderer.render( scene, camera );
         }
 
-        if (!oneTimeOnly) {
-            requestAnimationFrame(renderScene);
-        }
+        requestAnimationFrame(renderScene);
     }
 
     function toggleDisplayOriginBoxes(newValue) {
