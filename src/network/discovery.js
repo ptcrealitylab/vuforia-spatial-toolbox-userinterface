@@ -101,6 +101,19 @@ createNameSpace("realityEditor.network.discovery");
             }
         }
     }
+    
+    let exclusiveWorld = null;
+
+    exports.setExclusiveWorld = (ip, id) => {
+        exclusiveWorld = {
+            ip: ip,
+            id: id
+        };
+    }
+
+    exports.getExclusiveWorldInfo = () => {
+        return exclusiveWorld;
+    }
 
     exports.pauseObjectDetections = () => {
         heartbeatsPaused = true;
@@ -145,7 +158,7 @@ createNameSpace("realityEditor.network.discovery");
         serverContents.forEach(serverInfo => {
             Object.keys(serverInfo).forEach(objectId => {
                 let objectInfo = serverInfo[objectId];
-                if (objectInfo.metadata.type === type) {
+                if (objectInfo.metadata && objectInfo.metadata.type === type) {
                     matchingObjects.push(objectInfo);
                 }
             });

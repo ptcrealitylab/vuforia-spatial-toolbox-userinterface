@@ -522,6 +522,18 @@ realityEditor.network.addHeartbeatObject = function (beat) {
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
+
+                    // ignore this object if it's a world object and the exclusiveWorld is set but not equal to this one
+                    let exclusiveWorldInfo = realityEditor.network.discovery.getExclusiveWorldInfo();
+                    let isLocalWorld = beat.id === realityEditor.worldObjects.getLocalWorldId();
+                    if (exclusiveWorldInfo && (msg.isWorldObject || msg.type === 'world') && !isLocalWorld) {
+                        let hasIpInfo = exclusiveWorldInfo.ip;
+                        if (beat.id !== exclusiveWorldInfo.id || (hasIpInfo && beat.ip !== exclusiveWorldInfo.ip)) {
+                            console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match exclusive world ' + exclusiveWorldInfo.id);
+                            return;
+                        }
+                    }
+
                     console.log('instantiating new object with server data' + beat.id, msg);
                     
                     // add the object
