@@ -3,7 +3,7 @@ createNameSpace("realityEditor.gui.threejsScene");
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
-import { BufferGeometryUtils } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
+import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
@@ -303,7 +303,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
             let geometry = geometries[0];
             if (geometries.length > 1) {
-                const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+                const mergedGeometry = mergeBufferGeometries(geometries);
                 geometry = mergedGeometry;
             }
 
@@ -386,7 +386,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
                     }
                 });
-                const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children.map(child => {
+                const mergedGeometry = mergeBufferGeometries(gltf.scene.children.map(child => {
                   let geo = child.geometry.clone();
                   geo.deleteAttribute('uv');
                   return geo;
