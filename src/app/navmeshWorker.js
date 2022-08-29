@@ -21,7 +21,25 @@ importScripts('../../thirdPartyCode/three/three.min.js');
 importScripts('../../thirdPartyCode/three/GLTFLoader.js');
 importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
 
+const ActualTextureLoader = THREE.TextureLoader;
+
+THREE.TextureLoader = class TextureLoader extends ActualTextureLoader {
+  load(url, onLoad, onProgress, onError) {
+    let fake = new THREE.Texture();
+    setTimeout(() => {
+      onLoad(fake);
+    }, 10);
+    return fake;
+  }
+}
+
 const gltfLoader = new THREE.GLTFLoader();
+globalThis.document = {
+  createElementNS: function(ns, tag) {
+    console.warn('createElementNS called for', tag, new Error().stack);
+  }
+};
+
 const heatmapResolution = 10; // number of pixels per meter
 
 onmessage = function(evt) {
