@@ -97,11 +97,11 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     // light the scene with a combination of ambient and directional white light
     function setupLighting() {
         // This doesn't seem to work with the area target model material, but adding it for everything else
-        let ambLight = new THREE.AmbientLight(0xffffff, 0.4);
+        let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambLight);
 
         // attempts to light the scene evenly with directional lights from each side, but mostly from the top
-        let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 2);
+        let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLightTopDown.position.set(0, 1, 0); // top-down
         dirLightTopDown.lookAt(0, 0, 0);
         scene.add(dirLightTopDown);
@@ -364,27 +364,33 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             let wireMesh;
             let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
                 wireframe: true,
-                color: 0x00ffff,
+                color: 0x777777,
             }), maxHeight, center, true, true);
 
-            if (gltf.scene.children[0].geometry) {
+            if (gltf.scene.geometry) {
+                console.log('approach a', gltf.scene);
                 if (typeof maxHeight !== 'undefined') {
-                    gltf.scene.children[0].material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.children[0].material, maxHeight, center, true);
+                    gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
                 }
-                gltf.scene.children[0].geometry.computeVertexNormals();
-                gltf.scene.children[0].geometry.computeBoundingBox();
+                gltf.scene.geometry.computeVertexNormals();
+                gltf.scene.geometry.computeBoundingBox();
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
-                gltf.scene.children[0].geometry.boundsTree = new MeshBVH( gltf.scene.children[0].geometry );
+                gltf.scene.geometry.boundsTree = new MeshBVH( gltf.scene.geometry );
 
-                wireMesh = new THREE.Mesh(gltf.scene.children[0].geometry, wireMaterial);
+                wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
-                gltf.scene.children[0].children.forEach(child => {
+                console.log('approach b', gltf.scene);
+                gltf.scene.children.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
                     }
                 });
-                const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children[0].children.map(child=>child.geometry));
+                const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(gltf.scene.children.map(child => {
+                  let geo = child.geometry.clone();
+                  geo.deleteAttribute('uv');
+                  return geo;
+                }));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
 
@@ -493,7 +499,8 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         areaTargetFragmentShader(inverted) {
             let condition = 'if (len > maxHeight) discard;';
             if (inverted) {
-                condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
+                // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
+                condition = 'if (len < maxHeight) discard;';
             }
             return THREE.ShaderChunk.meshphysical_frag
                 .replace('#include <clipping_planes_fragment>', `
@@ -522,7 +529,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             if (animateOnLoad) {
                 this.materialsToAnimate.push({
                     material: material,
-                    currentHeight: -10, // -maxHeight,
+                    currentHeight: -15, // -maxHeight,
                     maxHeight: maxHeight * 4,
                     animationSpeed: 0.02 / 2
                 });
