@@ -1,4 +1,5 @@
 /* eslint-env worker */
+/* global globalThis */
 
 // ***** On Using Web Workers *****
 // Web Workers allow scripts to execute code in a background thread. In this
@@ -24,7 +25,7 @@ importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
 const ActualTextureLoader = THREE.TextureLoader;
 
 THREE.TextureLoader = class TextureLoader extends ActualTextureLoader {
-  load(url, onLoad, onProgress, onError) {
+  load(url, onLoad, _onProgress, _onError) {
     let fake = new THREE.Texture();
     setTimeout(() => {
       onLoad(fake);
