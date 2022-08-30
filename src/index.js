@@ -139,6 +139,11 @@ var realityEditor = realityEditor || {
         network: {},
         draw: {},
         utils: {}
+    },
+    humanPose: {
+        network: {},
+        draw: {},
+        utils: {}
     }
 };
 
