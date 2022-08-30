@@ -64,6 +64,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     }
 
     function startVisualization() {
+        globalStates.useGroundPlane = true;
         if (!gridHelper) {
             // check that the ground plane exists before we start the visualization
             let gpId = realityEditor.sceneGraph.NAMES.GROUNDPLANE;
@@ -156,6 +157,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     }
 
     function stopVisualization() {
+        globalStates.useGroundPlane = false;
         if (gridHelper) {
             realityEditor.gui.threejsScene.removeFromScene(gridHelper);
             gridHelper = null;
@@ -194,5 +196,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
     }
 
     exports.initService = initService;
+    exports.startVisualization = startVisualization;
+    exports.stopVisualization = stopVisualization;
 
 }(realityEditor.gui.ar.groundPlaneRenderer));
