@@ -2,7 +2,7 @@ createNameSpace("realityEditor.humanPose.network");
 
 (function(exports) {
 
-    // Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
+    // Tell the server (corresponding to this world object) to create a new human object with the specified ID
     function addHumanPoseObject(worldId, objectName, onSuccess, onError) {
         let worldObject = realityEditor.getObject(worldId);
         if (!worldObject) {

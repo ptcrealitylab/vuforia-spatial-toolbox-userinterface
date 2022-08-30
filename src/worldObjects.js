@@ -47,21 +47,15 @@ createNameSpace("realityEditor.worldObjects");
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             
             if (object.isWorldObject) {
-                
-                var IGNORE_HUMAN_POSE_OBJECTS = true;
-                if (!(IGNORE_HUMAN_POSE_OBJECTS && (object.isHumanPose || object.type === 'human'))) {
-
-                    // add to the internal world objects
-                    if (typeof worldObjects[objectKey] === 'undefined') {
-                        worldObjects[objectKey] = object;
-                        worldCorrections[objectKey] = null; // until we see its target, its origin is null
-                    }
-                    if (worldObjectKeys.indexOf(objectKey) === -1) {
-                        worldObjectKeys.push(objectKey);
-                    }
-                    
+                // add to the internal world objects
+                if (typeof worldObjects[objectKey] === 'undefined') {
+                    worldObjects[objectKey] = object;
+                    worldCorrections[objectKey] = null; // until we see its target, its origin is null
                 }
-                
+                if (worldObjectKeys.indexOf(objectKey) === -1) {
+                    worldObjectKeys.push(objectKey);
+                }
+
                 // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
                 if (object.objectId === getLocalWorldId()) {
                     initializeWorldObject(object);
