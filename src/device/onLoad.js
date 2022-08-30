@@ -366,6 +366,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.threejsScene.initService();
     // realityEditor.device.multiclientUI.initService();
     realityEditor.avatar.initService();
+    realityEditor.humanPose.initService();
 
     realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
 
