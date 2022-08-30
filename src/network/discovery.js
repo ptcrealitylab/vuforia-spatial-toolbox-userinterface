@@ -11,6 +11,8 @@ createNameSpace("realityEditor.network.discovery");
     let heartbeatsPaused = false;
     let isSystemInitializing = true; // pause heartbeats for the first instant while everything is still initializing
 
+    let primaryWorld = null; // if set, we will ignore processing all world heartbeats except for the primary world
+
     let callbacks = {
         onServerDetected: [],
         onObjectDetected: []
@@ -102,6 +104,17 @@ createNameSpace("realityEditor.network.discovery");
         }
     }
 
+    exports.setPrimaryWorld = (ip, id) => {
+        primaryWorld = {
+            ip: ip,
+            id: id
+        };
+    }
+
+    exports.getPrimaryWorldInfo = () => {
+        return primaryWorld;
+    }
+
     exports.pauseObjectDetections = () => {
         heartbeatsPaused = true;
     }
@@ -145,7 +158,7 @@ createNameSpace("realityEditor.network.discovery");
         serverContents.forEach(serverInfo => {
             Object.keys(serverInfo).forEach(objectId => {
                 let objectInfo = serverInfo[objectId];
-                if (objectInfo.metadata.type === type) {
+                if (objectInfo.metadata && objectInfo.metadata.type === type) {
                     matchingObjects.push(objectInfo);
                 }
             });

@@ -120,13 +120,15 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             if (typeof visibleObjects[sessionObjectId] !== 'undefined') {
                 hasFirstSeenInstantWorld = true;
 
-                getStatusTextfield().innerHTML = 'Successfully localized within new scan!'
-                getStatusTextfield().style.display = 'inline';
+                if (!realityEditor.device.environment.variables.overrideAreaTargetScanningUI) {
+                    getStatusTextfield().innerHTML = 'Successfully localized within new scan!'
+                    getStatusTextfield().style.display = 'inline';
 
-                setTimeout(function() {
-                    getStatusTextfield().innerHTML = '';
-                    getStatusTextfield().style.display = 'none';
-                }, 3000);
+                    setTimeout(function() {
+                        getStatusTextfield().innerHTML = '';
+                        getStatusTextfield().style.display = 'none';
+                    }, 3000);
+                }
             }
         });
 
