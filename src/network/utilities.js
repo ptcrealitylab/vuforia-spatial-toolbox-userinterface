@@ -157,3 +157,15 @@ realityEditor.network.utilities.getNodesJsonForIframes = function(nodes) {
     }
     return simpleNodes;
 };
+
+// Check if an object with this name exists on the server
+realityEditor.network.utilities.verifyObjectNameNotOnWorldServer = function(serverWorldObject, objectName, onDoesntExist, onExists) {
+    let downloadUrl = realityEditor.network.getURL(serverWorldObject.ip, realityEditor.network.getPort(serverWorldObject), '/object/' + objectName);
+    realityEditor.network.getData(null, null, null, downloadUrl, (objectKey, _frameKey, _nodeKey, msg) => {
+        if (msg) {
+            onExists(msg);
+        } else {
+            onDoesntExist();
+        }
+    });
+}

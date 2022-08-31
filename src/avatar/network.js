@@ -15,18 +15,6 @@ createNameSpace("realityEditor.avatar.network");
     let lastWritePublicDataTimestamp = Date.now();
     let pendingAvatarInitializations = {};
 
-    // Check if an object with this name exists on the server
-    function verifyObjectNameNotOnWorldServer(serverWorldObject, objectName, onDoesntExist, onExists) {
-        let downloadUrl = realityEditor.network.getURL(serverWorldObject.ip, realityEditor.network.getPort(serverWorldObject), '/object/' + objectName);
-        realityEditor.network.getData(null, null, null, downloadUrl, (objectKey, _frameKey, _nodeKey, msg) => {
-            if (msg) {
-                onExists(msg);
-            } else {
-                onDoesntExist();
-            }
-        });
-    }
-
     // Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
     function addAvatarObject(worldId, clientId, onSuccess, onError) {
         let worldObject = realityEditor.getObject(worldId);
@@ -178,7 +166,6 @@ createNameSpace("realityEditor.avatar.network");
         });
     }
 
-    exports.verifyObjectNameNotOnWorldServer = verifyObjectNameNotOnWorldServer
     exports.addAvatarObject = addAvatarObject;
     exports.onAvatarDiscovered = onAvatarDiscovered;
     exports.onAvatarDeleted = onAvatarDeleted;

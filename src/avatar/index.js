@@ -68,7 +68,7 @@ createNameSpace("realityEditor.avatar");
             // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
             let thisAvatarName = utils.getAvatarName();
             let worldObject = realityEditor.getObject(worldObjectKey);
-            network.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
+            realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
                 network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
                     console.log('added new avatar object', data);
                     myAvatarId = data.id;
