@@ -83,4 +83,15 @@ module.exports = {
         ],
         "no-inner-declarations": "off",
     },
+    "overrides": [{
+        "files": [
+          "src/constructors.js",
+          "src/device/utilities.js",
+          "src/objects.js",
+        ],
+        "parserOptions": {
+            "ecmaVersion": 2018,
+            "sourceType": "script"
+        }
+    }]
 };
