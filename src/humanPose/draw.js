@@ -66,7 +66,57 @@ createNameSpace("realityEditor.humanPose.draw");
             sphere.position.z = position.z;
         }
 
+        /**
+         * @param {Array<String>} jointIds
+         * @return {{x: number, y: number, z: number}} Average position of all
+         *         joints listed in jointIds
+         */
+        averageJointPositions(jointIds) {
+            let avg = {x: 0, y: 0, z: 0};
+            for (let jointId of jointIds) {
+                let joint = this.spheres[jointId]
+                avg.x += joint.position.x;
+                avg.y += joint.position.y;
+                avg.z += joint.position.z;
+            }
+            avg.x /= jointIds.length;
+            avg.y /= jointIds.length;
+            avg.z /= jointIds.length;
+            return avg;
+        }
+
         updateBonePositions() {
+            const {JOINTS} = utils;
+            // Add synthetic joint positions expected by REBA
+            this.setJointPosition(JOINTS.HEAD, this.averageJointPositions([
+                JOINTS.LEFT_EAR,
+                JOINTS.RIGHT_EAR
+            ]));
+            this.setJointPosition(JOINTS.NECK, this.averageJointPositions([
+                JOINTS.LEFT_SHOULDER,
+                JOINTS.RIGHT_SHOULDER,
+            ]));
+            this.setJointPosition(JOINTS.CHEST, this.averageJointPositions([
+                JOINTS.LEFT_SHOULDER,
+                JOINTS.RIGHT_SHOULDER,
+                JOINTS.LEFT_SHOULDER,
+                JOINTS.RIGHT_SHOULDER,
+                JOINTS.LEFT_HIP,
+                JOINTS.RIGHT_HIP,
+            ]));
+            this.setJointPosition(JOINTS.NAVEL, this.averageJointPositions([
+                JOINTS.LEFT_SHOULDER,
+                JOINTS.RIGHT_SHOULDER,
+                JOINTS.LEFT_HIP,
+                JOINTS.RIGHT_HIP,
+                JOINTS.LEFT_HIP,
+                JOINTS.RIGHT_HIP,
+            ]));
+            this.setJointPosition(JOINTS.PELVIS, this.averageJointPositions([
+                JOINTS.LEFT_HIP,
+                JOINTS.RIGHT_HIP,
+            ]));
+
             this.historyPoints.push(new THREE.Vector3(
                 this.spheres[0].position.x,
                 this.spheres[0].position.y + 0.4,
