@@ -5,40 +5,32 @@ createNameSpace("realityEditor.humanPose.utils");
 
     const JOINTS = {
         NOSE: 'nose',
-        LEFT_EYE: 'left eye',
-        RIGHT_EYE: 'right eye',
-        LEFT_EAR: 'left ear',
-        RIGHT_EAR: 'right ear',
-        LEFT_SHOULDER: 'left shoulder',
-        RIGHT_SHOULDER: 'right shoulder',
-        LEFT_ELBOW: 'left elbow',
-        RIGHT_ELBOW: 'right elbow',
-        LEFT_WRIST: 'left wrist',
-        RIGHT_WRIST: 'right wrist',
-        LEFT_HIP: 'left hip',
-        RIGHT_HIP: 'right hip',
-        LEFT_KNEE: 'left knee',
-        RIGHT_KNEE: 'right knee',
-        LEFT_ANKLE: 'left ankle',
-        RIGHT_ANKLE: 'right ankle',
-        HEAD: 'head synthetic',
-        NECK: 'neck synthetic',
-        CHEST: 'chest synthetic',
-        NAVEL: 'navel synthetic',
-        PELVIS: 'pelvis synthetic',
+        LEFT_EYE: 'left_eye',
+        RIGHT_EYE: 'right_eye',
+        LEFT_EAR: 'left_ear',
+        RIGHT_EAR: 'right_ear',
+        LEFT_SHOULDER: 'left_shoulder',
+        RIGHT_SHOULDER: 'right_shoulder',
+        LEFT_ELBOW: 'left_elbow',
+        RIGHT_ELBOW: 'right_elbow',
+        LEFT_WRIST: 'left_wrist',
+        RIGHT_WRIST: 'right_wrist',
+        LEFT_HIP: 'left_hip',
+        RIGHT_HIP: 'right_hip',
+        LEFT_KNEE: 'left_knee',
+        RIGHT_KNEE: 'right_knee',
+        LEFT_ANKLE: 'left_ankle',
+        RIGHT_ANKLE: 'right_ankle',
+        HEAD: 'head', // synthetic
+        NECK: 'neck', // synthetic
+        CHEST: 'chest', // synthetic
+        NAVEL: 'navel', // synthetic
+        PELVIS: 'pelvis', // synthetic
         // LEFT_HAND: 'left hand synthetic',
         // RIGHT_HAND: 'right hand synthetic',
     };
 
-    Object.keys(JOINTS).forEach((key, i) => {
-        JOINTS[key] = i;
-    });
-
     const JOINTS_LEN = Object.keys(JOINTS).length;
-
-    const JOINTS_COOL = JOINTS;
-
-    const JOINTS_COOL_INDEX = Object.values(JOINTS_COOL);
 
     const JOINT_CONNECTIONS = [
         [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
@@ -61,8 +53,6 @@ createNameSpace("realityEditor.humanPose.utils");
 
     exports.JOINTS = JOINTS;
     exports.JOINTS_LEN = JOINTS_LEN;
-    exports.JOINTS_COOL = JOINTS_COOL;
-    exports.JOINTS_COOL_INDEX = JOINTS_COOL_INDEX;
     exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
 
     // other modules in the project can use this to reliably check whether an object is a humanPose object

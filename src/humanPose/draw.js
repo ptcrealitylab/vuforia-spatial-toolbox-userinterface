@@ -23,14 +23,9 @@ createNameSpace("realityEditor.humanPose.draw");
         createSpheres() {
             const geo = new THREE.SphereGeometry(0.03, 12, 12);
             const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
-            for (const jointId of utils.JOINTS) {
+            for (const jointId of Object.values(utils.JOINTS)) {
                 // TODO use instanced mesh for better performance
                 let sphere = new THREE.Mesh(geo, mat);
-
-                if (!utils.JOINTS_COOL.hasOwnProperty(jointId)) {
-                    sphere.visible = false;
-                }
-
                 // this.spheres.push(sphere);
                 this.spheres[jointId] = sphere;
                 this.container.add(sphere);
@@ -167,7 +162,7 @@ createNameSpace("realityEditor.humanPose.draw");
         let groundPlaneMatrix = new THREE.Matrix4();
         realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneMatrix, groundPlaneSceneNode.worldMatrix);
 
-        for (let jointId of utils.JOINTS) {
+        for (let jointId of Object.values(utils.JOINTS)) {
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.id}_${jointId}`);
 
             let jointMatrixThree = new THREE.Matrix4();
