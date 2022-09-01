@@ -40,7 +40,7 @@ createNameSpace("realityEditor.humanPose");
         console.log('try updating pose object', pose, humanPoseObject);
 
         pose.joints.forEach((jointInfo, index) => {
-            let jointName = utils.JOINT_SCHEMA.jointIndices[index];
+            let jointName = Object.keys(utils.JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
                 return key.endsWith(jointName);
             });

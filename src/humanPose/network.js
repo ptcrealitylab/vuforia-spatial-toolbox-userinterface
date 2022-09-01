@@ -11,7 +11,7 @@ createNameSpace("realityEditor.humanPose.network");
         }
 
         let postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
-        let poseJointSchema = JSON.stringify(realityEditor.humanPose.utils.JOINT_SCHEMA);
+        let poseJointSchema = JSON.stringify(realityEditor.humanPose.utils.JOINTS);
         let params = new URLSearchParams({action: 'new', name: objectName, isHuman: JSON.stringify(true), worldId: worldId, poseJointSchema: poseJointSchema});
         // TODO: we may need to include the pose joints or at least a list of which joints are provided by this source
         fetch(postUrl, {
