@@ -355,7 +355,7 @@ createNameSpace("realityEditor.avatar.draw");
         // shift it so one end rests on the origin
         geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, length / 2, 0));
         // rotate it the right way for lookAt to work
-        geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
+        geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2)); // 90 degrees
         let mesh = new THREE.Mesh(geometry, material);
         if (startPoint) {
             mesh.position.copy(startPoint);
