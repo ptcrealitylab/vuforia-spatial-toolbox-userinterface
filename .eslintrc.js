@@ -88,6 +88,7 @@ module.exports = {
           "src/constructors.js",
           "src/device/utilities.js",
           "src/objects.js",
+          "src/states.js",
         ],
         "parserOptions": {
             "ecmaVersion": 2018,
