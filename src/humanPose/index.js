@@ -14,9 +14,9 @@ createNameSpace("realityEditor.humanPose");
 
         console.log('init humanPose module', network, draw, utils);
 
-        realityEditor.app.callbacks.subscribeToPoses((pose) => {
-            console.log('received pose', pose);
-
+        realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
+            console.log('received pose joints', poseJoints);
+            let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
             let poseObjectName = utils.getPoseObjectName(pose);
 
             if (typeof nameIdMap[poseObjectName] === 'undefined') {
@@ -66,7 +66,12 @@ createNameSpace("realityEditor.humanPose");
         });
     }
 
+    let objectsInProgress = {};
+
     function tryCreatingObjectFromPose(pose, poseObjectName) {
+        if (objectsInProgress[poseObjectName]) { return; }
+        objectsInProgress[poseObjectName] = true;
+
         let worldObject = realityEditor.worldObjects.getBestWorldObject(); // subscribeToPoses only triggers after we localize within a world
 
         realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, poseObjectName, () => {
@@ -76,19 +81,25 @@ createNameSpace("realityEditor.humanPose");
                 // myAvatarId = data.id;
                 // connectionStatus.isMyAvatarCreated = true;
                 // refreshStatusUI();
+                delete objectsInProgress[poseObjectName];
+
             }, (err) => {
-                console.warn('unable to add avatar object to server', err);
+                console.warn('unable to add human pose object to server', err);
+                delete objectsInProgress[poseObjectName];
+
             });
         }, () => {
-            console.warn('avatar already exists on server');
+            console.warn('human pose already exists on server');
+            delete objectsInProgress[poseObjectName];
+
         });
     }
 
-    // initialize the avatar object representing my own device, and those representing other devices
+    // initialize the human pose object
     function handleDiscoveredObject(object, objectKey) {
         if (!utils.isHumanPoseObject(object)) { return; }
         if (typeof humanPoseObjects[objectKey] !== 'undefined') { return; }
-        humanPoseObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
+        humanPoseObjects[objectKey] = object; // keep track of which human pose objects we've processed so far
 
         // TODO: subscribe to public data, etc
     }
