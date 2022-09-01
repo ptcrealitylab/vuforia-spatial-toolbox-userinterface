@@ -63,6 +63,11 @@ createNameSpace('realityEditor.app.callbacks');
 
     const skeletonDedupId = Math.floor(Math.random() * 10000);
 
+    // other modules can subscribe to what's happening here
+    let subscriptions = {
+        onPoseReceived: []
+    }
+
     function onOrientationSet() {
         // start the AR framework in native iOS
         realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
@@ -200,6 +205,11 @@ createNameSpace('realityEditor.app.callbacks');
         globalStates.device = deviceName;
         console.log('The Reality Editor is loaded on a ' + globalStates.device);
         realityEditor.device.layout.adjustForDevice(deviceName);
+    }
+
+    // callback will trigger with array of joints {x,y,z} when a pose is detected
+    exports.subscribeToPoses = function(callback) {
+        subscriptions.onPoseReceived.push(callback);
     }
 
     /**
@@ -356,6 +366,16 @@ createNameSpace('realityEditor.app.callbacks');
             y: camY / 1000,
             z: camZ / 1000,
         });
+
+        const USE_DEBUG_POSE = false;
+
+        if (USE_DEBUG_POSE) {
+            subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
+        } else {
+            if (poses.length > 0) {
+                subscriptions.onPoseReceived.forEach(cb => cb(coolerPoses));
+            }
+        }
     }
 
     /**
