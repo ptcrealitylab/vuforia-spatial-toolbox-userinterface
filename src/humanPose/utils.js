@@ -30,29 +30,26 @@ createNameSpace("realityEditor.humanPose.utils");
         // RIGHT_HAND: 'right hand synthetic',
     };
 
-    const JOINTS_LEN = Object.keys(JOINTS).length;
-
-    const JOINT_CONNECTIONS = [
-        [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
-        [JOINTS.LEFT_ELBOW, JOINTS.LEFT_SHOULDER],
-        [JOINTS.LEFT_SHOULDER, JOINTS.RIGHT_SHOULDER],
-        [JOINTS.RIGHT_SHOULDER, JOINTS.RIGHT_ELBOW],
-        [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_WRIST],
-        [JOINTS.LEFT_SHOULDER, JOINTS.LEFT_HIP], // 5
-        [JOINTS.LEFT_HIP, JOINTS.RIGHT_HIP],
-        [JOINTS.RIGHT_HIP, JOINTS.RIGHT_SHOULDER],
-        [JOINTS.LEFT_HIP, JOINTS.LEFT_KNEE],
-        [JOINTS.LEFT_KNEE, JOINTS.LEFT_ANKLE],
-        [JOINTS.RIGHT_HIP, JOINTS.RIGHT_KNEE], // 10
-        [JOINTS.RIGHT_KNEE, JOINTS.RIGHT_ANKLE], // 11
-        [JOINTS.HEAD, JOINTS.NECK],
-        [JOINTS.NECK, JOINTS.CHEST],
-        [JOINTS.CHEST, JOINTS.NAVEL],
-        [JOINTS.NAVEL, JOINTS.PELVIS],
-    ];
+    const JOINT_CONNECTIONS = {
+        elbowWristLeft: [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
+        shoulderElbowLeft: [JOINTS.LEFT_ELBOW, JOINTS.LEFT_SHOULDER],
+        shoulderSpan: [JOINTS.LEFT_SHOULDER, JOINTS.RIGHT_SHOULDER],
+        shoulderElbowRight: [JOINTS.RIGHT_SHOULDER, JOINTS.RIGHT_ELBOW],
+        elbowWristRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_WRIST],
+        chestLeft: [JOINTS.LEFT_SHOULDER, JOINTS.LEFT_HIP], // 5
+        hipSpan: [JOINTS.LEFT_HIP, JOINTS.RIGHT_HIP],
+        chestRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_SHOULDER],
+        hipKneeLeft: [JOINTS.LEFT_HIP, JOINTS.LEFT_KNEE],
+        kneeAnkleLeft: [JOINTS.LEFT_KNEE, JOINTS.LEFT_ANKLE],
+        hipKneeRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_KNEE], // 10
+        kneeAnkleRight: [JOINTS.RIGHT_KNEE, JOINTS.RIGHT_ANKLE], // 11
+        headNeck: [JOINTS.HEAD, JOINTS.NECK],
+        neckChest: [JOINTS.NECK, JOINTS.CHEST],
+        chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
+        navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
+    };
 
     exports.JOINTS = JOINTS;
-    exports.JOINTS_LEN = JOINTS_LEN;
     exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
 
     // other modules in the project can use this to reliably check whether an object is a humanPose object

@@ -3,16 +3,16 @@ createNameSpace("realityEditor.humanPose.draw");
 (function(exports) {
     let poseRenderers = {};
 
-    let utils = realityEditor.humanPose.utils;
+    const {utils, rebaScore} = realityEditor.humanPose;
 
     class HumanPoseRenderer {
         constructor(id) {
             this.id = id;
-            this.spheres = [];
+            this.spheres = {};
             this.container = new THREE.Group();
             // this.container.position.y = -floorOffset;
             this.container.scale.set(1000, 1000, 1000);
-            this.bones = [];
+            this.bones = {};
             this.ghost = false;
             this.createSpheres();
             this.historyLineContainer = new THREE.Group();
@@ -31,9 +31,9 @@ createNameSpace("realityEditor.humanPose.draw");
                 this.container.add(sphere);
             }
             const geoCyl = new THREE.CylinderGeometry(0.01, 0.01, 1, 3);
-            for (const _conn of utils.JOINT_CONNECTIONS) {
+            for (const boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
                 let bone = new THREE.Mesh(geoCyl, mat);
-                this.bones.push(bone);
+                this.bones[boneName] = bone;
                 this.container.add(bone);
             }
 
@@ -64,6 +64,10 @@ createNameSpace("realityEditor.humanPose.draw");
             sphere.position.x = position.x;
             sphere.position.y = position.y;
             sphere.position.z = position.z;
+        }
+
+        getJointPosition(jointId) {
+            return this.spheres[jointId].position;
         }
 
         /**
@@ -124,10 +128,10 @@ createNameSpace("realityEditor.humanPose.draw");
             ));
             this.historyLine.setPoints(this.historyPoints);
 
-            for (let i = 0; i < this.bones.length; i++) {
-                let bone = this.bones[i];
-                let jointA = this.spheres[utils.JOINT_CONNECTIONS[i][0]];
-                let jointB = this.spheres[utils.JOINT_CONNECTIONS[i][1]];
+            for (let boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
+                let bone = this.bones[boneName];
+                let jointA = this.spheres[utils.JOINT_CONNECTIONS[boneName][0]];
+                let jointB = this.spheres[utils.JOINT_CONNECTIONS[boneName][1]];
 
                 bone.position.x = (jointA.x + jointB.x) / 2;
                 bone.position.y = (jointA.y + jointB.y) / 2;
@@ -145,26 +149,22 @@ createNameSpace("realityEditor.humanPose.draw");
                 bone.scale.y = diff.length();
             }
 
-            let grades = this.calculateREBAScore();
-            const angles = Object.entries(grades); // oh dear
-            for (let item of angles) {
-                let boneNum = item[1][3];
-                let boneColor = item[1][5];
-                if (boneColor == 0) {
-                    this.bones[boneNum].material = this.greenMaterial;
-                }
-                if (boneColor == 1) {
-                    this.bones[boneNum].material = this.yellowMaterial;
-                } else if (boneColor == 2) {
-                    this.bones[boneNum].material = this.redMaterial;
-                }
-            }
-
+            rebaScore.annotateHumanPoseRenderer(this);
         }
 
-        calculateREBAScore() {
-            // TODO
-            return {};
+        setOverallRebaScore(_score) {
+            // we don't currently care about visualizing this
+        }
+
+        setBoneRebaColor(boneName, boneColor) {
+            if (boneColor == 0) {
+                this.bones[boneName].material = this.greenMaterial;
+            }
+            if (boneColor == 1) {
+                this.bones[boneName].material = this.yellowMaterial;
+            } else if (boneColor == 2) {
+                this.bones[boneName].material = this.redMaterial;
+            }
         }
 
         addToScene() {

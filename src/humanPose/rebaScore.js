@@ -38,6 +38,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         RIGHT_EAR: 31
     });
 
+    /*
     function flipObject(obj) {
         const flipped = {};
         for (let key of Object.keys(obj)) {
@@ -61,65 +62,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         wristHandRight: 6,
     });
 
-    const POSE_NET_JOINTS = {
-        NOSE: 'nose',
-        LEFT_EYE: 'left eye',
-        RIGHT_EYE: 'right eye',
-        LEFT_EAR: 'left ear',
-        RIGHT_EAR: 'right ear',
-        LEFT_SHOULDER: 'left shoulder',
-        RIGHT_SHOULDER: 'right shoulder',
-        LEFT_ELBOW: 'left elbow',
-        RIGHT_ELBOW: 'right elbow',
-        LEFT_WRIST: 'left wrist',
-        RIGHT_WRIST: 'right wrist',
-        LEFT_HIP: 'left hip',
-        RIGHT_HIP: 'right hip',
-        LEFT_KNEE: 'left knee',
-        RIGHT_KNEE: 'right knee',
-        LEFT_ANKLE: 'left ankle',
-        RIGHT_ANKLE: 'right ankle',
-        HEAD: 'head synthetic',
-        NECK: 'neck synthetic',
-        CHEST: 'chest synthetic',
-        NAVEL: 'navel synthetic',
-        PELVIS: 'pelvis synthetic',
-    };
+    const JOINT_CONNECTIONS_NET = realityEditor.humanPose.utils.JOINT_CONNECTIONS;
+    */
 
-    Object.keys(POSE_NET_JOINTS).forEach((key, i) => {
-        POSE_NET_JOINTS[key] = i;
-    });
+    const POSE_NET_JOINTS = realityEditor.humanPose.utils.JOINTS;
 
-    const JOINT_CONNECTIONS_NET = {
-        headNeck: 12,
-        neckChest: 13,
-        chestNavel: 14,
-        navelPelvis: 15,
-        hipKneeLeft: 8,
-        hipKneeRight: 10,
-        shoulderElbowLeft: 1,
-        shoulderElbowRight: 3,
-        elbowWristLeft: 0,
-        elbowWristRight: 4,
-        wristHandLeft: 0,
-        wristHandRight: 4,
-    };
 
     function jointToPoseNet(i) {
         let key = Object.keys(POSE_JOINTS)[i];
         if (!POSE_NET_JOINTS.hasOwnProperty(key)) {
-            return 0;
-        }
-        return POSE_NET_JOINTS[key];
-    }
-
-    function boneToPoseNet(i) {
-        let key = JOINT_CONNECTIONS[i];
-        let poseNetI = JOINT_CONNECTIONS_NET[key];
-        if (!JOINT_CONNECTIONS_NET.hasOwnProperty(key)) {
             return -1;
         }
-        return poseNetI;
+        return POSE_NET_JOINTS[key];
     }
 
     function calculateXAngle(skel, jointARaw, jointBRaw) {
@@ -567,7 +521,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return shoulderElbowRightScore;
     }
 
-    exports.calculateReba = function calculateReba(skel) {
+    function calculateReba(skel) {
         /* call all helper functions to annotate the individual scores of each bone */
 
         headNeckReba(skel);
@@ -591,7 +545,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         /* could calculate the overall reba score here or later for better optimization */
         // let overallScore = overallReba(skel);
-    };
+    }
 
     function calculateTableA(skel) {
         let neck = skel.angles.headNeck[4];
@@ -730,7 +684,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return numberB;
     }
 
-    exports.overallRebaCalculation = function overallRebaCalculation(skel) {
+    function overallRebaCalculation(skel) {
         var tableA = calculateTableA(skel);
         var tableB = calculateTableB(skel);
 
@@ -751,43 +705,115 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         var finalREBA = tableC[tableA - 1][tableB - 1];
         return finalREBA;
-    };
+    }
 
     /* create the object that contains all the angles for a skeleton and return that object */
-    exports.getAngles = function getAngles(skel) {
+    function getAngles(skel) {
     /* NOTE: I made it so that the first joint listed is always moving farthest away from body */
         let angles = {
             headNeck: [
-                calculateXAngle(skel, 26, 3),
-                calculateYAngle(skel, 26, 3),
-                calculateZAngle(skel, 26, 3),
+                // XYZ euler angles in degrees
+                calculateXAngle(skel, POSE_JOINTS.HEAD, POSE_JOINTS.NECK),
+                calculateYAngle(skel, POSE_JOINTS.HEAD, POSE_JOINTS.NECK),
+                calculateZAngle(skel, POSE_JOINTS.HEAD, POSE_JOINTS.NECK),
+                // index of bone relative to k4abt humanposerenderer's initialization order
                 15,
                 smallRebaScore(),
                 smallRebaColor()
             ],
-            neckChest: [calculateXAngle(skel, 3, 2), calculateYAngle(skel, 3, 2), calculateZAngle(skel, 3, 2), 16, smallRebaScore(), smallRebaColor()],
-            chestNavel: [calculateXAngle(skel, 2, 1), calculateYAngle(skel, 2, 1), calculateZAngle(skel, 2, 1), 17, smallRebaScore(), smallRebaColor()],
-            navelPelvis: [calculateXAngle(skel, 1, 0), calculateYAngle(skel, 1, 0), calculateZAngle(skel, 1, 0), 18, smallRebaScore(), smallRebaColor()],
-            hipKneeLeft: [calculateXAngle(skel, 19, 18), calculateYAngle(skel, 19, 18), calculateZAngle(skel, 19, 18), 21, smallRebaScore(), smallRebaColor()],
-            hipKneeRight: [calculateXAngle(skel, 23, 22), calculateYAngle(skel, 23, 22), calculateZAngle(skel, 23, 22), 25, smallRebaScore(), smallRebaColor()],
-            shoulderElbowLeft: [calculateXAngle(skel, 6, 5), calculateYAngle(skel, 6, 5), calculateZAngle(skel, 6, 5), 3, smallRebaScore(), smallRebaColor()],
-            shoulderElbowRight: [calculateXAngle(skel, 13, 12), calculateYAngle(skel, 13, 12), calculateZAngle(skel, 13, 12), 8, smallRebaScore(), smallRebaColor()],
-            elbowWristLeft: [calculateXAngle(skel, 7, 6), calculateYAngle(skel, 7, 6), calculateZAngle(skel, 7, 6), 2, smallRebaScore(), smallRebaColor()],
-            elbowWristRight: [calculateXAngle(skel, 14, 13), calculateYAngle(skel, 14, 13), calculateZAngle(skel, 14, 13), 7, smallRebaScore(), smallRebaColor()],
-            wristHandLeft: [calculateXAngle(skel, 8, 7), calculateYAngle(skel, 8, 7), calculateZAngle(skel, 8, 7), 1, smallRebaScore(), smallRebaColor()],
-            wristHandRight: [calculateXAngle(skel, 15, 14), calculateYAngle(skel, 15, 14), calculateZAngle(skel, 15, 14), 6, smallRebaScore(), smallRebaColor()],
+            neckChest: [
+                calculateXAngle(skel, 3, 2),
+                calculateYAngle(skel, 3, 2),
+                calculateZAngle(skel, 3, 2),
+                16,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            chestNavel: [
+                calculateXAngle(skel, 2, 1),
+                calculateYAngle(skel, 2, 1),
+                calculateZAngle(skel, 2, 1),
+                17,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            navelPelvis: [
+                calculateXAngle(skel, 1, 0),
+                calculateYAngle(skel, 1, 0),
+                calculateZAngle(skel, 1, 0),
+                18,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            hipKneeLeft: [
+                calculateXAngle(skel, 19, 18),
+                calculateYAngle(skel, 19, 18),
+                calculateZAngle(skel, 19, 18),
+                21,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            hipKneeRight: [
+                calculateXAngle(skel, 23, 22),
+                calculateYAngle(skel, 23, 22),
+                calculateZAngle(skel, 23, 22),
+                25,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            shoulderElbowLeft: [
+                calculateXAngle(skel, 6, 5),
+                calculateYAngle(skel, 6, 5),
+                calculateZAngle(skel, 6, 5),
+                3,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            shoulderElbowRight: [
+                calculateXAngle(skel, 13, 12),
+                calculateYAngle(skel, 13, 12),
+                calculateZAngle(skel, 13, 12),
+                8,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            elbowWristLeft: [
+                calculateXAngle(skel, 7, 6),
+                calculateYAngle(skel, 7, 6),
+                calculateZAngle(skel, 7, 6),
+                2,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            elbowWristRight: [
+                calculateXAngle(skel, 14, 13),
+                calculateYAngle(skel, 14, 13),
+                calculateZAngle(skel, 14, 13),
+                7,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            wristHandLeft: [
+                calculateXAngle(skel, 8, 7),
+                calculateYAngle(skel, 8, 7),
+                calculateZAngle(skel, 8, 7),
+                1,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
+            wristHandRight: [
+                calculateXAngle(skel, 15, 14),
+                calculateYAngle(skel, 15, 14),
+                calculateZAngle(skel, 15, 14),
+                6,
+                smallRebaScore(),
+                smallRebaColor()
+            ],
         };
-        for (let key of Object.keys(angles)) {
-            let newBone = boneToPoseNet(angles[key][3]);
-            if (newBone < 0) {
-                delete angles[key];
-                continue;
-            }
-            angles[key][3] = newBone;
-        }
 
         return angles;
-    };
+    }
+
     function smallRebaScore() {
         return 0;
     }
@@ -796,14 +822,29 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return 0;
     }
 
-    function makeSkel() {
+    function extractSkel(humanPoseRenderer) {
         let skel = {
             joints: {},
             angles: {},
         };
+        for (let jointId of Object.values(POSE_NET_JOINTS)) {
+            skel.joints[jointId] = humanPoseRenderer.getJointPosition(jointId);
+        }
 
+        skel.angles = getAngles(skel);
         return skel;
     }
 
+    function annotateHumanPoseRenderer(humanPoseRenderer) {
+        let skel = extractSkel(humanPoseRenderer);
+        calculateReba(skel);
+        humanPoseRenderer.setOverallRebaScore(overallRebaCalculation(skel));
+        for (let boneName in skel.angles) {
+            let rebaColor = skel.angles[boneName][5];
+            humanPoseRenderer.setBoneRebaColor(boneName, rebaColor);
+        }
+    }
+
+    exports.annotateHumanPoseRenderer = annotateHumanPoseRenderer;
 })(realityEditor.humanPose.reba);
 
