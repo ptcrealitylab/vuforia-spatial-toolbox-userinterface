@@ -433,7 +433,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         } else if (hipKneeLeftScore < 2) {
             skel.angles.hipKneeLeft[5] = 1;
         } else {
-            skel.angles.hipKneeLeft[5] == 2;
+            skel.angles.hipKneeLeft[5] = 2;
         }
         return hipKneeLeftScore;
     }
@@ -456,7 +456,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         } else if (hipKneeRightScore < 2) {
             skel.angles.hipKneeRight[5] = 1;
         } else {
-            skel.angles.hipKneeRight[5] == 2;
+            skel.angles.hipKneeRight[5] = 2;
         }
         return hipKneeRightScore;
     }
