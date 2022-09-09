@@ -246,6 +246,9 @@ createNameSpace("realityEditor.avatar");
 
         document.body.addEventListener('pointermove', (e) => {
             if (!isPointerDown || realityEditor.device.isMouseEventCameraControl(e)) { return; }
+            if (network.isTouchStateFpsLimited()) {
+                return;
+            }
             // update the beam position even if not hitting background, as long as we started on the background
             setBeamOn(e.pageX, e.pageY);
         });
