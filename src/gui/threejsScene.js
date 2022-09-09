@@ -395,7 +395,9 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 mergedGeometry.computeBoundingBox();
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
-                mergedGeometry.boundsTree = new MeshBVH( mergedGeometry );
+                gltf.scene.children.map(child => {
+                    child.geometry.boundsTree = new MeshBVH(child.geometry);
+                });
 
                 wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
