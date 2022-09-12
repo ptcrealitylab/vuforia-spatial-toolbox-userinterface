@@ -135,6 +135,8 @@ createNameSpace("realityEditor.avatar");
     // initialize the avatar object representing my own device, and those representing other devices
     function handleDiscoveredObject(object, objectKey) {
         if (!utils.isAvatarObject(object)) { return; }
+        let primaryIp = realityEditor.network.discovery.getPrimaryWorldInfo() ? realityEditor.network.discovery.getPrimaryWorldInfo().ip : null;
+        if (primaryIp && object.ip !== primaryIp) { return; } // don't add miscellaneous avatar objects from other servers in this network
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
         connectedAvatarNames[objectKey] = { name: null };
