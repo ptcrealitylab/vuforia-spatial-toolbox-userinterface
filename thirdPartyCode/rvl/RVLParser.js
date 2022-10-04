@@ -72,6 +72,9 @@ export default class RVLParser {
             // depth buffer. Note that this means the blue channel is
             // always zero
             let depth24Bits = rawDepth[i] << (24 - 14); // * 5 / (1 << 14);
+            if (depth24Bits > 0xffffff) {
+                depth24Bits = 0xffffff;
+            }
             let b = depth24Bits & 0xff;
             let g = (depth24Bits >> 8) & 0xff;
             let r = (depth24Bits >> 16) & 0xff;

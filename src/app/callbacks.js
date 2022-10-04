@@ -268,6 +268,7 @@ createNameSpace('realityEditor.app.callbacks');
         if (poses.length > 0) {
             for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
                 let pointA = poses[start];
+
                 let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
                 let outlierPresent = false;
                 let minDepth = pointA.depth;
@@ -298,12 +299,33 @@ createNameSpace('realityEditor.app.callbacks');
             }
         }
 
+        const focalLength = 1392.60913; // may change per device
+        const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
+
+        let roughCenterDepth = (
+            poses[POSE_JOINTS.LEFT_SHOULDER].depth +
+            poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
+            poses[POSE_JOINTS.LEFT_HIP].depth +
+            poses[POSE_JOINTS.RIGHT_HIP].depth
+        ) / 4;
+
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
-
             const THREE = realityEditor.gui.threejsScene.THREE;
-            let vec = new THREE.Vector3(0, 0, point.depth * 1000);
+
+            let zBasedDepth = point.depth;
+            // Add in mlkit's z approximation when available
+            if (point.hasOwnProperty('z')) {
+                zBasedDepth = roughCenterDepth + point.z / focalLength * roughCenterDepth;
+            }
+
+            point.error = point.depth - zBasedDepth;
+            let depth = zBasedDepth; // TODO incorporate point.depth
+            if (Math.abs(point.error) < 0.5) {
+                depth = point.depth * 0.8 + zBasedDepth * 0.2;
+            }
+            let vec = new THREE.Vector3(0, 0, depth * 1000); // point.depth * 1000);
             vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
             let initialVehicleMatrix = [
                 -1, 0, 0, 0,

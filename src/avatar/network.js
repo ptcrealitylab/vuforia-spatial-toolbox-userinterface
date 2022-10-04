@@ -105,11 +105,19 @@ createNameSpace("realityEditor.avatar.network");
 
     // write the touchState into the avatar object's storage node (internally limits data rate to FPS_LIMIT)
     function sendTouchState(keys, touchState, options) {
-        let sendData = !(options && options.limitToFps) || (Date.now() - lastWritePublicDataTimestamp > (1000 / DATA_SEND_FPS_LIMIT));
+        let sendData = !(options && options.limitToFps) || !isTouchStateFpsLimited();
         if (sendData) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.touchState, touchState);
             lastWritePublicDataTimestamp = Date.now();
         }
+    }
+
+    /**
+     * Helper function to provide insight into the fps limiter
+     * @return {boolean}
+     */
+    function isTouchStateFpsLimited() {
+        return Date.now() - lastWritePublicDataTimestamp < (1000 / DATA_SEND_FPS_LIMIT);
     }
 
     // write the username into the avatar object's storage node
@@ -171,6 +179,7 @@ createNameSpace("realityEditor.avatar.network");
     exports.onAvatarDeleted = onAvatarDeleted;
     exports.onLoadOcclusionObject = onLoadOcclusionObject;
     exports.realtimeSendAvatarPosition = realtimeSendAvatarPosition;
+    exports.isTouchStateFpsLimited = isTouchStateFpsLimited;
     exports.sendTouchState = sendTouchState;
     exports.sendUserProfile = sendUserProfile;
     exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
