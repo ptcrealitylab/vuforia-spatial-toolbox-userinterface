@@ -174,6 +174,11 @@ createNameSpace("realityEditor.avatar.network");
         });
     }
 
+    // signal the server that this avatar object is still active and shouldn't be deleted
+    function keepObjectAlive(objectKey) {
+        realityEditor.app.sendUDPMessage({type: 'keepObjectAlive', objectKey: objectKey });
+    }
+
     exports.addAvatarObject = addAvatarObject;
     exports.onAvatarDiscovered = onAvatarDiscovered;
     exports.onAvatarDeleted = onAvatarDeleted;
@@ -185,5 +190,6 @@ createNameSpace("realityEditor.avatar.network");
     exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
     exports.addPendingAvatarInitialization = addPendingAvatarInitialization;
     exports.subscribeToAvatarPublicData = subscribeToAvatarPublicData;
+    exports.keepObjectAlive = keepObjectAlive;
 
 }(realityEditor.avatar.network));
