@@ -64,6 +64,33 @@ createNameSpace('realityEditor.app.callbacks');
     const skeletonDedupId = Math.floor(Math.random() * 10000);
 
     function onOrientationSet() {
+        // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
+        realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
+    }
+
+    /**
+     * Requests Vuforia to start if Local Network access is provided, otherwise shows an error on screen
+     * @param {boolean} success
+     */
+    exports.receiveNetworkPermissions = function(success) {
+        if (typeof success !== 'undefined' && !success) {
+
+            while (listeners.onVuforiaInitFailure.length > 0) { // dismiss the intializing pop-up that was waiting
+                let callback = listeners.onVuforiaInitFailure.pop();
+                callback();
+            }
+
+            let headerText = 'Needs Local Network Access';
+            let descriptionText = 'Please enable "Local Network" access<br/>in your device\'s Settings app and try again.';
+
+            let notification = realityEditor.gui.modal.showSimpleNotification(
+                headerText, descriptionText, function () {
+                    console.log('closed...');
+                }, realityEditor.device.environment.variables.layoutUIForPortrait);
+            notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            return;
+        }
+
         // start the AR framework in native iOS
         realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
     }

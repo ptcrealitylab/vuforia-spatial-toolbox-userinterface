@@ -62,6 +62,14 @@ realityEditor.app.getDeviceReady = function(callBack) {
 };
 
 /**
+ * Response with true/false depending on whether app has "Local Network" permissions (required to discover edge servers)
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.didGrantNetworkPermissions = function(callBack) {
+    this.appFunctionCall('didGrantNetworkPermissions', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  **************Vuforia****************
  **/
 
