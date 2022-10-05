@@ -368,7 +368,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             }), maxHeight, center, true, true);
 
             if (gltf.scene.geometry) {
-                console.log('approach a', gltf.scene);
                 if (typeof maxHeight !== 'undefined') {
                     gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
                 }
@@ -380,7 +379,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
                 wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
-                console.log('approach b', gltf.scene);
                 gltf.scene.children.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
@@ -517,7 +515,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
-            console.log(material);
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.standard.uniforms,
                 {
