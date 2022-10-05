@@ -439,7 +439,7 @@ realityEditor.device.onload = function () {
     })();
     
     if (realityEditor.device.initFunctions.length === 0) {
-        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+        realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
     } else {
         realityEditor.device.initFunctions.forEach(function(initFunction) {
             initFunction();
