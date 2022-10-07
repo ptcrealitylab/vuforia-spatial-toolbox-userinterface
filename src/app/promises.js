@@ -43,13 +43,14 @@ createNameSpace("realityEditor.app.promises");
     // The name of each resolve param should be included iff the native API returns multiple values
     function makeAPI(appFunctionCall, resolveParams) {
         return function() {
+            const functionUuid = '_proxy_' + realityEditor.device.utilities.uuidTime();
+
             // when the API is called, create a new Promise
             let deferred = new Deferred(() => {
                 delete realityEditor.app.promises._callbackProxies[functionUuid];
             });
 
             // create a new function to be used as the callback that is passed to the native code
-            const functionUuid = '_proxy_' + realityEditor.device.utilities.uuidTime();
             realityEditor.app.promises._callbackProxies[functionUuid] = function() {
                 // when the callback is triggered, resolve the promise
                 if (Array.from(arguments).length < 2) {
