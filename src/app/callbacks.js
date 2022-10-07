@@ -94,8 +94,6 @@ createNameSpace('realityEditor.app.callbacks');
         // start the AR framework in native iOS
         realityEditor.app.promises.getVuforiaReady().then(success => {
             vuforiaIsReady(success);
-        }).catch(reason => {
-            console.warn('getVuforiaReady rejected due to ' + reason);
         });
     }
 
