@@ -82,6 +82,14 @@ realityEditor.app.getVuforiaReady = function(callBack){
 };
 
 /**
+ * Checks if the device has a depth sensor, e.g. LiDAR, and thus supports Area Target Scanning
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.doesDeviceHaveDepthSensor = function(callBack) {
+    this.appFunctionCall('doesDeviceHaveDepthSensor', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  * Adds a new marker and fires a callback with error or success
  * and the markerName for reference
  * @param {string} markerName
