@@ -1,16 +1,19 @@
 createNameSpace("realityEditor.app.promises");
 
-// provides a simpler interface to the native APIs
+// provides a simpler interface to some native APIs which are essentially getters but act
+// asynchronously because of the communication channel with the native app
 (function(exports) {
-    // assume APIs fail if they take longer than 3 seconds to resolve, they should be almost instantaneous
-    const TIMEOUT = 3000;
     const app = realityEditor.app;
 
-    // promises must be resolved externally due to the inner workings of how callbacks signatures get passed to swift
+    // promises must be resolved externally due to the inner workings of how callbacks signatures get passed to swift.
+    // in the current implementation, if multiple calls to the same API are made before any of them resolve, then all
+    // pending API calls of that type will be resolved when the first API returns. this works for getters that will
+    // return a consistent value, but the approach should change in order to support other types of APIs
     let deferredPromises = {
         getDeviceReady: [],
-        doesDeviceHaveDepthSensor: [],
-        didGrantNetworkPermissions: []
+        didGrantNetworkPermissions: [],
+        getVuforiaReady: [],
+        doesDeviceHaveDepthSensor: []
     };
 
     exports.getDeviceReady = makeAPI(deferredPromises.getDeviceReady, app.getDeviceReady.bind(app), '_getDeviceReadyCallback');
@@ -25,33 +28,36 @@ createNameSpace("realityEditor.app.promises");
     exports.doesDeviceHaveDepthSensor = makeAPI(deferredPromises.doesDeviceHaveDepthSensor, app.doesDeviceHaveDepthSensor.bind(app), '_doesDeviceHaveDepthSensorCallback');
     exports._doesDeviceHaveDepthSensorCallback = makeAPICallback(deferredPromises.doesDeviceHaveDepthSensor);
 
-
     // adapted from: https://stackoverflow.com/a/34637436 and https://www.30secondsofcode.org/articles/s/javascript-await-timeout
     class Deferred {
         constructor(maxDelay, onFinally) {
-            this.promise = Promise.race([
+            let promiseList = [
                 new Promise((resolve, reject) => {
                     this.reject = reject;
                     this.resolve = resolve;
-                }),
-                new Promise(resolve => {
-                    setTimeout(() => {
-                        resolve(); // todo: should this be a reject?
-                    }, maxDelay)
                 })
-            ]);
+            ];
+            if (typeof maxDelay !== 'undefined') {
+                promiseList.push(
+                    new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            reject('API Timeout (' + maxDelay + 'ms)');
+                        }, maxDelay)
+                    })
+                );
+            }
+            this.promise = Promise.race(promiseList);
             this.promise.finally(onFinally); // use this to clean up state after it's done
         }
     }
 
     function makeAPI(deferredPromiseList, appFunctionCall, localCallbackSignature) {
-        return function() {
-            let deferred = new Deferred(TIMEOUT, () => {
+        return function(timeoutMs = undefined) { // timeout is optional, and will cause the API to reject if it exceeds this length
+            let deferred = new Deferred(timeoutMs, () => {
                 deferredPromiseList.splice(deferredPromiseList.indexOf(deferred), 1);
             });
             deferredPromiseList.push(deferred);
             appFunctionCall('realityEditor.app.promises.' + localCallbackSignature);
-            // realityEditor.app.getDeviceReady('realityEditor.app.promises._getDeviceReadyCallback');
             return deferred.promise;
         }
     }

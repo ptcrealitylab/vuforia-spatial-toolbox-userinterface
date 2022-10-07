@@ -372,6 +372,8 @@ realityEditor.device.onload = function () {
         globalStates.device = deviceName;
         console.log('The Reality Editor is loaded on a ' + globalStates.device);
         realityEditor.device.layout.adjustForDevice(deviceName);
+    }).catch(reason => {
+        console.warn('getDeviceReady rejected due to ' + reason);
     });
 
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
@@ -445,6 +447,8 @@ realityEditor.device.onload = function () {
     if (realityEditor.device.initFunctions.length === 0) {
         realityEditor.app.promises.didGrantNetworkPermissions().then(success => {
             realityEditor.app.callbacks.receiveNetworkPermissions(success);
+        }).catch(reason => {
+            console.warn('didGrantNetworkPermissions rejected due to ' + reason);
         });
     } else {
         realityEditor.device.initFunctions.forEach(function(initFunction) {

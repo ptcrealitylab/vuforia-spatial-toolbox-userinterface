@@ -48,6 +48,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 console.log('No depth sensor - cant support area target capture');
                 realityEditor.device.environment.variables.supportsAreaTargetCapture = false;
             }
+        }).catch(reason => {
+            console.warn('doesDeviceHaveDepthSensor rejected due to ' + reason);
+            realityEditor.device.environment.variables.supportsAreaTargetCapture = false;
         });
     }
 
