@@ -35,15 +35,16 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     var threejsContainerObj;
 
     function initService() {
-        // create a fullscreen webgl renderer for the threejs content
-        const domElement = document.getElementById('mainThreejsCanvas');
-        renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(rendererWidth, rendererHeight);
+        // create a fullscreen webgl renderer for the threejs content and add to the dom
+        renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( rendererWidth, rendererHeight );
+        renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
-        camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
+        document.body.appendChild( renderer.domElement );
+        camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
         camera.matrixAutoUpdate = false;
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
