@@ -199,9 +199,6 @@ realityEditor.network.getPortByIp = function(ip) {
     return serverPort;
 };
 
-
-
-
 /**
  * @type {Array.<{messageName: string, callback: function}>}
  */
@@ -1465,6 +1462,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (msgContent.sendDeviceDistance) {
         tempThisObject.sendDeviceDistance = msgContent.sendDeviceDistance;
+    }
+
+    if (typeof msgContent.sendObjectPositions !== 'undefined') {
+        tempThisObject.sendObjectPositions = msgContent.sendObjectPositions;
     }
 
     if (msgContent.sendAcceleration === true) {
