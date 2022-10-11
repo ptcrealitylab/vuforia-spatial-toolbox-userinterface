@@ -287,7 +287,7 @@ realityEditor.device.onload = function () {
     }
 
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
-        console.log('offline check', Array.from(res.headers.entries()));
+        console.debug('offline check', Array.from(res.headers.entries()));
         if (!res.headers.has('X-Offline-Cache')) {
             return;
         }
