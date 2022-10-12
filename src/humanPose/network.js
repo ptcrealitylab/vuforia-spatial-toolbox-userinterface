@@ -42,7 +42,14 @@ createNameSpace("realityEditor.humanPose.network");
         });
     }
 
+    function onHumanPoseObjectDeleted(callback) {
+        realityEditor.network.registerCallback('objectDeleted', (params) => {
+            callback(params.objectKey);
+        });
+    }
+
     exports.addHumanPoseObject = addHumanPoseObject;
     exports.onHumanPoseObjectDiscovered = onHumanPoseObjectDiscovered;
+    exports.onHumanPoseObjectDeleted = onHumanPoseObjectDeleted;
 
 }(realityEditor.humanPose.network));

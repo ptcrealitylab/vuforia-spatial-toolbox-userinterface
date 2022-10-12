@@ -32,6 +32,14 @@ createNameSpace("realityEditor.humanPose");
         network.onHumanPoseObjectDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
         });
+
+        network.onHumanPoseObjectDeleted((objectKey) => {
+            let objectToDelete = humanPoseObjects[objectKey];
+            if (!objectToDelete) return;
+
+            delete nameIdMap[objectToDelete.name];
+            delete humanPoseObjects[objectKey];
+        });
     }
 
     function tryUpdatingPoseObject(pose, humanPoseObject) {
