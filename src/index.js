@@ -85,6 +85,7 @@ var realityEditor = realityEditor || {
             groundPlaneRenderer: {},
             grouping: {},
             lines: {},
+            meshLine: {},
             moveabilityOverlay: {},
             positioning: {},
             utilities: {}
