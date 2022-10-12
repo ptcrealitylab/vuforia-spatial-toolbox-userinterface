@@ -22,7 +22,8 @@ createNameSpace("realityEditor.humanPose.draw");
         }
 
         createSpheres() {
-            const geo = new THREE.SphereGeometry(0.03, 12, 12);
+            const SCALE = 1;
+            const geo = new THREE.SphereGeometry(0.03 * SCALE, 12 * SCALE, 12 * SCALE);
             const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
             for (const jointId of Object.values(utils.JOINTS)) {
                 // TODO use instanced mesh for better performance
@@ -31,7 +32,7 @@ createNameSpace("realityEditor.humanPose.draw");
                 this.spheres[jointId] = sphere;
                 this.container.add(sphere);
             }
-            const geoCyl = new THREE.CylinderGeometry(0.01, 0.01, 1, 3);
+            const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, 1 * SCALE, 3 * SCALE);
             for (const boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
                 let bone = new THREE.Mesh(geoCyl, mat);
                 this.bones[boneName] = bone;
@@ -44,8 +45,8 @@ createNameSpace("realityEditor.humanPose.draw");
         }
 
         createHistoryLine(container) {
-            this.historyLine = new realityEditor.device.meshLine.MeshLine();
-            const lineMat = new realityEditor.device.meshLine.MeshLineMaterial({
+            this.historyLine = new realityEditor.gui.ar.meshLine.MeshLine();
+            const lineMat = new realityEditor.gui.ar.meshLine.MeshLineMaterial({
                 color: this.ghost ? 0x777777 : 0xffff00,
                 // opacity: 0.6,
                 lineWidth: 14,
