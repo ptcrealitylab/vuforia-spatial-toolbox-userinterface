@@ -144,6 +144,7 @@ var realityEditor = realityEditor || {
     humanPose: {
         network: {},
         draw: {},
+        rebaScore: {},
         utils: {}
     }
 };

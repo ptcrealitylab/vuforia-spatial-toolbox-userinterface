@@ -4,6 +4,7 @@ createNameSpace("realityEditor.humanPose.draw");
     let poseRenderers = {};
 
     const {utils, rebaScore} = realityEditor.humanPose;
+    let THREE = null;
 
     class HumanPoseRenderer {
         constructor(id) {
@@ -122,16 +123,16 @@ createNameSpace("realityEditor.humanPose.draw");
             ]));
 
             this.historyPoints.push(new THREE.Vector3(
-                this.spheres[0].position.x,
-                this.spheres[0].position.y + 0.4,
-                this.spheres[0].position.z,
+                this.spheres[JOINTS.HEAD].position.x,
+                this.spheres[JOINTS.HEAD].position.y + 0.4,
+                this.spheres[JOINTS.HEAD].position.z,
             ));
             this.historyLine.setPoints(this.historyPoints);
 
             for (let boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
                 let bone = this.bones[boneName];
-                let jointA = this.spheres[utils.JOINT_CONNECTIONS[boneName][0]];
-                let jointB = this.spheres[utils.JOINT_CONNECTIONS[boneName][1]];
+                let jointA = this.spheres[utils.JOINT_CONNECTIONS[boneName][0]].position;
+                let jointB = this.spheres[utils.JOINT_CONNECTIONS[boneName][1]].position;
 
                 bone.position.x = (jointA.x + jointB.x) / 2;
                 bone.position.y = (jointA.y + jointB.y) / 2;
@@ -157,12 +158,14 @@ createNameSpace("realityEditor.humanPose.draw");
         }
 
         setBoneRebaColor(boneName, boneColor) {
-            if (boneColor == 0) {
+            if (typeof this.bones[boneName] === 'undefined') return;
+
+            if (boneColor === 0) {
                 this.bones[boneName].material = this.greenMaterial;
             }
-            if (boneColor == 1) {
+            if (boneColor === 1) {
                 this.bones[boneName].material = this.yellowMaterial;
-            } else if (boneColor == 2) {
+            } else if (boneColor === 2) {
                 this.bones[boneName].material = this.redMaterial;
             }
         }
@@ -173,14 +176,16 @@ createNameSpace("realityEditor.humanPose.draw");
 
         removeFromScene() {
             realityEditor.gui.threejsScene.removeFromScene(this.container);
-            this.bones[0].geometry.dispose();
-            this.spheres[0].geometry.dispose();
-            this.spheres[0].material.dispose();
+            this.bones.headNeck.geometry.dispose();
+            this.spheres[utils.JOINTS.HEAD].geometry.dispose();
+            this.spheres[utils.JOINTS].material.dispose();
         }
     }
 
 
     function renderHumanPoseObjects(poseObjects) {
+        if (!THREE) { THREE = realityEditor.gui.threejsScene.THREE; }
+
         for (let id in poseRenderers) {
             poseRenderers[id].updated = false;
         }
@@ -197,11 +202,11 @@ createNameSpace("realityEditor.humanPose.draw");
     function renderPose(poseObject) {
         // assume that all sub-objects are of the form poseObject.id + joint name
 
-        if (!poseRenderers[poseObject.id]) {
-            poseRenderers[poseObject.id] = new HumanPoseRenderer(poseObject.id);
-            poseRenderers[poseObject.id].addToScene();
+        if (!poseRenderers[poseObject.uuid]) {
+            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
+            poseRenderers[poseObject.uuid].addToScene();
         }
-        let poseRenderer = poseRenderers[poseObject.id];
+        let poseRenderer = poseRenderers[poseObject.uuid];
         poseRenderer.updated = true;
 
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
@@ -213,7 +218,8 @@ createNameSpace("realityEditor.humanPose.draw");
         realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneMatrix, groundPlaneSceneNode.worldMatrix);
 
         for (let jointId of Object.values(utils.JOINTS)) {
-            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.id}_${jointId}`);
+            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}_${jointId}`);
+            let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
             let jointMatrixThree = new THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(jointMatrixThree, sceneNode.worldMatrix);
@@ -222,7 +228,10 @@ createNameSpace("realityEditor.humanPose.draw");
             // then transform the final avatar position into groundplane coordinates since the threejsScene is relative to groundplane
             jointMatrixThree.premultiply(groundPlaneMatrix.invert());
 
-            poseRenderer.setJointPosition(jointId, jointMatrixThree);
+            let jointPosition = new THREE.Vector3();
+            jointPosition.setFromMatrixPosition(jointMatrixThree);
+
+            poseRenderer.setJointPosition(jointId, jointPosition);
         }
         poseRenderer.updateBonePositions();
     }

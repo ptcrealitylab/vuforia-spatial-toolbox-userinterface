@@ -40,6 +40,14 @@ createNameSpace("realityEditor.humanPose");
             delete nameIdMap[objectToDelete.name];
             delete humanPoseObjects[objectKey];
         });
+
+        realityEditor.gui.ar.draw.addUpdateListener(() => {
+            try {
+                draw.renderHumanPoseObjects(Object.values(humanPoseObjects));
+            } catch (e) {
+                console.warn('error in renderHumanPoseObjects', e);
+            }
+        });
     }
 
     function tryUpdatingPoseObject(pose, humanPoseObject) {
