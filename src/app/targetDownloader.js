@@ -276,7 +276,9 @@ createNameSpace("realityEditor.app.targetDownloader");
             triggerDownloadStateCallbacks(objectID);
 
             var xmlFileName = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.xml');
-            realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
+            realityEditor.app.promises.addNewMarker(xmlFileName).then(({success, fileName}) => {
+                onMarkerAdded(success, fileName);
+            });
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = false;
@@ -656,7 +658,9 @@ createNameSpace("realityEditor.app.targetDownloader");
                     return fileName.indexOf('xml') > -1;
                 })[0];
 
-                realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
+                realityEditor.app.promises.addNewMarker(xmlFileName).then(({success, fileName}) => {
+                    onMarkerAdded(success, fileName);
+                });
                 targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
                 targetDownloadStates[objectID].FILENAME = xmlFileName;
 
@@ -746,7 +750,9 @@ createNameSpace("realityEditor.app.targetDownloader");
         // synchronizes the two async download calls to add the marker when both tasks have completed
         var xmlFileName = isXML ? fileName : fileName.slice(0, -3) + 'xml';
         if (hasXML && hasDAT && markerNotAdded) {
-            realityEditor.app.addNewMarker(xmlFileName, moduleName + '.onMarkerAdded');
+            realityEditor.app.promises.addNewMarker(xmlFileName).then(({success, fileName}) => {
+                onMarkerAdded(success, fileName);
+            });
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             targetDownloadStates[objectID].FILENAME = fileName;
 
@@ -769,7 +775,9 @@ createNameSpace("realityEditor.app.targetDownloader");
                     targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
                 } else if (states.DAT === DownloadState.SUCCEEDED) {
                     console.log('>> add DAT target again: ' + objectID);
-                    realityEditor.app.addNewMarker(targetDownloadStates[objectID].FILENAME, moduleName + '.onMarkerAdded');
+                    realityEditor.app.promises.addNewMarker(targetDownloadStates[objectID].FILENAME).then(({success, fileName}) => {
+                        onMarkerAdded(success, fileName);
+                    });
                 }
             }
         });
@@ -824,7 +832,6 @@ createNameSpace("realityEditor.app.targetDownloader");
     exports.onTargetJPGDownloaded = onTargetJPGDownloaded;
     exports.onTargetGLBDownloaded = onTargetGLBDownloaded;
     exports.createNavmesh = createNavmesh;
-    exports.onMarkerAdded = onMarkerAdded;
     exports.doTargetFilesExist = doTargetFilesExist;
     exports.onTargetFileDownloaded = onTargetFileDownloaded;
 

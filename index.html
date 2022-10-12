@@ -92,6 +92,7 @@
 
     <script src="src/app/index.js"></script>
     <script src="src/app/callbacks.js"></script>
+    <script src="src/app/promises.js"></script>
     <script src="src/app/targetDownloader.js"></script>
 
     <script src="src/addons/index.js"></script>
@@ -557,9 +558,10 @@
     <div id="pocketTargetObjectLabel">Adding Tools to:</div>
 </div>
 
-<canvas class="Canvas" id="canvas"></canvas> <!--touch-action="none"-->
-<div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div> <!--touch-action="none"-->
-<canvas id="glcanvas"></canvas>
+<canvas class="canvas-main-threejs" id="mainThreejsCanvas"></canvas>
+<canvas class="Canvas canvas-node-connections" id="canvas"></canvas>
+<div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div>
+<canvas id="glcanvas" class="canvas-webgl-proxy"></canvas>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink" id="groupLassoSVG" class="groupSVGElement">
     <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>

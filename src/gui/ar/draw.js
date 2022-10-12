@@ -1310,7 +1310,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             
             if (activeType === "ui") {
                 let sendMatrices = activeVehicle.sendMatrices;
-                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition || activeVehicle.sendPositionInWorld || activeVehicle.sendDeviceDistance ||
+                if (activeVehicle.sendMatrix || activeVehicle.sendAcceleration || activeVehicle.sendScreenPosition ||
+                    activeVehicle.sendPositionInWorld || activeVehicle.sendDeviceDistance || activeVehicle.sendObjectPositions ||
                     sendMatrices && (sendMatrices.devicePose || sendMatrices.groundPlane || sendMatrices.anchoredModelView || sendMatrices.allObjects || sendMatrices.model || sendMatrices.view)) {
 
                     var thisMsg = {};
@@ -1378,6 +1379,10 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendDeviceDistance === true) {
                         thisMsg.deviceDistance = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
+                    }
+
+                    if (typeof activeVehicle.sendObjectPositions !== 'undefined') {
+                        thisMsg.objectPositions = realityEditor.gui.ar.positioning.getObjectPositionsOfTypes(activeVehicle.sendObjectPositions, true);
                     }
                     
                     if (activeType === 'ui') {

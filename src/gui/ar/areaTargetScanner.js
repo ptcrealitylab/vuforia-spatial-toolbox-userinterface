@@ -35,15 +35,24 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         onCaptureSuccessOrError: []
     };
 
-    /**
-     * Public init method to enable rendering ghosts of edited frames while in editing mode.
-     */
     function initService() {
         if (!realityEditor.device.environment.variables.supportsAreaTargetCapture) {
             console.log('This device doesn\'t support area target capture');
             return;
         }
 
+        realityEditor.app.promises.doesDeviceHaveDepthSensor().then(supportsCapture => {
+            if (supportsCapture) {
+                initServiceInternal();
+            } else {
+                console.log('No depth sensor - cant support area target capture');
+                realityEditor.device.environment.variables.supportsAreaTargetCapture = false;
+            }
+        });
+    }
+
+    // only gets called if we know we have access to LiDAR sensor / scanning capabilities
+    function initServiceInternal() {
         // wait until at least one server is detected
         // wait to see if any world objects are detected on that server
         // wait until camera device pose has been set / tracking is fully initialized
@@ -201,6 +210,11 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function programmaticallyStartScan(serverIp) {
+        if (!realityEditor.device.environment.variables.supportsAreaTargetCapture) {
+            console.log("Dont start scanning because device has no depth (LiDAR) sensor");
+            return;
+        }
+
         if (typeof serverIp !== 'undefined') {
             createPendingWorldObject(serverIp);
         } else {

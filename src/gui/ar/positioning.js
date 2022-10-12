@@ -637,3 +637,42 @@ realityEditor.gui.ar.positioning.canUnload = function(activeKey, finalMatrix, ve
     return bottom < viewportBounds.top || top > viewportBounds.bottom ||
         right < viewportBounds.left || left > viewportBounds.right;
 };
+
+/**
+ * Constructs a dataset of the positions of the relevant objects and their tools
+ * @param {Object.<string, boolean>} objectTypesToSend
+ * @param {boolean} includeToolPositions - defaults to true
+ * @returns {{}}
+ * @example getObjectPositionsOfTypes({'human': true}) returns:
+ * { 'human': { 'objectId1': { matrix: [worldMatrix], worldId: '_WORLD_xyz', tools: { 'toolId1': [localMatrix], 'toolId2': [localMatrix] }}}}
+ */
+realityEditor.gui.ar.positioning.getObjectPositionsOfTypes = function(objectTypesToSend, includeToolPositions = true) {
+    let dataToSend = {};
+    realityEditor.forEachObject((object, objectKey) => {
+        if (objectTypesToSend[object.type]) {
+            if (typeof dataToSend[object.type] === 'undefined') {
+                dataToSend[object.type] = {};
+            }
+
+            // only works if it's localized against a world object
+            if (object.worldId) {
+                let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(object.worldId);
+                let relativeMatrix = objectSceneNode.getMatrixRelativeTo(worldSceneNode);
+                dataToSend[object.type][objectKey] = {
+                    matrix: relativeMatrix,
+                    worldId: object.worldId
+                };
+
+                if (includeToolPositions) {
+                    dataToSend[object.type][objectKey].tools = {};
+                    realityEditor.forEachFrameInObject(objectKey, (_, frameKey) => {
+                        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+                        dataToSend[object.type][objectKey].tools[frameKey] = toolSceneNode.localMatrix;
+                    });
+                }
+            }
+        }
+    });
+    return dataToSend;
+};

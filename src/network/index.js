@@ -184,7 +184,8 @@ realityEditor.network.getPort = function(object) {
     return object.port;
 };
 realityEditor.network.getPortByIp = function(ip) {
-    if (ip === '127.0.0.1') {
+    if (ip === '127.0.0.1' && globalStates.device) {
+        console.debug('switching to mobile-specific server port');
         return '49369';
     }
 
@@ -198,9 +199,6 @@ realityEditor.network.getPortByIp = function(ip) {
     }
     return serverPort;
 };
-
-
-
 
 /**
  * @type {Array.<{messageName: string, callback: function}>}
@@ -1465,6 +1463,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (msgContent.sendDeviceDistance) {
         tempThisObject.sendDeviceDistance = msgContent.sendDeviceDistance;
+    }
+
+    if (typeof msgContent.sendObjectPositions !== 'undefined') {
+        tempThisObject.sendObjectPositions = msgContent.sendObjectPositions;
     }
 
     if (msgContent.sendAcceleration === true) {

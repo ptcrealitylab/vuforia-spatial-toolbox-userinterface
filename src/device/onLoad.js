@@ -287,7 +287,7 @@ realityEditor.device.onload = function () {
     }
 
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
-        console.log('offline check', Array.from(res.headers.entries()));
+        console.debug('offline check', Array.from(res.headers.entries()));
         if (!res.headers.has('X-Offline-Cache')) {
             return;
         }
@@ -368,7 +368,11 @@ realityEditor.device.onload = function () {
     realityEditor.avatar.initService();
     realityEditor.humanPose.initService();
 
-    realityEditor.app.getDeviceReady('realityEditor.app.callbacks.getDeviceReady');
+    realityEditor.app.promises.getDeviceReady().then(deviceName => {
+        globalStates.device = deviceName;
+        console.log('The Reality Editor is loaded on a ' + globalStates.device);
+        realityEditor.device.layout.adjustForDevice(deviceName);
+    });
 
     globalStates.tempUuid = realityEditor.device.utilities.uuidTimeShort();
     this.cout("This editor's session UUID: " + globalStates.tempUuid);
@@ -439,7 +443,9 @@ realityEditor.device.onload = function () {
     })();
     
     if (realityEditor.device.initFunctions.length === 0) {
-        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+        realityEditor.app.promises.didGrantNetworkPermissions().then(success => {
+            realityEditor.app.callbacks.receiveNetworkPermissions(success);
+        });
     } else {
         realityEditor.device.initFunctions.forEach(function(initFunction) {
             initFunction();

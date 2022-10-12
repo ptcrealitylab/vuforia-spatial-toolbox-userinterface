@@ -69,8 +69,37 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     function onOrientationSet() {
+        // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
+        realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
+    }
+
+    /**
+     * Requests Vuforia to start if Local Network access is provided, otherwise shows an error on screen
+     * @param {boolean} success
+     */
+    exports.receiveNetworkPermissions = function(success) {
+        if (typeof success !== 'undefined' && !success) {
+
+            while (listeners.onVuforiaInitFailure.length > 0) { // dismiss the intializing pop-up that was waiting
+                let callback = listeners.onVuforiaInitFailure.pop();
+                callback();
+            }
+
+            let headerText = 'Needs Local Network Access';
+            let descriptionText = 'Please enable "Local Network" access<br/>in your device\'s Settings app and try again.';
+
+            let notification = realityEditor.gui.modal.showSimpleNotification(
+                headerText, descriptionText, function () {
+                    console.log('closed...');
+                }, realityEditor.device.environment.variables.layoutUIForPortrait);
+            notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            return;
+        }
+
         // start the AR framework in native iOS
-        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+        realityEditor.app.promises.getVuforiaReady().then(success => {
+            vuforiaIsReady(success);
+        });
     }
 
     /**
@@ -191,20 +220,6 @@ createNameSpace('realityEditor.app.callbacks');
 
         // forward the message to a generic message handler that various modules use to subscribe to different messages
         realityEditor.network.onUDPMessage(message);
-    }
-
-    /**
-     * Callback for realityEditor.app.getDeviceReady
-     * Returns the native device name, which can be used to adjust the UI based on the phone/device type
-     * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
-     * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
-     * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
-     * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
-     */
-    function getDeviceReady(deviceName) {
-        globalStates.device = deviceName;
-        console.log('The Reality Editor is loaded on a ' + globalStates.device);
-        realityEditor.device.layout.adjustForDevice(deviceName);
     }
 
     // callback will trigger with array of joints {x,y,z} when a pose is detected
@@ -730,7 +745,6 @@ createNameSpace('realityEditor.app.callbacks');
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
     exports.receivedUDPMessage = receivedUDPMessage;
-    exports.getDeviceReady = getDeviceReady;
     exports.receiveGroundPlaneMatricesFromAR = receiveGroundPlaneMatricesFromAR;
     exports.receiveMatricesFromAR = receiveMatricesFromAR;
     exports.receivePoses = receivePoses;

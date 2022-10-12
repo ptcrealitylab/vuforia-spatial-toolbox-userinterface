@@ -59,6 +59,7 @@ var objects = {}; // TODO: this is a duplicate definition from src/objects.js
 var realityEditor = realityEditor || {
     app: {
         callbacks: {},
+        promises: {},
         targetDownloader: {}
     },
     device: {
