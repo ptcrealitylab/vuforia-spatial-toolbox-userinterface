@@ -7,6 +7,9 @@ createNameSpace("realityEditor.humanPose");
     let humanPoseObjects = {};
     let nameIdMap = {};
 
+    let TIME_PER_RENDER = 1000 / 10;
+    let lastRenderTime = Date.now();
+
     function initService() {
         network = realityEditor.humanPose.network;
         draw = realityEditor.humanPose.draw;
@@ -43,6 +46,8 @@ createNameSpace("realityEditor.humanPose");
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             try {
+                // if (Date.now() - lastRenderTime < TIME_PER_RENDER) return;
+                // lastRenderTime = Date.now();
                 draw.renderHumanPoseObjects(Object.values(humanPoseObjects));
             } catch (e) {
                 console.warn('error in renderHumanPoseObjects', e);

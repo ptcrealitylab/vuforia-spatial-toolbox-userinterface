@@ -6,24 +6,26 @@ createNameSpace("realityEditor.humanPose.draw");
     const {utils, rebaScore} = realityEditor.humanPose;
     let THREE = null;
 
+    const SCALE = 1000;
+
     class HumanPoseRenderer {
         constructor(id) {
             this.id = id;
             this.spheres = {};
             this.container = new THREE.Group();
             // this.container.position.y = -floorOffset;
-            this.container.scale.set(1000, 1000, 1000);
+            // this.container.scale.set(1000, 1000, 1000);
             this.bones = {};
             this.ghost = false;
             this.createSpheres();
             this.historyLineContainer = new THREE.Group();
-            this.historyLineContainer.scale.set(1000, 1000, 1000);
+            // this.historyLineContainer.scale.set(1000, 1000, 1000);
             this.createHistoryLine(this.historyLineContainer);
         }
 
         createSpheres() {
-            const SCALE = 1;
-            const geo = new THREE.SphereGeometry(0.03 * SCALE, 12 * SCALE, 12 * SCALE);
+            // const SCALE = 1000;
+            const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
             const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
             for (const jointId of Object.values(utils.JOINTS)) {
                 // TODO use instanced mesh for better performance
@@ -32,7 +34,7 @@ createNameSpace("realityEditor.humanPose.draw");
                 this.spheres[jointId] = sphere;
                 this.container.add(sphere);
             }
-            const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, 1 * SCALE, 3 * SCALE);
+            const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, 1 * SCALE, 3);
             for (const boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
                 let bone = new THREE.Mesh(geoCyl, mat);
                 this.bones[boneName] = bone;
@@ -148,7 +150,8 @@ createNameSpace("realityEditor.humanPose.draw");
                     jointB.x, jointB.y, jointB.z);
                 bone.lookAt(this.container.localToWorld(localTarget));
                 bone.rotateX(Math.PI / 2);
-                bone.scale.y = diff.length();
+                
+                bone.scale.y = diff.length() / SCALE;
             }
 
             rebaScore.annotateHumanPoseRenderer(this);
@@ -218,16 +221,15 @@ createNameSpace("realityEditor.humanPose.draw");
         let groundPlaneMatrix = new THREE.Matrix4();
         realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneMatrix, groundPlaneSceneNode.worldMatrix);
 
+        let groundPlaneRelativeMatrix = new THREE.Matrix4();
+        realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
+
         for (let jointId of Object.values(utils.JOINTS)) {
-            // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}_${jointId}`);
             let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
             let jointMatrixThree = new THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(jointMatrixThree, sceneNode.worldMatrix);
-            jointMatrixThree.premultiply(worldMatrixThree);
-
-            // then transform the final avatar position into groundplane coordinates since the threejsScene is relative to groundplane
-            jointMatrixThree.premultiply(groundPlaneMatrix.invert());
+            jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
 
             let jointPosition = new THREE.Vector3();
             jointPosition.setFromMatrixPosition(jointMatrixThree);

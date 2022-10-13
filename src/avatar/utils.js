@@ -16,6 +16,7 @@ createNameSpace("realityEditor.avatar.utils");
 
     // other modules in the project can use this to reliably check whether an object is an avatar
     exports.isAvatarObject = function(object) {
+        if (!object) { return false; }
         return object.type === 'avatar' || object.objectId.indexOf('_AVATAR_') === 0;
     }
 

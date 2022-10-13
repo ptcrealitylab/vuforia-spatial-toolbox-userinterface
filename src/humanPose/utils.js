@@ -54,6 +54,7 @@ createNameSpace("realityEditor.humanPose.utils");
 
     // other modules in the project can use this to reliably check whether an object is a humanPose object
     exports.isHumanPoseObject = function(object) {
+        if (!object) { return false; }
         return object.type === 'human' || object.objectId.indexOf(HUMAN_POSE_ID_PREFIX) === 0;
     }
 
