@@ -147,33 +147,38 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         return;
     }
 
-    const pointWidth = poses[0].width;
-    const pointHeight = poses[0].height;
-    const portrait = false;
-    let outWidth, outHeight;
-    if (!portrait) {
-        outWidth = gfx.width; // pointWidth / 3.8; // gfx.height * pointWidth / pointHeight;
-        outHeight = gfx.width / pointWidth * pointHeight; // pointHeight / 2.3; // gfx.height;
-    } else {
-        outHeight = gfx.height;
-        outWidth = gfx.height / pointHeight * pointWidth;
-    }
+    const pointWidth = 960;
+    const pointHeight = 540;
+    const portrait = gfx.width < gfx.height;
+    let outWidth = gfx.width;
+    let outHeight = gfx.width / pointWidth * pointHeight;
     if (globalStates.device.startsWith('iPad')) {
         outWidth = gfx.width;
         outHeight = gfx.height;
     }
     const cx = pointWidth / 2;
     const cy = pointHeight / 2;
+    const focalLengthX = 1392.60913; // may change per device
+    const focalLengthY = focalLengthX;
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     let debug = false;
     for (let point of poses) {
         gfx.beginPath();
+        // rotX = atan((x - cx) / (focalLength / 2));
+        if (!portrait) {
+            point.x = Math.tan(point.rotX) * (focalLengthX) + cx;
+            point.y = Math.tan(point.rotY) * (focalLengthY) + cy;
+        } else {
+            point.x = Math.tan(point.rotY) * (focalLengthX) + cx;
+            point.y = Math.tan(-point.rotX) * (focalLengthY) + cy;
+        }
         const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
         const y = -(point.y - cy) / pointHeight * outHeight + gfx.height / 2;
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
+        // gfx.fillText(`${Math.round(point.score * 100)}`, x + jointSize, y - jointSize);
         if (debug) {
             gfx.fillText(`${Math.round(point.x)} ${Math.round(point.y)}`, x + jointSize, y - jointSize);
             debug = false;

@@ -201,20 +201,28 @@ createNameSpace("realityEditor.avatar");
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);
         }
-        if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
-            objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
-        }
+
         if (cachedWorldObject && objectsToCheck.length > 0) {
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
+                worldIntersectPoint = raycastIntersects[0].point;
+                
+            // if we don't hit against the area target mesh, try colliding with the ground plane
+            } else if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
+                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [realityEditor.gui.threejsScene.getGroundPlaneCollider()]);
+                if (raycastIntersects.length > 0) {
+                    worldIntersectPoint = raycastIntersects[0].point;
+                }
+            }
+
+            if (worldIntersectPoint) {
                 // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
                 let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                 let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
                 matrix.invert();
-                raycastIntersects[0].point.applyMatrix4(matrix);
-                worldIntersectPoint = raycastIntersects[0].point;
+                worldIntersectPoint.applyMatrix4(matrix);
             }
         }
 

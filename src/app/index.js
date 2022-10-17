@@ -62,6 +62,14 @@ realityEditor.app.getDeviceReady = function(callBack) {
 };
 
 /**
+ * Response with true/false depending on whether app has "Local Network" permissions (required to discover edge servers)
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.didGrantNetworkPermissions = function(callBack) {
+    this.appFunctionCall('didGrantNetworkPermissions', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  **************Vuforia****************
  **/
 
@@ -71,6 +79,14 @@ realityEditor.app.getDeviceReady = function(callBack) {
  */
 realityEditor.app.getVuforiaReady = function(callBack){
     this.appFunctionCall('getVuforiaReady', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
+ * Checks if the device has a depth sensor, e.g. LiDAR, and thus supports Area Target Scanning
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.doesDeviceHaveDepthSensor = function(callBack) {
+    this.appFunctionCall('doesDeviceHaveDepthSensor', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
 /**

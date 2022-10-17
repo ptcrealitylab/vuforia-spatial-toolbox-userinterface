@@ -64,8 +64,37 @@ createNameSpace('realityEditor.app.callbacks');
     const skeletonDedupId = Math.floor(Math.random() * 10000);
 
     function onOrientationSet() {
+        // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
+        realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
+    }
+
+    /**
+     * Requests Vuforia to start if Local Network access is provided, otherwise shows an error on screen
+     * @param {boolean} success
+     */
+    exports.receiveNetworkPermissions = function(success) {
+        if (typeof success !== 'undefined' && !success) {
+
+            while (listeners.onVuforiaInitFailure.length > 0) { // dismiss the intializing pop-up that was waiting
+                let callback = listeners.onVuforiaInitFailure.pop();
+                callback();
+            }
+
+            let headerText = 'Needs Local Network Access';
+            let descriptionText = 'Please enable "Local Network" access<br/>in your device\'s Settings app and try again.';
+
+            let notification = realityEditor.gui.modal.showSimpleNotification(
+                headerText, descriptionText, function () {
+                    console.log('closed...');
+                }, realityEditor.device.environment.variables.layoutUIForPortrait);
+            notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            return;
+        }
+
         // start the AR framework in native iOS
-        realityEditor.app.getVuforiaReady('realityEditor.app.callbacks.vuforiaIsReady');
+        realityEditor.app.promises.getVuforiaReady().then(success => {
+            vuforiaIsReady(success);
+        });
     }
 
     /**
@@ -189,20 +218,6 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     /**
-     * Callback for realityEditor.app.getDeviceReady
-     * Returns the native device name, which can be used to adjust the UI based on the phone/device type
-     * e.g. iPhone 6s is "iPhone8,1", iPhone 6s Plus is "iPhone8,2", iPhoneX is "iPhone10,3"
-     * see: https://gist.github.com/adamawolf/3048717#file-ios_device_types-txt
-     * or:  https://support.hockeyapp.net/kb/client-integration-ios-mac-os-x-tvos/ios-device-types
-     * @param {string} deviceName - e.g. "iPhone10,3" or "iPad2,1"
-     */
-    function getDeviceReady(deviceName) {
-        globalStates.device = deviceName;
-        console.log('The Reality Editor is loaded on a ' + globalStates.device);
-        realityEditor.device.layout.adjustForDevice(deviceName);
-    }
-
-    /**
      * Callback for realityEditor.app.getPosesStream
      * @param {Array<Object>} poses
      */
@@ -258,6 +273,7 @@ createNameSpace('realityEditor.app.callbacks');
         if (poses.length > 0) {
             for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
                 let pointA = poses[start];
+
                 let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
                 let outlierPresent = false;
                 let minDepth = pointA.depth;
@@ -288,12 +304,33 @@ createNameSpace('realityEditor.app.callbacks');
             }
         }
 
+        const focalLength = 1392.60913; // may change per device
+        const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
+
+        let roughCenterDepth = (
+            poses[POSE_JOINTS.LEFT_SHOULDER].depth +
+            poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
+            poses[POSE_JOINTS.LEFT_HIP].depth +
+            poses[POSE_JOINTS.RIGHT_HIP].depth
+        ) / 4;
+
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
-
             const THREE = realityEditor.gui.threejsScene.THREE;
-            let vec = new THREE.Vector3(0, 0, point.depth * 1000);
+
+            let zBasedDepth = point.depth;
+            // Add in mlkit's z approximation when available
+            if (point.hasOwnProperty('z')) {
+                zBasedDepth = roughCenterDepth + point.z / focalLength * roughCenterDepth;
+            }
+
+            point.error = point.depth - zBasedDepth;
+            let depth = zBasedDepth; // TODO incorporate point.depth
+            if (Math.abs(point.error) < 0.5) {
+                depth = point.depth * 0.8 + zBasedDepth * 0.2;
+            }
+            let vec = new THREE.Vector3(0, 0, depth * 1000); // point.depth * 1000);
             vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
             let initialVehicleMatrix = [
                 -1, 0, 0, 0,
@@ -688,7 +725,6 @@ createNameSpace('realityEditor.app.callbacks');
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
     exports.receivedUDPMessage = receivedUDPMessage;
-    exports.getDeviceReady = getDeviceReady;
     exports.receiveGroundPlaneMatricesFromAR = receiveGroundPlaneMatricesFromAR;
     exports.receiveMatricesFromAR = receiveMatricesFromAR;
     exports.receivePoses = receivePoses;

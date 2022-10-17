@@ -35,16 +35,15 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     var threejsContainerObj;
 
     function initService() {
-        // create a fullscreen webgl renderer for the threejs content and add to the dom
-        renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( rendererWidth, rendererHeight );
-        renderer.domElement.id = 'mainThreejsCanvas'; // this applies some css to make it fullscreen
+        // create a fullscreen webgl renderer for the threejs content
+        const domElement = document.getElementById('mainThreejsCanvas');
+        renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(rendererWidth, rendererHeight);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
-        document.body.appendChild( renderer.domElement );
-        camera = new THREE.PerspectiveCamera( 70, aspectRatio, 1, 1000 );
+        camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
         camera.matrixAutoUpdate = false;
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
@@ -368,7 +367,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             }), maxHeight, center, true, true);
 
             if (gltf.scene.geometry) {
-                console.log('approach a', gltf.scene);
                 if (typeof maxHeight !== 'undefined') {
                     gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
                 }
@@ -380,7 +378,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
                 wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
-                console.log('approach b', gltf.scene);
                 gltf.scene.children.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
@@ -517,7 +514,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
-            console.log(material);
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.standard.uniforms,
                 {
