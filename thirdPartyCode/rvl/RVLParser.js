@@ -20,11 +20,35 @@ export default class RVLParser {
     }
 
     getFrameFromDeltaTimeSeconds(deltaTimeSeconds) {
-        while (this.nextFrame && this.nextFrame.timeMono - this.startTime <= deltaTimeSeconds) {
+        if (this.currentFrame.timeMono > this.startTime + deltaTimeSeconds) { // Currently past target frame
+            this.offset = 0;
+            this.currentFrame = this.parseNextFrame();
+            this.nextFrame = this.parseNextFrame();
+        }
+        let targetTimeMono = this.startTime + deltaTimeSeconds;
+        while (this.nextFrame && this.nextFrame.timeMono < targetTimeMono) {
             this.currentFrame = this.nextFrame;
             this.nextFrame = this.parseNextFrame();
         }
         return this.currentFrame;
+    }
+
+    getDuration() {
+        const offset = this.offset;
+        const currentFrame = this.currentFrame;
+        const nextFrame = this.nextFrame;
+        this.offset = 0;
+        this.currentFrame = this.parseNextFrame();
+        this.nextFrame = this.parseNextFrame();
+        while (this.nextFrame) {
+            this.currentFrame = this.nextFrame;
+            this.nextFrame = this.parseNextFrame();
+        }
+        const duration = this.currentFrame.timeMono - this.startTime;
+        this.offset = offset;
+        this.currentFrame = currentFrame;
+        this.nextFrame = nextFrame;
+        return duration;
     }
 
     parseNextFrame() {
@@ -102,4 +126,3 @@ export default class RVLParser {
         return arr;
     }
 }
-

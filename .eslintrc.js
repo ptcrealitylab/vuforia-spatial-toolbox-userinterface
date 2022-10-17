@@ -83,7 +83,7 @@ module.exports = {
         "no-inner-declarations": "off",
     },
     "overrides": [{
-        "files": ["src/gui/threejsScene.js", "src/device/multiclientUI.js"],
+        "files": ["src/gui/threejsScene.js", "src/device/multiclientUI.js", "src/gui/ar/videoPlayback.js"],
         "parserOptions": {
             "ecmaVersion": 2018,
             "sourceType": "module"

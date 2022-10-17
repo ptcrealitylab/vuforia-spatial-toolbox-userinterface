@@ -1333,6 +1333,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (sendMatrices.groundPlane === true) {
                         thisMsg.groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneModelViewMatrix();
+                        thisMsg.floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
                     }
 
                     if (sendMatrices.anchoredModelView === true) {
