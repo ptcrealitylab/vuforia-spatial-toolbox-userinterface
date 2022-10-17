@@ -88,7 +88,8 @@ var realityEditor = realityEditor || {
             meshLine: {},
             moveabilityOverlay: {},
             positioning: {},
-            utilities: {}
+            utilities: {},
+            videoPlayback: {}
         },
         spatial: {
             whereIs: {},

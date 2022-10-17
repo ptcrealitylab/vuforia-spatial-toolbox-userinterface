@@ -350,6 +350,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.groundPlaneRenderer.initService();
     realityEditor.gui.ar.areaTargetScanner.initService();
     realityEditor.gui.ar.areaCreator.initService();
+    realityEditor.gui.ar.videoPlayback.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.discovery.initService();
     realityEditor.network.realtime.initService();

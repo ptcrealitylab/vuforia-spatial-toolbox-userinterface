@@ -89,6 +89,9 @@ module.exports = {
           "src/device/utilities.js",
           "src/objects.js",
           "src/states.js",
+          "src/gui/threejsScene.js",
+          "src/device/multiclientUI.js",
+          "src/gui/ar/videoPlayback.js"
         ],
         "parserOptions": {
             "ecmaVersion": 2018,

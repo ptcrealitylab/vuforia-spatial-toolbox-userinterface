@@ -1940,13 +1940,28 @@ realityEditor.network.onInternalPostMessage = function (e) {
     }
 
     if (typeof msgContent.videoRecording !== "undefined") {
-
         if (msgContent.videoRecording) {
             realityEditor.device.videoRecording.startRecordingForFrame(msgContent.object, msgContent.frame);
         } else {
             realityEditor.device.videoRecording.stopRecordingForFrame(msgContent.object, msgContent.frame);
         }
+    }
 
+    if (typeof msgContent.virtualizerRecording !== "undefined") {
+        if (msgContent.virtualizerRecording) {
+            realityEditor.device.videoRecording.startVirtualizerRecording();
+        } else {
+            realityEditor.device.videoRecording.stopVirtualizerRecording((baseUrl, recordingId, deviceId) => {
+                const thisMsg = {
+                    virtualizerRecordingData: {
+                        baseUrl,
+                        recordingId,
+                        deviceId
+                    }
+                };
+                globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+            });
+        }
     }
 
     if (typeof msgContent.getScreenshotBase64 !== "undefined") {

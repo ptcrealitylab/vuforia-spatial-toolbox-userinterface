@@ -352,7 +352,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         let proxiesToConsider = [];
         function makeWatchdog() {
             return new Promise((res) => {
-                setTimeout(res, 100, false);
+                setTimeout(res, 200, false);
             });
         }
         proxies.forEach(function(thisProxy) {
