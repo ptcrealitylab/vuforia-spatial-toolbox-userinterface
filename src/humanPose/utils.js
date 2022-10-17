@@ -54,6 +54,7 @@ createNameSpace("realityEditor.humanPose.utils");
 
     // other modules in the project can use this to reliably check whether an object is a humanPose object
     exports.isHumanPoseObject = function(object) {
+        if (!object) { return false; }
         return object.type === 'human' || object.objectId.indexOf(HUMAN_POSE_ID_PREFIX) === 0;
     }
 
@@ -66,6 +67,15 @@ createNameSpace("realityEditor.humanPose.utils");
 
     exports.getPoseObjectName = function(pose) {
         return HUMAN_POSE_ID_PREFIX + pose.name;
+    }
+
+    exports.getPoseStringFromObject = function(poseObject) {
+        let jointPositions = Object.keys(poseObject.frames).map(jointFrameId => realityEditor.sceneGraph.getWorldPosition(jointFrameId));
+        return jointPositions.map(position => positionToRoundedString(position)).join()
+    }
+
+    function positionToRoundedString(position) {
+        return 'x' + position.x.toFixed(0) + 'y' + position.y.toFixed(0) + 'z' + position.z.toFixed(0);
     }
 
     // a single piece of pose test data saved from a previous session

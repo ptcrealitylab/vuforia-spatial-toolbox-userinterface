@@ -317,12 +317,12 @@ createNameSpace('realityEditor.app.callbacks');
         const focalLength = 1392.60913; // may change per device
         const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
 
-        let roughCenterDepth = (
+        let roughCenterDepth = poses.length > 0 ? (
             poses[POSE_JOINTS.LEFT_SHOULDER].depth +
             poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
             poses[POSE_JOINTS.LEFT_HIP].depth +
             poses[POSE_JOINTS.RIGHT_HIP].depth
-        ) / 4;
+        ) / 4 : 0;
 
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera

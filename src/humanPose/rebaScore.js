@@ -67,7 +67,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     const POSE_NET_JOINTS = realityEditor.humanPose.utils.JOINTS;
 
-
     function jointToPoseNet(i) {
         let key = Object.keys(POSE_JOINTS)[i];
         if (!POSE_NET_JOINTS.hasOwnProperty(key)) {
@@ -846,5 +845,5 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.annotateHumanPoseRenderer = annotateHumanPoseRenderer;
-})(realityEditor.humanPose.reba);
+})(realityEditor.humanPose.rebaScore);
 

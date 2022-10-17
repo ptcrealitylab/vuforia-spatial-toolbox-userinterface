@@ -85,6 +85,7 @@ var realityEditor = realityEditor || {
             groundPlaneRenderer: {},
             grouping: {},
             lines: {},
+            meshLine: {},
             moveabilityOverlay: {},
             positioning: {},
             utilities: {}
@@ -144,6 +145,7 @@ var realityEditor = realityEditor || {
     humanPose: {
         network: {},
         draw: {},
+        rebaScore: {},
         utils: {}
     }
 };
