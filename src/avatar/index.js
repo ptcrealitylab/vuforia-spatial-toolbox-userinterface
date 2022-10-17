@@ -12,6 +12,8 @@ createNameSpace("realityEditor.avatar");
 
     let network, draw, utils; // shortcuts to access realityEditor.avatar._____
 
+    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 10000; // once per 10 seconds
+
     let myAvatarId = null;
     let myAvatarObject = null;
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
@@ -130,6 +132,12 @@ createNameSpace("realityEditor.avatar");
                 writeUsername(myUsername);
             }
         });
+
+        setInterval(() => {
+            if (myAvatarId && myAvatarObject) {
+                network.keepObjectAlive(myAvatarId);
+            }
+        }, KEEP_ALIVE_HEARTBEAT_INTERVAL);
     }
 
     // initialize the avatar object representing my own device, and those representing other devices
