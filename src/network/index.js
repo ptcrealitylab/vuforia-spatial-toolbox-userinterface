@@ -1563,6 +1563,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
         // }
     }
 
+    if (typeof msgContent.alwaysFaceCamera === 'boolean') {
+        tempThisObject.alwaysFaceCamera = msgContent.alwaysFaceCamera;
+    }
+
     if (typeof msgContent.fullScreen === "boolean") {
         if (msgContent.fullScreen === true) {
 

@@ -1190,6 +1190,24 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
+            if (activeVehicle.alwaysFaceCamera === true) {
+                // easy billboard effect by clearing out the rotation values from the modelView
+                // matrix before applying projection matrix (https://stackoverflow.com/a/5487981)
+                let cameraNode = realityEditor.sceneGraph.getCameraNode();
+                let matMV = realityEditor.sceneGraph.getSceneNodeById(activeKey).getMatrixRelativeTo(cameraNode);
+
+                let d = Math.sqrt(matMV[0] * matMV[0] + matMV[1] * matMV[1] + matMV[2] * matMV[2]);
+
+                let matMV_noRotation = [
+                    d, 0, 0, 0,
+                    0, -d, 0, 0, // -flip upside-down because projection matrix flips it back up
+                    0, 0, d, 0,
+                    matMV[12], matMV[13], matMV[14], matMV[15]
+                ];
+
+                realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
+            }
+
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
             activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
