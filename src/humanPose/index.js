@@ -4,11 +4,12 @@ createNameSpace("realityEditor.humanPose");
 
     let network, draw, utils; // shortcuts to access realityEditor.humanPose._____
 
+    const MAX_FPS = 20;
+
     let humanPoseObjects = {};
     let nameIdMap = {};
-
-    let TIME_PER_RENDER = 1000 / 10;
     let lastRenderTime = Date.now();
+    let lastRenderedPoses = {};
 
     function initService() {
         network = realityEditor.humanPose.network;
@@ -18,7 +19,6 @@ createNameSpace("realityEditor.humanPose");
         console.log('init humanPose module', network, draw, utils);
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
-            console.log('received pose joints', poseJoints);
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
             let poseObjectName = utils.getPoseObjectName(pose);
 
@@ -46,13 +46,33 @@ createNameSpace("realityEditor.humanPose");
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             try {
-                // if (Date.now() - lastRenderTime < TIME_PER_RENDER) return;
-                // lastRenderTime = Date.now();
+                // main update runs at ~60 FPS, but we can save some compute by limiting the pose rendering FPS
+                if (Date.now() - lastRenderTime < (1000.0 / MAX_FPS)) return;
+                lastRenderTime = Date.now();
+
+                // further reduce rendering redundant poses by only rendering if any pose data has been updated
+                if (!areAnyPosesUpdated(humanPoseObjects)) return;
+
                 draw.renderHumanPoseObjects(Object.values(humanPoseObjects));
+
+                for (const [id, obj] of Object.entries(humanPoseObjects)) {
+                    lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
+                }
             } catch (e) {
                 console.warn('error in renderHumanPoseObjects', e);
             }
         });
+    }
+
+    function areAnyPosesUpdated(poseObjects) {
+        for (const [id, obj] of Object.entries(poseObjects)) {
+            if (typeof lastRenderedPoses[id] === 'undefined') return true;
+            let newPoseHash = utils.getPoseStringFromObject(obj);
+            if (newPoseHash !== lastRenderedPoses[id]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function tryUpdatingPoseObject(pose, humanPoseObject) {
@@ -80,10 +100,6 @@ createNameSpace("realityEditor.humanPose");
             ];
             let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameId);
             frameSceneNode.setLocalMatrix(positionMatrix); // this will broadcast it realtime, and sceneGraph will upload it every ~1 second for persistence
-
-            // realityEditor.gui.ar.positioning.setPositionDataMatrix(jointFrame, positionMatrix, false);
-            // realityEditor.network.realtime.broadcastUpdate(humanPoseObject.objectId, frameId, null, 'ar.matrix', sceneNode.localMatrix);
-            // realityEditor.network.postVehiclePosition(jointFrame);
         });
     }
 

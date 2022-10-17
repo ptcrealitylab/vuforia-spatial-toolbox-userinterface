@@ -69,6 +69,15 @@ createNameSpace("realityEditor.humanPose.utils");
         return HUMAN_POSE_ID_PREFIX + pose.name;
     }
 
+    exports.getPoseStringFromObject = function(poseObject) {
+        let jointPositions = Object.keys(poseObject.frames).map(jointFrameId => realityEditor.sceneGraph.getWorldPosition(jointFrameId));
+        return jointPositions.map(position => positionToRoundedString(position)).join()
+    }
+
+    function positionToRoundedString(position) {
+        return 'x' + position.x.toFixed(0) + 'y' + position.y.toFixed(0) + 'z' + position.z.toFixed(0);
+    }
+
     // a single piece of pose test data saved from a previous session
     exports.getMockPoseStandingFarAway = function() {
         let joints = JSON.parse(

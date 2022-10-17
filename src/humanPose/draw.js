@@ -1,30 +1,27 @@
 createNameSpace("realityEditor.humanPose.draw");
 
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+
 (function(exports) {
     let poseRenderers = {};
 
     const {utils, rebaScore} = realityEditor.humanPose;
-    let THREE = null;
 
-    const SCALE = 1000;
+    const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 
     class HumanPoseRenderer {
         constructor(id) {
             this.id = id;
             this.spheres = {};
             this.container = new THREE.Group();
-            // this.container.position.y = -floorOffset;
-            // this.container.scale.set(1000, 1000, 1000);
             this.bones = {};
             this.ghost = false;
             this.createSpheres();
             this.historyLineContainer = new THREE.Group();
-            // this.historyLineContainer.scale.set(1000, 1000, 1000);
             this.createHistoryLine(this.historyLineContainer);
         }
 
         createSpheres() {
-            // const SCALE = 1000;
             const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
             const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
             for (const jointId of Object.values(utils.JOINTS)) {
@@ -34,7 +31,7 @@ createNameSpace("realityEditor.humanPose.draw");
                 this.spheres[jointId] = sphere;
                 this.container.add(sphere);
             }
-            const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, 1 * SCALE, 3);
+            const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, SCALE, 3);
             for (const boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
                 let bone = new THREE.Mesh(geoCyl, mat);
                 this.bones[boneName] = bone;
@@ -182,14 +179,12 @@ createNameSpace("realityEditor.humanPose.draw");
             realityEditor.gui.threejsScene.removeFromScene(this.container);
             this.bones.headNeck.geometry.dispose();
             this.spheres[utils.JOINTS.HEAD].geometry.dispose();
-            this.spheres[utils.JOINTS].material.dispose();
+            this.spheres[utils.JOINTS.HEAD].material.dispose();
         }
     }
 
 
     function renderHumanPoseObjects(poseObjects) {
-        if (!THREE) { THREE = realityEditor.gui.threejsScene.THREE; }
-
         for (let id in poseRenderers) {
             poseRenderers[id].updated = false;
         }
@@ -213,14 +208,9 @@ createNameSpace("realityEditor.humanPose.draw");
         let poseRenderer = poseRenderers[poseObject.uuid];
         poseRenderer.updated = true;
 
+        // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-        let worldMatrixThree = new THREE.Matrix4();
-        realityEditor.gui.threejsScene.setMatrixFromArray(worldMatrixThree, worldSceneNode.worldMatrix);
-
         let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        let groundPlaneMatrix = new THREE.Matrix4();
-        realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneMatrix, groundPlaneSceneNode.worldMatrix);
-
         let groundPlaneRelativeMatrix = new THREE.Matrix4();
         realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
 
