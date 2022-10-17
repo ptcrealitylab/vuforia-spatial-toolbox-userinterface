@@ -1198,12 +1198,27 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 let d = Math.sqrt(matMV[0] * matMV[0] + matMV[1] * matMV[1] + matMV[2] * matMV[2]);
 
+                let flipX = globalStates.projectionMatrix[0] < 0 ? -1 : 1;
+                let flipY = globalStates.projectionMatrix[5] < 0 ? -1 : 1;
                 let matMV_noRotation = [
-                    d, 0, 0, 0,
-                    0, -d, 0, 0, // -flip upside-down because projection matrix flips it back up
+                    d * flipX, 0, 0, 0,
+                    0, d * flipY, 0, 0, // flip upside-down if projection matrix will flip it back up
                     0, 0, d, 0,
                     matMV[12], matMV[13], matMV[14], matMV[15]
                 ];
+
+                // in portrait mode app, projection matrix has values in m[1] and m[4] not m[0] and m[5]
+                // so we need to build the modelView differently otherwise it'll be rotated 90 degrees
+                if (globalStates.projectionMatrix[0] === 0) {
+                    flipX = globalStates.projectionMatrix[1] < 0 ? -1 : 1;
+                    flipY = globalStates.projectionMatrix[4] < 0 ? -1 : 1;
+                    matMV_noRotation = [
+                        0, d * flipX, 0, 0,
+                        d * flipY, 0, 0, 0,
+                        0, 0, d, 0,
+                        matMV[12], matMV[13], matMV[14], matMV[15]
+                    ];
+                }
 
                 realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
             }
