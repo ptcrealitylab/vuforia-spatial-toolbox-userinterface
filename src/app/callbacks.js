@@ -270,6 +270,7 @@ createNameSpace('realityEditor.app.callbacks');
         //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
         // }
 
+        /* MK HACK: switched off depth improvement
         if (poses.length > 0) {
             for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
                 let pointA = poses[start];
@@ -303,6 +304,7 @@ createNameSpace('realityEditor.app.callbacks');
                 poses[i].depth += depths[i];
             }
         }
+        */
 
         const focalLength = 1392.60913; // may change per device
         const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
@@ -325,18 +327,31 @@ createNameSpace('realityEditor.app.callbacks');
                 zBasedDepth = roughCenterDepth + point.z / focalLength * roughCenterDepth;
             }
 
+            
+            let depth = point.depth; // TODO incorporate point.depth
+            /*
             point.error = point.depth - zBasedDepth;
-            let depth = zBasedDepth; // TODO incorporate point.depth
             if (Math.abs(point.error) < 0.5) {
                 depth = point.depth * 0.8 + zBasedDepth * 0.2;
             }
-            let vec = new THREE.Vector3(0, 0, depth * 1000); // point.depth * 1000);
-            vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
+            */
+
+            
+            /* vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
             let initialVehicleMatrix = [
                 -1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, -1, 0,
                 vec.x, vec.y, -vec.z, 1
+            ];
+            */
+            // point.[X,Y,Z] in MLKit camera CS is converted to OpenGL CS
+            let vec = new THREE.Vector3(point.X * 1000.0, point.Y * 1000.0, point.Z * 1000.0); // * 1000 - convert from m to mm
+            let initialVehicleMatrix = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                vec.x, -vec.y, -vec.z, 1
             ];
 
             // needs to be flipped in some environments with different camera systems

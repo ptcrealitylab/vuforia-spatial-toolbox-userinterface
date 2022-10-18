@@ -147,6 +147,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         return;
     }
 
+    // MK TODO: bring image resolution associated with 2D points
     const pointWidth = 960;
     const pointHeight = 540;
     const portrait = gfx.width < gfx.height;
@@ -162,7 +163,7 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     const focalLengthY = focalLengthX;
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
-    let debug = false;
+    let debug = true;
     for (let point of poses) {
         gfx.beginPath();
         // rotX = atan((x - cx) / (focalLength / 2));
