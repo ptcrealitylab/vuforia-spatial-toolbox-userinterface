@@ -53,12 +53,14 @@ uniform float glPosScale;
 uniform float pointSize;
 const float pointSizeBase = 0.0;
 varying vec2 vUv;
+varying vec2 vDepthUv;
 varying vec4 pos;
 const float XtoZ = 1920.0 / 1448.24976; // width over focal length
 const float YtoZ = 1080.0 / 1448.24976;
 void main() {
   vUv = vec2(position.x / width, position.y / height);
-  vec4 color = texture2D(mapDepth, vUv);
+  vDepthUv = vec2((width - position.x) / width, (height - position.y) / height);
+  vec4 color = texture2D(mapDepth, vDepthUv);
   float depth = 5000.0 * (color.r + color.g / 255.0 + color.b / (255.0 * 255.0));
   float z = depth - 0.05;
   pos = vec4(
@@ -77,6 +79,7 @@ uniform sampler2D map;
 
 // uv (0.0-1.0) texture coordinates
 varying vec2 vUv;
+varying vec2 vDepthUv;
 // Position of this pixel relative to the camera in proper (millimeter) coordinates
 varying vec4 pos;
 
@@ -120,7 +123,7 @@ class VideoPlayer {
         };
         this.frameKey = frameKey;
         this.state = VideoPlayerStates.LOADING;
-        
+
         this.floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
         this.phoneParent = new THREE.Group();
         this.phone = new THREE.Group();
@@ -129,7 +132,7 @@ class VideoPlayer {
         realityEditor.gui.threejsScene.addToScene(this.phoneParent, {worldObjectId: realityEditor.worldObjects.getBestWorldObject().objectId});
         this.phoneParent.add(this.phone);
         this.phoneParent.rotateX(Math.PI / 2);
-        this.phoneParent.position.y = this.floorOffset;
+        // this.phoneParent.position.y = this.floorOffset;
 
         this.lastRenderTime = -1; // Last rendered frame time (using video time)
         this.videoLength = 0;
@@ -233,7 +236,7 @@ class VideoPlayer {
             this.loadPointCloud();
         } else {
             this.textures.depth.needsUpdate = true;
-            // this.pointCloudMaterial.uniforms.time = window.performance.now();
+            this.pointCloudMaterial.uniforms.time = window.performance.now();
         }
     }
 
@@ -249,6 +252,7 @@ class VideoPlayer {
         const material = this.createPointCloudMaterial();
         const mesh = new THREE.Mesh(geometry, material);
         mesh.scale.set(-1, 1, -1);
+        mesh.rotateZ(Math.PI);
         mesh.frustumCulled = false;
         this.pointCloud = mesh;
         this.phone.add(this.pointCloud);
