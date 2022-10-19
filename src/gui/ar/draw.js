@@ -246,17 +246,6 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
     }
 };
 
-function lowFrequencyDebugLog() {
-    if (!window.enableLowFrequencyDebugLog) { return; }
-
-    let mat = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(realityEditor.sceneGraph.getGroundPlaneNode());
-    let quat = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
-    let angles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(quat);
-    // let twist = angles.phi;
-
-    console.log(angles);
-}
-
 realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
 realityEditor.gui.ar.draw.prevSuppressedRendering = false;
 
@@ -342,10 +331,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
     } else {
         this.isLowFrequencyUpdateFrame = false;
         this.lowFrequencyUpdateCounter++;
-    }
-    
-    if (this.isLowFrequencyUpdateFrame) {
-        lowFrequencyDebugLog();
     }
     
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
