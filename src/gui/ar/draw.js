@@ -246,6 +246,17 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
     }
 };
 
+function lowFrequencyDebugLog() {
+    if (!window.enableLowFrequencyDebugLog) { return; }
+
+    let mat = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(realityEditor.sceneGraph.getGroundPlaneNode());
+    let quat = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
+    let angles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(quat);
+    // let twist = angles.phi;
+
+    console.log(angles);
+}
+
 realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
 realityEditor.gui.ar.draw.prevSuppressedRendering = false;
 
@@ -333,7 +344,9 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.lowFrequencyUpdateCounter++;
     }
     
-    // this.isLowFrequencyUpdateFrame = true;
+    if (this.isLowFrequencyUpdateFrame) {
+        lowFrequencyDebugLog();
+    }
     
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     
@@ -1196,31 +1209,105 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 let cameraNode = realityEditor.sceneGraph.getCameraNode();
                 let matMV = realityEditor.sceneGraph.getSceneNodeById(activeKey).getMatrixRelativeTo(cameraNode);
 
-                let d = Math.sqrt(matMV[0] * matMV[0] + matMV[1] * matMV[1] + matMV[2] * matMV[2]);
+                const USE_NAIVE_APPROACH = false;
 
-                let flipX = globalStates.projectionMatrix[0] < 0 ? -1 : 1;
-                let flipY = globalStates.projectionMatrix[5] < 0 ? -1 : 1;
-                let matMV_noRotation = [
-                    d * flipX, 0, 0, 0,
-                    0, d * flipY, 0, 0, // flip upside-down if projection matrix will flip it back up
-                    0, 0, d, 0,
-                    matMV[12], matMV[13], matMV[14], matMV[15]
-                ];
+                if (!USE_NAIVE_APPROACH) {
+                    
+                    let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                    let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
+                    let toolWorldMatrix = toolNode.getMatrixRelativeTo(worldNode);
+                    let cameraWorldMatrix = cameraNode.getMatrixRelativeTo(worldNode);
 
-                // in portrait mode app, projection matrix has values in m[1] and m[4] not m[0] and m[5]
-                // so we need to build the modelView differently otherwise it'll be rotated 90 degrees
-                if (globalStates.projectionMatrix[0] === 0) {
-                    flipX = globalStates.projectionMatrix[1] < 0 ? -1 : 1;
-                    flipY = globalStates.projectionMatrix[4] < 0 ? -1 : 1;
-                    matMV_noRotation = [
-                        0, d * flipX, 0, 0,
-                        d * flipY, 0, 0, 0,
+                    let toolPosition = {
+                        x: toolWorldMatrix[12] / toolWorldMatrix[15],
+                        y: toolWorldMatrix[13] / toolWorldMatrix[15],
+                        z: toolWorldMatrix[14] / toolWorldMatrix[15]
+                    };
+
+                    let cameraPosition = {
+                        x: cameraWorldMatrix[12] / cameraWorldMatrix[15],
+                        y: cameraWorldMatrix[13] / cameraWorldMatrix[15],
+                        z: cameraWorldMatrix[14] / cameraWorldMatrix[15]
+                    };
+
+                    // let toolPosition = realityEditor.sceneGraph.getWorldPosition(activeKey); // realityEditor.sceneGraph.getSceneNodeById(activeKey)
+                    // let cameraPosition = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+
+                    // lookAtMatrix is calculated in coordinates relative to the world object
+                    let lookAtMatrix = realityEditor.gui.ar.utilities.invertMatrix(this.lookAt(toolPosition.x, toolPosition.y, toolPosition.z, cameraPosition.x, cameraPosition.y, cameraPosition.z, 0, 1, 0));
+                    
+                    // do we need to convert from world object to ROOT coordinates?
+                    let modelRootMatrix = realityEditor.gui.ar.utilities.copyMatrix(lookAtMatrix);
+                    realityEditor.gui.ar.utilities.multiplyMatrix(lookAtMatrix, worldNode.worldMatrix, modelRootMatrix);
+                    
+                    let flipMatrix = [
+                        -1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0, 1
+                    ];
+                    let finalModelMatrix = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(flipMatrix, modelRootMatrix, finalModelMatrix);
+                    
+                    // let modelMatrix = realityEditor.sceneGraph.getSceneNodeById(activeKey).worldMatrix;
+                    let viewMatrix = realityEditor.sceneGraph.getViewMatrix();
+                    let matMV_noRotation = [];
+                    realityEditor.gui.ar.utilities.multiplyMatrix(finalModelMatrix, viewMatrix, matMV_noRotation);
+                    realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
+
+                } else {
+                    let d = Math.sqrt(matMV[0] * matMV[0] + matMV[1] * matMV[1] + matMV[2] * matMV[2]);
+
+                    let flipX = globalStates.projectionMatrix[0] < 0 ? -1 : 1;
+                    let flipY = globalStates.projectionMatrix[5] < 0 ? -1 : 1;
+                    let matMV_noRotation = [
+                        d * flipX, 0, 0, 0,
+                        0, d * flipY, 0, 0, // flip upside-down if projection matrix will flip it back up
                         0, 0, d, 0,
                         matMV[12], matMV[13], matMV[14], matMV[15]
                     ];
-                }
 
-                realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
+                    // in portrait mode app, projection matrix has values in m[1] and m[4] not m[0] and m[5]
+                    // so we need to build the modelView differently otherwise it'll be rotated 90 degrees
+                    if (globalStates.projectionMatrix[0] === 0) {
+                        flipX = globalStates.projectionMatrix[1] < 0 ? -1 : 1;
+                        flipY = globalStates.projectionMatrix[4] < 0 ? -1 : 1;
+                        matMV_noRotation = [
+                            0, d * flipX, 0, 0,
+                            d * flipY, 0, 0, 0,
+                            0, 0, d, 0,
+                            matMV[12], matMV[13], matMV[14], matMV[15]
+                        ];
+                    }
+
+                    var makeRotationZ =  function ( theta ) {
+                        var c = Math.cos( theta ), s = Math.sin( theta );
+                        return [  c, -s, 0, 0,
+                            s, c, 0, 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1];
+                    };
+
+                    let mat = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(realityEditor.sceneGraph.getGroundPlaneNode());
+                    let quat = realityEditor.gui.ar.utilities.getQuaternionFromMatrix(mat);
+                    let angles = realityEditor.gui.ar.utilities.quaternionToEulerAngles(quat);
+                    let twist = angles.phi;
+
+                    let untwisted = [];
+                    utilities.multiplyMatrix(matMV_noRotation, makeRotationZ(twist), untwisted);
+
+                    let final = [];
+                    final = realityEditor.gui.ar.utilities.copyMatrix(untwisted);
+                    final[12] = matMV_noRotation[12];
+                    final[13] = matMV_noRotation[13];
+                    final[14] = matMV_noRotation[14];
+                    final[15] = matMV_noRotation[15];
+
+                    realityEditor.gui.ar.utilities.copyMatrixInPlace(final, matMV_noRotation);
+
+                    realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
+                }
+                
             }
 
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
@@ -2419,3 +2506,55 @@ realityEditor.gui.ar.draw.setObjectVisible = function (object, shouldBeVisible) 
         object.frames[frameKey].objectVisible = shouldBeVisible;
     }
 };
+
+(function(exports) {
+    function lookAt( eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ ) {
+        var ev = [eyeX, eyeY, eyeZ];
+        var cv = [centerX, centerY, centerZ];
+        var uv = [upX, upY, upZ];
+
+        var n = normalize(add(ev, negate(cv))); // vector from the camera to the center point
+        var u = normalize(crossProduct(uv, n)); // a "right" vector, orthogonal to n and the lookup vector
+        var v = crossProduct(n, u); // resulting orthogonal vector to n and u, as the up vector isn't necessarily one anymore
+
+        return [u[0], v[0], n[0], 0,
+            u[1], v[1], n[1], 0,
+            u[2], v[2], n[2], 0,
+            dotProduct(negate(u), ev), dotProduct(negate(v), ev), dotProduct(negate(n), ev), 1];
+    }
+
+    function scalarMultiply(A, x) {
+        return [A[0] * x, A[1] * x, A[2] * x];
+    }
+
+    function negate(A) {
+        return [-A[0], -A[1], -A[2]];
+    }
+
+    function add(A, B) {
+        return [A[0] + B[0], A[1] + B[1], A[2] + B[2]];
+    }
+
+    function magnitude(A) {
+        return Math.sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
+    }
+
+    function normalize(A) {
+        var mag = magnitude(A);
+        return [A[0] / mag, A[1] / mag, A[2] / mag];
+    }
+
+    function crossProduct(A, B) {
+        var a = A[1] * B[2] - A[2] * B[1];
+        var b = A[2] * B[0] - A[0] * B[2];
+        var c = A[0] * B[1] - A[1] * B[0];
+        return [a, b, c];
+    }
+
+    function dotProduct(A, B) {
+        return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
+    }
+    
+    exports.lookAt = lookAt;
+})(realityEditor.gui.ar.draw);
+

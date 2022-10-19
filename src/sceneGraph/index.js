@@ -572,6 +572,58 @@ createNameSpace("realityEditor.sceneGraph");
         }
         return null;
     }
+    
+    // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
+    function getModelViewMatrixLookingAt(id, idToLookAt) {
+        let finalMatrix = [];
+        
+        // easy billboard effect by clearing out the rotation values from the modelView
+        // matrix before applying projection matrix (https://stackoverflow.com/a/5487981)
+        // let nodeToLookAt = realityEditor.sceneGraph.getCameraNode();
+        // let matMV = realityEditor.sceneGraph.getSceneNodeById(id).getMatrixRelativeTo(nodeToLookAt);
+
+        // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
+        let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+        let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
+        let sourceWorldMatrix = sourceNode.getMatrixRelativeTo(worldNode);
+        let targetNode = realityEditor.sceneGraph.getSceneNodeById(idToLookAt);
+        let targetWorldMatrix = targetNode.getMatrixRelativeTo(worldNode);
+
+        let sourcePosition = {
+            x: sourceWorldMatrix[12] / sourceWorldMatrix[15],
+            y: sourceWorldMatrix[13] / sourceWorldMatrix[15],
+            z: sourceWorldMatrix[14] / sourceWorldMatrix[15]
+        };
+
+        let targetPosition = {
+            x: targetWorldMatrix[12] / targetWorldMatrix[15],
+            y: targetWorldMatrix[13] / targetWorldMatrix[15],
+            z: targetWorldMatrix[14] / targetWorldMatrix[15]
+        };
+        
+        let lookAtMatrix = this.lookAt(sourcePosition.x, sourcePosition.y, sourcePosition.z, targetPosition.x, targetPosition.y, targetPosition.z, 0, 1, 0);
+        let correspondingModelMatrix = realityEditor.gui.ar.utilities.invertMatrix(lookAtMatrix);
+        // lookAtMatrix is calculated in coordinates relative to the world object, so we convert from world to ROOT
+        let modelRootMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(correspondingModelMatrix, worldNode.worldMatrix, modelRootMatrix);
+
+        let flipMatrix = [
+            -1, 0, 0, 0,
+            0, -1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ];
+        let finalModelMatrix = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(flipMatrix, modelRootMatrix, finalModelMatrix);
+
+        // let modelMatrix = realityEditor.sceneGraph.getSceneNodeById(id).worldMatrix;
+        let viewMatrix = realityEditor.sceneGraph.getViewMatrix();
+        let matMV_noRotation = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(finalModelMatrix, viewMatrix, matMV_noRotation);
+        realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
+        
+        return finalMatrix;
+    }
 
     /************ Private Functions ************/
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
