@@ -22,23 +22,18 @@ const videoPlayers = [];
 
 realityEditor.gui.ar.videoPlayback.initService = function() {
     realityEditor.network.addPostMessageHandler('createVideoPlayback', (msgData) => {
-        console.log('RECEIVING CREATION');
         videoPlayers.push(new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey));
     });
     realityEditor.network.addPostMessageHandler('disposeVideoPlayback', (msgData) => {
-        console.log('RECEIVING DISPOSE');
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).dispose();
     });
     realityEditor.network.addPostMessageHandler('setVideoPlaybackCurrentTime', (msgData) => {
-        console.log('RECEIVING CURRENT TIME');
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).currentTime = msgData.currentTime;
     });
     realityEditor.network.addPostMessageHandler('playVideoPlayback', (msgData) => {
-        console.log('RECEIVING PLAY');
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).play();
     });
     realityEditor.network.addPostMessageHandler('pauseVideoPlayback', (msgData) => {
-        console.log('RECEIVING PAUSE');
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).pause();
     });
 }.bind(realityEditor.gui.ar.videoPlayback);
@@ -156,12 +151,10 @@ class VideoPlayer {
         // document.body.appendChild(this.colorVideo);
         const source = document.createElement('source');
         source.src = this.urls.color;
-        console.log(`URL CHECK: ${this.urls.color} - ${window.location.origin}`);
         source.type = 'video/mp4';
         this.colorVideo.appendChild(source);
         this.colorVideo.load();
         this.colorVideo.onloadedmetadata = () => {
-            console.log('Loaded color video');
             this.colorVideo.loadSuccessful = true;
             if (this.rvl) {
                 this.pause();
@@ -174,13 +167,11 @@ class VideoPlayer {
         this.phone.add(this.debugBox);
 
         fetch(urls.rvl).then(res => res.arrayBuffer()).then(buf => {
-            console.log('Loaded rvl data');
             this.rvl = new RVLParser(buf);
             if (this.colorVideo.loadSuccessful) {
                 this.pause();
             }
             this.videoLength = this.rvl.getDuration();
-            console.log(`SENDING METADATA`);
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoMetadata: {videoLength: this.rvl.getDuration()}, id: this.id});
         });
         
@@ -205,14 +196,12 @@ class VideoPlayer {
     
     play() {
         this.state = VideoPlayerStates.PLAYING;
-        console.log(`SENDING PLAY`);
         realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
         this.colorVideo.play().then(() => {/** Empty then() callback to silence warning **/});
     }
     
     pause() {
         this.state = VideoPlayerStates.PAUSED;
-        console.log(`SENDING PAUSE`);
         realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
         this.colorVideo.pause();
     }
