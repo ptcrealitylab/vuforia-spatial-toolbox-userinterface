@@ -1406,3 +1406,54 @@ function polyfillWebkitConvertPointFromPageToNode() {
         return getTransformationMatrix(element).transformPoint(point);
     };
 }
+
+(function(exports) {
+    function lookAt(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ) {
+        var ev = [eyeX, eyeY, eyeZ];
+        var cv = [centerX, centerY, centerZ];
+        var uv = [upX, upY, upZ];
+
+        var n = normalize(add(ev, negate(cv))); // vector from the camera to the center point
+        var u = normalize(crossProduct(uv, n)); // a "right" vector, orthogonal to n and the lookup vector
+        var v = crossProduct(n, u); // resulting orthogonal vector to n and u, as the up vector isn't necessarily one anymore
+
+        return [u[0], v[0], n[0], 0,
+            u[1], v[1], n[1], 0,
+            u[2], v[2], n[2], 0,
+            dotProduct(negate(u), ev), dotProduct(negate(v), ev), dotProduct(negate(n), ev), 1];
+    }
+
+    function _scalarMultiply(A, x) {
+        return [A[0] * x, A[1] * x, A[2] * x];
+    }
+
+    function negate(A) {
+        return [-A[0], -A[1], -A[2]];
+    }
+
+    function add(A, B) {
+        return [A[0] + B[0], A[1] + B[1], A[2] + B[2]];
+    }
+
+    function magnitude(A) {
+        return Math.sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
+    }
+
+    function normalize(A) {
+        var mag = magnitude(A);
+        return [A[0] / mag, A[1] / mag, A[2] / mag];
+    }
+
+    function crossProduct(A, B) {
+        var a = A[1] * B[2] - A[2] * B[1];
+        var b = A[2] * B[0] - A[0] * B[2];
+        var c = A[0] * B[1] - A[1] * B[0];
+        return [a, b, c];
+    }
+
+    function dotProduct(A, B) {
+        return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
+    }
+
+    exports.lookAt = lookAt;
+})(realityEditor.gui.ar.utilities);

@@ -574,55 +574,43 @@ createNameSpace("realityEditor.sceneGraph");
     }
     
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
-    function getModelViewMatrixLookingAt(id, idToLookAt) {
-        let finalMatrix = [];
-        
-        // easy billboard effect by clearing out the rotation values from the modelView
-        // matrix before applying projection matrix (https://stackoverflow.com/a/5487981)
-        // let nodeToLookAt = realityEditor.sceneGraph.getCameraNode();
-        // let matMV = realityEditor.sceneGraph.getSceneNodeById(id).getMatrixRelativeTo(nodeToLookAt);
+    // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
+    function getModelViewMatrixLookingAt(id, idToLookAt, flipX = true, flipY = true) {
+        let utils = realityEditor.gui.ar.utilities;
 
         // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
         let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
         let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
-        let sourceWorldMatrix = sourceNode.getMatrixRelativeTo(worldNode);
-        let targetNode = realityEditor.sceneGraph.getSceneNodeById(idToLookAt);
-        let targetWorldMatrix = targetNode.getMatrixRelativeTo(worldNode);
+        let mSource = sourceNode.getMatrixRelativeTo(worldNode);
+        let mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
 
-        let sourcePosition = {
-            x: sourceWorldMatrix[12] / sourceWorldMatrix[15],
-            y: sourceWorldMatrix[13] / sourceWorldMatrix[15],
-            z: sourceWorldMatrix[14] / sourceWorldMatrix[15]
-        };
+        let sourcePosition = { x: mSource[12] / mSource[15], y: mSource[13] / mSource[15], z: mSource[14] / mSource[15] };
+        let targetPosition = { x: mTarget[12] / mTarget[15], y: mTarget[13] / mTarget[15], z: mTarget[14] / mTarget[15] };
+        let lookAtMatrix = utils.lookAt(sourcePosition.x, sourcePosition.y, sourcePosition.z, targetPosition.x, targetPosition.y, targetPosition.z, 0, 1, 0);
+        let correspondingModelMatrix = utils.invertMatrix(lookAtMatrix); // lookAt returns a ~"view" matrix, invert to get the model matrix
 
-        let targetPosition = {
-            x: targetWorldMatrix[12] / targetWorldMatrix[15],
-            y: targetWorldMatrix[13] / targetWorldMatrix[15],
-            z: targetWorldMatrix[14] / targetWorldMatrix[15]
-        };
-        
-        let lookAtMatrix = this.lookAt(sourcePosition.x, sourcePosition.y, sourcePosition.z, targetPosition.x, targetPosition.y, targetPosition.z, 0, 1, 0);
-        let correspondingModelMatrix = realityEditor.gui.ar.utilities.invertMatrix(lookAtMatrix);
+        // ensure we preserve the scale from before
+        let scale = sourceNode.getVehicleScale();
+        let transformMatrix = utils.newIdentityMatrix();
+        [0, 5, 10].forEach(index => transformMatrix[index] = scale);
+        let scaledModelMatrix = [];
+        utils.multiplyMatrix(transformMatrix, correspondingModelMatrix, scaledModelMatrix);
+
         // lookAtMatrix is calculated in coordinates relative to the world object, so we convert from world to ROOT
-        let modelRootMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(correspondingModelMatrix, worldNode.worldMatrix, modelRootMatrix);
+        let modelMatrix = [];
+        utils.multiplyMatrix(scaledModelMatrix, worldNode.worldMatrix, modelMatrix);
 
-        let flipMatrix = [
-            -1, 0, 0, 0,
-            0, -1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ];
-        let finalModelMatrix = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(flipMatrix, modelRootMatrix, finalModelMatrix);
+        // flip the element upside-down or left-right if needed
+        let flipMatrix = utils.newIdentityMatrix();
+        flipMatrix[0] = (flipX ? -1 : 1);
+        flipMatrix[5] = (flipY ? -1 : 1);
+        let flippedModelMatrix = [];
+        utils.multiplyMatrix(flipMatrix, modelMatrix, flippedModelMatrix);
+        modelMatrix = flippedModelMatrix;
 
-        // let modelMatrix = realityEditor.sceneGraph.getSceneNodeById(id).worldMatrix;
-        let viewMatrix = realityEditor.sceneGraph.getViewMatrix();
-        let matMV_noRotation = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(finalModelMatrix, viewMatrix, matMV_noRotation);
-        realityEditor.gui.ar.utilities.multiplyMatrix(matMV_noRotation, globalStates.projectionMatrix, finalMatrix);
-        
-        return finalMatrix;
+        let modelViewMatrix = [];
+        utils.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+        return modelViewMatrix;
     }
 
     /************ Private Functions ************/
@@ -761,6 +749,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.getGroundPlaneModelViewMatrix = getGroundPlaneModelViewMatrix;
     exports.isInFrontOfCamera = isInFrontOfCamera;
     exports.getViewMatrix = getViewMatrix;
+    exports.getModelViewMatrixLookingAt = getModelViewMatrixLookingAt;
 
     // public method to recompute sceneGraph for all visible entities
     exports.calculateFinalMatrices = calculateFinalMatrices;
