@@ -5,22 +5,37 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 (function(exports) {
     let poseRenderers = {};
 
+    let historyLineMeshes = [];
+    let historyLineContainer;
+
     const {utils, rebaScore} = realityEditor.humanPose;
 
     const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 
+    /**
+     * Renders COCO-pose keypoints
+     */
     class HumanPoseRenderer {
-        constructor(id) {
+        /**
+         * @param {string} id - Unique identifier of human pose being rendered
+         * @param {THREE.Object3D} historyLineContainer - THREE container for
+         *                         history line meshes
+         */
+        constructor(id, historyLineContainer) {
             this.id = id;
             this.spheres = {};
             this.container = new THREE.Group();
             this.bones = {};
             this.ghost = false;
             this.createSpheres();
-            this.historyLineContainer = new THREE.Group();
+            this.historyLineContainer = historyLineContainer;
             this.createHistoryLine(this.historyLineContainer);
         }
 
+        /**
+         * Creates all THREE.Meshes representing the spheres/joint balls of the
+         * pose
+         */
         createSpheres() {
             const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
             const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
@@ -43,6 +58,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             this.greenMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x00ff00});
         }
 
+        /**
+         * Creates a history line (spaghetti line) placing it within
+         * `container`
+         * @param {THREE.Object3D} container
+         */
         createHistoryLine(container) {
             this.historyLine = new realityEditor.gui.ar.meshLine.MeshLine();
             const lineMat = new realityEditor.gui.ar.meshLine.MeshLineMaterial({
@@ -59,7 +79,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             container.add(this.historyMesh);
         }
 
-
+        /**
+         * @param {string} jointId - from utils.JOINTS
+         * @param {THREE.Vector3} position
+         */
         setJointPosition(jointId, position) {
             let sphere = this.spheres[jointId];
             sphere.position.x = position.x;
@@ -67,6 +90,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             sphere.position.z = position.z;
         }
 
+        /**
+         * @return {THREE.Vector3}
+         */
         getJointPosition(jointId) {
             return this.spheres[jointId].position;
         }
@@ -90,6 +116,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             return avg;
         }
 
+        /**
+         * Updates bone (stick between joints) positions based on this.spheres'
+         * positions. Notably synthesizes a straight spine based on existing
+         * COCO keypoints
+         */
         updateBonePositions() {
             const {JOINTS} = utils;
             // Add synthetic joint positions expected by REBA
@@ -147,7 +178,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     jointB.x, jointB.y, jointB.z);
                 bone.lookAt(this.container.localToWorld(localTarget));
                 bone.rotateX(Math.PI / 2);
-                
+
                 bone.scale.y = diff.length() / SCALE;
             }
 
@@ -158,6 +189,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             // we don't currently care about visualizing this
         }
 
+        /**
+         * Annotates bone using material based on boneColor
+         * @param {string} boneName
+         * @param {number} boneColor
+         */
         setBoneRebaColor(boneName, boneColor) {
             if (typeof this.bones[boneName] === 'undefined') return;
 
@@ -175,6 +211,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             realityEditor.gui.threejsScene.addToScene(this.container);
         }
 
+        /**
+         * Removes from container and disposes resources
+         */
         removeFromScene() {
             realityEditor.gui.threejsScene.removeFromScene(this.container);
             this.bones.headNeck.geometry.dispose();
@@ -185,6 +224,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 
     function renderHumanPoseObjects(poseObjects) {
+        if (!historyLineContainer) {
+            historyLineContainer = new THREE.Group();
+            historyLineContainer.visible = false;
+            realityEditor.gui.threejsScene.addToScene(historyLineContainer);
+        }
+
         for (let id in poseRenderers) {
             poseRenderers[id].updated = false;
         }
@@ -193,6 +238,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
         for (let id of Object.keys(poseRenderers)) {
             if (!poseRenderers[id].updated) {
+                poseRenderers[id].removeFromScene();
+                historyLineMeshes.push(...poseRenderers[id].historyLineMeshes);
                 delete poseRenderers[id];
             }
         }
@@ -202,7 +249,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // assume that all sub-objects are of the form poseObject.id + joint name
 
         if (!poseRenderers[poseObject.uuid]) {
-            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
+            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid, historyLineContainer);
             poseRenderers[poseObject.uuid].addToScene();
         }
         let poseRenderer = poseRenderers[poseObject.uuid];
@@ -229,6 +276,22 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         poseRenderer.updateBonePositions();
     }
 
+    function resetHistory() {
+        for (let lineMesh of historyLineMeshes) {
+            historyLineContainer.remove(lineMesh);
+        }
+        historyLineMeshes = [];
+    }
+
+    /**
+     * @param {boolean} visible
+     */
+    function setHistoryVisible(visible) {
+        historyLineContainer.visible = visible;
+    }
+
     exports.renderHumanPoseObjects = renderHumanPoseObjects;
+    exports.resetHistory = resetHistory;
+    exports.setHistoryVisible = setHistoryVisible;
 
 }(realityEditor.humanPose.draw));
