@@ -1129,7 +1129,7 @@ realityEditor.device.tryToDeleteSelectedVehicle = function() {
     let activeVehicle = this.getEditingVehicle();
     if (!activeVehicle) return;
 
-    const isFrame = typeof activeVehicle.nodes !== 'undefined' && typeof activeVehicle.links !== 'undefined';
+    const isFrame = realityEditor.isVehicleAFrame(activeVehicle);
     const additionalInfo = isFrame ? { frameType: activeVehicle.src } : {};
     const objectId = this.editingState.object;
     const frameId = this.editingState.frame;
