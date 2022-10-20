@@ -40,8 +40,6 @@ createNameSpace("realityEditor.device.keyboardEvents");
      * @param {KeyboardEvent} event
      */
     function keyUpHandler(event) {
-        event.preventDefault();
-        
         callbackHandler.triggerCallbacks('keyUpHandler', {event: event});
     }
 
@@ -50,8 +48,6 @@ createNameSpace("realityEditor.device.keyboardEvents");
      * @param {KeyboardEvent} event
      */
     function keyDownHandler(event) {
-        event.preventDefault();
-        
         callbackHandler.triggerCallbacks('keyDownHandler', {event: event});
     }
 
