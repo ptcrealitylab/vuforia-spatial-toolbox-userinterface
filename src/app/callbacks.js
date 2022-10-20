@@ -63,6 +63,11 @@ createNameSpace('realityEditor.app.callbacks');
 
     const skeletonDedupId = Math.floor(Math.random() * 10000);
 
+    // other modules can subscribe to what's happening here
+    let subscriptions = {
+        onPoseReceived: []
+    }
+
     function onOrientationSet() {
         // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
         realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
@@ -217,6 +222,11 @@ createNameSpace('realityEditor.app.callbacks');
         realityEditor.network.onUDPMessage(message);
     }
 
+    // callback will trigger with array of joints {x,y,z} when a pose is detected
+    exports.subscribeToPoses = function(callback) {
+        subscriptions.onPoseReceived.push(callback);
+    }
+
     /**
      * Callback for realityEditor.app.getPosesStream
      * @param {Array<Object>} poses
@@ -307,12 +317,12 @@ createNameSpace('realityEditor.app.callbacks');
         const focalLength = 1392.60913; // may change per device
         const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
 
-        let roughCenterDepth = (
+        let roughCenterDepth = poses.length > 0 ? (
             poses[POSE_JOINTS.LEFT_SHOULDER].depth +
             poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
             poses[POSE_JOINTS.LEFT_HIP].depth +
             poses[POSE_JOINTS.RIGHT_HIP].depth
-        ) / 4;
+        ) / 4 : 0;
 
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
@@ -393,6 +403,16 @@ createNameSpace('realityEditor.app.callbacks');
             y: camY / 1000,
             z: camZ / 1000,
         });
+
+        const USE_DEBUG_POSE = false;
+
+        if (USE_DEBUG_POSE) {
+            subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
+        } else {
+            if (poses.length > 0) {
+                subscriptions.onPoseReceived.forEach(cb => cb(coolerPoses));
+            }
+        }
     }
 
     /**

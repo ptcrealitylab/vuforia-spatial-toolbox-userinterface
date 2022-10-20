@@ -384,7 +384,11 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisObject.matrix = [];
     }
 
-    let isImageTarget = !thisObject.isWorldObject && !thisObject.isAnchor;
+    let isImageTarget = !(thisObject.isWorldObject || thisObject.type === 'world') &&
+        !realityEditor.gui.ar.anchors.isAnchorObject(objectKey) &&
+        !realityEditor.avatar.utils.isAvatarObject(thisObject) &&
+        !realityEditor.humanPose.utils.isHumanPoseObject(thisObject);
+
     realityEditor.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
 
     // thisObject.unpinnedFrameKeys = {};

@@ -118,6 +118,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         if (typeof initialLocalMatrix !== 'undefined') {
             sceneNodeFrame.setLocalMatrix(initialLocalMatrix);
+            realityEditor.sceneGraph.network.recordInitialFramePosition(sceneNodeFrame);
         }
     }
 

@@ -312,6 +312,7 @@ realityEditor.gui.ar.positioning.getPositionData = function(activeVehicle) {
  * Sets the correct matrix for this vehicle's position data to the new value.
  * @param {Frame|Node} activeVehicle
  * @param {Array.<number>} newMatrixValue
+ * @param {boolean|undefined} dontBroadcast – pass true to prevent realtime broadcasting this update
  * @todo: ensure fully implemented
  */
 realityEditor.gui.ar.positioning.setPositionDataMatrix = function(activeVehicle, newMatrixValue, dontBroadcast) {

@@ -62,6 +62,8 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         // Assumes the BVH is available on the `boundsTree` variable
         THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
+        realityEditor.gui.ar.meshLine.inject();
+
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
 

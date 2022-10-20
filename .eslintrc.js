@@ -65,7 +65,8 @@ module.exports = {
         "webkitConvertPointFromPageToNode": "writable",
     },
     "parserOptions": {
-        "ecmaVersion": 2018
+        "ecmaVersion": 2018,
+        "sourceType": "module",
     },
     "rules": {
         "no-prototype-builtins": "off",
@@ -83,10 +84,15 @@ module.exports = {
         "no-inner-declarations": "off",
     },
     "overrides": [{
-        "files": ["src/gui/threejsScene.js", "src/device/multiclientUI.js"],
+        "files": [
+          "src/constructors.js",
+          "src/device/utilities.js",
+          "src/objects.js",
+          "src/states.js",
+        ],
         "parserOptions": {
             "ecmaVersion": 2018,
-            "sourceType": "module"
+            "sourceType": "script"
         }
     }]
 };
