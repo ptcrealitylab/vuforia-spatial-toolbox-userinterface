@@ -1138,7 +1138,23 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             let spatialCursorMatrix = realityEditor.spatialCursor.getCursorRelativeToWorldObject();
             if (spatialCursorMatrix) {
-                frame.ar.matrix = realityEditor.gui.threejsScene.getToolboxArrayFromThreejsMatrix(spatialCursorMatrix);
+                const utils = realityEditor.gui.ar.utilities;
+                let rotatedMatrix = realityEditor.gui.threejsScene.getToolboxArrayFromThreejsMatrix(spatialCursorMatrix);  //utils.copyMatrix(spatialCursorMatrix);
+                let forwardVector = utils.normalize([rotatedMatrix[8], rotatedMatrix[9], rotatedMatrix[10]]);
+                let globalUpVector = [0, -1, 0];
+                let newRightVector = utils.normalize(utils.crossProduct(forwardVector, globalUpVector));
+                let newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
+                // TODO: check for co-linear by checking if any of the new axis vectors are Vector.zero
+
+                rotatedMatrix[0] = newRightVector[0] * -1;
+                rotatedMatrix[1] = newRightVector[1] * -1;
+                rotatedMatrix[2] = newRightVector[2] * -1;
+
+                rotatedMatrix[4] = newUpVector[0];
+                rotatedMatrix[5] = newUpVector[1];
+                rotatedMatrix[6] = newUpVector[2];
+
+                frame.ar.matrix = rotatedMatrix; //realityEditor.gui.threejsScene.getToolboxArrayFromThreejsMatrix(spatialCursorMatrix);
             }
 
             realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);

@@ -1456,4 +1456,10 @@ function polyfillWebkitConvertPointFromPageToNode() {
     }
 
     exports.lookAt = lookAt;
+    exports.negate = negate;
+    exports.add = add;
+    exports.magnitude = magnitude;
+    exports.normalize = normalize;
+    exports.crossProduct = crossProduct;
+    exports.dotProduct = dotProduct;
 })(realityEditor.gui.ar.utilities);
