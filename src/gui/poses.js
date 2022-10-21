@@ -147,25 +147,45 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         return;
     }
 
+    // following naming is for landscape images (width is longer side)
     // MK TODO: bring image resolution associated with 2D points
-    const pointWidth = 960;
-    const pointHeight = 540;
+    const pointWidth = 1920; // 960;
+    const pointHeight = 1080; // 540;
+    let outWidth = 0, outHeight = 0;
+    let halfCanvasWidth = 0, halfCanvasHeight = 0;
     const portrait = gfx.width < gfx.height;
-    let outWidth = gfx.width;
-    let outHeight = gfx.width / pointWidth * pointHeight;
+    // iphones crop camera image along shorter side. Thus, longer side is taken to calulate scaling factor from camera image to display canvas (gfx.width/height) 
+    if (!portrait) {
+        outWidth = gfx.width;
+        outHeight = (outWidth / pointWidth) * pointHeight;
+        halfCanvasWidth = gfx.width / 2;
+        halfCanvasHeight = gfx.height / 2;
+    }
+    else {
+        outWidth = gfx.height;
+        outHeight = (outWidth / pointWidth) * pointHeight;
+        halfCanvasWidth = gfx.height / 2.0;
+        halfCanvasHeight = gfx.width / 2.0;
+    }
+    
     if (globalStates.device.startsWith('iPad')) {
         outWidth = gfx.width;
         outHeight = gfx.height;
+        halfCanvasWidth = gfx.width / 2.0;
+        halfCanvasHeight = gfx.height / 2.0;
     }
-    const cx = pointWidth / 2;
+    /* const cx = pointWidth / 2;
     const cy = pointHeight / 2;
     const focalLengthX = 1392.60913; // may change per device
     const focalLengthY = focalLengthX;
+    */
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
-    let debug = true;
+    let debug = false;
     for (let point of poses) {
         gfx.beginPath();
+
+        /*
         // rotX = atan((x - cx) / (focalLength / 2));
         if (!portrait) {
             point.x = Math.tan(point.rotX) * (focalLengthX) + cx;
@@ -176,6 +196,14 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         }
         const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
         const y = -(point.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        */
+
+        let x = (point.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
+        let y = ((pointHeight - point.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
+        if (portrait)   {
+            let tmp = x; x = y; y = tmp;
+        }
+
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
@@ -190,10 +218,19 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
-        const ax = - (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
+        /*const ax = - (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
         const ay = - (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
         const bx = - (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const by = - (b.y - cy) / pointHeight * outHeight + gfx.height / 2;
+        const by = - (b.y - cy) / pointHeight * outHeight + gfx.height / 2;*/
+        let ax = (a.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
+        let ay = ((pointHeight - a.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
+        let bx = (b.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
+        let by = ((pointHeight - b.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
+        if (portrait)   {
+            let tmp = ax; ax = ay; ay = tmp;
+            tmp = bx; bx = by; by = tmp;
+        }
+
         gfx.moveTo(ax, ay);
         gfx.lineTo(bx, by);
     }

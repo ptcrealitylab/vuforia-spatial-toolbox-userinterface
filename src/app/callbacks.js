@@ -306,19 +306,24 @@ createNameSpace('realityEditor.app.callbacks');
         }
         */
 
-        const focalLength = 1392.60913; // may change per device
+
         const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
 
+        /*
+        const focalLength = 1392.60913; // may change per device
         let roughCenterDepth = (
             poses[POSE_JOINTS.LEFT_SHOULDER].depth +
             poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
             poses[POSE_JOINTS.LEFT_HIP].depth +
             poses[POSE_JOINTS.RIGHT_HIP].depth
         ) / 4;
+        */
 
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
+
+            /*
             const THREE = realityEditor.gui.threejsScene.THREE;
 
             let zBasedDepth = point.depth;
@@ -327,16 +332,13 @@ createNameSpace('realityEditor.app.callbacks');
                 zBasedDepth = roughCenterDepth + point.z / focalLength * roughCenterDepth;
             }
 
-            
             let depth = point.depth; // TODO incorporate point.depth
-            /*
+            
             point.error = point.depth - zBasedDepth;
             if (Math.abs(point.error) < 0.5) {
                 depth = point.depth * 0.8 + zBasedDepth * 0.2;
             }
             */
-
-            
             /* vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
             let initialVehicleMatrix = [
                 -1, 0, 0, 0,
@@ -345,13 +347,14 @@ createNameSpace('realityEditor.app.callbacks');
                 vec.x, vec.y, -vec.z, 1
             ];
             */
+           
             // point.[X,Y,Z] in MLKit camera CS is converted to OpenGL CS
-            let vec = new THREE.Vector3(point.X * 1000.0, point.Y * 1000.0, point.Z * 1000.0); // * 1000 - convert from m to mm
+            //let vec = new THREE.Vector3(point.X * 1000.0, point.Y * 1000.0, point.Z * 1000.0); // * 1000 - convert from m to mm
             let initialVehicleMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                vec.x, -vec.y, -vec.z, 1
+                point.X * 1000.0, point.Y * -1000.0, point.Z * -1000.0, 1
             ];
 
             // needs to be flipped in some environments with different camera systems
