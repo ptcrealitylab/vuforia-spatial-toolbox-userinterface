@@ -3409,9 +3409,9 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
 /**
  * Makes a POST request to update the (x,y,scale,matrix) position data of a frame or node on the server
  * @param {Frame|Node} activeVehicle
- * @param {boolean|undefined} ignoreMatrix - include this if you only want to update (x,y,scale) not the transformation matrix
+ * @param {boolean} ignoreMatrix - include this if you only want to update (x,y,scale) not the transformation matrix
  */
-realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix) {
+realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix = false) {
     if (activeVehicle) {
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
         var content = {};

@@ -134,6 +134,7 @@ var realityEditor = realityEditor || {
         sceneNode: {},
         network: {}
     },
+    spatialCursor: {},
     envelopeManager: {},
     moduleCallbacks: {},
     worldObjects: {},

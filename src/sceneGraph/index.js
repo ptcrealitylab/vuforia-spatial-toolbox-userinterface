@@ -576,7 +576,7 @@ createNameSpace("realityEditor.sceneGraph");
     
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
     // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
-    function getModelViewMatrixLookingAt(id, idToLookAt, flipX = true, flipY = true) {
+    function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true} = {}) {
         let utils = realityEditor.gui.ar.utilities;
 
         // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
@@ -591,11 +591,15 @@ createNameSpace("realityEditor.sceneGraph");
         let correspondingModelMatrix = utils.invertMatrix(lookAtMatrix); // lookAt returns a ~"view" matrix, invert to get the model matrix
 
         // ensure we preserve the scale from before
-        let scale = sourceNode.getVehicleScale();
-        let transformMatrix = utils.newIdentityMatrix();
-        [0, 5, 10].forEach(index => transformMatrix[index] = scale);
         let scaledModelMatrix = [];
-        utils.multiplyMatrix(transformMatrix, correspondingModelMatrix, scaledModelMatrix);
+        if (includeScale) {
+            let scale = sourceNode.getVehicleScale();
+            let transformMatrix = utils.newIdentityMatrix();
+            [0, 5, 10].forEach(index => transformMatrix[index] = scale);
+            utils.multiplyMatrix(transformMatrix, correspondingModelMatrix, scaledModelMatrix);
+        } else {
+            scaledModelMatrix = correspondingModelMatrix;
+        }
 
         // lookAtMatrix is calculated in coordinates relative to the world object, so we convert from world to ROOT
         let modelMatrix = [];
@@ -607,11 +611,9 @@ createNameSpace("realityEditor.sceneGraph");
         flipMatrix[5] = (flipY ? -1 : 1);
         let flippedModelMatrix = [];
         utils.multiplyMatrix(flipMatrix, modelMatrix, flippedModelMatrix);
-        modelMatrix = flippedModelMatrix;
+        // modelMatrix = flippedModelMatrix;
 
-        let modelViewMatrix = [];
-        utils.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
-        return modelViewMatrix;
+        return flippedModelMatrix;
     }
 
     /************ Private Functions ************/
@@ -750,7 +752,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.getGroundPlaneModelViewMatrix = getGroundPlaneModelViewMatrix;
     exports.isInFrontOfCamera = isInFrontOfCamera;
     exports.getViewMatrix = getViewMatrix;
-    exports.getModelViewMatrixLookingAt = getModelViewMatrixLookingAt;
+    exports.getModelMatrixLookingAt = getModelMatrixLookingAt;
 
     // public method to recompute sceneGraph for all visible entities
     exports.calculateFinalMatrices = calculateFinalMatrices;
