@@ -573,7 +573,15 @@ createNameSpace("realityEditor.sceneGraph");
         }
         return null;
     }
-    
+
+    /**
+     * Helper function to convert a point or matrix from one coordinate system to another
+     * Input can be one of four formats: length-16 toolbox matrix, THREE.Matrix4, length-3 position vector, or {x,y,z}
+     * @param {Matrix4|{x: number, y: number, z: number}|number[]} input
+     * @param {SceneNode} currentParentSceneNode
+     * @param {SceneNode} newParentSceneNode
+     * @returns {Matrix4|{x: number, y: number, z: number}|number[]}
+     */
     function convertToNewCoordSystem(input, currentParentSceneNode, newParentSceneNode) {
         let processedInput = [];
         let inputType;
@@ -600,10 +608,10 @@ createNameSpace("realityEditor.sceneGraph");
                 input.x, input.y, input.z, 1
             ];
         }
-        
+
         let relativeMatrix = currentParentSceneNode.getMatrixRelativeTo(newParentSceneNode);
         let output = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(relativeMatrix, processedInput, output);
+        realityEditor.gui.ar.utilities.multiplyMatrix(processedInput, relativeMatrix, output);
 
         if (inputType === 'matrix4x4') {
             return output;

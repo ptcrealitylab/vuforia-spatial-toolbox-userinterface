@@ -1155,7 +1155,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 console.log('dot between camera and tool is ' + dotProduct);
 
                 let upness = utils.dotProduct(forwardVector, globalUpVector);
-                if (upness > 0.9) {
+                if (Math.abs(upness) > 0.9) {
                     // if it's flat enough – cross the local up by the camera forward to rotate it on horizontal surfaces
                     // todo: will have issues if camera is orthogonal to surface (i.e. it is looking from directly above)
                     newRightVector = utils.normalize(utils.crossProduct(forwardVector, cameraForward)); // camera forward is the "up vector" in this case
