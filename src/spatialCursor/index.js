@@ -17,7 +17,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     };
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
-    const worldIntersectOffsetDist = 15;
+    // const worldIntersectOffsetDist = 15;
     const indicatorAxis = new THREE.Vector3(0, 0, 1);
     // const normalCursorMaterial = new THREE.ShaderMaterial({
     //     vertexShader: realityEditor.spatialCursor.shader.vertexShader.vertexShaderCode,
