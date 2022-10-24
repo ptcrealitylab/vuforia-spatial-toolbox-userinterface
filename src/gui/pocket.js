@@ -1136,42 +1136,55 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             realityEditor.network.toBeInitialized[frameID] = true;
             
+            // we need to apply multiple transformations to rotate the spatial cursor so that its local up vector is
+            // best aligned with the global up, it faces towards the camera rather than away, and if it's on a
+            // horizontal surface, it rotates so that its local up vector is in line with the camera forward vector
             let spatialCursorMatrix = realityEditor.spatialCursor.getCursorRelativeToWorldObject();
             if (spatialCursorMatrix) {
                 const utils = realityEditor.gui.ar.utilities;
-                let rotatedMatrix = spatialCursorMatrix.elements;
-                let forwardVector = utils.normalize([rotatedMatrix[8], rotatedMatrix[9], rotatedMatrix[10]]);
-                let globalUpVector = [0, -1, 0]; // TODO: do we need to convert this relative to world object too?
+                let rotatedMatrix = utils.copyMatrix(spatialCursorMatrix.elements);
+                let forwardVector = utils.getForward(rotatedMatrix); // utils.normalize([rotatedMatrix[8], rotatedMatrix[9], rotatedMatrix[10]]);
+                // TODO: may need to convert this relative to world object, but for now global up and world up are aligned anyways
+                let globalUpVector = [0, -1, 0];
+
+                // crossing forward vector with desired up vector yields new right vector
+                // then cross new right with forward to get orthogonal local up vector (similar to camera lookAt math)
+
                 let newRightVector = utils.normalize(utils.crossProduct(forwardVector, globalUpVector));
+                // handle co-linear case by reverting to original axis
+                if (isNaN(newRightVector[0])) { newRightVector = utils.getRight(rotatedMatrix); }
+
                 let newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
-                // TODO: check for co-linear by checking if any of the new axis vectors are Vector.zero
+                if (isNaN(newUpVector[0])) { newUpVector = utils.getUp(rotatedMatrix); }
 
                 let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                 let cameraRelativeToWorldObject = realityEditor.sceneGraph.convertToNewCoordSystem(utils.newIdentityMatrix(), realityEditor.sceneGraph.getCameraNode(), worldSceneNode);
 
                 // compute dot product of camera forward and new tool forward to see whether it's facing towards or away from you
                 let cameraForward = utils.normalize([cameraRelativeToWorldObject[8], cameraRelativeToWorldObject[9], cameraRelativeToWorldObject[10]]);
-                let dotProduct = utils.dotProduct(cameraForward, forwardVector);
-                console.log('dot between camera and tool is ' + dotProduct);
 
-                let upness = utils.dotProduct(forwardVector, globalUpVector);
-                if (Math.abs(upness) > 0.9) {
-                    // if it's flat enough – cross the local up by the camera forward to rotate it on horizontal surfaces
-                    // todo: will have issues if camera is orthogonal to surface (i.e. it is looking from directly above)
-                    newRightVector = utils.normalize(utils.crossProduct(forwardVector, cameraForward)); // camera forward is the "up vector" in this case
+                // check if it is upright enough to be considered on a horizontal surface – 0.9 seems to work well
+                if (Math.abs(utils.dotProduct(forwardVector, globalUpVector)) > 0.9) {
+                    // math works out same as above, except the camera forward is the desired "up vector" in this case
+                    newRightVector = utils.normalize(utils.crossProduct(forwardVector, cameraForward));
+                    if (isNaN(newRightVector[0])) { newRightVector = utils.getRight(rotatedMatrix); }
+
                     newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
+                    if (isNaN(newUpVector[0])) { newUpVector = utils.getUp(rotatedMatrix); }
                 }
 
-                // if normals are corrupted and tool ends up facing away from camera instead of towards it, flip it left-right again
+                // if normals are inverted and tool ends up facing away from camera instead of towards it, flip it left-right again
+                let dotProduct = utils.dotProduct(cameraForward, forwardVector);
+
+                // assign the new right and up vectors to the tool matrix, keeping its forward the same
                 rotatedMatrix[0] = newRightVector[0] * Math.sign(dotProduct);
                 rotatedMatrix[1] = newRightVector[1] * Math.sign(dotProduct);
                 rotatedMatrix[2] = newRightVector[2] * Math.sign(dotProduct);
-
                 rotatedMatrix[4] = newUpVector[0];
                 rotatedMatrix[5] = newUpVector[1];
                 rotatedMatrix[6] = newUpVector[2];
 
-                frame.ar.matrix = rotatedMatrix; //realityEditor.gui.threejsScene.getToolboxArrayFromThreejsMatrix(spatialCursorMatrix);
+                frame.ar.matrix = rotatedMatrix;
             }
 
             realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
