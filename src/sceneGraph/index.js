@@ -574,6 +574,51 @@ createNameSpace("realityEditor.sceneGraph");
         return null;
     }
     
+    function convertToNewCoordSystem(input, currentParentSceneNode, newParentSceneNode) {
+        let processedInput = [];
+        let inputType;
+        if (typeof input.length !== 'undefined' && input.length === 16) {
+            inputType = 'matrix4x4';
+            processedInput = input;
+        } else if (typeof input.elements !== 'undefined' && input.elements.length === 16) {
+            inputType = 'THREE.Matrix4';
+            processedInput = input.elements;
+        } else if (typeof input.length !== 'undefined' && input.length === 3) {
+            inputType = 'vector3';
+            processedInput = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                input[0], input[1], input[2], 1
+            ];
+        } else if (typeof input.x !== 'undefined' && typeof input.y !== 'undefined' && typeof input.z !== 'undefined') {
+            inputType = 'position';
+            processedInput = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                input.x, input.y, input.z, 1
+            ];
+        }
+        
+        let relativeMatrix = currentParentSceneNode.getMatrixRelativeTo(newParentSceneNode);
+        let output = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(relativeMatrix, processedInput, output);
+
+        if (inputType === 'matrix4x4') {
+            return output;
+        } else if (inputType === 'THREE.Matrix4') {
+            let matrixThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(matrixThree, output);
+            return matrixThree;
+        } else if (inputType === 'vector3') {
+            return [output[12]/output[15], output[13]/output[15], output[14]/output[15]];
+        } else if (inputType === 'position') {
+            return { x: output[12]/output[15], y: output[13]/output[15], z: output[14]/output[15] };
+        }
+    }
+    exports.convertToNewCoordSystem = convertToNewCoordSystem;
+    
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
     // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
     function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true} = {}) {

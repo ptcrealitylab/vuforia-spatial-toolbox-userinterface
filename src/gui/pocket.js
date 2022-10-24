@@ -1154,6 +1154,35 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 rotatedMatrix[5] = newUpVector[1];
                 rotatedMatrix[6] = newUpVector[2];
 
+                // TODO: ben – try crossing with the camera forward vector to determine if it's facing towards you or away from you?
+                // TODO: don't actually rotate it's forward vector entirely, but use the sign of the result to multiply the local forward by
+                // TODO: or at least, if it's flat enough – cross the local up by the camera forward to rotate it on horizontal surfaces
+                
+                // calculate camera relative to world object
+                // let cameraRelativeToWorldObject = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                // realityEditor.gui.threejsScene.setMatrixFromArray(cameraRelativeToWorldObject, realityEditor.sceneGraph.getCameraNode().worldMatrix);
+                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                // let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                // realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
+                // matrix.invert();
+                // cameraRelativeToWorldObject.premultiply(matrix);
+
+                let cameraRelativeToWorldObject = realityEditor.sceneGraph.convertToNewCoordSystem(utils.newIdentityMatrix(), realityEditor.sceneGraph.getCameraNode(), worldSceneNode);
+
+                // compute dot product of camera forward and new tool forward to see whether it's facing towards or away from you
+                let cameraForward = utils.normalize([cameraRelativeToWorldObject.elements[8], cameraRelativeToWorldObject.elements[9], cameraRelativeToWorldObject.elements[10]]);
+                let dotProduct = utils.dotProduct(cameraForward, forwardVector);
+                console.log('dot between camera and tool is ' + dotProduct);
+                
+                // if normals are corrupted and tool ends up facing away from camera instead of towards it, flip it left-right again
+                if (dotProduct > 0) {
+                    rotatedMatrix[0] *= -1;
+                    rotatedMatrix[1] *= -1;
+                    rotatedMatrix[2] *= -1;
+                }
+
+                // if dot product with camera forward is close to 0.5 and/or with the global up vector is close to 1, treat it as on a horizontal surface
+    
                 frame.ar.matrix = rotatedMatrix; //realityEditor.gui.threejsScene.getToolboxArrayFromThreejsMatrix(spatialCursorMatrix);
             }
 
