@@ -137,6 +137,13 @@ var realityEditor = realityEditor || {
     envelopeManager: {},
     moduleCallbacks: {},
     worldObjects: {},
+    spatialCursor: {
+        shader: {
+            normalCursorFragmentShader: {},
+            colorCursorFragmentShader: {},
+            vertexShader: {},
+        }
+    },
     avatar: {
         network: {},
         draw: {},
