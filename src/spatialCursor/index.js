@@ -176,12 +176,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return worldIntersectPoint; // these are relative to the world object
     }
 
+    // gets the position relative to groundplane (common coord system for threejsScene)
     function getToolPosition(toolId) {
         let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
         return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
     }
 
+    // gets the direction the tool is facing, within the coordinate system of the groundplane
     function getToolForwardVector(toolId) {
         let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
