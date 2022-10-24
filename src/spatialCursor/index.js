@@ -96,6 +96,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
             // console.log(overlappingDivs);
             overlapped = overlappingDivs.some(element => element.tagName === 'IFRAME');
+            if (overlapped) {
+                let overlappingIframe = overlappingDivs.find(element => element.tagName === 'IFRAME');
+                let position = getToolPosition(overlappingIframe.dataset.frameKey);
+                indicator.position.set(position.x, position.y, position.z);
+                indicator.quaternion.setFromUnitVectors(indicatorAxis, getToolForwardVector(overlappingIframe.dataset.frameKey));
+            }
         });
     }
 
@@ -168,6 +174,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
         // console.log(`%c ${worldIntersectPoint.point}`, 'color: orange');
         return worldIntersectPoint; // these are relative to the world object
+    }
+
+    function getToolPosition(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
+    }
+
+    function getToolForwardVector(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
+        let forwardVector = realityEditor.gui.ar.utilities.getForward(toolMatrix);
+        return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
     }
 
     function getCursorRelativeToWorldObject() {
