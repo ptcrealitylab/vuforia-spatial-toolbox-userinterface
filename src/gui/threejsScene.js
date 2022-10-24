@@ -436,17 +436,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         );
     }
 
-    function getToolboxArrayFromThreejsMatrix(matrix) {
-        let m = matrix.elements;
-        return m;
-        // return [
-        //     m[0], m[4], m[8], m[12],
-        //     m[1], m[5], m[9], m[13],
-        //     m[2], m[6], m[10], m[14],
-        //     m[3], m[7], m[11], m[15]
-        // ];
-    }
-
     // this module exports this utility so that other modules can perform hit tests
     // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
     // NOTE: returns the coordinates in threejs scene world coordinates:
@@ -644,7 +633,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     exports.getObjectByName = getObjectByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.setMatrixFromArray = setMatrixFromArray;
-    exports.getToolboxArrayFromThreejsMatrix = getToolboxArrayFromThreejsMatrix;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.addTransformControlsTo = addTransformControlsTo;
     exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;

@@ -104,15 +104,8 @@ import * as THREE from '../thirdPartyCode/three/three.module.js'
         if (!cachedWorldObject || !cachedOcclusionObject) { return null; }
 
         let cursorMatrix = indicator.matrixWorld.clone(); // in ROOT coordinates
-
-        // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-        let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-        realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
-        matrix.invert();
-        cursorMatrix.premultiply(matrix);
-
-        return cursorMatrix;
+        return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
     }
 
     exports.initService = initService;
