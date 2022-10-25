@@ -112,10 +112,10 @@ const VideoPlayerStates = {
 class VideoPlayer {
     constructor(id, urls, frameKey) {
         this.id = id;
-        this.urls = {
-            color: urls.color.replace('https://toolboxedge.net', `${window.location.origin}/proxy`), // Avoid CORS issues on iOS WebKit
-            rvl: urls.rvl.replace('https://toolboxedge.net', `${window.location.origin}/proxy`) // Avoid CORS issues on iOS WebKit
-        };
+        this.urls = window.location.origin.includes('toolboxedge.net') ? urls : {
+            color: urls.color.replace('https://toolboxedge.net', `${window.location.origin}/proxy`), // Avoid CORS issues on iOS WebKit by proxying video
+            rvl: urls.rvl.replace('https://toolboxedge.net', `${window.location.origin}/proxy`) // Avoid CORS issues on iOS WebKit by proxying video
+        }; // TODO: test without rvl proxy, don't think it is needed
         this.frameKey = frameKey;
         this.state = VideoPlayerStates.LOADING;
 
@@ -163,8 +163,8 @@ class VideoPlayer {
 
         this.decoder = new TextDecoder();
 
-        this.debugBox = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshNormalMaterial());
-        this.phone.add(this.debugBox);
+        // this.debugBox = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshNormalMaterial());
+        // this.phone.add(this.debugBox);
 
         fetch(urls.rvl).then(res => res.arrayBuffer()).then(buf => {
             this.rvl = new RVLParser(buf);
@@ -197,6 +197,7 @@ class VideoPlayer {
     play() {
         this.state = VideoPlayerStates.PLAYING;
         realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
+        this.pointCloud.visible = true;
         this.colorVideo.play().then(() => {/** Empty then() callback to silence warning **/});
     }
     
@@ -244,6 +245,7 @@ class VideoPlayer {
         mesh.rotateZ(Math.PI);
         mesh.frustumCulled = false;
         this.pointCloud = mesh;
+        this.pointCloud.visible = false; // Make visible once video starts playing to prevent black-screen from load
         this.phone.add(this.pointCloud);
     }
 
