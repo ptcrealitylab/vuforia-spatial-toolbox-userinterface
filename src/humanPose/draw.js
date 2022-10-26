@@ -5,8 +5,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 (function(exports) {
     let poseRenderers = {};
 
-    let historyLineMeshes = [];
     let historyLineContainer;
+    let historyCloneContainer;
+
+    let recordingClones = false;
+    let cloneMaterialIndex = 0;
+    let cloneMaterials = [
+        '_materialOverallReba',
+        '_materialRainbow',
+        '_materialOld',
+    ];
 
     const {utils, rebaScore} = realityEditor.humanPose;
 
@@ -20,16 +28,21 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
          * @param {string} id - Unique identifier of human pose being rendered
          * @param {THREE.Object3D} historyLineContainer - THREE container for
          *                         history line meshes
+         * @param {THREE.Object3D} historyCloneContainer - THREE container for
+         *                         history clone meshes
          */
-        constructor(id, historyLineContainer) {
+        constructor(id, historyLineContainer, historyCloneContainer) {
             this.id = id;
             this.spheres = {};
             this.container = new THREE.Group();
             this.bones = {};
             this.ghost = false;
+            this.overallRebaScore = 1;
             this.createSpheres();
             this.historyLineContainer = historyLineContainer;
-            this.createHistoryLine(this.historyLineContainer);
+            this.createHistoryLine();
+
+            this.historyCloneContainer = historyCloneContainer;
         }
 
         /**
@@ -39,6 +52,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         createSpheres() {
             const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
             const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
+            this.baseMaterial = mat;
+
             for (const jointId of Object.values(utils.JOINTS)) {
                 // TODO use instanced mesh for better performance
                 let sphere = new THREE.Mesh(geo, mat);
@@ -63,20 +78,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
          * `container`
          * @param {THREE.Object3D} container
          */
-        createHistoryLine(container) {
+        createHistoryLine() {
             this.historyLine = new realityEditor.gui.ar.meshLine.MeshLine();
             const lineMat = new realityEditor.gui.ar.meshLine.MeshLineMaterial({
                 color: this.ghost ? 0x777777 : 0xffff00,
-                // opacity: 0.6,
+                opacity: 0.6,
                 lineWidth: 14,
                 // depthWrite: false,
-                transparent: false,
+                transparent: true,
                 side: THREE.DoubleSide,
             });
             this.historyMesh = new THREE.Mesh(this.historyLine, lineMat);
             this.historyPoints = [];
             this.historyLine.setPoints(this.historyPoints);
-            container.add(this.historyMesh);
+            this.historyLineContainer.add(this.historyMesh);
         }
 
         /**
@@ -153,11 +168,19 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 JOINTS.RIGHT_HIP,
             ]));
 
-            this.historyPoints.push(new THREE.Vector3(
+            let newPoint = new THREE.Vector3(
                 this.spheres[JOINTS.HEAD].position.x,
                 this.spheres[JOINTS.HEAD].position.y + 0.4,
                 this.spheres[JOINTS.HEAD].position.z,
-            ));
+            );
+
+            // Split spaghetti line if we jumped by a large amount
+            if (this.historyPoints.length > 0 &&
+                this.historyPoints[this.historyPoints.length - 1].sub(newPoint).lengthSq() > 1) {
+                this.createHistoryLine();
+            }
+
+            this.historyPoints.push(newPoint);
             this.historyLine.setPoints(this.historyPoints);
 
             for (let boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
@@ -183,10 +206,84 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             }
 
             rebaScore.annotateHumanPoseRenderer(this);
+
+            if (recordingClones) {
+                let clone = this.clone();
+                this.historyCloneContainer.add(clone);
+            }
         }
 
-        setOverallRebaScore(_score) {
-            // we don't currently care about visualizing this
+        clone() {
+            let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
+            let hueReba = 180 - (this.overallRebaScore - 1) * 240 / 11;
+            if (isNaN(hueReba)) {
+                hueReba = 120;
+            }
+            hueReba = Math.min(Math.max(hueReba, 0), 120);
+            let colorReba = `hsl(${hueReba}, 100%, 50%)`;
+            let newContainer = this.container.clone();
+            let matRainbow = new THREE.MeshBasicMaterial({
+                color: colorRainbow,
+                transparent: true,
+                opacity: 0.5,
+            });
+            let matReba = new THREE.MeshBasicMaterial({
+                color: colorReba,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let baseMaterial = new THREE.MeshBasicMaterial({
+                color: this.baseMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let redMaterial = new THREE.MeshBasicMaterial({
+                color: this.redMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let yellowMaterial = new THREE.MeshBasicMaterial({
+                color: this.yellowMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let greenMaterial = new THREE.MeshBasicMaterial({
+                color: this.greenMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            newContainer.traverse((obj) => {
+                if (obj.material) {
+                    obj._materialOverallReba = matReba;
+                    obj._materialRainbow = matRainbow;
+                    let materialOld = obj.material;
+
+                    // Switch to transparent version of old material if possible
+                    if (materialOld === this.baseMaterial) {
+                        materialOld = baseMaterial;
+                    } else if (materialOld === this.redMaterial) {
+                        materialOld = redMaterial;
+                    } else if (materialOld === this.yellowMaterial) {
+                        materialOld = yellowMaterial;
+                    } else if (materialOld === this.greenMaterial) {
+                        materialOld = greenMaterial;
+                    }
+
+                    obj._materialOld = materialOld;
+                    obj.material = obj[cloneMaterials[cloneMaterialIndex]];
+                }
+            });
+            return newContainer;
+        }
+
+
+        setOverallRebaScore(score) {
+            this.overallRebaScore = score;
         }
 
         /**
@@ -230,6 +327,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             realityEditor.gui.threejsScene.addToScene(historyLineContainer);
         }
 
+        if (!historyCloneContainer) {
+            historyCloneContainer = new THREE.Group();
+            historyCloneContainer.visible = true;
+            realityEditor.gui.threejsScene.addToScene(historyCloneContainer);
+        }
+
         for (let id in poseRenderers) {
             poseRenderers[id].updated = false;
         }
@@ -239,7 +342,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         for (let id of Object.keys(poseRenderers)) {
             if (!poseRenderers[id].updated) {
                 poseRenderers[id].removeFromScene();
-                historyLineMeshes.push(...poseRenderers[id].historyLineMeshes);
                 delete poseRenderers[id];
             }
         }
@@ -249,7 +351,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // assume that all sub-objects are of the form poseObject.id + joint name
 
         if (!poseRenderers[poseObject.uuid]) {
-            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid, historyLineContainer);
+            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid, historyLineContainer, historyCloneContainer);
             poseRenderers[poseObject.uuid].addToScene();
         }
         let poseRenderer = poseRenderers[poseObject.uuid];
@@ -276,22 +378,53 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         poseRenderer.updateBonePositions();
     }
 
-    function resetHistory() {
-        for (let lineMesh of historyLineMeshes) {
-            historyLineContainer.remove(lineMesh);
+    function resetHistoryLines() {
+        // Loop over copy of children to remove all
+        for (let child of historyLineContainer.children.concat()) {
+            historyLineContainer.remove(child);
         }
-        historyLineMeshes = [];
+    }
+
+    function resetHistoryClones() {
+        for (let child of historyCloneContainer.children.concat()) {
+            historyCloneContainer.remove(child);
+        }
     }
 
     /**
      * @param {boolean} visible
      */
-    function setHistoryVisible(visible) {
+    function setHistoryLinesVisible(visible) {
         historyLineContainer.visible = visible;
     }
 
+    /**
+     * @param {boolean} enabled
+     */
+    function setRecordingClonesEnabled(enabled) {
+        recordingClones = enabled;
+    }
+
+    function advanceCloneMaterial() {
+        cloneMaterialIndex += 1;
+        if (cloneMaterialIndex >= cloneMaterials.length) {
+            cloneMaterialIndex = 0;
+        }
+
+        let newMaterialKey = cloneMaterials[cloneMaterialIndex];
+        historyCloneContainer.traverse((obj) => {
+            if (obj.material) {
+                obj.material = obj[newMaterialKey];
+            }
+        });
+    }
+
+
     exports.renderHumanPoseObjects = renderHumanPoseObjects;
-    exports.resetHistory = resetHistory;
-    exports.setHistoryVisible = setHistoryVisible;
+    exports.resetHistoryLines = resetHistoryLines;
+    exports.resetHistoryClones = resetHistoryClones;
+    exports.setHistoryLinesVisible = setHistoryLinesVisible;
+    exports.setRecordingClonesEnabled = setRecordingClonesEnabled;
+    exports.advanceCloneMaterial = advanceCloneMaterial;
 
 }(realityEditor.humanPose.draw));
