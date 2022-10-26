@@ -100,7 +100,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 let overlappingIframe = overlappingDivs.find(element => element.tagName === 'IFRAME');
                 let position = getToolPosition(overlappingIframe.dataset.frameKey);
                 indicator.position.set(position.x, position.y, position.z);
-                indicator.quaternion.setFromUnitVectors(indicatorAxis, getToolForwardVector(overlappingIframe.dataset.frameKey));
+                indicator.quaternion.setFromUnitVectors(indicatorAxis, getToolDirection(overlappingIframe.dataset.frameKey));
             }
         });
     }
@@ -184,11 +184,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     // gets the direction the tool is facing, within the coordinate system of the groundplane
-    function getToolForwardVector(toolId) {
+    function getToolDirection(toolId) {
         let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
         let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
-        let forwardVector = realityEditor.gui.ar.utilities.getForward(toolMatrix);
+        let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
         return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
     }
 
@@ -208,7 +208,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (spatialCursorMatrix) {
             const utils = realityEditor.gui.ar.utilities;
             let rotatedMatrix = utils.copyMatrix(spatialCursorMatrix.elements);
-            let forwardVector = utils.getForward(rotatedMatrix); // utils.normalize([rotatedMatrix[8], rotatedMatrix[9], rotatedMatrix[10]]);
+            let forwardVector = utils.getForwardVector(rotatedMatrix);
             // TODO: may need to convert this relative to world object, but for now global up and world up are aligned anyways
             let globalUpVector = [0, -1, 0];
 
@@ -217,25 +217,25 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
             let newRightVector = utils.normalize(utils.crossProduct(forwardVector, globalUpVector));
             // handle co-linear case by reverting to original axis
-            if (isNaN(newRightVector[0])) { newRightVector = utils.getRight(rotatedMatrix); }
+            if (isNaN(newRightVector[0])) { newRightVector = utils.getRightVector(rotatedMatrix); }
 
             let newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
-            if (isNaN(newUpVector[0])) { newUpVector = utils.getUp(rotatedMatrix); }
+            if (isNaN(newUpVector[0])) { newUpVector = utils.getUpVector(rotatedMatrix); }
 
             let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
             let cameraRelativeToWorldObject = realityEditor.sceneGraph.convertToNewCoordSystem(utils.newIdentityMatrix(), realityEditor.sceneGraph.getCameraNode(), worldSceneNode);
 
             // compute dot product of camera forward and new tool forward to see whether it's facing towards or away from you
-            let cameraForward = utils.normalize([cameraRelativeToWorldObject[8], cameraRelativeToWorldObject[9], cameraRelativeToWorldObject[10]]);
+            let cameraForward = utils.normalize(utils.getForwardVector(cameraRelativeToWorldObject));
 
             // check if it is upright enough to be considered on a horizontal surface – 0.9 seems to work well
             if (Math.abs(utils.dotProduct(forwardVector, globalUpVector)) > 0.9) {
                 // math works out same as above, except the camera forward is the desired "up vector" in this case
                 newRightVector = utils.normalize(utils.crossProduct(forwardVector, cameraForward));
-                if (isNaN(newRightVector[0])) { newRightVector = utils.getRight(rotatedMatrix); }
+                if (isNaN(newRightVector[0])) { newRightVector = utils.getRightVector(rotatedMatrix); }
 
                 newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
-                if (isNaN(newUpVector[0])) { newUpVector = utils.getUp(rotatedMatrix); }
+                if (isNaN(newUpVector[0])) { newUpVector = utils.getUpVector(rotatedMatrix); }
             }
 
             // if normals are inverted and tool ends up facing away from camera instead of towards it, flip it left-right again
