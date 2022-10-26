@@ -625,7 +625,6 @@ createNameSpace("realityEditor.sceneGraph");
             return { x: output[12]/output[15], y: output[13]/output[15], z: output[14]/output[15] };
         }
     }
-    exports.convertToNewCoordSystem = convertToNewCoordSystem;
 
     /**
      * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
@@ -633,7 +632,7 @@ createNameSpace("realityEditor.sceneGraph");
      * @param {number} screenY - in screen pixels
      * @param {number} distance - in millimeters
      * @param {SceneNode} coordinateSystem - which coordinate system you want the result calculated relative to
-     * @returns {{x: number, y: number, z: number}} - position in ROOT coordinates
+     * @returns {{x: number, y: number, z: number}} - position in ROOT coordinates, or whatever coordinateSystem is specified
      */
     function getPointAtDistanceFromCamera(screenX, screenY, distance, coordinateSystem = rootNode) {
         let distanceRaycastVector = [
@@ -647,7 +646,6 @@ createNameSpace("realityEditor.sceneGraph");
         let inputPosition = {x: localDistanceVector[0], y: localDistanceVector[1], z: localDistanceVector[2]};
         return convertToNewCoordSystem(inputPosition, cameraNode, coordinateSystem);
     }
-    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
 
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
     // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
@@ -828,6 +826,8 @@ createNameSpace("realityEditor.sceneGraph");
     exports.isInFrontOfCamera = isInFrontOfCamera;
     exports.getViewMatrix = getViewMatrix;
     exports.getModelMatrixLookingAt = getModelMatrixLookingAt;
+    exports.convertToNewCoordSystem = convertToNewCoordSystem;
+    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
 
     // public method to recompute sceneGraph for all visible entities
     exports.calculateFinalMatrices = calculateFinalMatrices;

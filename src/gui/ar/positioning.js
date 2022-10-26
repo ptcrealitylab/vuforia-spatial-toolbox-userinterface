@@ -191,6 +191,11 @@ realityEditor.gui.ar.positioning.stopRepositioning = function() {
 // both are working but further investigation is needed to determine if one is always better than the other
 realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinates = true;
 
+/**
+ * Removes the x and y translation offsets from the vehicle so that its position is purely determined by its matrix
+ * This should be done if you want to directly set the position of a tool to a given matrix
+ * @param {Frame|Node} activeVehicle
+ */
 realityEditor.gui.ar.positioning.resetVehicleTranslation = function(activeVehicle) {
     let positionData = this.getPositionData(activeVehicle);
     positionData.x = 0;
@@ -209,6 +214,12 @@ realityEditor.gui.ar.positioning.resetVehicleTranslation = function(activeVehicl
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
 }
 
+/**
+ * Moves the tool to be centered on the screen (x,y) position, keeping it the same distance from the camera as before
+ * @param {Frame|Node} activeVehicle
+ * @param {number} screenX
+ * @param {number} screenY
+ */
 realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(activeVehicle, screenX, screenY) {
     let distanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
     let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
@@ -228,6 +239,11 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
     toolNode.setLocalMatrix(matrixCopy);
 }
 
+/**
+ * Determines whether to translate tool along its local plane, or parallel to camera (preserving distance to camera)
+ * @param {Frame|Node} activeVehicle
+ * @returns {boolean}
+ */
 realityEditor.gui.ar.positioning.shouldPreserveDistanceWhileMoving = function(activeVehicle) {
     // always move 3D tools
     if (activeVehicle.fullScreen) return true;
