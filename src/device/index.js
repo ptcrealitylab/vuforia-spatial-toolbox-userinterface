@@ -329,8 +329,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         this.cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(this.cachedWorldObject.objectId);
         if (this.cachedOcclusionObject) {
             this.cachedOcclusionObject.updateMatrixWorld();
-            this.cachedOcclusionObject.children[0].geometry.computeFaceNormals()
-            this.cachedOcclusionObject.children[0].geometry.computeVertexNormals()
+            this.cachedOcclusionObject.children[0].geometry.computeVertexNormals();
         }
     }
 

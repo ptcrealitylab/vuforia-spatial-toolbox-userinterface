@@ -191,6 +191,56 @@ realityEditor.gui.ar.positioning.stopRepositioning = function() {
 // both are working but further investigation is needed to determine if one is always better than the other
 realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinates = true;
 
+realityEditor.gui.ar.positioning.resetVehicleTranslation = function(activeVehicle) {
+    let positionData = this.getPositionData(activeVehicle);
+    positionData.x = 0;
+    positionData.y = 0;
+
+    // flags the sceneNode as dirty so it gets rendered again with the new x/y position
+    realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid);
+
+    // broadcasts this to the realtime system if it's enabled
+    if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
+
+    let keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    let propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.x' : 'x';
+    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.x);
+    propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.y' : 'y';
+    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
+}
+
+realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(activeVehicle, screenX, screenY) {
+    let distanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
+    let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+    let outputCoordinateSystem = toolNode.parent;
+    let point = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, distanceToCamera, outputCoordinateSystem);
+
+    let positionData = this.getPositionData(activeVehicle);
+    if (positionData.x !== 0 || positionData.y !== 0) {
+        this.resetVehicleTranslation(activeVehicle);
+    }
+
+    // keep the rotation and scale the same but update the translation elements of the matrix
+    let matrixCopy = realityEditor.gui.ar.utilities.copyMatrix(toolNode.localMatrix);
+    matrixCopy[12] = point.x;
+    matrixCopy[13] = point.y;
+    matrixCopy[14] = point.z;
+    toolNode.setLocalMatrix(matrixCopy);
+}
+
+realityEditor.gui.ar.positioning.shouldPreserveDistanceWhileMoving = function(activeVehicle) {
+    // always move 3D tools
+    if (activeVehicle.fullScreen) return true;
+
+    // preserve distance while moving a 2D tool if the plane that the tool sits on isn't roughly parallel to the camera
+    const DIRECTION_SIMILARITY_THRESHOLD = 0.8;
+    const utils = realityEditor.gui.ar.utilities;
+    let toolDirection = utils.getForwardVector(realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).worldMatrix);
+    let cameraDirection = utils.getForwardVector(realityEditor.sceneGraph.getCameraNode().worldMatrix);
+    let dotProduct = utils.dotProduct(toolDirection, cameraDirection); // 1=parallel, 0=perpendicular
+    return (Math.abs(dotProduct) < DIRECTION_SIMILARITY_THRESHOLD);
+}
+
 /**
  * Primary method to move a transformed frame or node to the (x,y) point on its plane where the (screenX,screenY) ray cast intersects
  * @param {Frame|Node} activeVehicle
@@ -203,7 +253,10 @@ realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinates = true;
  *                                 if true, you are expected to manually call stopRepositioning when done
  */
 realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset, isContinuous) {
-    
+    if (this.shouldPreserveDistanceWhileMoving(activeVehicle)) {
+        return this.moveVehiclePreservingDistance(activeVehicle, screenX, screenY);
+    }
+
     var newPosition;
     try {
         // set dummy div transform to iframe without x,y,scale
