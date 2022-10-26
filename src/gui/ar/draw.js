@@ -629,7 +629,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {
                     if (!globalStates.freezeButtonState) {
-                        realityEditor.app.tap();
+                        const TAP_WHEN_NO_FRAMES_VISIBLE = false;
+                        if (TAP_WHEN_NO_FRAMES_VISIBLE) {
+                            realityEditor.app.tap();
+                        }
                     }
                 }, delay);
                 
