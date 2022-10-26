@@ -1423,7 +1423,7 @@ function polyfillWebkitConvertPointFromPageToNode() {
             dotProduct(negate(u), ev), dotProduct(negate(v), ev), dotProduct(negate(n), ev), 1];
     }
 
-    function _scalarMultiply(A, x) {
+    function scalarMultiply(A, x) {
         return [A[0] * x, A[1] * x, A[2] * x];
     }
 
@@ -1468,6 +1468,7 @@ function polyfillWebkitConvertPointFromPageToNode() {
     }
 
     exports.lookAt = lookAt;
+    exports.scalarMultiply = scalarMultiply;
     exports.negate = negate;
     exports.add = add;
     exports.magnitude = magnitude;

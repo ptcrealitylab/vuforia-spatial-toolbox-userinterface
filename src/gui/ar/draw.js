@@ -1719,17 +1719,6 @@ realityEditor.gui.ar.draw.addPocketVehicleAtCursorPosition = function(pocketCont
 
     realityEditor.device.resetEditingState();
 
-    setTimeout(() => {
-        let newModelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(pocketContainer.vehicle.uuid, 'CAMERA');
-        let inverseObjectModelMatrix = realityEditor.gui.ar.utilities.invertMatrix(realityEditor.sceneGraph.getSceneNodeById(pocketContainer.vehicle.objectId).worldMatrix);
-        let modelRelativeToParent = [];
-        realityEditor.gui.ar.utilities.multiplyMatrix(inverseObjectModelMatrix, newModelMatrix, modelRelativeToParent);
-
-        let vehicleSceneNode = realityEditor.sceneGraph.getSceneNodeById(pocketContainer.vehicle.uuid);
-        vehicleSceneNode.setLocalMatrix(modelRelativeToParent);
-        console.log('set initial model matrix to face the camera');
-    }, 100);
-
     realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
 }
 
