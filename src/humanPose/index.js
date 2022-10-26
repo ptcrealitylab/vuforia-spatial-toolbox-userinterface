@@ -5,10 +5,12 @@ createNameSpace("realityEditor.humanPose");
     let network, draw, utils; // shortcuts to access realityEditor.humanPose._____
 
     const MAX_FPS = 20;
+    const IDLE_TIMEOUT_MS = 2000;
 
     let humanPoseObjects = {};
     let nameIdMap = {};
     let lastRenderTime = Date.now();
+    let lastUpdateTime = Date.now();
     let lastRenderedPoses = {};
 
     function initService() {
@@ -50,8 +52,18 @@ createNameSpace("realityEditor.humanPose");
                 if (Date.now() - lastRenderTime < (1000.0 / MAX_FPS)) return;
                 lastRenderTime = Date.now();
 
+                if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
+                    // Clear out all human pose renderers because we've
+                    // received no updates from any of them
+                    draw.renderHumanPoseObjects([]);
+                    lastUpdateTime = Date.now();
+                    return;
+                }
+
                 // further reduce rendering redundant poses by only rendering if any pose data has been updated
                 if (!areAnyPosesUpdated(humanPoseObjects)) return;
+
+                lastUpdateTime = Date.now();
 
                 draw.renderHumanPoseObjects(Object.values(humanPoseObjects));
 
