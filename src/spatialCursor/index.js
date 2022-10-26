@@ -231,6 +231,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     // best aligned with the global up, it faces towards the camera rather than away, and if it's on a
     // horizontal surface, it rotates so that its local up vector is in line with the camera forward vector
     function getOrientedCursorRelativeToWorldObject() {
+        if (!indicator1.visible) { return null; }
+
         let spatialCursorMatrix = getCursorRelativeToWorldObject();
         if (spatialCursorMatrix) {
             const utils = realityEditor.gui.ar.utilities;
@@ -278,6 +280,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
             return rotatedMatrix;
         }
+
+        return null;
     }
 
     exports.initService = initService;
