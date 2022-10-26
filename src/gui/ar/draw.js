@@ -1193,7 +1193,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
             if (activeVehicle.alwaysFaceCamera === true) {
-                let modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrixLookingAt(activeKey, 'CAMERA');
+                let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
+                let modelViewMatrix = [];
+                utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
                 utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
             }
 
@@ -1324,7 +1326,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
-                        thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                        if (activeVehicle.alwaysFaceCamera) {
+                            // thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            let modelViewMatrix = [];
+                            utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+                            thisMsg.modelViewMatrix = modelViewMatrix;
+                        } else {
+                            thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                        }
                     }
 
                     if (sendMatrices.model === true) {
@@ -1653,6 +1663,12 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
     var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
+    let spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
+    if (spatialCursorMatrix) {
+        this.addPocketVehicleAtCursorPosition(pocketContainer);
+        return;
+    }
+
     let distanceInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier;
     realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeKey, distanceInFrontOfCamera);
 
@@ -1698,6 +1714,16 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
     // }, 500);
 };
+
+realityEditor.gui.ar.draw.addPocketVehicleAtCursorPosition = function(pocketContainer) {
+    // clear some flags so it gets rendered after this occurs
+    pocketContainer.positionOnLoad = null;
+    pocketContainer.waitingToRender = false;
+
+    realityEditor.device.resetEditingState();
+
+    realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
+}
 
 /**
  * Run an animation on the frame being dropped in from the pocket, performing a smooth tweening of its last matrix element
