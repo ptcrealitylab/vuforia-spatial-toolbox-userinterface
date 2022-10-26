@@ -1423,7 +1423,7 @@ function polyfillWebkitConvertPointFromPageToNode() {
             dotProduct(negate(u), ev), dotProduct(negate(v), ev), dotProduct(negate(n), ev), 1];
     }
 
-    function _scalarMultiply(A, x) {
+    function scalarMultiply(A, x) {
         return [A[0] * x, A[1] * x, A[2] * x];
     }
 
@@ -1455,5 +1455,27 @@ function polyfillWebkitConvertPointFromPageToNode() {
         return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
     }
 
+    function getRightVector(M) {
+        return normalize([M[0], M[1], M[2]]);
+    }
+
+    function getUpVector(M) {
+        return normalize([M[4], M[5], M[6]]);
+    }
+
+    function getForwardVector(M) {
+        return normalize([M[8], M[9], M[10]]);
+    }
+
     exports.lookAt = lookAt;
+    exports.scalarMultiply = scalarMultiply;
+    exports.negate = negate;
+    exports.add = add;
+    exports.magnitude = magnitude;
+    exports.normalize = normalize;
+    exports.crossProduct = crossProduct;
+    exports.dotProduct = dotProduct;
+    exports.getRightVector = getRightVector;
+    exports.getUpVector = getUpVector;
+    exports.getForwardVector = getForwardVector;
 })(realityEditor.gui.ar.utilities);

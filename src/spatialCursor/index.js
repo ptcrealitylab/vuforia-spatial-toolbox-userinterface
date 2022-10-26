@@ -100,6 +100,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
             // console.log(overlappingDivs);
             overlapped = overlappingDivs.some(element => element.tagName === 'IFRAME');
+            if (overlapped) {
+                let overlappingIframe = overlappingDivs.find(element => element.tagName === 'IFRAME');
+                let tool = realityEditor.getFrame(overlappingIframe.dataset.objectKey, overlappingIframe.dataset.frameKey);
+                if (tool.fullScreen) {
+                    overlapped = false;
+                } else {
+                    let position = getToolPosition(overlappingIframe.dataset.frameKey);
+                    indicator1.position.set(position.x, position.y, position.z);
+                    indicator1.quaternion.setFromUnitVectors(indicatorAxis, getToolDirection(overlappingIframe.dataset.frameKey));
+                }
+            }
         });
     }
 
@@ -192,6 +203,84 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return worldIntersectPoint; // these are relative to the world object
     }
 
+    // gets the position relative to groundplane (common coord system for threejsScene)
+    function getToolPosition(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
+    }
+
+    // gets the direction the tool is facing, within the coordinate system of the groundplane
+    function getToolDirection(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
+        let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
+        return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
+    }
+
+    function getCursorRelativeToWorldObject() {
+        if (!cachedWorldObject || !cachedOcclusionObject) { return null; }
+
+        let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
+        let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+        return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
+    }
+
+    // we need to apply multiple transformations to rotate the spatial cursor so that its local up vector is
+    // best aligned with the global up, it faces towards the camera rather than away, and if it's on a
+    // horizontal surface, it rotates so that its local up vector is in line with the camera forward vector
+    function getOrientedCursorRelativeToWorldObject() {
+        let spatialCursorMatrix = getCursorRelativeToWorldObject();
+        if (spatialCursorMatrix) {
+            const utils = realityEditor.gui.ar.utilities;
+            let rotatedMatrix = utils.copyMatrix(spatialCursorMatrix.elements);
+            let forwardVector = utils.getForwardVector(rotatedMatrix);
+            // TODO: may need to convert this relative to world object, but for now global up and world up are aligned anyways
+            let globalUpVector = [0, -1, 0];
+
+            // crossing forward vector with desired up vector yields new right vector
+            // then cross new right with forward to get orthogonal local up vector (similar to camera lookAt math)
+
+            let newRightVector = utils.normalize(utils.crossProduct(forwardVector, globalUpVector));
+            // handle co-linear case by reverting to original axis
+            if (isNaN(newRightVector[0])) { newRightVector = utils.getRightVector(rotatedMatrix); }
+
+            let newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
+            if (isNaN(newUpVector[0])) { newUpVector = utils.getUpVector(rotatedMatrix); }
+
+            let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+            let cameraRelativeToWorldObject = realityEditor.sceneGraph.convertToNewCoordSystem(utils.newIdentityMatrix(), realityEditor.sceneGraph.getCameraNode(), worldSceneNode);
+
+            // compute dot product of camera forward and new tool forward to see whether it's facing towards or away from you
+            let cameraForward = utils.normalize(utils.getForwardVector(cameraRelativeToWorldObject));
+
+            // check if it is upright enough to be considered on a horizontal surface – 0.9 seems to work well
+            if (Math.abs(utils.dotProduct(forwardVector, globalUpVector)) > 0.9) {
+                // math works out same as above, except the camera forward is the desired "up vector" in this case
+                newRightVector = utils.normalize(utils.crossProduct(forwardVector, cameraForward));
+                if (isNaN(newRightVector[0])) { newRightVector = utils.getRightVector(rotatedMatrix); }
+
+                newUpVector = utils.normalize(utils.crossProduct(newRightVector, forwardVector));
+                if (isNaN(newUpVector[0])) { newUpVector = utils.getUpVector(rotatedMatrix); }
+            }
+
+            // if normals are inverted and tool ends up facing away from camera instead of towards it, flip it left-right again
+            let dotProduct = utils.dotProduct(cameraForward, forwardVector);
+
+            // assign the new right and up vectors to the tool matrix, keeping its forward the same
+            rotatedMatrix[0] = newRightVector[0] * Math.sign(dotProduct);
+            rotatedMatrix[1] = newRightVector[1] * Math.sign(dotProduct);
+            rotatedMatrix[2] = newRightVector[2] * Math.sign(dotProduct);
+            rotatedMatrix[4] = newUpVector[0];
+            rotatedMatrix[5] = newUpVector[1];
+            rotatedMatrix[6] = newUpVector[2];
+
+            return rotatedMatrix;
+        }
+    }
+
     exports.initService = initService;
+    exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
 }(realityEditor.spatialCursor));

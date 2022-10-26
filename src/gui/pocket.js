@@ -1136,6 +1136,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             realityEditor.network.toBeInitialized[frameID] = true;
 
+            let spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
+            if (spatialCursorMatrix) {
+                frame.ar.matrix = spatialCursorMatrix;
+            }
+
             realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
             realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(frame.objectId, frameID, frame, frame.ar.matrix);
 
