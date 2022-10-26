@@ -638,6 +638,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // let wrist = Math.ceil((skel.angles.wristHandLeft[4] + skel.angles.wristHandRight[4])/2);
         // let upperArm = Math.ceil((skel.angles.shoulderElbowLeft[4] + skel.angles.shoulderElbowRight[4])/2);
 
+        wrist = Math.min(Math.max(wrist, 1), 3);
+        lowerArm = Math.min(Math.max(lowerArm, 1), 2);
+        upperArm = Math.min(Math.max(lowerArm, 1), 6);
+
         let lwaKey = lowerArm + ',' + wrist + ',' + upperArm;
 
         const LWAReba = new Map(); //set up table for intermediate score from lower, then wrist, then upper
