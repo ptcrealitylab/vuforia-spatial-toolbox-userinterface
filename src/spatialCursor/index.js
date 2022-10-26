@@ -8,7 +8,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let cachedOcclusionObject;
     let occlusionDownloadInterval = null;
     let worldIntersectPoint = {};
-    let indicator;
+    let indicator1;
+    let indicator2;
     let overlapped = false;
 
     let clock = new THREE.Clock();
@@ -83,14 +84,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
         });
-
-        indicator = addSpatialCursor();
+        
+        addSpatialCursor();
+        addTestSpatialCursor();
+        toggleDisplaySpatialCursor(false);
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             let screenX = window.innerWidth / 2;
             let screenY = window.innerHeight / 2;
-            worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+            worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
             updateSpatialCursor();
+            updateTestSpatialCursor();
             uniforms['time'].value = clock.getElapsedTime() * 10;
             // constantly check if the screen center overlaps any iframes
             let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
@@ -101,20 +105,39 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     function addSpatialCursor() {
         const geometryLength = 50;
-        const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
-        const circle1 = new THREE.Mesh(geometry1, normalCursorMaterial);
-        realityEditor.gui.threejsScene.addToScene(circle1);
-        return circle1;
+        const geometry = new THREE.CircleGeometry(geometryLength, 32);
+        indicator1 = new THREE.Mesh(geometry, normalCursorMaterial);
+        realityEditor.gui.threejsScene.addToScene(indicator1);
     }
-
+    
+    function addTestSpatialCursor() {
+        const geometryLength = 50;
+        const geometry = new THREE.CircleGeometry(geometryLength, 32);
+        const material = new THREE.MeshBasicMaterial({color: new THREE.Color(0x006fff)})
+        indicator2 = new THREE.Mesh(geometry, material);
+        realityEditor.gui.threejsScene.addToScene(indicator2);
+    }
+    
     function updateSpatialCursor() {
         if (typeof worldIntersectPoint.point !== 'undefined') {
-            let position = new THREE.Vector3(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
-            position.add(worldIntersectPoint.normalVector.multiplyScalar(worldIntersectOffsetDist));
-            indicator.position.set(position.x, position.y, position.z);
-            indicator.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
+            indicator1.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
+            let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(worldIntersectOffsetDist);
+            indicator1.position.add(offset);
+            indicator1.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
         }
-        indicator.material = overlapped ? colorCursorMaterial : normalCursorMaterial;
+        indicator1.material = overlapped ? colorCursorMaterial : normalCursorMaterial;
+    }
+
+    function updateTestSpatialCursor() {
+        if (typeof worldIntersectPoint.point !== 'undefined') {
+            indicator2.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
+            indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
+        }
+    }
+    
+    function toggleDisplaySpatialCursor(newValue) {
+        indicator1.visible = newValue;
+        indicator2.visible = newValue;
     }
 
     // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
@@ -166,9 +189,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 }
             }
         }
-        // console.log(`%c ${worldIntersectPoint.point}`, 'color: orange');
         return worldIntersectPoint; // these are relative to the world object
     }
 
     exports.initService = initService;
+    exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
 }(realityEditor.spatialCursor));
