@@ -63,6 +63,11 @@ createNameSpace('realityEditor.app.callbacks');
 
     const skeletonDedupId = Math.floor(Math.random() * 10000);
 
+    // other modules can subscribe to what's happening here
+    let subscriptions = {
+        onPoseReceived: []
+    }
+
     function onOrientationSet() {
         // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
         realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
@@ -217,6 +222,11 @@ createNameSpace('realityEditor.app.callbacks');
         realityEditor.network.onUDPMessage(message);
     }
 
+    // callback will trigger with array of joints {x,y,z} when a pose is detected
+    exports.subscribeToPoses = function(callback) {
+        subscriptions.onPoseReceived.push(callback);
+    }
+
     /**
      * Callback for realityEditor.app.getPosesStream
      * @param {Array<Object>} poses
@@ -333,6 +343,16 @@ createNameSpace('realityEditor.app.callbacks');
         let camY = cameraMat[13];
         let camZ = cameraMat[14];
         realityEditor.gui.poses.drawPoses(poses, imageSize);
+
+        const USE_DEBUG_POSE = false;
+
+        if (USE_DEBUG_POSE) {
+            subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
+        } else {
+            if (poses.length > 0) {
+                subscriptions.onPoseReceived.forEach(cb => cb(coolerPoses));
+            }
+        }
     }
 
     /**

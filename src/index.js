@@ -85,6 +85,7 @@ var realityEditor = realityEditor || {
             groundPlaneRenderer: {},
             grouping: {},
             lines: {},
+            meshLine: {},
             moveabilityOverlay: {},
             positioning: {},
             utilities: {}
@@ -136,6 +137,13 @@ var realityEditor = realityEditor || {
     envelopeManager: {},
     moduleCallbacks: {},
     worldObjects: {},
+    spatialCursor: {
+        shader: {
+            normalCursorFragmentShader: {},
+            colorCursorFragmentShader: {},
+            vertexShader: {},
+        }
+    },
     avatar: {
         network: {},
         draw: {},
@@ -144,6 +152,7 @@ var realityEditor = realityEditor || {
     humanPose: {
         network: {},
         draw: {},
+        rebaScore: {},
         utils: {}
     }
 };

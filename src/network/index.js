@@ -384,7 +384,11 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
         thisObject.matrix = [];
     }
 
-    let isImageTarget = !thisObject.isWorldObject && !thisObject.isAnchor;
+    let isImageTarget = !(thisObject.isWorldObject || thisObject.type === 'world') &&
+        !realityEditor.gui.ar.anchors.isAnchorObject(objectKey) &&
+        !realityEditor.avatar.utils.isAvatarObject(thisObject) &&
+        !realityEditor.humanPose.utils.isHumanPoseObject(thisObject);
+
     realityEditor.sceneGraph.addObject(objectKey, thisObject.matrix, isImageTarget);
 
     // thisObject.unpinnedFrameKeys = {};
@@ -1561,6 +1565,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
         //         }
         //     }
         // }
+    }
+
+    if (typeof msgContent.alwaysFaceCamera === 'boolean') {
+        tempThisObject.alwaysFaceCamera = msgContent.alwaysFaceCamera;
     }
 
     if (typeof msgContent.fullScreen === "boolean") {
@@ -3401,9 +3409,9 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
 /**
  * Makes a POST request to update the (x,y,scale,matrix) position data of a frame or node on the server
  * @param {Frame|Node} activeVehicle
- * @param {boolean|undefined} ignoreMatrix - include this if you only want to update (x,y,scale) not the transformation matrix
+ * @param {boolean} ignoreMatrix - include this if you only want to update (x,y,scale) not the transformation matrix
  */
-realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix) {
+realityEditor.network.postVehiclePosition = function(activeVehicle, ignoreMatrix = false) {
     if (activeVehicle) {
         var positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
         var content = {};

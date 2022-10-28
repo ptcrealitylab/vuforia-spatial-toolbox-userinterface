@@ -329,8 +329,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         this.cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(this.cachedWorldObject.objectId);
         if (this.cachedOcclusionObject) {
             this.cachedOcclusionObject.updateMatrixWorld();
-            this.cachedOcclusionObject.children[0].geometry.computeFaceNormals()
-            this.cachedOcclusionObject.children[0].geometry.computeVertexNormals()
+            this.cachedOcclusionObject.children[0].geometry.computeVertexNormals();
         }
     }
 
@@ -827,8 +826,7 @@ realityEditor.device.onElementTouchUp = function(event) {
       return;
     }
 
-    var target = event.currentTarget;
-    var activeVehicle = this.getEditingVehicle();
+    const target = event.currentTarget;
 
     if (this.shouldPostEventsIntoIframe()) {
         this.postEventIntoIframe(event, target.frameId, target.nodeId);
@@ -867,59 +865,8 @@ realityEditor.device.onElementTouchUp = function(event) {
 
     }
 
-    // touch up over the trash
-    if (event.pageX >= this.layout.getTrashThresholdX()) {
-        
-        var isFrame = activeVehicle && globalStates.guiState === "ui";
-
-        var additionalInfo = {};
-        if (isFrame) { additionalInfo.frameType = activeVehicle.src; }
-
-        this.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: this.editingState.object, frameKey: this.editingState.frame, nodeKey: this.editingState.node, additionalInfo: additionalInfo});
-
-        // delete logic node
-        if (target.type === "logic") {
-
-            // delete links to and from the node
-            realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
-                var thisFrame = realityEditor.getFrame(objectKey, frameKey);
-                Object.keys(thisFrame.links).forEach(function(linkKey) {
-                    var thisLink = thisFrame.links[linkKey];
-                    if (((thisLink.objectA === target.objectId) && (thisLink.frameA === target.frameId) && (thisLink.nodeA === target.nodeId)) ||
-                        ((thisLink.objectB === target.objectId) && (thisLink.frameB === target.frameId) && (thisLink.nodeB === target.nodeId))) {
-                        delete thisFrame.links[linkKey];
-                        realityEditor.network.deleteLinkFromObject(objects[objectKey].ip, objectKey, frameKey, linkKey);
-                    }
-                });
-            });
-
-            // remove it from the DOM
-            setTimeout(function() {
-                realityEditor.gui.ar.draw.deleteNode(target.objectId, target.frameId, target.nodeId);
-            }, 10);
-            // delete it from the server
-            realityEditor.network.deleteNodeFromObject(objects[target.objectId].ip, target.objectId, target.frameId, target.nodeId);
-
-        } else if (isFrame && activeVehicle.location === "global") {
-            
-            // delete frame after a slight delay so that DOM changes don't mess with touch event propagation
-            let thisVehicle = activeVehicle;
-            let thisObjectId = this.editingState.object;
-            let thisFrameId = this.editingState.frame;
-            setTimeout(function() {
-                realityEditor.device.deleteFrame(thisVehicle, thisObjectId, thisFrameId);
-            }, 10);
-        }
-    }
-
     // force the canvas to re-render
     globalCanvas.hasContent = true;
-    
-    // hide the trash menu
-    // realityEditor.gui.menus.buttonOn("main");
-    // if (!didDisplayCrafting) {
-    //     realityEditor.gui.menus.switchToMenu("main");
-    // }
 
     cout("onElementTouchUp");
 };
@@ -1132,6 +1079,11 @@ realityEditor.device.onDocumentPointerUp = function(event) {
         realityEditor.device.onElementTouchUp(syntheticPointerEvent);
     }
 
+    // delete the tool if you are over a defined trash zone
+    if (this.editingState.frame && this.isPointerInTrashZone(event.pageX, event.pageY)) {
+        this.tryToDeleteSelectedVehicle();
+    }
+
     // clear state that may have been set during a touchdown or touchmove event
     this.clearTouchTimer();
     realityEditor.gui.ar.positioning.initialScaleData = null;
@@ -1166,6 +1118,61 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     }
     
     cout("onDocumentPointerUp");
+};
+
+realityEditor.device.isPointerInTrashZone = function(pointerX, _pointerY) {
+    return pointerX > realityEditor.device.layout.getTrashThresholdX();
+};
+
+realityEditor.device.tryToDeleteSelectedVehicle = function() {
+    let activeVehicle = this.getEditingVehicle();
+    if (!activeVehicle) return;
+
+    const isFrame = realityEditor.isVehicleAFrame(activeVehicle);
+    const additionalInfo = isFrame ? { frameType: activeVehicle.src } : {};
+    const objectId = this.editingState.object;
+    const frameId = this.editingState.frame;
+    const nodeId = this.editingState.node;
+    let didDelete = false;
+
+    if (isFrame && activeVehicle.location === 'global') {
+        // delete frame after a slight delay so that DOM changes don't mess with touch event propagation
+        setTimeout(function() {
+            realityEditor.device.deleteFrame(activeVehicle, objectId, frameId);
+        }, 10);
+        didDelete = true;
+    }
+
+    if (nodeId && activeVehicle.type === 'logic') {
+        // delete links to and from the node
+        realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+            let thisFrame = realityEditor.getFrame(objectKey, frameKey);
+            Object.keys(thisFrame.links).forEach(linkKey => {
+                let thisLink = thisFrame.links[linkKey];
+                if (((thisLink.objectA === objectId) && (thisLink.frameA === frameId) && (thisLink.nodeA === nodeId)) ||
+                    ((thisLink.objectB === objectId) && (thisLink.frameB === frameId) && (thisLink.nodeB === nodeId))) {
+                    delete thisFrame.links[linkKey];
+                    realityEditor.network.deleteLinkFromObject(objects[objectKey].ip, objectKey, frameKey, linkKey);
+                }
+            });
+        });
+        // delete node after a slight delay so DOM changes don't mess with touch event propagation
+        setTimeout(() => {
+            realityEditor.gui.ar.draw.deleteNode(objectId, frameId, nodeId); 
+            realityEditor.network.deleteNodeFromObject(objects[objectId].ip, objectId, frameId, nodeId);
+        }, 10);
+        didDelete = true;
+    }
+
+    if (!didDelete) return;
+
+    this.resetEditingState();
+    this.callbackHandler.triggerCallbacks('vehicleDeleted', {
+        objectKey: objectId,
+        frameKey: frameId,
+        nodeKey: nodeId,
+        additionalInfo: additionalInfo
+    });
 };
 
 /**

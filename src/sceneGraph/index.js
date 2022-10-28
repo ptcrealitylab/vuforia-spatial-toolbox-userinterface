@@ -118,6 +118,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         if (typeof initialLocalMatrix !== 'undefined') {
             sceneNodeFrame.setLocalMatrix(initialLocalMatrix);
+            realityEditor.sceneGraph.network.recordInitialFramePosition(sceneNodeFrame);
         }
     }
 
@@ -573,6 +574,121 @@ createNameSpace("realityEditor.sceneGraph");
         return null;
     }
 
+    /**
+     * Helper function to convert a point or matrix from one coordinate system to another
+     * Input can be one of four formats: length-16 toolbox matrix, THREE.Matrix4, length-3 position vector, or {x,y,z}
+     * @param {Matrix4|{x: number, y: number, z: number}|number[]} input
+     * @param {SceneNode} currentParentSceneNode
+     * @param {SceneNode} newParentSceneNode
+     * @returns {Matrix4|{x: number, y: number, z: number}|number[]}
+     */
+    function convertToNewCoordSystem(input, currentParentSceneNode, newParentSceneNode) {
+        let processedInput = [];
+        let inputType;
+        if (typeof input.length !== 'undefined' && input.length === 16) {
+            inputType = 'matrix4x4';
+            processedInput = input;
+        } else if (typeof input.elements !== 'undefined' && input.elements.length === 16) {
+            inputType = 'THREE.Matrix4';
+            processedInput = input.elements;
+        } else if (typeof input.length !== 'undefined' && input.length === 3) {
+            inputType = 'vector3';
+            processedInput = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                input[0], input[1], input[2], 1
+            ];
+        } else if (typeof input.x !== 'undefined' && typeof input.y !== 'undefined' && typeof input.z !== 'undefined') {
+            inputType = 'position';
+            processedInput = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                input.x, input.y, input.z, 1
+            ];
+        }
+
+        let relativeMatrix = currentParentSceneNode.getMatrixRelativeTo(newParentSceneNode);
+        let output = [];
+        realityEditor.gui.ar.utilities.multiplyMatrix(processedInput, relativeMatrix, output);
+
+        if (inputType === 'matrix4x4') {
+            return output;
+        } else if (inputType === 'THREE.Matrix4') {
+            let matrixThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(matrixThree, output);
+            return matrixThree;
+        } else if (inputType === 'vector3') {
+            return [output[12]/output[15], output[13]/output[15], output[14]/output[15]];
+        } else if (inputType === 'position') {
+            return { x: output[12]/output[15], y: output[13]/output[15], z: output[14]/output[15] };
+        }
+    }
+
+    /**
+     * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
+     * @param {number} screenX - in screen pixels
+     * @param {number} screenY - in screen pixels
+     * @param {number} distance - in millimeters
+     * @param {SceneNode} coordinateSystem - which coordinate system you want the result calculated relative to
+     * @returns {{x: number, y: number, z: number}} - position in ROOT coordinates, or whatever coordinateSystem is specified
+     */
+    function getPointAtDistanceFromCamera(screenX, screenY, distance, coordinateSystem = rootNode) {
+        let distanceRaycastVector = [
+            (screenX / window.innerWidth) * 2.0 - 1,
+            - (screenY / window.innerHeight) * 2.0 + 1,
+            0,
+            1
+        ];
+        let unprojectedVector = utils.multiplyMatrix4(distanceRaycastVector, utils.invertMatrix(globalStates.realProjectionMatrix));
+        let localDistanceVector = utils.scalarMultiply(utils.normalize([unprojectedVector[0], unprojectedVector[1], unprojectedVector[2]]), distance);
+        let inputPosition = {x: localDistanceVector[0], y: localDistanceVector[1], z: localDistanceVector[2]};
+        return convertToNewCoordSystem(inputPosition, cameraNode, coordinateSystem);
+    }
+
+    // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
+    // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
+    function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true} = {}) {
+        let utils = realityEditor.gui.ar.utilities;
+
+        // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
+        let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+        let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
+        let mSource = sourceNode.getMatrixRelativeTo(worldNode);
+        let mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
+
+        let sourcePosition = { x: mSource[12] / mSource[15], y: mSource[13] / mSource[15], z: mSource[14] / mSource[15] };
+        let targetPosition = { x: mTarget[12] / mTarget[15], y: mTarget[13] / mTarget[15], z: mTarget[14] / mTarget[15] };
+        let lookAtMatrix = utils.lookAt(sourcePosition.x, sourcePosition.y, sourcePosition.z, targetPosition.x, targetPosition.y, targetPosition.z, 0, 1, 0);
+        let correspondingModelMatrix = utils.invertMatrix(lookAtMatrix); // lookAt returns a ~"view" matrix, invert to get the model matrix
+
+        // ensure we preserve the scale from before
+        let scaledModelMatrix = [];
+        if (includeScale) {
+            let scale = sourceNode.getVehicleScale();
+            let transformMatrix = utils.newIdentityMatrix();
+            [0, 5, 10].forEach(index => transformMatrix[index] = scale);
+            utils.multiplyMatrix(transformMatrix, correspondingModelMatrix, scaledModelMatrix);
+        } else {
+            scaledModelMatrix = correspondingModelMatrix;
+        }
+
+        // lookAtMatrix is calculated in coordinates relative to the world object, so we convert from world to ROOT
+        let modelMatrix = [];
+        utils.multiplyMatrix(scaledModelMatrix, worldNode.worldMatrix, modelMatrix);
+
+        // flip the element upside-down or left-right if needed
+        let flipMatrix = utils.newIdentityMatrix();
+        flipMatrix[0] = (flipX ? -1 : 1);
+        flipMatrix[5] = (flipY ? -1 : 1);
+        let flippedModelMatrix = [];
+        utils.multiplyMatrix(flipMatrix, modelMatrix, flippedModelMatrix);
+        // modelMatrix = flippedModelMatrix;
+
+        return flippedModelMatrix;
+    }
+
     /************ Private Functions ************/
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
         let sceneNodeRotateX;
@@ -709,6 +825,9 @@ createNameSpace("realityEditor.sceneGraph");
     exports.getGroundPlaneModelViewMatrix = getGroundPlaneModelViewMatrix;
     exports.isInFrontOfCamera = isInFrontOfCamera;
     exports.getViewMatrix = getViewMatrix;
+    exports.getModelMatrixLookingAt = getModelMatrixLookingAt;
+    exports.convertToNewCoordSystem = convertToNewCoordSystem;
+    exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
 
     // public method to recompute sceneGraph for all visible entities
     exports.calculateFinalMatrices = calculateFinalMatrices;

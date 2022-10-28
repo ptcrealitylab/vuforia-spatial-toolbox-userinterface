@@ -363,7 +363,9 @@ createNameSpace("realityEditor.app.targetDownloader");
             console.log('successfully downloaded JPG file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
             let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
-            realityEditor.app.addNewMarkerJPG(fileName, objectID, targetWidth, moduleName + '.onMarkerAdded');
+            realityEditor.app.promises.addNewMarkerJPG(fileName, objectID, targetWidth).then(({success, fileName}) => {
+                onMarkerAdded(success, fileName);
+            });
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
             targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = true;
@@ -771,7 +773,9 @@ createNameSpace("realityEditor.app.targetDownloader");
                 if (states.JPG === DownloadState.SUCCEEDED && states.DAT !== DownloadState.SUCCEEDED) {
                     console.log('>> add JPG target again: ' + objectID);
                     let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
-                    realityEditor.app.addNewMarkerJPG(targetDownloadStates[objectID].FILENAME, objectID, targetWidth, moduleName + '.onMarkerAdded');
+                    realityEditor.app.promises.addNewMarkerJPG(targetDownloadStates[objectID].FILENAME, objectID, targetWidth).then(({success, fileName}) => {
+                        onMarkerAdded(success, fileName);
+                    });
                     targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
                 } else if (states.DAT === DownloadState.SUCCEEDED) {
                     console.log('>> add DAT target again: ' + objectID);

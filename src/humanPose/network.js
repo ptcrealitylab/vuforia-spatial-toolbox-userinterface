@@ -11,7 +11,9 @@ createNameSpace("realityEditor.humanPose.network");
         }
 
         let postUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/');
-        let params = new URLSearchParams({action: 'new', name: objectName, isHuman: true, worldId: worldId});
+        let poseJointSchema = JSON.stringify(realityEditor.humanPose.utils.JOINTS);
+        let params = new URLSearchParams({action: 'new', name: objectName, isHuman: JSON.stringify(true), worldId: worldId, poseJointSchema: poseJointSchema});
+        // TODO: we may need to include the pose joints or at least a list of which joints are provided by this source
         fetch(postUrl, {
             method: 'POST',
             body: params
@@ -23,6 +25,31 @@ createNameSpace("realityEditor.humanPose.network");
         });
     }
 
+    // helper function that will trigger the callback for each avatar object previously or in-future discovered
+    function onHumanPoseObjectDiscovered(callback) {
+        // first check if any previously discovered objects are avatars
+        for (let [objectKey, object] of Object.entries(objects)) {
+            if (realityEditor.humanPose.utils.isHumanPoseObject(object)) {
+                callback(object, objectKey);
+            }
+        }
+
+        // next, listen to newly discovered objects
+        realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
+            if (realityEditor.humanPose.utils.isHumanPoseObject(object)) {
+                callback(object, objectKey);
+            }
+        });
+    }
+
+    function onHumanPoseObjectDeleted(callback) {
+        realityEditor.network.registerCallback('objectDeleted', (params) => {
+            callback(params.objectKey);
+        });
+    }
+
     exports.addHumanPoseObject = addHumanPoseObject;
+    exports.onHumanPoseObjectDiscovered = onHumanPoseObjectDiscovered;
+    exports.onHumanPoseObjectDeleted = onHumanPoseObjectDeleted;
 
 }(realityEditor.humanPose.network));

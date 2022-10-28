@@ -333,8 +333,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         this.lowFrequencyUpdateCounter++;
     }
     
-    // this.isLowFrequencyUpdateFrame = true;
-    
     // checks if you detect an object with no frames within the viewport, so that you can provide haptic feedback
     
     let visibleNonWorldObjects = [];
@@ -377,7 +375,8 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         // for now, totally ignore avatar objects in the rendering engine
         // TODO: if we want to render tools relative to each avatar, we can remove this and add them to the visibleObjects list
         if (realityEditor.avatar.utils.isAvatarObject(this.activeObject)) { continue; }
-        
+        if (realityEditor.humanPose.utils.isHumanPoseObject(this.activeObject)) { continue; }
+
         // if this object was detected by the AR engine this frame, render its nodes and/or frames
         if (this.visibleObjects.hasOwnProperty(objectKey)) {
             
@@ -630,7 +629,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 // or every 1 seconds if you're looking at the world object
                 visibleObjectTapInterval = setInterval(function () {
                     if (!globalStates.freezeButtonState) {
-                        realityEditor.app.tap();
+                        const TAP_WHEN_NO_FRAMES_VISIBLE = false;
+                        if (TAP_WHEN_NO_FRAMES_VISIBLE) {
+                            realityEditor.app.tap();
+                        }
                     }
                 }, delay);
                 
@@ -1190,6 +1192,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
+            if (activeVehicle.alwaysFaceCamera === true) {
+                let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
+                let modelViewMatrix = [];
+                utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+                utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+            }
+
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
             activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
@@ -1317,7 +1326,15 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
-                        thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                        if (activeVehicle.alwaysFaceCamera) {
+                            // thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            let modelViewMatrix = [];
+                            utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+                            thisMsg.modelViewMatrix = modelViewMatrix;
+                        } else {
+                            thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                        }
                     }
 
                     if (sendMatrices.model === true) {
@@ -1646,6 +1663,12 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     var activeFrameKey = pocketContainer.vehicle.frameId || pocketContainer.vehicle.uuid;
     var activeNodeKey = pocketContainer.vehicle.uuid === activeFrameKey ? null : pocketContainer.vehicle.uuid;
 
+    let spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
+    if (spatialCursorMatrix) {
+        this.addPocketVehicleAtCursorPosition(pocketContainer);
+        return;
+    }
+
     let distanceInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier;
     realityEditor.gui.ar.positioning.moveFrameToCamera(pocketContainer.vehicle.objectId, activeKey, distanceInFrontOfCamera);
 
@@ -1691,6 +1714,16 @@ realityEditor.gui.ar.draw.addPocketVehicle = function(pocketContainer) {
     //     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, newMatrixValue);
     // }, 500);
 };
+
+realityEditor.gui.ar.draw.addPocketVehicleAtCursorPosition = function(pocketContainer) {
+    // clear some flags so it gets rendered after this occurs
+    pocketContainer.positionOnLoad = null;
+    pocketContainer.waitingToRender = false;
+
+    realityEditor.device.resetEditingState();
+
+    realityEditor.network.postVehiclePosition(pocketContainer.vehicle);
+}
 
 /**
  * Run an animation on the frame being dropped in from the pocket, performing a smooth tweening of its last matrix element

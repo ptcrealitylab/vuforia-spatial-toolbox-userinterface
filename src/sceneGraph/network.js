@@ -39,9 +39,16 @@ createNameSpace("realityEditor.sceneGraph.network");
         
         realityEditor.forEachObject(function(object, objectKey) {
             let sceneNode = sceneGraph.getSceneNodeById(objectKey);
-            if (doesNeedUpload(sceneNode)) {
-                uploadSceneNode(sceneNode);
+            if (doesObjectNeedUpload(sceneNode)) {
+                uploadObjectSceneNode(sceneNode);
             }
+            
+            realityEditor.forEachFrameInObject(objectKey, (objectKey, frameKey) => {
+                let sceneNode = sceneGraph.getSceneNodeById(frameKey);
+                if (doesFrameNeedUpload(sceneNode)) {
+                    uploadFrameSceneNode(sceneNode);
+                }
+            });
         });
     }
 
@@ -51,7 +58,7 @@ createNameSpace("realityEditor.sceneGraph.network");
      * @param {SceneNode} sceneNode
      * @return {boolean}
      */
-    function doesNeedUpload(sceneNode) {
+    function doesObjectNeedUpload(sceneNode) {
         // only do this for objects
         let object = realityEditor.getObject(sceneNode.id);
         if (!object) { return false; }
@@ -85,7 +92,7 @@ createNameSpace("realityEditor.sceneGraph.network");
      * Stores some metadata locally in uploadInfo so that we can compare to decide when to upload again
      * @param {SceneNode} sceneNode
      */
-    function uploadSceneNode(sceneNode) {
+    function uploadObjectSceneNode(sceneNode) {
         // don't upload if we haven't localized everything to a world object yet
         if (!realityEditor.sceneGraph.getWorldId())  { return; }
 
@@ -123,6 +130,63 @@ createNameSpace("realityEditor.sceneGraph.network");
         sceneNode.needsUploadToServer = false;
     }
 
+    // Similar to doesObjectNeedUpload, but for frames. Determines eligibility by measuring change in localMatrix
+    // (not worldPosition like in doesNeedObjectUpload)
+    function doesFrameNeedUpload(sceneNode) {
+        // only do this for frames
+        let frame = sceneNode.linkedVehicle;
+        if (!frame) { return false; }
+
+        // if the frame specifically marked itself as needing to upload, upload it
+        if (sceneNode.needsUploadToServer) { return true; }
+
+        // otherwise check that it's moved since the last upload
+        let previousUploadInfo = uploadInfo[sceneNode.id];
+        if (previousUploadInfo) {
+            // the less distance it's moved, the more time needs to pass between uploads
+            let timeSinceLastUpload = (Date.now() - previousUploadInfo.timestamp) / 1000;
+            // let distanceMoved = distance(sceneGraph.getWorldPosition(sceneNode.id), previousUploadInfo.worldPosition) / 1000;
+            let currentPosition = { x: sceneNode.localMatrix[12], y: sceneNode.localMatrix[13], z: sceneNode.localMatrix[14] };
+            let previousPosition = { x: previousUploadInfo.localMatrix[12], y: previousUploadInfo.localMatrix[13], z: previousUploadInfo.localMatrix[14] };
+            let distanceMoved = distance(currentPosition, previousPosition) / 1000;
+            
+            if (distanceMoved === 0) { return false; }
+            // needs to wait 1 second if it moves 10cm, 0.1 second if moves 1m, 10 sec if moves only 1cm
+            return (distanceMoved * timeSinceLastUpload) > 0.1;
+        }
+
+        return true;
+    }
+
+    // similar to uploadObjectSceneNode, but for frames.
+    // simpler upload because just updating localMatrix, not computing relative to world
+    function uploadFrameSceneNode(sceneNode) {
+        let frame = sceneNode.linkedVehicle;
+        if (!frame) { return; }
+
+        uploadInfo[sceneNode.id] = {
+            localMatrix: sceneNode.localMatrix,
+            timestamp: Date.now()
+        };
+
+        console.log('uploading scene graph frame position for ' + sceneNode.id);
+
+        realityEditor.network.postVehiclePosition(frame, false);
+
+        sceneNode.needsUploadToServer = false;
+    }
+
+    // helps us from re-uploading frame position when the frame is initially loaded, by keeping track of its initial
+    // position, so that we only have to upload if it moves from the position last stored in the server
+    function recordInitialFramePosition(sceneNode) {
+        if (!sceneNode.linkedVehicle) { return; } // only work for frames
+
+        uploadInfo[sceneNode.id] = {
+            localMatrix: sceneNode.localMatrix,
+            timestamp: Date.now()
+        };
+    }
+
     /**
      * Public function for other modules to trigger an upload instead of waiting for this module to eventually do it
      * @param {string} objectId
@@ -130,7 +194,7 @@ createNameSpace("realityEditor.sceneGraph.network");
     function uploadObjectPosition(objectId) {
         let objectNode = sceneGraph.getSceneNodeById(objectId);
         if (objectNode) {
-            uploadSceneNode(objectNode);
+            uploadObjectSceneNode(objectNode);
         }
     }
 
@@ -152,5 +216,6 @@ createNameSpace("realityEditor.sceneGraph.network");
     exports.uploadObjectPosition = uploadObjectPosition;
     exports.onObjectLocalized = onObjectLocalized;
     exports.triggerLocalizationCallbacks = triggerLocalizationCallbacks;
+    exports.recordInitialFramePosition = recordInitialFramePosition;
 
 })(realityEditor.sceneGraph.network);
