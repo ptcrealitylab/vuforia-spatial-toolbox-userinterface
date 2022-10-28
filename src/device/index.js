@@ -95,7 +95,7 @@ realityEditor.device.cachedWorldObject = null;
  * @property {string|null} object - objectId of the selected vehicle
  * @property {string|null} frame - frameId of the selected vehicle
  * @property {string|null} node - nodeIf of the selected node (null if vehicle is a frame, not a node)
- * @property {{x: number, y: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
+ * @property {{x: number, y: number, z: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
  * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
  * @property {number|null} initialCameraPosition - initial camera position used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location

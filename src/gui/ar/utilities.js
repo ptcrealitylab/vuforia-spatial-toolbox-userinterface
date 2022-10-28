@@ -1345,14 +1345,17 @@ function polyfillWebkitConvertPointFromPageToNode() {
     function getForwardVector(M) {
         return normalize([M[8], M[9], M[10]]);
     }
-    
-    function matrixFromTranslation(x, y, z) {
-        return [
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            x, y, z, 1
-        ];
+
+    // see https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
+    function rayPlaneIntersect(planeOrigin, planeNormal, rayOrigin, rayDirection) {
+        let denom = dotProduct(planeNormal, rayDirection);
+        if (Math.abs(denom) < 0.0001) return null; // plane and ray are ~parallel, so either 0 or infinite intersections
+
+        // solve for parametric variable, t, to figure out where on the ray is the plane intersection
+        let vector = subtract(planeOrigin, rayOrigin);
+        let t = dotProduct(vector, planeNormal) / denom;
+
+        return add(rayOrigin, scalarMultiply(rayDirection, t));
     }
 
     exports.lookAt = lookAt;
@@ -1367,5 +1370,5 @@ function polyfillWebkitConvertPointFromPageToNode() {
     exports.getRightVector = getRightVector;
     exports.getUpVector = getUpVector;
     exports.getForwardVector = getForwardVector;
-    exports.matrixFromTranslation = matrixFromTranslation;
+    exports.rayPlaneIntersect = rayPlaneIntersect;
 })(realityEditor.gui.ar.utilities);
