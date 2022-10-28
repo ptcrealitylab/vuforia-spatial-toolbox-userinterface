@@ -174,29 +174,11 @@ exports.drawPoses = function(poses, imageSize) {
         halfCanvasWidth = gfx.width / 2.0;
         halfCanvasHeight = gfx.height / 2.0;
     }
-    /* const cx = pointWidth / 2;
-    const cy = pointHeight / 2;
-    const focalLengthX = 1392.60913; // may change per device
-    const focalLengthY = focalLengthX;
-    */
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
     let debug = false;
     for (let point of poses) {
         gfx.beginPath();
-
-        /*
-        // rotX = atan((x - cx) / (focalLength / 2));
-        if (!portrait) {
-            point.x = Math.tan(point.rotX) * (focalLengthX) + cx;
-            point.y = Math.tan(point.rotY) * (focalLengthY) + cy;
-        } else {
-            point.x = Math.tan(point.rotY) * (focalLengthX) + cx;
-            point.y = Math.tan(-point.rotX) * (focalLengthY) + cy;
-        }
-        const x = -(point.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const y = -(point.y - cy) / pointHeight * outHeight + gfx.height / 2;
-        */
 
         let x = (point.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
         let y = ((pointHeight - point.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
@@ -218,10 +200,7 @@ exports.drawPoses = function(poses, imageSize) {
     for (let conn of JOINT_CONNECTIONS) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
-        /*const ax = - (a.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const ay = - (a.y - cy) / pointHeight * outHeight + gfx.height / 2;
-        const bx = - (b.x - cx) / pointWidth * outWidth + gfx.width / 2;
-        const by = - (b.y - cy) / pointHeight * outHeight + gfx.height / 2;*/
+
         let ax = (a.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
         let ay = ((pointHeight - a.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
         let bx = (b.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;

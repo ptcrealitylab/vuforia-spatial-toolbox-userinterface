@@ -270,86 +270,12 @@ createNameSpace('realityEditor.app.callbacks');
         //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
         // }
 
-        /* MK HACK: switched off depth improvement
-        if (poses.length > 0) {
-            for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
-                let pointA = poses[start];
-
-                let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
-                let outlierPresent = false;
-                let minDepth = pointA.depth;
-                for (let other of others) {
-                    let pointB = poses[other];
-                    minDepth = Math.min(minDepth, pointB.depth);
-                }
-                for (let other of others) {
-                    let pointB = poses[other];
-                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
-                        outlierPresent = true;
-                    }
-                }
-                if (!outlierPresent) {
-                    continue;
-                }
-                for (let other of others) {
-                    let pointB = poses[other];
-                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
-                        pointB.depth = minDepth;
-                    }
-                }
-            }
-
-            let depths = Object.values(realityEditor.gui.poses.POSE_JOINTS_DEPTH);
-            for (let i = 0; i < depths.length; i++) {
-                poses[i].depth += depths[i];
-            }
-        }
-        */
-
-
-        const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
-
-        /*
-        const focalLength = 1392.60913; // may change per device
-        let roughCenterDepth = (
-            poses[POSE_JOINTS.LEFT_SHOULDER].depth +
-            poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
-            poses[POSE_JOINTS.LEFT_HIP].depth +
-            poses[POSE_JOINTS.RIGHT_HIP].depth
-        ) / 4;
-        */
-
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
 
-            /*
-            const THREE = realityEditor.gui.threejsScene.THREE;
-
-            let zBasedDepth = point.depth;
-            // Add in mlkit's z approximation when available
-            if (point.hasOwnProperty('z')) {
-                zBasedDepth = roughCenterDepth + point.z / focalLength * roughCenterDepth;
-            }
-
-            let depth = point.depth; // TODO incorporate point.depth
-            
-            point.error = point.depth - zBasedDepth;
-            if (Math.abs(point.error) < 0.5) {
-                depth = point.depth * 0.8 + zBasedDepth * 0.2;
-            }
-            */
-            /* vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
-            let initialVehicleMatrix = [
-                -1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, -1, 0,
-                vec.x, vec.y, -vec.z, 1
-            ];
-            */
-           
             // point.[X,Y,Z] in MLKit camera CS is converted to OpenGL CS
-            //let vec = new THREE.Vector3(point.X * 1000.0, point.Y * 1000.0, point.Z * 1000.0); // * 1000 - convert from m to mm
+            // * 1000 - convert from m to mm
             let initialVehicleMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
