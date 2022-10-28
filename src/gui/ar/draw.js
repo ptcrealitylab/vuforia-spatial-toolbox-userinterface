@@ -1755,13 +1755,11 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
             editingAnimationsMatrix[12] = 0;
             editingAnimationsMatrix[13] = 0;
             editingAnimationsMatrix[14] = 0;
-            realityEditor.gui.ar.positioning.stopRepositioning(); // trigger drag matrix to be recomputed
             pocketDropAnimation = null;
         }).onStop(function() {
             editingAnimationsMatrix[12] = 0;
             editingAnimationsMatrix[13] = 0;
             editingAnimationsMatrix[14] = 0;
-            realityEditor.gui.ar.positioning.stopRepositioning();
             pocketDropAnimation = null;
         })
         .start();

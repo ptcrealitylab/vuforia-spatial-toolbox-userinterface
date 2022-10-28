@@ -426,8 +426,6 @@ realityEditor.device.resetEditingState = function() {
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     pocketFrame.vehicle = null;
-    
-    realityEditor.gui.ar.positioning.stopRepositioning();
 };
 
 /**
@@ -1386,7 +1384,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
             realityEditor.gui.ar.positioning.y =event.touches[0].pageY;
                 realityEditor.gui.ar.positioning.x =   event.touches[0].pageX;
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true, true);
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
             var isDeletableVehicle = activeVehicle.type === 'logic' || (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global");
             
