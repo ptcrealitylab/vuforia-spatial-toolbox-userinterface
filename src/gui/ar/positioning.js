@@ -167,6 +167,7 @@ realityEditor.gui.ar.positioning.resetVehicleTranslation = function(activeVehicl
  */
 realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(activeVehicle, screenX, screenY, useTouchOffset = false) {
     const utils = realityEditor.gui.ar.utilities;
+    const editingState = realityEditor.device.editingState;
 
     let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
     let rootNode = realityEditor.sceneGraph.getSceneNodeById('ROOT');
@@ -174,13 +175,18 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
     let originalDistanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
     console.log('>> START: ' + originalDistanceToCamera.toFixed(2));
 
-    let offsetLocalMatrix = utils.copyMatrix(toolNode.localMatrix);
-    if (realityEditor.device.editingState.touchOffset) {
-        offsetLocalMatrix[12] += realityEditor.device.editingState.touchOffset.x;
-        offsetLocalMatrix[13] += realityEditor.device.editingState.touchOffset.y;
-        offsetLocalMatrix[14] += realityEditor.device.editingState.touchOffset.z;
-    }
-    let offsetWorldMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(offsetLocalMatrix, toolNode.parent, rootNode);
+    // let offsetLocalMatrix = utils.copyMatrix(toolNode.localMatrix);
+    // if (realityEditor.device.editingState.touchOffset) {
+    //     offsetLocalMatrix[12] += realityEditor.device.editingState.touchOffset.x;
+    //     offsetLocalMatrix[13] += realityEditor.device.editingState.touchOffset.y;
+    //     offsetLocalMatrix[14] += realityEditor.device.editingState.touchOffset.z;
+    // }
+    let localX = editingState.touchOffset ? editingState.touchOffset.x : 0;
+    let localY = editingState.touchOffset ? editingState.touchOffset.y : 0;
+    let localZ = editingState.touchOffset ? editingState.touchOffset.z : 0;
+    let offsetLocalMatrix = utils.matrixFromTranslation(localX, localY, localZ);
+
+    let offsetWorldMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(offsetLocalMatrix, toolNode, rootNode);
     let relativeMatrix = [];
     utils.multiplyMatrix(offsetWorldMatrix, utils.invertMatrix(realityEditor.sceneGraph.getCameraNode().worldMatrix), relativeMatrix);
 
@@ -196,7 +202,7 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
     // }
     
     let outputCoordinateSystem = toolNode.parent;
-    let point = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, distanceToCamera, outputCoordinateSystem);
+    let point = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, originalDistanceToCamera, outputCoordinateSystem);
 
     let offset = this.computeTouchOffset(toolNode, point, useTouchOffset);
 
@@ -209,12 +215,11 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
     let matrixCopy = utils.copyMatrix(toolNode.localMatrix);
     matrixCopy[12] = point.x - offset.x;
     matrixCopy[13] = point.y - offset.y;
-    matrixCopy[14] = point.z - offset.z;
+    matrixCopy[14] = point.z;
     toolNode.setLocalMatrix(matrixCopy);
     toolNode.updateWorldMatrix(toolNode.parent.worldMatrix);
     let endDistanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
-    console.log('>> END: ' + endDistanceToCamera.toFixed(2))
-
+    console.log('>> END: ' + endDistanceToCamera.toFixed(2));
 
     // /* TODO: in order to preserve the distance while also allowing for a touchOffset, we need to renormalize by the
     //     original distanceToCamera, otherwise it will drift by the touchOffset distance each frame */
