@@ -1435,6 +1435,10 @@ function polyfillWebkitConvertPointFromPageToNode() {
         return [A[0] + B[0], A[1] + B[1], A[2] + B[2]];
     }
 
+    function subtract(A, B) {
+        return [A[0] - B[0], A[1] - B[1], A[2] - B[2]];
+    }
+
     function magnitude(A) {
         return Math.sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
     }
@@ -1471,6 +1475,7 @@ function polyfillWebkitConvertPointFromPageToNode() {
     exports.scalarMultiply = scalarMultiply;
     exports.negate = negate;
     exports.add = add;
+    exports.subtract = subtract;
     exports.magnitude = magnitude;
     exports.normalize = normalize;
     exports.crossProduct = crossProduct;
