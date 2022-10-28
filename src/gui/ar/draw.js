@@ -82,6 +82,7 @@ realityEditor.gui.ar.draw.rotateX = rotateX;
  * @type {{temp: number[], begin: number[], end: number[], r: number[], r2: number[], r3: number[]}}
  */
 realityEditor.gui.ar.draw.matrix = {
+    recomputeUnconstrainedMatrix: false,
     worldReference: null,
     temp: [
         1, 0, 0, 0,
@@ -1140,26 +1141,38 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 // }
 
                 if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+                    
+                    let lastPointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                    realityEditor.gui.ar.positioning.moveVehiclePreservingDistance(activeVehicle, lastPointerPosition.x, lastPointerPosition.y, true);
 
                     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
                     let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
                     
+                    // TODO: also show "shadow" on ground plane on remote operator while moving, to help position it
+
+                    let doMove = true;
                     // do this one time when you first tap down on something unconstrained, to preserve its current matrix
-                    if (matrix.copyStillFromMatrixSwitch) {
-                        
+                    if (matrix.copyStillFromMatrixSwitch || matrix.recomputeUnconstrainedMatrix) {
+                        if (matrix.copyStillFromMatrixSwitch && !matrix.recomputeUnconstrainedMatrix) {
+                            doMove = false;
+                        }
+
                         let relativeMatrix = sceneNode.getMatrixRelativeTo(cameraNode);
                         activeVehicle.begin = utilities.copyMatrix(relativeMatrix);
                         matrix.copyStillFromMatrixSwitch = false;
-                        
-                    // if this isn't the first frame of unconstrained editing, just use the previously stored matrices
-                    } else {
+                        matrix.recomputeUnconstrainedMatrix = false;
+
+                        // if this isn't the first frame of unconstrained editing, just use the previously stored matrices
+                    } // else {
+
+                    if (doMove) {
                         // TODO: decide whether to do this the mathematical way, or fake it like before for performance
                         // multiply camera's worldMatrix by the activeVehicle.begin to get activeVehicle's
                         // worldMatrix... then convert to local
                         let requiredWorldMatrix = [];
                         utilities.multiplyMatrix(activeVehicle.begin, cameraNode.worldMatrix, requiredWorldMatrix);
                         let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
-                        
+
                         // cancel out the initial transform (x,y,scale) of when the vehicle's matrix.begin was stored,
                         // otherwise they will be double-applied to the resulting sceneNode
                         let startingTransform = realityEditor.device.editingState.startingTransform || realityEditor.gui.ar.utilities.newIdentityMatrix();
@@ -1755,13 +1768,11 @@ realityEditor.gui.ar.draw.startPocketDropAnimation = function(timeInMilliseconds
             editingAnimationsMatrix[12] = 0;
             editingAnimationsMatrix[13] = 0;
             editingAnimationsMatrix[14] = 0;
-            realityEditor.gui.ar.positioning.stopRepositioning(); // trigger drag matrix to be recomputed
             pocketDropAnimation = null;
         }).onStop(function() {
             editingAnimationsMatrix[12] = 0;
             editingAnimationsMatrix[13] = 0;
             editingAnimationsMatrix[14] = 0;
-            realityEditor.gui.ar.positioning.stopRepositioning();
             pocketDropAnimation = null;
         })
         .start();

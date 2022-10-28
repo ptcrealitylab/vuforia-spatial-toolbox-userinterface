@@ -132,61 +132,6 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
 };
 
-/**
- * Currently not used, but this is a good alternative method for projecting a (screenX,Y) position onto an element:
- * @example newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY))
- * Creates and returns a div with the same CSS3D transform as the provided vehicle, but with all x/y/scale removed
- * @param {Frame|Node} activeVehicle
- * @param {boolean} isContinuous
- * @return {HTMLElement}
- */
-realityEditor.gui.ar.positioning.getDivWithUntransformedMatrix = function(activeVehicle, isContinuous) {
-    let activeKey = activeVehicle.uuid;
-    
-    let matrixComputationDiv = globalDOMCache['matrixComputationDiv'];
-    if (!matrixComputationDiv) {
-        // create it if needed
-        matrixComputationDiv = document.createElement('div');
-        matrixComputationDiv.id = 'matrixComputationDiv';
-        matrixComputationDiv.classList.add('main');
-        matrixComputationDiv.classList.add('ignorePointerEvents');
-        
-        // 3D transforms only apply correctly if it's a child of the GUI container (like the rest of the tools/nodes)
-        document.getElementById('GUI').appendChild(matrixComputationDiv);
-        globalDOMCache['matrixComputationDiv'] = matrixComputationDiv;
-    }
-    
-    // optimize dragging same element around while frozen by not recomputing matrix multiple times per drag
-    if (isContinuous && globalStates.lastRepositionedUuid === activeKey) {
-        return matrixComputationDiv;
-    }
-    
-    if (matrixComputationDiv.style.display === 'none') {
-        matrixComputationDiv.style.display = '';
-    }
-    
-    // the computation is only correct if it has the same width/height as the vehicle's transformed element
-    let vehicleContainer = globalDOMCache['object' + activeKey];
-    matrixComputationDiv.style.width = vehicleContainer.style.width;
-    matrixComputationDiv.style.height = vehicleContainer.style.height;
-
-    let untransformedMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeKey);
-    matrixComputationDiv.style.transform = 'matrix3d(' + untransformedMatrix.toString() + ')';
-    
-    return matrixComputationDiv;
-};
-
-/**
- * Call this when you stop a drag gesture
- */
-realityEditor.gui.ar.positioning.stopRepositioning = function() {
-    if (globalDOMCache['matrixComputationDiv']) {
-        globalDOMCache['matrixComputationDiv'].style.display = 'none'; // hide it after use so it doesn't consume resources
-        globalStates.lastRepositionedUuid = null;
-    }
-    globalStates.repositionStartingCSSMatrix = null;
-};
-
 // we can use either of two different implementations for moveVehicleToScreenCoordinate by toggling this
 // both are working but further investigation is needed to determine if one is always better than the other
 realityEditor.gui.ar.positioning.useWebkitForProjectedCoordinates = true;
@@ -214,17 +159,50 @@ realityEditor.gui.ar.positioning.resetVehicleTranslation = function(activeVehicl
     realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
 }
 
+let storedOffset = null;
+let storedDistance = null;
+let storedToolOriginInObject = null;
+
 /**
  * Moves the tool to be centered on the screen (x,y) position, keeping it the same distance from the camera as before
  * @param {Frame|Node} activeVehicle
  * @param {number} screenX
  * @param {number} screenY
  */
-realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(activeVehicle, screenX, screenY) {
-    let distanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
+realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(activeVehicle, screenX, screenY, useTouchOffset = false) {
+    // return movePreservingDistance(activeVehicle, screenX, screenY);
+    const utils = realityEditor.gui.ar.utilities;
+
     let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+    let rootNode = realityEditor.sceneGraph.getSceneNodeById('ROOT');
+
+    if (!storedOffset) {
+        let pointInObject = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
+        storedToolOriginInObject = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode.parent);
+        storedOffset = utils.subtract([pointInObject.x, pointInObject.y, pointInObject.z], [storedToolOriginInObject.x, storedToolOriginInObject.y, storedToolOriginInObject.z]);  // realityEditor.sceneGraph.convertToNewCoordSystem(pointInObject, toolNode.parent, toolNode);
+        console.log('set storedOffset to ', storedOffset);
+    }
+
+    if (!storedDistance) {
+        let worldPoint = realityEditor.sceneGraph.convertToNewCoordSystem(storedOffset, toolNode, rootNode);
+        let cameraPoint = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+        let pointToCamera = utils.subtract(worldPoint, [cameraPoint.x, cameraPoint.y, cameraPoint.z]);
+        storedDistance = utils.magnitude(pointToCamera);
+        console.log('set storedDistance to ', storedDistance);
+        // this is the distance from the camera to the point at (toolOrigin + storedOffset)
+    }
+
+    // let distanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
     let outputCoordinateSystem = toolNode.parent;
-    let point = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, distanceToCamera, outputCoordinateSystem);
+    let point = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, storedDistance, outputCoordinateSystem);
+    
+    // TODO: set localMatrix of tool such that the localPoint that intersects with the ray stays at the same distance to the camera as the first tap down
+    
+
+    /* TODO: figure out how to re-enable touchOffset without adding drift - all the methods i've tried so far are 
+        slightly incorrect because subtracting the offset increasingly shifts the distanceToCamera each frame */
+
+    let offset = this.computeTouchOffset(toolNode, point, useTouchOffset);
 
     let positionData = this.getPositionData(activeVehicle);
     if (positionData.x !== 0 || positionData.y !== 0) {
@@ -233,88 +211,166 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
 
     // keep the rotation and scale the same but update the translation elements of the matrix
     let matrixCopy = realityEditor.gui.ar.utilities.copyMatrix(toolNode.localMatrix);
-    matrixCopy[12] = point.x;
-    matrixCopy[13] = point.y;
-    matrixCopy[14] = point.z;
+    matrixCopy[12] = point.x - offset.x;
+    matrixCopy[13] = point.y - offset.y;
+    matrixCopy[14] = point.z - offset.z;
     toolNode.setLocalMatrix(matrixCopy);
 }
 
-// see https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
-realityEditor.gui.ar.positioning.intersectPlane = function(planeOrigin, planeNormal, rayOrigin, rayDirection) {
+/*
+function movePreservingDistance(activeVehicle, screenX, screenY) {
     const utils = realityEditor.gui.ar.utilities;
+    let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+    let rootNode = realityEditor.sceneGraph.getSceneNodeById('ROOT');
 
-    let denom = utils.dotProduct(planeNormal, rayDirection);
-    if (Math.abs(denom) < 0.0001) return null; // plane and ray are ~parallel, so either 0 or infinite intersections
+    let toolOriginInObject = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode.parent);
 
-    // solve for parametric variable, t, to figure out where on the ray is the plane intersection
-    let vector = utils.add(planeOrigin, utils.negate(rayOrigin));
-    let t = utils.dotProduct(vector, planeNormal) / denom;
+    if (!storedOffset) {
+        let pointInObject = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
+        storedToolOriginInObject = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode.parent);
+        storedOffset = utils.subtract([pointInObject.x, pointInObject.y, pointInObject.z], [storedToolOriginInObject.x, storedToolOriginInObject.y, storedToolOriginInObject.z]);  // realityEditor.sceneGraph.convertToNewCoordSystem(pointInObject, toolNode.parent, toolNode);
+        console.log('set storedOffset to ', storedOffset);
+    }
     
-    return utils.add(rayOrigin, utils.scalarMultiply(rayDirection, t));
+     // TODO: not quite working – maybe because we're utilizing the tool's frame of reference, which is moving... can we do it using only the object frame of reference?
+     //    or if this won't work, try going back to the `offset = this.computeTouchOffset(toolNode, point, useTouchOffset);`
+     //    and then subtract the offset from the final position.. since we are guaranteeing the distance won't drift
+     //
     
-    // TODO: can also get the vector along the plane from the origin to this point by doing v = result - planeOrigin
-}
+    // calculate currentOffset
+    // let currentPointInObject = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
+    // let toolOriginInObject = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode.parent);
+    // let currentOffset = utils.subtract([currentPointInObject.x, currentPointInObject.y, currentPointInObject.z], [toolOriginInObject.x, toolOriginInObject.y, toolOriginInObject.z]);  // realityEditor.sceneGraph.convertToNewCoordSystem(pointInObject, toolNode.parent, toolNode);
+    // console.log('set currentOffset to ', storedOffset);
 
-realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle, screenX, screenY, useTouchOffset = false) {
-    const utils = realityEditor.gui.ar.utilities;
+    if (!storedDistance) {
+        let worldPoint = realityEditor.sceneGraph.convertToNewCoordSystem(storedOffset, toolNode, rootNode);
+        let cameraPoint = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+        let pointToCamera = utils.subtract(worldPoint, [cameraPoint.x, cameraPoint.y, cameraPoint.z]);
+        storedDistance = utils.magnitude(pointToCamera);
+        console.log('set storedDistance to ', storedDistance);
+        // this is the distance from the camera to the point at (toolOrigin + storedOffset)
+    }
 
-    // step 1, compute planeOrigin, planeNormal, rayOrigin, rayDirection in the same coordinate system
     // let distanceToCamera = realityEditor.sceneGraph.getDistanceToCamera(activeVehicle.uuid);
+    let pointAtStoredDistance = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, storedDistance, toolNode.parent);
+    console.log('pointAtStoredDistance = ', pointAtStoredDistance);
+    
+    // convert pointAtStoredDistance to position within tool frame-of-reference
+    // let toolOriginInObject = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode.parent);
+    // let relativePoint = utils.subtract([pointAtStoredDistance.x, pointAtStoredDistance.y, pointAtStoredDistance.z], [toolOriginInObject.x, toolOriginInObject.y, toolOriginInObject.z]);  // realityEditor.sceneGraph.convertToNewCoordSystem(pointInObject, toolNode.parent, toolNode);
+    // let newToolOrigin = utils.add(relativePoint, storedOffset);
+    // console.log(newToolOrigin);
+    
+    let toolOriginInTool = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode); // should = (0,0,0)
+    let pointInTool = realityEditor.sceneGraph.convertToNewCoordSystem(pointAtStoredDistance, toolNode.parent, toolNode);
+    let newOrigin = utils.add([pointInTool.x, pointInTool.y, pointInTool.z], storedOffset); // utils.subtract(currentOffset, storedOffset));
+    // pointInTool = realityEditor.sceneGraph.convertToNewCoordSystem(pointAtStoredDistance, toolNode.parent, toolNode);
+    // newOrigin = utils.subtract([pointInTool.x, pointInTool.y, pointInTool.z], storedOffset)
+    let originInObject = realityEditor.sceneGraph.convertToNewCoordSystem(newOrigin, toolNode, toolNode.parent)
+    
+    // keep the rotation and scale the same but update the translation elements of the matrix
+    let matrixCopy = realityEditor.gui.ar.utilities.copyMatrix(toolNode.localMatrix);
+    matrixCopy[12] = originInObject[0];
+    matrixCopy[13] = originInObject[1];
+    matrixCopy[14] = originInObject[2];
+    toolNode.setLocalMatrix(matrixCopy);
+}
+*/
+
+function getLocalPointAtScreenXY(activeVehicle, screenX, screenY) {
+    const utils = realityEditor.gui.ar.utilities;
 
     let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
     let toolPoint = realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid);
-
     let planeOrigin = [toolPoint.x, toolPoint.y, toolPoint.z];
     let planeNormal = utils.getForwardVector(toolNode.worldMatrix);
-
-    // let cameraNode = realityEditor.sceneGraph.getCameraNode();
     let cameraPoint = realityEditor.sceneGraph.getWorldPosition('CAMERA');
-
-    // let outputCoordinateSystem = toolNode.parent;
-    // let point = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, distanceToCamera, outputCoordinateSystem);
     let rootCoordinateSystem = realityEditor.sceneGraph.getSceneNodeById('ROOT'); // camera is in this system
-    const SEGMENT_LENGTH = 1000;
+    const SEGMENT_LENGTH = 1000; // arbitrary, just need to calculate one point so we can solve parametric equation
     let testPoint = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, SEGMENT_LENGTH, rootCoordinateSystem);
 
     let rayOrigin = [cameraPoint.x, cameraPoint.y, cameraPoint.z];
     let rayDirection = utils.normalize(utils.subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
-    
-    // result is in ROOT coordinates
-    let result = this.intersectPlane(planeOrigin, planeNormal, rayOrigin, rayDirection);
-    let worldCoordinates = {x: result[0], y: result[1], z: result[2]};
+
+    let planeIntersection = utils.rayPlaneIntersect(planeOrigin, planeNormal, rayOrigin, rayDirection);
+    if (!planeIntersection) return; // can't move if plane is parallel to ray
+
+    let worldCoordinates = {x: planeIntersection[0], y: planeIntersection[1], z: planeIntersection[2]};
     let objectCoordinateSystem = toolNode.parent;
     let localPoint = realityEditor.sceneGraph.convertToNewCoordSystem(worldCoordinates, rootCoordinateSystem, objectCoordinateSystem);
+    return localPoint;
+}
 
-    if (useTouchOffset) {
-        let changeInPosition = {
-            x: localPoint.x - toolNode.localMatrix[12],
-            y: localPoint.y - toolNode.localMatrix[13],
-            z: localPoint.z - toolNode.localMatrix[14]
-        };
+/**
+ * Translates the tool along its local XY plane such that it moves to the screen (x,y) position
+ * @param {Frame|Node} activeVehicle
+ * @param {number} screenX
+ * @param {number} screenY
+ * @param {boolean} useTouchOffset - if false, jumps to center on pointer. if true, translates relative to pointerdown position
+ */
+realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle, screenX, screenY, useTouchOffset = false) {
+    // const utils = realityEditor.gui.ar.utilities;
+    //
+    let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+    // let toolPoint = realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid);
+    // let planeOrigin = [toolPoint.x, toolPoint.y, toolPoint.z];
+    // let planeNormal = utils.getForwardVector(toolNode.worldMatrix);
+    // let cameraPoint = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+    // let rootCoordinateSystem = realityEditor.sceneGraph.getSceneNodeById('ROOT'); // camera is in this system
+    // const SEGMENT_LENGTH = 1000; // arbitrary, just need to calculate one point so we can solve parametric equation
+    // let testPoint = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, SEGMENT_LENGTH, rootCoordinateSystem);
+    //
+    // let rayOrigin = [cameraPoint.x, cameraPoint.y, cameraPoint.z];
+    // let rayDirection = utils.normalize(utils.subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
+    //
+    // let planeIntersection = utils.rayPlaneIntersect(planeOrigin, planeNormal, rayOrigin, rayDirection);
+    // if (!planeIntersection) return; // can't move if plane is parallel to ray
+    //
+    // let worldCoordinates = {x: planeIntersection[0], y: planeIntersection[1], z: planeIntersection[2]};
+    // let objectCoordinateSystem = toolNode.parent;
+    // let localPoint = realityEditor.sceneGraph.convertToNewCoordSystem(worldCoordinates, rootCoordinateSystem, objectCoordinateSystem);
 
-        if (!realityEditor.device.editingState.touchOffset) {
-            realityEditor.device.editingState.touchOffset = changeInPosition;
-        }
-    } else {
-        realityEditor.device.editingState.touchOffset = null;
-    }
+    let localPoint = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
 
+    // this makes it so the center of the tool doesn't snap to the pointer location
+    let offset = this.computeTouchOffset(toolNode, localPoint, useTouchOffset);
 
+    // we don't need the separate x and y components anymore
     let positionData = this.getPositionData(activeVehicle);
     if (positionData.x !== 0 || positionData.y !== 0) {
         this.resetVehicleTranslation(activeVehicle);
     }
 
-    let offsetX = realityEditor.device.editingState.touchOffset ? realityEditor.device.editingState.touchOffset.x : 0;
-    let offsetY = realityEditor.device.editingState.touchOffset ? realityEditor.device.editingState.touchOffset.y : 0;
-    let offsetZ = realityEditor.device.editingState.touchOffset ? realityEditor.device.editingState.touchOffset.z : 0;
-
     // keep the rotation and scale the same but update the translation elements of the matrix
     let matrixCopy = realityEditor.gui.ar.utilities.copyMatrix(toolNode.localMatrix);
-    matrixCopy[12] = localPoint.x - offsetX;
-    matrixCopy[13] = localPoint.y - offsetY;
-    matrixCopy[14] = localPoint.z - offsetZ;
+    matrixCopy[12] = localPoint.x - offset.x;
+    matrixCopy[13] = localPoint.y - offset.y;
+    matrixCopy[14] = localPoint.z - offset.z;
     toolNode.setLocalMatrix(matrixCopy);
+}
+
+/**
+ * Prevents the tool from jumping so that its center is on your pointer – offsets it relative to your cursor.
+ * Returns the difference between the sceneNode's localMatrix origin and the newOrigin.
+ * @param {SceneNode} sceneNode
+ * @param {{x: number, y: number, z: number}} newOrigin
+ * @param {boolean} useTouchOffset - if false, always return (0,0,0)
+ * @returns {{x: number, y: number, z: number}}
+ */
+realityEditor.gui.ar.positioning.computeTouchOffset = function(sceneNode, newOrigin, useTouchOffset) {
+    let editingState = realityEditor.device.editingState;
+    if (!useTouchOffset) {
+        editingState.offset = null;
+        return { x: 0, y: 0, z: 0 };
+    }
+    if (editingState.touchOffset) return editingState.touchOffset; // return existing offset unless it gets reset to null
+    editingState.touchOffset = {
+        x: newOrigin.x - sceneNode.localMatrix[12],
+        y: newOrigin.y - sceneNode.localMatrix[13],
+        z: newOrigin.z - sceneNode.localMatrix[14]
+    }
+    return editingState.touchOffset; // return newly calculated offset at the start of each drag
 }
 
 /**
@@ -343,80 +399,25 @@ realityEditor.gui.ar.positioning.shouldPreserveDistanceWhileMoving = function(ac
  * @param {boolean} useTouchOffset - if false, puts (0,0) coordinate of frame/node at the resulting point.
  *                                   if true, the first time you call it, it determines the x,y offset to drag the frame/node
  *                                   from the ray cast without it jumping, and subsequently drags it from that point
- * @param {boolean} isContinuous - true to optimize calculations for this being triggered multiple times in a row
- *                                 if true, you are expected to manually call stopRepositioning when done
  */
-realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset, isContinuous) {
+realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate = function(activeVehicle, screenX, screenY, useTouchOffset) {
+    // if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+    //     // realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+    //     realityEditor.gui.ar.draw.matrix.recomputeUnconstrainedMatrix = true;
+    //     return;
+    // }
+
     if (this.shouldPreserveDistanceWhileMoving(activeVehicle)) {
-        return this.moveVehiclePreservingDistance(activeVehicle, screenX, screenY);
+        this.moveVehiclePreservingDistance(activeVehicle, screenX, screenY, true);
     } else {
-        return this.moveVehicleAlongPlane(activeVehicle, screenX, screenY, useTouchOffset);
+        this.moveVehicleAlongPlane(activeVehicle, screenX, screenY, useTouchOffset);
     }
 
-    var newPosition;
-    try {
-        // set dummy div transform to iframe without x,y,scale
-        if (this.useWebkitForProjectedCoordinates) {
-            let matrixComputationDiv = this.getDivWithUntransformedMatrix(activeVehicle, isContinuous);
-            newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
-        }
-
-        if (!isContinuous) {
-            realityEditor.gui.ar.positioning.stopRepositioning();
-        } else {
-            globalStates.lastRepositionedUuid = activeVehicle.uuid;
-            if (!this.useWebkitForProjectedCoordinates) {
-                if (!globalStates.repositionStartingCSSMatrix) {
-                    globalStates.repositionStartingCSSMatrix = realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid)
-                }
-            }
-        }
-
-        if (!this.useWebkitForProjectedCoordinates) {
-            let cssMatrix = globalStates.repositionStartingCSSMatrix || realityEditor.sceneGraph.getCSSMatrixWithoutTranslation(activeVehicle.uuid);
-            newPosition = realityEditor.gui.ar.utilities.solveProjectedCoordinatesInVehicle(activeVehicle, screenX, screenY, cssMatrix);
-        }
-
-    } catch (e) {
-        console.warn('Error while trying to compute newPosition for vehicle', e);
-        return;
+    // recompute the unconstrained editing matrix so they don't conflict
+    if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+        // realityEditor.gui.ar.draw.matrix.copyStillFromMatrixSwitch = true;
+        realityEditor.gui.ar.draw.matrix.recomputeUnconstrainedMatrix = true;
     }
-
-    var positionData = this.getPositionData(activeVehicle);
-
-    if (useTouchOffset) {
-
-        var changeInPosition = {
-            x: newPosition.x - positionData.x,
-            y: newPosition.y - positionData.y
-        };
-
-        if (!realityEditor.device.editingState.touchOffset) {
-            realityEditor.device.editingState.touchOffset = changeInPosition;
-        } else {
-            positionData.x = newPosition.x - realityEditor.device.editingState.touchOffset.x;
-            positionData.y = newPosition.y - realityEditor.device.editingState.touchOffset.y;
-        }
-
-    } else {
-
-        realityEditor.device.editingState.touchOffset = null;
-        positionData.x = newPosition.x;
-        positionData.y = newPosition.y;
-        
-    }
-
-    // flags the sceneNode as dirty so it gets rendered again with the new x/y position
-    realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid); 
-
-    // broadcasts this to the realtime system if it's enabled
-    if (!realityEditor.gui.settings.toggleStates.realtimeEnabled) { return; }
-
-    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-    var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.x' : 'x';
-    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.x);
-    propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.y' : 'y';
-    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.y);
 };
 
 /**
