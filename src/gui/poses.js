@@ -97,7 +97,7 @@ exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
 
 // let lastDraw = performance.now();
 
-exports.drawPoses = function(poses, _coords, _cameraPos) {
+exports.drawPoses = function(poses, imageSize) {
     let canvas = document.getElementById('supercooldebugcanvas');
     let gfx;
     if (!canvas) {
@@ -147,10 +147,10 @@ exports.drawPoses = function(poses, _coords, _cameraPos) {
         return;
     }
 
-    // following naming is for landscape images (width is longer side)
-    // MK TODO: bring image resolution associated with 2D points
-    const pointWidth = 1920; // 960;
-    const pointHeight = 1080; // 540;
+    // following naming is for landscape images (width is a longer side)
+    // image resolution associated with 2D point positions
+    const pointWidth = imageSize[0]; // 1920; // 960;
+    const pointHeight = imageSize[1]; // 1080; // 540;
     let outWidth = 0, outHeight = 0;
     let halfCanvasWidth = 0, halfCanvasHeight = 0;
     const portrait = gfx.width < gfx.height;

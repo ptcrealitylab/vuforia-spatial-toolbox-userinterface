@@ -221,7 +221,7 @@ createNameSpace('realityEditor.app.callbacks');
      * Callback for realityEditor.app.getPosesStream
      * @param {Array<Object>} poses
      */
-    function receivePoses(poses) {
+    function receivePoses(poses, imageSize) {
         if (!window.rzvIo) {
             // window.rzvIo = io('http://jhobin0ml.local:31337');
             // window.rzvIo = io('http://10.10.10.166:31337');
@@ -406,11 +406,7 @@ createNameSpace('realityEditor.app.callbacks');
         let camX = cameraMat[12];
         let camY = cameraMat[13];
         let camZ = cameraMat[14];
-        realityEditor.gui.poses.drawPoses(poses, coolerPoses, {
-            x: camX / 1000,
-            y: camY / 1000,
-            z: camZ / 1000,
-        });
+        realityEditor.gui.poses.drawPoses(poses, imageSize);
     }
 
     /**
