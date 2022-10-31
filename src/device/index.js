@@ -424,14 +424,10 @@ realityEditor.device.resetEditingState = function() {
         }
     }
 
-    midwayMovingAlongPlane = false;
-
     this.editingState.object = null;
     this.editingState.frame = null;
     this.editingState.node = null;
     this.editingState.touchOffset = null;
-    storedOffset = null;
-    storedDistance = null;
     this.editingState.unconstrained = false;
     this.editingState.initialCameraPosition = null;
     this.editingState.startingMatrix = null;
@@ -443,6 +439,8 @@ realityEditor.device.resetEditingState = function() {
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     pocketFrame.vehicle = null;
+
+    realityEditor.gui.ar.positioning.stopRepositioning();
 };
 
 /**
@@ -1594,8 +1592,6 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
         } else {
             // if there's still a touch on it (it was being scaled), reset touch offset so vehicle doesn't jump
             this.editingState.touchOffset = null;
-            storedOffset = null;
-            storedDistance = null;
             realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
 
         }

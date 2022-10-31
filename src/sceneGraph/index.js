@@ -748,11 +748,6 @@ createNameSpace("realityEditor.sceneGraph");
         }
         if (cameraNode) {
             cameraNode.updateWorldMatrix();
-
-            // update children of camera
-            cameraNode.children.forEach(childNode => {
-                childNode.updateWorldMatrix();
-            });
         }
 
         // this might become a child of a world object but still safe to call update multiple times

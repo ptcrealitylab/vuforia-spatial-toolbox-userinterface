@@ -181,15 +181,17 @@ createNameSpace("realityEditor.sceneGraph");
             let vehicleParentId = realityEditor.isVehicleAFrame(this.linkedVehicle) ? this.linkedVehicle.objectId : this.linkedVehicle.frameId;
             if (this.parent.id === vehicleParentId) {
                 realityEditor.gui.ar.positioning.setPositionDataMatrix(this.linkedVehicle, matrix, this.dontBroadcastNext);
-                this.dontBroadcastNext = false;
             } else {
                 // if tool is parented to CAMERA or other, broadcast its matrix relative to its linkedVehicle's parent
                 let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(vehicleParentId);
                 let matrixRelativeToObject = realityEditor.sceneGraph.convertToNewCoordSystem(matrix, this.parent, objectSceneNode);
-                let keys = realityEditor.getKeysFromVehicle(this.linkedVehicle);
-                let propertyPath = this.linkedVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
-                realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, matrixRelativeToObject);
+                if (!this.dontBroadcastNext) {
+                    let keys = realityEditor.getKeysFromVehicle(this.linkedVehicle);
+                    let propertyPath = this.linkedVehicle.hasOwnProperty('visualization') ? 'ar.matrix' : 'matrix';
+                    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, matrixRelativeToObject);
+                }
             }
+            this.dontBroadcastNext = false; // gets set true when receiving an update from another client
         }
 
         // flagging this will eventually set the other necessary flags for this and parent/children nodes
