@@ -162,6 +162,7 @@ realityEditor.gui.ar.positioning.resetVehicleTranslation = function(activeVehicl
 let storedOffset = null;
 let storedDistance = null;
 let storedToolOriginInObject = null;
+let midwayMovingAlongPlane = false;
 
 /**
  * Moves the tool to be centered on the screen (x,y) position, keeping it the same distance from the camera as before
@@ -202,6 +203,10 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
     /* TODO: figure out how to re-enable touchOffset without adding drift - all the methods i've tried so far are 
         slightly incorrect because subtracting the offset increasingly shifts the distanceToCamera each frame */
 
+    if (midwayMovingAlongPlane) {
+        realityEditor.device.editingState.touchOffset = null; // recalculate touchoffset if switch reposition modes
+        midwayMovingAlongPlane = false;
+    }
     let offset = this.computeTouchOffset(toolNode, point, useTouchOffset);
 
     let positionData = this.getPositionData(activeVehicle);
@@ -334,7 +339,8 @@ realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle,
     let localPoint = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
 
     // this makes it so the center of the tool doesn't snap to the pointer location
-    let offset = {x: 0, y: 0, z: 0}; // this.computeTouchOffset(toolNode, localPoint, useTouchOffset);
+    let offset = this.computeTouchOffset(toolNode, localPoint, useTouchOffset);
+    midwayMovingAlongPlane = true; // flag which drag mode we're doing right now
 
     // we don't need the separate x and y components anymore
     let positionData = this.getPositionData(activeVehicle);
@@ -346,9 +352,13 @@ realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle,
     let matrixCopy = realityEditor.gui.ar.utilities.copyMatrix(toolNode.localMatrix);
     matrixCopy[12] = localPoint.x - offset.x;
     matrixCopy[13] = localPoint.y - offset.y;
-    matrixCopy[14] = localPoint.z - offset.z;
+    // if (toolNode.parent.id === 'CAMERA') {
+    //     matrixCopy[14] = localPoint.z;
+    // } else {
+        matrixCopy[14] = localPoint.z - offset.z;
+    // }
     toolNode.setLocalMatrix(matrixCopy);
-    toolNode.updateWorldMatrix(toolNode.parent.worldMatrix);
+    // toolNode.updateWorldMatrix(toolNode.parent.worldMatrix);
 
     console.log('move: ' + toolNode.localMatrix[12].toFixed(0) + ', ' + toolNode.localMatrix[13].toFixed(0) + ', ' + toolNode.localMatrix[14].toFixed(0));
 }
@@ -384,6 +394,10 @@ realityEditor.gui.ar.positioning.computeTouchOffset = function(sceneNode, newOri
 realityEditor.gui.ar.positioning.shouldPreserveDistanceWhileMoving = function(activeVehicle) {
     // always move 3D tools
     if (activeVehicle.fullScreen) return true;
+    
+    // for now, moving along plane while attached to camera is a bit buggy if offset is included
+    // so force it to use distance-preserving method if in this mode
+    if (realityEditor.device.isEditingUnconstrained(activeVehicle)) return true;
 
     // preserve distance while moving a 2D tool if the plane that the tool sits on isn't roughly parallel to the camera
     const DIRECTION_SIMILARITY_THRESHOLD = 0.8;

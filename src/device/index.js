@@ -411,14 +411,20 @@ realityEditor.device.resetEditingState = function() {
     // gets triggered before state gets reset, so that subscribed modules can respond based on what is about to be reset
     this.callbackHandler.triggerCallbacks('resetEditingState');
     
+    // properly write the vehicle position to the server if it's been moved relative to another parent
     if (this.getEditingVehicle() && this.isEditingUnconstrained(this.getEditingVehicle())) {
         let activeVehicle = this.getEditingVehicle();
+        let vehicleParentId = realityEditor.isVehicleAFrame(activeVehicle) ? activeVehicle.objectId : activeVehicle.frameId;
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
-        if (sceneNode.parent && sceneNode.parent.id === 'CAMERA') {
+        if (sceneNode.parent && sceneNode.parent.id !== vehicleParentId) {
             let parentId = realityEditor.isVehicleAFrame(activeVehicle) ? activeVehicle.objectId : activeVehicle.frameId;
             realityEditor.sceneGraph.changeParent(sceneNode, parentId, true);
+            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.getEditingVehicle(), sceneNode.localMatrix, false);
+            sceneNode.needsUploadToServer = true;
         }
     }
+
+    midwayMovingAlongPlane = false;
 
     this.editingState.object = null;
     this.editingState.frame = null;

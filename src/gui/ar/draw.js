@@ -1168,6 +1168,9 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         // if this isn't the first frame of unconstrained editing, just use the previously stored matrices
                     } // else {
 
+                    // this forces it to broadcast its position in realtime to other clients
+                    sceneNode.setLocalMatrix(sceneNode.localMatrix);
+
                     // // if (doMove) {
                     //     // TODO: decide whether to do this the mathematical way, or fake it like before for performance
                     //     // multiply camera's worldMatrix by the activeVehicle.begin to get activeVehicle's
