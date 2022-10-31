@@ -303,6 +303,7 @@ createNameSpace("realityEditor.network.realtime");
         if (Object.keys(batchedUpdates).length === 0) { return; }
 
         for (let objectKey in batchedUpdates) {
+            if (!objects[objectKey]) continue;
             let serverSocket = getServerSocketForObject(objectKey);
             if (!serverSocket) { continue; }
 

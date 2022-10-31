@@ -410,6 +410,15 @@ realityEditor.device.resetEditingState = function() {
 
     // gets triggered before state gets reset, so that subscribed modules can respond based on what is about to be reset
     this.callbackHandler.triggerCallbacks('resetEditingState');
+    
+    if (this.getEditingVehicle() && this.isEditingUnconstrained(this.getEditingVehicle())) {
+        let activeVehicle = this.getEditingVehicle();
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+        if (sceneNode.parent && sceneNode.parent.id === 'CAMERA') {
+            let parentId = realityEditor.isVehicleAFrame(activeVehicle) ? activeVehicle.objectId : activeVehicle.frameId;
+            realityEditor.sceneGraph.changeParent(sceneNode, parentId, true);
+        }
+    }
 
     this.editingState.object = null;
     this.editingState.frame = null;

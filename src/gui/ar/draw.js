@@ -1142,50 +1142,62 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 if (realityEditor.device.isEditingUnconstrained(activeVehicle)) {
                     
-                    let lastPointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                    realityEditor.gui.ar.positioning.moveVehiclePreservingDistance(activeVehicle, lastPointerPosition.x, lastPointerPosition.y, true);
+                    // let lastPointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                    // realityEditor.gui.ar.positioning.moveVehiclePreservingDistance(activeVehicle, lastPointerPosition.x, lastPointerPosition.y, true);
 
                     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
                     let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
                     
                     // TODO: also show "shadow" on ground plane on remote operator while moving, to help position it
 
-                    let doMove = true;
+                    // let doMove = true;
                     // do this one time when you first tap down on something unconstrained, to preserve its current matrix
-                    if (matrix.copyStillFromMatrixSwitch || matrix.recomputeUnconstrainedMatrix) {
-                        if (matrix.copyStillFromMatrixSwitch && !matrix.recomputeUnconstrainedMatrix) {
-                            doMove = false;
-                        }
+                    if (matrix.copyStillFromMatrixSwitch) { // || matrix.recomputeUnconstrainedMatrix) {
+                        // if (matrix.copyStillFromMatrixSwitch && !matrix.recomputeUnconstrainedMatrix) {
+                        //     doMove = false;
+                        // }
 
                         let relativeMatrix = sceneNode.getMatrixRelativeTo(cameraNode);
                         activeVehicle.begin = utilities.copyMatrix(relativeMatrix);
                         matrix.copyStillFromMatrixSwitch = false;
                         matrix.recomputeUnconstrainedMatrix = false;
+                        
+                        realityEditor.sceneGraph.changeParent(sceneNode, 'CAMERA', true);
+                        console.log('move unconstrained to camera node');
 
                         // if this isn't the first frame of unconstrained editing, just use the previously stored matrices
                     } // else {
 
-                    if (doMove) {
-                        // TODO: decide whether to do this the mathematical way, or fake it like before for performance
-                        // multiply camera's worldMatrix by the activeVehicle.begin to get activeVehicle's
-                        // worldMatrix... then convert to local
-                        let requiredWorldMatrix = [];
-                        utilities.multiplyMatrix(activeVehicle.begin, cameraNode.worldMatrix, requiredWorldMatrix);
-                        let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
-
-                        // cancel out the initial transform (x,y,scale) of when the vehicle's matrix.begin was stored,
-                        // otherwise they will be double-applied to the resulting sceneNode
-                        let startingTransform = realityEditor.device.editingState.startingTransform || realityEditor.gui.ar.utilities.newIdentityMatrix();
-                        let inverseTransform = realityEditor.gui.ar.utilities.invertMatrix(startingTransform);
-                        let untransformed = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(inverseTransform, requiredLocalMatrix, untransformed);
-
-                        sceneNode.setLocalMatrix(untransformed);
-                    }
-
+                    // // if (doMove) {
+                    //     // TODO: decide whether to do this the mathematical way, or fake it like before for performance
+                    //     // multiply camera's worldMatrix by the activeVehicle.begin to get activeVehicle's
+                    //     // worldMatrix... then convert to local
+                    //     let requiredWorldMatrix = [];
+                    //     utilities.multiplyMatrix(activeVehicle.begin, cameraNode.worldMatrix, requiredWorldMatrix);
+                    //     let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
+                    //
+                    //     // cancel out the initial transform (x,y,scale) of when the vehicle's matrix.begin was stored,
+                    //     // otherwise they will be double-applied to the resulting sceneNode
+                    //     let startingTransform = realityEditor.device.editingState.startingTransform || realityEditor.gui.ar.utilities.newIdentityMatrix();
+                    //     let inverseTransform = realityEditor.gui.ar.utilities.invertMatrix(startingTransform);
+                    //     let untransformed = [];
+                    //     realityEditor.gui.ar.utilities.multiplyMatrix(inverseTransform, requiredLocalMatrix, untransformed);
+                    //
+                    //     sceneNode.setLocalMatrix(untransformed);
+                    // }
+                    // console.log('draw needs rerender? ' + sceneNode.needsRerender);
+                    console.log('draw: ' + sceneNode.worldMatrix[12].toFixed(0) + ', ' + sceneNode.worldMatrix[13].toFixed(0) + ', ' + sceneNode.worldMatrix[14].toFixed(0));
                 }
-                
             }
+
+            // // set parent back to object if necessary
+            // if (!realityEditor.device.isEditingUnconstrained(activeVehicle)) {
+            //     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
+            //     if (sceneNode.parent && sceneNode.parent.id === 'CAMERA') {
+            //         let parentId = realityEditor.isVehicleAFrame(activeVehicle) ? activeVehicle.objectId : activeVehicle.frameId;
+            //         realityEditor.sceneGraph.changeParent(sceneNode, parentId, true);
+            //     }
+            // }
             
             // TODO ben: add in animation matrix
             // multiply in the animation matrix if you are editing this frame in unconstrained mode.

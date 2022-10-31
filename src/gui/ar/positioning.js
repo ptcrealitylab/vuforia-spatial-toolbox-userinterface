@@ -334,7 +334,7 @@ realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle,
     let localPoint = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
 
     // this makes it so the center of the tool doesn't snap to the pointer location
-    let offset = this.computeTouchOffset(toolNode, localPoint, useTouchOffset);
+    let offset = {x: 0, y: 0, z: 0}; // this.computeTouchOffset(toolNode, localPoint, useTouchOffset);
 
     // we don't need the separate x and y components anymore
     let positionData = this.getPositionData(activeVehicle);
@@ -348,6 +348,9 @@ realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle,
     matrixCopy[13] = localPoint.y - offset.y;
     matrixCopy[14] = localPoint.z - offset.z;
     toolNode.setLocalMatrix(matrixCopy);
+    toolNode.updateWorldMatrix(toolNode.parent.worldMatrix);
+
+    console.log('move: ' + toolNode.localMatrix[12].toFixed(0) + ', ' + toolNode.localMatrix[13].toFixed(0) + ', ' + toolNode.localMatrix[14].toFixed(0));
 }
 
 /**
