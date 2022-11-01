@@ -284,13 +284,12 @@ createNameSpace('realityEditor.app.callbacks');
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
 
-            // point.[X,Y,Z] in MLKit camera CS is converted to OpenGL CS
             // * 1000 - convert from m to mm
             let initialVehicleMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                point.X * 1000.0, point.Y * -1000.0, point.Z * -1000.0, 1
+                point.x * 1000, point.y * 1000, point.z * 1000, 1
             ];
 
             // needs to be flipped in some environments with different camera systems
@@ -339,9 +338,6 @@ createNameSpace('realityEditor.app.callbacks');
         }
         // }
 
-        let camX = cameraMat[12];
-        let camY = cameraMat[13];
-        let camZ = cameraMat[14];
         realityEditor.gui.poses.drawPoses(poses, imageSize);
 
         const USE_DEBUG_POSE = false;

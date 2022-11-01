@@ -164,15 +164,15 @@ exports.drawPoses = function(poses, imageSize) {
     else {
         outWidth = gfx.height;
         outHeight = (outWidth / pointWidth) * pointHeight;
-        halfCanvasWidth = gfx.height / 2.0;
-        halfCanvasHeight = gfx.width / 2.0;
+        halfCanvasWidth = gfx.height / 2;
+        halfCanvasHeight = gfx.width / 2;
     }
     
     if (globalStates.device.startsWith('iPad')) {
         outWidth = gfx.width;
         outHeight = gfx.height;
-        halfCanvasWidth = gfx.width / 2.0;
-        halfCanvasHeight = gfx.height / 2.0;
+        halfCanvasWidth = gfx.width / 2;
+        halfCanvasHeight = gfx.height / 2;
     }
 
     // gfx.fillText(`${format(coords[0].x)} ${format(coords[0].y)} ${format(coords[0].z)} ${format(poses[0].rotX * 180 / Math.PI)} ${format(poses[0].rotY * 180 / Math.PI)}`, 16, 64);
@@ -180,8 +180,8 @@ exports.drawPoses = function(poses, imageSize) {
     for (let point of poses) {
         gfx.beginPath();
 
-        let x = (point.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
-        let y = ((pointHeight - point.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
+        let x = (point.imgX - pointWidth / 2) * (outWidth / pointWidth) + halfCanvasWidth;
+        let y = ((pointHeight - point.imgY) - pointHeight / 2) * (outHeight / pointHeight) + halfCanvasHeight;
         if (portrait)   {
             let tmp = x; x = y; y = tmp;
         }
@@ -191,7 +191,7 @@ exports.drawPoses = function(poses, imageSize) {
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
         // gfx.fillText(`${Math.round(point.score * 100)}`, x + jointSize, y - jointSize);
         if (debug) {
-            gfx.fillText(`${Math.round(point.x)} ${Math.round(point.y)}`, x + jointSize, y - jointSize);
+            gfx.fillText(`${Math.round(point.imgX)} ${Math.round(point.imgY)}`, x + jointSize, y - jointSize);
             debug = false;
         }
     }
@@ -201,10 +201,10 @@ exports.drawPoses = function(poses, imageSize) {
         let a = poses[conn[0]];
         let b = poses[conn[1]];
 
-        let ax = (a.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
-        let ay = ((pointHeight - a.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
-        let bx = (b.x - pointWidth / 2.0) * (outWidth / pointWidth) + halfCanvasWidth;
-        let by = ((pointHeight - b.y) - pointHeight / 2.0) * (outHeight / pointHeight) + halfCanvasHeight;
+        let ax = (a.imgX - pointWidth / 2) * (outWidth / pointWidth) + halfCanvasWidth;
+        let ay = ((pointHeight - a.imgY) - pointHeight / 2) * (outHeight / pointHeight) + halfCanvasHeight;
+        let bx = (b.imgX - pointWidth / 2) * (outWidth / pointWidth) + halfCanvasWidth;
+        let by = ((pointHeight - b.imgY) - pointHeight / 2) * (outHeight / pointHeight) + halfCanvasHeight;
         if (portrait)   {
             let tmp = ax; ax = ay; ay = tmp;
             tmp = bx; bx = by; by = tmp;
