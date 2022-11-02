@@ -262,36 +262,57 @@ createNameSpace("realityEditor.avatar.draw");
             avatarMeshes[objectKey].device.matrix.copy(avatarObjectMatrixThree);
         }
 
-        if (!touchState.worldIntersectPoint) { return; }
+        // we either draw an "infinite" ray in the specified direction, or draw a line to the specified point
+        if (!touchState.worldIntersectPoint && !touchState.rayDirection) return;
 
-        // worldIntersectPoint was converted to world coordinates. need to convert back to groundPlane coordinates in this system
-        let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
-        let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
-        realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
-        let convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
-        convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
-        // move the pointer sphere to the raycast intersect position
-        avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+        let convertedEndPosition = new THREE.Vector3();
 
-        // get the 2D screen coordinates of the pointer, and render a text bubble centered on it with the name of the sender
-        let pointerWorldPosition = new THREE.Vector3();
-        avatarMeshes[objectKey].pointer.getWorldPosition(pointerWorldPosition);
-        let screenCoords = realityEditor.gui.threejsScene.getScreenXY(pointerWorldPosition);
-        if (avatarName) {
-            avatarMeshes[objectKey].textLabel.style.display = 'inline';
+        if (touchState.worldIntersectPoint) {
+            // worldIntersectPoint was converted to world coordinates. need to convert back to groundPlane coordinates in this system
+            let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+            let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
+            // convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+            convertedEndPosition.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+            convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
+            // move the pointer sphere to the raycast intersect position
+
+            avatarMeshes[objectKey].pointer.visible = true;
+            avatarMeshes[objectKey].pointer.position.set(convertedEndPosition.x, convertedEndPosition.y, convertedEndPosition.z);
+
+            // get the 2D screen coordinates of the pointer, and render a text bubble centered on it with the name of the sender
+            let pointerWorldPosition = new THREE.Vector3();
+            avatarMeshes[objectKey].pointer.getWorldPosition(pointerWorldPosition);
+            let screenCoords = realityEditor.gui.threejsScene.getScreenXY(pointerWorldPosition);
+            if (avatarName) {
+                avatarMeshes[objectKey].textLabel.style.display = 'inline';
+            }
+            // scale the name textLabel based on distance from convertedEndPosition to camera
+            let camPos = realityEditor.sceneGraph.getWorldPosition('CAMERA');
+            let delta = {
+                x: camPos.x - convertedEndPosition.x,
+                y: camPos.y - convertedEndPosition.y,
+                z: camPos.z - convertedEndPosition.z
+            };
+            let distanceToCamera = Math.max(0.001, Math.sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z));
+            let scale = Math.max(0.5, Math.min(2, 2000 / distanceToCamera)); // biggest when <1m, smallest when >4m
+            avatarMeshes[objectKey].textLabel.style.transform = 'translateX(-50%) translateY(-50%) translateZ(3000px) scale(' + scale + ')';
+            avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + 'px'; // position it centered on the pointer sphere
+            avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + 'px';
+        } else {
+            // hide the pointer and just compute a point along the rayDirection, so we can render the beam
+            avatarMeshes[objectKey].pointer.visible = false;
+            avatarMeshes[objectKey].textLabel.style.display = 'none';
+
+            // rayDirection is relative to world object – convert to relative to groundPlane
+            let rayDirectionRelativeToWorldObject = touchState.rayDirection;
+            const RAY_LENGTH_MM = 100 * 1000; // render it 100 meters long
+            let arUtils = realityEditor.gui.ar.utilities;
+            let rayOriginRelativeToWorldObject = realityEditor.sceneGraph.convertToNewCoordSystem([0, 0, 0], thatAvatarSceneNode, worldSceneNode);
+            let endRelativeToWorldObject = arUtils.add(rayOriginRelativeToWorldObject, arUtils.scalarMultiply(rayDirectionRelativeToWorldObject, RAY_LENGTH_MM));
+            let endRelativeToGroundPlane = realityEditor.sceneGraph.convertToNewCoordSystem(endRelativeToWorldObject, worldSceneNode, groundPlaneSceneNode);
+            convertedEndPosition.set(endRelativeToGroundPlane[0], endRelativeToGroundPlane[1], endRelativeToGroundPlane[2]);
         }
-        // scale the name textLabel based on distance from convertedEndPosition to camera
-        let camPos = realityEditor.sceneGraph.getWorldPosition('CAMERA');
-        let delta = {
-            x: camPos.x - convertedEndPosition.x,
-            y: camPos.y - convertedEndPosition.y,
-            z: camPos.z - convertedEndPosition.z
-        };
-        let distanceToCamera = Math.max(0.001, Math.sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z));
-        let scale = Math.max(0.5, Math.min(2, 2000 / distanceToCamera)); // biggest when <1m, smallest when >4m
-        avatarMeshes[objectKey].textLabel.style.transform = 'translateX(-50%) translateY(-50%) translateZ(3000px) scale(' + scale + ')';
-        avatarMeshes[objectKey].textLabel.style.left = screenCoords.x + 'px'; // position it centered on the pointer sphere
-        avatarMeshes[objectKey].textLabel.style.top = screenCoords.y + 'px';
 
         // the position of the avatar in space
         let startPosition = new THREE.Vector3(avatarObjectMatrixThree.elements[12], avatarObjectMatrixThree.elements[13], avatarObjectMatrixThree.elements[14]);

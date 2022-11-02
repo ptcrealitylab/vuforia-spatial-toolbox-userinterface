@@ -70,6 +70,7 @@ createNameSpace("realityEditor.avatar");
             // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
             let thisAvatarName = utils.getAvatarName();
             let worldObject = realityEditor.getObject(worldObjectKey);
+            // cachedWorldObject = worldObject;
             realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
                 network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
                     console.log('added new avatar object', data);
@@ -201,6 +202,20 @@ createNameSpace("realityEditor.avatar");
         refreshStatusUI();
     }
 
+    // return a vector relative to the world object
+    function getRayDirection(screenX, screenY) {
+        if (!realityEditor.sceneGraph.getWorldId()) return null;
+
+        let cameraNode = realityEditor.sceneGraph.getCameraNode();
+        let worldObjectNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+        const SEGMENT_LENGTH = 1000; // arbitrary, just need to calculate one point so we can solve parametric equation
+        let testPoint = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, SEGMENT_LENGTH, worldObjectNode);
+        let cameraRelativeToWorldObject = realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 9}, cameraNode, worldObjectNode);
+        let rayOrigin = [cameraRelativeToWorldObject.x, cameraRelativeToWorldObject.y, cameraRelativeToWorldObject.z];
+        let arUtils = realityEditor.gui.ar.utilities;
+        return arUtils.normalize(arUtils.subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
+    }
+
     // checks where the click intersects with the area target, or the groundplane, and returns {x,y,z} relative to the world object origin 
     function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
@@ -292,10 +307,11 @@ createNameSpace("realityEditor.avatar");
             screenX: screenX,
             screenY: screenY,
             worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
+            rayDirection: getRayDirection(screenX, screenY),
             timestamp: Date.now()
         }
 
-        if (touchState.isPointerDown && !touchState.worldIntersectPoint) { return; } // don't send if click on nothing
+        if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
@@ -314,7 +330,8 @@ createNameSpace("realityEditor.avatar");
             isPointerDown: isPointerDown,
             screenX: screenX,
             screenY: screenY,
-            worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
+            worldIntersectPoint: null,
+            rayDirection: null,
             timestamp: Date.now()
         }
 
@@ -379,8 +396,8 @@ createNameSpace("realityEditor.avatar");
         if (connectionStatus.isLocalized) {
             let isConnectionReady = connectionStatus.isLocalized &&
                 connectionStatus.isMyAvatarCreated &&
-                connectionStatus.isMyAvatarInitialized &&
-                connectionStatus.isWorldOcclusionObjectAdded && myAvatarId;
+                connectionStatus.isMyAvatarInitialized && myAvatarId;
+                // && connectionStatus.isWorldOcclusionObjectAdded;
             draw.renderConnectionFeedback(isConnectionReady);
         }
     }
