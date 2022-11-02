@@ -298,6 +298,16 @@ createNameSpace("realityEditor.sceneGraph");
             objectSceneNode.anythingInSubtreeNeedsRerender = false;
         });
 
+        if (cameraNode.anythingInSubtreeNeedsRerender) {
+            cameraNode.children.forEach(childNode => {
+                relativeToCamera[childNode.id] = childNode.getMatrixRelativeTo(cameraNode);
+                finalCSSMatrices[childNode.id] = [];
+                utils.multiplyMatrix(relativeToCamera[childNode.id], globalStates.projectionMatrix, finalCSSMatrices[childNode.id]);
+                childNode.needsRerender = false;
+            });
+            cameraNode.anythingInSubtreeNeedsRerender = false;
+        }
+
         // process additional visual elements at the end, in case they are relative to groundPlane/frames/nodes
         for (let elementId in visualElements) {
             let miscellaneousElementNode = visualElements[elementId];

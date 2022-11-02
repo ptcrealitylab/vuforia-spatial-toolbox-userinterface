@@ -1144,34 +1144,20 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeKey);
                     let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
                     
-                    // do this one time when you first tap down on something unconstrained, to preserve its current matrix
-                    if (matrix.copyStillFromMatrixSwitch) {
-                        
-                        let relativeMatrix = sceneNode.getMatrixRelativeTo(cameraNode);
-                        activeVehicle.begin = utilities.copyMatrix(relativeMatrix);
-                        matrix.copyStillFromMatrixSwitch = false;
-                        
-                    // if this isn't the first frame of unconstrained editing, just use the previously stored matrices
-                    } else {
-                        // TODO: decide whether to do this the mathematical way, or fake it like before for performance
-                        // multiply camera's worldMatrix by the activeVehicle.begin to get activeVehicle's
-                        // worldMatrix... then convert to local
-                        let requiredWorldMatrix = [];
-                        utilities.multiplyMatrix(activeVehicle.begin, cameraNode.worldMatrix, requiredWorldMatrix);
-                        let requiredLocalMatrix = sceneNode.calculateLocalMatrix(requiredWorldMatrix);
-                        
-                        // cancel out the initial transform (x,y,scale) of when the vehicle's matrix.begin was stored,
-                        // otherwise they will be double-applied to the resulting sceneNode
-                        let startingTransform = realityEditor.device.editingState.startingTransform || realityEditor.gui.ar.utilities.newIdentityMatrix();
-                        let inverseTransform = realityEditor.gui.ar.utilities.invertMatrix(startingTransform);
-                        let untransformed = [];
-                        realityEditor.gui.ar.utilities.multiplyMatrix(inverseTransform, requiredLocalMatrix, untransformed);
+                    // TODO: also show "shadow" on ground plane on remote operator while moving, to help position it
 
-                        sceneNode.setLocalMatrix(untransformed);
+                    // when you first trigger unconstrained repositioning, attach the tool to the camera so that its
+                    // matrix gets stored "frozen" relative to the camera and moves with it
+                    if (matrix.copyStillFromMatrixSwitch) {
+                        let relativeMatrix = sceneNode.getMatrixRelativeTo(cameraNode);
+                        activeVehicle.begin = utilities.copyMatrix(relativeMatrix); // todo: do we still need the .begin matrix?
+                        matrix.copyStillFromMatrixSwitch = false;
+                        realityEditor.sceneGraph.changeParent(sceneNode, 'CAMERA', true);
                     }
 
+                    // this forces it to broadcast its position in realtime to other clients
+                    sceneNode.setLocalMatrix(sceneNode.localMatrix);
                 }
-                
             }
             
             // TODO ben: add in animation matrix

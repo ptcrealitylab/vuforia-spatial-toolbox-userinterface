@@ -95,7 +95,7 @@ realityEditor.device.cachedWorldObject = null;
  * @property {string|null} object - objectId of the selected vehicle
  * @property {string|null} frame - frameId of the selected vehicle
  * @property {string|null} node - nodeIf of the selected node (null if vehicle is a frame, not a node)
- * @property {{x: number, y: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
+ * @property {{x: number, y: number, z: number}|null} touchOffset - relative position of the touch to the vehicle when you start repositioning
  * @property {boolean} unconstrained - iff the current reposition is temporarily unconstrained (globalStates.unconstrainedEditing is used for permanent unconstrained repositioning)
  * @property {number|null} initialCameraPosition - initial camera position used for calculating popping into unconstrained
  * @property {Array.<number>|null} startingMatrix - stores the previous vehicle matrix while unconstrained editing, so that it can be returned to its original position if dropped in an invalid location
@@ -410,6 +410,19 @@ realityEditor.device.resetEditingState = function() {
 
     // gets triggered before state gets reset, so that subscribed modules can respond based on what is about to be reset
     this.callbackHandler.triggerCallbacks('resetEditingState');
+    
+    // properly write the vehicle position to the server if it's been moved relative to another parent
+    if (this.getEditingVehicle() && this.isEditingUnconstrained(this.getEditingVehicle())) {
+        let activeVehicle = this.getEditingVehicle();
+        let vehicleParentId = realityEditor.isVehicleAFrame(activeVehicle) ? activeVehicle.objectId : activeVehicle.frameId;
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
+        if (sceneNode.parent && sceneNode.parent.id !== vehicleParentId) {
+            let parentId = realityEditor.isVehicleAFrame(activeVehicle) ? activeVehicle.objectId : activeVehicle.frameId;
+            realityEditor.sceneGraph.changeParent(sceneNode, parentId, true);
+            realityEditor.gui.ar.positioning.setPositionDataMatrix(this.getEditingVehicle(), sceneNode.localMatrix, false);
+            sceneNode.needsUploadToServer = true;
+        }
+    }
 
     this.editingState.object = null;
     this.editingState.frame = null;
@@ -426,7 +439,7 @@ realityEditor.device.resetEditingState = function() {
     globalStates.inTransitionObject = null;
     globalStates.inTransitionFrame = null;
     pocketFrame.vehicle = null;
-    
+
     realityEditor.gui.ar.positioning.stopRepositioning();
 };
 
@@ -1386,7 +1399,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
 
             realityEditor.gui.ar.positioning.y =event.touches[0].pageY;
                 realityEditor.gui.ar.positioning.x =   event.touches[0].pageX;
-            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true, true);
+            realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinate(activeVehicle, event.touches[0].pageX, event.touches[0].pageY, true);
             
             var isDeletableVehicle = activeVehicle.type === 'logic' || (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global");
             
