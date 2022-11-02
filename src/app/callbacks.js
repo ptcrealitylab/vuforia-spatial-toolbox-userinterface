@@ -214,6 +214,11 @@ createNameSpace('realityEditor.app.callbacks');
             realityEditor.network.discovery.processHeartbeat(message);
 
             // forward the action message to the network module, to synchronize state across multiple clients
+        } else if (typeof message.ip !== 'undefined' &&
+            typeof message.services !== 'undefined') {
+
+            realityEditor.network.discovery.processServerBeat(message);
+
         } else if (typeof message.action !== 'undefined') {
             realityEditor.network.onAction(message.action);
         }
