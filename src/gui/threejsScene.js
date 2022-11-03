@@ -8,8 +8,10 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
+import WebXRPolyfill from '../../thirdPartyCode/webxr-polyfill.module.js';
 
 (function(exports) {
+    const _polyfill = new WebXRPolyfill();
 
     var camera, scene, renderer;
     var rendererWidth = window.innerWidth;
@@ -43,6 +45,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.xr.enabled = true;
         camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
         camera.matrixAutoUpdate = false;
         scene = new THREE.Scene();
@@ -619,6 +622,24 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         };
     }
 
+
+    async function onWebXRSessionStarted(session) {
+        session.addEventListener('end', onWebXRSessionEnded);
+
+        renderer.xr.setReferenceSpaceType('local');
+
+        await renderer.xr.setSession(session);
+    }
+
+    function onWebXRSessionEnded() {
+        console.log('onWebXRSessionEnded');
+    }
+
+    function enterWebXR() {
+        const sessionInit = {};
+        navigator.xr.requestSession('immersive-ar', sessionInit).then(onWebXRSessionStarted);
+    }
+
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -639,4 +660,5 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
+    exports.enterWebXR = enterWebXR;
 })(realityEditor.gui.threejsScene);
