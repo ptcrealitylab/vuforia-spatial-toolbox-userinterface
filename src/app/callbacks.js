@@ -236,7 +236,7 @@ createNameSpace('realityEditor.app.callbacks');
      * Callback for realityEditor.app.getPosesStream
      * @param {Array<Object>} poses
      */
-    function receivePoses(poses) {
+    function receivePoses(poses, imageSize) {
         if (!window.rzvIo) {
             // window.rzvIo = io('http://jhobin0ml.local:31337');
             // window.rzvIo = io('http://10.10.10.166:31337');
@@ -285,73 +285,16 @@ createNameSpace('realityEditor.app.callbacks');
         //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
         // }
 
-        if (poses.length > 0) {
-            for (let start in realityEditor.gui.poses.JOINT_NEIGHBORS) {
-                let pointA = poses[start];
-
-                let others = realityEditor.gui.poses.JOINT_NEIGHBORS[start];
-                let outlierPresent = false;
-                let minDepth = pointA.depth;
-                for (let other of others) {
-                    let pointB = poses[other];
-                    minDepth = Math.min(minDepth, pointB.depth);
-                }
-                for (let other of others) {
-                    let pointB = poses[other];
-                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
-                        outlierPresent = true;
-                    }
-                }
-                if (!outlierPresent) {
-                    continue;
-                }
-                for (let other of others) {
-                    let pointB = poses[other];
-                    if (Math.abs(pointB.depth - minDepth) > 1.5) {
-                        pointB.depth = minDepth;
-                    }
-                }
-            }
-
-            let depths = Object.values(realityEditor.gui.poses.POSE_JOINTS_DEPTH);
-            for (let i = 0; i < depths.length; i++) {
-                poses[i].depth += depths[i];
-            }
-        }
-
-        const focalLength = 1392.60913; // may change per device
-        const POSE_JOINTS = realityEditor.gui.poses.POSE_JOINTS;
-
-        let roughCenterDepth = poses.length > 0 ? (
-            poses[POSE_JOINTS.LEFT_SHOULDER].depth +
-            poses[POSE_JOINTS.RIGHT_SHOULDER].depth +
-            poses[POSE_JOINTS.LEFT_HIP].depth +
-            poses[POSE_JOINTS.RIGHT_HIP].depth
-        ) / 4 : 0;
-
         for (let point of poses) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
-            const THREE = realityEditor.gui.threejsScene.THREE;
 
-            let zBasedDepth = point.depth;
-            // Add in mlkit's z approximation when available
-            if (point.hasOwnProperty('z')) {
-                zBasedDepth = roughCenterDepth + point.z / focalLength * roughCenterDepth;
-            }
-
-            point.error = point.depth - zBasedDepth;
-            let depth = zBasedDepth; // TODO incorporate point.depth
-            if (Math.abs(point.error) < 0.5) {
-                depth = point.depth * 0.8 + zBasedDepth * 0.2;
-            }
-            let vec = new THREE.Vector3(0, 0, depth * 1000); // point.depth * 1000);
-            vec.applyEuler(new THREE.Euler(point.rotY, point.rotX, 0));
+            // * 1000 - convert from m to mm
             let initialVehicleMatrix = [
-                -1, 0, 0, 0,
+                1, 0, 0, 0,
                 0, 1, 0, 0,
-                0, 0, -1, 0,
-                vec.x, vec.y, -vec.z, 1
+                0, 0, 1, 0,
+                point.x * 1000, point.y * 1000, point.z * 1000, 1
             ];
 
             // needs to be flipped in some environments with different camera systems
@@ -400,14 +343,7 @@ createNameSpace('realityEditor.app.callbacks');
         }
         // }
 
-        let camX = cameraMat[12];
-        let camY = cameraMat[13];
-        let camZ = cameraMat[14];
-        realityEditor.gui.poses.drawPoses(poses, coolerPoses, {
-            x: camX / 1000,
-            y: camY / 1000,
-            z: camZ / 1000,
-        });
+        realityEditor.gui.poses.drawPoses(poses, imageSize);
 
         const USE_DEBUG_POSE = false;
 

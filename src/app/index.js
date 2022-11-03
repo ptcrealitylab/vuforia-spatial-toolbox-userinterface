@@ -134,7 +134,7 @@ realityEditor.app.getMatrixStream = function(callBack) {
  * @param {FunctionName} callBack
  */
 realityEditor.app.getPosesStream = function(callBack) {
-    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**
