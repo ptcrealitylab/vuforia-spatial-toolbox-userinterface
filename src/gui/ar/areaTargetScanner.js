@@ -3,8 +3,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 (function(exports) {
 
     let hasUserBeenNotified = false;
-    let detectedServers = {};
-    let detectedObjects = {};
 
     let foundAnyWorldObjects = false;
     let isScanning = false;
@@ -61,26 +59,11 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // show "SCAN" button on bottom center of screen
         // OR -> show a modal with this info and the button to start. can dismiss and ignore completely.
 
-        realityEditor.network.addUDPMessageHandler('id', (message) => {
-            if (typeof message.id === 'undefined' || typeof message.ip === 'undefined') {
-                return;
-            }
-            if (typeof detectedServers[message.ip] !== 'undefined') {
-                return;
-            }
-            detectedServers[message.ip] = true;
-        });
-
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             // if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
             //     return; // ignore local world
             // }
             console.log('areaTarget objectDiscoveredCallback', pendingAddedObjectName, object);
-
-            if (typeof detectedObjects[objectKey] !== 'undefined') {
-                return;
-            }
-            detectedObjects[objectKey] = true;
 
             if (pendingAddedObjectName) {
                 if (object.name === pendingAddedObjectName) {
@@ -108,17 +91,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                     showNotificationIfNeeded();
                 }
             }, delay);
-        });
-
-        realityEditor.network.onNewServerDetected(function(serverIP) {
-            console.log('areaTargetScanner onNewServerDetected', serverIP);
-            // if (serverIP === '127.0.0.1' || serverIP === 'localhost') {
-            //     return;
-            // }
-            if (typeof detectedServers[serverIP] !== 'undefined') {
-                return;
-            }
-            detectedServers[serverIP] = true;
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(function(visibleObjects) {
@@ -178,6 +150,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             return;
         }
 
+        let detectedServers = realityEditor.network.discovery.getDetectedServerIPs({limitToWorldService: true});
+
         const headerText = 'No scans of this space detected. Make a scan?';
         let randomServerIP = Object.keys(detectedServers).filter(detectedServer => {
             return detectedServer !== '127.0.0.1';
@@ -218,7 +192,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (typeof serverIp !== 'undefined') {
             createPendingWorldObject(serverIp);
         } else {
-            let randomServerIP = Object.keys(detectedServers);
+            let detectedServers = realityEditor.network.discovery.getDetectedServerIPs({limitToWorldService: true});
+            let randomServerIP = Object.keys(detectedServers)[0];
             //.filter(detectedServer => {
             //    return detectedServer !== '127.0.0.1';
             //})[0];
@@ -429,15 +404,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function createPendingWorldObject(serverIp) {
-        console.log('createPendingWorldObject()', detectedServers);
-
-        // default to a random available server if the provided serverIp hasn't been seen yet
-        let serverIps = Object.keys(detectedServers);
-        if (!serverIps.includes(serverIp)) {
-            serverIp = serverIps.filter(detectedServer => {
-                return detectedServer !== '127.0.0.1';
-            })[0]; // this is guaranteed to have at least one entry if we get here
-        }
         pendingAddedObjectName = "_WORLD_instantScan" + globalStates.tempUuid;
 
         realityEditor.network.discovery.addExceptionToPausedObjectDetections(pendingAddedObjectName);
@@ -751,16 +717,11 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         callbacks.onCaptureSuccessOrError.push(callback);
     };
     exports.didFindAnyWorldObjects = () => {
-        let validWorlds = Object.keys(detectedObjects).map(key => objects[key]).filter(obj => {
-            return (obj.isWorldObject || obj.type === 'world') && obj.objectId !== realityEditor.worldObjects.getLocalWorldId();
-        });
-        return foundAnyWorldObjects && validWorlds.length > 0;
+        let detectedObjects = realityEditor.network.discovery.getDetectedObjectsOfType('world');
+        return detectedObjects.length > 0;
     };
     exports.onCaptureStatus = (callback) => {
         callbacks.onCaptureStatus.push(callback);
-    };
-    exports.getDetectedServers = () => {
-        return detectedServers;
     };
     exports.getSessionObjectId = () => {
         return sessionObjectId;
