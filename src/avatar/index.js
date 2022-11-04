@@ -12,7 +12,8 @@ createNameSpace("realityEditor.avatar");
 
     let network, draw, utils; // shortcuts to access realityEditor.avatar._____
 
-    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 10000; // once per 10 seconds
+    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 10 * 1000; // once per 10 seconds
+    const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
     const RAYCAST_AGAINST_GROUNDPLANE = false;
 
     let myAvatarId = null;
@@ -22,6 +23,12 @@ createNameSpace("realityEditor.avatar");
     let avatarUserProfiles = {}; // data received from avatars' userProfile property in their storage node
     let connectedAvatarNames = {}; // similar to avatarObjects, but maps objectKey -> name or null
     let isPointerDown = false;
+    let lastPointerState = {
+        position: null,
+        timestamp: Date.now(),
+        viewMatrixChecksum: null
+    };
+    let lastBeamOnTimestamp = null;
 
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
     let isUsernameActive = false;
@@ -36,7 +43,8 @@ createNameSpace("realityEditor.avatar");
         isLocalized: false,
         isMyAvatarCreated: false,
         isMyAvatarInitialized: false,
-        isWorldOcclusionObjectAdded: false
+        isWorldOcclusionObjectAdded: false,
+        didCreationFail: false
     }
 
     // these are just used for debugging purposes
@@ -85,10 +93,21 @@ createNameSpace("realityEditor.avatar");
                     }
                 }, (err) => {
                     console.warn('unable to add avatar object to server', err);
+                    connectionStatus.didCreationFail = true;
+                    refreshStatusUI();
                 });
             }, () => {
                 console.warn('avatar already exists on server');
+                connectionStatus.didCreationFail = true;
+                refreshStatusUI();
             });
+
+            // if it takes longer than 10 seconds to load the avatar, hide the "loading" UI - todo: retry if timeout
+            setTimeout(() => {
+                if (myAvatarId) return;
+                connectionStatus.didCreationFail = true;
+                refreshStatusUI();
+            }, AVATAR_CREATION_TIMEOUT_LENGTH);
         });
 
         network.onAvatarDiscovered((object, objectKey) => {
@@ -99,6 +118,9 @@ createNameSpace("realityEditor.avatar");
         network.onAvatarDeleted((objectKey) => {
             delete avatarObjects[objectKey];
             delete connectedAvatarNames[objectKey];
+            delete avatarTouchStates[objectKey];
+            delete avatarUserProfiles[objectKey];
+            draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarNames);
         });
 
@@ -109,6 +131,23 @@ createNameSpace("realityEditor.avatar");
 
             try {
                 updateMyAvatar();
+
+                // send updated ray even if the touch doesn't move, because the camera might have moved
+                // Limit to 10 FPS because this is a bit CPU-intensive
+                if (isPointerDown) {
+                    let needsUpdate = lastPointerState.position &&
+                        Date.now() - lastPointerState.timestamp > 100 &&
+                        Date.now() - lastBeamOnTimestamp > 100;
+                    if (!needsUpdate) return;
+                    // this is a quick way to check for changes to the camera - in very rare instances this can be incorrect
+                    // but because this is just for performance optimizations that is an ok tradeoff
+                    let checksum = realityEditor.sceneGraph.getCameraNode().worldMatrix.reduce((sum, a) => sum + a, 0);
+                    needsUpdate = lastPointerState.viewMatrixChecksum !== checksum;
+                    if (!needsUpdate) return;
+                    setBeamOn(lastPointerState.position.x, lastPointerState.position.y);
+                    lastPointerState.viewMatrixChecksum = checksum;
+                    console.log('update from view matrix changing', checksum);
+                }
             } catch (e) {
                 console.warn('error updating my avatar', e);
             }
@@ -237,7 +276,7 @@ createNameSpace("realityEditor.avatar");
             if (raycastIntersects.length > 0) {
                 worldIntersectPoint = raycastIntersects[0].point;
                 
-            // if we don't hit against the area target mesh, try colliding with the ground plane
+            // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
                 let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
                 raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane]);
@@ -272,6 +311,11 @@ createNameSpace("realityEditor.avatar");
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (realityEditor.device.utilities.isEventHittingBackground(e)) {
                 setBeamOn(e.pageX, e.pageY);
+                lastPointerState.position = {
+                    x: e.pageX,
+                    y: e.pageY
+                };
+                lastPointerState.timestamp = Date.now();
             }
         });
 
@@ -279,6 +323,7 @@ createNameSpace("realityEditor.avatar");
             document.body.addEventListener(eventName, (e) => {
                 if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
                 setBeamOff();
+                lastPointerState.position = null;
             });
         });
 
@@ -289,6 +334,12 @@ createNameSpace("realityEditor.avatar");
             }
             // update the beam position even if not hitting background, as long as we started on the background
             setBeamOn(e.pageX, e.pageY);
+
+            lastPointerState.position = {
+                x: e.pageX,
+                y: e.pageY
+            };
+            lastPointerState.timestamp = Date.now();
         });
     }
 
@@ -317,6 +368,8 @@ createNameSpace("realityEditor.avatar");
             rayDirection: getRayDirection(screenX, screenY),
             timestamp: Date.now()
         }
+
+        lastBeamOnTimestamp = Date.now();
 
         if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
 
@@ -404,8 +457,12 @@ createNameSpace("realityEditor.avatar");
             let isConnectionReady = connectionStatus.isLocalized &&
                 connectionStatus.isMyAvatarCreated &&
                 connectionStatus.isMyAvatarInitialized && myAvatarId;
-                // && connectionStatus.isWorldOcclusionObjectAdded;
+            // && connectionStatus.isWorldOcclusionObjectAdded;
             draw.renderConnectionFeedback(isConnectionReady);
+        }
+
+        if (connectionStatus.didCreationFail) {
+            draw.renderConnectionFeedback(false, connectionStatus.didCreationFail);
         }
     }
 

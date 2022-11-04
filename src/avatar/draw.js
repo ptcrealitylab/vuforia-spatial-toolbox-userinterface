@@ -463,7 +463,7 @@ createNameSpace("realityEditor.avatar.draw");
     }
 
     // Shows an "Establishing Connection..." --> "Connected!" label in the top left
-    function renderConnectionFeedback(isConnected) {
+    function renderConnectionFeedback(isConnected, didFail = false) {
         if (!statusUI) {
             statusUI = document.createElement('div');
             statusUI.id = 'avatarStatus';
@@ -485,7 +485,11 @@ createNameSpace("realityEditor.avatar.draw");
                 }, 2000);
             }, 300);
         } else {
-            statusUI.innerText = 'Establishing Avatar Connection...'
+            if (didFail) {
+                statusUI.innerText = ''; // hide the "Establishing" message on fail or timeout
+            } else {
+                statusUI.innerText = 'Establishing Avatar Connection...';
+            }
         }
     }
 
@@ -518,7 +522,21 @@ createNameSpace("realityEditor.avatar.draw");
             'Did Send? (' + sendText + ').  ' +
             'Did Receive? (' + receiveText + ')' +
             '<br/>' +
+            'Did Fail? (' + debugConnectionStatus.didCreationFail + ')' +
+            '<br/>' +
             'My ID: ' + (myId ? myId : 'null');
+    }
+
+    function deleteAvatarMeshes(objectKey) {
+        if (avatarMeshes[objectKey]) {
+            Object.values(avatarMeshes[objectKey]).forEach(elt => {
+                if (typeof elt.isObject3D !== 'undefined' && elt.isObject3D && typeof elt.removeFromParent !== 'undefined') {
+                    elt.removeFromParent();
+                } else if (elt.tagName !== 'undefined' && typeof elt.parentElement !== 'undefined') {
+                    elt.parentElement.removeChild(elt);
+                }
+            });
+        }
     }
 
     exports.renderOtherAvatars = renderOtherAvatars;
@@ -527,5 +545,6 @@ createNameSpace("realityEditor.avatar.draw");
     exports.renderCursorOverlay = renderCursorOverlay;
     exports.renderConnectionFeedback = renderConnectionFeedback;
     exports.renderConnectionDebugInfo = renderConnectionDebugInfo;
+    exports.deleteAvatarMeshes = deleteAvatarMeshes;
 
 }(realityEditor.avatar.draw));
