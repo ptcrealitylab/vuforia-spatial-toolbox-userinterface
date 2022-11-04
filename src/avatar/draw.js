@@ -537,6 +537,7 @@ createNameSpace("realityEditor.avatar.draw");
                 }
             });
         }
+        delete avatarMeshes[objectKey];
     }
 
     exports.renderOtherAvatars = renderOtherAvatars;

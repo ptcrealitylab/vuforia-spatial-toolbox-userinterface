@@ -146,7 +146,6 @@ createNameSpace("realityEditor.avatar");
                     if (!needsUpdate) return;
                     setBeamOn(lastPointerState.position.x, lastPointerState.position.y);
                     lastPointerState.viewMatrixChecksum = checksum;
-                    console.log('update from view matrix changing', checksum);
                 }
             } catch (e) {
                 console.warn('error updating my avatar', e);
