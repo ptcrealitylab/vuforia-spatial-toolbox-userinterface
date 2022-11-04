@@ -13,6 +13,7 @@ createNameSpace("realityEditor.avatar");
     let network, draw, utils; // shortcuts to access realityEditor.avatar._____
 
     const KEEP_ALIVE_HEARTBEAT_INTERVAL = 10000; // once per 10 seconds
+    const RAYCAST_AGAINST_GROUNDPLANE = false;
 
     let myAvatarId = null;
     let myAvatarObject = null;
@@ -77,6 +78,11 @@ createNameSpace("realityEditor.avatar");
                     myAvatarId = data.id;
                     connectionStatus.isMyAvatarCreated = true;
                     refreshStatusUI();
+
+                    // ping the server to discover the object more quickly
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => realityEditor.app.sendUDPMessage({action: 'ping'}), 300 * i * i);
+                    }
                 }, (err) => {
                     console.warn('unable to add avatar object to server', err);
                 });
@@ -232,8 +238,9 @@ createNameSpace("realityEditor.avatar");
                 worldIntersectPoint = raycastIntersects[0].point;
                 
             // if we don't hit against the area target mesh, try colliding with the ground plane
-            } else if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
-                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [realityEditor.gui.threejsScene.getGroundPlaneCollider()]);
+            } else if (RAYCAST_AGAINST_GROUNDPLANE) {
+                let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
+                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane]);
                 if (raycastIntersects.length > 0) {
                     worldIntersectPoint = raycastIntersects[0].point;
                 }
