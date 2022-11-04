@@ -1261,8 +1261,10 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
                             this.isDoubleTap = false;
                         }.bind(this), 300);
                     } else { // registered double tap and create memory
-                        realityEditor.gui.menus.switchToMenu("bigPocket");
-                        realityEditor.gui.memory.createMemory();
+                        if (realityEditor.device.environment.variables.supportsMemoryCreation) {
+                            realityEditor.gui.menus.switchToMenu("bigPocket");
+                            realityEditor.gui.memory.createMemory();
+                        }
                     }
 
                 }

@@ -40,6 +40,7 @@ createNameSpace("realityEditor.device.environment");
         enableViewFrustumCulling: true,
         layoutUIForPortrait: false,
         defaultShowGroundPlane: false,
+        supportsMemoryCreation: true,
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
