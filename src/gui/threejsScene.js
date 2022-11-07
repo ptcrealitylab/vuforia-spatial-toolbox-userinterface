@@ -370,7 +370,11 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
             if (gltf.scene.geometry) {
                 if (typeof maxHeight !== 'undefined') {
-                    gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
+                    if (!gltf.scene.material) {
+                        console.warn('no material', gltf.scene);
+                    } else {
+                        gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
+                    }
                 }
                 gltf.scene.geometry.computeVertexNormals();
                 gltf.scene.geometry.computeBoundingBox();
@@ -380,12 +384,19 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
                 wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
-                gltf.scene.children.forEach(child => {
+                let allMeshes = [];
+                gltf.scene.traverse(child => {
+                    if (child.material && child.geometry) {
+                        allMeshes.push(child);
+                    }
+                });
+
+                allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
                     }
                 });
-                const mergedGeometry = mergeBufferGeometries(gltf.scene.children.map(child => {
+                const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
                   let geo = child.geometry.clone();
                   geo.deleteAttribute('uv');
                   return geo;
@@ -394,7 +405,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 mergedGeometry.computeBoundingBox();
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
-                gltf.scene.children.map(child => {
+                allMeshes.map(child => {
                     child.geometry.boundsTree = new MeshBVH(child.geometry);
                 });
 
