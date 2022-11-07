@@ -528,7 +528,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
             material.uniforms = THREE.UniformsUtils.merge([
-                THREE.ShaderLib.standard.uniforms,
+                THREE.ShaderLib.physical.uniforms,
                 {
                     maxHeight: {value: maxHeight},
                 }
