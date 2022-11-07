@@ -25,7 +25,9 @@ realityEditor.gui.ar.videoPlayback.initService = function() {
         videoPlayers.push(new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey));
     });
     realityEditor.network.addPostMessageHandler('disposeVideoPlayback', (msgData) => {
-        videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).dispose();
+        const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
+        videoPlayer.dispose();
+        videoPlayers.splice(videoPlayers.indexOf(videoPlayer), 1);
     });
     realityEditor.network.addPostMessageHandler('setVideoPlaybackCurrentTime', (msgData) => {
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).currentTime = msgData.currentTime;
@@ -142,7 +144,6 @@ class VideoPlayer {
         this.colorVideo = document.createElement('video');
         this.colorVideo.width = 256;
         this.colorVideo.loop = true;
-        this.colorVideo.muted = true;
         this.colorVideo.playsInline = true;
         this.colorVideo.crossOrigin = 'Anonymous';
         this.colorVideo.style.position = 'absolute';
@@ -153,6 +154,7 @@ class VideoPlayer {
         source.src = this.urls.color;
         source.type = 'video/mp4';
         this.colorVideo.appendChild(source);
+        this.colorVideo.sourceElement = source;
         this.colorVideo.load();
         this.colorVideo.onloadedmetadata = () => {
             this.colorVideo.loadSuccessful = true;
@@ -174,12 +176,19 @@ class VideoPlayer {
             this.videoLength = this.rvl.getDuration();
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoMetadata: {videoLength: this.rvl.getDuration()}, id: this.id});
         });
-        
-        realityEditor.gui.threejsScene.onAnimationFrame(() => this.render());
+
+        this.onAnimationFrame = () => this.render();
+        realityEditor.gui.threejsScene.onAnimationFrame(this.onAnimationFrame);
     }
     
     dispose() {
         // TODO: dispose resources
+        this.phoneParent.parent.remove(this.phoneParent);
+        this.colorVideo.pause();
+        this.colorVideo.sourceElement.remove();
+        this.colorVideo.load();
+        this.rvl = null;
+        realityEditor.gui.threejsScene.removeAnimationCallback(this.onAnimationFrame);
     }
     
     get currentTime() {
