@@ -4,6 +4,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
 
+    /* TODO: enable this again after fixing getAllDivsUnderCoordinate to not set display:none to all elements
+        otherwise performance takes a big hit and scrolling in the pocket stops working */
+    const SNAP_CURSOR_TO_TOOLS = false;
+
+    let isCursorEnabled = true;
+    let isUpdateLoopRunning = false;
+
     let cachedWorldObject;
     let cachedOcclusionObject;
     let occlusionDownloadInterval = null;
@@ -89,29 +96,52 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         addTestSpatialCursor();
         toggleDisplaySpatialCursor(false);
 
-        realityEditor.gui.ar.draw.addUpdateListener(() => {
+        // begin update loop
+        update();
+    }
+
+    function update() {
+        if (!isCursorEnabled) {
+            isUpdateLoopRunning = false;
+            return; // need to call update() again when isCursorEnabled gets toggled on again
+        }
+        isUpdateLoopRunning = true;
+
+        try {
             let screenX = window.innerWidth / 2;
             let screenY = window.innerHeight / 2;
             worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
             updateSpatialCursor();
             updateTestSpatialCursor();
             uniforms['time'].value = clock.getElapsedTime() * 10;
-            // constantly check if the screen center overlaps any iframes
-            let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
-            // console.log(overlappingDivs);
-            overlapped = overlappingDivs.some(element => element.tagName === 'IFRAME');
-            if (overlapped) {
-                let overlappingIframe = overlappingDivs.find(element => element.tagName === 'IFRAME');
-                let tool = realityEditor.getFrame(overlappingIframe.dataset.objectKey, overlappingIframe.dataset.frameKey);
-                if (tool.fullScreen) {
-                    overlapped = false;
-                } else {
-                    let position = getToolPosition(overlappingIframe.dataset.frameKey);
-                    indicator1.position.set(position.x, position.y, position.z);
-                    indicator1.quaternion.setFromUnitVectors(indicatorAxis, getToolDirection(overlappingIframe.dataset.frameKey));
-                }
+
+            if (SNAP_CURSOR_TO_TOOLS) {
+                trySnappingCursorToTools();
             }
+        } catch (e) {
+            console.warn('error in spatialCursor', e);
+        }
+        window.requestAnimationFrame(update);
+    }
+
+    function trySnappingCursorToTools() {
+        // constantly check if the screen center overlaps any iframes
+        let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
+        // console.log(overlappingDivs);
+        overlapped = overlappingDivs.some(element => {
+            return element.tagName === 'IFRAME' && typeof element.dataset.objectKey !== 'undefined';
         });
+        if (overlapped) {
+            let overlappingIframe = overlappingDivs.find(element => element.tagName === 'IFRAME');
+            let tool = realityEditor.getFrame(overlappingIframe.dataset.objectKey, overlappingIframe.dataset.frameKey);
+            if (tool.fullScreen) {
+                overlapped = false;
+            } else {
+                let position = getToolPosition(overlappingIframe.dataset.frameKey);
+                indicator1.position.set(position.x, position.y, position.z);
+                indicator1.quaternion.setFromUnitVectors(indicatorAxis, getToolDirection(overlappingIframe.dataset.frameKey));
+            }
+        }
     }
 
     function addSpatialCursor() {
@@ -145,10 +175,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
         }
     }
-    
+
     function toggleDisplaySpatialCursor(newValue) {
+        isCursorEnabled = newValue;
         indicator1.visible = newValue;
         indicator2.visible = newValue;
+
+        if (isCursorEnabled && !isUpdateLoopRunning) {
+            update(); // restart the update loop
+        }
     }
 
     // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
@@ -287,4 +322,5 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.initService = initService;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
+    exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
 }(realityEditor.spatialCursor));
