@@ -182,7 +182,6 @@ class VideoPlayer {
     }
     
     dispose() {
-        // TODO: dispose resources
         this.phoneParent.parent.remove(this.phoneParent);
         this.colorVideo.pause();
         this.colorVideo.sourceElement.remove();
