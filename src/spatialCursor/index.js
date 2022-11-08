@@ -4,9 +4,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
 
-    /* TODO: enable this again after fixing getAllDivsUnderCoordinate to not set display:none to all elements
-        otherwise performance takes a big hit and scrolling in the pocket stops working */
-    const SNAP_CURSOR_TO_TOOLS = false;
+    const SNAP_CURSOR_TO_TOOLS = true;
 
     let isCursorEnabled = true;
     let isUpdateLoopRunning = false;
