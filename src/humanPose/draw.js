@@ -232,11 +232,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         clone(poseRenderer) {
             let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
-            let hueReba = 180 - (poseRenderer.overallRebaScore - 1) * 240 / 11;
+            let hueReba = 140 - (poseRenderer.overallRebaScore - 1) * 240 / 11;
+            let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
             if (isNaN(hueReba)) {
                 hueReba = 120;
             }
-            hueReba = Math.min(Math.max(hueReba, 0), 120);
+            hueReba = (Math.min(Math.max(hueReba, -30), 120) + 360) % 360;
             let colorReba = `hsl(${hueReba}, 100%, 50%)`;
             let newContainer = poseRenderer.container.clone();
             let matRainbow = new THREE.MeshBasicMaterial({
@@ -247,7 +248,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let matReba = new THREE.MeshBasicMaterial({
                 color: colorReba,
                 transparent: true,
-                opacity: 0.5,
+                opacity: alphaReba,
             });
 
             let baseMaterial = new THREE.MeshBasicMaterial({
@@ -289,9 +290,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     }
 
                     obj.__cloneMaterials = [
+                        matReba,
                         materialOld,
                         matRainbow,
-                        matReba,
                     ];
                     obj.material = obj.__cloneMaterials[this.cloneMaterialIndex % obj.__cloneMaterials.length];
                 }
