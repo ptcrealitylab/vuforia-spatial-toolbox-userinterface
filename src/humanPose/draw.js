@@ -26,7 +26,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             this.spheres = {};
             this.container = new THREE.Group();
             this.bones = {};
-            this.ghost = false;
             this.overallRebaScore = 1;
             this.createSpheres();
         }
@@ -37,7 +36,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
          */
         createSpheres() {
             const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
-            const mat = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x0077ff});
+            const mat = new THREE.MeshBasicMaterial({color: 0x0077ff});
             this.baseMaterial = mat;
 
             for (const jointId of Object.values(utils.JOINTS)) {
@@ -54,9 +53,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 this.container.add(bone);
             }
 
-            this.redMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0xFF0000});
-            this.yellowMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0xFFFF00});
-            this.greenMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x00ff00});
+            this.redMaterial = new THREE.MeshBasicMaterial({color: 0xFF0000});
+            this.yellowMaterial = new THREE.MeshBasicMaterial({color: 0xFFFF00});
+            this.greenMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00});
         }
 
         /**
