@@ -4,17 +4,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
     let poseRenderers = {};
-
-    let historyLineContainer;
-    let historyCloneContainer;
-
-    let recordingClones = false;
-    let cloneMaterialIndex = 0;
-    let cloneMaterials = [
-        '_materialOverallReba',
-        '_materialRainbow',
-        '_materialOld',
-    ];
+    let humanPoseAnalyzer;
 
     const {utils, rebaScore} = realityEditor.humanPose;
 
@@ -31,7 +21,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
          * @param {THREE.Object3D} historyCloneContainer - THREE container for
          *                         history clone meshes
          */
-        constructor(id, historyLineContainer, historyCloneContainer) {
+        constructor(id) {
             this.id = id;
             this.spheres = {};
             this.container = new THREE.Group();
@@ -39,10 +29,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             this.ghost = false;
             this.overallRebaScore = 1;
             this.createSpheres();
-            this.historyLineContainer = historyLineContainer;
-            this.createHistoryLine();
-
-            this.historyCloneContainer = historyCloneContainer;
         }
 
         /**
@@ -71,27 +57,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             this.redMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0xFF0000});
             this.yellowMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0xFFFF00});
             this.greenMaterial = new THREE.MeshBasicMaterial({color: this.ghost ? 0x777777 : 0x00ff00});
-        }
-
-        /**
-         * Creates a history line (spaghetti line) placing it within
-         * `container`
-         * @param {THREE.Object3D} container
-         */
-        createHistoryLine() {
-            this.historyLine = new realityEditor.gui.ar.meshLine.MeshLine();
-            const lineMat = new realityEditor.gui.ar.meshLine.MeshLineMaterial({
-                color: this.ghost ? 0x777777 : 0xffff00,
-                opacity: 0.6,
-                lineWidth: 14,
-                // depthWrite: false,
-                transparent: true,
-                side: THREE.DoubleSide,
-            });
-            this.historyMesh = new THREE.Mesh(this.historyLine, lineMat);
-            this.historyPoints = [];
-            this.historyLine.setPoints(this.historyPoints);
-            this.historyLineContainer.add(this.historyMesh);
         }
 
         /**
@@ -168,21 +133,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 JOINTS.RIGHT_HIP,
             ]));
 
-            let newPoint = new THREE.Vector3(
-                this.spheres[JOINTS.HEAD].position.x,
-                this.spheres[JOINTS.HEAD].position.y + 0.4,
-                this.spheres[JOINTS.HEAD].position.z,
-            );
-
-            // Split spaghetti line if we jumped by a large amount
-            if (this.historyPoints.length > 0 &&
-                this.historyPoints[this.historyPoints.length - 1].sub(newPoint).lengthSq() > 1) {
-                this.createHistoryLine();
-            }
-
-            this.historyPoints.push(newPoint);
-            this.historyLine.setPoints(this.historyPoints);
-
             for (let boneName of Object.keys(utils.JOINT_CONNECTIONS)) {
                 let bone = this.bones[boneName];
                 let jointA = this.spheres[utils.JOINT_CONNECTIONS[boneName][0]].position;
@@ -206,79 +156,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             }
 
             rebaScore.annotateHumanPoseRenderer(this);
-
-            if (recordingClones) {
-                let clone = this.clone();
-                this.historyCloneContainer.add(clone);
-            }
-        }
-
-        clone() {
-            let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
-            let hueReba = 180 - (this.overallRebaScore - 1) * 240 / 11;
-            if (isNaN(hueReba)) {
-                hueReba = 120;
-            }
-            hueReba = Math.min(Math.max(hueReba, 0), 120);
-            let colorReba = `hsl(${hueReba}, 100%, 50%)`;
-            let newContainer = this.container.clone();
-            let matRainbow = new THREE.MeshBasicMaterial({
-                color: colorRainbow,
-                transparent: true,
-                opacity: 0.5,
-            });
-            let matReba = new THREE.MeshBasicMaterial({
-                color: colorReba,
-                transparent: true,
-                opacity: 0.5,
-            });
-
-            let baseMaterial = new THREE.MeshBasicMaterial({
-                color: this.baseMaterial.color,
-                transparent: true,
-                opacity: 0.5,
-            });
-
-            let redMaterial = new THREE.MeshBasicMaterial({
-                color: this.redMaterial.color,
-                transparent: true,
-                opacity: 0.5,
-            });
-
-            let yellowMaterial = new THREE.MeshBasicMaterial({
-                color: this.yellowMaterial.color,
-                transparent: true,
-                opacity: 0.5,
-            });
-
-            let greenMaterial = new THREE.MeshBasicMaterial({
-                color: this.greenMaterial.color,
-                transparent: true,
-                opacity: 0.5,
-            });
-
-            newContainer.traverse((obj) => {
-                if (obj.material) {
-                    obj._materialOverallReba = matReba;
-                    obj._materialRainbow = matRainbow;
-                    let materialOld = obj.material;
-
-                    // Switch to transparent version of old material if possible
-                    if (materialOld === this.baseMaterial) {
-                        materialOld = baseMaterial;
-                    } else if (materialOld === this.redMaterial) {
-                        materialOld = redMaterial;
-                    } else if (materialOld === this.yellowMaterial) {
-                        materialOld = yellowMaterial;
-                    } else if (materialOld === this.greenMaterial) {
-                        materialOld = greenMaterial;
-                    }
-
-                    obj._materialOld = materialOld;
-                    obj.material = obj[cloneMaterials[cloneMaterialIndex]];
-                }
-            });
-            return newContainer;
         }
 
 
@@ -319,18 +196,185 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
-
-    function renderHumanPoseObjects(poseObjects) {
-        if (!historyLineContainer) {
-            historyLineContainer = new THREE.Group();
-            historyLineContainer.visible = false;
-            realityEditor.gui.threejsScene.addToScene(historyLineContainer);
+    class HumanPoseAnalyzer {
+        constructor(historyLineContainer, historyCloneContainer) {
+            this.historyLineContainer = historyLineContainer;
+            this.historyCloneContainer = historyCloneContainer;
+            this.recordingClones = false;
+            this.cloneMaterialIndex = 0;
+            this.historyLinesAll = {};
+            this.historyPointsAll = {};
         }
 
-        if (!historyCloneContainer) {
-            historyCloneContainer = new THREE.Group();
+        poseRendererUpdated(poseRenderer) {
+            if (this.recordingClones) {
+                const obj = this.clone(poseRenderer);
+                this.historyCloneContainer.add(obj);
+            }
+
+            let newPoint = poseRenderer.getJointPosition(utils.JOINTS.HEAD).clone();
+            newPoint.y += 0.4;
+
+            if (!this.historyPointsAll.hasOwnProperty(poseRenderer.id)) {
+                this.createHistoryLine(poseRenderer);
+            }
+
+            let historyPoints = this.historyPointsAll[poseRenderer.id];
+
+            // Split spaghetti line if we jumped by a large amount
+            if (historyPoints.length > 0 &&
+                historyPoints[historyPoints.length - 1].sub(newPoint).lengthSq() > 1) {
+                this.createHistoryLine(poseRenderer);
+            }
+
+            historyPoints.push(newPoint);
+            this.historyLinesAll[poseRenderer.id].setPoints(historyPoints);
+        }
+
+        clone(poseRenderer) {
+            let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
+            let hueReba = 180 - (poseRenderer.overallRebaScore - 1) * 240 / 11;
+            if (isNaN(hueReba)) {
+                hueReba = 120;
+            }
+            hueReba = Math.min(Math.max(hueReba, 0), 120);
+            let colorReba = `hsl(${hueReba}, 100%, 50%)`;
+            let newContainer = poseRenderer.container.clone();
+            let matRainbow = new THREE.MeshBasicMaterial({
+                color: colorRainbow,
+                transparent: true,
+                opacity: 0.5,
+            });
+            let matReba = new THREE.MeshBasicMaterial({
+                color: colorReba,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let baseMaterial = new THREE.MeshBasicMaterial({
+                color: poseRenderer.baseMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let redMaterial = new THREE.MeshBasicMaterial({
+                color: poseRenderer.redMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let yellowMaterial = new THREE.MeshBasicMaterial({
+                color: poseRenderer.yellowMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            let greenMaterial = new THREE.MeshBasicMaterial({
+                color: poseRenderer.greenMaterial.color,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            newContainer.traverse((obj) => {
+                if (obj.material) {
+                    let materialOld = obj.material;
+                    // Switch to transparent version of old material if possible
+                    if (materialOld === poseRenderer.baseMaterial) {
+                        materialOld = baseMaterial;
+                    } else if (materialOld === poseRenderer.redMaterial) {
+                        materialOld = redMaterial;
+                    } else if (materialOld === poseRenderer.yellowMaterial) {
+                        materialOld = yellowMaterial;
+                    } else if (materialOld === poseRenderer.greenMaterial) {
+                        materialOld = greenMaterial;
+                    }
+
+                    obj.__cloneMaterials = [
+                        materialOld,
+                        matRainbow,
+                        matReba,
+                    ];
+                    obj.material = obj.__cloneMaterials[this.cloneMaterialIndex % obj.__cloneMaterials.length];
+                }
+            });
+            return newContainer;
+        }
+
+        /**
+         * Creates a history line (spaghetti line) placing it within
+         * the historyLineContainer
+         * @param {HumanPoseRenderer} poseRenderer
+         */
+        createHistoryLine(poseRenderer) {
+            const historyLine = new realityEditor.gui.ar.meshLine.MeshLine();
+            const lineMat = new realityEditor.gui.ar.meshLine.MeshLineMaterial({
+                color: 0xffff00,
+                opacity: 0.6,
+                lineWidth: 14,
+                // depthWrite: false,
+                transparent: true,
+                side: THREE.DoubleSide,
+            });
+            const historyMesh = new THREE.Mesh(historyLine, lineMat);
+            const historyPoints = [];
+            historyLine.setPoints(historyPoints);
+            this.historyLineContainer.add(historyMesh);
+
+            this.historyPointsAll[poseRenderer.id] = historyPoints;
+            this.historyLinesAll[poseRenderer.id] = historyLine;
+        }
+
+
+        resetHistoryLines() {
+            // Loop over copy of children to remove all
+            for (let child of this.historyLineContainer.children.concat()) {
+                this.historyLineContainer.remove(child);
+            }
+        }
+
+        resetHistoryClones() {
+            for (let child of this.historyCloneContainer.children.concat()) {
+                this.historyCloneContainer.remove(child);
+            }
+        }
+
+        /**
+         * @param {boolean} visible
+         */
+        setHistoryLinesVisible(visible) {
+            this.historyLineContainer.visible = visible;
+        }
+
+        /**
+         * @param {boolean} enabled
+         */
+        setRecordingClonesEnabled(enabled) {
+            this.recordingClones = enabled;
+        }
+
+        advanceCloneMaterial() {
+            this.cloneMaterialIndex += 1;
+
+            this.historyCloneContainer.traverse((obj) => {
+                if (obj.material && obj.__cloneMaterials) {
+                    let index = this.cloneMaterialIndex % obj.__cloneMaterials.length;
+                    obj.material = obj.__cloneMaterials[index];
+                }
+            });
+        }
+    }
+
+    function renderHumanPoseObjects(poseObjects) {
+        if (!humanPoseAnalyzer) {
+            const historyLineContainer = new THREE.Group();
+            historyLineContainer.visible = false;
+            realityEditor.gui.threejsScene.addToScene(historyLineContainer);
+
+            const historyCloneContainer = new THREE.Group();
             historyCloneContainer.visible = true;
             realityEditor.gui.threejsScene.addToScene(historyCloneContainer);
+
+            humanPoseAnalyzer = new HumanPoseAnalyzer(historyLineContainer, historyCloneContainer);
         }
 
         for (let id in poseRenderers) {
@@ -351,7 +395,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // assume that all sub-objects are of the form poseObject.id + joint name
 
         if (!poseRenderers[poseObject.uuid]) {
-            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid, historyLineContainer, historyCloneContainer);
+            poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
             poseRenderers[poseObject.uuid].addToScene();
         }
         let poseRenderer = poseRenderers[poseObject.uuid];
@@ -376,47 +420,34 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             poseRenderer.setJointPosition(jointId, jointPosition);
         }
         poseRenderer.updateBonePositions();
+
+        humanPoseAnalyzer.poseRendererUpdated(poseRenderer);
     }
 
     function resetHistoryLines() {
-        // Loop over copy of children to remove all
-        for (let child of historyLineContainer.children.concat()) {
-            historyLineContainer.remove(child);
-        }
+        humanPoseAnalyzer.resetHistoryLines();
     }
 
     function resetHistoryClones() {
-        for (let child of historyCloneContainer.children.concat()) {
-            historyCloneContainer.remove(child);
-        }
+        humanPoseAnalyzer.resetHistoryClones();
     }
 
     /**
      * @param {boolean} visible
      */
     function setHistoryLinesVisible(visible) {
-        historyLineContainer.visible = visible;
+        humanPoseAnalyzer.setHistoryLinesVisible(visible);
     }
 
     /**
      * @param {boolean} enabled
      */
     function setRecordingClonesEnabled(enabled) {
-        recordingClones = enabled;
+        humanPoseAnalyzer.setRecordingClonesEnabled(enabled);
     }
 
     function advanceCloneMaterial() {
-        cloneMaterialIndex += 1;
-        if (cloneMaterialIndex >= cloneMaterials.length) {
-            cloneMaterialIndex = 0;
-        }
-
-        let newMaterialKey = cloneMaterials[cloneMaterialIndex];
-        historyCloneContainer.traverse((obj) => {
-            if (obj.material) {
-                obj.material = obj[newMaterialKey];
-            }
-        });
+        humanPoseAnalyzer.advanceCloneMaterial();
     }
 
 
