@@ -1,8 +1,14 @@
 createNameSpace("realityEditor.humanPose");
 
-(function(exports) {
+import * as network from './network.js'
+import * as draw from './draw.js'
+import * as utils from './utils.js'
 
-    let network, draw, utils; // shortcuts to access realityEditor.humanPose._____
+(function(exports) {
+    // Re-export submodules for use in legacy code
+    exports.network = network;
+    exports.draw = draw;
+    exports.utils = utils;
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
@@ -14,10 +20,6 @@ createNameSpace("realityEditor.humanPose");
     let lastRenderedPoses = {};
 
     function initService() {
-        network = realityEditor.humanPose.network;
-        draw = realityEditor.humanPose.draw;
-        utils = realityEditor.humanPose.utils;
-
         console.log('init humanPose module', network, draw, utils);
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
@@ -154,5 +156,6 @@ createNameSpace("realityEditor.humanPose");
     }
 
     exports.initService = initService;
-
 }(realityEditor.humanPose));
+
+export const initService = realityEditor.humanPose.initService;
