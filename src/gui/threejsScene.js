@@ -12,6 +12,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 (function(exports) {
 
     var camera, scene, renderer;
+    let audioListener;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
     var aspectRatio = rendererWidth / rendererHeight;
@@ -45,6 +46,9 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         renderer.outputEncoding = THREE.sRGBEncoding;
         camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
         camera.matrixAutoUpdate = false;
+        audioListener = new THREE.AudioListener();
+        camera.add(audioListener);
+
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
@@ -127,6 +131,13 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
         setMatrixFromArray(camera.matrix, matrix);
+    }
+
+    /**
+     * @return {THREE.AudioListener}
+     */
+    function getAudioListener() {
+        return audioListener;
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
@@ -647,6 +658,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.addTransformControlsTo = addTransformControlsTo;
     exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;
+    exports.getAudioListener = getAudioListener;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
