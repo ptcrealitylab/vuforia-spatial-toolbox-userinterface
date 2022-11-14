@@ -3,12 +3,16 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
+import * as spaghettiMesh from './spaghettiMesh.js'
 
 (function(exports) {
     // Re-export submodules for use in legacy code
     exports.network = network;
     exports.draw = draw;
     exports.utils = utils;
+    exports.spaghettiMesh = spaghettiMesh;
+    
+    const USE_MOCK_PATH_DATA = true;
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
@@ -21,6 +25,24 @@ import * as utils from './utils.js'
 
     function initService() {
         console.log('init humanPose module', network, draw, utils);
+
+        realityEditor.worldObjects.onLocalizedWithinWorld((_worldObjectKey) => {
+            if (USE_MOCK_PATH_DATA) {
+                let mockPath = spaghettiMesh.getMockData().map((point, i) => {
+                    return {
+                        x: point.x,
+                        y: (point.z + 400), // flip y and z for mock data
+                        z: point.y, // flip y and z
+                        // weight: 0.1 + 3.0 * Math.sin(i / Math.PI)
+                    }; //new realityEditor.gui.threejsScene.THREE.Vector3(point.x, point.z, point.y)
+                });
+                let topColor = 0xffff00;
+                let wallColor = 0x888800;
+                const SIZE = 8;
+                let mesh = spaghettiMesh.pathToMesh(mockPath, SIZE, SIZE, topColor, wallColor);
+                realityEditor.gui.threejsScene.addToScene(mesh);
+            }
+        });
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
