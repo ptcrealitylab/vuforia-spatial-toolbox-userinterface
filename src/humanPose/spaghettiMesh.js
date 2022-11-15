@@ -1,7 +1,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 let pathMeshResources;
-const LINE_WIDTH_POWER = 1.5;
+const LINE_WIDTH_POWER = 1.2;
 const CELL_SIZE_MM = 250;
 
 // Allows us to reuse materials and geometries
@@ -19,8 +19,12 @@ const getPathMeshResources = (THREE, lightWidth, lightLength, reuseMaterials, to
     } else {
         const lightGeometry = new THREE.BoxGeometry(lightWidth,2,lightLength);
         const lightMaterial = new THREE.MeshBasicMaterial({color:0xFFFFCC, transparent:true});
-        const topMaterial = new THREE.MeshBasicMaterial({color:topColor||0x000000, transparent:true});
-        const wallMaterial = new THREE.MeshBasicMaterial({color:wallColor||0xffffff, transparent:true, opacity:0.8});
+        // const topMaterial = new THREE.MeshBasicMaterial({color:topColor||0x000000, transparent:true});
+        // const wallMaterial = new THREE.MeshBasicMaterial({color:wallColor||0xffffff, transparent:true, opacity:0.8});
+
+        const topMaterial = new THREE.MeshBasicMaterial({vertexColors: true});
+        const wallMaterial = new THREE.MeshBasicMaterial({vertexColors: true});
+
         const floorMaterial = new THREE.MeshBasicMaterial({color:0xffffff, transparent: true, opacity: 0.3, side: THREE.DoubleSide});
 
         return {lightGeometry, lightMaterial, topMaterial, wallMaterial, floorMaterial};
@@ -62,9 +66,30 @@ function calculatePathWeights(path) {
     }
 }
 
+function calculatePathSpeeds(path) {
+    
+    function distance(pointA, pointB) {
+        return Math.sqrt(Math.pow(pointA.x - pointB.x, 2) + Math.pow(pointA.y - pointB.y, 2) + Math.pow(pointA.z - pointB.z, 2));
+    }
+    
+    let window = 10;
+    for (let i = 0; i < path.length - 1; i++) {
+        let rollingAverage = 0;
+        if (i > window) {
+            for (let j = i - window; j < i - 1; j++) {
+                let pointA = path[j];
+                let pointB = path[j+1];
+                rollingAverage += distance(pointA, pointB);
+            }
+        }
+        path[i].speed = rollingAverage;
+    }
+}
+
 // Converts a path in 3D space to a three.js mesh
 function pathToMesh(path, width, height, topColor, wallColor) {
     calculatePathWeights(path);
+    calculatePathSpeeds(path);
     if (path.length < 2) {
         return new THREE.Group();
     }
@@ -80,6 +105,8 @@ function pathToMesh(path, width, height, topColor, wallColor) {
     let topVertices = [];
     let wallVertices = [];
     let floorVertices = [];
+    let topColors = [];
+    let wallColors = [];
     const up = new THREE.Vector3(0,1,0);
     // Base should be wider to allow visibility while moving along line
     const bottomScale = 1.4; // How much wider the bottom of the walls is
@@ -102,14 +129,51 @@ function pathToMesh(path, width, height, topColor, wallColor) {
     const floorShape = new THREE.Shape();
 
     floorShape.moveTo(path[path.length-1].x, path[path.length-1].z);
+    
+    function addTopVertex(x, y, z, color) {
+        topVertices.push(x, y, z);
+        topColors.push(color[0], color[1], color[2]);
+    }
+    
+    function addWallVertex(x, y, z, color) {
+        wallVertices.push(x, y, z);
+        let darken = 0.5;
+        let r = Math.max(0, color[0] * darken);
+        let g = Math.max(0, color[1] * darken);
+        let b = Math.max(0, color[2] * darken);
+        wallColors.push(r, g, b);
+    }
+
+    function getColor(point, minSpeed, maxSpeed) {
+        let speed = typeof point.speed !== 'undefined' ? point.speed : 0;
+        let mappedSpeed = (speed - minSpeed) / (maxSpeed - minSpeed);
+        
+        if (mappedSpeed > 0.5) {
+            return [0, 0.25, 1];
+        } else if (mappedSpeed > 0.4) {
+            return [1, 1, 0];
+        } else {
+            return [1, 0, 0];
+        }
+        
+        // let r = mappedSpeed; // Math.pow(1.0 - mappedSpeed, 2);
+        // let g = 0.5 - Math.abs(mappedSpeed - 0.5);
+        // let b = Math.pow(mappedSpeed, 2);
+        // return [r, g, b];
+    }
+
+    let speeds = path.map(point => point.speed).filter(speed => { return typeof speed !== 'undefined' });
+    const minSpeed = Math.min.apply(Math, speeds);
+    const maxSpeed = Math.max.apply(Math, speeds);
 
     for (let i = path.length - 1; i > 0; i--) {
         const start = path[i];
         const end = path[i-1];
         const direction = new THREE.Vector3().subVectors(end, start);
         
-        const startWidthFactor = (typeof start.weight !== 'undefined') ? start.weight : 1;
-        const endWidthFactor = (typeof end.weight !== 'undefined') ? end.weight : 1;
+        const preventZFighting = 0.1 * (i / path.length);
+        const startWidthFactor = preventZFighting + (typeof start.weight !== 'undefined') ? start.weight : 1;
+        const endWidthFactor = preventZFighting + (typeof end.weight !== 'undefined') ? end.weight : 1;
         
         const cross = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(pathWidth / 2);
         const bottomCross = cross.clone().multiplyScalar(bottomScale);
@@ -120,35 +184,55 @@ function pathToMesh(path, width, height, topColor, wallColor) {
         const startTaperFactor = startWidthFactor; // lightDistanceTraveled >= Math.abs(rampLength) ? 1 : lightDistanceTraveled / rampLength;
         const endTaperFactor = endWidthFactor; // lightDistanceTraveled + direction.length() >= Math.abs(rampLength) ? 1 : (lightDistanceTraveled + direction.length()) / rampLength;
 
+        let startColor = [(i / path.length), 0.0, 1.0 - (i / path.length)]; //0xFF00FF;
+        let endColor = [((i+1) / path.length), 0.0, 1.0 - ((i+1) / path.length)]; //0xFF00FF;
+
+        startColor = getColor(start, minSpeed, maxSpeed);
+        endColor = getColor(end, minSpeed, maxSpeed);
+
+        // let startData = {
+        //     point: start,
+        //     taperFactor: startTaperFactor,
+        //     rampHeight: startRampHeight,
+        //     color: startColor
+        // }
+        //
+        // let endData = {
+        //     point: end,
+        //     taperFactor: endTaperFactor,
+        //     rampHeight: endRampHeight,
+        //     color: endColor
+        // }
+
         // First top triangle
-        topVertices.push(start.x-cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z-cross.z*startTaperFactor);
-        topVertices.push(start.x+cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z+cross.z*startTaperFactor);
-        topVertices.push(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor);
+        addTopVertex(start.x-cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z-cross.z*startTaperFactor, startColor);
+        addTopVertex(start.x+cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z+cross.z*startTaperFactor, startColor);
+        addTopVertex(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor, endColor);
 
         // Second top triangle
-        topVertices.push(start.x+cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z+cross.z*startTaperFactor);
-        topVertices.push(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor);
-        topVertices.push(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor);
+        addTopVertex(start.x+cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z+cross.z*startTaperFactor, startColor);
+        addTopVertex(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor, endColor);
+        addTopVertex(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor, endColor);
 
         // First left triangle
-        wallVertices.push(start.x-bottomCross.x*startTaperFactor, start.y+startRampHeight, start.z-bottomCross.z*startTaperFactor);
-        wallVertices.push(start.x-cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z-cross.z*startTaperFactor);
-        wallVertices.push(end.x-bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-bottomCross.z*endTaperFactor);
+        addWallVertex(start.x-bottomCross.x*startTaperFactor, start.y+startRampHeight, start.z-bottomCross.z*startTaperFactor, startColor);
+        addWallVertex(start.x-cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z-cross.z*startTaperFactor, startColor);
+        addWallVertex(end.x-bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-bottomCross.z*endTaperFactor, endColor);
 
         // Second left triangle
-        wallVertices.push(start.x-cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z-cross.z*startTaperFactor);
-        wallVertices.push(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor);
-        wallVertices.push(end.x-bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-bottomCross.z*endTaperFactor);
+        addWallVertex(start.x-cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z-cross.z*startTaperFactor, startColor);
+        addWallVertex(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor, endColor);
+        addWallVertex(end.x-bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-bottomCross.z*endTaperFactor, endColor);
 
         // First right triangle
-        wallVertices.push(start.x+cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z+cross.z*startTaperFactor);
-        wallVertices.push(start.x+bottomCross.x*startTaperFactor, start.y+startRampHeight, start.z+bottomCross.z*startTaperFactor);
-        wallVertices.push(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor);
+        addWallVertex(start.x+cross.x*startTaperFactor, start.y+pathHeight*startTaperFactor+startRampHeight, start.z+cross.z*startTaperFactor, startColor);
+        addWallVertex(start.x+bottomCross.x*startTaperFactor, start.y+startRampHeight, start.z+bottomCross.z*startTaperFactor, startColor);
+        addWallVertex(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor, endColor);
 
         // Second right triangle
-        wallVertices.push(start.x+bottomCross.x*startTaperFactor, start.y+startRampHeight, start.z+bottomCross.z*startTaperFactor);
-        wallVertices.push(end.x+bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+bottomCross.z*endTaperFactor);
-        wallVertices.push(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor);
+        addWallVertex(start.x+bottomCross.x*startTaperFactor, start.y+startRampHeight, start.z+bottomCross.z*startTaperFactor, startColor);
+        addWallVertex(end.x+bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+bottomCross.z*endTaperFactor, endColor);
+        addWallVertex(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor, endColor);
 
         // Handle bends
         if (i > 1) {
@@ -157,34 +241,34 @@ function pathToMesh(path, width, height, topColor, wallColor) {
             const nextBottomCross = nextCross.clone().multiplyScalar(bottomScale);
 
             // First top triangle
-            topVertices.push(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor);
-            topVertices.push(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor);
-            topVertices.push(end.x-nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-nextCross.z*endTaperFactor);
+            addTopVertex(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor, endColor);
+            addTopVertex(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor, endColor);
+            addTopVertex(end.x-nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-nextCross.z*endTaperFactor, endColor);
 
             // Second top triangle
-            topVertices.push(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor);
-            topVertices.push(end.x+nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+nextCross.z*endTaperFactor);
-            topVertices.push(end.x-nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-nextCross.z*endTaperFactor);
+            addTopVertex(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor, endColor);
+            addTopVertex(end.x+nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+nextCross.z*endTaperFactor, endColor);
+            addTopVertex(end.x-nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-nextCross.z*endTaperFactor, endColor);
 
             // First left triangle
-            wallVertices.push(end.x-bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-bottomCross.z*endTaperFactor);
-            wallVertices.push(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor);
-            wallVertices.push(end.x-nextBottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-nextBottomCross.z*endTaperFactor);
+            addWallVertex(end.x-bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-bottomCross.z*endTaperFactor, endColor);
+            addWallVertex(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor, endColor);
+            addWallVertex(end.x-nextBottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-nextBottomCross.z*endTaperFactor, endColor);
 
             // Second left triangle
-            wallVertices.push(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor);
-            wallVertices.push(end.x-nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-nextCross.z*endTaperFactor);
-            wallVertices.push(end.x-nextBottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-nextBottomCross.z*endTaperFactor);
+            addWallVertex(end.x-cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-cross.z*endTaperFactor, endColor);
+            addWallVertex(end.x-nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z-nextCross.z*endTaperFactor, endColor);
+            addWallVertex(end.x-nextBottomCross.x*endTaperFactor, end.y+endRampHeight, end.z-nextBottomCross.z*endTaperFactor, endColor);
 
             // First right triangle
-            wallVertices.push(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor);
-            wallVertices.push(end.x+bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+bottomCross.z*endTaperFactor);
-            wallVertices.push(end.x+nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+nextCross.z*endTaperFactor);
+            addWallVertex(end.x+cross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+cross.z*endTaperFactor, endColor);
+            addWallVertex(end.x+bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+bottomCross.z*endTaperFactor, endColor);
+            addWallVertex(end.x+nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+nextCross.z*endTaperFactor, endColor);
 
             // Second right triangle
-            wallVertices.push(end.x+bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+bottomCross.z*endTaperFactor);
-            wallVertices.push(end.x+nextBottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+nextBottomCross.z*endTaperFactor);
-            wallVertices.push(end.x+nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+nextCross.z*endTaperFactor);
+            addWallVertex(end.x+bottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+bottomCross.z*endTaperFactor, endColor);
+            addWallVertex(end.x+nextBottomCross.x*endTaperFactor, end.y+endRampHeight, end.z+nextBottomCross.z*endTaperFactor, endColor);
+            addWallVertex(end.x+nextCross.x*endTaperFactor, end.y+pathHeight*endTaperFactor+endRampHeight, end.z+nextCross.z*endTaperFactor, endColor);
         }
 
         // const lightPos = start.clone();
@@ -227,6 +311,10 @@ function pathToMesh(path, width, height, topColor, wallColor) {
 
     topGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(topVertices), 3));
     wallGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(wallVertices), 3));
+
+    topGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(topColors), 3));
+    wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(wallColors), 3));
+
     const topMesh = new THREE.Mesh(topGeometry, topMaterial);
     const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
     const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);

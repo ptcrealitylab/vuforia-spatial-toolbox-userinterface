@@ -31,14 +31,14 @@ import * as spaghettiMesh from './spaghettiMesh.js'
                 let mockPath = spaghettiMesh.getMockData().map((point, i) => {
                     return {
                         x: point.x,
-                        y: (point.z + 400), // flip y and z for mock data
+                        y: (point.z + 50), // flip y and z for mock data
                         z: point.y, // flip y and z
                         // weight: 0.1 + 3.0 * Math.sin(i / Math.PI)
                     }; //new realityEditor.gui.threejsScene.THREE.Vector3(point.x, point.z, point.y)
                 });
                 let topColor = 0xffff00;
                 let wallColor = 0x888800;
-                const SIZE = 8;
+                const SIZE = 4;
                 let mesh = spaghettiMesh.pathToMesh(mockPath, SIZE, SIZE, topColor, wallColor);
                 realityEditor.gui.threejsScene.addToScene(mesh);
             }
