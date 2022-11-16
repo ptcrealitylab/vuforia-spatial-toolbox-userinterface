@@ -4,6 +4,7 @@ import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
 import * as spaghettiMesh from './spaghettiMesh.js'
+import { MeshPath } from "../gui/ar/meshPath.js";
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -28,18 +29,43 @@ import * as spaghettiMesh from './spaghettiMesh.js'
 
         realityEditor.worldObjects.onLocalizedWithinWorld((_worldObjectKey) => {
             if (USE_MOCK_PATH_DATA) {
-                let mockPath = spaghettiMesh.getMockData().map((point, i) => {
+                let cachedMockData = spaghettiMesh.getMockData().map((point, i) => {
                     return {
                         x: point.x,
-                        y: (point.z + 50), // flip y and z for mock data
+                        y: (point.z + 500), // flip y and z for mock data
                         z: point.y, // flip y and z
+                        // color: 
                         // weight: 0.1 + 3.0 * Math.sin(i / Math.PI)
                     }; //new realityEditor.gui.threejsScene.THREE.Vector3(point.x, point.z, point.y)
                 });
+                
+                let mockPath = cachedMockData.slice(0, 15);
                 let topColor = 0xffff00;
                 let wallColor = 0x888800;
-                const SIZE = 4;
-                let mesh = spaghettiMesh.pathToMesh(mockPath, SIZE, SIZE, topColor, wallColor);
+                const SIZE = 50;
+                // let mesh = spaghettiMesh.pathToMesh(mockPath, SIZE, SIZE, topColor, wallColor);
+                let params = {
+                    width_mm: SIZE,
+                    height_mm: SIZE,
+                    topColor: topColor,
+                    wallColor: wallColor,
+                    perVertexColors: true,
+                    bottomScale: 1.0 // bottom is slightly wider than top
+                }
+                // let mesh = meshPath.pathToMesh(mockPath, params);
+                let mesh = new MeshPath(mockPath, params);
+
+                const ANIMATE = true;
+                if (ANIMATE) {
+                    let i = 1;
+                    setInterval(() => {
+                        if (i > cachedMockData.length) i = 0;
+
+                        let newMockPath = cachedMockData.slice(0, 15+i);
+                        i += 3;
+                        mesh.setPoints(newMockPath);
+                    }, 33);
+                }
                 realityEditor.gui.threejsScene.addToScene(mesh);
             }
         });
