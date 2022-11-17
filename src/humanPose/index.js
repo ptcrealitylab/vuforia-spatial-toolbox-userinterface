@@ -3,7 +3,6 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import * as spaghettiMesh from './spaghettiMesh.js'
 import { MeshPath } from "../gui/ar/meshPath.js";
 
 (function(exports) {
@@ -11,7 +10,6 @@ import { MeshPath } from "../gui/ar/meshPath.js";
     exports.network = network;
     exports.draw = draw;
     exports.utils = utils;
-    exports.spaghettiMesh = spaghettiMesh;
     
     const USE_MOCK_PATH_DATA = true;
 
@@ -28,45 +26,62 @@ import { MeshPath } from "../gui/ar/meshPath.js";
         console.log('init humanPose module', network, draw, utils);
 
         realityEditor.worldObjects.onLocalizedWithinWorld((_worldObjectKey) => {
-            if (USE_MOCK_PATH_DATA) {
-                let cachedMockData = spaghettiMesh.getMockData().map((point, i) => {
+            let mockData = window.localStorage.getItem('mockSpaghettiData');
+            if (mockData && USE_MOCK_PATH_DATA) {
+                let cachedMockData = JSON.parse(mockData).map((point, i) => {
                     return {
                         x: point.x,
                         y: (point.z + 500), // flip y and z for mock data
                         z: point.y, // flip y and z
                         // color: 
                         // weight: 0.1 + 3.0 * Math.sin(i / Math.PI)
-                    }; //new realityEditor.gui.threejsScene.THREE.Vector3(point.x, point.z, point.y)
+                    };
                 });
                 
-                let mockPath = cachedMockData.slice(0, 15);
                 let topColor = 0xffff00;
                 let wallColor = 0x888800;
                 const SIZE = 50;
-                // let mesh = spaghettiMesh.pathToMesh(mockPath, SIZE, SIZE, topColor, wallColor);
                 let params = {
                     width_mm: SIZE,
                     height_mm: SIZE,
                     topColor: topColor,
                     wallColor: wallColor,
-                    perVertexColors: true,
+                    usePerVertexColors: true,
                     bottomScale: 1.0 // bottom is slightly wider than top
                 }
-                // let mesh = meshPath.pathToMesh(mockPath, params);
-                let mesh = new MeshPath(mockPath, params);
 
-                const ANIMATE = true;
+                let mesh = new MeshPath(cachedMockData.map((point, i) => {
+                    point.y += 300;
+                    let r = Math.floor(255 * Math.pow((i / cachedMockData.length), 2));
+                    let g = Math.floor(255 * Math.pow((i / cachedMockData.length), 2));
+                    let b = Math.floor(255 * Math.pow((i / cachedMockData.length), 2));
+                    point.color = [r, g, b]; // 1.0 - (i / newMockPath.length)
+                    return point;
+                }), params);
+                realityEditor.gui.threejsScene.addToScene(mesh);
+
+                const ANIMATE = false;
                 if (ANIMATE) {
                     let i = 1;
                     setInterval(() => {
                         if (i > cachedMockData.length) i = 0;
 
                         let newMockPath = cachedMockData.slice(0, 15+i);
+
+                        newMockPath.forEach((point, i) => {
+                            point.scale = 2.0 * i / newMockPath.length; // Math.cos(i * Math.PI / cachedMockData.length);
+                            
+                            let r = Math.floor(255 * Math.pow((i / newMockPath.length), 2));
+                            let g = Math.floor(255 * Math.pow((i / newMockPath.length), 2));
+                            let b = Math.floor(255 * Math.pow((i / newMockPath.length), 2));
+                            
+                            point.color = [r, g, b]; // 1.0 - (i / newMockPath.length)
+                        });
+                        
                         i += 3;
                         mesh.setPoints(newMockPath);
                     }, 33);
                 }
-                realityEditor.gui.threejsScene.addToScene(mesh);
             }
         });
 

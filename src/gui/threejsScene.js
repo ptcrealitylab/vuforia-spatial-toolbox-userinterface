@@ -3,6 +3,7 @@ createNameSpace("realityEditor.gui.threejsScene");
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
+import { DRACOLoader } from '../../thirdPartyCode/three/DRACOLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
@@ -290,6 +291,12 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         }
 
         const gltfLoader = new GLTFLoader();
+
+        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath( 'thirdPartyCode/three/draco/' );
+        gltfLoader.setDRACOLoader( dracoLoader );
+        
         console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
             const geometries = [];
@@ -358,6 +365,11 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
      */
     function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
         const gltfLoader = new GLTFLoader();
+
+        // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath( 'thirdPartyCode/three/draco/' ); // './draco/' );
+        gltfLoader.setDRACOLoader( dracoLoader );
 
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;

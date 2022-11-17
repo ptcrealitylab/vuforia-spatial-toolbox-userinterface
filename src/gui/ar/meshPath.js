@@ -1,6 +1,6 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 
-let pathMeshResources = {};
+let cachedMaterials = {};
 
 let VERT_PATH = Object.freeze({
     x: 'x',
@@ -15,32 +15,40 @@ let VERT_PATH = Object.freeze({
 });
 
 // lets you reuse materials that share identical properties
-const getMaterialKey = (color, isTransparent, opacity, perVertexColors) => {
-    return JSON.stringify(color) + JSON.stringify(isTransparent) + JSON.stringify(opacity) + JSON.stringify(perVertexColors)
+const getMaterialKey = (color, opacity, usePerVertexColors) => {
+    return JSON.stringify(color) + JSON.stringify(opacity) + JSON.stringify(usePerVertexColors)
 }
 
 // lets you reuse materials that share identical properties
-const getMaterial = (color, isTransparent = false, opacity = 1.0, perVertexColors = false) => {
-    let materialKey = getMaterialKey(color, isTransparent, opacity);
-    if (typeof pathMeshResources[materialKey] === 'undefined') {
+const getMaterial = (color, opacity = 1, usePerVertexColors = false) => {
+    if (usePerVertexColors) { color = 0xFFFFFF; } // if color isn't white, vertex colors blend un-intuitively
+    let materialKey = getMaterialKey(color, opacity, usePerVertexColors);
+    if (typeof cachedMaterials[materialKey] === 'undefined') {
         let params = {
-            color: color||0x000000,
-            transparent: isTransparent
+            color: color || 0xFFFFFF
         };
-        if (isTransparent) {
+        if (opacity < 1) {
+            params.transparent = true
             params.opacity = opacity
         }
-        if (perVertexColors) {
+        if (usePerVertexColors) {
             params.vertexColors = true;
         }
-        pathMeshResources[materialKey] = new THREE.MeshBasicMaterial(params);
+        cachedMaterials[materialKey] = new THREE.MeshBasicMaterial(params);
     }
-    return pathMeshResources[materialKey]; // allows us to reuse materials that have the exact same params
+    return cachedMaterials[materialKey]; // allows us to reuse materials that have the exact same params
 }
 
+/**
+ * MeshPath is similar to MeshLine but is an extruded rectangular path where you can also specify color and size
+ * for each of the points on the path. It is aligned so that its "top" faces the global up vector. Different colors can
+ * be given to its "top" vs its "walls".
+ * 
+ * Note: as of now, MeshPath doesn't include a bottom face along the path, but this could easily be added
+ */
 class MeshPath extends THREE.Group
 {
-    constructor(path, {width_mm, height_mm, topColor, wallColor, wallBrightness, perVertexColors, bottomScale}) {
+    constructor(path, {width_mm, height_mm, topColor, wallColor, wallBrightness, usePerVertexColors, bottomScale, opacity}) {
         super();
 
         this.width_mm = width_mm || 10; // 10mm default
@@ -48,22 +56,23 @@ class MeshPath extends THREE.Group
         this.topColor = topColor || 0xFFFFFF;
         this.wallColor = wallColor || 0xABABAB;
         this.wallBrightness = wallBrightness || 0.8; // sides are by default a bit darker than the top, to make more visible
-        this.perVertexColors = perVertexColors || false;
-        this.bottomScale = bottomScale || 1.4; // bottom of path flares out a bit to make sides more visible
+        this.usePerVertexColors = usePerVertexColors || false;
+        this.bottomScale = bottomScale || 1; // if > 1, bottom of path flares out a bit to make sides more visible
+        this.opacity = opacity || 1;
 
-        this.topVertices = [];
-        this.topColors = [];
-        this.wallVertices = [];
-        this.wallColors = [];
+        this.topPositionsBuffer = [];
+        this.wallPositionsBuffer = [];
+        this.topColorsBuffer = [];
+        this.wallColorsBuffer = [];
 
         this.setPoints(path);
     }
 
     resetPoints() {
-        this.topVertices = [];
-        this.topColors = [];
-        this.wallVertices = [];
-        this.wallColors = [];
+        this.topPositionsBuffer = [];
+        this.topColorsBuffer = [];
+        this.wallPositionsBuffer = [];
+        this.wallColorsBuffer = [];
 
         this.children.forEach(childMesh => {
             this.remove(childMesh);
@@ -75,7 +84,7 @@ class MeshPath extends THREE.Group
     }
 
     setPoints(points) {
-        this.resetPoints();
+        this.resetPoints(); // removes the previous mesh from the scene and disposes of its geometry
 
         if (points.length < 2) return;
 
@@ -83,37 +92,27 @@ class MeshPath extends THREE.Group
         const wallGeometry = new THREE.BufferGeometry(); // The wall represents the yellow sides of the line
         const up = new THREE.Vector3(0,1,0);
 
-        // Base should be wider to allow visibility while moving along line
-        const topMaterial = getMaterial(this.topColor, false, 1, this.perVertexColors);
-        const wallMaterial = getMaterial(this.wallColor, false, 1, this.perVertexColors);
+        const topMaterial = getMaterial(this.topColor, this.opacity, this.usePerVertexColors);
+        const wallMaterial = getMaterial(this.wallColor, this.opacity, this.usePerVertexColors);
 
         for (let i = points.length - 1; i > 0; i--) {
             const start = points[i];
             const end = points[i-1];
             const direction = new THREE.Vector3().subVectors(end, start);
-
-            const startWidthFactor = (typeof start.weight !== 'undefined') ? start.weight : 1;
-            const endWidthFactor = (typeof end.weight !== 'undefined') ? end.weight : 1;
-
+            const startTaperFactor = (typeof start.scale !== 'undefined') ? start.scale : 1;
+            const endTaperFactor = (typeof end.scale !== 'undefined') ? end.scale : 1;
             const cross = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(this.width_mm / 2);
+            // Base should be wider to allow visibility while moving along line
             const bottomCross = cross.clone().multiplyScalar(this.bottomScale);
-
-            const startTaperFactor = startWidthFactor; // lightDistanceTraveled >= Math.abs(rampLength) ? 1 : lightDistanceTraveled / rampLength;
-            const endTaperFactor = endWidthFactor; // lightDistanceTraveled + direction.length() >= Math.abs(rampLength) ? 1 : (lightDistanceTraveled + direction.length()) / rampLength;
-
             const vertex = this.createVertexComponents(start, end, cross, bottomCross, startTaperFactor, endTaperFactor);
 
-            let startColor = [Math.pow((i / points.length), 2), 0.0, 1.0 - (i / points.length)]; //0xFF00FF;
-            let endColor = [Math.pow(((i+1) / points.length), 2), 0.0, 1.0 - ((i+1) / points.length)]; //0xFF00FF;
-
-            if (typeof start.color !== 'undefined') {
-                startColor = (typeof start.color !== 'undefined') ? start.color : 0xFFFFFF;
-                endColor = (typeof end.color !== 'undefined') ? end.color : 0xFFFFFF;
-            }
-
             let colors = {};
-            colors[VERT_PATH.start] = startColor;
-            colors[VERT_PATH.end] = endColor;
+            colors[VERT_PATH.start] = {};
+            colors[VERT_PATH.end] = {};
+            colors[VERT_PATH.start].top = (typeof start.color !== 'undefined') ? start.color : this.topColor;
+            colors[VERT_PATH.end].top = (typeof end.color !== 'undefined') ? end.color : this.topColor;
+            colors[VERT_PATH.start].wall = (typeof start.color !== 'undefined') ? start.color : this.wallColor;
+            colors[VERT_PATH.end].wall = (typeof end.color !== 'undefined') ? end.color : this.wallColor;
 
             // First top triangle
             this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.top, colors);
@@ -124,6 +123,16 @@ class MeshPath extends THREE.Group
             this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.top, colors);
             this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
             this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
+
+            // First bottom triangle
+            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.bottom, colors);
+            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
+            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+
+            // Second bottom triangle
+            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
+            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
 
             // First left triangle
             this.addWallVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
@@ -162,6 +171,16 @@ class MeshPath extends THREE.Group
                 this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
                 this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
 
+                // First bottom triangle
+                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+
+                // Second bottom triangle
+                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+
                 // First left triangle
                 this.addWallVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
                 this.addWallVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
@@ -184,12 +203,13 @@ class MeshPath extends THREE.Group
             }
         }
 
-        topGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.topVertices), 3));
-        wallGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.wallVertices), 3));
+        topGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.topPositionsBuffer), 3));
+        wallGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.wallPositionsBuffer), 3));
 
-        if (this.perVertexColors) {
-            topGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(this.topColors), 3));
-            wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(this.wallColors), 3));
+        if (this.usePerVertexColors) {
+            const normalized = true; // maps the uints from 0-255 to 0-1
+            topGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.topColorsBuffer), 3, normalized));
+            wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), 3, normalized));
         }
 
         const topMesh = new THREE.Mesh(topGeometry, topMaterial);
@@ -206,33 +226,33 @@ class MeshPath extends THREE.Group
 
     // internal helper function
     addTopVertex(x, y, z, color) {
-        this.topVertices.push(x, y, z);
-        if (this.perVertexColors) {
-            this.topColors.push(color[0], color[1], color[2]);
+        this.topPositionsBuffer.push(x, y, z);
+        if (this.usePerVertexColors) {
+            this.topColorsBuffer.push(color[0], color[1], color[2]);
         }
     }
 
     // internal helper function
     addWallVertex(x, y, z, color) {
-        this.wallVertices.push(x, y, z);
-        if (this.perVertexColors) {
+        this.wallPositionsBuffer.push(x, y, z);
+        if (this.usePerVertexColors) {
             let r = Math.max(0, color[0] * this.wallBrightness);
             let g = Math.max(0, color[1] * this.wallBrightness);
             let b = Math.max(0, color[2] * this.wallBrightness);
-            this.wallColors.push(r, g, b);
+            this.wallColorsBuffer.push(r, g, b);
         }
     }
 
     // internal helper function - adds the vertex information to the topMesh
     addTopVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
         let thisVertex = vertexComponents[startEnd][topBottom][leftRight];
-        this.addTopVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd]);
+        this.addTopVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd].top);
     }
 
     // internal helper function - adds the vertex information to the wallMesh
     addWallVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
         let thisVertex = vertexComponents[startEnd][topBottom][leftRight];
-        this.addWallVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd]);
+        this.addWallVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd].wall);
     }
 
     // internal helper function - constructs all the vertices that we'll need to render the faces of this segment

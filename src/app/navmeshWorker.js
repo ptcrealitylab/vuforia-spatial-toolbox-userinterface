@@ -21,6 +21,7 @@
 importScripts('../../thirdPartyCode/three/three.min.js');
 importScripts('../../thirdPartyCode/three/GLTFLoader.js');
 importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
+// importScripts('../../thirdPartyCode/three/DRACOLoader.js');
 
 const ActualTextureLoader = THREE.TextureLoader;
 
@@ -35,6 +36,12 @@ THREE.TextureLoader = class TextureLoader extends ActualTextureLoader {
 }
 
 const gltfLoader = new THREE.GLTFLoader();
+
+// // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+// const dracoLoader = new THREE.DRACOLoader();
+// dracoLoader.setDecoderPath( './draco/' );
+// gltfLoader.setDRACOLoader( dracoLoader );
+
 globalThis.document = {
   createElementNS: function(ns, tag) {
     console.warn('createElementNS called for', tag, new Error().stack);
