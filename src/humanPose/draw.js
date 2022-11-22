@@ -209,6 +209,27 @@ export class HumanPoseAnalyzer {
         this.cloneMaterialIndex = 0;
         this.historyLinesAll = {};
         this.historyPointsAll = {};
+
+        this.baseMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0077ff,
+            transparent: true,
+            opacity: 0.5,
+        });
+        this.redMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFF0000,
+            transparent: true,
+            opacity: 0.5,
+        });
+        this.yellowMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFF00,
+            transparent: true,
+            opacity: 0.5,
+        });
+        this.greenMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ff00,
+            transparent: true,
+            opacity: 0.5,
+        });
     }
 
     poseRendererUpdated(poseRenderer) {
@@ -257,42 +278,18 @@ export class HumanPoseAnalyzer {
             opacity: alphaReba,
         });
 
-        let baseMaterial = new THREE.MeshBasicMaterial({
-            color: poseRenderer.baseMaterial.color,
-            transparent: true,
-            opacity: 0.5,
-        });
-
-        let redMaterial = new THREE.MeshBasicMaterial({
-            color: poseRenderer.redMaterial.color,
-            transparent: true,
-            opacity: 0.5,
-        });
-
-        let yellowMaterial = new THREE.MeshBasicMaterial({
-            color: poseRenderer.yellowMaterial.color,
-            transparent: true,
-            opacity: 0.5,
-        });
-
-        let greenMaterial = new THREE.MeshBasicMaterial({
-            color: poseRenderer.greenMaterial.color,
-            transparent: true,
-            opacity: 0.5,
-        });
-
-        newContainer.traverse((obj) => {
+        newContainer.children.forEach((obj) => {
             if (obj.material) {
                 let materialOld = obj.material;
                 // Switch to transparent version of old material if possible
                 if (materialOld === poseRenderer.baseMaterial) {
-                    materialOld = baseMaterial;
+                    materialOld = this.baseMaterial;
                 } else if (materialOld === poseRenderer.redMaterial) {
-                    materialOld = redMaterial;
+                    materialOld = this.redMaterial;
                 } else if (materialOld === poseRenderer.yellowMaterial) {
-                    materialOld = yellowMaterial;
+                    materialOld = this.yellowMaterial;
                 } else if (materialOld === poseRenderer.greenMaterial) {
-                    materialOld = greenMaterial;
+                    materialOld = this.greenMaterial;
                 }
 
                 obj.__cloneMaterials = [
