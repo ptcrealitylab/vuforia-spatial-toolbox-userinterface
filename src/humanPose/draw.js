@@ -1,4 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import {MeshLine, MeshLineMaterial} from '../../thirdPartyCode/three/THREE.MeshLine.js';
 import {JOINTS, JOINT_CONNECTIONS} from './utils.js';
 import {annotateHumanPoseRenderer} from './rebaScore.js';
 
@@ -309,8 +310,8 @@ export class HumanPoseAnalyzer {
      * @param {HumanPoseRenderer} poseRenderer
      */
     createHistoryLine(poseRenderer) {
-        const historyLine = new realityEditor.gui.ar.meshLine.MeshLine();
-        const lineMat = new realityEditor.gui.ar.meshLine.MeshLineMaterial({
+        const historyLine = new MeshLine();
+        const lineMat = new MeshLineMaterial({
             color: 0xffff00,
             opacity: 0.6,
             lineWidth: 14,
