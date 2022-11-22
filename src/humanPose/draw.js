@@ -10,13 +10,9 @@ const SCALE = 1000; // we want to scale up the size of individual joints, but no
 /**
  * Renders COCO-pose keypoints
  */
-class HumanPoseRenderer {
+export class HumanPoseRenderer {
     /**
      * @param {string} id - Unique identifier of human pose being rendered
-     * @param {THREE.Object3D} historyLineContainer - THREE container for
-     *                         history line meshes
-     * @param {THREE.Object3D} historyCloneContainer - THREE container for
-     *                         history clone meshes
      */
     constructor(id) {
         this.id = id;
@@ -176,22 +172,36 @@ class HumanPoseRenderer {
         }
     }
 
-    addToScene() {
-        realityEditor.gui.threejsScene.addToScene(this.container);
+    addToScene(container) {
+        if (container) {
+            container.add(this.container);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(this.container);
+        }
     }
 
     /**
      * Removes from container and disposes resources
      */
-    removeFromScene() {
-        realityEditor.gui.threejsScene.removeFromScene(this.container);
+    removeFromScene(container) {
+        if (container) {
+            container.remove(this.container);
+        } else {
+            realityEditor.gui.threejsScene.removeFromScene(this.container);
+        }
         this.bones.headNeck.geometry.dispose();
         this.spheres[JOINTS.HEAD].geometry.dispose();
         this.spheres[JOINTS.HEAD].material.dispose();
     }
 }
 
-class HumanPoseAnalyzer {
+export class HumanPoseAnalyzer {
+    /**
+     * @param {THREE.Object3D} historyLineContainer - THREE container for
+     *                         history line meshes
+     * @param {THREE.Object3D} historyCloneContainer - THREE container for
+     *                         history clone meshes
+     */
     constructor(historyLineContainer, historyCloneContainer) {
         this.historyLineContainer = historyLineContainer;
         this.historyCloneContainer = historyCloneContainer;
