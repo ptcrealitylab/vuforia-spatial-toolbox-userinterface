@@ -368,15 +368,23 @@ export class HumanPoseAnalyzer {
     }
 }
 
-function renderHumanPoseObjects(poseObjects) {
+function renderHumanPoseObjects(poseObjects, container) {
     if (!humanPoseAnalyzer) {
         const historyLineContainer = new THREE.Group();
         historyLineContainer.visible = false;
-        realityEditor.gui.threejsScene.addToScene(historyLineContainer);
+        if (container) {
+            container.add(historyLineContainer);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(historyLineContainer);
+        }
 
         const historyCloneContainer = new THREE.Group();
         historyCloneContainer.visible = true;
-        realityEditor.gui.threejsScene.addToScene(historyCloneContainer);
+        if (container) {
+            container.add(historyCloneContainer);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(historyCloneContainer);
+        }
 
         humanPoseAnalyzer = new HumanPoseAnalyzer(historyLineContainer, historyCloneContainer);
     }
@@ -385,22 +393,30 @@ function renderHumanPoseObjects(poseObjects) {
         poseRenderers[id].updated = false;
     }
     for (let poseObject of poseObjects) {
-        renderPose(poseObject);
+        renderPose(poseObject, container);
     }
     for (let id of Object.keys(poseRenderers)) {
         if (!poseRenderers[id].updated) {
-            poseRenderers[id].removeFromScene();
+            poseRenderers[id].removeFromScene(container);
             delete poseRenderers[id];
         }
     }
 }
 
-function renderPose(poseObject) {
+function setMatrixFromArray(matrix, array) {
+    matrix.set( array[0], array[4], array[8], array[12],
+        array[1], array[5], array[9], array[13],
+        array[2], array[6], array[10], array[14],
+        array[3], array[7], array[11], array[15]
+    );
+}
+
+function renderPose(poseObject, container) {
     // assume that all sub-objects are of the form poseObject.id + joint name
 
     if (!poseRenderers[poseObject.uuid]) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
-        poseRenderers[poseObject.uuid].addToScene();
+        poseRenderers[poseObject.uuid].addToScene(container);
     }
     let poseRenderer = poseRenderers[poseObject.uuid];
     poseRenderer.updated = true;
@@ -409,13 +425,13 @@ function renderPose(poseObject) {
     let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
     let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
     let groundPlaneRelativeMatrix = new THREE.Matrix4();
-    realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
+    setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
 
     for (let jointId of Object.values(JOINTS)) {
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
         let jointMatrixThree = new THREE.Matrix4();
-        realityEditor.gui.threejsScene.setMatrixFromArray(jointMatrixThree, sceneNode.worldMatrix);
+        setMatrixFromArray(jointMatrixThree, sceneNode.worldMatrix);
         jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
 
         let jointPosition = new THREE.Vector3();
