@@ -21,6 +21,20 @@ import { MeshPath } from "../gui/ar/meshPath.js";
     let lastRenderTime = Date.now();
     let lastUpdateTime = Date.now();
     let lastRenderedPoses = {};
+    
+    let spaghettiMesh = null;
+
+    let isPointerDown = false;
+    let lastSelected = {
+        start: {
+            index: null,
+            prevRgb: null
+        },
+        end: {
+            index: null,
+            prevRgb: null
+        }
+    }
 
     function initService() {
         console.log('init humanPose module', network, draw, utils);
@@ -36,7 +50,7 @@ import { MeshPath } from "../gui/ar/meshPath.js";
                         // color: 
                         // weight: 0.1 + 3.0 * Math.sin(i / Math.PI)
                     };
-                });
+                }); //.slice(0, 50);
                 
                 let topColor = 0xffff00;
                 let wallColor = 0x888800;
@@ -59,6 +73,8 @@ import { MeshPath } from "../gui/ar/meshPath.js";
                     return point;
                 }), params);
                 realityEditor.gui.threejsScene.addToScene(mesh);
+                
+                spaghettiMesh = mesh;
 
                 const ANIMATE = false;
                 if (ANIMATE) {
@@ -139,6 +155,73 @@ import { MeshPath } from "../gui/ar/meshPath.js";
                 console.warn('error in renderHumanPoseObjects', e);
             }
         });
+        
+
+        document.addEventListener('pointerup', (_e) => {
+            isPointerDown = false;
+        });
+        
+        document.addEventListener('pointerdown', (e) => {
+            if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            
+            isPointerDown = true;
+            highlightRaycast(e.pageX, e.pageY);
+        });
+        document.addEventListener('pointermove', (e) => {
+            if (realityEditor.device.isMouseEventCameraControl(e)) return;
+
+            if (!isPointerDown) { return; }
+            highlightRaycast(e.pageX, e.pageY);
+        });
+    }
+    
+    function highlightRaycast(screenX, screenY) {
+        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [spaghettiMesh]);
+        if (intersects.length > 0) {
+            console.log('clicked on spaghetti path');
+            console.log(intersects);
+            let intersect = intersects[0];
+            // let face = intersect.face; // a = 8235, b = 8236, c = 8237, normal = {x,y,z}, materialIndex = 0
+            // let faceIndex = intersect.faceIndex; // faceIndex = 2745
+            // let point = intersect.point; // x, y, z
+            // let distance = intersect.distance; // 8811.21
+
+            let indicesToUpdate = [];
+
+            // reset previous colors
+            ['start' /*, 'end'*/].forEach(elt => {
+                if (lastSelected[elt].index !== null) {
+                    spaghettiMesh.currentPoints[lastSelected[elt].index].color = lastSelected[elt].prevRgb;
+                    indicesToUpdate.push(lastSelected[elt].index);
+                }
+            });
+            
+
+            // record new indices and colors
+            let pointIndex = spaghettiMesh.getPointFromFace([intersect.face.a, intersect.face.b, intersect.face.c]);
+            lastSelected.start.index = pointIndex;
+            lastSelected.start.prevRgb = spaghettiMesh.currentPoints[lastSelected.start.index].color;
+            // lastSelected.end.index = pointIndex < spaghettiMesh.currentPoints.length - 1 ? (pointIndex + 1) : (pointIndex - 1);
+            // lastSelected.end.prevRgb = spaghettiMesh.currentPoints[lastSelected.end.index].color;
+
+            // change the colors
+            spaghettiMesh.currentPoints[lastSelected.start.index].color = [255, 0, 0];
+            // spaghettiMesh.currentPoints[lastSelected.end.index].color = [255, 0, 0];
+
+            indicesToUpdate.push(lastSelected.start.index);
+
+            // for (let i = 0; i < 5; i++) {
+            //     if (pointIndex + i < spaghettiMesh.currentPoints.length) {
+            //         let r = 255;
+            //         let g = 0;
+            //         let b = 0;
+            //         spaghettiMesh.currentPoints[pointIndex + i].color = [r, g, b];
+            //     }
+            // }
+            spaghettiMesh.updateColors(indicesToUpdate);
+
+            // spaghettiMesh.setPoints(spaghettiMesh.currentPoints);
+        }
     }
 
     function areAnyPosesUpdated(poseObjects) {

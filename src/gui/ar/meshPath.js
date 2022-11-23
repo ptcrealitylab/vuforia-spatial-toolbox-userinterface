@@ -82,9 +82,81 @@ class MeshPath extends THREE.Group
             this.onRemove(); // dispose of geometry to avoid memory leak
         }
     }
+    
+    getPointFromFace(vertexIndices) {
+        let approximatePointIndex = Math.floor(vertexIndices[0] / 24);
+        return Math.max(0, Math.min(this.currentPoints.length - 1, (this.currentPoints.length - approximatePointIndex) - 2)); // this.currentPoints[approximatePointIndex];
+    }
+    
+    getBufferIndices(pointIndex) {
+        // if i = length-1, indices = 0-23
+        // if i = length-2, indices = 24-47
+        // if i = length-3, indices = 48-71
+        // ...
+        // if i = length-N, indices = (24 * (N-1)) to (24 * N - 1) 
+        // if i = 0, indices = (24 * (length-1)) to (24 * length - 1 - 12) // special case only has 12 not 24
+        
+        let positionsPerPoint = 24;
+        let componentsPerPosition = 3; // color=[r,g,b] or position=[x,y,z]
+        
+        let length = this.currentPoints.length;
+        let i = length - pointIndex;
+        let startBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-2);
+        let endBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-1) - 1; // last index has half as many positions
+        if (i === length - 1) {
+            endBufferIndex -= (positionsPerPoint * componentsPerPosition) * 0.5;
+        }
+        console.log('start', startBufferIndex, 'end', endBufferIndex);
+        let bufferIndices = [];
+        for (let j = startBufferIndex; j <= endBufferIndex; j += componentsPerPosition) {
+            bufferIndices.push(Math.floor(j/3));
+        }
+        return bufferIndices;
+    }
+    
+    updateColors(pointIndicesThatNeedUpdate) {
+        if (this.usePerVertexColors) {
+            // const normalized = true; // maps the uints from 0-255 to 0-1
+            let geometry = this.getGeometry();
+            
+            // TODO: pass in a range of points to recompute, and replace the colorsBuffer entries with recomputed values
+            
+            let topColorAttribute = geometry.top.getAttribute('color');
+            let wallColorAttribute = geometry.wall.getAttribute('color');
+            
+            pointIndicesThatNeedUpdate.forEach(index => {
+                let bufferIndices = this.getBufferIndices(index); // []; // todo: get each corresponding index from this.topColorsBuffer and this.wallColorsBuffer
+                console.log('pointIndex ' + index + ' yields buffer indices', bufferIndices);
+                bufferIndices.forEach(bfrIndex => {
+                    let newColor = {
+                        r: this.currentPoints[index].color[0],
+                        g: this.currentPoints[index].color[1],
+                        b: this.currentPoints[index].color[2]
+                    }
+                    topColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
+                    console.log('set colorAttribute[' + bfrIndex + '] to ' + newColor);
+                    wallColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
+                    // this.topColorsBuffer[bfrIndex] = this.currentPoints[index].color[0]; // get color from point
+                    // this.topColorsBuffer[bfrIndex+1] = this.currentPoints[index].color[1]; // get color from point
+                    // this.topColorsBuffer[bfrIndex+2] = this.currentPoints[index].color[2]; // get color from point
+                });
+            })
+            
+            // let colorAttribute = new THREE.BufferAttribute(new Uint8Array(this.topColorsBuffer), 3, normalized);
+            // colorAttribute.setXYZ()
+            
+            // geometry.top.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.topColorsBuffer), 3, normalized));
+            // geometry.wall.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), 3, normalized));
+            
+            geometry.top.attributes.color.needsUpdate = true;
+            geometry.wall.attributes.color.needsUpdate = true;
+        }
+    }
 
     setPoints(points) {
         this.resetPoints(); // removes the previous mesh from the scene and disposes of its geometry
+        
+        this.currentPoints = points;
 
         if (points.length < 2) return;
 
@@ -221,6 +293,13 @@ class MeshPath extends THREE.Group
             // Since these geometries are not reused, they MUST be disposed to prevent memory leakage
             if (topGeometry) topGeometry.dispose();
             if (wallGeometry) wallGeometry.dispose();
+        }
+        
+        this.getGeometry = () => {
+            return {
+                top: topGeometry,
+                wall: wallGeometry
+            }
         }
     }
 
