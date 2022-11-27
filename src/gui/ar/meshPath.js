@@ -101,12 +101,12 @@ class MeshPath extends THREE.Group
         
         let length = this.currentPoints.length;
         let i = length - pointIndex;
-        let startBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-2);
-        let endBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-1) - 1; // last index has half as many positions
+        let startBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-2); // todo: this was off by 1 so i'm subtracting (i-2) instead of (i-1), but i'm not sure why
+        let endBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-1) - 1; 
         if (i === length - 1) {
-            endBufferIndex -= (positionsPerPoint * componentsPerPosition) * 0.5;
+            endBufferIndex -= (positionsPerPoint * componentsPerPosition) * 0.5; // last index has half as many positions
         }
-        console.log('start', startBufferIndex, 'end', endBufferIndex);
+        // console.log('start', startBufferIndex, 'end', endBufferIndex);
         let bufferIndices = [];
         for (let j = startBufferIndex; j <= endBufferIndex; j += componentsPerPosition) {
             bufferIndices.push(Math.floor(j/3));
@@ -114,19 +114,35 @@ class MeshPath extends THREE.Group
         return bufferIndices;
     }
     
+    getDistanceAlongPath(firstIndex, secondIndex) {
+        let smallerIndex = Math.min(firstIndex, secondIndex);
+        let biggerIndex = Math.max(firstIndex, secondIndex);
+        // let first = this.currentPoints[smallerIndex];
+        // let second = this.currentPoints[biggerIndex];
+        let totalDistance = 0;
+        for (let i = smallerIndex; i < biggerIndex; i++) {
+            let thisPoint = this.currentPoints[i];
+            let nextPoint = this.currentPoints[i+1];
+            let dx = nextPoint.x - thisPoint.x;
+            let dy = nextPoint.y - thisPoint.y;
+            let dz = nextPoint.z - thisPoint.z;
+            let segmentDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            totalDistance += segmentDistance;
+        }
+        return totalDistance;
+    }
+
+    // pass in a range of points to recompute, and it replaces the colorsBuffer entries with recomputed values
     updateColors(pointIndicesThatNeedUpdate) {
         if (this.usePerVertexColors) {
-            // const normalized = true; // maps the uints from 0-255 to 0-1
             let geometry = this.getGeometry();
-            
-            // TODO: pass in a range of points to recompute, and replace the colorsBuffer entries with recomputed values
             
             let topColorAttribute = geometry.top.getAttribute('color');
             let wallColorAttribute = geometry.wall.getAttribute('color');
             
             pointIndicesThatNeedUpdate.forEach(index => {
-                let bufferIndices = this.getBufferIndices(index); // []; // todo: get each corresponding index from this.topColorsBuffer and this.wallColorsBuffer
-                console.log('pointIndex ' + index + ' yields buffer indices', bufferIndices);
+                let bufferIndices = this.getBufferIndices(index);
+                // console.log('pointIndex ' + index + ' yields buffer indices', bufferIndices);
                 bufferIndices.forEach(bfrIndex => {
                     let newColor = {
                         r: this.currentPoints[index].color[0],
@@ -134,20 +150,10 @@ class MeshPath extends THREE.Group
                         b: this.currentPoints[index].color[2]
                     }
                     topColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
-                    console.log('set colorAttribute[' + bfrIndex + '] to ' + newColor);
-                    wallColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
-                    // this.topColorsBuffer[bfrIndex] = this.currentPoints[index].color[0]; // get color from point
-                    // this.topColorsBuffer[bfrIndex+1] = this.currentPoints[index].color[1]; // get color from point
-                    // this.topColorsBuffer[bfrIndex+2] = this.currentPoints[index].color[2]; // get color from point
+                    // console.log('set colorAttribute[' + bfrIndex + '] to ' + newColor);
+                    wallColorAttribute.setXYZ(bfrIndex, newColor.r * this.wallBrightness, newColor.g * this.wallBrightness, newColor.b * this.wallBrightness);
                 });
             })
-            
-            // let colorAttribute = new THREE.BufferAttribute(new Uint8Array(this.topColorsBuffer), 3, normalized);
-            // colorAttribute.setXYZ()
-            
-            // geometry.top.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.topColorsBuffer), 3, normalized));
-            // geometry.wall.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), 3, normalized));
-            
             geometry.top.attributes.color.needsUpdate = true;
             geometry.wall.attributes.color.needsUpdate = true;
         }

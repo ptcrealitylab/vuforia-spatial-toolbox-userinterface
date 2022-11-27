@@ -1723,6 +1723,29 @@ Logic Interface CSS
     transform: translateX(-50%) translateY(-50%) translateZ(3000px);
 }
 
+
+/*.pathDistanceLabel {*/
+/*    position: absolute;*/
+/*    display: none; !* hidden by default, need to overwrite this to display it *!*/
+/*    pointer-events: none;*/
+/*    color: white;*/
+/*    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;*/
+/*    font-size: 24px;*/
+/*    background-color: rgba(0, 0, 0, 0.3);*/
+/*    border-radius: 22px;*/
+/*    width: 44px;*/
+/*    height: 44px;*/
+/*    text-align: center;*/
+/*    vertical-align: middle;*/
+/*    line-height: 44px;*/
+/*    z-index: 3000;*/
+/*    transform-style: preserve-3d;*/
+/*    !* translateZ puts it above web interfaces, below side buttons *!*/
+/*    !* translateX and Y centers it when you set its left and top *!*/
+/*    !* in JS, we can adjust its size using scale (since it's centered) *!*/
+/*    transform: translateX(-50%) translateY(-50%) translateZ(3000px);*/
+/*}*/
+
 .topLeftInfoText {
     pointer-events: none;
     position: absolute;

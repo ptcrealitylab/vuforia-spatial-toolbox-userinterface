@@ -512,7 +512,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
         console.warn('addHeartbeatObject called before init done', beat);
         setTimeout(() => {
             realityEditor.network.addHeartbeatObject(beat);
-        }, 500);
+        }, 1000);
         return;
     }
 
