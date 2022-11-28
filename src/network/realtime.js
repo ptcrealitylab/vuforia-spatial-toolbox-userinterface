@@ -42,11 +42,7 @@ createNameSpace("realityEditor.network.realtime");
         }
 
         if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
-            if (PROXY) {
-                desktopSocket = io.connect();
-            } else {
-                desktopSocket = window._oldIo.connect();
-            }
+            createDesktopSocket();
         }
         setupServerSockets();
 
@@ -67,6 +63,15 @@ createNameSpace("realityEditor.network.realtime");
 
         loop();
     }
+
+    function createDesktopSocket() {
+        if (PROXY) {
+            desktopSocket = io.connect();
+        } else {
+            desktopSocket = window._oldIo.connect();
+        }
+    }
+
 
     function loop() {
         if(typeof updateFramerate !== 'undefined') {
@@ -274,14 +279,23 @@ createNameSpace("realityEditor.network.realtime");
             console.log('realtime addDesktopSocketMessageListener', desktopSocket, messageName);
         }
 
-        if (desktopSocket) {
-            desktopSocket.on(messageName, function() {
-                if (DEBUG) {
-                    console.log('addDesktopSocketMessageListener received', messageName, Array.from(arguments));
-                }
-                callback.apply(this, arguments);
-            });
+        // desktopSocket might not be initialized but we should error if we're
+        // not expected to create a desktop socket at all
+        if (!desktopSocket) {
+            if (realityEditor.device.environment.shouldCreateDesktopSocket()) {
+                createDesktopSocket();
+            } else {
+                console.error('addDesktopSocketMessageListener called without desktopSocket', messageName);
+                return;
+            }
         }
+
+        desktopSocket.on(messageName, function() {
+            if (DEBUG) {
+                console.log('addDesktopSocketMessageListener received', messageName, Array.from(arguments));
+            }
+            callback.apply(this, arguments);
+        });
     }
 
     /**
