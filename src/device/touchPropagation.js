@@ -15,6 +15,8 @@ createNameSpace("realityEditor.device.touchPropagation");
      */
     var cachedTarget = null;
 
+    const DEBUG = false;
+
     /**
      * Sets up the touch propagation model by listening for accepted and unaccepted touches
      */
@@ -26,15 +28,16 @@ createNameSpace("realityEditor.device.touchPropagation");
         // be notified when certain touch event functions get triggered in device/index.js
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
-        
+
         // handle touch events that hit realityInteraction divs within frames
         realityEditor.network.addPostMessageHandler('pointerDownResult', handlePointerDownResult);
     }
-    
+
     function handlePointerDownResult(eventData, fullMessageContent) {
-        // pointerDownResult
-        console.log(eventData, fullMessageContent);
-        
+        if (DEBUG) {
+            console.log(eventData, fullMessageContent);
+        }
+
         if (eventData === 'interaction') {
             console.log('TODO: cancel the moveDelay timer to prevent accidental moves?');
         } else if (eventData === 'nonInteraction') {
@@ -54,8 +57,9 @@ createNameSpace("realityEditor.device.touchPropagation");
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
      */
     function handleUnacceptedTouch(eventData, fullMessageContent) {
-        
-        console.log('handleUnacceptedTouch');
+        if (DEBUG) {
+            console.log('handleUnacceptedTouch', eventData.type);
+        }
         // eventData.x is the x coordinate projected within the previouslyTouched iframe. we need to get position on screen
         var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
         eventData.x = touchPosition.x;
@@ -63,7 +67,7 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // clear the timer that would start dragging the previously traversed frame
         realityEditor.device.clearTouchTimer();
-        
+
         // don't recalculate correct target on every touchmove if already cached the target
         if (cachedTarget) {
             stopHidingFramesForTouchDuration();
@@ -163,7 +167,7 @@ createNameSpace("realityEditor.device.touchPropagation");
         cachedTarget = null;
         stopHidingFramesForTouchDuration();
     }
-    
+
     exports.initService = initService;
-    
+
 })(realityEditor.device.touchPropagation);
