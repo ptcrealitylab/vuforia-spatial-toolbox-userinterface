@@ -78,31 +78,29 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // tag the element that rejected the touch so that it becomes hidden but can be restored
         var previouslyTouchedElement = globalDOMCache['object' + fullMessageContent.frame];
-        previouslyTouchedElement.dataset.displayAfterTouch = previouslyTouchedElement.style.display;
-        
+        if (previouslyTouchedElement) {
+            previouslyTouchedElement.dataset.didNotAcceptTouch = true;
+        }
+
         // hide each tagged element. we may need to hide more than just this previouslyTouchedElement
         // (in case there are multiple fullscreen frames)
-        var overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y);
-        overlappingDivs.filter(function(elt) {
-            return (elt.parentNode && typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
-        }).forEach(function(elt) {
-            elt.parentNode.style.display = 'none'; // TODO: instead of changing display, maybe just change pointerevents css to none
+        const allUntouchedDivsAtPoint = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y).filter((elt) => {
+            if (elt.dataset.didNotAcceptTouch) {
+                return false;
+            }
+            return true;
         });
 
         // find the next overlapping div that hasn't been traversed (and therefore hidden) yet
-        var newTouchedElement = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+        var newTouchedElement = allUntouchedDivsAtPoint[0] || document.body;
+        if (DEBUG) {
+            console.log('newTouchedElement', newTouchedElement);
+        }
         // var newCoords = webkitConvertPointFromPageToNode(newTouchedElement, new WebKitPoint(eventData.x, eventData.y));
         // eventData.x = newCoords.x;
         // eventData.y = newCoords.y;
         dispatchSyntheticEvent(newTouchedElement, eventData);
 
-        // re-show each tagged element
-        overlappingDivs.filter(function(elt) {
-            return (elt.parentNode && typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
-        }).forEach(function(elt) {
-            elt.parentNode.style.display = elt.parentNode.dataset.displayAfterTouch;
-        });
-        
         // we won't get an acceptedTouch message if the newTouchedElement isn't a frame, so auto-trigger it
         var isFrameElement = newTouchedElement.id.indexOf(fullMessageContent.object) > -1;
         if (!isFrameElement) {
@@ -130,8 +128,8 @@ createNameSpace("realityEditor.device.touchPropagation");
      * Remove tag from frames that have been hidden for the current touch.
      */
     function stopHidingFramesForTouchDuration() {
-        Array.from(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
-            delete element.dataset.displayAfterTouch;
+        Array.from(document.querySelectorAll('[data-did-not-accept-touch]')).forEach(function(element) {
+            delete element.dataset.didNotAcceptTouch;
         });
     }
 
