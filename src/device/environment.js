@@ -19,6 +19,14 @@ createNameSpace("realityEditor.device.environment");
         console.log('Default environment initialized');
     };
 
+    function isDesktop() {
+        const userAgent = window.navigator.userAgent;
+        const isWebView = userAgent.includes('Mobile') && !userAgent.includes('Safari');
+        const isMac = userAgent.includes('Macintosh');
+
+        return (!isWebView) || isMac;
+    }
+
     // initialized with default variables for iPhone environment. add-ons can modify
     let variables = {
         // booleans
@@ -34,7 +42,7 @@ createNameSpace("realityEditor.device.environment");
         shouldDisplayLogicMenuModally: false,
         isSourceOfObjectPositions: true,
         isCameraOrientationFlipped: false,
-        waitForARTracking: true,
+        waitForARTracking: !isDesktop(), // set to false on remote operator
         overrideMenusAndButtons: false,
         listenForDeviceOrientationChanges: true,
         enableViewFrustumCulling: true,
