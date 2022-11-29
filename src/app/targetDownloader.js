@@ -332,7 +332,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].GLB = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
-        // createNavmesh(fileName, objectID);
+        createNavmesh(fileName, objectID);
 
         triggerDownloadStateCallbacks(objectID);
     }
