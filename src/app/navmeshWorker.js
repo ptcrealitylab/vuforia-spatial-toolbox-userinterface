@@ -35,7 +35,6 @@ THREE.TextureLoader = class TextureLoader extends ActualTextureLoader {
 }
 
 const gltfLoader = new THREE.GLTFLoader();
-
 globalThis.document = {
   createElementNS: function(ns, tag) {
     console.warn('createElementNS called for', tag, new Error().stack);

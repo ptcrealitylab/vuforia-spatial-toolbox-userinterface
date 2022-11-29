@@ -254,15 +254,16 @@ import { MeshPath } from "../gui/ar/meshPath.js";
                     };
                 }).slice(50, 250);
                 
-                let topColor = 0xffff00;
+                let horizontalColor = 0xffff00;
                 let wallColor = 0x888800;
                 const SIZE = 50;
                 let params = {
                     width_mm: SIZE,
                     height_mm: SIZE,
-                    topColor: topColor,
+                    horizontalColor: horizontalColor,
                     wallColor: wallColor,
                     usePerVertexColors: true,
+                    colorBlending: false,
                     wallBrightness: 0.6,
                     bottomScale: 1.0 // bottom is slightly wider than top
                 }

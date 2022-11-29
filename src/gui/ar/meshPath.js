@@ -13,64 +13,41 @@ let VERT_PATH = Object.freeze({
     start: 'start',
     end: 'end'
 });
-
-// lets you reuse materials that share identical properties
-const getMaterialKey = (color, opacity, usePerVertexColors) => {
-    return JSON.stringify(color) + JSON.stringify(opacity) + JSON.stringify(usePerVertexColors)
-}
-
-// lets you reuse materials that share identical properties
-const getMaterial = (color, opacity = 1, usePerVertexColors = false) => {
-    if (usePerVertexColors) { color = 0xFFFFFF; } // if color isn't white, vertex colors blend un-intuitively
-    let materialKey = getMaterialKey(color, opacity, usePerVertexColors);
-    if (typeof cachedMaterials[materialKey] === 'undefined') {
-        let params = {
-            color: color || 0xFFFFFF
-        };
-        if (opacity < 1) {
-            params.transparent = true
-            params.opacity = opacity
-        }
-        if (usePerVertexColors) {
-            params.vertexColors = true;
-        }
-        cachedMaterials[materialKey] = new THREE.MeshBasicMaterial(params);
-    }
-    return cachedMaterials[materialKey]; // allows us to reuse materials that have the exact same params
-}
+const POSITIONS_PER_POINT = 24; // each point on the path has 8 triangles
+const COMPONENTS_PER_POSITION = 3; // each vertex has 3 position components (x,y,z) and 3 color components (r,g,b)
 
 /**
  * MeshPath is similar to MeshLine but is an extruded rectangular path where you can also specify color and size
- * for each of the points on the path. It is aligned so that its "top" faces the global up vector. Different colors can
- * be given to its "top" vs its "walls".
- * 
- * Note: as of now, MeshPath doesn't include a bottom face along the path, but this could easily be added
+ * for each of the points on the path. It is aligned so that its top faces the global up vector. Different colors can
+ * be given to its "horizontal" vs its "wall" faces.
  */
 class MeshPath extends THREE.Group
 {
-    constructor(path, {width_mm, height_mm, topColor, wallColor, wallBrightness, usePerVertexColors, bottomScale, opacity}) {
+    constructor(path, {width_mm, height_mm, horizontalColor, wallColor, wallBrightness, usePerVertexColors, bottomScale, opacity, colorBlending}) {
         super();
 
         this.width_mm = width_mm || 10; // 10mm default
         this.height_mm = height_mm || 10;
-        this.topColor = topColor || 0xFFFFFF;
+        this.horizontalColor = horizontalColor || 0xFFFFFF;
         this.wallColor = wallColor || 0xABABAB;
-        this.wallBrightness = wallBrightness || 0.8; // sides are by default a bit darker than the top, to make more visible
+        this.wallBrightness = wallBrightness || 0.8; // sides are by default a bit darker than the horizontal, to make more visible
         this.usePerVertexColors = usePerVertexColors || false;
         this.bottomScale = bottomScale || 1; // if > 1, bottom of path flares out a bit to make sides more visible
         this.opacity = opacity || 1;
+        // if true, multiplies perVertexColors by horizontal and wallColors - otherwise vertexColors override the default
+        this.colorBlending = colorBlending || false;
 
-        this.topPositionsBuffer = [];
+        this.horizontalPositionsBuffer = [];
         this.wallPositionsBuffer = [];
-        this.topColorsBuffer = [];
+        this.horizontalColorsBuffer = [];
         this.wallColorsBuffer = [];
 
         this.setPoints(path);
     }
 
     resetPoints() {
-        this.topPositionsBuffer = [];
-        this.topColorsBuffer = [];
+        this.horizontalPositionsBuffer = [];
+        this.horizontalColorsBuffer = [];
         this.wallPositionsBuffer = [];
         this.wallColorsBuffer = [];
 
@@ -82,83 +59,8 @@ class MeshPath extends THREE.Group
             this.onRemove(); // dispose of geometry to avoid memory leak
         }
     }
-    
-    getPointFromFace(vertexIndices) {
-        let approximatePointIndex = Math.floor(vertexIndices[0] / 24);
-        return Math.max(0, Math.min(this.currentPoints.length - 1, (this.currentPoints.length - approximatePointIndex) - 2)); // this.currentPoints[approximatePointIndex];
-    }
-    
-    getBufferIndices(pointIndex) {
-        // if i = length-1, indices = 0-23
-        // if i = length-2, indices = 24-47
-        // if i = length-3, indices = 48-71
-        // ...
-        // if i = length-N, indices = (24 * (N-1)) to (24 * N - 1) 
-        // if i = 0, indices = (24 * (length-1)) to (24 * length - 1 - 12) // special case only has 12 not 24
-        
-        let positionsPerPoint = 24;
-        let componentsPerPosition = 3; // color=[r,g,b] or position=[x,y,z]
-        
-        let length = this.currentPoints.length;
-        let i = length - pointIndex;
-        let startBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-2); // todo: this was off by 1 so i'm subtracting (i-2) instead of (i-1), but i'm not sure why
-        let endBufferIndex = (positionsPerPoint * componentsPerPosition) * (i-1) - 1; 
-        if (i === length - 1) {
-            endBufferIndex -= (positionsPerPoint * componentsPerPosition) * 0.5; // last index has half as many positions
-        }
-        // console.log('start', startBufferIndex, 'end', endBufferIndex);
-        let bufferIndices = [];
-        for (let j = startBufferIndex; j <= endBufferIndex; j += componentsPerPosition) {
-            bufferIndices.push(Math.floor(j/3));
-        }
-        return bufferIndices;
-    }
-    
-    getDistanceAlongPath(firstIndex, secondIndex) {
-        let smallerIndex = Math.min(firstIndex, secondIndex);
-        let biggerIndex = Math.max(firstIndex, secondIndex);
-        // let first = this.currentPoints[smallerIndex];
-        // let second = this.currentPoints[biggerIndex];
-        let totalDistance = 0;
-        for (let i = smallerIndex; i < biggerIndex; i++) {
-            let thisPoint = this.currentPoints[i];
-            let nextPoint = this.currentPoints[i+1];
-            let dx = nextPoint.x - thisPoint.x;
-            let dy = nextPoint.y - thisPoint.y;
-            let dz = nextPoint.z - thisPoint.z;
-            let segmentDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            totalDistance += segmentDistance;
-        }
-        return totalDistance;
-    }
 
-    // pass in a range of points to recompute, and it replaces the colorsBuffer entries with recomputed values
-    updateColors(pointIndicesThatNeedUpdate) {
-        if (this.usePerVertexColors) {
-            let geometry = this.getGeometry();
-            
-            let topColorAttribute = geometry.top.getAttribute('color');
-            let wallColorAttribute = geometry.wall.getAttribute('color');
-            
-            pointIndicesThatNeedUpdate.forEach(index => {
-                let bufferIndices = this.getBufferIndices(index);
-                // console.log('pointIndex ' + index + ' yields buffer indices', bufferIndices);
-                bufferIndices.forEach(bfrIndex => {
-                    let newColor = {
-                        r: this.currentPoints[index].color[0],
-                        g: this.currentPoints[index].color[1],
-                        b: this.currentPoints[index].color[2]
-                    }
-                    topColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
-                    // console.log('set colorAttribute[' + bfrIndex + '] to ' + newColor);
-                    wallColorAttribute.setXYZ(bfrIndex, newColor.r * this.wallBrightness, newColor.g * this.wallBrightness, newColor.b * this.wallBrightness);
-                });
-            })
-            geometry.top.attributes.color.needsUpdate = true;
-            geometry.wall.attributes.color.needsUpdate = true;
-        }
-    }
-
+    // call this to build (or rebuild) the mesh given an updated array of {x,y,z} points
     setPoints(points) {
         this.resetPoints(); // removes the previous mesh from the scene and disposes of its geometry
         
@@ -166,12 +68,12 @@ class MeshPath extends THREE.Group
 
         if (points.length < 2) return;
 
-        const topGeometry = new THREE.BufferGeometry(); // The top represents the flat black top of the line
-        const wallGeometry = new THREE.BufferGeometry(); // The wall represents the yellow sides of the line
+        const horizontalGeometry = new THREE.BufferGeometry(); // The horizontal represents the flat top and bottom of the line
+        const wallGeometry = new THREE.BufferGeometry(); // The wall represents the two sides of the line
         const up = new THREE.Vector3(0,1,0);
 
-        const topMaterial = getMaterial(this.topColor, this.opacity, this.usePerVertexColors);
-        const wallMaterial = getMaterial(this.wallColor, this.opacity, this.usePerVertexColors);
+        const horizontalMaterial = getMaterial(this.horizontalColor, this.opacity, this.usePerVertexColors, this.colorBlending);
+        const wallMaterial = getMaterial(this.wallColor, this.opacity, this.usePerVertexColors, this.colorBlending);
 
         for (let i = points.length - 1; i > 0; i--) {
             const start = points[i];
@@ -187,30 +89,30 @@ class MeshPath extends THREE.Group
             let colors = {};
             colors[VERT_PATH.start] = {};
             colors[VERT_PATH.end] = {};
-            colors[VERT_PATH.start].top = (typeof start.color !== 'undefined') ? start.color : this.topColor;
-            colors[VERT_PATH.end].top = (typeof end.color !== 'undefined') ? end.color : this.topColor;
+            colors[VERT_PATH.start].horizontal = (typeof start.color !== 'undefined') ? start.color : this.horizontalColor;
+            colors[VERT_PATH.end].horizontal = (typeof end.color !== 'undefined') ? end.color : this.horizontalColor;
             colors[VERT_PATH.start].wall = (typeof start.color !== 'undefined') ? start.color : this.wallColor;
             colors[VERT_PATH.end].wall = (typeof end.color !== 'undefined') ? end.color : this.wallColor;
 
             // First top triangle
-            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.top, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.top, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.top, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.top, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
 
             // Second top triangle
-            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.top, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.top, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
 
             // First bottom triangle
-            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.bottom, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.start, VERT_PATH.right, VERT_PATH.bottom, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
 
             // Second bottom triangle
-            this.addTopVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
-            this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+            this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
 
             // First left triangle
             this.addWallVertexHelper(vertex, VERT_PATH.start, VERT_PATH.left, VERT_PATH.bottom, colors);
@@ -240,24 +142,24 @@ class MeshPath extends THREE.Group
                 const nextVertex = this.createVertexComponents(start, end, nextCross, nextBottomCross, startTaperFactor, endTaperFactor);
 
                 // First top triangle
-                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
-                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
-                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
+                this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
+                this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
+                this.addHorizontalVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
 
                 // Second top triangle
-                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
-                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
-                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
+                this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
+                this.addHorizontalVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.top, colors);
+                this.addHorizontalVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.top, colors);
 
                 // First bottom triangle
-                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
-                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
-                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+                this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+                this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+                this.addHorizontalVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
 
                 // Second bottom triangle
-                this.addTopVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
-                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
-                this.addTopVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
+                this.addHorizontalVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+                this.addHorizontalVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
+                this.addHorizontalVertexHelper(nextVertex, VERT_PATH.end, VERT_PATH.right, VERT_PATH.bottom, colors);
 
                 // First left triangle
                 this.addWallVertexHelper(vertex, VERT_PATH.end, VERT_PATH.left, VERT_PATH.bottom, colors);
@@ -281,39 +183,51 @@ class MeshPath extends THREE.Group
             }
         }
 
-        topGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.topPositionsBuffer), 3));
-        wallGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.wallPositionsBuffer), 3));
+        horizontalGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.horizontalPositionsBuffer), COMPONENTS_PER_POSITION));
+        wallGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.wallPositionsBuffer), COMPONENTS_PER_POSITION));
 
         if (this.usePerVertexColors) {
             const normalized = true; // maps the uints from 0-255 to 0-1
-            topGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.topColorsBuffer), 3, normalized));
-            wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), 3, normalized));
+            horizontalGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.horizontalColorsBuffer), COMPONENTS_PER_POSITION, normalized));
+            wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), COMPONENTS_PER_POSITION, normalized));
         }
 
-        const topMesh = new THREE.Mesh(topGeometry, topMaterial);
+        const horizontalMesh = new THREE.Mesh(horizontalGeometry, horizontalMaterial);
         const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-        this.add(topMesh);
+        this.add(horizontalMesh);
         this.add(wallMesh);
 
         this.onRemove = () => {
             // Since these geometries are not reused, they MUST be disposed to prevent memory leakage
-            if (topGeometry) topGeometry.dispose();
+            if (horizontalGeometry) horizontalGeometry.dispose();
             if (wallGeometry) wallGeometry.dispose();
         }
         
         this.getGeometry = () => {
             return {
-                top: topGeometry,
+                horizontal: horizontalGeometry,
                 wall: wallGeometry
             }
         }
     }
 
+    // internal helper function - adds the vertex information to the horizontalMesh
+    addHorizontalVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
+        let thisVertex = vertexComponents[startEnd][topBottom][leftRight];
+        this.addHorizontalVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd].horizontal);
+    }
+
+    // internal helper function - adds the vertex information to the wallMesh
+    addWallVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
+        let thisVertex = vertexComponents[startEnd][topBottom][leftRight];
+        this.addWallVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd].wall);
+    }
+
     // internal helper function
-    addTopVertex(x, y, z, color) {
-        this.topPositionsBuffer.push(x, y, z);
+    addHorizontalVertex(x, y, z, color) {
+        this.horizontalPositionsBuffer.push(x, y, z);
         if (this.usePerVertexColors) {
-            this.topColorsBuffer.push(color[0], color[1], color[2]);
+            this.horizontalColorsBuffer.push(color[0], color[1], color[2]);
         }
     }
 
@@ -326,18 +240,6 @@ class MeshPath extends THREE.Group
             let b = Math.max(0, color[2] * this.wallBrightness);
             this.wallColorsBuffer.push(r, g, b);
         }
-    }
-
-    // internal helper function - adds the vertex information to the topMesh
-    addTopVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
-        let thisVertex = vertexComponents[startEnd][topBottom][leftRight];
-        this.addTopVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd].top);
-    }
-
-    // internal helper function - adds the vertex information to the wallMesh
-    addWallVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
-        let thisVertex = vertexComponents[startEnd][topBottom][leftRight];
-        this.addWallVertex(thisVertex.x, thisVertex.y, thisVertex.z, colors[startEnd].wall);
     }
 
     // internal helper function - constructs all the vertices that we'll need to render the faces of this segment
@@ -362,6 +264,117 @@ class MeshPath extends THREE.Group
         });
         return components;
     }
+
+    // given a list of the vertex indices defining a face (such as those returned by a raycast intersection),
+    // returns the index of the point on the path that contains that face
+    getPointFromFace(vertexIndices) {
+        let approximatePointIndex = Math.floor(vertexIndices[0] / POSITIONS_PER_POINT);
+        return Math.max(0, Math.min(this.currentPoints.length - 1, (this.currentPoints.length - approximatePointIndex) - 2));
+    }
+
+    // use this to get the indices in the color and position BufferAttributes that correspond to a certain point in the path
+    // geometry is constructed backwards, from length-1 down to 0, so buffer attribute indices are "opposite" what you may expect
+    getBufferIndices(pointIndex) {
+        // if i = length-1, indices = 0-23... if i = length-2, indices = 24-47... if i = length-3, indices = 48-71...
+        // generalized formula: if i = length-N, indices = (24 * (N-1)) to (24 * N - 1)
+        // special case: if i = 0, indices = (24 * (length-1)) to (24 * length - 1 - 12) // last index only has 12 not 24
+
+        const length = this.currentPoints.length;
+        const i = length - pointIndex;
+        const startBufferIndex = (POSITIONS_PER_POINT * COMPONENTS_PER_POSITION) * (i-2); // todo: this was off by 1 on my first attempt so i'm subtracting (i-2) instead of (i-1), but i'm not sure why
+        let endBufferIndex = (POSITIONS_PER_POINT * COMPONENTS_PER_POSITION) * (i-1) - 1;
+        if (i === length - 1) {
+            endBufferIndex -= (POSITIONS_PER_POINT * COMPONENTS_PER_POSITION) * 0.5; // last index has half as many positions
+        }
+
+        let bufferIndices = [];
+        for (let j = startBufferIndex; j <= endBufferIndex; j += COMPONENTS_PER_POSITION) {
+            bufferIndices.push(Math.floor(j/COMPONENTS_PER_POSITION));
+        }
+        return bufferIndices;
+    }
+
+    // calculates the sum of distances between the two points on the path
+    getDistanceAlongPath(firstIndex, secondIndex) {
+        const smallerIndex = Math.min(firstIndex, secondIndex);
+        const biggerIndex = Math.max(firstIndex, secondIndex);
+        let totalDistance = 0;
+        for (let i = smallerIndex; i < biggerIndex; i++) {
+            let thisPoint = this.currentPoints[i];
+            let nextPoint = this.currentPoints[i+1];
+            let dx = nextPoint.x - thisPoint.x;
+            let dy = nextPoint.y - thisPoint.y;
+            let dz = nextPoint.z - thisPoint.z;
+            let segmentDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            totalDistance += segmentDistance;
+        }
+        return totalDistance;
+    }
+
+    // pass in a range of points to recompute, and it replaces the colorsBuffer entries with recomputed values
+    // note: modify the point.color beforehand, then call this for the color to be applied
+    updateColors(pointIndicesThatNeedUpdate) {
+        if (!this.usePerVertexColors) return; // no effect on single-colored paths
+
+        let geometry = this.getGeometry();
+        let horizontalColorAttribute = geometry.horizontal.getAttribute('color');
+        let wallColorAttribute = geometry.wall.getAttribute('color');
+        let brightness = this.wallBrightness;
+
+        pointIndicesThatNeedUpdate.forEach(index => {
+            let bufferIndices = this.getBufferIndices(index);
+            bufferIndices.forEach(bfrIndex => {
+                let newColor = {
+                    r: this.currentPoints[index].color[0],
+                    g: this.currentPoints[index].color[1],
+                    b: this.currentPoints[index].color[2]
+                }
+                horizontalColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
+                wallColorAttribute.setXYZ(bfrIndex, newColor.r * brightness, newColor.g * brightness, newColor.b * brightness);
+            });
+        })
+        geometry.horizontal.attributes.color.needsUpdate = true;
+        geometry.wall.attributes.color.needsUpdate = true;
+    }
+    // todo: add an updatePositions method similar to updateColors that can be used to update the mesh instead of rebuilding it entirely with setPoints
+}
+
+/**
+ * Lets you reuse materials that share identical properties by generating a hash of those material parameters
+ * @param {number|string} color - hex color
+ * @param {number} opacity
+ * @param {boolean} usePerVertexColors
+ * @returns {string}
+ */
+function getMaterialKey(color, opacity, usePerVertexColors) {
+    return JSON.stringify(color) + JSON.stringify(opacity) + JSON.stringify(usePerVertexColors);
+}
+
+/**
+ * Creates a new material, or returns a cached material, with the provided parameters
+ * @param {number|string} color - used if !usePerVertexColors
+ * @param {number} opacity - defaults to 1
+ * @param {boolean} usePerVertexColors - defaults to false
+ * @param {boolean} colorBlending - defaults to false
+ * @returns {THREE.MeshBasicMaterial}
+ */
+function getMaterial(color, opacity = 1, usePerVertexColors = false, colorBlending = false) {
+    if (usePerVertexColors && !colorBlending) { color = 0xFFFFFF; } // if color isn't white, vertex colors blend
+    let materialKey = getMaterialKey(color, opacity, usePerVertexColors);
+    if (typeof cachedMaterials[materialKey] === 'undefined') {
+        let params = {
+            color: color || 0xFFFFFF
+        };
+        if (opacity < 1) {
+            params.transparent = true
+            params.opacity = opacity
+        }
+        if (usePerVertexColors) {
+            params.vertexColors = true;
+        }
+        cachedMaterials[materialKey] = new THREE.MeshBasicMaterial(params);
+    }
+    return cachedMaterials[materialKey]; // allows us to reuse materials that have the exact same params
 }
 
 export { MeshPath };
