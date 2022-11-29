@@ -155,6 +155,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     function setGroundPlanePosition(groundPlaneMatrix) {
         groundPlaneNode.setLocalMatrix(groundPlaneMatrix);
+        groundPlaneNode.updateWorldMatrix(); // immediately process instead of waiting for next frame
     }
 
     // TODO: implement remove scene node (removes from parent, etc, and all children)
