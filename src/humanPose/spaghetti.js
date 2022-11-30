@@ -9,7 +9,7 @@ export class SpaghettiMeshPath extends MeshPath {
         
         this.comparer = new KeyframeComparer();
         this.comparer.setMeshPath(this);
-        this.cursor = this.createCursor();
+        this.cursor = this.createCursor(this.width_mm);
         this.setupPointerEvents();
         
         this.cursorDestination = null;
@@ -42,11 +42,16 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     onPointerDown(e) {
-        this.selectFirstPathPoint(e.pageX, e.pageY);
+        const isHover = false;
+        this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
     }
     
     onPointerMove(e) {
-        if (this.comparer.firstPointIndex === null) { return; }
+        if (this.comparer.firstPointIndex === null || this.comparer.selectionState === 'first') {
+            const isHover = true;
+            this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
+            return;
+        }
 
         if (this.distanceLabelContainer) {
             this.distanceLabelContainer.style.left = e.pageX + 'px'; // position it centered on the pointer sphere
@@ -108,7 +113,7 @@ export class SpaghettiMeshPath extends MeshPath {
         return realityEditor.sceneGraph.convertToNewCoordSystem(pointOnPlane, rootCoords, groundPlaneCoords);
     }
     
-    selectFirstPathPoint(screenX, screenY) {
+    selectFirstPathPoint(screenX, screenY, isHover) {
         if (this.resetIfNoGeometry()) return;
 
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
@@ -120,11 +125,11 @@ export class SpaghettiMeshPath extends MeshPath {
         }
         let intersect = intersects[0];
         let pointIndex = this.getPointFromFace([intersect.face.a, intersect.face.b, intersect.face.c]);
-        if (this.comparer.firstPointIndex !== null) {
+        if (this.comparer.selectionState === 'second') {
             this.comparer.reset();
             this.cursor.visible = false;
         } else {
-            this.comparer.setFirstPoint(pointIndex);
+            this.comparer.setFirstPoint(pointIndex, isHover);
         }
         this.updateMeshWithComparer();
     }
@@ -164,7 +169,11 @@ export class SpaghettiMeshPath extends MeshPath {
         // refresh the color of the first point
         if (comparer.firstPointIndex !== null && points[comparer.firstPointIndex].color) {
             comparer.savePreviousColor(comparer.firstPointIndex, points[comparer.firstPointIndex].color);
-            points[comparer.firstPointIndex].color = [0, 255, 0];
+            if (comparer.selectionState === 'first') {
+                points[comparer.firstPointIndex].color = [200, 255, 200];
+            } else {
+                points[comparer.firstPointIndex].color = [0, 255, 0];
+            }
             indicesToUpdate.push(comparer.firstPointIndex);
         }
 
@@ -256,13 +265,19 @@ export class KeyframeComparer {
         this.previousColors = [];
     }
     reset() {
+        this.selectionState = 'first';
         this.firstPointIndex = null;
         this.secondPointIndex = null;
     }
     setMeshPath(meshPath) {
         this.meshPath = meshPath;
     }
-    setFirstPoint(index) {
+    setFirstPoint(index, isHover) {
+        if (isHover) {
+            this.selectionState = 'first';
+        } else {
+            this.selectionState = 'second';
+        }
         this.firstPointIndex = index;
     }
     setEndPoint(index) {

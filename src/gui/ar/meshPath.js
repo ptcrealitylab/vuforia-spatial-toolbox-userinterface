@@ -51,9 +51,13 @@ class MeshPath extends THREE.Group
         this.wallPositionsBuffer = [];
         this.wallColorsBuffer = [];
 
-        this.children.forEach(childMesh => {
-            this.remove(childMesh);
-        });
+        if (this.horizontalMesh) {
+            this.remove(this.horizontalMesh);
+        }
+
+        if (this.wallMesh) {
+            this.remove(this.wallMesh);
+        }
 
         if (typeof this.onRemove === 'function') {
             this.onRemove(); // dispose of geometry to avoid memory leak
