@@ -5,7 +5,6 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import * as spaghetti from './spaghetti.js';
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -24,12 +23,6 @@ import * as spaghetti from './spaghetti.js';
     
     function initService() {
         console.log('init humanPose module', network, draw, utils);
-
-        spaghetti.init();
-
-        realityEditor.worldObjects.onLocalizedWithinWorld((_worldObjectKey) => {
-            spaghetti.loadMockData();
-        });
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
@@ -59,7 +52,7 @@ import * as spaghetti from './spaghetti.js';
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             try {
-                spaghetti.update();
+                // spaghetti.update();
                 
                 // main update runs at ~60 FPS, but we can save some compute by limiting the pose rendering FPS
                 if (Date.now() - lastRenderTime < (1000.0 / MAX_FPS)) return;

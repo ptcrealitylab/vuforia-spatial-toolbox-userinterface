@@ -82,7 +82,7 @@ class MeshPath extends THREE.Group
             const startTaperFactor = (typeof start.scale !== 'undefined') ? start.scale : 1;
             const endTaperFactor = (typeof end.scale !== 'undefined') ? end.scale : 1;
             const cross = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(this.width_mm / 2);
-            // Base should be wider to allow visibility while moving along line
+            // Base can be wider to allow visibility while moving along line
             const bottomCross = cross.clone().multiplyScalar(this.bottomScale);
             const vertex = this.createVertexComponents(start, end, cross, bottomCross, startTaperFactor, endTaperFactor);
 
@@ -196,6 +196,10 @@ class MeshPath extends THREE.Group
         const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
         this.add(horizontalMesh);
         this.add(wallMesh);
+
+        // can be accessed publicly
+        this.horizontalMesh = horizontalMesh;
+        this.wallMesh = wallMesh;
 
         this.onRemove = () => {
             // Since these geometries are not reused, they MUST be disposed to prevent memory leakage
@@ -315,6 +319,7 @@ class MeshPath extends THREE.Group
     // note: modify the point.color beforehand, then call this for the color to be applied
     updateColors(pointIndicesThatNeedUpdate) {
         if (!this.usePerVertexColors) return; // no effect on single-colored paths
+        if (typeof this.getGeometry === 'undefined') return; // no geometry yet
 
         let geometry = this.getGeometry();
         let horizontalColorAttribute = geometry.horizontal.getAttribute('color');

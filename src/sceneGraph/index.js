@@ -59,12 +59,14 @@ createNameSpace("realityEditor.sceneGraph");
         // create node for camera outside the tree of the main scene
         cameraNode = new SceneNode(NAMES.CAMERA);
         sceneGraph[NAMES.CAMERA] = cameraNode;
+        cameraNode.setParent(rootNode);
 
         // create a node representing the ground plane coordinate system
         groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
         // groundPlaneNode.needsRotateX = true;
         // addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
+        groundPlaneNode.setParent(rootNode);
 
         // also init the network service when this starts
         realityEditor.sceneGraph.network.initService();
@@ -387,8 +389,11 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
-    function getWorldPosition(activeKey) {
-        let sceneNode = getSceneNodeById(activeKey);
+    function getWorldPosition(idOrNode) {
+        let sceneNode = idOrNode;
+        if (typeof idOrNode === 'string') {
+            sceneNode = getSceneNodeById(idOrNode);
+        }
         return {
             // TODO: should we normalize all of these by default?
             x: sceneNode.worldMatrix[12]/sceneNode.worldMatrix[15],
@@ -745,15 +750,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     function recomputeScene() {
         if (rootNode) {
-            rootNode.updateWorldMatrix();
-        }
-        if (cameraNode) {
-            cameraNode.updateWorldMatrix();
-        }
-
-        // this might become a child of a world object but still safe to call update multiple times
-        if (groundPlaneNode) {
-            groundPlaneNode.updateWorldMatrix();
+            rootNode.updateWorldMatrix(); // updates everything that is a child of the root, too (objects, camera, groundPlane, etc)
         }
 
         // just in case, iterate over all miscellaneous visual elements (they are ignored if they've already been

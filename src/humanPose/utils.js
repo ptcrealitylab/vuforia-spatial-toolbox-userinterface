@@ -80,6 +80,20 @@ function getMockPoseStandingFarAway() {
     return joints;
 }
 
+// fast way to compute the index of the minimum element of the array ("argmin")
+function indexOfMin(arr) {
+    if (arr.length === 0) return -1;
+    let min = arr[0];
+    let minIndex = 0;
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < min) {
+            minIndex = i;
+            min = arr[i];
+        }
+    }
+    return minIndex;
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
@@ -88,4 +102,5 @@ export {
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
+    indexOfMin
 };

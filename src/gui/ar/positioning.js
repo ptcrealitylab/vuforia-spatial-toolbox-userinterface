@@ -191,7 +191,7 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
     let rootNode = realityEditor.sceneGraph.getSceneNodeById('ROOT');
 
     if (!this.tempDraggingState.initialOffset) {
-        let pointInObject = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
+        let pointInObject = this.getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
         let toolOriginLocal = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid), rootNode, toolNode.parent);
         this.tempDraggingState.initialOffset = utils.subtract([pointInObject.x, pointInObject.y, pointInObject.z], [toolOriginLocal.x, toolOriginLocal.y, toolOriginLocal.z]);
         let worldPoint = realityEditor.sceneGraph.convertToNewCoordSystem(this.tempDraggingState.initialOffset, toolNode, rootNode);
@@ -233,28 +233,19 @@ realityEditor.gui.ar.positioning.moveVehiclePreservingDistance = function(active
  * @param {number} screenY
  * @returns {{x: number, y: number, z: number}}
  */
-function getLocalPointAtScreenXY(activeVehicle, screenX, screenY) {
+realityEditor.gui.ar.positioning.getLocalPointAtScreenXY = function(activeVehicle, screenX, screenY) {
     const utils = realityEditor.gui.ar.utilities;
 
+    let cameraNode = realityEditor.sceneGraph.getCameraNode();
     let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
     let toolPoint = realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid);
     let planeOrigin = [toolPoint.x, toolPoint.y, toolPoint.z];
     let planeNormal = utils.getForwardVector(toolNode.worldMatrix);
-    let cameraPoint = realityEditor.sceneGraph.getWorldPosition('CAMERA');
-    let rootCoordinateSystem = realityEditor.sceneGraph.getSceneNodeById('ROOT'); // camera is in this system
-    const SEGMENT_LENGTH = 1000; // arbitrary, just need to calculate one point so we can solve parametric equation
-    let testPoint = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, SEGMENT_LENGTH, rootCoordinateSystem);
 
-    let rayOrigin = [cameraPoint.x, cameraPoint.y, cameraPoint.z];
-    let rayDirection = utils.normalize(utils.subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
-
-    let planeIntersection = utils.rayPlaneIntersect(planeOrigin, planeNormal, rayOrigin, rayDirection);
-    if (!planeIntersection) return undefined; // can't move if plane is parallel to ray
-
-    let worldCoordinates = {x: planeIntersection[0], y: planeIntersection[1], z: planeIntersection[2]};
-    let objectCoordinateSystem = toolNode.parent;
-    return realityEditor.sceneGraph.convertToNewCoordSystem(worldCoordinates, rootCoordinateSystem, objectCoordinateSystem);
-}
+    let worldCoordinates = utils.getPointOnPlaneFromScreenXY(planeOrigin, planeNormal, cameraNode, screenX, screenY);
+    let rootCoordinateSystem = cameraNode.parent || realityEditor.sceneGraph.getSceneNodeById('ROOT');
+    return realityEditor.sceneGraph.convertToNewCoordSystem(worldCoordinates, rootCoordinateSystem, toolNode.parent);
+};
 
 /**
  * Translates the tool along its local XY plane such that it moves to the screen (x,y) position
@@ -265,7 +256,7 @@ function getLocalPointAtScreenXY(activeVehicle, screenX, screenY) {
  */
 realityEditor.gui.ar.positioning.moveVehicleAlongPlane = function(activeVehicle, screenX, screenY, useTouchOffset = false) {
     let toolNode = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid);
-    let localPoint = getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
+    let localPoint = this.getLocalPointAtScreenXY(activeVehicle, screenX, screenY);
 
     // recalculate touchOffset if switch reposition modes
     if (this.tempDraggingState.currentlyMovingPreservingDistance) {
