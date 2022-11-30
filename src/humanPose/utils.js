@@ -80,7 +80,7 @@ function getMockPoseStandingFarAway() {
     return joints;
 }
 
-// fast way to compute the index of the minimum element of the array ("argmin")
+// compute the index of the minimum element of the array
 function indexOfMin(arr) {
     if (arr.length === 0) return -1;
     let min = arr[0];

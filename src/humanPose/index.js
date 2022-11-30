@@ -1,5 +1,3 @@
-// import * as THREE from "../../thirdPartyCode/three/three.module";
-
 createNameSpace("realityEditor.humanPose");
 
 import * as network from './network.js'
@@ -20,7 +18,7 @@ import * as utils from './utils.js'
     let lastRenderTime = Date.now();
     let lastUpdateTime = Date.now();
     let lastRenderedPoses = {};
-    
+
     function initService() {
         console.log('init humanPose module', network, draw, utils);
 
@@ -52,8 +50,6 @@ import * as utils from './utils.js'
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             try {
-                // spaghetti.update();
-                
                 // main update runs at ~60 FPS, but we can save some compute by limiting the pose rendering FPS
                 if (Date.now() - lastRenderTime < (1000.0 / MAX_FPS)) return;
                 lastRenderTime = Date.now();

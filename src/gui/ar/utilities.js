@@ -1380,11 +1380,6 @@ function polyfillWebkitConvertPointFromPageToNode() {
         if (!planeIntersection) return undefined; // if plane is parallel to ray
 
         return {x: planeIntersection[0], y: planeIntersection[1], z: planeIntersection[2]};
-        // let worldCoordinates = {x: planeIntersection[0], y: planeIntersection[1], z: planeIntersection[2]};
-        // return worldCoordinates;
-        // let objectCoordinateSystem = realityEditor.sceneGraph.getGroundPlaneNode(); // toolNode.parent;
-        // return realityEditor.sceneGraph.convertToNewCoordSystem(worldCoordinates, rootCoordinateSystem, objectCoordinateSystem);
-        // return worldCoordinates;
     }
 
     exports.lookAt = lookAt;

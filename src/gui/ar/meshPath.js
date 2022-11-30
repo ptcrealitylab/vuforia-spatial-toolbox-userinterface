@@ -21,7 +21,7 @@ const COMPONENTS_PER_POSITION = 3; // each vertex has 3 position components (x,y
  * for each of the points on the path. It is aligned so that its top faces the global up vector. Different colors can
  * be given to its "horizontal" vs its "wall" faces.
  */
-class MeshPath extends THREE.Group
+export class MeshPath extends THREE.Group
 {
     constructor(path, {width_mm, height_mm, horizontalColor, wallColor, wallBrightness, usePerVertexColors, bottomScale, opacity, colorBlending}) {
         super();
@@ -64,7 +64,10 @@ class MeshPath extends THREE.Group
         }
     }
 
-    // call this to build (or rebuild) the mesh given an updated array of {x,y,z} points
+    // call this to build (or rebuild) the mesh given an updated array of [{x,y,z}, ...] values
+    // each point can also have parameters:
+    // - color: [0-255, 0-255, 0-255] (only used if perVertexColors=true)
+    // - scale: float (1.0 = default)
     setPoints(points) {
         this.resetPoints(); // removes the previous mesh from the scene and disposes of its geometry
         
@@ -385,5 +388,3 @@ function getMaterial(color, opacity = 1, usePerVertexColors = false, colorBlendi
     }
     return cachedMaterials[materialKey]; // allows us to reuse materials that have the exact same params
 }
-
-export { MeshPath };

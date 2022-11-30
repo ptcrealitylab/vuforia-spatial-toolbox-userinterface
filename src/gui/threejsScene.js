@@ -290,7 +290,6 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         }
 
         const gltfLoader = new GLTFLoader();
-        
         console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
             const geometries = [];

@@ -2,11 +2,70 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
 import * as utils from './utils.js'
 
+// we will lazily instantiate a shared label that all SpaghettiMeshPaths can use
+let sharedMeasurementLabel = null;
+
+class MeasurementLabel {
+    constructor() {
+        this.container = this.createTextLabel();
+        this.visibilityRequests = {};
+    }
+
+    requestVisible(wantsVisible, pathId) {
+        this.visibilityRequests[pathId] = wantsVisible;
+
+        // go through all visibility requests, and hide the label if nothing needs it
+        let anythingWantsVisible = Object.values(this.visibilityRequests).reduce((a, b) => a || b, false);
+        this.container.style.display = anythingWantsVisible ? 'inline' : 'none';
+    }
+
+    goToPointer(pageX, pageY) {
+        this.container.style.left = pageX + 'px'; // position it centered on the pointer sphere
+        this.container.style.top = (pageY - 10) + 'px'; // slightly offset in y
+    }
+
+    updateTextLabel(distance_mm, time_ms) {
+        // round time and distance to 1 decimal place
+        let distanceMeters = (distance_mm / 1000).toFixed(1);
+        let timeSeconds = (time_ms / 1000).toFixed(1);
+        let timeString = '';
+        if (timeSeconds > 0) {
+            timeString = ' traveled in ' + timeSeconds + 's';
+        } else {
+            timeString = ' traveled in < 1s';
+        }
+        this.container.children[0].innerText = distanceMeters + 'm' + timeString;
+    }
+
+    createTextLabel(text, width = 240, fontSize = 18, scale = 1.33) {
+        let labelContainer = document.createElement('div');
+        labelContainer.classList.add('avatarBeamLabel');
+        labelContainer.style.width = width + 'px';
+        labelContainer.style.fontSize = fontSize + 'px';
+        labelContainer.style.transform = 'translateX(-50%) translateY(-100%) translateZ(3000px) scale(' + scale + ')';
+        document.body.appendChild(labelContainer);
+
+        let label = document.createElement('div');
+        labelContainer.appendChild(label);
+
+        if (text) {
+            label.innerText = text;
+            labelContainer.classList.remove('displayNone');
+        } else {
+            label.innerText = text;
+            labelContainer.classList.add('displayNone');
+        }
+
+        return labelContainer;
+    }
+}
+
 // creates a Path that you can click on to measure the time and distance between points on the path
 export class SpaghettiMeshPath extends MeshPath {
     constructor(path, params) {
         super(path, params);
-        
+
+        this.pathId = realityEditor.device.utilities.uuidTime();
         this.comparer = new KeyframeComparer();
         this.comparer.setMeshPath(this);
         this.cursor = this.createCursor(this.width_mm);
@@ -14,7 +73,6 @@ export class SpaghettiMeshPath extends MeshPath {
         
         this.cursorDestination = null;
         this.cursorSnapDestination = null;
-        this.distanceLabelContainer = this.createTextLabel();
         
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             if (this.cursor && this.cursorDestination) {
@@ -41,6 +99,13 @@ export class SpaghettiMeshPath extends MeshPath {
         this.planeNormal = [0, 1, 0];
     }
 
+    getMeasurementLabel() {
+        if (!sharedMeasurementLabel) {
+            sharedMeasurementLabel = new MeasurementLabel();
+        }
+        return sharedMeasurementLabel;
+    }
+
     onPointerDown(e) {
         const isHover = false;
         this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
@@ -53,10 +118,7 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
-        if (this.distanceLabelContainer) {
-            this.distanceLabelContainer.style.left = e.pageX + 'px'; // position it centered on the pointer sphere
-            this.distanceLabelContainer.style.top = (e.pageY - 10) + 'px'; // slightly offset in y
-        }
+        this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
 
         // move cursor to where the pointer coordinates hit the plane that the spaghetti lies on
         let pointOnPlane = this.raycastOntoPathPlane(e.pageX, e.pageY);
@@ -181,7 +243,7 @@ export class SpaghettiMeshPath extends MeshPath {
         // also displays a text label showing the time and distance along the path
 
         if (comparer.secondPointIndex === null) {
-            this.distanceLabelContainer.style.display = 'none';
+            this.getMeasurementLabel().requestVisible(false, this.pathId);
         } else {
             if (points[comparer.secondPointIndex].color) {
                 comparer.savePreviousColor(comparer.secondPointIndex, points[comparer.secondPointIndex].color);
@@ -205,60 +267,23 @@ export class SpaghettiMeshPath extends MeshPath {
             if (typeof firstTimestamp !== 'undefined' && typeof secondTimestamp !== 'undefined') {
                 time_ms = Math.abs(firstTimestamp - secondTimestamp);
             }
-            this.updateTextLabel(distance_mm, time_ms);
+            this.getMeasurementLabel().updateTextLabel(distance_mm, time_ms);
+            this.getMeasurementLabel().requestVisible(true, this.pathId);
         }
 
         // update the mesh buffer attributes to render the updated point colors
         this.updateColors(indicesToUpdate);
-    }
-    
-    updateTextLabel(distance_mm, time_ms) {
-        // round time and distance to 1 decimal place
-        let distanceMeters = (distance_mm / 1000).toFixed(1);
-        let timeSeconds = (time_ms / 1000).toFixed(1);
-        let timeString = '';
-        if (timeSeconds > 0) {
-            timeString = ' traveled in ' + timeSeconds + 's';
-        } else {
-            timeString = ' traveled in < 1s';
-        }
-        this.distanceLabelContainer.children[0].innerText = distanceMeters + 'm' + timeString;
-        this.distanceLabelContainer.style.display = 'inline';
     }
 
     createCursor(radius = 50) {
         let cursorMesh = new THREE.Mesh(new THREE.SphereGeometry(radius,12,12), new THREE.MeshBasicMaterial({color:0xff0000})); // new THREE.MeshNormalMaterial());
         cursorMesh.visible = false;
         this.add(cursorMesh);
-        // realityEditor.gui.threejsScene.addToScene(cursorMesh);
         return cursorMesh;
-    }
-
-    // adds a circular label with enough space for two initials, e.g. "BR" (but hides it if no initials provided)
-    createTextLabel(text, width = 240, fontSize = 18, scale = 1.33) {
-        let labelContainer = document.createElement('div');
-        labelContainer.classList.add('avatarBeamLabel');
-        labelContainer.style.width = width + 'px';
-        labelContainer.style.fontSize = fontSize + 'px';
-        labelContainer.style.transform = 'translateX(-50%) translateY(-100%) translateZ(3000px) scale(' + scale + ')';
-        document.body.appendChild(labelContainer);
-
-        let label = document.createElement('div');
-        labelContainer.appendChild(label);
-
-        if (text) {
-            label.innerText = text;
-            labelContainer.classList.remove('displayNone');
-        } else {
-            label.innerText = text;
-            labelContainer.classList.add('displayNone');
-        }
-
-        return labelContainer;
     }
 }
 
-// Handles the logic of comparing two points on a MeshPath to each other
+// Handles some state management for comparing two points on a MeshPath to each other
 export class KeyframeComparer {
     constructor() {
         this.reset();
