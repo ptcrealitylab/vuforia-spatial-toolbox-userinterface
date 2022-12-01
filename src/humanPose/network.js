@@ -25,7 +25,7 @@ function addHumanPoseObject(worldId, objectName, onSuccess, onError) {
 
 // helper function that will trigger the callback for each avatar object previously or in-future discovered
 function onHumanPoseObjectDiscovered(callback) {
-    // first check if any previously discovered objects are avatars
+    // first check if any previously discovered objects are human poses
     for (let [objectKey, object] of Object.entries(objects)) {
         if (isHumanPoseObject(object)) {
             callback(object, objectKey);
