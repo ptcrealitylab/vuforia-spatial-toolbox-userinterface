@@ -361,17 +361,23 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;
-            let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
+            let wireMaterial = new THREE.MeshStandardMaterial({
                 wireframe: true,
                 color: 0x777777,
-            }), maxHeight, center, true, true);
+            });
+            // let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
+            //     wireframe: true,
+            //     color: 0x777777,
+            // }), 0, center, true, true );
+            
+            let INVERTED_SHADER = true;
 
             if (gltf.scene.geometry) {
                 if (typeof maxHeight !== 'undefined') {
                     if (!gltf.scene.material) {
                         console.warn('no material', gltf.scene);
                     } else {
-                        gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
+                        gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true, INVERTED_SHADER);
                     }
                 }
                 gltf.scene.geometry.computeVertexNormals();
@@ -391,7 +397,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
-                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
+                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true, INVERTED_SHADER);
                     }
                 });
                 const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
@@ -415,7 +421,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             wireMesh.scale.set(1000, 1000, 1000); // convert meters -> mm
             if (typeof originOffset !== 'undefined') {
                 gltf.scene.position.set(originOffset.x, originOffset.y, originOffset.z);
-                wireMesh.position.set(originOffset.x, originOffset.y, originOffset.z);
+                wireMesh.position.set(originOffset.x, originOffset.y - 10, originOffset.z);
             }
             if (typeof originRotation !== 'undefined') {
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
@@ -493,24 +499,52 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         return groundPlaneCollider;
     }
 
+    // function isPointInsideCone(p, coneTipPoint, coneDirection, coneHeight, coneBaseRadius) {
+    //     let utils = realityEditor.gui.ar.utilities;
+    //     let cone_dist = utils.dotProduct(utils.subtract(p, coneTipPoint), coneDirection);
+    //     // reject values outside 0 <= cone_dist <= coneHeight
+    //     if (cone_dist < 0 || cone_dist > coneHeight) {
+    //         return false;
+    //     }
+    //     let cone_radius = (cone_dist / coneHeight) * coneBaseRadius;
+    //     // calculate the point's orthogonal distance from the acis to compare against the cone radius
+    //     let ortho_distance = utils.magnitude(utils.subtract(utils.subtract(p, coneTipPoint), utils.scalarMultiply(coneDirection, cone_dist));
+    //     let is_point_inside_cone = ortho_distance < cone_radius;
+    //     return is_point_inside_cone;
+    // }
+
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
             this.lastUpdate = -1;
+            this.materialsById = {};
         }
-        areaTargetVertexShader(center) {
+        // len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
+        // len = length(position - bubble);
+
+        areaTargetVertexShader(_center) {
             return THREE.ShaderChunk.meshphysical_vert
                 .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-    len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
+        cone_dist = dot(position - coneTipPoint, coneDirection);
+        cone_radius = (cone_dist / coneHeight) * coneBaseRadius;
+        orth_dist = length((position - coneTipPoint) - cone_dist * coneDirection);
+        
     `).replace('#include <common>', `#include <common>
-    varying float len;
+    varying float cone_dist;
+    varying float cone_radius;
+    varying float orth_dist;
+    uniform vec3 coneTipPoint;
+    uniform vec3 coneDirection;
+    uniform float coneHeight;
+    uniform float coneBaseRadius;
     `);
         }
         areaTargetFragmentShader(inverted) {
             let condition = 'if (len > maxHeight) discard;';
             if (inverted) {
                 // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
-                condition = 'if (len < maxHeight) discard;';
+                // condition = 'if (len < maxHeight) discard;';
+                condition = 'if (cone_dist > 0.0 && cone_dist < coneHeight && orth_dist < cone_radius) discard;'
             }
             return THREE.ShaderChunk.meshphysical_frag
                 .replace('#include <clipping_planes_fragment>', `
@@ -520,15 +554,25 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 .replace(`#include <common>`, `
                          #include <common>
                          varying float len;
+                         varying float cone_dist;
+                         varying float cone_radius;
+                         varying float orth_dist;
                          uniform float maxHeight;
+                         uniform float coneHeight;
                          `);
         }
+        
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.physical.uniforms,
                 {
                     maxHeight: {value: maxHeight},
+                    // bubble: {value: new THREE.Vector3(0, 0, 0)}
+                    coneTipPoint: {value: new THREE.Vector3(0, 0, 0)},
+                    coneDirection: {value: new THREE.Vector3(1, 0, 0)},
+                    coneHeight: {value: 5.0},
+                    coneBaseRadius: {value: 3.0}
                 }
             ]);
 
@@ -538,7 +582,8 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             if (animateOnLoad) {
                 this.materialsToAnimate.push({
                     material: material,
-                    currentHeight: -15, // -maxHeight,
+                    currentHeight: maxHeight, // -maxHeight,
+                    currentBubble: new THREE.Vector3(0, 0, 0),
                     maxHeight: maxHeight * 4,
                     animationSpeed: 0.02 / 2
                 });
@@ -550,6 +595,11 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
             return material;
         }
+        // setBubbleCenter(materialId, center) {
+        //     if (!this.materialsById[materialId]) return;
+        //    
+        //     this.materialsById[materialId].uniforms['bubble'].value = center;
+        // }
         update() {
             if (this.materialsToAnimate.length === 0) { return; }
 
@@ -563,18 +613,24 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             let indicesToRemove = [];
             this.materialsToAnimate.forEach(function(entry, index) {
                 let material = entry.material;
-                if (entry.currentHeight < entry.maxHeight) {
-                    entry.currentHeight += entry.animationSpeed * dt;
+                // if (entry.currentHeight < entry.maxHeight) {
+                //     entry.currentHeight += entry.animationSpeed * dt;
+                
+                // entry.currentBubble.x = Math.sin(now / 1000);
+                
                     material.uniforms['maxHeight'].value = entry.currentHeight;
-                } else {
-                    indicesToRemove.push(index);
-                }
+                    // material.uniforms['bubble'].value = entry.currentBubble;
+                // console.log('animate: ', material.uniforms['bubble'].value);
+
+                // } else {
+                //     indicesToRemove.push(index);
+                // }
             });
 
-            for (let i = indicesToRemove.length-1; i > 0; i--) {
-                let matIndex = indicesToRemove[i];
-                this.materialsToAnimate.splice(matIndex, 1);
-            }
+            // for (let i = indicesToRemove.length-1; i > 0; i--) {
+            //     let matIndex = indicesToRemove[i];
+            //     this.materialsToAnimate.splice(matIndex, 1);
+            // }
         }
     }
 
