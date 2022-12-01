@@ -389,11 +389,8 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
-    function getWorldPosition(idOrNode) {
-        let sceneNode = idOrNode;
-        if (typeof idOrNode === 'string') {
-            sceneNode = getSceneNodeById(idOrNode);
-        }
+    function getWorldPosition(activeKey) {
+        let sceneNode = getSceneNodeById(activeKey);
         return {
             // TODO: should we normalize all of these by default?
             x: sceneNode.worldMatrix[12]/sceneNode.worldMatrix[15],

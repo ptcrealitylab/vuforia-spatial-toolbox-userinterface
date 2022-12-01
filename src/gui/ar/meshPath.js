@@ -23,11 +23,11 @@ const COMPONENTS_PER_POSITION = 3; // each vertex has 3 position components (x,y
  */
 export class MeshPath extends THREE.Group
 {
-    constructor(path, {width_mm, height_mm, horizontalColor, wallColor, wallBrightness, usePerVertexColors, bottomScale, opacity, colorBlending}) {
+    constructor(path, {widthMm, heightMm, horizontalColor, wallColor, wallBrightness, usePerVertexColors, bottomScale, opacity, colorBlending}) {
         super();
 
-        this.width_mm = width_mm || 10; // 10mm default
-        this.height_mm = height_mm || 10;
+        this.widthMm = widthMm || 10; // 10mm default
+        this.heightMm = heightMm || 10;
         this.horizontalColor = horizontalColor || 0xFFFFFF;
         this.wallColor = wallColor || 0xABABAB;
         this.wallBrightness = wallBrightness || 0.8; // sides are by default a bit darker than the horizontal, to make more visible
@@ -88,7 +88,7 @@ export class MeshPath extends THREE.Group
             const direction = new THREE.Vector3().subVectors(end, start);
             const startTaperFactor = (typeof start.scale !== 'undefined') ? start.scale : 1;
             const endTaperFactor = (typeof end.scale !== 'undefined') ? end.scale : 1;
-            const cross = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(this.width_mm / 2);
+            const cross = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(this.widthMm / 2);
             // Base can be wider to allow visibility while moving along line
             const bottomCross = cross.clone().multiplyScalar(this.bottomScale);
             const vertex = this.createVertexComponents(start, end, cross, bottomCross, startTaperFactor, endTaperFactor);
@@ -144,7 +144,7 @@ export class MeshPath extends THREE.Group
             // Handle bends by adding extra geometry bridging this segment to the next segment
             if (i > 1) {
                 const nextDirection = new THREE.Vector3().subVectors(points[i-2],end);
-                const nextCross = new THREE.Vector3().crossVectors(nextDirection, up).normalize().multiplyScalar(this.width_mm / 2);
+                const nextCross = new THREE.Vector3().crossVectors(nextDirection, up).normalize().multiplyScalar(this.widthMm / 2);
                 const nextBottomCross = nextCross.clone().multiplyScalar(this.bottomScale);
                 const nextVertex = this.createVertexComponents(start, end, nextCross, nextBottomCross, startTaperFactor, endTaperFactor);
 
@@ -262,7 +262,7 @@ export class MeshPath extends THREE.Group
             let taperFactor = startEnd === VERT_PATH.start ? startTaperFactor : endTaperFactor;
             [VERT_PATH.top, VERT_PATH.bottom].forEach((topBottom) => {
                 components[startEnd][topBottom] = {};
-                let heightOffset = topBottom === VERT_PATH.top ? this.height_mm : 0;
+                let heightOffset = topBottom === VERT_PATH.top ? this.heightMm : 0;
                 [VERT_PATH.left, VERT_PATH.right].forEach((leftRight) => {
                     let crossMultiplier = leftRight === VERT_PATH.left ? -1 : 1;
                     components[startEnd][topBottom][leftRight] = {

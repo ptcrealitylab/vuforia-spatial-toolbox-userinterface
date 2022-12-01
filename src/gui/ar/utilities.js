@@ -1372,7 +1372,7 @@ function polyfillWebkitConvertPointFromPageToNode() {
         const SEGMENT_LENGTH = 1000; // arbitrary, just need to calculate one point, so we can compute rayDirection
         let testPoint = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, SEGMENT_LENGTH, rootCoordinateSystem);
 
-        let cameraPoint = realityEditor.sceneGraph.getWorldPosition(cameraNode);
+        let cameraPoint = realityEditor.sceneGraph.getWorldPosition(cameraNode.id);
         let rayOrigin = [cameraPoint.x, cameraPoint.y, cameraPoint.z];
         let rayDirection = normalize(subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
 

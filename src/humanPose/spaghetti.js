@@ -24,10 +24,10 @@ class MeasurementLabel {
         this.container.style.top = (pageY - 10) + 'px'; // slightly offset in y
     }
 
-    updateTextLabel(distance_mm, time_ms) {
+    updateTextLabel(distanceMm, timeMs) {
         // round time and distance to 1 decimal place
-        let distanceMeters = (distance_mm / 1000).toFixed(1);
-        let timeSeconds = (time_ms / 1000).toFixed(1);
+        let distanceMeters = (distanceMm / 1000).toFixed(1);
+        let timeSeconds = (timeMs / 1000).toFixed(1);
         let timeString = '';
         if (timeSeconds > 0) {
             timeString = ' traveled in ' + timeSeconds + 's';
@@ -68,7 +68,7 @@ export class SpaghettiMeshPath extends MeshPath {
         this.pathId = realityEditor.device.utilities.uuidTime();
         this.comparer = new KeyframeComparer();
         this.comparer.setMeshPath(this);
-        this.cursor = this.createCursor(this.width_mm);
+        this.cursor = this.createCursor(this.widthMm);
         this.setupPointerEvents();
         
         this.cursorDestination = null;
@@ -145,7 +145,7 @@ export class SpaghettiMeshPath extends MeshPath {
 
             // snap to halfway point between two endpoints of the selected segment
             let avgX = (closestPoint.x + adjacentPoint.x) / 2;
-            let avgY = ((closestPoint.y + this.height_mm/2) + (adjacentPoint.y + this.height_mm/2)) / 2;
+            let avgY = ((closestPoint.y + this.heightMm/2) + (adjacentPoint.y + this.heightMm/2)) / 2;
             let avgZ = (closestPoint.z + adjacentPoint.z) / 2;
             this.cursorSnapDestination = [avgX, avgY, avgZ];
 
@@ -260,14 +260,14 @@ export class SpaghettiMeshPath extends MeshPath {
                 }
             }
 
-            let distance_mm = this.getDistanceAlongPath(comparer.firstPointIndex, comparer.secondPointIndex);
-            let time_ms = 0;
+            let distanceMm = this.getDistanceAlongPath(comparer.firstPointIndex, comparer.secondPointIndex);
+            let timeMs = 0;
             let firstTimestamp = points[comparer.firstPointIndex].timestamp;
             let secondTimestamp = points[comparer.secondPointIndex].timestamp;
             if (typeof firstTimestamp !== 'undefined' && typeof secondTimestamp !== 'undefined') {
-                time_ms = Math.abs(firstTimestamp - secondTimestamp);
+                timeMs = Math.abs(firstTimestamp - secondTimestamp);
             }
-            this.getMeasurementLabel().updateTextLabel(distance_mm, time_ms);
+            this.getMeasurementLabel().updateTextLabel(distanceMm, timeMs);
             this.getMeasurementLabel().requestVisible(true, this.pathId);
         }
 
