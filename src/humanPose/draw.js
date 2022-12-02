@@ -321,6 +321,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 
     function renderHumanPoseObjects(poseObjects) {
+
+        // MK HACK: to prevent rendering on mobile 
+        //if (!realityEditor.device.environment.requiresMouseEvents()) return;  
+
         if (!historyLineContainer) {
             historyLineContainer = new THREE.Group();
             historyLineContainer.visible = false;
@@ -336,9 +340,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         for (let id in poseRenderers) {
             poseRenderers[id].updated = false;
         }
+ 
         for (let poseObject of poseObjects) {
             renderPose(poseObject);
         }
+    
         for (let id of Object.keys(poseRenderers)) {
             if (!poseRenderers[id].updated) {
                 poseRenderers[id].removeFromScene();

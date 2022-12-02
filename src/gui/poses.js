@@ -186,6 +186,8 @@ exports.drawPoses = function(poses, imageSize) {
             let tmp = x; x = y; y = tmp;
         }
 
+        gfx.fillStyle = `hsl(180, 100%, ${point.score * 50.0}%`;
+        //gfx.strokeStyle = '#00ffff';
         gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
         gfx.fill();
         // gfx.fillText(`${Math.round(point.depth * 100) / 100}`, x + jointSize, y - jointSize);
@@ -195,6 +197,10 @@ exports.drawPoses = function(poses, imageSize) {
             debug = false;
         }
     }
+
+    gfx.fillStyle = '#00ffff';
+    gfx.strokeStyle = '#00ffff';
+    gfx.lineWidth = 4;
 
     gfx.beginPath();
     for (let conn of JOINT_CONNECTIONS) {
