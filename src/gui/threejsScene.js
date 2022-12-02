@@ -493,6 +493,147 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         return groundPlaneCollider;
     }
 
+    const GEO = Object.freeze({
+        TOP: 0,
+        BOTTOM: 1,
+        LEFT: 2,
+        RIGHT: 3,
+        NEARP: 4,
+        FARP: 5
+    });
+    const ANG2RAD = 3.14159265358979323846/180.0;
+    
+    class PlaneGeo {
+        constructor() {
+            this.utils = realityEditor.gui.ar.utilities;
+        }
+        /**
+         * Assumes points are given in clockwise order
+         * @param p1
+         * @param p2
+         * @param p3
+         */
+        setPoints(p1, p2, p3) {
+            let utils = this.utils;
+            this.p1 = p1;
+            this.p2 = p2;
+            this.p3 = p3;
+            
+            // plane is defined by Ax + By + Cz + D = 0
+            // given p1, p2, p3 (three points on the plane) we can compute A, B, C, and D
+            let v = utils.subtract(p2, p1);
+            let u = utils.subtract(p3, p1);
+            this.normal = utils.normalize(utils.crossProduct(v, u));
+            this.A = this.normal[0];
+            this.B = this.normal[1];
+            this.C = this.normal[2];
+            this.D = -1 * utils.dotProduct(this.normal, p1);
+            return this;
+        }
+        setNormalAndPoint(normal, point) {
+            this.normal = normal;
+            this.point = point;
+            return this;
+        }
+        // returns signed distance
+        distance(p) {
+            let utils = this.utils;
+            // let distance = this.A * p[0] + this.B * p[1] + this.C * p[2] + D
+            return utils.dotProduct(this.normal, p) + this.D;
+        }
+    }
+    
+    // http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-implementation/
+    class FrustumGeo {
+        constructor() {
+            this.utils = realityEditor.gui.ar.utilities;
+            this.planes = [];
+        }
+        setCameraInternals(angle, ratio, nearD, farD) {
+            // store the information
+            this.ratio = ratio;
+            this.angle = angle;
+            this.nearD = nearD;
+            this.farD = farD;
+
+            // compute width and height of the near and far plane sections
+            let tang = Math.tan(ANG2RAD * angle * 0.5) ;
+            this.nh = nearD * tang;
+            this.nw = this.nh * ratio;
+            this.fh = farD  * tang;
+            this.fw = this.fh * ratio;
+        }
+        setCameraDef(p, l, u) {
+            let dir,nc,fc,X,Y,Z;
+            let utils = this.utils;
+
+            // compute the Z axis of camera
+            // this axis points in the opposite direction from
+            // the looking direction
+            Z = utils.subtract(p, l);
+            Z = utils.normalize(Z);
+
+            // X axis of camera with given "up" vector and Z axis
+            X = utils.crossProduct(u, Z);
+            X = utils.normalize(X);
+
+            // the real "up" vector is the cross product of Z and X
+            Y = utils.crossProduct(Z, X);
+
+            // compute the centers of the near and far planes
+            nc = utils.subtract(p, utils.scalarMultiply(Z, this.nearD));
+            fc = utils.subtract(p, utils.scalarMultiply(Z, this.farD));
+
+            // compute the 4 corners of the frustum on the near plane
+            let nearScaledX = utils.scalarMultiply(X, this.nw);
+            let nearScaledY = utils.scalarMultiply(Y, this.nh);
+            this.ntl = utils.subtract(utils.add(nc, nearScaledY), nearScaledX);
+            this.ntr = utils.add(utils.add(nc, nearScaledY), nearScaledX);
+            this.nbl = utils.subtract(utils.subtract(nc, nearScaledY), nearScaledX);
+            this.nbr = utils.add(utils.subtract(nc, nearScaledY), nearScaledX);
+
+            // compute the 4 corners of the frustum on the far plane
+            let farScaledX = utils.scalarMultiply(X, this.fw);
+            let farScaledY = utils.scalarMultiply(Y, this.fh);
+            this.ftl = utils.subtract(utils.add(fc, farScaledY), farScaledX);
+            this.ftr = utils.add(utils.add(fc, farScaledY), farScaledX);
+            this.fbl = utils.subtract(utils.subtract(fc, farScaledY), farScaledX);
+            this.fbr = utils.add(utils.subtract(fc, farScaledY), farScaledX);
+
+            // compute the six planes
+            // the function set3Points assumes that the points
+            // are given in counter clockwise order
+            this.planes[GEO.TOP] = new PlaneGeo().setPoints(this.ntr, this.ntl, this.ftl);
+            this.planes[GEO.BOTTOM] = new PlaneGeo().setPoints(this.nbl, this.nbr, this.fbr);
+            this.planes[GEO.LEFT] = new PlaneGeo().setPoints(this.ntl, this.nbl, this.fbl);
+            this.planes[GEO.RIGHT] = new PlaneGeo().setPoints(this.nbr, this.ntr, this.fbr);
+            this.planes[GEO.NEARP] = new PlaneGeo().setPoints(this.ntl, this.ntr, this.nbr);
+            this.planes[GEO.FARP] = new PlaneGeo().setPoints(this.ftr, this.ftl, this.fbl);
+            
+            // TODO: replace with setNormalAndPoint implementation
+        }
+        isPointInFrustum(p) {
+            for (let i = 0; i < 6; i++) {
+                if (this.planes[i].distance(p) < 0) {
+                    return false; // outside
+                }
+            }
+            return true; // inside
+        }
+    }
+
+    let cullingFrustum = new FrustumGeo();
+    const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
+    const widthToHeightRatio = 9/16; // window.innerWidth / window.innerHeight;
+    cullingFrustum.setCameraInternals(iPhoneVerticalFOV, widthToHeightRatio, 10, 5000);
+
+    let cameraPosition = [0, 0, 0];
+    let cameraForward = [1, 0, 0];
+    let cameraUp = [0, 1, 0];
+    cullingFrustum.setCameraDef(cameraPosition, cameraForward, cameraUp);
+
+    window.cullingFrustum = cullingFrustum;
+
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
