@@ -542,6 +542,171 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             return utils.dotProduct(this.normal, p) + this.D;
         }
     }
+
+    const coneVertexShader = function() {
+        return THREE.ShaderChunk.meshphysical_vert
+            .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+    len = length(position - vec3(${center.x}, ${center.y}, ${center.z})); // is point within loading radius
+    cone_dist = dot(position - coneTipPoint, coneDirection); // is point inside cone: https://stackoverflow.com/a/12826333
+    cone_radius = (cone_dist / coneHeight) * coneBaseRadius;
+    orth_dist = length((position - coneTipPoint) - cone_dist * coneDirection);
+    `).replace('#include <common>', `#include <common>
+    varying float len; // calculates this for initial loading animation
+    varying float cone_dist;
+    varying float cone_radius;
+    varying float orth_dist;
+    uniform vec3 coneTipPoint; // pass in the position of a camera
+    uniform vec3 coneDirection; // pass in the direction of the camera
+    uniform float coneHeight; // how far the cone extends, e.g. LiDAR has 5.0 meter range
+    uniform float coneBaseRadius; // radius in meters at base of cone. radius/height relates to camera FoV
+    `);
+    }
+    
+    const coneFragmentShader = function(inverted) {
+        let condition = 'if (len > maxHeight) discard;';
+        if (inverted) {
+            // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
+            condition = 'if (len < maxHeight) discard;';
+        }
+        condition += `
+            if (cone_dist > 0.0 && cone_dist < coneHeight && orth_dist < cone_radius) discard;`
+        return THREE.ShaderChunk.meshphysical_frag
+            .replace('#include <clipping_planes_fragment>', `
+                         ${condition}
+
+                         #include <clipping_planes_fragment>`)
+            .replace(`#include <common>`, `
+                         #include <common>
+                         varying float len;
+                         uniform float maxHeight;
+                         uniform float coneHeight;
+                         varying float cone_dist;
+                         varying float cone_radius;
+                         varying float orth_dist;
+                         `);
+    }
+
+    const cullingVertexShader = function() {
+        return THREE.ShaderChunk.meshphysical_vert
+            .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+            
+    #define ANG2RAD 3.14159265358979323846/180.0
+    // vec3 getPlaneNormal(vec3 p0, vec3 p1, vec3 p2);
+    
+    // compute width and height of the near and far plane sections
+    float tang = tan(ANG2RAD * angle * 0.5);
+    nh = nearD * tang;
+    nw = nh * ratio;
+    fh = farD * tang;
+    fw = fh * ratio;
+    
+    // compute the Z axis of camera
+    vec3 Z = normalize(p - l);
+    // X axis of camera with given "up" vector and Z axis
+    vec3 X = normalize(cross(u, Z));
+    // the real "up" vector is the cross product of Z and X
+    vec3 Y = cross(Z, X);
+    
+    // compute the centers of the near and far planes
+    vec3 nc = p - Z * nearD;
+    vec3 fc = p - Z * farD;
+    
+    // compute the 4 corners of the frustum on the near plane
+    vec3 ntl = nc + Y * nh - X * nw;
+    vec3 ntr = nc + Y * nh + X * nw;
+    vec3 nbl = nc - Y * nh - X * nw;
+    vec3 nbr = nc - Y * nh + X * nw;
+
+    // compute the 4 corners of the frustum on the far plane
+    vec3 ftl = fc + Y * fh - X * fw;
+    vec3 ftr = fc + Y * fh + X * fw;
+    vec3 fbl = fc - Y * fh - X * fw;
+    vec3 fbr = fc - Y * fh + X * fw;
+    
+    // compute the six planes
+    
+    vec3 normal1 = getPlaneNormal(ntr, ntl, ftl);
+    vec3 normal2 = getPlaneNormal(nbl, nbr, fbr);
+    vec3 normal3 = getPlaneNormal(ntl, nbl, fbl);
+    vec3 normal4 = getPlaneNormal(nbr, ntr, fbr);
+    vec3 normal5 = getPlaneNormal(ntl, ntr, nbr);
+    vec3 normal6 = getPlaneNormal(ftr, ftl, fbl);
+    
+    float D1 = getPlaneD(normal1, ntr);
+    float D2 = getPlaneD(normal2, nbl);
+    float D3 = getPlaneD(normal3, ntl);
+    float D4 = getPlaneD(normal4, nbr);
+    float D5 = getPlaneD(normal5, ntl);
+    float D6 = getPlaneD(normal6, ftr);
+    
+    bool inside1 = isInside(normal1, D1, position);
+    bool inside2 = isInside(normal2, D2, position);
+    bool inside3 = isInside(normal3, D3, position);
+    bool inside4 = isInside(normal4, D4, position);
+    bool inside5 = isInside(normal5, D5, position);
+    bool inside6 = isInside(normal6, D6, position);
+    
+    inside = 0.0;
+    if (inside1 && inside2 && inside3 && inside4 && inside5 && inside6) inside = 1.0;
+     
+    `).replace('#include <common>', `#include <common>
+    
+    uniform float angle; // vertical FoV
+    uniform float ratio; // width/height
+    uniform float nearD; // near plane distance
+    uniform float farD; // far plane distance
+    uniform vec3 p; // camera origin
+    uniform vec3 l; // camera forward vector
+    uniform vec3 u; // camera up vector
+    varying float nh;
+    varying float nw;
+    varying float fh;
+    varying float fw;
+    varying float inside;
+    
+    vec3 getPlaneNormal(vec3 p0, vec3 p1, vec3 p2)
+    {
+        vec3 v = p1 - p0;
+        vec3 u = p2 - p0;
+        return normalize(cross(v, u));
+    }
+    
+    float getPlaneD(vec3 normal, vec3 p0)
+    {
+        return -1.0 * dot(normal, p0);
+    }
+        
+    bool isInside(vec3 normal, float D, vec3 point)
+    {
+        return dot(normal, point) + D > 0.0;
+    }
+    
+    `);
+    }
+    
+    const cullingFragmentShader = function() {
+        let condition = 'if (inside > 0.5) discard;'
+        return THREE.ShaderChunk.meshphysical_frag
+            .replace('#include <clipping_planes_fragment>', `
+                         ${condition}
+
+                         #include <clipping_planes_fragment>`)
+            .replace(`#include <common>`, `
+                         #include <common>
+    uniform float angle; // vertical FoV
+    uniform float ratio; // width/height
+    uniform float nearD; // near plane distance
+    uniform float farD; // far plane distance
+    uniform vec3 p; // camera origin
+    uniform vec3 l; // camera forward vector
+    uniform vec3 u; // camera up vector
+    varying float nh;
+    varying float nw;
+    varying float fh;
+    varying float fw;
+    varying float inside;
+                         `);
+    }
     
     // http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-implementation/
     class FrustumGeo {
@@ -639,46 +804,13 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             this.materialsToAnimate = [];
             this.lastUpdate = -1;
         }
-        areaTargetVertexShader(center) {
-            return THREE.ShaderChunk.meshphysical_vert
-                .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-    len = length(position - vec3(${center.x}, ${center.y}, ${center.z})); // is point within loading radius
-    cone_dist = dot(position - coneTipPoint, coneDirection); // is point inside cone: https://stackoverflow.com/a/12826333
-    cone_radius = (cone_dist / coneHeight) * coneBaseRadius;
-    orth_dist = length((position - coneTipPoint) - cone_dist * coneDirection);
-    `).replace('#include <common>', `#include <common>
-    varying float len; // calculates this for initial loading animation
-    varying float cone_dist;
-    varying float cone_radius;
-    varying float orth_dist;
-    uniform vec3 coneTipPoint; // pass in the position of a camera
-    uniform vec3 coneDirection; // pass in the direction of the camera
-    uniform float coneHeight; // how far the cone extends, e.g. LiDAR has 5.0 meter range
-    uniform float coneBaseRadius; // radius in meters at base of cone. radius/height relates to camera FoV
-    `);
+        areaTargetVertexShader(_center) {
+            // return coneVertexShader();
+            return cullingVertexShader(); 
         }
-        areaTargetFragmentShader(inverted) {
-            let condition = 'if (len > maxHeight) discard;';
-            if (inverted) {
-                // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
-                condition = 'if (len < maxHeight) discard;';
-            }
-            condition += `
-            if (cone_dist > 0.0 && cone_dist < coneHeight && orth_dist < cone_radius) discard;`
-            return THREE.ShaderChunk.meshphysical_frag
-                .replace('#include <clipping_planes_fragment>', `
-                         ${condition}
-
-                         #include <clipping_planes_fragment>`)
-                .replace(`#include <common>`, `
-                         #include <common>
-                         varying float len;
-                         uniform float maxHeight;
-                         uniform float coneHeight;
-                         varying float cone_dist;
-                         varying float cone_radius;
-                         varying float orth_dist;
-                         `);
+        areaTargetFragmentShader(_inverted) {
+            // return coneFragmentShader();
+            return cullingFragmentShader();
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
@@ -686,10 +818,28 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 THREE.ShaderLib.physical.uniforms,
                 {
                     maxHeight: {value: maxHeight},
-                    coneHeight: {value: 0.0}, // set height >0 and radius >0 when a virtualizer connects to begin the effect
-                    coneBaseRadius: {value: 0.0},
-                    coneTipPoint: {value: new THREE.Vector3(0, 0, 0)},
-                    coneDirection: {value: new THREE.Vector3(1, 0, 0)}
+                    
+                    // coneHeight: {value: 0.0}, // set height >0 and radius >0 when a virtualizer connects to begin the effect
+                    // coneBaseRadius: {value: 0.0},
+                    // coneTipPoint: {value: new THREE.Vector3(0, 0, 0)},
+                    // coneDirection: {value: new THREE.Vector3(1, 0, 0)}
+
+                    angle: {value: 41.22673},
+                    ratio: {value: 9/16},
+                    nearD: {value: 0.1},
+                    farD: {value: 5},
+                    p: {value: new THREE.Vector3(0, 0, 0)},
+                    l: {value: new THREE.Vector3(1, 0, 0)},
+                    u: {value: new THREE.Vector3(0, 1, 0)}
+                    
+                    
+                    // uniform float angle; // vertical FoV
+                    // uniform float ratio; // width/height
+                    // uniform float nearD; // near plane distance
+                    // uniform float farD; // far plane distance
+                    // uniform vec3 p; // camera origin
+                    // uniform vec3 l; // camera forward vector
+                    // uniform vec3 u; // camera up vector
                 }
             ]);
 
@@ -728,8 +878,10 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                     entry.currentHeight += entry.animationSpeed * dt;
                     material.uniforms['maxHeight'].value = entry.currentHeight;
                 } else {
-                    indicesToRemove.push(index);
+                    // indicesToRemove.push(index);
                 }
+                
+                // material.uniforms['p'].value.y = Math.sin(now / 1000);
             });
 
             for (let i = indicesToRemove.length-1; i > 0; i--) {
