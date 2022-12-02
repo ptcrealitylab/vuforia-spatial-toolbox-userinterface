@@ -501,9 +501,19 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         areaTargetVertexShader(center) {
             return THREE.ShaderChunk.meshphysical_vert
                 .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-    len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
+    len = length(position - vec3(${center.x}, ${center.y}, ${center.z})); // is point within loading radius
+    cone_dist = dot(position - coneTipPoint, coneDirection); // is point inside cone: https://stackoverflow.com/a/12826333
+    cone_radius = (cone_dist / coneHeight) * coneBaseRadius;
+    orth_dist = length((position - coneTipPoint) - cone_dist * coneDirection);
     `).replace('#include <common>', `#include <common>
-    varying float len;
+    varying float len; // calculates this for initial loading animation
+    varying float cone_dist;
+    varying float cone_radius;
+    varying float orth_dist;
+    uniform vec3 coneTipPoint; // pass in the position of a camera
+    uniform vec3 coneDirection; // pass in the direction of the camera
+    uniform float coneHeight; // how far the cone extends, e.g. LiDAR has 5.0 meter range
+    uniform float coneBaseRadius; // radius in meters at base of cone. radius/height relates to camera FoV
     `);
         }
         areaTargetFragmentShader(inverted) {
@@ -512,6 +522,8 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
                 condition = 'if (len < maxHeight) discard;';
             }
+            condition += `
+            if (cone_dist > 0.0 && cone_dist < coneHeight && orth_dist < cone_radius) discard;`
             return THREE.ShaderChunk.meshphysical_frag
                 .replace('#include <clipping_planes_fragment>', `
                          ${condition}
@@ -521,6 +533,10 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                          #include <common>
                          varying float len;
                          uniform float maxHeight;
+                         uniform float coneHeight;
+                         varying float cone_dist;
+                         varying float cone_radius;
+                         varying float orth_dist;
                          `);
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
@@ -529,6 +545,10 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 THREE.ShaderLib.physical.uniforms,
                 {
                     maxHeight: {value: maxHeight},
+                    coneHeight: {value: 0.0}, // set height >0 and radius >0 when a virtualizer connects to begin the effect
+                    coneBaseRadius: {value: 0.0},
+                    coneTipPoint: {value: new THREE.Vector3(0, 0, 0)},
+                    coneDirection: {value: new THREE.Vector3(1, 0, 0)}
                 }
             ]);
 
