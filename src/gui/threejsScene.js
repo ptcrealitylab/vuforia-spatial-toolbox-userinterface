@@ -543,7 +543,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         }
     }
 
-    const coneVertexShader = function() {
+    const coneVertexShader = function(center) {
         return THREE.ShaderChunk.meshphysical_vert
             .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
     len = length(position - vec3(${center.x}, ${center.y}, ${center.z})); // is point within loading radius
@@ -584,6 +584,68 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                          varying float cone_radius;
                          varying float orth_dist;
                          `);
+    }
+    
+    const optimizedCullingVertexShader = function() {
+        return THREE.ShaderChunk.meshphysical_vert
+            .replace('#define STANDARD', `#define STANDARD
+            // #define USE_TRANSMISSION
+            `)
+            .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+            
+            // gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    // orth_dist = length((position - coneTipPoint) - cone_dist * coneDirection);
+    
+        vPosition = position.xyz;
+            
+    `).replace('#include <common>', `#include <common>
+    // varying float len; // calculates this for initial loading animation
+    // uniform vec3 coneTipPoint; // pass in the position of a camera
+        varying vec3 vPosition;
+
+    `);
+    }
+    
+    const optimizedCullingFragmentShader = function() {
+        let condition = `
+    bool inside1 = isInside(normal1, D1, vPosition);
+    bool inside2 = isInside(normal2, D2, vPosition);
+    bool inside3 = isInside(normal3, D3, vPosition);
+    bool inside4 = isInside(normal4, D4, vPosition);
+    bool inside5 = isInside(normal5, D5, vPosition);
+    bool inside6 = isInside(normal6, D6, vPosition);
+    
+    if (inside1 && inside2 && inside3 && inside4 && inside5 && inside6) discard;
+    `;
+        // 'if (inside > 0.5) discard;'
+        return THREE.ShaderChunk.meshphysical_frag
+            .replace('#include <clipping_planes_fragment>', `
+                         ${condition}
+
+                         #include <clipping_planes_fragment>`)
+            .replace(`#include <common>`, `
+                         #include <common>
+    
+    uniform vec3 normal1;
+    uniform vec3 normal2;
+    uniform vec3 normal3;
+    uniform vec3 normal4;
+    uniform vec3 normal5;
+    uniform vec3 normal6;
+    uniform float D1;
+    uniform float D2;
+    uniform float D3;
+    uniform float D4;
+    uniform float D5;
+    uniform float D6;
+    // varying vec3 vWorldPosition;
+    varying vec3 vPosition;
+    
+    bool isInside(vec3 normal, float D, vec3 point)
+    {
+        return dot(normal, point) + D > 0.0;
+    }
+    `);
     }
 
     const cullingVertexShader = function() {
@@ -789,8 +851,8 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
     let cullingFrustum = new FrustumGeo();
     const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
-    const widthToHeightRatio = 9/16; // window.innerWidth / window.innerHeight;
-    cullingFrustum.setCameraInternals(iPhoneVerticalFOV, widthToHeightRatio, 10, 5000);
+    const widthToHeightRatio = 16/9; // window.innerWidth / window.innerHeight;
+    cullingFrustum.setCameraInternals(iPhoneVerticalFOV, widthToHeightRatio, 10/1000, 5000/1000);
 
     let cameraPosition = [0, 0, 0];
     let cameraForward = [1, 0, 0];
@@ -798,6 +860,28 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     cullingFrustum.setCameraDef(cameraPosition, cameraForward, cameraUp);
 
     window.cullingFrustum = cullingFrustum;
+    
+    exports.updateFrustum = function(cameraPosition, cameraForward, cameraUp) {
+        // let posVec = [cameraPosition.x, cameraPosition.y, cameraPosition.z];
+        // let forwardVec = [cameraForward.x, cameraForward.y, cameraForward.z];
+        // let upVec = [cameraUp.x, cameraUp.y, cameraUp.z];
+        // cullingFrustum.setCameraDef(posVec, forwardVec, upVec);
+        cullingFrustum.setCameraDef(cameraPosition, cameraForward, cameraUp);
+        return {
+            normal1: cullingFrustum.planes[0].normal,
+            normal2: cullingFrustum.planes[1].normal,
+            normal3: cullingFrustum.planes[2].normal,
+            normal4: cullingFrustum.planes[3].normal,
+            normal5: cullingFrustum.planes[4].normal,
+            normal6: cullingFrustum.planes[5].normal,
+            D1: cullingFrustum.planes[0].D,
+            D2: cullingFrustum.planes[1].D,
+            D3: cullingFrustum.planes[2].D,
+            D4: cullingFrustum.planes[3].D,
+            D5: cullingFrustum.planes[4].D,
+            D6: cullingFrustum.planes[5].D,
+        }
+    }
 
     class CustomMaterials {
         constructor() {
@@ -806,11 +890,17 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         }
         areaTargetVertexShader(_center) {
             // return coneVertexShader();
-            return cullingVertexShader(); 
+            // return cullingVertexShader(); 
+            let shader = optimizedCullingVertexShader();
+            console.log(shader);
+            return shader;
         }
         areaTargetFragmentShader(_inverted) {
             // return coneFragmentShader();
-            return cullingFragmentShader();
+            // return cullingFragmentShader();
+            let shader = optimizedCullingFragmentShader();
+            console.log(shader);
+            return shader;
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
@@ -824,15 +914,27 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                     // coneTipPoint: {value: new THREE.Vector3(0, 0, 0)},
                     // coneDirection: {value: new THREE.Vector3(1, 0, 0)}
 
-                    angle: {value: 41.22673},
-                    ratio: {value: 9/16},
-                    nearD: {value: 0.1},
-                    farD: {value: 5},
-                    p: {value: new THREE.Vector3(0, 0, 0)},
-                    l: {value: new THREE.Vector3(1, 0, 0)},
-                    u: {value: new THREE.Vector3(0, 1, 0)}
-                    
-                    
+                    // angle: {value: 41.22673},
+                    // ratio: {value: 9/16},
+                    // nearD: {value: 0.1},
+                    // farD: {value: 5},
+                    // p: {value: new THREE.Vector3(0, 0, 0)},
+                    // l: {value: new THREE.Vector3(1, 0, 0)},
+                    // u: {value: new THREE.Vector3(0, 1, 0)}
+
+                    normal1: {value: new THREE.Vector3(1, 0, 0)},
+                    normal2: {value: new THREE.Vector3(1, 0, 0)},
+                    normal3: {value: new THREE.Vector3(1, 0, 0)},
+                    normal4: {value: new THREE.Vector3(1, 0, 0)},
+                    normal5: {value: new THREE.Vector3(1, 0, 0)},
+                    normal6: {value: new THREE.Vector3(1, 0, 0)},
+                    D1: {value: 0.0},
+                    D2: {value: 0.0},
+                    D3: {value: 0.0},
+                    D4: {value: 0.0},
+                    D5: {value: 0.0},
+                    D6: {value: 0.0}
+
                     // uniform float angle; // vertical FoV
                     // uniform float ratio; // width/height
                     // uniform float nearD; // near plane distance
