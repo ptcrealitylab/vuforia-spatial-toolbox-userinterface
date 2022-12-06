@@ -27,7 +27,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
 
-    const DISPLAY_ORIGIN_BOX = true;
+    const DISPLAY_ORIGIN_BOX = false;
 
     let customMaterials;
 
@@ -87,7 +87,7 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
         renderScene(); // update loop
 
         if (DISPLAY_ORIGIN_BOX) {
-            realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
+            realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', true, function(newValue) {
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
@@ -170,9 +170,9 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
                     const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
                     const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
-                    xBox.position.x = 15;
-                    yBox.position.y = 15;
-                    zBox.position.z = 15;
+                    xBox.position.x = 100;
+                    yBox.position.y = 100;
+                    zBox.position.z = 100;
                     group.add(originBox);
                     originBox.scale.set(10,10,10);
                     originBox.add(xBox);
@@ -361,10 +361,11 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;
-            let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
+            let wireMaterial = //customMaterials.areaTargetMaterialWithTextureAndHeight(
+                new THREE.MeshStandardMaterial({
                 wireframe: true,
                 color: 0x777777,
-            }), maxHeight, center, true, true);
+            });//, maxHeight, center, true, true);
 
             if (gltf.scene.geometry) {
                 if (typeof maxHeight !== 'undefined') {
@@ -422,10 +423,27 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
+            // let debugGeo = new THREE.BoxGeometry(5000, 10, 5000);
+            //
+            //
+            // let divisions = 5;
+            // let modifier = new THREE.SubdivisionModifier(divisions);
+            //
+            // let newDebugGeo = modifier.modify(debugGeo);
+            //
+            // let sourceMat = new THREE.MeshStandardMaterial({
+            //     color: 0x777777,
+            // });
+            // let debugMat = customMaterials.areaTargetMaterialWithTextureAndHeight(sourceMat, maxHeight, center, true);
+            //
+            // let cube = new THREE.Mesh(newDebugGeo, debugMat);
+            // window.debugCube = cube;
+            // threejsContainerObj.add(cube);
+
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
                 threejsContainerObj.remove(wireMesh);
-            }, 10000);
+            }, 100);
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
@@ -608,14 +626,15 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     
     const optimizedCullingFragmentShader = function() {
         let condition = `
-    bool inside1 = isInside(normal1, D1, vPosition);
-    bool inside2 = isInside(normal2, D2, vPosition);
-    bool inside3 = isInside(normal3, D3, vPosition);
-    bool inside4 = isInside(normal4, D4, vPosition);
-    bool inside5 = isInside(normal5, D5, vPosition);
-    bool inside6 = isInside(normal6, D6, vPosition);
+    bool inside1 = isInside(normal1, D1, vPosition); // top (when un-rotated)
+    bool inside2 = isInside(normal2, D2, vPosition); // bottom
+    bool inside3 = isInside(normal3, D3, vPosition); // left
+    bool inside4 = isInside(normal4, D4, vPosition); // right (when un-rotated)
+    bool inside5 = isInside(normal5, D5, vPosition); // near
+    bool inside6 = isInside(normal6, D6, vPosition); // far
     
     if (inside1 && inside2 && inside3 && inside4 && inside5 && inside6) discard;
+    // if (inside1 && inside2 && inside3 && inside4 && inside6) discard;
     `;
         // 'if (inside > 0.5) discard;'
         return THREE.ShaderChunk.meshphysical_frag
@@ -623,6 +642,18 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                          ${condition}
 
                          #include <clipping_planes_fragment>`)
+            // .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `vec4 diffuseColor = vec4( diffuse, opacity );
+            // if (!inside5) diffuseColor.x = 1.0; //vec4(1.0, 0.0, 0.0, 1.0);
+            // if (!inside3) diffuseColor.y = 1.0; //vec4(1.0, 0.0, 0.0, 1.0);
+            // if (!inside4) diffuseColor.z = 1.0; //vec4(1.0, 0.0, 0.0, 1.0);
+            //
+            // `)
+            .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+            // gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
+            // if (inside5 && inside6) gl_FragColor.x = 1.0;
+            // if (inside1 && inside2 && inside3 && inside4) gl_FragColor.y = 1.0;
+            // if (!inside4) gl_FragColor.z = 1.0;
+            `)
             .replace(`#include <common>`, `
                          #include <common>
     
@@ -850,13 +881,15 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
     }
 
     let cullingFrustum = new FrustumGeo();
+    const iPhoneHorizontalFOX = 73.29196; // https://discussions.apple.com/thread/250970597
     const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
-    const widthToHeightRatio = 16/9; // window.innerWidth / window.innerHeight;
-    cullingFrustum.setCameraInternals(iPhoneVerticalFOV, widthToHeightRatio, 10/1000, 5000/1000);
+    const widthToHeightRatio = 1920/1080; // 16/9; // window.innerWidth / window.innerHeight;
+    const MAX_DIST = 5500;
+    cullingFrustum.setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, 10/1000, MAX_DIST/1000);
 
-    let cameraPosition = [0, 0, 0];
-    let cameraForward = [1, 0, 0];
-    let cameraUp = [0, 1, 0];
+    let cameraPosition = [0.05608870697021484, 0.38426324701309217, 0.4168415222167969]; // [0, 0, 0];
+    let cameraForward = [-0.05006729596487764, -0.10317421216363985, 0.9934024098114408]; // [1, 0, 0];
+    let cameraUp = [-0.9983388996355061, 0.033561153354058376, -0.04683044373174655]; // [0, 1, 0];
     cullingFrustum.setCameraDef(cameraPosition, cameraForward, cameraUp);
 
     window.cullingFrustum = cullingFrustum;
@@ -882,6 +915,11 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
             D6: cullingFrustum.planes[5].D,
         }
     }
+    
+    const startTime = Date.now();
+    window.dx = 0;
+    window.dy = 0;
+    window.dz = 0;
 
     class CustomMaterials {
         constructor() {
@@ -922,18 +960,19 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                     // l: {value: new THREE.Vector3(1, 0, 0)},
                     // u: {value: new THREE.Vector3(0, 1, 0)}
 
-                    normal1: {value: new THREE.Vector3(1, 0, 0)},
-                    normal2: {value: new THREE.Vector3(1, 0, 0)},
-                    normal3: {value: new THREE.Vector3(1, 0, 0)},
-                    normal4: {value: new THREE.Vector3(1, 0, 0)},
-                    normal5: {value: new THREE.Vector3(1, 0, 0)},
-                    normal6: {value: new THREE.Vector3(1, 0, 0)},
-                    D1: {value: 0.0},
-                    D2: {value: 0.0},
-                    D3: {value: 0.0},
-                    D4: {value: 0.0},
-                    D5: {value: 0.0},
-                    D6: {value: 0.0}
+                    
+                    normal1: {value: {x: -0.180438255839729, y: -0.15260992462598252, z: -0.971674969696744}}, //{value: new THREE.Vector3(1, 0, 0)},
+                    normal2: {value: {x: 0.7361757787476327, y: -0.14757905544534186, z: 0.6605040841502627}}, //{value: new THREE.Vector3(1, 0, 0)},
+                    normal3: {value: {x: 0.1307110390731121, y: -0.9889208318402299, z: -0.07035774738331892}}, //{value: new THREE.Vector3(1, 0, 0)},
+                    normal4: {value: {x: 0.746742998841211, y: 0.5149524171780162, z: -0.4209499990784577}}, // {value: new THREE.Vector3(1, 0, 0)},
+                    normal5: {value: {x: 0.7892653854919476, y: -0.42633214658008856, z: -0.4419287861824135}}, // {value: new THREE.Vector3(1, 0, 0)},
+                    normal6: {value: {x: -0.7892653854919454, y: 0.42633214658008767, z: 0.4419287861824182}}, // {value: new THREE.Vector3(1, 0, 0)},
+                    D1: {value: 0.2007508513352633},
+                    D2: {value: 0.18232710157441373},
+                    D3: {value: 0.6000431442173823},
+                    D4: {value: 0.004798679055097274},
+                    D5: {value: 0.534052103220726},
+                    D6: {value: 4.455947896779274}
 
                     // uniform float angle; // vertical FoV
                     // uniform float ratio; // width/height
@@ -984,6 +1023,70 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
                 }
                 
                 // material.uniforms['p'].value.y = Math.sin(now / 1000);
+                
+                window.DO_ANIMATE = false;
+                
+                if (window.DO_ANIMATE) {
+
+                    // let cameraPos = [now / 5000, 0, 0];
+                    // let cameraDirection = [1, 0, 0];
+                    // let cameraUp = [0, 1, 0];
+                    let cosT = Math.cos(now / 1000);
+                    let sinT = Math.sin(now / 1000);
+
+                    // let cameraPosition = [0.05608870697021484, 0, 0.4168415222167969]; // [0, 0, 0];
+                    // let cameraPosition = [0.05608870697021484 + window.dx, window.dy, 0.4168415222167969 + window.dz]; // [0, 0, 0];
+                    let cameraPosition = [0, 0, (Date.now()-startTime)/3000]; // [0, 0, 0];
+                    
+                    let cameraForward = realityEditor.gui.ar.utilities.add(cameraPosition, [cosT, 0, sinT]); //[-0.05006729596487764, -0.10317421216363985, 0.9934024098114408]; // [1, 0, 0];
+                    
+                    let cameraUp = [-1, 0, 0]; //[-0.9983388996355061, 0.033561153354058376, -0.04683044373174655]; // [0, 1, 0];
+                    // cullingFrustum.setCameraDef(cameraPosition, cameraForward, cameraUp);
+
+                    let frustumPlanes = realityEditor.gui.threejsScene.updateFrustum(cameraPosition, cameraForward, cameraUp);
+
+                    const UNIFORMS = Object.freeze({
+                        coneTipPoint: 'coneTipPoint',
+                        coneDirection: 'coneDirection',
+                        coneHeight: 'coneHeight',
+                        coneBaseRadius: 'coneBaseRadius',
+                        p: 'p',
+                        l: 'l',
+                        u: 'u',
+                        normal1: 'normal1',
+                        normal2: 'normal2',
+                        normal3: 'normal3',
+                        normal4: 'normal4',
+                        normal5: 'normal5',
+                        normal6: 'normal6',
+                        D1: 'D1',
+                        D2: 'D2',
+                        D3: 'D3',
+                        D4: 'D4',
+                        D5: 'D5',
+                        D6: 'D6'
+                    });
+                    const SCALE = 1000;
+
+                    function array3ToXYZ(arr3) {
+                        return new THREE.Vector3(arr3[0], arr3[1], arr3[2]);
+                    }
+
+                    material.uniforms[UNIFORMS.normal1].value = array3ToXYZ(frustumPlanes.normal1);
+                    material.uniforms[UNIFORMS.normal2].value = array3ToXYZ(frustumPlanes.normal2);
+                    material.uniforms[UNIFORMS.normal3].value = array3ToXYZ(frustumPlanes.normal3);
+                    material.uniforms[UNIFORMS.normal4].value = array3ToXYZ(frustumPlanes.normal4);
+                    material.uniforms[UNIFORMS.normal5].value = array3ToXYZ(frustumPlanes.normal5);
+                    material.uniforms[UNIFORMS.normal6].value = array3ToXYZ(frustumPlanes.normal6);
+
+                    material.uniforms[UNIFORMS.D1].value = frustumPlanes.D1;
+                    material.uniforms[UNIFORMS.D2].value = frustumPlanes.D2;
+                    material.uniforms[UNIFORMS.D3].value = frustumPlanes.D3;
+                    material.uniforms[UNIFORMS.D4].value = frustumPlanes.D4;
+                    material.uniforms[UNIFORMS.D5].value = frustumPlanes.D5;
+                    material.uniforms[UNIFORMS.D6].value = frustumPlanes.D6;
+                }
+
             });
 
             for (let i = indicesToRemove.length-1; i > 0; i--) {
