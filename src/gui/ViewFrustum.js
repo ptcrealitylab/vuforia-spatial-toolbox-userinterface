@@ -1,22 +1,10 @@
 import { ShaderChunk } from '../../thirdPartyCode/three/three.module.js';
 
-export const MAX_VIEW_FRUSTUMS = 5;
+const MAX_VIEW_FRUSTUMS = 5;
 
-export const UNIFORMS = Object.freeze({
+const UNIFORMS = Object.freeze({
     numFrustums: 'numFrustums',
     frustums: 'frustums',
-    normal1: 'normal1',
-    normal2: 'normal2',
-    normal3: 'normal3',
-    normal4: 'normal4',
-    normal5: 'normal5',
-    normal6: 'normal6',
-    D1: 'D1',
-    D2: 'D2',
-    D3: 'D3',
-    D4: 'D4',
-    D5: 'D5',
-    D6: 'D6'
 });
 
 const GEO = Object.freeze({
@@ -30,7 +18,7 @@ const GEO = Object.freeze({
 const ANG2RAD = 3.14159265358979323846/180.0;
 
 // http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-implementation/
-export class ViewFrustum {
+class ViewFrustum {
     constructor() {
         this.planes = [];
     }
@@ -148,58 +136,35 @@ class PlaneGeo {
     }
 }
 
-export const frustumVertexShader = function() {
+const frustumVertexShader = function() {
     return ShaderChunk.meshphysical_vert
-        .replace('#define STANDARD', `#define STANDARD
-            // #define USE_TRANSMISSION
-            `)
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-            
-            // gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    // orth_dist = length((position - coneTipPoint) - cone_dist * coneDirection);
-    
-        vPosition = position.xyz;
+
+        vPosition = position.xyz; // make position accessible in the fragment shader
             
     `).replace('#include <common>', `#include <common>
     // varying float len; // calculates this for initial loading animation
-    // uniform vec3 coneTipPoint; // pass in the position of a camera
         varying vec3 vPosition;
-
     `);
 }
 
-export const frustumFragmentShader = function() {
+const frustumFragmentShader = function() {
     let condition = `
-    bool clipped = false;
-    
     if (numFrustums > 0)
     {
         for (int i = 0; i < numFrustums; i++)
         {
-            clipped = clipped || isInsideFrustum(frustums[i]);
+            bool clipped = isInsideFrustum(frustums[i]);
+            if (clipped) discard;
+            if (clipped) break;
         }
     }
-    
-    if (clipped) discard;
     `;
-    // 'if (inside > 0.5) discard;'
     return ShaderChunk.meshphysical_frag
         .replace('#include <clipping_planes_fragment>', `
                          ${condition}
 
                          #include <clipping_planes_fragment>`)
-        // .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `vec4 diffuseColor = vec4( diffuse, opacity );
-        // if (!inside5) diffuseColor.x = 1.0; //vec4(1.0, 0.0, 0.0, 1.0);
-        // if (!inside3) diffuseColor.y = 1.0; //vec4(1.0, 0.0, 0.0, 1.0);
-        // if (!inside4) diffuseColor.z = 1.0; //vec4(1.0, 0.0, 0.0, 1.0);
-        //
-        // `)
-        .replace('#include <dithering_fragment>', `#include <dithering_fragment>
-            // gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
-            // if (inside5 && inside6) gl_FragColor.x = 1.0;
-            // if (inside1 && inside2 && inside3 && inside4) gl_FragColor.y = 1.0;
-            // if (!inside4) gl_FragColor.z = 1.0;
-            `)
         .replace(`#include <common>`, `
                          #include <common>
     
@@ -240,4 +205,12 @@ export const frustumFragmentShader = function() {
         return (inside1 && inside2 && inside3 && inside4 && inside5 && inside6);
     }
     `);
+}
+
+export {
+    MAX_VIEW_FRUSTUMS,
+    UNIFORMS,
+    ViewFrustum,
+    frustumFragmentShader,
+    frustumVertexShader
 }

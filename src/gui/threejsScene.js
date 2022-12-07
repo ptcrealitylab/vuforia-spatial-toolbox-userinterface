@@ -31,6 +31,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     const DISPLAY_ORIGIN_BOX = false;
 
     let customMaterials;
+    let cullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
 
     // for now, this contains everything not attached to a specific world object
     var threejsContainerObj;
@@ -495,38 +496,40 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return groundPlaneCollider;
     }
 
-    // let cullingFrustum = new ViewFrustum(); // FrustumGeo();
-    // const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
-    // const widthToHeightRatio = 1920/1080; // 16/9; // window.innerWidth / window.innerHeight;
-    // const MAX_DIST = 5000 + 500; // extend it slightly beyond the extent of the LiDAR sensor
-    // cullingFrustum.setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, 10/1000, MAX_DIST/1000);
-    let cullingFrustums = {};
-    
     const createCullingFrustum = function() {
+        // TODO: get these camera parameters dynamically?
         const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
-        const widthToHeightRatio = 1920/1080; // 16/9; // window.innerWidth / window.innerHeight;
-        const MAX_DIST = 5000 + 500; // extend it slightly beyond the extent of the LiDAR sensor
+        const widthToHeightRatio = 1920/1080;
+        
+        // TODO: continuously set MAX_DIST_OBSERVED to the furthest depth point seen this frame
+        //  so that frustum doesn't cut through multiple walls
+        const MAX_DIST_OBSERVED = 5000;
+        const FAR_PLANE_MM = Math.min(MAX_DIST_OBSERVED, 5000) + 100; // extend it slightly beyond the extent of the LiDAR sensor
+        const NEAR_PLANE_MM = 10;
+
         let frustum = new ViewFrustum();
-        frustum.setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, 10/1000, MAX_DIST/1000);
+        frustum.setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, NEAR_PLANE_MM / 1000, FAR_PLANE_MM / 1000);
         return frustum;
+    }
+
+    // helper function to convert (x,y,z) from toolbox math format to three.js vector
+    function array3ToXYZ(arr3) {
+        return new THREE.Vector3(arr3[0], arr3[1], arr3[2]);
     }
     
     exports.updateFrustum = function(id, cameraPosition, cameraForward, cameraUp) {
         if (typeof cullingFrustums[id] === 'undefined') {
             cullingFrustums[id] = createCullingFrustum();
-            frustumAddedCallbacks.forEach(cb => {
-                cb(Object.keys(cullingFrustums).length);
-            });
         }
 
         cullingFrustums[id].setCameraDef(cameraPosition, cameraForward, cameraUp);
         return {
-            normal1: cullingFrustums[id].planes[0].normal,
-            normal2: cullingFrustums[id].planes[1].normal,
-            normal3: cullingFrustums[id].planes[2].normal,
-            normal4: cullingFrustums[id].planes[3].normal,
-            normal5: cullingFrustums[id].planes[4].normal,
-            normal6: cullingFrustums[id].planes[5].normal,
+            normal1: array3ToXYZ(cullingFrustums[id].planes[0].normal),
+            normal2: array3ToXYZ(cullingFrustums[id].planes[1].normal),
+            normal3: array3ToXYZ(cullingFrustums[id].planes[2].normal),
+            normal4: array3ToXYZ(cullingFrustums[id].planes[3].normal),
+            normal5: array3ToXYZ(cullingFrustums[id].planes[4].normal),
+            normal6: array3ToXYZ(cullingFrustums[id].planes[5].normal),
             D1: cullingFrustums[id].planes[0].D,
             D2: cullingFrustums[id].planes[1].D,
             D3: cullingFrustums[id].planes[2].D,
@@ -536,7 +539,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         }
     }
     
-    let frustumAddedCallbacks = [];
+    exports.removeCameraFrustum = function(id) {
+        delete cullingFrustums[id];
+    }
 
     class CustomMaterials {
         constructor() {
@@ -572,21 +577,17 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
             
-            let frustums = this.buildDefaultFrustums(MAX_VIEW_FRUSTUMS);
-            
-            frustumAddedCallbacks.push((numFrustums) => {
-                material.uniforms.numFrustums.value = numFrustums;
-            });
+            // for the shader to work, we must fully populate the frustums uniform array
+            // with placeholder data (e.g. normals and constants for all 5 frustums),
+            // but as long as numFrustums is 0 then it won't have any effect
+            let defaultFrustums = this.buildDefaultFrustums(MAX_VIEW_FRUSTUMS);
             
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.physical.uniforms,
                 {
                     maxHeight: {value: maxHeight},
-
-                    numFrustums: {value: Object.keys(cullingFrustums).length},
-                    frustums: {
-                        value: frustums
-                    },
+                    numFrustums: {value: 0},
+                    frustums: {value: defaultFrustums},
                 }
             ]);
 
