@@ -1,12 +1,25 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {MeshLine, MeshLineMaterial} from '../../thirdPartyCode/three/THREE.MeshLine.js';
 import {JOINTS, JOINT_CONNECTIONS} from './utils.js';
 import {annotateHumanPoseRenderer} from './rebaScore.js';
+import {SpaghettiMeshPath} from './spaghetti.js';
 
 let poseRenderers = {};
 let humanPoseAnalyzer;
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
+
+// author: https://www.30secondsofcode.org/js/s/hsl-to-rgb
+// input ranges: H: [0, 360], S: [0, 100], L: [0, 100]
+// output ranges: [0, 255]
+function HSLToRGB(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n =>
+        l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [255 * f(0), 255 * f(8), 255 * f(4)];
+}
 
 /**
  * Renders COCO-pose keypoints
@@ -198,17 +211,17 @@ export class HumanPoseRenderer {
 
 export class HumanPoseAnalyzer {
     /**
-     * @param {THREE.Object3D} historyLineContainer - THREE container for
+     * @param {THREE.Object3D} historyMeshContainer - THREE container for
      *                         history line meshes
      * @param {THREE.Object3D} historyCloneContainer - THREE container for
      *                         history clone meshes
      */
-    constructor(historyLineContainer, historyCloneContainer) {
-        this.historyLineContainer = historyLineContainer;
+    constructor(historyMeshContainer, historyCloneContainer) {
+        this.historyMeshContainer = historyMeshContainer;
         this.historyCloneContainer = historyCloneContainer;
         this.recordingClones = false;
         this.cloneMaterialIndex = 0;
-        this.historyLinesAll = {};
+        this.historyMeshesAll = {};
         this.historyPointsAll = {};
 
         this.baseMaterial = new THREE.MeshBasicMaterial({
@@ -233,14 +246,14 @@ export class HumanPoseAnalyzer {
         });
     }
 
-    poseRendererUpdated(poseRenderer) {
+    poseRendererUpdated(poseRenderer, timestamp) {
         if (this.recordingClones) {
             const obj = this.clone(poseRenderer);
             this.historyCloneContainer.add(obj);
         }
 
         let newPoint = poseRenderer.getJointPosition(JOINTS.HEAD).clone();
-        newPoint.y += 0.4;
+        newPoint.y += 400;
 
         if (!this.historyPointsAll.hasOwnProperty(poseRenderer.id)) {
             this.createHistoryLine(poseRenderer);
@@ -249,23 +262,42 @@ export class HumanPoseAnalyzer {
         let historyPoints = this.historyPointsAll[poseRenderer.id];
 
         // Split spaghetti line if we jumped by a large amount
-        if (historyPoints.length > 0 &&
-            historyPoints[historyPoints.length - 1].sub(newPoint).lengthSq() > 1) {
-            this.createHistoryLine(poseRenderer);
+        if (historyPoints.length > 0) {
+            let lastPoint = historyPoints[historyPoints.length - 1];
+            let lastVec = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
+            if (lastVec.distanceToSquared(newPoint) > 800 * 800) {
+                this.createHistoryLine(poseRenderer);
+            }
         }
 
-        historyPoints.push(newPoint);
-        this.historyLinesAll[poseRenderer.id].setPoints(historyPoints);
+        let hueReba = this.getOverallRebaScoreHue(poseRenderer);
+        let colorRGB = HSLToRGB(hueReba, 80, 50);
+
+        let nextHistoryPoint = {
+            x: newPoint.x,
+            y: newPoint.y,
+            z: newPoint.z,
+            color: colorRGB,
+            timestamp,
+        };
+
+        historyPoints.push(nextHistoryPoint);
+        this.historyMeshesAll[poseRenderer.id].setPoints(historyPoints);
     }
 
-    clone(poseRenderer) {
-        let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
-        let hueReba = 140 - (poseRenderer.overallRebaScore - 1) * 240 / 11;
-        let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
+    getOverallRebaScoreHue(overallRebaScore) {
+        let hueReba = 140 - (overallRebaScore - 1) * 240 / 11;
         if (isNaN(hueReba)) {
             hueReba = 120;
         }
         hueReba = (Math.min(Math.max(hueReba, -30), 120) + 360) % 360;
+        return hueReba;
+    }
+
+    clone(poseRenderer) {
+        let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
+        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
+        let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
         let colorReba = `hsl(${hueReba}, 100%, 50%)`;
         let newContainer = poseRenderer.container.clone();
         let matRainbow = new THREE.MeshBasicMaterial({
@@ -306,33 +338,28 @@ export class HumanPoseAnalyzer {
 
     /**
      * Creates a history line (spaghetti line) placing it within
-     * the historyLineContainer
+     * the historyMeshContainer
      * @param {HumanPoseRenderer} poseRenderer
      */
     createHistoryLine(poseRenderer) {
-        const historyLine = new MeshLine();
-        const lineMat = new MeshLineMaterial({
-            color: 0xffff00,
-            opacity: 0.6,
-            lineWidth: 14,
-            // depthWrite: false,
-            transparent: true,
-            side: THREE.DoubleSide,
-        });
-        const historyMesh = new THREE.Mesh(historyLine, lineMat);
         const historyPoints = [];
-        historyLine.setPoints(historyPoints);
-        this.historyLineContainer.add(historyMesh);
+        const historyMesh = new SpaghettiMeshPath(historyPoints, {
+            widthMm: 30,
+            heightMm: 30,
+            usePerVertexColors: true,
+            wallBrightness: 0.6,
+        });
+        this.historyMeshContainer.add(historyMesh);
 
         this.historyPointsAll[poseRenderer.id] = historyPoints;
-        this.historyLinesAll[poseRenderer.id] = historyLine;
+        this.historyMeshesAll[poseRenderer.id] = historyMesh;
     }
 
 
     resetHistoryLines() {
         // Loop over copy of children to remove all
-        for (let child of this.historyLineContainer.children.concat()) {
-            this.historyLineContainer.remove(child);
+        for (let child of this.historyMeshContainer.children.concat()) {
+            this.historyMeshContainer.remove(child);
         }
     }
 
@@ -346,7 +373,7 @@ export class HumanPoseAnalyzer {
      * @param {boolean} visible
      */
     setHistoryLinesVisible(visible) {
-        this.historyLineContainer.visible = visible;
+        this.historyMeshContainer.visible = visible;
     }
 
     /**
@@ -368,14 +395,14 @@ export class HumanPoseAnalyzer {
     }
 }
 
-function renderHumanPoseObjects(poseObjects, container) {
+function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
     if (!humanPoseAnalyzer) {
-        const historyLineContainer = new THREE.Group();
-        historyLineContainer.visible = false;
+        const historyMeshContainer = new THREE.Group();
+        historyMeshContainer.visible = true;
         if (container) {
-            container.add(historyLineContainer);
+            container.add(historyMeshContainer);
         } else {
-            realityEditor.gui.threejsScene.addToScene(historyLineContainer);
+            realityEditor.gui.threejsScene.addToScene(historyMeshContainer);
         }
 
         const historyCloneContainer = new THREE.Group();
@@ -386,14 +413,18 @@ function renderHumanPoseObjects(poseObjects, container) {
             realityEditor.gui.threejsScene.addToScene(historyCloneContainer);
         }
 
-        humanPoseAnalyzer = new HumanPoseAnalyzer(historyLineContainer, historyCloneContainer);
+        humanPoseAnalyzer = new HumanPoseAnalyzer(historyMeshContainer, historyCloneContainer);
     }
 
     for (let id in poseRenderers) {
         poseRenderers[id].updated = false;
     }
     for (let poseObject of poseObjects) {
-        renderPose(poseObject, container);
+        if (historical) {
+            renderHistoricalPose(poseObject, timestamp, container);
+        } else {
+            renderPose(poseObject, timestamp, container);
+        }
     }
     for (let id of Object.keys(poseRenderers)) {
         if (!poseRenderers[id].updated) {
@@ -411,8 +442,12 @@ function setMatrixFromArray(matrix, array) {
     );
 }
 
-function renderPose(poseObject, container) {
+function renderHistoricalPose(poseObject, timestamp, container) {
     // assume that all sub-objects are of the form poseObject.id + joint name
+    if (!poseObject.uuid) {
+        poseObject.uuid = poseObject.objectId;
+        poseObject.id = poseObject.objectId;
+    }
 
     if (!poseRenderers[poseObject.uuid]) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
@@ -428,6 +463,42 @@ function renderPose(poseObject, container) {
     setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
 
     for (let jointId of Object.values(JOINTS)) {
+        let frame = poseObject.frames[poseObject.uuid + jointId];
+
+        let jointMatrixThree = new THREE.Matrix4();
+        setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
+        jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
+
+        let jointPosition = new THREE.Vector3();
+        jointPosition.setFromMatrixPosition(jointMatrixThree);
+
+        poseRenderer.setJointPosition(jointId, jointPosition);
+    }
+    poseRenderer.updateBonePositions();
+
+    humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
+}
+
+function renderPose(poseObject, timestamp, container) {
+    // assume that all sub-objects are of the form poseObject.id + joint name
+
+    if (!poseRenderers[poseObject.uuid]) {
+        poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
+        poseRenderers[poseObject.uuid].addToScene(container);
+    }
+    let poseRenderer = poseRenderers[poseObject.uuid];
+    poseRenderer.updated = true;
+
+    // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
+    let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+    let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+    let groundPlaneRelativeMatrix = new THREE.Matrix4();
+    setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
+    let objectRootMatrix = new THREE.Matrix4();
+    setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+    groundPlaneRelativeMatrix.multiply(objectRootMatrix);
+
+    for (let jointId of Object.values(JOINTS)) {
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
         let jointMatrixThree = new THREE.Matrix4();
@@ -441,7 +512,7 @@ function renderPose(poseObject, container) {
     }
     poseRenderer.updateBonePositions();
 
-    humanPoseAnalyzer.poseRendererUpdated(poseRenderer);
+    humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
 }
 
 function resetHistoryLines() {
