@@ -8,7 +8,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
-import { ViewFrustum, frustumVertexShader, frustumFragmentShader } from './ViewFrustum.js';
+import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS } from './ViewFrustum.js';
 
 (function(exports) {
 
@@ -424,23 +424,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader } from './ViewF
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
-            // let debugGeo = new THREE.BoxGeometry(5000, 10, 5000);
-            //
-            //
-            // let divisions = 5;
-            // let modifier = new THREE.SubdivisionModifier(divisions);
-            //
-            // let newDebugGeo = modifier.modify(debugGeo);
-            //
-            // let sourceMat = new THREE.MeshStandardMaterial({
-            //     color: 0x777777,
-            // });
-            // let debugMat = customMaterials.areaTargetMaterialWithTextureAndHeight(sourceMat, maxHeight, center, true);
-            //
-            // let cube = new THREE.Mesh(newDebugGeo, debugMat);
-            // window.debugCube = cube;
-            // threejsContainerObj.add(cube);
-
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
                 threejsContainerObj.remove(wireMesh);
@@ -519,15 +502,23 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader } from './ViewF
     // cullingFrustum.setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, 10/1000, MAX_DIST/1000);
     let cullingFrustums = {};
     
-    exports.createCullingFrustum = function(id) {
+    const createCullingFrustum = function() {
         const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
         const widthToHeightRatio = 1920/1080; // 16/9; // window.innerWidth / window.innerHeight;
         const MAX_DIST = 5000 + 500; // extend it slightly beyond the extent of the LiDAR sensor
-        cullingFrustums[id] = new ViewFrustum();
-        cullingFrustums[id].setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, 10/1000, MAX_DIST/1000);
+        let frustum = new ViewFrustum();
+        frustum.setCameraInternals(iPhoneVerticalFOV * 0.95, widthToHeightRatio, 10/1000, MAX_DIST/1000);
+        return frustum;
     }
     
     exports.updateFrustum = function(id, cameraPosition, cameraForward, cameraUp) {
+        if (typeof cullingFrustums[id] === 'undefined') {
+            cullingFrustums[id] = createCullingFrustum();
+            frustumAddedCallbacks.forEach(cb => {
+                cb(Object.keys(cullingFrustums).length);
+            });
+        }
+
         cullingFrustums[id].setCameraDef(cameraPosition, cameraForward, cameraUp);
         return {
             normal1: cullingFrustums[id].planes[0].normal,
@@ -545,7 +536,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader } from './ViewF
         }
     }
     
-    const startTime = Date.now();
+    let frustumAddedCallbacks = [];
 
     class CustomMaterials {
         constructor() {
@@ -558,43 +549,44 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader } from './ViewF
         areaTargetFragmentShader(_inverted) {
             return frustumFragmentShader();
         }
+        buildDefaultFrustums(numFrustums) {
+            let frustums = [];
+            for (let i = 0; i < numFrustums; i++) {
+                frustums.push({
+                    normal1: {x: 1, y: 0, z: 0},
+                    normal2: {x: 1, y: 0, z: 0},
+                    normal3: {x: 1, y: 0, z: 0},
+                    normal4: {x: 1, y: 0, z: 0},
+                    normal5: {x: 1, y: 0, z: 0},
+                    normal6: {x: 1, y: 0, z: 0},
+                    D1: 0,
+                    D2: 0,
+                    D3: 0,
+                    D4: 0,
+                    D5: 0,
+                    D6: 0
+                })
+            }
+            return frustums;
+        }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
             let material = sourceMaterial.clone();
+            
+            let frustums = this.buildDefaultFrustums(MAX_VIEW_FRUSTUMS);
+            
+            frustumAddedCallbacks.push((numFrustums) => {
+                material.uniforms.numFrustums.value = numFrustums;
+            });
+            
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.physical.uniforms,
                 {
                     maxHeight: {value: maxHeight},
-                    
+
+                    numFrustums: {value: Object.keys(cullingFrustums).length},
                     frustums: {
-                        value: [],
-                        properties: {
-                            normal1: {x: 1, y: 0, z: 0},
-                            normal2: {x: 1, y: 0, z: 0},
-                            normal3: {x: 1, y: 0, z: 0},
-                            normal4: {x: 1, y: 0, z: 0},
-                            normal5: {x: 1, y: 0, z: 0},
-                            normal6: {x: 1, y: 0, z: 0},
-                            D1: 0,
-                            D2: 0,
-                            D3: 0,
-                            D4: 0,
-                            D5: 0,
-                            D6: 0
-                        }
+                        value: frustums
                     },
-                    
-                    normal1: {value: {x: -0.180438255839729, y: -0.15260992462598252, z: -0.971674969696744}}, //{value: new THREE.Vector3(1, 0, 0)},
-                    normal2: {value: {x: 0.7361757787476327, y: -0.14757905544534186, z: 0.6605040841502627}}, //{value: new THREE.Vector3(1, 0, 0)},
-                    normal3: {value: {x: 0.1307110390731121, y: -0.9889208318402299, z: -0.07035774738331892}}, //{value: new THREE.Vector3(1, 0, 0)},
-                    normal4: {value: {x: 0.746742998841211, y: 0.5149524171780162, z: -0.4209499990784577}}, // {value: new THREE.Vector3(1, 0, 0)},
-                    normal5: {value: {x: 0.7892653854919476, y: -0.42633214658008856, z: -0.4419287861824135}}, // {value: new THREE.Vector3(1, 0, 0)},
-                    normal6: {value: {x: -0.7892653854919454, y: 0.42633214658008767, z: 0.4419287861824182}}, // {value: new THREE.Vector3(1, 0, 0)},
-                    D1: {value: 0.2007508513352633},
-                    D2: {value: 0.18232710157441373},
-                    D3: {value: 0.6000431442173823},
-                    D4: {value: 0.004798679055097274},
-                    D5: {value: 0.534052103220726},
-                    D6: {value: 4.455947896779274}
                 }
             ]);
 

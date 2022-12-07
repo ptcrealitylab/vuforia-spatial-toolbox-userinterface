@@ -1,4 +1,10 @@
+import { ShaderChunk } from '../../thirdPartyCode/three/three.module.js';
+
+export const MAX_VIEW_FRUSTUMS = 5;
+
 export const UNIFORMS = Object.freeze({
+    numFrustums: 'numFrustums',
+    frustums: 'frustums',
     normal1: 'normal1',
     normal2: 'normal2',
     normal3: 'normal3',
@@ -143,7 +149,7 @@ class PlaneGeo {
 }
 
 export const frustumVertexShader = function() {
-    return THREE.ShaderChunk.meshphysical_vert
+    return ShaderChunk.meshphysical_vert
         .replace('#define STANDARD', `#define STANDARD
             // #define USE_TRANSMISSION
             `)
@@ -164,18 +170,20 @@ export const frustumVertexShader = function() {
 
 export const frustumFragmentShader = function() {
     let condition = `
-    bool inside1 = isInside(normal1, D1, vPosition); // top (when un-rotated)
-    bool inside2 = isInside(normal2, D2, vPosition); // bottom
-    bool inside3 = isInside(normal3, D3, vPosition); // left
-    bool inside4 = isInside(normal4, D4, vPosition); // right (when un-rotated)
-    bool inside5 = isInside(normal5, D5, vPosition); // near
-    bool inside6 = isInside(normal6, D6, vPosition); // far
+    bool clipped = false;
     
-    if (inside1 && inside2 && inside3 && inside4 && inside5 && inside6) discard;
-    // if (inside1 && inside2 && inside3 && inside4 && inside6) discard;
+    if (numFrustums > 0)
+    {
+        for (int i = 0; i < numFrustums; i++)
+        {
+            clipped = clipped || isInsideFrustum(frustums[i]);
+        }
+    }
+    
+    if (clipped) discard;
     `;
     // 'if (inside > 0.5) discard;'
-    return THREE.ShaderChunk.meshphysical_frag
+    return ShaderChunk.meshphysical_frag
         .replace('#include <clipping_planes_fragment>', `
                          ${condition}
 
@@ -195,8 +203,8 @@ export const frustumFragmentShader = function() {
         .replace(`#include <common>`, `
                          #include <common>
     
-    uniform int numFrustums;
-    struct Frustum {
+    uniform int numFrustums; // current number of frustums to apply 
+    struct Frustum { // each Frustum is defined by 24 values (6 normals + 6 constants)
         vec3 normal1;
         vec3 normal2;
         vec3 normal3;
@@ -209,27 +217,27 @@ export const frustumFragmentShader = function() {
         float D4;
         float D5;
         float D6;
-    }
-    uniform Frustum frustums[numFrustums];
+    };
+    uniform Frustum frustums[${MAX_VIEW_FRUSTUMS}]; // MAX number of frustums that can cull the geometry
     
-    uniform vec3 normal1;
-    uniform vec3 normal2;
-    uniform vec3 normal3;
-    uniform vec3 normal4;
-    uniform vec3 normal5;
-    uniform vec3 normal6;
-    uniform float D1;
-    uniform float D2;
-    uniform float D3;
-    uniform float D4;
-    uniform float D5;
-    uniform float D6;
     // varying vec3 vWorldPosition;
     varying vec3 vPosition;
-    
+     
     bool isInside(vec3 normal, float D, vec3 point)
     {
         return dot(normal, point) + D > 0.0;
+    }
+
+    bool isInsideFrustum(Frustum f)
+    {
+        bool inside1 = isInside(f.normal1, f.D1, vPosition); // top (when un-rotated)
+        bool inside2 = isInside(f.normal2, f.D2, vPosition); // bottom
+        bool inside3 = isInside(f.normal3, f.D3, vPosition); // left
+        bool inside4 = isInside(f.normal4, f.D4, vPosition); // right (when un-rotated)
+        bool inside5 = isInside(f.normal5, f.D5, vPosition); // near
+        bool inside6 = isInside(f.normal6, f.D6, vPosition); // far
+        
+        return (inside1 && inside2 && inside3 && inside4 && inside5 && inside6);
     }
     `);
 }
