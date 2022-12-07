@@ -18,9 +18,12 @@ import * as utils from './utils.js'
     let lastRenderTime = Date.now();
     let lastUpdateTime = Date.now();
     let lastRenderedPoses = {};
+    let inHistoryPlayback = false;
 
     function initService() {
         console.log('init humanPose module', network, draw, utils);
+
+        loadHistory();
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
@@ -49,6 +52,10 @@ import * as utils from './utils.js'
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
+            if (inHistoryPlayback) {
+                return;
+            }
+
             try {
                 // main update runs at ~60 FPS, but we can save some compute by limiting the pose rendering FPS
                 if (Date.now() - lastRenderTime < (1000.0 / MAX_FPS)) return;
@@ -57,7 +64,7 @@ import * as utils from './utils.js'
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderHumanPoseObjects([]);
+                    draw.renderHumanPoseObjects([], Date.now());
                     lastUpdateTime = Date.now();
                     return;
                 }
@@ -67,7 +74,7 @@ import * as utils from './utils.js'
 
                 lastUpdateTime = Date.now();
 
-                draw.renderHumanPoseObjects(Object.values(humanPoseObjects));
+                draw.renderHumanPoseObjects(Object.values(humanPoseObjects), Date.now());
 
                 for (const [id, obj] of Object.entries(humanPoseObjects)) {
                     lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
@@ -76,6 +83,61 @@ import * as utils from './utils.js'
                 console.warn('error in renderHumanPoseObjects', e);
             }
         });
+    }
+
+    function applyDiffRecur(objects, diff) {
+        let diffKeys = Object.keys(diff);
+        for (let key of diffKeys) {
+            if (diff[key] === null) {
+                continue; // JSON encodes undefined as null so just skip (problem if we try to encode null)
+            }
+            if (typeof diff[key] === 'object' && objects.hasOwnProperty(key)) {
+                applyDiffRecur(objects[key], diff[key]);
+                continue;
+            }
+            objects[key] = diff[key];
+        }
+    }
+
+    function applyDiff(objects, diff) {
+        applyDiffRecur(objects, diff);
+    }
+
+    function sleep(ms) {
+        return new Promise(res => {
+            setTimeout(res, ms);
+        });
+    }
+
+    async function loadHistory() {
+        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
+            setTimeout(loadHistory, 500);
+            return;
+        }
+        let res = await fetch('http://localhost:8080/history');
+        let hist = await res.json();
+        replayHistory(hist);
+    }
+
+    async function replayHistory(hist) {
+        inHistoryPlayback = true;
+        let timeObjects = {};
+        for (let key of Object.keys(hist)) {
+            let diff = hist[key];
+            let presentObjectKeys = Object.keys(diff);
+            let presentHumans = presentObjectKeys.filter(k => k.startsWith('_HUMAN_'));
+            applyDiff(timeObjects, diff);
+            if (presentHumans.length === 0) {
+                continue;
+            }
+            let humanPoseObjects = [];
+            for (let key of presentHumans) {
+                humanPoseObjects.push(timeObjects[key]);
+            }
+            draw.renderHumanPoseObjects(humanPoseObjects, parseInt(key), true, null);
+            await sleep(10);
+        }
+        inHistoryPlayback = false;
     }
 
     function areAnyPosesUpdated(poseObjects) {
