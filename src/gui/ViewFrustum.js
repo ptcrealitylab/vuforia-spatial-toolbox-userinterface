@@ -1,7 +1,10 @@
 import { ShaderChunk } from '../../thirdPartyCode/three/three.module.js';
 
+// Set this to how many users can possibly be holding virtualizers at the same time
+// This populates the frustum shader with this many placeholder frustums, since array must compile with fixed length
 const MAX_VIEW_FRUSTUMS = 5;
 
+// names of the uniforms used in the frustum vertex and fragment shaders
 const UNIFORMS = Object.freeze({
     numFrustums: 'numFrustums',
     frustums: 'frustums',
@@ -208,7 +211,7 @@ const frustumVertexShader = function({useLoadingAnimation, center}) {
     return ShaderChunk.meshphysical_vert
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
         ${loadingCalcString}
-        vPosition = position.xyz; // make position accessible in the fragment shader
+        vPosition = position.xyz; // makes position accessible in the fragment shader
     `).replace('#include <common>', `#include <common>
         ${loadingUniformString}
         varying vec3 vPosition;
@@ -268,8 +271,11 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     };
     uniform Frustum frustums[${MAX_VIEW_FRUSTUMS}]; // MAX number of frustums that can cull the geometry
     
-    // varying vec3 vWorldPosition;
     varying vec3 vPosition;
+    // todo: this shader only works if the mesh is exported with origin at (0,0,0)
+    //   and has identity scale and rotation (1 unit = 1 meter)
+    //   ... perhaps swapping vPosition to vWorldPosition could fix this?
+    // varying vec3 vWorldPosition;
      
     bool isInside(vec3 normal, float D, vec3 point)
     {
