@@ -277,19 +277,19 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     //   ... perhaps swapping vPosition to vWorldPosition could fix this?
     // varying vec3 vWorldPosition;
      
-    bool isInside(vec3 normal, float D, vec3 point)
+    bool isInsidePlane(vec3 normal, float D, vec3 point)
     {
         return dot(normal, point) + D > 0.0;
     }
 
     bool isInsideFrustum(Frustum f)
     {
-        bool inside1 = isInside(f.normal1, f.D1, vPosition); // top (when un-rotated)
-        bool inside2 = isInside(f.normal2, f.D2, vPosition); // bottom
-        bool inside3 = isInside(f.normal3, f.D3, vPosition); // left
-        bool inside4 = isInside(f.normal4, f.D4, vPosition); // right (when un-rotated)
-        bool inside5 = isInside(f.normal5, f.D5, vPosition); // near
-        bool inside6 = isInside(f.normal6, f.D6, vPosition); // far
+        bool inside1 = isInsidePlane(f.normal1, f.D1, vPosition); // top (when un-rotated)
+        bool inside2 = isInsidePlane(f.normal2, f.D2, vPosition); // bottom
+        bool inside3 = isInsidePlane(f.normal3, f.D3, vPosition); // left
+        bool inside4 = isInsidePlane(f.normal4, f.D4, vPosition); // right (when un-rotated)
+        bool inside5 = isInsidePlane(f.normal5, f.D5, vPosition); // near
+        bool inside6 = isInsidePlane(f.normal6, f.D6, vPosition); // far
         
         return (inside1 && inside2 && inside3 && inside4 && inside5 && inside6);
     }
