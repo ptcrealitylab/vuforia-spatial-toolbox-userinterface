@@ -7,7 +7,7 @@ const UNIFORMS = Object.freeze({
     frustums: 'frustums',
 });
 
-const GEO = Object.freeze({
+const PLANES = Object.freeze({
     TOP: 0,
     BOTTOM: 1,
     LEFT: 2,
@@ -15,13 +15,25 @@ const GEO = Object.freeze({
     NEARP: 4,
     FARP: 5
 });
-const ANG2RAD = 3.14159265358979323846/180.0;
+const ANG2RAD = Math.PI / 180.0;
 
-// http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-implementation/
+/**
+ * Geometrically defines a viewing frustum, based on the cameraInternals (FoV, aspect ratio, etc), and the
+ * position and direction of the camera. Frustum is represented internally by 6 planes (near, far, left, right, top, bottom).
+ * To tell if something is within the frustum, check whether its signed distance to all planes is positive.
+ * Source: http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-implementation/
+ */
 class ViewFrustum {
     constructor() {
         this.planes = [];
     }
+    /**
+     * Configures the "shape" of the frustum based on camera properties
+     * @param {number} angle – vertical FoV angle in degrees (e.g. iPhoneVerticalFOV = 41.22673)
+     * @param {number} ratio – aspect ratio, e.g. 1920/1080
+     * @param {number} nearD – near plane distance in scene units, e.g. 0.1 meters
+     * @param {number} farD – far plane distance in scene units, e.g. 5 meters
+     */
     setCameraInternals(angle, ratio, nearD, farD) {
         // store the information
         this.ratio = ratio;
@@ -35,18 +47,33 @@ class ViewFrustum {
         this.nw = this.nh * ratio;
         this.fh = farD  * tang;
         this.fw = this.fh * ratio;
+
+        // Note: if you change this after setCameraDef, you need to call setCameraDef again to recompute the planes
+        if (typeof this.p !== 'undefined' && typeof this.l !== 'undefined' && typeof this.u !== 'undefined') {
+            this.setCameraDef(this.p, this.l, this.u);
+        }
     }
+
+    /**
+     * Updates the position and orientation of the view frustum by
+     * setting the position, direction, and up vector of the camera
+     * @param {number[]} p – the position of the camera
+     * @param {number[]} l – the *position* of what the camera is looking at (this is not the normalized forward vector)
+     * @param {number[]} u – the normalized up vector
+     */
     setCameraDef(p, l, u) {
+        this.p = p;
+        this.l = l;
+        this.u = u;
         let nc,fc,X,Y,Z;
         let utils = realityEditor.gui.ar.utilities;
 
-        // compute the Z axis of camera
-        // this axis points in the opposite direction from
-        // the looking direction
+        // compute the Z-axis of camera
+        // this axis points in the opposite direction from the looking direction
         Z = utils.subtract(p, l);
         Z = utils.normalize(Z);
 
-        // X axis of camera with given "up" vector and Z axis
+        // X-axis of camera with given "up" vector and Z-axis
         X = utils.crossProduct(u, Z);
         X = utils.normalize(X);
 
@@ -74,17 +101,20 @@ class ViewFrustum {
         this.fbr = utils.add(utils.subtract(fc, farScaledY), farScaledX);
 
         // compute the six planes
-        // the function set3Points assumes that the points
-        // are given in counter clockwise order
-        this.planes[GEO.TOP] = new PlaneGeo().setPoints(this.ntr, this.ntl, this.ftl);
-        this.planes[GEO.BOTTOM] = new PlaneGeo().setPoints(this.nbl, this.nbr, this.fbr);
-        this.planes[GEO.LEFT] = new PlaneGeo().setPoints(this.ntl, this.nbl, this.fbl);
-        this.planes[GEO.RIGHT] = new PlaneGeo().setPoints(this.nbr, this.ntr, this.fbr);
-        this.planes[GEO.NEARP] = new PlaneGeo().setPoints(this.ntl, this.ntr, this.nbr);
-        this.planes[GEO.FARP] = new PlaneGeo().setPoints(this.ftr, this.ftl, this.fbl);
-
-        // TODO: replace with setNormalAndPoint implementation
+        // assumes that the points are given in counter-clockwise order
+        this.planes[PLANES.TOP] = new PlaneGeo(this.ntr, this.ntl, this.ftl);
+        this.planes[PLANES.BOTTOM] = new PlaneGeo(this.nbl, this.nbr, this.fbr);
+        this.planes[PLANES.LEFT] = new PlaneGeo(this.ntl, this.nbl, this.fbl);
+        this.planes[PLANES.RIGHT] = new PlaneGeo(this.nbr, this.ntr, this.fbr);
+        this.planes[PLANES.NEARP] = new PlaneGeo(this.ntl, this.ntr, this.nbr);
+        this.planes[PLANES.FARP] = new PlaneGeo(this.ftr, this.ftl, this.fbl);
+        // TODO: can be optimized with plane.setNormalAndPoint implementation from source website
     }
+
+    /**
+     * @param {number[]} p – [x, y, z]
+     * @returns {boolean} – true if point lies within the volume of the view frustum
+     */
     isPointInFrustum(p) {
         for (let i = 0; i < 6; i++) {
             if (this.planes[i].distance(p) < 0) {
@@ -95,17 +125,28 @@ class ViewFrustum {
     }
 }
 
+/**
+ * A plane is represented in two ways: three points that sit on the plane,
+ * or by the equation Ax + By + Cz + D = 0, where [A,B,C] is the normal
+ * and D is the distance offset to the origin.
+ * Source: http://www.lighthouse3d.com/tutorials/maths/plane/
+ */
 class PlaneGeo {
+    /**
+     * You can also omit the points from the constructor and call setPoints or setNormalAndConstant to fully initialize
+     */
     constructor(p1, p2, p3) {
         if (p1 && p2 && p3) {
             this.setPoints(p1, p2, p3);
         }
     }
     /**
-     * Assumes points are given in clockwise order
-     * @param p1
-     * @param p2
-     * @param p3
+     * Assumes points are given in counter-clockwise order.
+     * Calculates normal and constant using the points on the plane.
+     * @param {number[]} p1 - [x, y, z] array
+     * @param {number[]} p2 - [x, y, z] array
+     * @param {number[]} p3 - [x, y, z] array
+     * @returns {PlaneGeo}
      */
     setPoints(p1, p2, p3) {
         let utils =  realityEditor.gui.ar.utilities;
@@ -124,18 +165,33 @@ class PlaneGeo {
         this.D = -1 * utils.dotProduct(this.normal, p1); // signed distance to the origin
         return this;
     }
-    // setNormalAndPoint(normal, point) {
-    //     this.normal = normal;
-    //     this.point = point;
-    //     return this;
-    // }
-    // returns signed distance to a point
+
+    /**
+     * Directly initialize the plane with its normal and constant
+     * @param {number[]} normal - [x, y, z] array
+     * @param {number} D
+     * @returns {PlaneGeo}
+     */
+    setNormalAndConstant(normal, D) {
+        this.normal = normal;
+        this.D = D;
+        return this;
+    }
+    /**
+     * Returns signed distance from point to the plane. If positive, point is on side of plane facing the normal.
+     * @param {number[]} p - [x, y, z] array
+     * @returns {number}
+     */
     distance(p) {
-        // let distance = this.A * p[0] + this.B * p[1] + this.C * p[2] + D
         return realityEditor.gui.ar.utilities.dotProduct(this.normal, p) + this.D;
     }
 }
 
+/**
+ * Returns a GLSL vertex shader for culling the points that fall within view frustums.
+ * Actually doesn't do much, the magic happens in the fragment shader.
+ * @returns {string}
+ */
 const frustumVertexShader = function() {
     return ShaderChunk.meshphysical_vert
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
@@ -148,6 +204,13 @@ const frustumVertexShader = function() {
     `);
 }
 
+/**
+ * Returns a GLSL fragment shader for culling the points that fall within view frustums.
+ * Takes in an array of Frustum structs, which each have 6 vec3's (plane normals) and 6 floats (plane constants)
+ * The frustums (uniform) array should have length MAX_VIEW_FRUSTUMS, but only the first numFrustums (uniform)
+ * will be applied to discard points from rendering. The rest should have placeholder values.
+ * @returns {string}
+ */
 const frustumFragmentShader = function() {
     let condition = `
     if (numFrustums > 0)

@@ -31,7 +31,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     const DISPLAY_ORIGIN_BOX = false;
 
     let customMaterials;
-    let cullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
+    let materialCullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
 
     // for now, this contains everything not attached to a specific world object
     var threejsContainerObj;
@@ -496,6 +496,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return groundPlaneCollider;
     }
 
+    /**
+     * Helper function to create a new ViewFrustum instance with preset camera internals
+     * @returns {ViewFrustum}
+     */
     const createCullingFrustum = function() {
         // TODO: get these camera parameters dynamically?
         const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
@@ -512,35 +516,52 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return frustum;
     }
 
-    // helper function to convert (x,y,z) from toolbox math format to three.js vector
+    /**
+     * Helper function to convert (x,y,z) from toolbox math format to three.js vector
+     * @param {number[]} arr3 – [x, y, z] array
+     * @returns {Vector3}
+     */
     function array3ToXYZ(arr3) {
         return new THREE.Vector3(arr3[0], arr3[1], arr3[2]);
     }
-    
-    exports.updateFrustum = function(id, cameraPosition, cameraForward, cameraUp) {
-        if (typeof cullingFrustums[id] === 'undefined') {
-            cullingFrustums[id] = createCullingFrustum();
+
+    /**
+     * Creates a frustum, or updates the existing frustum with this id, to move it to this position and orientation.
+     * Returns the parameters that define the planes of this frustum after moving it.
+     * @param {string} id – id of the virtualizer
+     * @param {number[]} cameraPosition - position in model coordinates. this may be meters, not millimeters.
+     * @param {number[]} cameraLookAtPosition – position where the camera is looking. if you subtract cameraPosition, you get direction
+     * @param {number[]} cameraUp - normalized up vector of camera orientation
+     * @returns {{normal1: Vector3, normal2: Vector3, normal3: Vector3, normal4: Vector3, normal5: Vector3, normal6: Vector3, D1: number, D2: number, D3: number, D4: number, D5: number, D6: number}}
+     */
+    function updateMaterialCullingFrustum(id, cameraPosition, cameraLookAtPosition, cameraUp) {
+        if (typeof materialCullingFrustums[id] === 'undefined') {
+            materialCullingFrustums[id] = createCullingFrustum();
         }
 
-        cullingFrustums[id].setCameraDef(cameraPosition, cameraForward, cameraUp);
+        materialCullingFrustums[id].setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
         return {
-            normal1: array3ToXYZ(cullingFrustums[id].planes[0].normal),
-            normal2: array3ToXYZ(cullingFrustums[id].planes[1].normal),
-            normal3: array3ToXYZ(cullingFrustums[id].planes[2].normal),
-            normal4: array3ToXYZ(cullingFrustums[id].planes[3].normal),
-            normal5: array3ToXYZ(cullingFrustums[id].planes[4].normal),
-            normal6: array3ToXYZ(cullingFrustums[id].planes[5].normal),
-            D1: cullingFrustums[id].planes[0].D,
-            D2: cullingFrustums[id].planes[1].D,
-            D3: cullingFrustums[id].planes[2].D,
-            D4: cullingFrustums[id].planes[3].D,
-            D5: cullingFrustums[id].planes[4].D,
-            D6: cullingFrustums[id].planes[5].D,
+            normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
+            normal2: array3ToXYZ(materialCullingFrustums[id].planes[1].normal),
+            normal3: array3ToXYZ(materialCullingFrustums[id].planes[2].normal),
+            normal4: array3ToXYZ(materialCullingFrustums[id].planes[3].normal),
+            normal5: array3ToXYZ(materialCullingFrustums[id].planes[4].normal),
+            normal6: array3ToXYZ(materialCullingFrustums[id].planes[5].normal),
+            D1: materialCullingFrustums[id].planes[0].D,
+            D2: materialCullingFrustums[id].planes[1].D,
+            D3: materialCullingFrustums[id].planes[2].D,
+            D4: materialCullingFrustums[id].planes[3].D,
+            D5: materialCullingFrustums[id].planes[4].D,
+            D6: materialCullingFrustums[id].planes[5].D,
         }
     }
-    
-    exports.removeCameraFrustum = function(id) {
-        delete cullingFrustums[id];
+
+    /**
+     * Deletes the ViewFrustum that corresponds with the virtualizer id
+     * @param {string} id
+     */
+    function removeMaterialCullingFrustum(id) {
+        delete materialCullingFrustums[id];
     }
 
     class CustomMaterials {
@@ -704,6 +725,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.addTransformControlsTo = addTransformControlsTo;
     exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;
+    exports.updateMaterialCullingFrustum = updateMaterialCullingFrustum;
+    exports.removeMaterialCullingFrustum = removeMaterialCullingFrustum;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
