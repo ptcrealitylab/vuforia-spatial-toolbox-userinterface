@@ -28,7 +28,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
 
-    const DISPLAY_ORIGIN_BOX = false;
+    const DISPLAY_ORIGIN_BOX = true;
 
     let customMaterials;
     let materialCullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
@@ -89,7 +89,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         renderScene(); // update loop
 
         if (DISPLAY_ORIGIN_BOX) {
-            realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', true, function(newValue) {
+            realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
@@ -172,9 +172,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0xff0000}));
                     const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x00ff00}));
                     const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial({color:0x0000ff}));
-                    xBox.position.x = 100;
-                    yBox.position.y = 100;
-                    zBox.position.z = 100;
+                    xBox.position.x = 15;
+                    yBox.position.y = 15;
+                    zBox.position.z = 15;
                     group.add(originBox);
                     originBox.scale.set(10,10,10);
                     originBox.add(xBox);
@@ -363,18 +363,29 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;
-            let wireMaterial = //customMaterials.areaTargetMaterialWithTextureAndHeight(
-                new THREE.MeshStandardMaterial({
+            let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
                 wireframe: true,
                 color: 0x777777,
-            });//, maxHeight, center, true, true);
+            }), {
+                maxHeight: maxHeight,
+                center: center,
+                animateOnLoad: true,
+                inverted: true,
+                useFrustumCulling: false
+            });
 
             if (gltf.scene.geometry) {
                 if (typeof maxHeight !== 'undefined') {
                     if (!gltf.scene.material) {
                         console.warn('no material', gltf.scene);
                     } else {
-                        gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, maxHeight, center, true);
+                        gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
+                            maxHeight: maxHeight,
+                            center: center,
+                            animateOnLoad: true,
+                            inverted: false,
+                            useFrustumCulling: true
+                        });
                     }
                 }
                 gltf.scene.geometry.computeVertexNormals();
@@ -394,7 +405,13 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
-                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, maxHeight, center, true);
+                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
+                            maxHeight: maxHeight,
+                            center: center,
+                            animateOnLoad: true,
+                            inverted: false,
+                            useFrustumCulling: true
+                        });
                     }
                 });
                 const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
@@ -428,7 +445,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
                 threejsContainerObj.remove(wireMesh);
-            }, 100);
+            }, 5000);
             threejsContainerObj.add( gltf.scene );
 
             console.log('loaded gltf', pathToGltf);
@@ -517,15 +534,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     }
 
     /**
-     * Helper function to convert (x,y,z) from toolbox math format to three.js vector
-     * @param {number[]} arr3 – [x, y, z] array
-     * @returns {Vector3}
-     */
-    function array3ToXYZ(arr3) {
-        return new THREE.Vector3(arr3[0], arr3[1], arr3[2]);
-    }
-
-    /**
      * Creates a frustum, or updates the existing frustum with this id, to move it to this position and orientation.
      * Returns the parameters that define the planes of this frustum after moving it.
      * @param {string} id – id of the virtualizer
@@ -557,6 +565,15 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     }
 
     /**
+     * Helper function to convert [x,y,z] from toolbox math format to three.js vector
+     * @param {number[]} arr3 – [x, y, z] array
+     * @returns {Vector3}
+     */
+    function array3ToXYZ(arr3) {
+        return new THREE.Vector3(arr3[0], arr3[1], arr3[2]);
+    }
+
+    /**
      * Deletes the ViewFrustum that corresponds with the virtualizer id
      * @param {string} id
      */
@@ -569,11 +586,43 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             this.materialsToAnimate = [];
             this.lastUpdate = -1;
         }
-        areaTargetVertexShader(_center) {
-            return frustumVertexShader();
+        areaTargetVertexShader({useFrustumCulling, useLoadingAnimation, center}) {
+            if (!useLoadingAnimation && !useFrustumCulling) return THREE.ShaderChunk.meshphysical_vert;
+            if (useLoadingAnimation && !useFrustumCulling) {
+                return this.loadingAnimationVertexShader(center);
+            }
+            return frustumVertexShader({useLoadingAnimation: useLoadingAnimation, center: center});
         }
-        areaTargetFragmentShader(_inverted) {
-            return frustumFragmentShader();
+        areaTargetFragmentShader({useFrustumCulling, useLoadingAnimation, inverted}) {
+            if (!useLoadingAnimation && !useFrustumCulling) return THREE.ShaderChunk.meshphysical_frag;
+            if (useLoadingAnimation && !useFrustumCulling) {
+                return this.loadingAnimationFragmentShader(inverted);
+            }
+            return frustumFragmentShader({useLoadingAnimation: useLoadingAnimation, inverted: inverted});
+        }
+        loadingAnimationVertexShader(center) {
+            return THREE.ShaderChunk.meshphysical_vert
+                .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+    len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
+    `).replace('#include <common>', `#include <common>
+    varying float len;
+    `);
+        }
+        loadingAnimationFragmentShader(inverted) {
+            let condition = 'if (len > maxHeight) discard;';
+            if (inverted) {
+                // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
+                condition = 'if (len < maxHeight) discard;';
+            }
+            return THREE.ShaderChunk.meshphysical_frag
+                .replace('#include <clipping_planes_fragment>', `
+                         ${condition}
+                         #include <clipping_planes_fragment>`)
+                .replace(`#include <common>`, `
+                         #include <common>
+                         varying float len;
+                         uniform float maxHeight;
+                         `);
         }
         buildDefaultFrustums(numFrustums) {
             let frustums = [];
@@ -595,7 +644,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             }
             return frustums;
         }
-        areaTargetMaterialWithTextureAndHeight(sourceMaterial, maxHeight, center, animateOnLoad, inverted) {
+        areaTargetMaterialWithTextureAndHeight(sourceMaterial, {maxHeight, center, animateOnLoad, inverted, useFrustumCulling}) {
             let material = sourceMaterial.clone();
             
             // for the shader to work, we must fully populate the frustums uniform array
@@ -612,8 +661,16 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 }
             ]);
 
-            material.vertexShader = this.areaTargetVertexShader(center);
-            material.fragmentShader = this.areaTargetFragmentShader(inverted);
+            material.vertexShader = this.areaTargetVertexShader({
+                useFrustumCulling: useFrustumCulling,
+                useLoadingAnimation: animateOnLoad,
+                center: center
+            });
+            material.fragmentShader = this.areaTargetFragmentShader({
+                useFrustumCulling: useFrustumCulling,
+                useLoadingAnimation: animateOnLoad,
+                inverted: inverted
+            });
 
             if (animateOnLoad) {
                 this.materialsToAnimate.push({

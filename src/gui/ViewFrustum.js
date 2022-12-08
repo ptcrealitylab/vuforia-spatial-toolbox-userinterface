@@ -190,16 +190,27 @@ class PlaneGeo {
 /**
  * Returns a GLSL vertex shader for culling the points that fall within view frustums.
  * Actually doesn't do much, the magic happens in the fragment shader.
+ * @param {boolean} useLoadingAnimation – if true, calculates distance of each point to center
+ * @param {{x: number, y: number, z: number}} center
  * @returns {string}
  */
-const frustumVertexShader = function() {
+const frustumVertexShader = function({useLoadingAnimation, center}) {
+    let loadingCalcString = '';
+    let loadingUniformString = '';
+    if (useLoadingAnimation) {
+        if (!center) {
+            console.warn('trying to create loading animation shader without specifying center');
+            center = {x: 0, y: 0, z: 0};
+        }
+        loadingCalcString = `len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));`;
+        loadingUniformString = `varying float len;`;
+    }
     return ShaderChunk.meshphysical_vert
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-
+        ${loadingCalcString}
         vPosition = position.xyz; // make position accessible in the fragment shader
-            
     `).replace('#include <common>', `#include <common>
-    // varying float len; // calculates this for initial loading animation
+        ${loadingUniformString}
         varying vec3 vPosition;
     `);
 }
@@ -211,8 +222,17 @@ const frustumVertexShader = function() {
  * will be applied to discard points from rendering. The rest should have placeholder values.
  * @returns {string}
  */
-const frustumFragmentShader = function() {
+const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
+    let loadingUniformString = '';
+    let loadingConditionString = '';
+    if (useLoadingAnimation) {
+        loadingUniformString = `
+        varying float len;
+        uniform float maxHeight;`
+        loadingConditionString = inverted ? 'if (len < maxHeight) discard;' : 'if (len > maxHeight) discard;';
+    }
     let condition = `
+    ${loadingConditionString}
     if (numFrustums > 0)
     {
         for (int i = 0; i < numFrustums; i++)
@@ -230,7 +250,7 @@ const frustumFragmentShader = function() {
                          #include <clipping_planes_fragment>`)
         .replace(`#include <common>`, `
                          #include <common>
-    
+    ${loadingUniformString}
     uniform int numFrustums; // current number of frustums to apply 
     struct Frustum { // each Frustum is defined by 24 values (6 normals + 6 constants)
         vec3 normal1;
