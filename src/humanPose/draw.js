@@ -8,19 +8,6 @@ let humanPoseAnalyzer;
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 
-// author: https://www.30secondsofcode.org/js/s/hsl-to-rgb
-// input ranges: H: [0, 360], S: [0, 100], L: [0, 100]
-// output ranges: [0, 255]
-function HSLToRGB(h, s, l) {
-    s /= 100;
-    l /= 100;
-    const k = n => (n + h / 30) % 12;
-    const a = s * Math.min(l, 1 - l);
-    const f = n =>
-        l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-    return [255 * f(0), 255 * f(8), 255 * f(4)];
-}
-
 /**
  * Renders COCO-pose keypoints
  */
@@ -43,26 +30,41 @@ export class HumanPoseRenderer {
      */
     createSpheres() {
         const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
-        const mat = new THREE.MeshBasicMaterial({color: 0x0077ff});
-        this.baseMaterial = mat;
+        const mat = new THREE.MeshLambertMaterial();
 
-        for (const jointId of Object.values(JOINTS)) {
-            // TODO use instanced mesh for better performance
-            let sphere = new THREE.Mesh(geo, mat);
-            // this.spheres.push(sphere);
-            this.spheres[jointId] = sphere;
-            this.container.add(sphere);
+        this.baseColor = new THREE.Color(0, 0.5, 1);
+        this.redColor = new THREE.Color(1, 0, 0);
+        this.yellowColor = new THREE.Color(1, 1, 0);
+        this.greenColor = new THREE.Color(0, 1, 0);
+
+        this.spheresMesh = new THREE.InstancedMesh(
+            geo,
+            mat,
+            Object.values(JOINTS).length,
+        );
+        this.spheresMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+        for (const [i, jointId] of Object.values(JOINTS).entries()) {
+            this.spheres[jointId] = i;
+            this.spheresMesh.setColorAt(i, this.baseColor);
         }
+        this.container.add(this.spheresMesh);
+
         const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, SCALE, 3);
-        for (const boneName of Object.keys(JOINT_CONNECTIONS)) {
-            let bone = new THREE.Mesh(geoCyl, mat);
-            this.bones[boneName] = bone;
-            this.container.add(bone);
+        this.bonesMesh = new THREE.InstancedMesh(
+            geoCyl,
+            mat,
+            Object.keys(JOINT_CONNECTIONS).length,
+        );
+        this.container.add(this.bonesMesh);
+
+        for (const [i, boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
+            this.bones[boneName] = i;
+            this.bonesMesh.setColorAt(i, this.baseColor);
         }
 
-        this.redMaterial = new THREE.MeshBasicMaterial({color: 0xFF0000});
-        this.yellowMaterial = new THREE.MeshBasicMaterial({color: 0xFFFF00});
-        this.greenMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00});
+        this.spheresMesh.material = new THREE.MeshBasicMaterial();
+        this.bonesMesh.material = new THREE.MeshBasicMaterial();
     }
 
     /**
@@ -70,17 +72,25 @@ export class HumanPoseRenderer {
      * @param {THREE.Vector3} position
      */
     setJointPosition(jointId, position) {
-        let sphere = this.spheres[jointId];
-        sphere.position.x = position.x;
-        sphere.position.y = position.y;
-        sphere.position.z = position.z;
+        const index = this.spheres[jointId];
+        this.spheresMesh.setMatrixAt(
+            index,
+            new THREE.Matrix4().makeTranslation(
+                position.x,
+                position.y,
+                position.z,
+            ),
+        );
     }
 
     /**
      * @return {THREE.Vector3}
      */
     getJointPosition(jointId) {
-        return this.spheres[jointId].position;
+        const index = this.spheres[jointId];
+        const mat = new THREE.Matrix4();
+        this.spheresMesh.getMatrixAt(index, mat);
+        return new THREE.Vector3().setFromMatrixPosition(mat);
     }
 
     /**
@@ -91,10 +101,10 @@ export class HumanPoseRenderer {
     averageJointPositions(jointIds) {
         let avg = {x: 0, y: 0, z: 0};
         for (let jointId of jointIds) {
-            let joint = this.spheres[jointId]
-            avg.x += joint.position.x;
-            avg.y += joint.position.y;
-            avg.z += joint.position.z;
+            let jointPos = this.getJointPosition(jointId);
+            avg.x += jointPos.x;
+            avg.y += jointPos.y;
+            avg.z += jointPos.z;
         }
         avg.x /= jointIds.length;
         avg.y /= jointIds.length;
@@ -138,29 +148,41 @@ export class HumanPoseRenderer {
             JOINTS.RIGHT_HIP,
         ]));
 
-        for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
-            let bone = this.bones[boneName];
-            let jointA = this.spheres[JOINT_CONNECTIONS[boneName][0]].position;
-            let jointB = this.spheres[JOINT_CONNECTIONS[boneName][1]].position;
 
-            bone.position.x = (jointA.x + jointB.x) / 2;
-            bone.position.y = (jointA.y + jointB.y) / 2;
-            bone.position.z = (jointA.z + jointB.z) / 2;
-            bone.rotation.set(0, 0, 0);
+        for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
+            const boneIndex = this.bones[boneName];
+            let jointA = this.getJointPosition(JOINT_CONNECTIONS[boneName][0]);
+            let jointB = this.getJointPosition(JOINT_CONNECTIONS[boneName][1]);
+
+            let pos = new THREE.Vector3(
+                (jointA.x + jointB.x) / 2,
+                (jointA.y + jointB.y) / 2,
+                (jointA.z + jointB.z) / 2,
+            );
 
             let diff = new THREE.Vector3(jointB.x - jointA.x, jointB.y - jointA.y,
                 jointB.z - jointA.z);
+            let scale = new THREE.Vector3(1, diff.length() / SCALE, 1);
+            diff.normalize();
 
-            bone.scale.y = 1;
-            let localTarget = new THREE.Vector3(
-                jointB.x, jointB.y, jointB.z);
-            bone.lookAt(this.container.localToWorld(localTarget));
-            bone.rotateX(Math.PI / 2);
+            let rot = new THREE.Quaternion();
+            rot.setFromUnitVectors(new THREE.Vector3(0, 1, 0),
+                                   diff);
 
-            bone.scale.y = diff.length() / SCALE;
+            // bone.lookAt(this.container.localToWorld(localTarget));
+            // bone.rotateX(Math.PI / 2);
+            let mat = new THREE.Matrix4();
+            mat.compose(pos, rot, scale);
+
+            this.bonesMesh.setMatrixAt(boneIndex, mat);
         }
 
         annotateHumanPoseRenderer(this);
+
+        this.spheresMesh.instanceMatrix.needsUpdate = true;
+        this.spheresMesh.instanceColor.needsUpdate = true;
+        this.bonesMesh.instanceMatrix.needsUpdate = true;
+        this.bonesMesh.instanceColor.needsUpdate = true;
     }
 
 
@@ -174,15 +196,23 @@ export class HumanPoseRenderer {
      * @param {number} boneColor
      */
     setBoneRebaColor(boneName, boneColor) {
-        if (typeof this.bones[boneName] === 'undefined') return;
+        if (typeof this.bones[boneName] === 'undefined') {
+            return;
+        }
+
+        const boneIndex = this.bones[boneName];
+        const joint = JOINT_CONNECTIONS[boneName][1];
+        const jointIndex = this.spheres[joint];
 
         if (boneColor === 0) {
-            this.bones[boneName].material = this.greenMaterial;
-        }
-        if (boneColor === 1) {
-            this.bones[boneName].material = this.yellowMaterial;
+            this.bonesMesh.setColorAt(boneIndex, this.greenColor);
+            this.spheresMesh.setColorAt(jointIndex, this.greenColor);
+        } else if (boneColor === 1) {
+            this.bonesMesh.setColorAt(boneIndex, this.yellowColor);
+            this.spheresMesh.setColorAt(jointIndex, this.yellowColor);
         } else if (boneColor === 2) {
-            this.bones[boneName].material = this.redMaterial;
+            this.bonesMesh.setColorAt(boneIndex, this.redColor);
+            this.spheresMesh.setColorAt(jointIndex, this.redColor);
         }
     }
 
@@ -203,9 +233,8 @@ export class HumanPoseRenderer {
         } else {
             realityEditor.gui.threejsScene.removeFromScene(this.container);
         }
-        this.bones.headNeck.geometry.dispose();
-        this.spheres[JOINTS.HEAD].geometry.dispose();
-        this.spheres[JOINTS.HEAD].material.dispose();
+        this.bonesMesh.dispose();
+        this.spheresMesh.dispose();
     }
 }
 
@@ -271,13 +300,14 @@ export class HumanPoseAnalyzer {
         }
 
         let hueReba = this.getOverallRebaScoreHue(poseRenderer);
-        let colorRGB = HSLToRGB(hueReba, 80, 50);
+        let colorRGB = new THREE.Color();
+        colorRGB.setHSL(hueReba / 360, 0.8, 0.5);
 
         let nextHistoryPoint = {
             x: newPoint.x,
             y: newPoint.y,
             z: newPoint.z,
-            color: colorRGB,
+            color: [colorRGB.r * 255, colorRGB.g * 255, colorRGB.b * 255],
             timestamp,
         };
 
@@ -295,42 +325,36 @@ export class HumanPoseAnalyzer {
     }
 
     clone(poseRenderer) {
-        let colorRainbow = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
+        let colorRainbow = new THREE.Color(`hsl(${(Date.now() / 5) % 360}, 100%, 50%)`);
         let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
-        let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
-        let colorReba = `hsl(${hueReba}, 100%, 50%)`;
+        // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
+        let colorReba = new THREE.Color(`hsl(${hueReba}, 100%, 50%)`);
         let newContainer = poseRenderer.container.clone();
-        let matRainbow = new THREE.MeshBasicMaterial({
+        let matBase = new THREE.MeshBasicMaterial({
             color: colorRainbow,
             transparent: true,
             opacity: 0.5,
         });
-        let matReba = new THREE.MeshBasicMaterial({
-            color: colorReba,
-            transparent: true,
-            opacity: alphaReba,
-        });
 
         newContainer.children.forEach((obj) => {
-            if (obj.material) {
-                let materialOld = obj.material;
-                // Switch to transparent version of old material if possible
-                if (materialOld === poseRenderer.baseMaterial) {
-                    materialOld = this.baseMaterial;
-                } else if (materialOld === poseRenderer.redMaterial) {
-                    materialOld = this.redMaterial;
-                } else if (materialOld === poseRenderer.yellowMaterial) {
-                    materialOld = this.yellowMaterial;
-                } else if (materialOld === poseRenderer.greenMaterial) {
-                    materialOld = this.greenMaterial;
-                }
+            if (obj.instanceColor) {
+                // Make the material transparent
+                obj.material = matBase;
 
-                obj.__cloneMaterials = [
-                    matReba,
-                    materialOld,
-                    matRainbow,
+                let attrBase = obj.instanceColor;
+                let attrReba = obj.instanceColor.clone();
+                let attrRainbow = obj.instanceColor.clone();
+                for (let i = 0; i < attrReba.count; i++) {
+                    colorReba.toArray(attrReba.array, i * 3);
+                    colorRainbow.toArray(attrRainbow.array, i * 3);
+                }
+                obj.__cloneColors = [
+                    attrReba,
+                    attrBase,
+                    attrRainbow,
                 ];
-                obj.material = obj.__cloneMaterials[this.cloneMaterialIndex % obj.__cloneMaterials.length];
+                obj.instanceColor = obj.__cloneColors[this.cloneMaterialIndex % obj.__cloneColors.length];
+                obj.instanceColor.needsUpdate = true;
             }
         });
         return newContainer;
@@ -387,9 +411,10 @@ export class HumanPoseAnalyzer {
         this.cloneMaterialIndex += 1;
 
         this.historyCloneContainer.traverse((obj) => {
-            if (obj.material && obj.__cloneMaterials) {
-                let index = this.cloneMaterialIndex % obj.__cloneMaterials.length;
-                obj.material = obj.__cloneMaterials[index];
+            if (obj.__cloneColors) {
+                let index = this.cloneMaterialIndex % obj.__cloneColors.length;
+                obj.instanceColor = obj.__cloneColors[index];
+                obj.instanceColor.needsUpdate = true;
             }
         });
     }
