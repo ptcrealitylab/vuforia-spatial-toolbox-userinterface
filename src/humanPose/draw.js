@@ -248,10 +248,19 @@ export class HumanPoseAnalyzer {
     constructor(historyMeshContainer, historyCloneContainer) {
         this.historyMeshContainer = historyMeshContainer;
         this.historyCloneContainer = historyCloneContainer;
-        this.recordingClones = false;
+        this.recordingClones = true;
         this.cloneMaterialIndex = 0;
         this.historyMeshesAll = {};
         this.historyPointsAll = {};
+        this.clonesAll = [];
+        this.lastDisplayedCloneIndex = 0;
+
+        this.animationStart = -1;
+        this.animationEnd = -1;
+        this.animationPosition = -1;
+        this.lastAnimationUpdate = Date.now();
+
+        this.update = this.update.bind(this);
 
         this.baseMaterial = new THREE.MeshBasicMaterial({
             color: 0x0077ff,
@@ -273,11 +282,40 @@ export class HumanPoseAnalyzer {
             transparent: true,
             opacity: 0.5,
         });
+
+        window.requestAnimationFrame(this.update);
+    }
+
+    update() {
+        let firstTimestamp = -1;
+        let secondTimestamp = -1;
+        for (let spaghettiMesh of Object.values(this.historyMeshesAll)) {
+            let comparer = spaghettiMesh.comparer;
+            let points = spaghettiMesh.currentPoints;
+            if (!comparer.firstPointIndex) {
+                continue;
+            }
+            firstTimestamp = points[comparer.firstPointIndex].timestamp;
+            secondTimestamp = firstTimestamp + 1;
+            if (comparer.secondPointIndex) {
+                secondTimestamp = points[comparer.secondPointIndex].timestamp;
+            }
+        }
+
+        this.setAnimation(firstTimestamp, secondTimestamp);
+        this.updateAnimation();
+
+        window.requestAnimationFrame(this.update);
     }
 
     poseRendererUpdated(poseRenderer, timestamp) {
         if (this.recordingClones) {
             const obj = this.clone(poseRenderer);
+            this.clonesAll.push({
+                timestamp,
+                poseObject: obj,
+            })
+            obj.visible = false;
             this.historyCloneContainer.add(obj);
         }
 
@@ -325,13 +363,16 @@ export class HumanPoseAnalyzer {
     }
 
     clone(poseRenderer) {
-        let colorRainbow = new THREE.Color(`hsl(${(Date.now() / 5) % 360}, 100%, 50%)`);
+        let colorRainbow = new THREE.Color();
+        colorRainbow.setHSL(((Date.now() / 5) % 360) / 360, 1, 0.5);
+
         let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
         // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
-        let colorReba = new THREE.Color(`hsl(${hueReba}, 100%, 50%)`);
+        let colorReba = new THREE.Color();
+        colorReba.setHSL(hueReba / 360, 1, 0.5);
+
         let newContainer = poseRenderer.container.clone();
         let matBase = new THREE.MeshBasicMaterial({
-            color: colorRainbow,
             transparent: true,
             opacity: 0.5,
         });
@@ -339,7 +380,6 @@ export class HumanPoseAnalyzer {
         newContainer.children.forEach((obj) => {
             if (obj.instanceColor) {
                 // Make the material transparent
-                obj.material = matBase;
 
                 let attrBase = obj.instanceColor;
                 let attrReba = obj.instanceColor.clone();
@@ -354,6 +394,7 @@ export class HumanPoseAnalyzer {
                     attrRainbow,
                 ];
                 obj.instanceColor = obj.__cloneColors[this.cloneMaterialIndex % obj.__cloneColors.length];
+                obj.material = matBase;
                 obj.instanceColor.needsUpdate = true;
             }
         });
@@ -417,6 +458,54 @@ export class HumanPoseAnalyzer {
                 obj.instanceColor.needsUpdate = true;
             }
         });
+    }
+
+    setAnimation(start, end) {
+        this.animationStart = start;
+        this.animationEnd = end;
+    }
+
+    updateAnimation() {
+        let dt = Date.now() - this.lastAnimationUpdate;
+        this.lastAnimationUpdate += dt;
+        if (this.animationStart < 0 || this.animationEnd < 0) {
+            return;
+        }
+        this.animationPosition += dt * 2;
+        let offset = this.animationPosition - this.animationStart;
+        let duration = this.animationEnd - this.animationStart;
+        let offsetClamped = offset % duration;
+        this.animationPosition = this.animationStart + offsetClamped;
+        this.displayNearestClone(this.animationPosition);
+    }
+
+    displayNearestClone(timestamp) {
+        if (this.clonesAll.length < 2) {
+            return;
+        }
+        let bestClone = null;
+        if (this.lastDisplayedCloneIndex >= 0) {
+            let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
+            lastClone.poseObject.visible = false;
+            if (lastClone.timestamp > timestamp) {
+                this.lastDisplayedCloneIndex = 0;
+            }
+        }
+        for (let i = this.lastDisplayedCloneIndex; i < this.clonesAll.length; i++) {
+            let clone = this.clonesAll[i];
+            let cloneNext = this.clonesAll[i + 1];
+            if (clone.timestamp > timestamp) {
+                break;
+            }
+            if (!cloneNext || cloneNext.timestamp > timestamp) {
+                bestClone = clone;
+                this.lastDisplayedCloneIndex = i;
+                break;
+            }
+        }
+        if (bestClone) {
+            bestClone.poseObject.visible = true;
+        }
     }
 }
 
