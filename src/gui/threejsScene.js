@@ -27,6 +27,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
+    let hasGltfScene = false;
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -45,6 +46,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.autoClear = false;
+
         camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
         camera.matrixAutoUpdate = false;
         scene = new THREE.Scene();
@@ -218,7 +221,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.render( scene, camera );
+            renderer.clear();
+            if (hasGltfScene) {
+                camera.layers.set(1);
+                renderer.render(scene, camera);
+                renderer.clear(false, true, true);
+            }
+            camera.layers.set(0);
+            renderer.render(scene, camera);
         }
 
         requestAnimationFrame(renderScene);
@@ -441,6 +451,15 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
+
+            wireMesh.layers.set(1);
+            gltf.scene.layers.set(1);
+            gltf.scene.traverse(child => {
+                if (child.layers) {
+                    child.layers.set(1);
+                }
+            });
+            hasGltfScene = true;
 
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
@@ -763,7 +782,22 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             x: ( pos.x + 1 ) * window.innerWidth / 2,
             y: ( -pos.y + 1) * window.innerHeight / 2
         };
-    }
+    };
+
+    /**
+     * @return {{
+           camera: THREE.PerspectiveCamera,
+           renderer: THREE.WebGLRenderer,
+           scene: THREE.Scene,
+       }} Various internal objects necessary for advanced (hacky) functions
+     */
+    exports.getInternals = function getInternals() {
+        return {
+            camera,
+            renderer,
+            scene,
+        };
+    };
 
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
