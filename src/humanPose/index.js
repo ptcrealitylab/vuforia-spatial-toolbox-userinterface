@@ -114,9 +114,13 @@ import * as utils from './utils.js'
             setTimeout(loadHistory, 500);
             return;
         }
-        let res = await fetch('http://localhost:8080/history');
-        let hist = await res.json();
-        replayHistory(hist);
+        try {
+            let res = await fetch('http://localhost:8080/history');
+            let hist = await res.json();
+            replayHistory(hist);
+        } catch (e) {
+            console.warn('Unable to load history', e);
+        }
     }
 
     async function replayHistory(hist) {
