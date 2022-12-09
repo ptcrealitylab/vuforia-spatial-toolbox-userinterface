@@ -768,7 +768,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     }
 
     exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance)
+        return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance);
     }
 
     // source: https://github.com/mrdoob/three.js/issues/78
