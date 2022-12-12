@@ -251,7 +251,6 @@ export class HumanPoseAnalyzer {
         this.recordingClones = true;
         this.cloneMaterialIndex = 0;
         this.historyMeshesAll = {};
-        this.historyPointsAll = {};
         this.clonesAll = [];
         this.lastDisplayedCloneIndex = 0;
 
@@ -322,18 +321,20 @@ export class HumanPoseAnalyzer {
         let newPoint = poseRenderer.getJointPosition(JOINTS.HEAD).clone();
         newPoint.y += 400;
 
-        if (!this.historyPointsAll.hasOwnProperty(poseRenderer.id)) {
+        if (!this.historyMeshesAll.hasOwnProperty(poseRenderer.id)) {
             this.createHistoryLine(poseRenderer);
         }
 
-        let historyPoints = this.historyPointsAll[poseRenderer.id];
+        let historyMesh = this.historyMeshesAll[poseRenderer.id];
 
         // Split spaghetti line if we jumped by a large amount
-        if (historyPoints.length > 0) {
-            let lastPoint = historyPoints[historyPoints.length - 1];
+        if (historyMesh.currentPoints.length > 0) {
+            let lastPoint = historyMesh.currentPoints[historyMesh.currentPoints.length - 1];
             let lastVec = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
             if (lastVec.distanceToSquared(newPoint) > 800 * 800) {
+                this.historyMeshesAll[poseRenderer.id + '-until-' + timestamp] = historyMesh;
                 this.createHistoryLine(poseRenderer);
+                historyMesh = this.historyMeshesAll[poseRenderer.id];
             }
         }
 
@@ -349,8 +350,8 @@ export class HumanPoseAnalyzer {
             timestamp,
         };
 
-        historyPoints.push(nextHistoryPoint);
-        this.historyMeshesAll[poseRenderer.id].setPoints(historyPoints);
+        historyMesh.currentPoints.push(nextHistoryPoint);
+        this.historyMeshesAll[poseRenderer.id].setPoints(historyMesh.currentPoints);
     }
 
     getOverallRebaScoreHue(overallRebaScore) {
@@ -407,8 +408,7 @@ export class HumanPoseAnalyzer {
      * @param {HumanPoseRenderer} poseRenderer
      */
     createHistoryLine(poseRenderer) {
-        const historyPoints = [];
-        const historyMesh = new SpaghettiMeshPath(historyPoints, {
+        const historyMesh = new SpaghettiMeshPath([], {
             widthMm: 30,
             heightMm: 30,
             usePerVertexColors: true,
@@ -416,7 +416,6 @@ export class HumanPoseAnalyzer {
         });
         this.historyMeshContainer.add(historyMesh);
 
-        this.historyPointsAll[poseRenderer.id] = historyPoints;
         this.historyMeshesAll[poseRenderer.id] = historyMesh;
     }
 
