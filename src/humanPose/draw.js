@@ -428,14 +428,22 @@ export class HumanPoseAnalyzer {
 
 
     resetHistoryLines() {
-        // Loop over copy of children to remove all
-        for (let child of this.historyMeshContainer.children.concat()) {
-            this.historyMeshContainer.remove(child);
+        for (let key of Object.keys(this.historyMeshesAll)) {
+            let historyMesh = this.historyMeshesAll[key];
+            historyMesh.resetPoints();
+            this.historyMeshContainer.remove(historyMesh);
         }
+        this.historyMeshesAll = {};
     }
 
     resetHistoryClones() {
+        // Loop over copy of children to remove all
         for (let child of this.historyCloneContainer.children.concat()) {
+            child.geometry.dispose();
+            child.material.dispose();
+            if (child.dispose) {
+                child.dispose();
+            }
             this.historyCloneContainer.remove(child);
         }
     }
