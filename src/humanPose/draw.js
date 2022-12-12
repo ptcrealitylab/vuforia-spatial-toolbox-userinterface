@@ -486,7 +486,7 @@ export class HumanPoseAnalyzer {
             this.hideLastDisplayedClone(-1);
             return;
         }
-        this.animationPosition += dt * 2;
+        this.animationPosition += dt;
         let offset = this.animationPosition - this.animationStart;
         let duration = this.animationEnd - this.animationStart;
         let offsetClamped = offset % duration;
