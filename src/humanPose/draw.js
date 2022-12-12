@@ -576,13 +576,20 @@ function setMatrixFromArray(matrix, array) {
     );
 }
 
+function renderPose(poseObject, timestamp, container) {
+    updatePoseRenderer(poseObject, timestamp, container, false);
+}
+
 function renderHistoricalPose(poseObject, timestamp, container) {
-    // assume that all sub-objects are of the form poseObject.id + joint name
     if (!poseObject.uuid) {
         poseObject.uuid = poseObject.objectId;
         poseObject.id = poseObject.objectId;
     }
 
+    updatePoseRenderer(poseObject, timestamp, container, true);
+}
+
+function updatePoseRenderer(poseObject, timestamp, container, historical) {
     if (!poseRenderers[poseObject.uuid]) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
         poseRenderers[poseObject.uuid].addToScene(container);
@@ -590,15 +597,32 @@ function renderHistoricalPose(poseObject, timestamp, container) {
     let poseRenderer = poseRenderers[poseObject.uuid];
     poseRenderer.updated = true;
 
-    // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
+    if (historical) {
+        updateJointsHistorical(poseRenderer, poseObject);
+    } else {
+        updateJoints(poseRenderer, poseObject);
+    }
+
+    poseRenderer.updateBonePositions();
+
+    humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
+}
+
+function getGroundPlaneRelativeMatrix() {
     let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
     let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
     let groundPlaneRelativeMatrix = new THREE.Matrix4();
     setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
+    return groundPlaneRelativeMatrix;
+}
+
+function updateJointsHistorical(poseRenderer, poseObject) {
+    let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
     for (let jointId of Object.values(JOINTS)) {
         let frame = poseObject.frames[poseObject.uuid + jointId];
 
+        // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let jointMatrixThree = new THREE.Matrix4();
         setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
         jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
@@ -608,33 +632,20 @@ function renderHistoricalPose(poseObject, timestamp, container) {
 
         poseRenderer.setJointPosition(jointId, jointPosition);
     }
-    poseRenderer.updateBonePositions();
-
-    humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
 }
 
-function renderPose(poseObject, timestamp, container) {
-    // assume that all sub-objects are of the form poseObject.id + joint name
+function updateJoints(poseRenderer, poseObject) {
+    let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
-    if (!poseRenderers[poseObject.uuid]) {
-        poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
-        poseRenderers[poseObject.uuid].addToScene(container);
-    }
-    let poseRenderer = poseRenderers[poseObject.uuid];
-    poseRenderer.updated = true;
-
-    // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
-    let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-    let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-    let groundPlaneRelativeMatrix = new THREE.Matrix4();
-    setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
     let objectRootMatrix = new THREE.Matrix4();
     setMatrixFromArray(objectRootMatrix, poseObject.matrix);
     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
 
     for (let jointId of Object.values(JOINTS)) {
+        // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
+        // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let jointMatrixThree = new THREE.Matrix4();
         setMatrixFromArray(jointMatrixThree, sceneNode.worldMatrix);
         jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
@@ -644,9 +655,6 @@ function renderPose(poseObject, timestamp, container) {
 
         poseRenderer.setJointPosition(jointId, jointPosition);
     }
-    poseRenderer.updateBonePositions();
-
-    humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
 }
 
 function resetHistoryLines() {
