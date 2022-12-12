@@ -483,6 +483,7 @@ export class HumanPoseAnalyzer {
         let dt = Date.now() - this.lastAnimationUpdate;
         this.lastAnimationUpdate += dt;
         if (this.animationStart < 0 || this.animationEnd < 0) {
+            this.hideLastDisplayedClone(-1);
             return;
         }
         this.animationPosition += dt * 2;
@@ -493,18 +494,23 @@ export class HumanPoseAnalyzer {
         this.displayNearestClone(this.animationPosition);
     }
 
+    hideLastDisplayedClone(timestamp) {
+        if (this.lastDisplayedCloneIndex >= 0) {
+            let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
+            lastClone.poseObject.visible = false;
+            if (timestamp >= 0 && lastClone.timestamp > timestamp) {
+                this.lastDisplayedCloneIndex = 0;
+            }
+        }
+    }
+
     displayNearestClone(timestamp) {
+        this.hideLastDisplayedClone(timestamp);
+
         if (this.clonesAll.length < 2) {
             return;
         }
         let bestClone = null;
-        if (this.lastDisplayedCloneIndex >= 0) {
-            let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
-            lastClone.poseObject.visible = false;
-            if (lastClone.timestamp > timestamp) {
-                this.lastDisplayedCloneIndex = 0;
-            }
-        }
         for (let i = this.lastDisplayedCloneIndex; i < this.clonesAll.length; i++) {
             let clone = this.clonesAll[i];
             let cloneNext = this.clonesAll[i + 1];
