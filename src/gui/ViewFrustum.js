@@ -36,8 +36,9 @@ class ViewFrustum {
      * @param {number} ratio – aspect ratio, e.g. 1920/1080
      * @param {number} nearD – near plane distance in scene units, e.g. 0.1 meters
      * @param {number} farD – far plane distance in scene units, e.g. 5 meters
+     * @param {boolean|undefined} dontAutoRecompute - pass in true if you plan to call setCameraDef immediately afterwards with new params
      */
-    setCameraInternals(angle, ratio, nearD, farD) {
+    setCameraInternals(angle, ratio, nearD, farD, dontAutoRecompute) {
         // store the information
         this.ratio = ratio;
         this.angle = angle;
@@ -52,7 +53,7 @@ class ViewFrustum {
         this.fw = this.fh * ratio;
 
         // Note: if you change this after setCameraDef, you need to call setCameraDef again to recompute the planes
-        if (typeof this.p !== 'undefined' && typeof this.l !== 'undefined' && typeof this.u !== 'undefined') {
+        if (!dontAutoRecompute && typeof this.p !== 'undefined' && typeof this.l !== 'undefined' && typeof this.u !== 'undefined') {
             this.setCameraDef(this.p, this.l, this.u);
         }
     }
@@ -212,8 +213,11 @@ const frustumVertexShader = function({useLoadingAnimation, center}) {
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
         ${loadingCalcString}
         vPosition = position.xyz; // makes position accessible in the fragment shader
+        vBarycentric = a_barycentric; // Pass barycentric to fragment shader for wireframe effect
     `).replace('#include <common>', `#include <common>
         ${loadingUniformString}
+        attribute vec3 a_barycentric;
+        varying vec3 vBarycentric;
         varying vec3 vPosition;
     `);
 }
@@ -223,6 +227,9 @@ const frustumVertexShader = function({useLoadingAnimation, center}) {
  * Takes in an array of Frustum structs, which each have 6 vec3's (plane normals) and 6 floats (plane constants)
  * The frustums (uniform) array should have length MAX_VIEW_FRUSTUMS, but only the first numFrustums (uniform)
  * will be applied to discard points from rendering. The rest should have placeholder values.
+ *
+ * This version of the shader applies a wireframe effect within the frustum instead of discarding all points.
+ * Note: you must first do geometry.toNonIndexed() and assigned barycentric coordinates to each vertex to do the wireframe effect
  * @returns {string}
  */
 const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
@@ -236,13 +243,16 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     }
     let condition = `
     ${loadingConditionString}
+    bool clipped = false;
     if (numFrustums > 0)
     {
         for (int i = 0; i < numFrustums; i++)
         {
-            bool clipped = isInsideFrustum(frustums[i]);
-            if (clipped) discard;
-            if (clipped) break;
+            clipped = clipped || isInsideFrustum(frustums[i]);
+            if (clipped) {
+                // discard; // uncomment to fully discard all points within frustums instead of wireframing them
+                break;
+            }
         }
     }
     `;
@@ -251,6 +261,32 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
                          ${condition}
 
                          #include <clipping_planes_fragment>`)
+        .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+            // make the texture darker if a client connects
+            if (numFrustums > 0 && !clipped) {
+                gl_FragColor.r *= 0.5;
+                gl_FragColor.g *= 0.5;
+                gl_FragColor.b *= 0.5;
+
+            // render the area inside the frustum as a wireframe
+            } else if (clipped) {
+                // calculate whether this point is very close to any of the three triangle edges
+                float min_dist = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
+                float edgeIntensity = 1.0 - step(0.03, min_dist); // 1 if on edge, 0 otherwise. Adjust 0.03 to make wireframe thicker/thinner.
+
+                // uncomment to include texture in between the wireframes
+                // vec4 diffuse = texture2D(u_texture, v_texcoord) * vec4(vec3(v_light_intensity), 1.0);
+                // gl_FragColor = edgeIntensity * vec4(0.0, 1.0, 1.0, 1.0) + (1.0 - edgeIntensity) * diffuse;
+
+                // white if on edge, transparent if not. adjust 0.3 to change opacity of lines.
+                gl_FragColor = edgeIntensity * vec4(1.0, 1.0, 1.0, 0.3);
+
+                // to ensure that in between the wireframes is fully transparent, it's easiest to just discard the point
+                if (edgeIntensity < 0.5) {
+                    discard;
+                }
+            }
+            `)
         .replace(`#include <common>`, `
                          #include <common>
     ${loadingUniformString}
@@ -271,6 +307,7 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     };
     uniform Frustum frustums[${MAX_VIEW_FRUSTUMS}]; // MAX number of frustums that can cull the geometry
     
+    varying vec3 vBarycentric;
     varying vec3 vPosition;
     // todo: this shader only works if the mesh is exported with origin at (0,0,0)
     //   and has identity scale and rotation (1 unit = 1 meter)
