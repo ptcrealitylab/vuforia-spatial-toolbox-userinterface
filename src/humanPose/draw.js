@@ -301,6 +301,13 @@ export class HumanPoseAnalyzer {
             }
         }
 
+        // Swap so the animation is always from low to high
+        if (firstTimestamp > secondTimestamp) {
+            let t = firstTimestamp;
+            firstTimestamp = secondTimestamp;
+            secondTimestamp = t;
+        }
+
         this.setAnimation(firstTimestamp, secondTimestamp);
         this.updateAnimation();
 
