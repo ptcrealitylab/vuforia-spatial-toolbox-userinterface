@@ -34,6 +34,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     let customMaterials;
     let materialCullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
 
+    let areaTargetMaterials = [];
+
     // for now, this contains everything not attached to a specific world object
     var threejsContainerObj;
 
@@ -423,6 +425,23 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                             useFrustumCulling: true
                         });
                     }
+
+                    // the attributes must be non-indexed in order to add a barycentric coordinate buffer
+                    child.geometry = child.geometry.toNonIndexed();
+
+                    // we assign barycentric coordinates to each vertex in order to render a wireframe shader
+                    let positionAttribute = child.geometry.getAttribute('position');
+                    let barycentricBuffer = [];
+                    const count = positionAttribute.count / 3;
+                    for (let i = 0; i < count; i++) {
+                        barycentricBuffer.push(
+                            0, 0, 1,
+                            0, 1, 0,
+                            1, 0, 0
+                        );
+                    }
+
+                    child.geometry.setAttribute('a_barycentric', new THREE.BufferAttribute(new Uint8Array(barycentricBuffer), 3));
                 });
                 const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
                   let geo = child.geometry.clone();
@@ -537,12 +556,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      * @returns {ViewFrustum}
      */
     const createCullingFrustum = function() {
+        areaTargetMaterials.forEach(material => {
+            material.transparent = true;
+        });
+
         // TODO: get these camera parameters dynamically?
         const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
         const widthToHeightRatio = 1920/1080;
-        
-        // TODO: continuously set MAX_DIST_OBSERVED to the furthest depth point seen this frame
-        //  so that frustum doesn't cut through multiple walls
+
         const MAX_DIST_OBSERVED = 5000;
         const FAR_PLANE_MM = Math.min(MAX_DIST_OBSERVED, 5000) + 100; // extend it slightly beyond the extent of the LiDAR sensor
         const NEAR_PLANE_MM = 10;
@@ -559,14 +580,21 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      * @param {number[]} cameraPosition - position in model coordinates. this may be meters, not millimeters.
      * @param {number[]} cameraLookAtPosition – position where the camera is looking. if you subtract cameraPosition, you get direction
      * @param {number[]} cameraUp - normalized up vector of camera orientation
+     * @param {number} maxDepthMeters - furthest point detected by the LiDAR sensor this frame
      * @returns {{normal1: Vector3, normal2: Vector3, normal3: Vector3, normal4: Vector3, normal5: Vector3, normal6: Vector3, D1: number, D2: number, D3: number, D4: number, D5: number, D6: number}}
      */
-    function updateMaterialCullingFrustum(id, cameraPosition, cameraLookAtPosition, cameraUp) {
+    function updateMaterialCullingFrustum(id, cameraPosition, cameraLookAtPosition, cameraUp, maxDepthMeters) {
         if (typeof materialCullingFrustums[id] === 'undefined') {
             materialCullingFrustums[id] = createCullingFrustum();
         }
 
-        materialCullingFrustums[id].setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
+        let frustum = materialCullingFrustums[id];
+
+        if (typeof maxDepthMeters !== 'undefined') {
+            frustum.setCameraInternals(frustum.angle, frustum.ratio, frustum.nearD, (frustum.farD + maxDepthMeters) / 2, true);
+        }
+
+        frustum.setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
         return {
             normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
             normal2: array3ToXYZ(materialCullingFrustums[id].planes[1].normal),
@@ -598,6 +626,12 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      */
     function removeMaterialCullingFrustum(id) {
         delete materialCullingFrustums[id];
+
+        if (Object.keys(materialCullingFrustums).length === 0) {
+            areaTargetMaterials.forEach(material => {
+                material.transparent = false; // optimize by turning off transparency when no virtualizers are connected
+            });
+        }
     }
 
     class CustomMaterials {
@@ -690,6 +724,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 useLoadingAnimation: animateOnLoad,
                 inverted: inverted
             });
+
+            material.transparent = (Object.keys(materialCullingFrustums).length > 0);
+            areaTargetMaterials.push(material);
 
             if (animateOnLoad) {
                 this.materialsToAnimate.push({
