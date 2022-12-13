@@ -264,9 +264,9 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
         .replace('#include <dithering_fragment>', `#include <dithering_fragment>
             // make the texture darker if a client connects
             if (numFrustums > 0 && !clipped) {
-                gl_FragColor.r *= 0.5;
-                gl_FragColor.g *= 0.5;
-                gl_FragColor.b *= 0.5;
+                gl_FragColor.r *= 0.8;
+                gl_FragColor.g *= 0.8;
+                gl_FragColor.b *= 0.8;
 
             // render the area inside the frustum as a wireframe
             } else if (clipped) {
