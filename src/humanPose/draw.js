@@ -497,7 +497,9 @@ export class HumanPoseAnalyzer {
     hideLastDisplayedClone(timestamp) {
         if (this.lastDisplayedCloneIndex >= 0) {
             let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
-            lastClone.poseObject.visible = false;
+            if (lastClone) {
+                lastClone.poseObject.visible = false;
+            }
             if (timestamp >= 0 && lastClone.timestamp > timestamp) {
                 this.lastDisplayedCloneIndex = 0;
             }
