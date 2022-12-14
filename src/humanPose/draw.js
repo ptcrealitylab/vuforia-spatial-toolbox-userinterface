@@ -532,6 +532,10 @@ export class HumanPoseAnalyzer {
 }
 
 function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
+    
+    if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+
+    
     if (!humanPoseAnalyzer) {
         const historyMeshContainer = new THREE.Group();
         historyMeshContainer.visible = true;
