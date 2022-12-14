@@ -120,14 +120,16 @@ createNameSpace("realityEditor.worldObjects");
      * Tries again repeatedly every 1 second until it succeeds, in case server takes awhile to initialize
      */
     function tryLoadingLocalWorldObject() {
-        console.log('try loading local world object...');
-        let worldObjectBeat = { id: localWorldObjectKey,
+        let worldObjectBeat = {
+            id: localWorldObjectKey,
             ip: '127.0.0.1',
             port: realityEditor.device.environment.getLocalServerPort(),
             vn: 320,
             pr: 'R2',
             tcs: null,
-            zone: '' };
+            zone: '',
+        };
+        console.log('try loading local world object...', worldObjectBeat);
 
         if (!realityEditor.network.state.isCloudInterface) {
             realityEditor.network.addHeartbeatObject(worldObjectBeat);

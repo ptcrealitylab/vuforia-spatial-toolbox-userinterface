@@ -1358,6 +1358,30 @@ function polyfillWebkitConvertPointFromPageToNode() {
         return add(rayOrigin, scalarMultiply(rayDirection, t));
     }
 
+    /**
+     * Ray-casts from (screenX, screenY) onto the XY plane, and returns the (x,y,z) intersect in ROOT coordinates
+     * @param {number[]} planeOrigin
+     * @param {number[]} planeNormal
+     * @param {SceneNode} cameraNode
+     * @param {number} screenX
+     * @param {number} screenY
+     * @returns {{x: number, y: number, z: number}}
+     */
+    function getPointOnPlaneFromScreenXY(planeOrigin, planeNormal, cameraNode, screenX, screenY) {
+        let rootCoordinateSystem = cameraNode.parent || realityEditor.sceneGraph.getSceneNodeById('ROOT');
+        const SEGMENT_LENGTH = 1000; // arbitrary, just need to calculate one point, so we can compute rayDirection
+        let testPoint = realityEditor.sceneGraph.getPointAtDistanceFromCamera(screenX, screenY, SEGMENT_LENGTH, rootCoordinateSystem);
+
+        let cameraPoint = realityEditor.sceneGraph.getWorldPosition(cameraNode.id);
+        let rayOrigin = [cameraPoint.x, cameraPoint.y, cameraPoint.z];
+        let rayDirection = normalize(subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
+
+        let planeIntersection = rayPlaneIntersect(planeOrigin, planeNormal, rayOrigin, rayDirection);
+        if (!planeIntersection) return undefined; // if plane is parallel to ray
+
+        return {x: planeIntersection[0], y: planeIntersection[1], z: planeIntersection[2]};
+    }
+
     exports.lookAt = lookAt;
     exports.scalarMultiply = scalarMultiply;
     exports.negate = negate;
@@ -1371,4 +1395,5 @@ function polyfillWebkitConvertPointFromPageToNode() {
     exports.getUpVector = getUpVector;
     exports.getForwardVector = getForwardVector;
     exports.rayPlaneIntersect = rayPlaneIntersect;
+    exports.getPointOnPlaneFromScreenXY = getPointOnPlaneFromScreenXY;
 })(realityEditor.gui.ar.utilities);

@@ -1,8 +1,14 @@
 createNameSpace("realityEditor.humanPose");
 
-(function(exports) {
+import * as network from './network.js'
+import * as draw from './draw.js'
+import * as utils from './utils.js'
 
-    let network, draw, utils; // shortcuts to access realityEditor.humanPose._____
+(function(exports) {
+    // Re-export submodules for use in legacy code
+    exports.network = network;
+    exports.draw = draw;
+    exports.utils = utils;
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
@@ -12,13 +18,12 @@ createNameSpace("realityEditor.humanPose");
     let lastRenderTime = Date.now();
     let lastUpdateTime = Date.now();
     let lastRenderedPoses = {};
+    let inHistoryPlayback = false;
 
     function initService() {
-        network = realityEditor.humanPose.network;
-        draw = realityEditor.humanPose.draw;
-        utils = realityEditor.humanPose.utils;
-
         console.log('init humanPose module', network, draw, utils);
+
+        loadHistory();
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
@@ -47,6 +52,10 @@ createNameSpace("realityEditor.humanPose");
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
+            if (inHistoryPlayback) {
+                return;
+            }
+
             try {
                 // main update runs at ~60 FPS, but we can save some compute by limiting the pose rendering FPS
                 if (Date.now() - lastRenderTime < (1000.0 / MAX_FPS)) return;
@@ -55,7 +64,7 @@ createNameSpace("realityEditor.humanPose");
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderHumanPoseObjects([]);
+                    draw.renderHumanPoseObjects([], Date.now());
                     lastUpdateTime = Date.now();
                     return;
                 }
@@ -65,7 +74,7 @@ createNameSpace("realityEditor.humanPose");
 
                 lastUpdateTime = Date.now();
 
-                draw.renderHumanPoseObjects(Object.values(humanPoseObjects));
+                draw.renderHumanPoseObjects(Object.values(humanPoseObjects), Date.now());
 
                 for (const [id, obj] of Object.entries(humanPoseObjects)) {
                     lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
@@ -74,6 +83,65 @@ createNameSpace("realityEditor.humanPose");
                 console.warn('error in renderHumanPoseObjects', e);
             }
         });
+    }
+
+    function applyDiffRecur(objects, diff) {
+        let diffKeys = Object.keys(diff);
+        for (let key of diffKeys) {
+            if (diff[key] === null) {
+                continue; // JSON encodes undefined as null so just skip (problem if we try to encode null)
+            }
+            if (typeof diff[key] === 'object' && objects.hasOwnProperty(key)) {
+                applyDiffRecur(objects[key], diff[key]);
+                continue;
+            }
+            objects[key] = diff[key];
+        }
+    }
+
+    function applyDiff(objects, diff) {
+        applyDiffRecur(objects, diff);
+    }
+
+    function sleep(ms) {
+        return new Promise(res => {
+            setTimeout(res, ms);
+        });
+    }
+
+    async function loadHistory() {
+        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
+            setTimeout(loadHistory, 500);
+            return;
+        }
+        try {
+            let res = await fetch('http://localhost:8080/history');
+            let hist = await res.json();
+            replayHistory(hist);
+        } catch (e) {
+            console.warn('Unable to load history', e);
+        }
+    }
+
+    async function replayHistory(hist) {
+        inHistoryPlayback = true;
+        let timeObjects = {};
+        for (let key of Object.keys(hist)) {
+            let diff = hist[key];
+            let presentObjectKeys = Object.keys(diff);
+            let presentHumans = presentObjectKeys.filter(k => k.startsWith('_HUMAN_'));
+            applyDiff(timeObjects, diff);
+            if (presentHumans.length === 0) {
+                continue;
+            }
+            let humanPoseObjects = [];
+            for (let key of presentHumans) {
+                humanPoseObjects.push(timeObjects[key]);
+            }
+            draw.renderHumanPoseObjects(humanPoseObjects, parseInt(key), true, null);
+            await sleep(10);
+        }
+        inHistoryPlayback = false;
     }
 
     function areAnyPosesUpdated(poseObjects) {
@@ -154,5 +222,6 @@ createNameSpace("realityEditor.humanPose");
     }
 
     exports.initService = initService;
-
 }(realityEditor.humanPose));
+
+export const initService = realityEditor.humanPose.initService;

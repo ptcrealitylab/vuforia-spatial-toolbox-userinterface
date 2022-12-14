@@ -252,6 +252,8 @@ realityEditor.device.onload = function () {
 
     let cachedSettings = {};
     const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+    // If we're viewing this on localhost we can connect to and read settings
+    // from the local server
     if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
         setInterval(async () => {
             let settings;
@@ -286,6 +288,7 @@ realityEditor.device.onload = function () {
         }, 1000);
     }
 
+    // Check whether we're offline by adding a cache-busting search parameter
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
         console.debug('offline check', Array.from(res.headers.entries()));
         if (!res.headers.has('X-Offline-Cache')) {
@@ -350,6 +353,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.ar.groundPlaneRenderer.initService();
     realityEditor.gui.ar.areaTargetScanner.initService();
     realityEditor.gui.ar.areaCreator.initService();
+    realityEditor.gui.ar.videoPlayback.initService();
     realityEditor.device.touchPropagation.initService();
     realityEditor.network.discovery.initService();
     realityEditor.network.realtime.initService();
