@@ -2,6 +2,8 @@ createNameSpace('realityEditor.gui.poses');
 
 (function(exports) {
 
+const DEBUG = false;
+
 const POSE_JOINTS = {
   NOSE: "nose",
   LEFT_EYE: "left eye",
@@ -95,9 +97,18 @@ JOINT_NEIGHBORS[POSE_JOINTS.RIGHT_KNEE] = [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.R
 // }
 exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
 
+function isPose2DSkeletonRendered() {
+    return DEBUG && !realityEditor.device.environment.requiresMouseEvents();
+}
+
+exports.isPose2DSkeletonRendered = isPose2DSkeletonRendered;
+
 // let lastDraw = performance.now();
 
 exports.drawPoses = function(poses, imageSize) {
+
+    if (!isPose2DSkeletonRendered()) return; 
+
     let canvas = document.getElementById('supercooldebugcanvas');
     let gfx;
     if (!canvas) {

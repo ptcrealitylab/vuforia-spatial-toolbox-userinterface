@@ -322,8 +322,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     function renderHumanPoseObjects(poseObjects) {
 
-        // MK HACK: to prevent rendering on mobile 
-        //if (!realityEditor.device.environment.requiresMouseEvents()) return;  
+        if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
 
         if (!historyLineContainer) {
             historyLineContainer = new THREE.Group();
