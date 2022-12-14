@@ -532,10 +532,10 @@ export class HumanPoseAnalyzer {
 }
 
 function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
-    
+
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
 
-    
+
     if (!humanPoseAnalyzer) {
         const historyMeshContainer = new THREE.Group();
         historyMeshContainer.visible = true;
@@ -643,9 +643,11 @@ function updateJointsHistorical(poseRenderer, poseObject) {
 function updateJoints(poseRenderer, poseObject) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
-    let objectRootMatrix = new THREE.Matrix4();
-    setMatrixFromArray(objectRootMatrix, poseObject.matrix);
-    groundPlaneRelativeMatrix.multiply(objectRootMatrix);
+    if (poseObject.matrix && poseObject.matrix.length > 0) {
+        let objectRootMatrix = new THREE.Matrix4();
+        setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+        groundPlaneRelativeMatrix.multiply(objectRootMatrix);
+    }
 
     for (let jointId of Object.values(JOINTS)) {
         // assume that all sub-objects are of the form poseObject.id + joint name
