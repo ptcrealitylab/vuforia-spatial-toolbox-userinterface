@@ -97,7 +97,13 @@ function Objects() {
     this.zone = "";
 
     this.averageScale = 0.5;
-    
+
+    this.matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    ];
     // taken from target.xml. necessary to make the screens work correctly.
     this.targetSize = {
         width: 0.3, // default size should always be overridden, but exists in case xml doesn't contain size
@@ -127,7 +133,12 @@ function Frame() {
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
         scale : 0.5,
         // Unconstrained positioning in 3D space
-        matrix : []
+        matrix: [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+        ],
     };
     // position data for the screen visualization mode
     this.screen = {
@@ -223,7 +234,12 @@ function Node() {
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
 	this.scale = 0.5;
 	// Unconstrained positioning in 3D space
-	this.matrix = [];
+	this.matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    ];
 	// defines the nodeInterface that is used to process data of this type. It also defines the visual representation
 	// in the Reality Editor. Such data points interfaces can be found in the nodeInterface folder.
 	this.type = "node";
@@ -256,7 +272,12 @@ function Logic() {
 	// Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
 	this.scale = 0.5;
 	// Unconstrained positioning in 3D space
-	this.matrix = [];
+	this.matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    ];
 
 	// Used internally from the reality editor to indicate if an object should be rendered or not.
 	this.visible = false;
