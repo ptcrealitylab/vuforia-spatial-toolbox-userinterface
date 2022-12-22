@@ -178,8 +178,17 @@ import * as utils from './utils.js'
                 0, 0, 1, 0,
                 jointInfo.x * SCALE, jointInfo.y * SCALE, jointInfo.z * SCALE, 1,
             ];
+
+            // updating scene graph with new pose
             let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameId);
             frameSceneNode.setLocalMatrix(positionMatrix); // this will broadcast it realtime, and sceneGraph will upload it every ~1 second for persistence
+            
+            // updating a node data of tool/frame of a joint
+            let keys = utils.getJointNodeInfo(humanPoseObject, index);
+            
+            // TODO: add timestamp to public data
+            realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.data, { confidence: jointInfo.confidence});
+            
         });
     }
 

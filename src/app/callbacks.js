@@ -253,7 +253,7 @@ createNameSpace('realityEditor.app.callbacks');
             window.rzvIo = new WebSocket(url);
         }
 
-        let coolerPoses = [];
+        let poseInWorld = [];
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (!worldObject) {
             console.warn('okay I give up');
@@ -312,10 +312,11 @@ createNameSpace('realityEditor.app.callbacks');
             let worldX = mat[12];
             let worldY = mat[13];
             let worldZ = mat[14];
-            coolerPoses.push({
+            poseInWorld.push({
                 x: worldX / 1000,
                 y: worldY / 1000,
                 z: worldZ / 1000,
+                confidence: point.score,
             });
         }
 
@@ -330,17 +331,21 @@ createNameSpace('realityEditor.app.callbacks');
         sceneNode.updateWorldMatrix();
 
         let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
-        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: coolerPoses}], camera: cameraMat};
+        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: poseInWorld}], camera: cameraMat};
 
         // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
         //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
         //         window.lastPosesLen = coolerPoses.length;
         //     }
+
+        // MK HACK: test without this data transfer route
+        /*
         if (window.rzvIo.readyState === WebSocket.OPEN) {
             window.rzvIo.send(JSON.stringify(Object.assign({
                 command: '/update/humanPoses'
             }, msg)));
         }
+        */
         // }
 
         realityEditor.gui.poses.drawPoses(poses, imageSize);
@@ -351,7 +356,7 @@ createNameSpace('realityEditor.app.callbacks');
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
             if (poses.length > 0) {
-                subscriptions.onPoseReceived.forEach(cb => cb(coolerPoses));
+                subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld));
             }
         }
     }

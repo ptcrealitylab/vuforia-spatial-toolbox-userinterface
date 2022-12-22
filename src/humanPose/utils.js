@@ -1,5 +1,10 @@
 const HUMAN_POSE_ID_PREFIX = '_HUMAN_';
 
+const JOINT_NODE_NAME = 'storage';
+const JOINT_PUBLIC_DATA_KEYS = {
+    data: 'data',
+};
+
 const JOINTS = {
     NOSE: 'nose',
     LEFT_EYE: 'left_eye',
@@ -94,13 +99,33 @@ function indexOfMin(arr) {
     return minIndex;
 }
 
+// returns the {objectKey, frameKey, nodeKey} address of the avatar storeData node on this avatar object
+function getJointNodeInfo(humanObject, jointIndex) {
+    if (!humanObject) { return null; }
+
+    let humanObjectKey = humanObject.objectId;
+    let jointName = Object.values(JOINTS)[jointIndex];
+    let humanFrameKey = Object.keys(humanObject.frames).find(name => name.includes(jointName));
+    if (!humanObject.frames || !humanFrameKey) { return null; }
+    let humanNodeKey = Object.keys(humanObject.frames[humanFrameKey].nodes).find(name => name.includes(JOINT_NODE_NAME));
+    if (!humanNodeKey) { return null; }
+    return {
+        objectKey: humanObjectKey,
+        frameKey: humanFrameKey,
+        nodeKey: humanNodeKey
+    }
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
+    JOINT_NODE_NAME,
+    JOINT_PUBLIC_DATA_KEYS,
     isHumanPoseObject,
     makePoseFromJoints,
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
-    indexOfMin
+    indexOfMin,
+    getJointNodeInfo
 };
