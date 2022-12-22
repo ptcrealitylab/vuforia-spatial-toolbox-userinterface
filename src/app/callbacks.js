@@ -330,6 +330,8 @@ createNameSpace('realityEditor.app.callbacks');
         sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
         sceneNode.updateWorldMatrix();
 
+        // MK HACK: disabled this altenative data transmission route
+        /*
         let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
         let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: poseInWorld}], camera: cameraMat};
 
@@ -338,15 +340,12 @@ createNameSpace('realityEditor.app.callbacks');
         //         window.lastPosesLen = coolerPoses.length;
         //     }
 
-        // MK HACK: test without this data transfer route
-        /*
         if (window.rzvIo.readyState === WebSocket.OPEN) {
             window.rzvIo.send(JSON.stringify(Object.assign({
                 command: '/update/humanPoses'
             }, msg)));
         }
         */
-        // }
 
         realityEditor.gui.poses.drawPoses(poses, imageSize);
 
