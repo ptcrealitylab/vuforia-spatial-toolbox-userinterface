@@ -466,7 +466,7 @@ createNameSpace("realityEditor.network.realtime");
 
         // only need to subscribe to this one time, as long as we set up the right callbacks
         if (!didSubscribeToPublicData) {
-            didSubscribeToPublicData = true;
+            // didSubscribeToPublicData = true; // MK HACK: why is this flag needed?
             let publicDataTitle = realityEditor.network.getIoTitle(objects[objectKey].port, 'object/publicData');
             const listener = (msg) => {
                 let msgData = JSON.parse(msg);

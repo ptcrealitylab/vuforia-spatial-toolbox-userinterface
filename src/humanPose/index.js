@@ -13,6 +13,7 @@ import * as utils from './utils.js'
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
 
+    let myHumanPoseId = null;  // objectId
     let humanPoseObjects = {};
     let nameIdMap = {};
     let lastRenderTime = Date.now();
@@ -40,7 +41,7 @@ import * as utils from './utils.js'
         });
 
         network.onHumanPoseObjectDiscovered((object, objectKey) => {
-            handleDiscoveredObject(object, objectKey);
+            handleDiscoveredHumanPose(object, objectKey);
         });
 
         network.onHumanPoseObjectDeleted((objectKey) => {
@@ -187,8 +188,9 @@ import * as utils from './utils.js'
             let keys = utils.getJointNodeInfo(humanPoseObject, index);
             
             // TODO: add timestamp to public data
-            realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.data, { confidence: jointInfo.confidence});
-            
+            if (keys) {
+                realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.data, { confidence: jointInfo.confidence});
+            }
         });
     }
 
@@ -204,9 +206,7 @@ import * as utils from './utils.js'
             network.addHumanPoseObject(worldObject.objectId, poseObjectName, (data) => {
                 console.log('added new human pose object', data);
                 nameIdMap[poseObjectName] = data.id;
-                // myAvatarId = data.id;
-                // connectionStatus.isMyAvatarCreated = true;
-                // refreshStatusUI();
+                myHumanPoseId = data.id;
                 delete objectsInProgress[poseObjectName];
 
             }, (err) => {
@@ -222,12 +222,35 @@ import * as utils from './utils.js'
     }
 
     // initialize the human pose object
-    function handleDiscoveredObject(object, objectKey) {
+    function handleDiscoveredHumanPose(object, objectKey) {
         if (!utils.isHumanPoseObject(object)) { return; }
         if (typeof humanPoseObjects[objectKey] !== 'undefined') { return; }
         humanPoseObjects[objectKey] = object; // keep track of which human pose objects we've processed so far
 
-        // TODO: subscribe to public data, etc
+
+        if (objectKey === myHumanPoseId) {
+            // no action for now
+        } else {
+            // subscribe to public data of joint nodes in remote HumanPoseObject
+
+            for (let index = 0; index < Object.keys(utils.JOINTS).length; index++) {
+            
+                let keys = utils.getJointNodeInfo(object, index);
+                if (!keys) continue;
+
+                let subscriptionCallback = (msgContent) => {
+                    // update public data of nodes in local human pose object
+                    let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
+                    if (!node) { return; }
+                    node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data] = msgContent.publicData.data;
+                }
+            
+                realityEditor.network.realtime.subscribeToPublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.data, (msg) => {
+                    subscriptionCallback(JSON.parse(msg));
+                });
+            }
+        }
+
     }
 
     exports.initService = initService;
