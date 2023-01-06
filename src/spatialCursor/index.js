@@ -96,6 +96,49 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         // begin update loop
         update();
+        
+        const ADD_SEARCH_TOOL_WITH_CURSOR = false;
+        
+        if (ADD_SEARCH_TOOL_WITH_CURSOR) {
+            document.addEventListener('pointerdown', (e) => {
+                if (!indicator2 || !indicator2.visible) return;
+                if (realityEditor.device.isMouseEventCameraControl(e)) return;
+                if (e.target.tagName !== 'CANVAS') return; // if clicking on a button, etc, don't trigger this
+
+                // raycast against the spatial cursor
+                let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, [indicator2]);
+                if (intersects.length > 0) {
+                    addToolAtScreenCenter('searchDigitalThread');
+                }
+            });
+        }
+    }
+
+    // copied from pop-up-onboarding addon – should we refactor somewhere convenient to both?
+    function addToolAtScreenCenter(toolName) {
+        let touchPosition = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+        };
+
+        // parameters for createFrame function. all can be undefined except name, x, y, noUserInteraction
+        let startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo;
+        x = touchPosition.x;
+        y = touchPosition.y;
+        noUserInteraction = true;
+
+        let addedElement = realityEditor.gui.pocket.createFrame(toolName, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo);
+
+        if (typeof realityEditor.spatialCursor !== 'undefined' && realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject()) {
+            realityEditor.device.resetEditingState();
+        } else {
+            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 400);
+        }
+
+        // make sure tool is created and uploaded before we send the position, otherwise it won't save
+        setTimeout(function() {
+            realityEditor.network.postVehiclePosition(addedElement);
+        }, 1000);
     }
 
     function update() {
@@ -108,6 +151,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         try {
             let screenX = window.innerWidth / 2;
             let screenY = window.innerHeight / 2;
+            if (realityEditor.device.environment.requiresMouseEvents()) {
+                let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                screenX = mousePosition.x;
+                screenY = mousePosition.y;
+            }
             worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
             updateSpatialCursor();
             updateTestSpatialCursor();
@@ -178,6 +226,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         isCursorEnabled = newValue;
         indicator1.visible = newValue;
         indicator2.visible = newValue;
+        
+        if (newValue) {
+            document.getElementById('canvas').style.cursor = 'none';
+        } else {
+            document.getElementById('canvas').style.cursor = 'auto';
+        }
 
         if (isCursorEnabled && !isUpdateLoopRunning) {
             update(); // restart the update loop

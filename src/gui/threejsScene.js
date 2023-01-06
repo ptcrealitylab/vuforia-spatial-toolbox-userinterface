@@ -520,6 +520,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
         raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
 
+        // add object layer to raycast layer mask
+        objectsToCheck.forEach(obj => {
+            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
+        });
+
         //3. compute intersections
         let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
         results.forEach(intersection => {
