@@ -8,6 +8,7 @@ const MAX_VIEW_FRUSTUMS = 5;
 const UNIFORMS = Object.freeze({
     numFrustums: 'numFrustums',
     frustums: 'frustums',
+    cameraDirection: 'cameraDirection'
 });
 
 const PLANES = Object.freeze({
@@ -243,15 +244,18 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     }
     let condition = `
     ${loadingConditionString}
+    float maxViewAngleSimilarity = 0.0;
+    
     bool clipped = false;
     if (numFrustums > 0)
     {
         for (int i = 0; i < numFrustums; i++)
         {
+            maxViewAngleSimilarity = max(maxViewAngleSimilarity, abs(frustums[i].cameraIncidence)); // dot(cameraDirection, frustums[i].normal5));
             clipped = clipped || isInsideFrustum(frustums[i]);
             if (clipped) {
                 // discard; // uncomment to fully discard all points within frustums instead of wireframing them
-                break;
+                // break;
             }
         }
     }
@@ -270,20 +274,32 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
 
             // render the area inside the frustum as a wireframe
             } else if (clipped) {
-                // calculate whether this point is very close to any of the three triangle edges
-                float min_dist = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-                float edgeIntensity = 1.0 - step(0.03, min_dist); // 1 if on edge, 0 otherwise. Adjust 0.03 to make wireframe thicker/thinner.
-
-                // uncomment to include texture in between the wireframes
-                // vec4 diffuse = texture2D(u_texture, v_texcoord) * vec4(vec3(v_light_intensity), 1.0);
-                // gl_FragColor = edgeIntensity * vec4(0.0, 1.0, 1.0, 1.0) + (1.0 - edgeIntensity) * diffuse;
-
-                // white if on edge, transparent if not. adjust 0.3 to change opacity of lines.
-                gl_FragColor = edgeIntensity * vec4(1.0, 1.0, 1.0, 0.3);
-
-                // to ensure that in between the wireframes is fully transparent, it's easiest to just discard the point
-                if (edgeIntensity < 0.5) {
+                if (maxViewAngleSimilarity > 0.95) {
                     discard;
+                } else {
+                    // calculate whether this point is very close to any of the three triangle edges
+                    float min_dist = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
+                    float edgeIntensity = 1.0 - step(0.03, min_dist); // 1 if on edge, 0 otherwise. Adjust 0.03 to make wireframe thicker/thinner.
+    
+                    // uncomment to include texture in between the wireframes
+                    // if (edgeIntensity > 0.5) {
+                    //     gl_FragColor = edgeIntensity * vec4(1.0, 1.0, 1.0, 0.5 * (1.0 - maxViewAngleSimilarity));
+                    // } else {
+                    //     gl_FragColor.a = 0.3 * (1.0 - maxViewAngleSimilarity);
+                    // }
+                    
+                    gl_FragColor.a = 0.3 * (1.0 - maxViewAngleSimilarity);
+                    
+                    // vec4 diffuse = texture2D(u_texture, v_texcoord) * vec4(vec3(v_light_intensity), 1.0);
+                    // gl_FragColor = edgeIntensity * vec4(0.0, 1.0, 1.0, 1.0) + (1.0 - edgeIntensity) * diffuse;
+    
+                    // white if on edge, transparent if not. adjust 0.3 to change opacity of lines.
+                    // gl_FragColor = edgeIntensity * vec4(1.0, 1.0, 1.0, 0.3 * (1.0 - maxViewAngleSimilarity));
+    
+                    // to ensure that in between the wireframes is fully transparent, it's easiest to just discard the point
+                    // if (edgeIntensity < 0.5) {
+                    //     discard;
+                    // }
                 }
             }
             `)
@@ -304,8 +320,10 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
         float D4;
         float D5;
         float D6;
+        float cameraIncidence; // 1 if camera is pointing in same direction as frustum
     };
     uniform Frustum frustums[${MAX_VIEW_FRUSTUMS}]; // MAX number of frustums that can cull the geometry
+    uniform vec3 cameraDirection;
     
     varying vec3 vBarycentric;
     varying vec3 vPosition;
