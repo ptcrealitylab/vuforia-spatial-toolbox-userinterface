@@ -156,11 +156,8 @@ import * as utils from './utils.js'
         return false;
     }
 
-    function tryUpdatingPoseObject(pose, humanPoseObject) {
-        // update the object position to be the average of the pose.joints
-        // update each of the tool's positions to be the position of the joint relative to the average
-        console.log('try updating pose object', pose, humanPoseObject);
-
+    function updateObjectFromRawPose(humanPoseObject, pose) {
+        
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(utils.JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
@@ -171,7 +168,6 @@ import * as utils from './utils.js'
                 return;
             }
             const SCALE = 1000;
-            // let jointFrame = humanPoseObject.frames[frameId];
             // set position of jointFrame
             let positionMatrix = [
                 1, 0, 0, 0,
@@ -182,16 +178,43 @@ import * as utils from './utils.js'
 
             // updating scene graph with new pose
             let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameId);
-            frameSceneNode.setLocalMatrix(positionMatrix); // this will broadcast it realtime, and sceneGraph will upload it every ~1 second for persistence
+            frameSceneNode.dontBroadcastNext = true; // this will prevent broadcast of matrix to remote servers in the function call below
+            frameSceneNode.setLocalMatrix(positionMatrix); 
             
             // updating a node data of tool/frame of a joint
             let keys = utils.getJointNodeInfo(humanPoseObject, index);
-            
-            // TODO: add timestamp to public data
             if (keys) {
-                realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.data, { confidence: jointInfo.confidence});
+                let node = realityEditor.getNode(keys.objectKey, keys.frameKey, keys.nodeKey);
+                if (node) {
+                    node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data] = { confidence: jointInfo.confidence };
+                }
             }
         });
+
+        // TODO: store timestamp of update in the object
+
+
+    }
+
+    function tryUpdatingPoseObject(pose, humanPoseObject) {
+        // NOTE: is the comment below still relevant?
+        // update the object position to be the average of the pose.joints
+        // update each of the tool's positions to be the position of the joint relative to the average
+        console.log('try updating pose object', pose, humanPoseObject);
+
+        // TODO: compute confidence for synthetic joints - here ?  
+
+        // update local instance of HumanPoseObject with new pose data 
+        updateObjectFromRawPose(humanPoseObject, pose);
+
+        // updating a 'transfer' node data of selected joint (the first one at the moment). 
+        // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers 
+        let keys = utils.getJointNodeInfo(humanPoseObject, 0);
+        // TODO: add timestamp to public data
+        if (keys) {
+            realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, pose);
+        }
+
     }
 
     let objectsInProgress = {};
@@ -231,26 +254,33 @@ import * as utils from './utils.js'
         if (objectKey === myHumanPoseId) {
             // no action for now
         } else {
-            // subscribe to public data of joint nodes in remote HumanPoseObject
+            // subscribe to public data of a selected joint node in remote HumanPoseObject which transfers whole pose
+            let keys = utils.getJointNodeInfo(object, 0);
+            if (!keys) { return; }
 
-            for (let index = 0; index < Object.keys(utils.JOINTS).length; index++) {
-            
-                let keys = utils.getJointNodeInfo(object, index);
-                if (!keys) continue;
-
-                let subscriptionCallback = (msgContent) => {
-                    // update public data of nodes in local human pose object
-                    let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
-                    if (!node) { return; }
-                    node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data] = msgContent.publicData.data;
+            let subscriptionCallback = (msgContent) => {
+                // update public data of node in local human pose object
+                let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
+                if (!node) { 
+                    console.warn('couldn\'t find the node ' + msgContent.node + ' which stores whole pose data');
+                    return; 
                 }
-            
-                realityEditor.network.realtime.subscribeToPublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.data, (msg) => {
-                    subscriptionCallback(JSON.parse(msg));
-                });
-            }
-        }
+                node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData] = msgContent.publicData.whole_pose;
 
+                let object = realityEditor.getObject(msgContent.object)
+                if (!object) { 
+                    console.warn('couldn\'t find the human pose object ' + msgContent.object);
+                    return; 
+                }
+
+                // update local instance of HumanPoseObject with new pose data transferred through a selected node
+                updateObjectFromRawPose(object, node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData]);
+            }
+        
+            realityEditor.network.realtime.subscribeToPublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, (msg) => {
+                subscriptionCallback(JSON.parse(msg));
+            });
+        }
     }
 
     exports.initService = initService;

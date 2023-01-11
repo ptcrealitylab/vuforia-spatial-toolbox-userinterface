@@ -3,6 +3,7 @@ const HUMAN_POSE_ID_PREFIX = '_HUMAN_';
 const JOINT_NODE_NAME = 'storage';
 const JOINT_PUBLIC_DATA_KEYS = {
     data: 'data',
+    transferData: 'whole_pose'
 };
 
 const JOINTS = {

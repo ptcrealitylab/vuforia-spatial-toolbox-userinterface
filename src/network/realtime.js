@@ -475,7 +475,7 @@ createNameSpace("realityEditor.network.realtime");
             let publicDataTitle = realityEditor.network.getIoTitle(objects[objectKey].port, 'object/publicData');
             const listener = (msg) => {
                 let msgData = JSON.parse(msg);
-                console.log('TEST: ', msgData.node, msgData.publicData.data);
+                console.log('TEST: ', msgData.node, msgData.publicData.whole_pose);
                 Object.keys(msgData.publicData).forEach(dataKey => {
                     // attempt triggering callbacks for all keys in the publicData.
                     // only ones with registered callbacks will do anything
