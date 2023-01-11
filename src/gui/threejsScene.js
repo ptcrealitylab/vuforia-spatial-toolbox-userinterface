@@ -606,10 +606,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         frustum.setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
 
         let viewingCameraForwardVector = realityEditor.gui.ar.utilities.getForwardVector(realityEditor.sceneGraph.getCameraNode().worldMatrix);
-        // customMaterials.updateCameraDirection();
-        // let viewingCameraDirection = new THREE.Vector3(viewingCameraForwardVector[0], viewingCameraForwardVector[1], viewingCameraForwardVector[2]);
         let angleOfIncidence = realityEditor.gui.ar.utilities.dotProduct(materialCullingFrustums[id].planes[5].normal, viewingCameraForwardVector);
-        angleOfIncidence = Math.max(0, angleOfIncidence);
+        angleOfIncidence = Math.max(0, angleOfIncidence); // angle can go to -1 if viewing from anti-parallel direction, but limit it to 0
         
         return {
             normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
@@ -745,8 +743,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 {
                     maxHeight: {value: maxHeight},
                     numFrustums: {value: 0},
-                    frustums: {value: defaultFrustums},
-                    cameraDirection: {value: new THREE.Vector3(1, 0, 0)}
+                    frustums: {value: defaultFrustums}
                 }
             ]);
 

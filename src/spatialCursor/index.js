@@ -5,8 +5,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 (function(exports) {
 
     const SNAP_CURSOR_TO_TOOLS = true;
+    const DEFAULT_SPATIAL_CURSOR_ON = false;
 
-    let isCursorEnabled = true;
+    let isCursorEnabled = DEFAULT_SPATIAL_CURSOR_ON;
     let isUpdateLoopRunning = false;
 
     let cachedWorldObject;
@@ -92,7 +93,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         
         addSpatialCursor();
         addTestSpatialCursor();
-        toggleDisplaySpatialCursor(false);
+        toggleDisplaySpatialCursor(DEFAULT_SPATIAL_CURSOR_ON);
 
         // begin update loop
         update();
@@ -103,7 +104,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             document.addEventListener('pointerdown', (e) => {
                 if (!indicator2 || !indicator2.visible) return;
                 if (realityEditor.device.isMouseEventCameraControl(e)) return;
-                if (e.target.tagName !== 'CANVAS') return; // if clicking on a button, etc, don't trigger this
+                if (!realityEditor.device.utilities.isEventHittingBackground(e)) return; // if clicking on a button, etc, don't trigger this
 
                 // raycast against the spatial cursor
                 let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, [indicator2]);
@@ -226,12 +227,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         isCursorEnabled = newValue;
         indicator1.visible = newValue;
         indicator2.visible = newValue;
-        
-        if (newValue) {
-            document.getElementById('canvas').style.cursor = 'none';
-        } else {
-            document.getElementById('canvas').style.cursor = 'auto';
-        }
 
         if (isCursorEnabled && !isUpdateLoopRunning) {
             update(); // restart the update loop
