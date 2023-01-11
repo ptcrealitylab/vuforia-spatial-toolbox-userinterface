@@ -243,23 +243,19 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     }
     let condition = `
     ${loadingConditionString}
+    // we compare the viewing angle to the frustum direction, to show wireframe more if viewing from an off-angle
     float maxViewAngleSimilarity = 0.0;
     
     bool clipped = false;
-    if (numFrustums > 0)
+    for (int i = 0; i < numFrustums; i++)
     {
-        for (int i = 0; i < numFrustums; i++)
-        {
-            bool isInside = isInsideFrustum(frustums[i]);
-            if (isInside) {
-                maxViewAngleSimilarity = max(maxViewAngleSimilarity, abs(frustums[i].cameraIncidence));
-            }
-            clipped = clipped || isInsideFrustum(frustums[i]);
-            if (clipped) {
-                // discard; // uncomment to fully discard all points within frustums instead of wireframing them
-                // break;
-            }
+        bool isInside = isInsideFrustum(frustums[i]);
+        if (isInside) {
+            // by taking the max, we will set the transparency by the most-aligned frustum to this view, ignoring the others
+            maxViewAngleSimilarity = max(maxViewAngleSimilarity, abs(frustums[i].viewAngleSimilarity));
         }
+        clipped = clipped || isInside;
+        // if (clipped) discard; // uncomment to fully discard all points within frustums instead of wireframing them
     }
     `;
     return ShaderChunk.meshphysical_frag
@@ -276,16 +272,15 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
 
             // render the area inside the frustum as a wireframe
             } else if (clipped) {
-                float textureScale = max(0.0, 0.95 - maxViewAngleSimilarity);
-                float wireframeScale = max(0.0, 0.8 - maxViewAngleSimilarity);
+                // mesh fades out if it's cutout by a frustum that is closely aligned with the viewing angle
+                float textureOpacity = 0.3 * (0.1 + max(0.0, 0.95 - maxViewAngleSimilarity));
+                float wireframeOpacity = 0.3 * (0.1 + max(0.0, 0.8 - maxViewAngleSimilarity)); // wireframe fades out earlier
                 
+                // show wireframe by calculating whether this point is very close to any of the three triangle edges
                 float min_dist = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
                 float edgeIntensity = 1.0 - step(0.03, min_dist); // 1 if on edge, 0 otherwise. Adjust 0.03 to make wireframe thicker/thinner.
-    
-                float wireframeOpacity = 0.3 * (0.1 + wireframeScale);
-                float textureOpacity = 0.3 * (0.1 + textureScale);
 
-                if (edgeIntensity > 0.5) { // brighten the edges
+                if (edgeIntensity > 0.5) { // the "wireframe" is rendered by brightening the edges 50%
                     float r = 0.5 + 0.5 * gl_FragColor.r;
                     float g = 0.5 + 0.5 * gl_FragColor.g;
                     float b = 0.5 + 0.5 * gl_FragColor.b;
@@ -293,43 +288,6 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
                 } else {
                     gl_FragColor.a = textureOpacity;
                 }
-            
-                // if (maxViewAngleSimilarity > 0.95) {
-                //     discard; // totally hide if following / viewing from very similar angle
-                // } else if (maxViewAngleSimilarity > 0.8) {
-                //     // don't show wireframes, but show faint mesh if close but not exact
-                //     float opacity = 0.1 + 0.2 * (1.0 - maxViewAngleSimilarity);
-                //     gl_FragColor.a = opacity;
-                // } else {
-                //     // show wireframe by calculating whether this point is very close to any of the three triangle edges
-                //     float min_dist = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-                //     float edgeIntensity = 1.0 - step(0.03, min_dist); // 1 if on edge, 0 otherwise. Adjust 0.03 to make wireframe thicker/thinner.
-                //
-                //     // uncomment to include texture in between the wireframes
-                //     float opacity = 0.1 + 0.2 * (1.0 - maxViewAngleSimilarity);
-                //     if (edgeIntensity > 0.5) { // brighten the edges
-                //         float r = 0.5 + 0.5 * gl_FragColor.r;
-                //         float g = 0.5 + 0.5 * gl_FragColor.g;
-                //         float b = 0.5 + 0.5 * gl_FragColor.b;                        
-                //         gl_FragColor = edgeIntensity * vec4(r, g, b, opacity);
-                //         // gl_FragColor = edgeIntensity * vec4(1.0, 1.0, 1.0, opacity);
-                //     } else {
-                //         gl_FragColor.a = opacity;
-                //     }
-                //    
-                //     // gl_FragColor.a = 0.3 * (1.0 - maxViewAngleSimilarity);
-                //    
-                //     // vec4 diffuse = texture2D(u_texture, v_texcoord) * vec4(vec3(v_light_intensity), 1.0);
-                //     // gl_FragColor = edgeIntensity * vec4(0.0, 1.0, 1.0, 1.0) + (1.0 - edgeIntensity) * diffuse;
-                //
-                //     // white if on edge, transparent if not. adjust 0.3 to change opacity of lines.
-                //     // gl_FragColor = edgeIntensity * vec4(1.0, 1.0, 1.0, 0.3 * (1.0 - maxViewAngleSimilarity));
-                //
-                //     // to ensure that in between the wireframes is fully transparent, it's easiest to just discard the point
-                //     // if (edgeIntensity < 0.5) {
-                //     //     discard;
-                //     // }
-                // }
             }
             `)
         .replace(`#include <common>`, `
@@ -349,10 +307,9 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
         float D4;
         float D5;
         float D6;
-        float cameraIncidence; // 1 if camera is pointing in same direction as frustum
+        float viewAngleSimilarity; // 1 if camera is pointing in same direction as frustum
     };
     uniform Frustum frustums[${MAX_VIEW_FRUSTUMS}]; // MAX number of frustums that can cull the geometry
-    uniform vec3 cameraDirection;
     
     varying vec3 vBarycentric;
     varying vec3 vPosition;

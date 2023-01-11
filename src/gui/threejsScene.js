@@ -606,8 +606,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         frustum.setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
 
         let viewingCameraForwardVector = realityEditor.gui.ar.utilities.getForwardVector(realityEditor.sceneGraph.getCameraNode().worldMatrix);
-        let angleOfIncidence = realityEditor.gui.ar.utilities.dotProduct(materialCullingFrustums[id].planes[5].normal, viewingCameraForwardVector);
-        angleOfIncidence = Math.max(0, angleOfIncidence); // angle can go to -1 if viewing from anti-parallel direction, but limit it to 0
+        let viewAngleSimilarity = realityEditor.gui.ar.utilities.dotProduct(materialCullingFrustums[id].planes[5].normal, viewingCameraForwardVector);
+        viewAngleSimilarity = Math.max(0, viewAngleSimilarity); // limit it to 0 instead of going to -1 if viewing from anti-parallel direction
         
         return {
             normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
@@ -622,7 +622,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             D4: materialCullingFrustums[id].planes[3].D,
             D5: materialCullingFrustums[id].planes[4].D,
             D6: materialCullingFrustums[id].planes[5].D,
-            cameraIncidence: angleOfIncidence
+            viewAngleSimilarity: viewAngleSimilarity
         }
     }
 
@@ -708,26 +708,20 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     D4: 0,
                     D5: 0,
                     D6: 0,
-                    cameraIncidence: 0
+                    viewAngleSimilarity: 0
                 })
             }
             return frustums;
         }
         updateCameraDirection(cameraDirection) {
             areaTargetMaterials.forEach(material => {
-                // material.uniforms[UNIFORMS.cameraDirection].value = cameraDirection;
                 for (let i = 0; i < material.uniforms[UNIFORMS.numFrustums].value; i++) {
                     let thisFrustum = material.uniforms[UNIFORMS.frustums].value[i];
                     let frustumDir = [thisFrustum.normal6.x, thisFrustum.normal6.y, thisFrustum.normal6.z];
                     let viewingDir = [cameraDirection.x, cameraDirection.y, cameraDirection.z];
-                    thisFrustum.cameraIncidence = Math.max(0, realityEditor.gui.ar.utilities.dotProduct(frustumDir, viewingDir));
-                    // console.log(thisFrustum.cameraIncidence);
+                    // set to 1 if parallel, 0 if perpendicular. lower bound clamped to 0 instead of going to -1 if antiparallel
+                    thisFrustum.viewAngleSimilarity = Math.max(0, realityEditor.gui.ar.utilities.dotProduct(frustumDir, viewingDir));
                 }
-                
-                // material.uniforms[UNIFORMS.frustums].value.forEach(frustum => {
-                //     frustum.cameraIncidence = realityEditor.gui.ar.utilities.dotProduct([frustum.normal6.x, frustum.normal6.y, frustum.normal6.z], [cameraDirection.x, cameraDirection.y, cameraDirection.z]);
-                //     console.log(frustum.cameraIncidence);
-                // });
             });
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, {maxHeight, center, animateOnLoad, inverted, useFrustumCulling}) {
