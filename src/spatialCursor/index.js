@@ -115,7 +115,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
-    // copied from pop-up-onboarding addon – should we refactor somewhere convenient to both?
+    // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
     function addToolAtScreenCenter(toolName) {
         let touchPosition = {
             x: window.innerWidth / 2,
@@ -128,11 +128,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         y = touchPosition.y;
         noUserInteraction = true;
 
+        // automatically adds the tool at the spatial cursor, if the cursor is active
         let addedElement = realityEditor.gui.pocket.createFrame(toolName, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo);
 
-        if (typeof realityEditor.spatialCursor !== 'undefined' && realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject()) {
-            realityEditor.device.resetEditingState();
+        if (getOrientedCursorRelativeToWorldObject()) {
+            realityEditor.device.resetEditingState(); // make sure we don't drag the tool after adding
         } else {
+            // if cursor isn't active, default move the tool to be floating .4m in front of the camera
             realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 400);
         }
 
@@ -370,4 +372,5 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
+    exports.addToolAtScreenCenter = addToolAtScreenCenter;
 }(realityEditor.spatialCursor));
