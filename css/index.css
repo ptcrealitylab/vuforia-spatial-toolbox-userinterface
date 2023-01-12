@@ -1788,3 +1788,18 @@ Logic Interface CSS
     width: 16px;
     height: 8px;
 }
+
+#analytics-container {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    z-index: 10000;
+    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
+    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
+    max-width: 1024px;
+    width: 100%;
+}
+
+.analytics-timeline {
+    width: 100%;
+}

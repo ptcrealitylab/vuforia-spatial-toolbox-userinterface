@@ -112,6 +112,14 @@ export class SpaghettiMeshPath extends MeshPath {
     }
     
     onPointerMove(e) {
+        if (this.frozen) {
+            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
+            if (intersects.length === 0) {
+                return;
+            }
+            this.frozen = false;
+        }
+
         if (this.comparer.firstPointIndex === null || this.comparer.selectionState === 'first') {
             const isHover = true;
             this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
@@ -225,6 +233,19 @@ export class SpaghettiMeshPath extends MeshPath {
         let comparer = this.comparer;
         let points = this.currentPoints;
 
+        if (comparer.firstPointIndex !== null) {
+            const firstTimestamp = points[comparer.firstPointIndex].timestamp;
+            if (comparer.secondPointIndex !== null) {
+                const secondTimestamp = points[comparer.secondPointIndex].timestamp;
+                realityEditor.analytics.setHighlightRegion({
+                    startTime: Math.min(firstTimestamp, secondTimestamp),
+                    endTime: Math.max(firstTimestamp, secondTimestamp),
+                }, true);
+            } else {
+                realityEditor.analytics.setCursorTime(firstTimestamp, true);
+            }
+        }
+
         // revert to original state, and store indices of each vertex whose color changed
         let indicesToUpdate = this.comparer.restorePreviousColors();
 
@@ -273,6 +294,40 @@ export class SpaghettiMeshPath extends MeshPath {
 
         // update the mesh buffer attributes to render the updated point colors
         this.updateColors(indicesToUpdate);
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of interval in ms
+     * @param {number} secondTimestamp - start of interval in ms or -1 for unspecified (hover mode)
+     */
+    setTimeInterval(firstTimestamp, secondTimestamp) {
+        let firstIndex = -1;
+        let secondIndex = -1;
+        for (let i = 0; i < this.currentPoints.length; i++) {
+            let point = this.currentPoints[i];
+            if (firstIndex < 0 && point.timestamp >= firstTimestamp) {
+                firstIndex = i;
+            }
+            if (secondIndex < 0 && point.timestamp >= secondTimestamp) {
+                secondIndex = i;
+                break;
+            }
+        }
+        if (firstIndex >= 0 && secondIndex < 0) {
+            secondIndex = this.currentPoints.length - 1;
+        }
+        if (firstIndex < 0 || secondIndex < 0) {
+            return;
+        }
+        this.frozen = true;
+
+        if (secondTimestamp > 0) {
+            this.comparer.setFirstPoint(firstIndex, false);
+            this.comparer.setEndPoint(secondIndex);
+        } else {
+            this.comparer.setFirstPoint(firstIndex, true);
+        }
+        this.updateMeshWithComparer();
     }
 
     createCursor(radius = 50) {

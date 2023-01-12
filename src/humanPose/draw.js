@@ -417,7 +417,6 @@ export class HumanPoseAnalyzer {
         this.historyMeshesAll[poseRenderer.id] = historyMesh;
     }
 
-
     resetHistoryLines() {
         for (let key of Object.keys(this.historyMeshesAll)) {
             let historyMesh = this.historyMeshesAll[key];
@@ -436,6 +435,12 @@ export class HumanPoseAnalyzer {
                 child.dispose();
             }
             this.historyCloneContainer.remove(child);
+        }
+    }
+
+    setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            mesh.setTimeInterval(firstTimestamp, secondTimestamp);
         }
     }
 
@@ -603,6 +608,11 @@ function updatePoseRenderer(poseObject, timestamp, container, historical) {
     poseRenderer.updateBonePositions();
 
     humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
+    if (realityEditor.analytics) {
+        realityEditor.analytics.appendPose({
+            time: timestamp,
+        });
+    }
 }
 
 function getGroundPlaneRelativeMatrix() {
@@ -678,6 +688,14 @@ function resetHistoryClones() {
 }
 
 /**
+ * @param {number} firstTimestamp - start of time interval in ms
+ * @param {number} secondTimestamp - end of time interval in ms
+ */
+function setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
+    humanPoseAnalyzer.setHistoryTimeInterval(firstTimestamp, secondTimestamp);
+}
+
+/**
  * @param {boolean} visible
  */
 function setHistoryLinesVisible(visible) {
@@ -699,6 +717,7 @@ export {
     renderHumanPoseObjects,
     resetHistoryLines,
     resetHistoryClones,
+    setHistoryTimeInterval,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceCloneMaterial,
