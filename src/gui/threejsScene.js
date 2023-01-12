@@ -8,7 +8,7 @@ import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
-import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS } from './ViewFrustum.js';
+import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 
 (function(exports) {
 
@@ -132,6 +132,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
         setMatrixFromArray(camera.matrix, matrix);
+        if (customMaterials) {
+            let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
+            customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
+        }
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
@@ -516,6 +520,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
         raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
 
+        // add object layer to raycast layer mask
+        objectsToCheck.forEach(obj => {
+            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
+        });
+
         //3. compute intersections
         let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
         results.forEach(intersection => {
@@ -595,6 +604,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         }
 
         frustum.setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
+
+        let viewingCameraForwardVector = realityEditor.gui.ar.utilities.getForwardVector(realityEditor.sceneGraph.getCameraNode().worldMatrix);
+        let viewAngleSimilarity = realityEditor.gui.ar.utilities.dotProduct(materialCullingFrustums[id].planes[5].normal, viewingCameraForwardVector);
+        viewAngleSimilarity = Math.max(0, viewAngleSimilarity); // limit it to 0 instead of going to -1 if viewing from anti-parallel direction
+        
         return {
             normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
             normal2: array3ToXYZ(materialCullingFrustums[id].planes[1].normal),
@@ -608,6 +622,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             D4: materialCullingFrustums[id].planes[3].D,
             D5: materialCullingFrustums[id].planes[4].D,
             D6: materialCullingFrustums[id].planes[5].D,
+            viewAngleSimilarity: viewAngleSimilarity
         }
     }
 
@@ -692,10 +707,22 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     D3: 0,
                     D4: 0,
                     D5: 0,
-                    D6: 0
+                    D6: 0,
+                    viewAngleSimilarity: 0
                 })
             }
             return frustums;
+        }
+        updateCameraDirection(cameraDirection) {
+            areaTargetMaterials.forEach(material => {
+                for (let i = 0; i < material.uniforms[UNIFORMS.numFrustums].value; i++) {
+                    let thisFrustum = material.uniforms[UNIFORMS.frustums].value[i];
+                    let frustumDir = [thisFrustum.normal6.x, thisFrustum.normal6.y, thisFrustum.normal6.z];
+                    let viewingDir = [cameraDirection.x, cameraDirection.y, cameraDirection.z];
+                    // set to 1 if parallel, 0 if perpendicular. lower bound clamped to 0 instead of going to -1 if antiparallel
+                    thisFrustum.viewAngleSimilarity = Math.max(0, realityEditor.gui.ar.utilities.dotProduct(frustumDir, viewingDir));
+                }
+            });
         }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, {maxHeight, center, animateOnLoad, inverted, useFrustumCulling}) {
             let material = sourceMaterial.clone();
@@ -710,7 +737,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 {
                     maxHeight: {value: maxHeight},
                     numFrustums: {value: 0},
-                    frustums: {value: defaultFrustums},
+                    frustums: {value: defaultFrustums}
                 }
             ]);
 
