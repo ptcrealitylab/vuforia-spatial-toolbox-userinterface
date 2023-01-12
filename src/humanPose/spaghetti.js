@@ -132,6 +132,7 @@ export class SpaghettiMeshPath extends MeshPath {
                 this.frozen = true;
                 this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
                 this.comparer.setEndPoint(this.prevState.secondPointIndex);
+                this.comparer.selectionState = SelectionState.TIMELINE;
                 this.updateMeshWithComparer();
             }
 
@@ -276,8 +277,10 @@ export class SpaghettiMeshPath extends MeshPath {
             comparer.savePreviousColor(comparer.firstPointIndex, points[comparer.firstPointIndex].color);
             if (comparer.selectionState === SelectionState.FIRST) {
                 points[comparer.firstPointIndex].color = [200, 255, 200];
+            } else if (comparer.selectionState === SelectionState.SECOND) {
+                points[comparer.firstPointIndex].color = [0, 127, 255];
             } else {
-                points[comparer.firstPointIndex].color = [0, 255, 0];
+                points[comparer.firstPointIndex].color = [255, 255, 0];
             }
             indicesToUpdate.push(comparer.firstPointIndex);
         }
@@ -289,10 +292,6 @@ export class SpaghettiMeshPath extends MeshPath {
             this.getMeasurementLabel().requestVisible(false, this.pathId);
         } else {
             if (points[comparer.secondPointIndex].color) {
-                comparer.savePreviousColor(comparer.secondPointIndex, points[comparer.secondPointIndex].color);
-                points[comparer.secondPointIndex].color = [255, 0, 0];
-                indicesToUpdate.push(comparer.secondPointIndex);
-
                 // set all points in between first and second
                 let biggerIndex = Math.max(comparer.firstPointIndex, comparer.secondPointIndex);
                 let smallerIndex = Math.min(comparer.firstPointIndex, comparer.secondPointIndex);
@@ -300,6 +299,12 @@ export class SpaghettiMeshPath extends MeshPath {
                     comparer.savePreviousColor(i, points[i].color);
                     points[i].color = [255, 255, 0];
                     indicesToUpdate.push(i);
+                }
+
+                if (comparer.selectionState !== SelectionState.TIMELINE) {
+                    comparer.savePreviousColor(comparer.secondPointIndex, points[comparer.secondPointIndex].color);
+                    points[comparer.secondPointIndex].color = [255, 0, 0];
+                    indicesToUpdate.push(comparer.secondPointIndex);
                 }
             }
 
@@ -345,7 +350,7 @@ export class SpaghettiMeshPath extends MeshPath {
         this.frozen = true;
         this.comparer.setFirstPoint(firstIndex, false);
         this.comparer.setEndPoint(secondIndex);
-        this.comparer.selectionState = SelectionState.SECOND;
+        this.comparer.selectionState = SelectionState.TIMELINE;
         this.updateMeshWithComparer();
     }
 
@@ -360,6 +365,7 @@ export class SpaghettiMeshPath extends MeshPath {
 const SelectionState = {
     FIRST: 'first',
     SECOND: 'second',
+    TIMELINE: 'timeline',
 };
 
 // Handles some state management for comparing two points on a MeshPath to each other
