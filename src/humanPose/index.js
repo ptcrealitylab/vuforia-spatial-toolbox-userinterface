@@ -26,8 +26,8 @@ import * as utils from './utils.js'
 
         loadHistory();
 
-        realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
-            let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
+        realityEditor.app.callbacks.subscribeToPoses((poseJoints, timestamp) => {
+            let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints, timestamp);
             let poseObjectName = utils.getPoseObjectName(pose);
 
             if (typeof nameIdMap[poseObjectName] === 'undefined') {
@@ -157,6 +157,13 @@ import * as utils from './utils.js'
     }
 
     function updateObjectFromRawPose(humanPoseObject, pose) {
+
+        if (pose.joints.length <= 0) {
+            // if no pose is detected, don't update (even update timestamp) 
+        }
+
+        // store timestamp of update in the object
+        humanPoseObject.lastUpdateTS = pose.timestamp;
         
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(utils.JOINTS)[index];
@@ -190,9 +197,6 @@ import * as utils from './utils.js'
                 }
             }
         });
-
-        // TODO: store timestamp of update in the object
-
 
     }
 

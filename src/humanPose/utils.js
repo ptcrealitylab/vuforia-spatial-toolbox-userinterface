@@ -58,9 +58,10 @@ function isHumanPoseObject(object) {
     return object.type === 'human' || object.objectId.indexOf(HUMAN_POSE_ID_PREFIX) === 0;
 }
 
-function makePoseFromJoints(name, joints) {
+function makePoseFromJoints(name, joints, timestamp) {
     return {
         name: name,
+        timestamp: timestamp,
         joints: joints
     }
 }

@@ -234,9 +234,11 @@ createNameSpace('realityEditor.app.callbacks');
 
     /**
      * Callback for realityEditor.app.getPosesStream
-     * @param {Array<Object>} poses
+     * @param {Array<Object>} pose
+     * @param {Number} timestamp of the pose
+     * @param {Array<Number>} [width, height] of the image which the pose was computed from
      */
-    function receivePoses(poses, imageSize) {
+    function receivePoses(pose, timestamp, imageSize) {
         if (!window.rzvIo) {
             // window.rzvIo = io('http://jhobin0ml.local:31337');
             // window.rzvIo = io('http://10.10.10.166:31337');
@@ -285,7 +287,7 @@ createNameSpace('realityEditor.app.callbacks');
         //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
         // }
 
-        for (let point of poses) {
+        for (let point of pose) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
 
@@ -347,15 +349,16 @@ createNameSpace('realityEditor.app.callbacks');
         }
         */
 
-        realityEditor.gui.poses.drawPoses(poses, imageSize);
+        realityEditor.gui.poses.drawPoses(pose, imageSize);
 
         const USE_DEBUG_POSE = false;
 
         if (USE_DEBUG_POSE) {
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
-            if (poses.length > 0) {
-                subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld));
+            // NOTE: if no pose detected, do not. We may want to reconsider sending out this information (with a timestamp) to notify other servers/clients that body tracking is 'lost'.
+            if (pose.length > 0) {
+                subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
             }
         }
     }
