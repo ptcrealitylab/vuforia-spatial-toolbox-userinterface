@@ -125,7 +125,7 @@ export class SpaghettiMeshPath extends MeshPath {
             this.comparer.reset();
         }
 
-        if (this.comparer.firstPointIndex === null || this.comparer.selectionState === 'first') {
+        if (this.comparer.firstPointIndex === null || this.comparer.selectionState === SelectionState.FIRST) {
             const isHover = true;
             this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
             if (this.comparer.firstPointIndex === null && this.prevState) {
@@ -208,7 +208,7 @@ export class SpaghettiMeshPath extends MeshPath {
         }
         let intersect = intersects[0];
         let pointIndex = this.getPointFromFace([intersect.face.a, intersect.face.b, intersect.face.c]);
-        if (this.comparer.selectionState === 'second') {
+        if (this.comparer.selectionState === SelectionState.SECOND) {
             this.comparer.reset();
             this.cursor.visible = false;
         } else {
@@ -274,7 +274,7 @@ export class SpaghettiMeshPath extends MeshPath {
         // refresh the color of the first point
         if (comparer.firstPointIndex !== null && points[comparer.firstPointIndex].color) {
             comparer.savePreviousColor(comparer.firstPointIndex, points[comparer.firstPointIndex].color);
-            if (comparer.selectionState === 'first') {
+            if (comparer.selectionState === SelectionState.FIRST) {
                 points[comparer.firstPointIndex].color = [200, 255, 200];
             } else {
                 points[comparer.firstPointIndex].color = [0, 255, 0];
@@ -345,6 +345,7 @@ export class SpaghettiMeshPath extends MeshPath {
         this.frozen = true;
         this.comparer.setFirstPoint(firstIndex, false);
         this.comparer.setEndPoint(secondIndex);
+        this.comparer.selectionState = SelectionState.SECOND;
         this.updateMeshWithComparer();
     }
 
@@ -356,6 +357,11 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 }
 
+const SelectionState = {
+    FIRST: 'first',
+    SECOND: 'second',
+};
+
 // Handles some state management for comparing two points on a MeshPath to each other
 export class KeyframeComparer {
     constructor() {
@@ -363,7 +369,7 @@ export class KeyframeComparer {
         this.previousColors = [];
     }
     reset() {
-        this.selectionState = 'first';
+        this.selectionState = SelectionState.FIRST;
         this.firstPointIndex = null;
         this.secondPointIndex = null;
     }
@@ -372,9 +378,9 @@ export class KeyframeComparer {
     }
     setFirstPoint(index, isHover) {
         if (isHover) {
-            this.selectionState = 'first';
+            this.selectionState = SelectionState.FIRST;
         } else {
-            this.selectionState = 'second';
+            this.selectionState = SelectionState.SECOND;
         }
         this.firstPointIndex = index;
     }
