@@ -37,7 +37,7 @@ export class Analytics {
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
         if (time > 0 && !fromSpaghetti) {
-            setHistoryTimeInterval(time, -1);
+            // setHistoryTimeInterval(time, -1);
         }
     }
 

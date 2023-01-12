@@ -113,16 +113,28 @@ export class SpaghettiMeshPath extends MeshPath {
     
     onPointerMove(e) {
         if (this.frozen) {
-            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
+            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
             if (intersects.length === 0) {
                 return;
             }
+            this.prevState = {
+                firstPointIndex: this.comparer.firstPointIndex,
+                secondPointIndex: this.comparer.secondPointIndex
+            };
             this.frozen = false;
+            this.comparer.reset();
         }
 
         if (this.comparer.firstPointIndex === null || this.comparer.selectionState === 'first') {
             const isHover = true;
             this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
+            if (this.comparer.firstPointIndex === null && this.prevState) {
+                this.frozen = true;
+                this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
+                this.comparer.setEndPoint(this.prevState.secondPointIndex);
+                this.updateMeshWithComparer();
+            }
+
             return;
         }
 
@@ -190,6 +202,7 @@ export class SpaghettiMeshPath extends MeshPath {
         if (intersects.length === 0) {
             this.comparer.reset();
             this.updateMeshWithComparer();
+            this.updateAnalyticsHighlightRegion();
             this.cursor.visible = false;
             return;
         }
@@ -202,6 +215,7 @@ export class SpaghettiMeshPath extends MeshPath {
             this.comparer.setFirstPoint(pointIndex, isHover);
         }
         this.updateMeshWithComparer();
+        this.updateAnalyticsHighlightRegion();
     }
 
     selectSecondPathPoint(screenX, screenY, possibleSnapIndex) {
@@ -217,6 +231,8 @@ export class SpaghettiMeshPath extends MeshPath {
         this.comparer.setEndPoint(pointIndex);
         this.cursor.visible = true;
         this.updateMeshWithComparer();
+        this.updateAnalyticsHighlightRegion();
+        this.prevState = null;
     }
     
     resetIfNoGeometry() {
@@ -228,10 +244,10 @@ export class SpaghettiMeshPath extends MeshPath {
         }
         return false;
     }
-    
-    updateMeshWithComparer() {
-        let comparer = this.comparer;
-        let points = this.currentPoints;
+
+    updateAnalyticsHighlightRegion() {
+        const comparer = this.comparer;
+        const points = this.currentPoints;
 
         if (comparer.firstPointIndex !== null) {
             const firstTimestamp = points[comparer.firstPointIndex].timestamp;
@@ -245,6 +261,12 @@ export class SpaghettiMeshPath extends MeshPath {
                 realityEditor.analytics.setCursorTime(firstTimestamp, true);
             }
         }
+    }
+
+    updateMeshWithComparer() {
+        let comparer = this.comparer;
+        let points = this.currentPoints;
+
 
         // revert to original state, and store indices of each vertex whose color changed
         let indicesToUpdate = this.comparer.restorePreviousColors();
@@ -316,17 +338,13 @@ export class SpaghettiMeshPath extends MeshPath {
         if (firstIndex >= 0 && secondIndex < 0) {
             secondIndex = this.currentPoints.length - 1;
         }
-        if (firstIndex < 0 || secondIndex < 0) {
+        if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
             return;
         }
-        this.frozen = true;
 
-        if (secondTimestamp > 0) {
-            this.comparer.setFirstPoint(firstIndex, false);
-            this.comparer.setEndPoint(secondIndex);
-        } else {
-            this.comparer.setFirstPoint(firstIndex, true);
-        }
+        this.frozen = true;
+        this.comparer.setFirstPoint(firstIndex, false);
+        this.comparer.setEndPoint(secondIndex);
         this.updateMeshWithComparer();
     }
 
