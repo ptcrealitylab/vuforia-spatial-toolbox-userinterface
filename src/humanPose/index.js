@@ -162,8 +162,8 @@ import * as utils from './utils.js'
             // if no pose is detected, don't update (even update timestamp) 
         }
 
-        // store timestamp of update in the object
-        humanPoseObject.lastUpdateTS = pose.timestamp;
+        // store timestamp of update in the object (this is capture time of the image used to compute the pose in this update)
+        humanPoseObject.lastUpdateDataTS = pose.timestamp;
         
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(utils.JOINTS)[index];
