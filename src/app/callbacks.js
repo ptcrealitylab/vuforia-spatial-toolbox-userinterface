@@ -239,26 +239,11 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array<Number>} [width, height] of the image which the pose was computed from
      */
     function receivePoses(pose, timestamp, imageSize) {
-        if (!window.rzvIo) {
-            // window.rzvIo = io('http://jhobin0ml.local:31337');
-            // window.rzvIo = io('http://10.10.10.166:31337');
-            // window.rzvIo = io('http://192.168.0.106:31337');
-            // window.rzvIo = io('http://192.168.50.98:31337');
-
-            let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-            if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-                return;
-            }
-            const wsPort = 31337;
-            const url = `ws://${bestWorldObject.ip}:${wsPort}/`;
-            // const url = 'ws://10.10.10.166:31337/';
-            window.rzvIo = new WebSocket(url);
-        }
 
         let poseInWorld = [];
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (!worldObject) {
-            console.warn('okay I give up');
+            console.warn('Could not find world object.');
             return;
         }
         let worldObjectId = worldObject.objectId;
@@ -331,23 +316,6 @@ createNameSpace('realityEditor.app.callbacks');
 
         sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
         sceneNode.updateWorldMatrix();
-
-        // MK HACK: disabled this altenative data transmission route
-        /*
-        let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
-        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: poseInWorld}], camera: cameraMat};
-
-        // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
-        //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
-        //         window.lastPosesLen = coolerPoses.length;
-        //     }
-
-        if (window.rzvIo.readyState === WebSocket.OPEN) {
-            window.rzvIo.send(JSON.stringify(Object.assign({
-                command: '/update/humanPoses'
-            }, msg)));
-        }
-        */
 
         realityEditor.gui.poses.drawPoses(pose, imageSize);
 
