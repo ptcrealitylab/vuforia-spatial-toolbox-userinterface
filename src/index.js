@@ -113,6 +113,7 @@ var realityEditor = realityEditor || {
         buttons: {},
         dropdown: {},
         glRenderer: {},
+        glState: {},
         menus:{},
         modal: {},
         moveabilityCorners: {},

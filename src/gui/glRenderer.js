@@ -1,9 +1,171 @@
 createNameSpace("realityEditor.gui.glRenderer");
 
+/**
+ * @typedef {WebGLRenderingContext | WebGL2RenderingContext} WebGL
+ * @typedef {{}} GLState
+ * @typedef {*} HandleObj
+ * @typedef {{handle: number}} Handle
+ */
+
+class CommandId {
+    /**
+     * 
+     * @param {number} worker 
+     * @param {number} buffer 
+     * @param {number} command 
+     */
+    constructor(worker, buffer, command) {
+        /**
+         * @type {number}
+         */
+        this.worker = worker;
+
+        /**
+         * @type {number}
+         */
+        this.buffer = buffer;
+
+        /**
+         * @type {number}
+         */
+        this.command = command;
+    }
+}
+
+class Command {
+    /**
+     * 
+     * @param {string} name 
+     * @param {any[]} args 
+     * @param {number} handle
+     */
+    constructor(name, args, handle) {
+        /**
+         * @type {string}
+         */
+        this.name = name;
+
+        /**
+         * @type {any[]}
+         */
+        this.args = args;
+
+        /**
+         * @type {number}
+         */
+        this.handle = handle;
+    }
+}
+
+class CommandBuffer {
+    /**
+     * 
+     * @param {number} workerId 
+     * @param {number} commandBufferId
+     * @param {boolean} isRendering
+     * @param {Command[]} commands 
+     */
+    constructor(workerId, commandBufferId, isRendering, commands) {
+        this.workerId = workerId;
+        this.commandBufferId = commandBufferId;
+        this.isRendering = isRendering;
+        this.commands = commands;
+    }
+}
+
+/**
+ * manages all received command buffers and the one that is used for rendering
+ * 
+ */
+class CommandBufferManager {
+    /**
+     * 
+     * @param {number} workerId 
+     */
+    constructor(workerId) {
+        /**
+         * @type {CommandBuffer[]}
+         */
+        this.commandBuffers = [];
+
+        /**
+         * @type {CommandBuffer}
+         */
+        this.renderCommandBuffer = new CommandBuffer(workerId, -1, true, []);
+    }
+
+    /**
+     * 
+     * @param {CommandBuffer} commandBuffer 
+     */
+    onCommandBufferReceived(commandBuffer) {
+        console.log(`cmd(${commandBuffer.workerId}): received buffer[${commandBuffer.commands.length}]`);
+        this.commandBuffers.push(commandBuffer);
+    }
+
+    /**
+     * 
+     * @returns the newest commandbuffer marked for rendering for which all resources have been loaded
+     */
+    getRenderCommandBuffer() {
+        // current code does not conform to the specs, let's process each buffer sequentially
+        /*while (this.commandBuffers.length > 0) {
+            const commandBuffer = this.commandBuffers[0];
+            if (commandBuffer.isRendering) {
+                // the command buffer was marked for rendering, remove it from the list and store it as the last known rendering command buffer 
+                this.commandBuffers.shift();
+                this.renderCommandBuffer = commandBuffer;
+            } else {
+                // the command buffer is marked for loading resources, return last know command buffer for rendering
+                return this.renderCommandBuffer;
+            }
+        }
+        return this.renderCommandBuffer;*/
+        if (this.commandBuffers.length > 0) {
+            const commandBuffer = this.commandBuffers[0];
+            this.commandBuffers.shift();
+            if (commandBuffer.isRendering) {
+                // render buffers can be repeated
+                this.renderCommandBuffer = commandBuffer;
+            }
+            return commandBuffer;
+        }
+        return this.renderCommandBuffer;
+    }
+
+    /**
+     * 
+     * @returns the next resource commandbuffer if it exists
+     */
+    getResourceCommandBuffer() {
+        // current code does not conform to the specs, let's process each buffer sequentially
+        /*while (this.commandBuffers.length > 0) {
+            const commandBuffer = this.commandBuffers[0];
+            this.commandBuffers.shift();
+            if (commandBuffer.isRendering) {
+               // the command buffer was marked for rendering, update the last known rendering frame buffer, since we've loaded all resources
+               this.renderCommandBuffer = commandBuffer;
+            } else {
+                // the command buffer was marked for resource loading, return it
+                return commandBuffer;
+            }
+        } */
+        console.log(`cmd(${this.renderCommandBuffer.workerId}) no resource buffer`)
+        return null;
+    }
+}
+
 (function(exports) {
+    /**
+     * @type {Object.<string, number>}
+     */
     let workerIds = {};
     let nextWorkerId = 1;
     let toolIdToProxy = {};
+
+    /**
+     * @type {WorkerGLProxy[]}
+     */
     let proxies = [];
     let rendering = false;
 
@@ -14,30 +176,46 @@ createNameSpace("realityEditor.gui.glRenderer");
      */
     class WorkerGLProxy {
         /**
-         * @param {Element} worker - worker iframe
-         * @param {WebGLContext} gl
-         * @param {number|string} workerId - unique identifier of worker
+         * @param {Window} worker - worker iframe
+         * @param {WebGL} gl
+         * @param {number} workerId - unique identifier of worker
          * @param {string} toolId - unique identifier of associated tool
          */
         constructor(worker, gl, workerId, toolId) {
+            /**
+             * @type {Window}
+             */
             this.worker = worker;
+
+            /**
+             * @type {WebGL}
+             */
             this.gl = gl;
+
+            /**
+             * @type {number}
+             */
             this.workerId = workerId;
+
+            /**
+             * @type {string}
+             */
             this.toolId = toolId;
 
-            this.uncloneables = {};
+            /**
+             * @type {Map<number, HandleObj>}
+             */
+            this.unclonables = new Map();
 
-            this.commandBuffer = [];
-            this.previousCommandBuffer = [];
-            this.lastUseProgram = null;
-            this.lastActiveTexture = {
-                name: 'activeTexture',
-                args: [this.gl.TEXTURE0],
-            };
-            this.lastTargettedBinds = {};
-            this.lastTextureBinds = {};
-            this.lastCapabilities = {};
-            this.buffering = false;
+            /**
+             * @type {CommandBufferManager}
+             */
+            this.buffer = new CommandBufferManager(workerId);
+
+            /**
+             * @type {GLState}
+             */
+            this.lastState = new realityEditor.gui.glState.GLState(this.gl, this.unclonables);
 
             this.onMessage = this.onMessage.bind(this);
             window.addEventListener('message', this.onMessage);
@@ -45,6 +223,11 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.frameEndListener = null;
         }
 
+        /**
+         * 
+         * @param {MessageEvent<any>} e 
+         * @returns 
+         */
         onMessage(e) {
             const message = e.data;
             if (message.workerId !== this.workerId) {
@@ -56,115 +239,89 @@ createNameSpace("realityEditor.gui.glRenderer");
                 return;
             }
 
-            if (this.buffering) {
-                this.commandBuffer.push(message);
-                return;
-            }
-
-            const res = this.executeCommand(message);
-
-            if (message.wantsResponse) {
-                this.worker.postMessage({
-                    id: message.id,
-                    result: res,
-                }, '*');
-            }
+            this.buffer.onCommandBufferReceived(message)
         }
 
-        executeCommand(message) {
-            if (message.messages) {
-                for (let bufferedMessage of message.messages) {
-                    this.executeOneCommand(bufferedMessage);
-                }
-            } else {
-                this.executeOneCommand(message);
+        /**
+         * 
+         * @param {Command} command 
+         * @param {CommandId} id 
+         * @returns 
+         */
+        executeOneCommand(command, id) {
+            if (command.args.length == undefined) {
+                console.log("no length!");
             }
-        }
-
-        executeOneCommand(message) {
-            for (let i = 0; i < message.args.length; i++) {
-                let arg = message.args[i];
-                if (arg && arg.fakeClone) {
-                    message.args[i] = this.uncloneables[arg.index];
+            //console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
+            
+            
+            /**
+             * @type {Command}
+             */
+            let localCommand = structuredClone(command);
+            for (let i = 0; i < localCommand.args.length; i++) {
+                let arg = localCommand.args[i];
+                if (arg && arg.hasOwnProperty("handle")) {
+                    localCommand.args[i] = this.unclonables.get(arg.handle);
+                }
+                if (arg && arg.hasOwnProperty("type") && arg.hasOwnProperty("data")) {
+                    if (arg.type === "Float32Array") {
+                        localCommand.args[i] = new Float32Array(arg.data);
+                    } else if (arg.type === "Uint8Array") {
+                        localCommand.args[i] = new Uint8Array(arg.data);
+                    } else if (arg.type === "Uint16Array") {
+                        localCommand.args[i] = new Uint16Array(arg.data);
+                    }
                 }
             }
 
-            if (!this.gl[message.name] && !message.name.startsWith('extVao-')) {
+            if (!this.gl[localCommand.name] && !localCommand.name.startsWith('extVao-')) {
                 return;
             }
 
-            if (message.name === 'clear') {
+            if (localCommand.name === 'clear') {
                 return;
             }
 
-            if (message.name === 'useProgram') {
-                this.lastUseProgram = message;
-            }
-
-            if (message.name === 'activeTexture') {
-                this.lastActiveTexture = message;
-            }
-
-            const targettedBinds = {
-                // Note that all targetted binds should be stored using a VAO
-
-                // bindAttribLocation: true,
-                // bindBuffer: true,
-                // bindFramebuffer: true,
-                // bindRenderbuffer: true,
-
-                // bindTexture: true, // can't be here because of activeTexture nonsense
-                // pixelStorei: true,
-                // texParameterf: true, // 2 hmm
-                // texParameteri: true, // 2
-                // texImage2D: true,
-            };
-
-            if (message.name === 'disable' || message.name === 'enable') {
-                let capaId = message.args[0];
-                if (!this.lastCapabilities.hasOwnProperty(capaId)) {
-                    let isEnabled = this.gl.isEnabled(capaId);
-                    this.lastCapabilities[capaId] = isEnabled;
-                }
-                let isReturnToDefault =
-                    (this.lastCapabilities[capaId] && message.name === 'enable') ||
-                    ((!this.lastCapabilities[capaId]) && message.name === 'disable');
-                if (isReturnToDefault) {
-                    delete this.lastCapabilities[capaId];
-                }
-            }
-
-            if (targettedBinds.hasOwnProperty(message.name)) {
-                this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
-            }
-            if (message.name === 'bindTexture') {
-                let activeTexture = this.lastActiveTexture.args[0];
-                if (!this.lastTextureBinds[activeTexture]) {
-                    this.lastTextureBinds[activeTexture] = {};
-                }
-                this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
-            }
+           this.lastState.preProcessOneCommand(localCommand);
 
             let res;
 
-            if (message.name.startsWith('extVao-')) {
-                let fnName = message.name.split('-')[1]; // e.g. createVertexArrayOES
+            if (localCommand.name.startsWith('extVao-')) {
+                let fnName = localCommand.name.split('-')[1]; // e.g. createVertexArrayOES
                 fnName = fnName.replace(/OES$/, '');
-                res = this.gl[fnName].apply(this.gl, message.args);
+                res = this.gl[fnName].apply(this.gl, localCommand.args);
             } else {
-                res = this.gl[message.name].apply(this.gl, message.args);
+                try {
+                    res = this.gl[localCommand.name].apply(this.gl, localCommand.args);
+                    const err = this.gl.getError();
+                    if (err !== 0) {
+                        console.error("glError: " + err + ", " + localCommand.name + "(" + command.args + ")");
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
             }
 
+            this.lastState.postProcessOneCommand(command);
+
             if (typeof res === 'object') {
-                this.uncloneables[message.id] = res;
-                res = {fakeClone: true, index: message.id};
+
+                this.unclonables.set(localCommand.handle, res);
+                res = new Handle(localCommand.handle);
             }
-            return res;
+            
+            if (localCommand.name === "getProgramParameter") {
+                this.worker.postMessage({
+                    id: id,
+                    result: res,
+                }, '*')
+            }
         }
 
         logCommandBuffer() {
             let program = [];
-            for (let command of this.commandBuffer) {
+            for (let command of this.debug) {
                 let messages = command.messages || [command];
                 for (let message of messages) {
                     let args = message.args.map(arg => {
@@ -197,60 +354,36 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
         }
 
-        executeFrameCommands() {
-            this.buffering = false;
+        /**
+         * 
+         * @param {GLState} glState 
+         * @returns 
+         */
+        executeFrameCommands(glState) {
+            this.lastState.applyDiff(glState);
 
-            let setup = [];
-            if (this.lastUseProgram) {
-                setup.push(this.lastUseProgram);
-            }
-            for (let activeTexture in this.lastTextureBinds) {
-                setup.push({
-                    name: 'activeTexture',
-                    args: [parseInt(activeTexture)],
-                });
-                for (let command of Object.values(this.lastTextureBinds[activeTexture])) {
-                    setup.push(command);
-                }
-            }
-            if (this.lastActiveTexture) {
-                setup.push(this.lastActiveTexture);
-            }
-            if (this.lastTargettedBinds) {
-                for (let command of Object.values(this.lastTargettedBinds)) {
-                    setup.push(command);
-                }
-            }
-            let teardown = [];
-            for (let capaId in this.lastCapabilities) {
-                let val = this.lastCapabilities[capaId];
-                teardown.push({
-                    name: val ? 'enable' : 'disable',
-                    args: [parseInt(capaId)],
-                });
-            }
-            this.commandBuffer = setup.concat(this.commandBuffer).concat(teardown);
+            // execute resources command buffer or rendering command buffer but never both during a frame
+            let localCommandBuffer = this.buffer.getResourceCommandBuffer();
 
-            for (let message of this.commandBuffer) {
-                this.executeCommand(message);
+            if ((localCommandBuffer !== null) && localCommandBuffer.commands.length !== 0) {
+                let commandId = 1;
+                for (let command of localCommandBuffer.commands) {
+                    const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
+                    let res = this.executeOneCommand(command, id);
+                }            
+            } else {
+                localCommandBuffer = this.buffer.getRenderCommandBuffer();
+                let commandId = 1;
+                for (let command of localCommandBuffer.commands) {
+                    const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
+                    let res = this.executeOneCommand(command, id);
+                }
             }
             // this.logCommandBuffer();
-            this.previousCommandBuffer = this.commandBuffer;
-            this.commandBuffer = [];
-        }
-
-        /**
-         * Execute last successful frame's command buffer
-         */
-        executePreviousFrameCommands() {
-            for (let message of this.previousCommandBuffer) {
-                this.executeCommand(message);
-            }
+            return this.lastState;
         }
 
         getFrameCommands() {
-            this.buffering = true;
-            this.commandBuffer = [];
             this.worker.postMessage({name: 'frame', time: Date.now()}, '*');
             return new Promise((res) => {
                 this.frameEndListener = res;
@@ -263,58 +396,76 @@ createNameSpace("realityEditor.gui.glRenderer");
         }
     }
 
+    /**
+     * @type {HTMLCanvasElement | null}
+     */
     let canvas;
+    
+    /**
+     * @type {WebGL2RenderingContext | null}
+     */
     let gl;
     const functions = [];
     const constants = {};
     let lastRender = Date.now();
 
+    /**
+     * @type {GLState | null}
+     */
+    let defaultGLState = null;
+
     function initService() {
         // canvas = globalCanvas.canvas;
         canvas = document.querySelector('#glcanvas');
-        canvas.width = globalStates.height;
-        canvas.height = globalStates.width;
-        canvas.style.width = canvas.width + 'px';
-        canvas.style.height = canvas.height + 'px';
-        gl = canvas.getContext('webgl2');
+        if (canvas !== null) {
+            canvas.width = globalStates.height;
+            canvas.height = globalStates.width;
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+            gl = canvas.getContext('webgl2');
+            const ext = gl?.getExtension('GMAN_debug_helper');
+           
+            // If we don't have a GL context, give up now
 
-        // If we don't have a GL context, give up now
+            if (!gl) {
+                alert('Unable to initialize WebGL2. Your browser or machine may not support it.');
+                return;
+            } else {
+                for (let key in gl) {
+                    switch (typeof gl[key]) {
+                    case 'function':
+                        functions.push(key);
+                        break;
+                    case 'number':
+                        constants[key] = gl[key];
+                        break;
+                    }
+                    if (key === 'canvas') {
+                        constants[key] = {
+                            width: gl[key].width,
+                            height: gl[key].height,
+                        };
+                    }
+                }
 
-        if (!gl) {
-            alert('Unable to initialize WebGL2. Your browser or machine may not support it.');
-            return;
-        }
+                defaultGLState = realityEditor.gui.glState.GLState.createFromGLContext(gl, new Map());
 
-        for (let key in gl) {
-            switch (typeof gl[key]) {
-            case 'function':
-                functions.push(key);
-                break;
-            case 'number':
-                constants[key] = gl[key];
-                break;
+                setTimeout(renderFrame, 500);
+                setInterval(watchpuppy, 1000);
+
+                realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+                realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
             }
-            if (key === 'canvas') {
-                constants[key] = {
-                    width: gl[key].width,
-                    height: gl[key].height,
-                };
-            }
         }
-
-        setTimeout(renderFrame, 500);
-        setInterval(watchpuppy, 1000);
-
-        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
-        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
     }
 
     /**
      * Returns n random elements from the array. Fast and non-destructive.
      * @author https://stackoverflow.com/a/19270021
-     * @param {Array} arr
+     * @template T 
+     * @param {T[]} arr
      * @param {number} n
-     * @return {Array}
+     * @return {T[]}
      */
     function getRandom(arr, n) {
         var result = new Array(n),
@@ -332,7 +483,8 @@ createNameSpace("realityEditor.gui.glRenderer");
 
     /**
      * If there are too many proxies, chooses a random subset of them
-     * @return {Array}
+     * @param {WorkerGLProxy[]} proxiesToConsider
+     * @return {WorkerGLProxy[]}
      */
     function getSafeProxySubset(proxiesToConsider) {
         if (proxiesToConsider.length < MAX_PROXIES) {
@@ -349,10 +501,14 @@ createNameSpace("realityEditor.gui.glRenderer");
             return;
         }
         rendering = true;
+
+        /**
+         * @type {WorkerGLProxy[]}
+         */
         let proxiesToConsider = [];
         function makeWatchdog() {
             return new Promise((res) => {
-                setTimeout(res, 100, false);
+                setTimeout(res, 1000000, false);
             });
         }
         proxies.forEach(function(thisProxy) {
@@ -374,23 +530,27 @@ createNameSpace("realityEditor.gui.glRenderer");
             return;
         }
 
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
-        gl.clearDepth(1.0);                 // Clear everything
-        gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-        gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+        if (gl !== null) {
+            gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
+            gl.clearDepth(1.0);                 // Clear everything
+            gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+            gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
 
-        // Clear the canvas before we start drawing on it.
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            // Clear the canvas before we start drawing on it.
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        }
 
-        // Execute all pending commands for this frame
-        for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
-            let proxy = proxiesToBeRenderedThisFrame[i];
-            if (!res[i]) {
-                console.warn('dropped proxy frame due to large delay', proxy);
-                proxy.executePreviousFrameCommands();
-                continue;
+        let glState = defaultGLState;
+        if (glState !== null) {
+            glState.applyAll();
+            // Execute all pending commands for this frame
+            for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
+                let proxy = proxiesToBeRenderedThisFrame[i];
+                if (!res[i]) {
+                    console.warn('dropped proxy frame due to large delay', proxy);
+                }
+                glState = proxy.executeFrameCommands(glState);
             }
-            proxy.executeFrameCommands();
         }
 
         requestAnimationFrame(renderFrame);
@@ -404,6 +564,11 @@ createNameSpace("realityEditor.gui.glRenderer");
         }
     }
 
+    /**
+     * 
+     * @param {string} toolId 
+     * @returns {number}
+     */
     function generateWorkerIdForTool(toolId) {
         // generate workerIds incrementally
         workerIds[toolId] = nextWorkerId;
@@ -412,6 +577,10 @@ createNameSpace("realityEditor.gui.glRenderer");
     }
 
     function addWebGlProxy(toolId) {
+        if (defaultGLState === null) {
+            console.error("webgl not initialized for tool", toolId);
+            return;
+        }
         if (toolIdToProxy.hasOwnProperty(toolId)) {
             console.error('overwriting webglproxy for tool', toolId);
             removeWebGlProxy(toolId);
@@ -427,6 +596,7 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         const {width, height} = globalStates;
 
+        // create gl context
         setTimeout(() => {
             worker.postMessage({
                 name: 'bootstrap',
@@ -434,6 +604,8 @@ createNameSpace("realityEditor.gui.glRenderer");
                 constants,
                 width: height,
                 height: width,
+                glState: JSON.stringify(defaultGLState),
+                deviceDesc: JSON.stringify(new DeviceDescription(gl))
             }, '*');
         }, 200);
     }

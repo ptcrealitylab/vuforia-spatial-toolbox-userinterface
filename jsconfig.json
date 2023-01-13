@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "module": "commonjs",
+        "target": "es2016",
+        "checkJs": true,
+        "lib": [
+            "es2016",
+            "dom"
+        ]
+    }
+}
