@@ -156,10 +156,90 @@ import * as utils from './utils.js'
         return false;
     }
 
+    /**
+     * @param {Array<{x, y, z, confidence}>} input joints
+     * @return {{x: number, y: number, z: number, confidence: number}} average attributes of all
+     *         input joints
+     */
+    function averageJoints(joints) {
+        let avg = { x: 0, y: 0, z: 0, confidence: 0 };
+        for (let joint of joints) {
+            avg.x += joint.x;
+            avg.y += joint.y;
+            avg.z += joint.z;
+            avg.confidence += joint.confidence;
+        }
+        avg.x /= joints.length;
+        avg.y /= joints.length;
+        avg.z /= joints.length;
+        avg.confidence /= joints.length;
+        return avg;
+    }
+
+    /**
+     * @param {Array<{x, y, z, confidence}>} all joints
+     * @param {Array<String>} selected joint names
+     * @return {Array<{x, y, z, confidence}>} selected joints
+     */
+    function extractJoints(joints, jointNames) {
+        let arr = [];
+        for (let name of jointNames) {
+            let index = Object.values(utils.JOINTS).indexOf(name);
+            arr.push(joints[index]);
+        }
+        return arr;
+    }
+    
+    /** Extends original tracked set of joints with derived synthetic joints 
+     * @param {Object} human pose - 17 -> 22 real joints 
+     */
+    function addSyntheticJoints(pose) {
+        
+        if (pose.joints.length <= 0) {
+            // if no pose is detected, cannot add
+            return; 
+        }
+
+        // head
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_EAR,
+            utils.JOINTS.RIGHT_EAR,
+        ])));
+        // neck
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+        ])));
+        // chest 
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+        ])));
+        // navel
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+        ])));
+        // pelvis
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+        ])));
+    }
+
     function updateObjectFromRawPose(humanPoseObject, pose) {
 
         if (pose.joints.length <= 0) {
-            // if no pose is detected, don't update (even update timestamp) 
+            // if no pose is detected, don't update (even update timestamp)
+            return; 
         }
 
         // store timestamp of update in the object (this is capture time of the image used to compute the pose in this update)
@@ -201,12 +281,10 @@ import * as utils from './utils.js'
     }
 
     function tryUpdatingPoseObject(pose, humanPoseObject) {
-        // NOTE: is the comment below still relevant?
-        // update the object position to be the average of the pose.joints
-        // update each of the tool's positions to be the position of the joint relative to the average
+        
         console.log('try updating pose object', pose, humanPoseObject);
 
-        // TODO: compute confidence for synthetic joints - here ?  
+        addSyntheticJoints(pose);
 
         // update local instance of HumanPoseObject with new pose data 
         updateObjectFromRawPose(humanPoseObject, pose);
@@ -214,7 +292,6 @@ import * as utils from './utils.js'
         // updating a 'transfer' node data of selected joint (the first one at the moment). 
         // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers 
         let keys = utils.getJointNodeInfo(humanPoseObject, 0);
-        // TODO: add timestamp to public data
         if (keys) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, pose);
         }

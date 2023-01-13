@@ -10,7 +10,7 @@ const SCALE = 1000; // we want to scale up the size of individual joints, but no
 const RENDER_CONFIDENCE_COLOR = false;
 
 /**
- * Renders COCO-pose keypoints
+ * Renders 3D skeleton
  */
 export class HumanPoseRenderer {
     /**
@@ -115,40 +115,9 @@ export class HumanPoseRenderer {
 
     /**
      * Updates bone (stick between joints) positions based on this.spheres'
-     * positions. Notably synthesizes a straight spine based on existing
-     * COCO keypoints
+     * positions. 
      */
     updateBonePositions() {
-        // Add synthetic joint positions expected by REBA
-        this.setJointPosition(JOINTS.HEAD, this.averageJointPositions([
-            JOINTS.LEFT_EAR,
-            JOINTS.RIGHT_EAR
-        ]));
-        this.setJointPosition(JOINTS.NECK, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-        ]));
-        this.setJointPosition(JOINTS.CHEST, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-        this.setJointPosition(JOINTS.NAVEL, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-        this.setJointPosition(JOINTS.PELVIS, this.averageJointPositions([
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-
 
         for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
             const boneIndex = this.bones[boneName];
@@ -687,10 +656,9 @@ function updateJoints(poseRenderer, poseObject) {
 
         if (RENDER_CONFIDENCE_COLOR) {
             let keys = getJointNodeInfo(poseObject, i);
-            // TODO: improve;  for now full confidence if node's public data are not available 
-            let confidence = 1.0; 
+            // zero confidence if node's public data are not available 
+            let confidence = 0.0; 
             if (keys) {
-                // let node = realityEditor.getNode(keys.objectKey, keys.frameKey, keys.nodeKey);
                 const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
                 if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) { 
                     confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
