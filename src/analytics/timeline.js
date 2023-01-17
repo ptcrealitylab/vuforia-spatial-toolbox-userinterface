@@ -125,8 +125,8 @@ export class Timeline {
         if (this.highlightRegion) {
             baseFill = 'hsl(120, 50%, 25%)';
         }
-        let highlight = false;
-        for (let pose of this.poses) {
+        let highlight = this.isHighlight(lastPoseTime);
+        for (const pose of this.poses) {
             if (pose.time < this.timeMin) {
                 lastPoseTime = pose.time;
                 continue;
@@ -134,9 +134,11 @@ export class Timeline {
             if (pose.time > this.timeMin + this.widthMs) {
                 break;
             }
-            let newHighlight = this.isHighlight(pose.time);
-            if (pose.time - lastPoseTime < maxPoseDelayLenience &&
-                highlight === newHighlight) {
+            const newHighlight = this.isHighlight(pose.time);
+            const isHighlightSwap = highlight !== newHighlight;
+            const isGap = pose.time - lastPoseTime > maxPoseDelayLenience;
+            if (!isGap &&
+                !isHighlightSwap) {
                 lastPoseTime = pose.time;
                 continue;
             }
@@ -144,6 +146,19 @@ export class Timeline {
                 highlight ?
                 highlightFill :
                 baseFill;
+            // When swapping highlight allow the pose section to clip on the
+            // right side at the highlight region border
+            let clippedRightTime = lastPoseTime;
+            if (isHighlightSwap && !isGap) {
+                if (newHighlight) {
+                    clippedRightTime = this.highlightRegion.startTime;
+                } else {
+                    clippedRightTime = this.highlightRegion.endTime;
+                }
+
+                lastPoseTime = clippedRightTime;
+            }
+
             highlight = newHighlight;
             const startX = this.timeToX(startSectionTime);
             const endX = this.timeToX(lastPoseTime);
@@ -153,8 +168,15 @@ export class Timeline {
                 endX - startX,
                 rowHeight
             );
+
+            if (isHighlightSwap && !isGap) {
+                // When swapping highlight extend the pose section
+                // leftwards down to the highlight region border
+                startSectionTime = lastPoseTime;
+            } else {
+                startSectionTime = pose.time;
+            }
             lastPoseTime = pose.time;
-            startSectionTime = lastPoseTime;
         }
 
         if (timeMax - lastPoseTime < maxPoseDelayLenience) {
