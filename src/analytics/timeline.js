@@ -350,16 +350,27 @@ export class Timeline {
 
         const timeBefore = this.xToTime(this.mouseX);
 
-        const factor = 1 + event.deltaY * -0.01;
-        this.pixelsPerMs *= factor;
+        if (Math.abs(event.deltaY) * 1.3 > Math.abs(event.deltaX)) {
+            const factor = 1 + event.deltaY * -0.01;
+            this.pixelsPerMs *= factor;
+            if (this.pixelsPerMs > 0.12) {
+                this.pixelsPerMs = 0.12;
+            } else if (this.pixelsPerMs < 0.0001) {
+                this.pixelsPerMs = 0.0001;
+            }
 
-        // let timeCenter = this.timeMin + this.widthMs / 2;
-        this.widthMs = this.width / this.pixelsPerMs;
-        // this.timeMin = timeCenter - this.widthMs / 2;
+            // let timeCenter = this.timeMin + this.widthMs / 2;
+            this.widthMs = this.width / this.pixelsPerMs;
+            // this.timeMin = timeCenter - this.widthMs / 2;
 
-        // Do some math to keep timeBefore at the same x value
-        this.timeMin = timeBefore - this.mouseX / this.pixelsPerMs;
+            // Do some math to keep timeBefore at the same x value
+            this.timeMin = timeBefore - this.mouseX / this.pixelsPerMs;
+        } else {
+            let dTime = event.deltaX / this.pixelsPerMs;
+            this.timeMin -= dTime;
+        }
 
+        event.preventDefault();
         event.stopPropagation();
     }
 }
