@@ -1,7 +1,7 @@
-const needleTipHeight = 16;
-const needleTipWidth = 16;
+const needleTipHeight = 12;
+const needleTipWidth = 12;
 const needlePad = 4;
-const needleWidth = 4;
+const needleWidth = 3;
 const needleDragWidth = 8;
 
 const rowPad = 4;
@@ -65,7 +65,7 @@ export class Timeline {
 
         this.gfx.clearRect(0, 0, this.width, this.height);
 
-        this.gfx.fillStyle = '#000';
+        this.gfx.fillStyle = 'rgba(0, 0, 0, 0.15)';
         this.gfx.fillRect(0, needleTipHeight, this.width, boardHeight);
 
         this.drawPoses();
@@ -83,7 +83,6 @@ export class Timeline {
             this.gfx.fill();
 
             let endX = this.timeToX(this.highlightRegion.endTime);
-            this.gfx.fillStyle = '#00ffff';
             this.gfx.beginPath();
             this.gfx.moveTo(endX - needleWidth / 2, 0);
             this.gfx.lineTo(endX - needleWidth / 2, this.height);
@@ -92,13 +91,11 @@ export class Timeline {
             this.gfx.lineTo(endX + needleWidth / 2 + needleTipWidth, 0);
             this.gfx.closePath();
             this.gfx.fill();
-
-            // dim rest of board
         }
     }
 
     timeToX(timeMs) {
-        return (timeMs - this.timeMin) * this.pixelsPerMs;
+        return Math.round((timeMs - this.timeMin) * this.pixelsPerMs);
     }
 
     xToTime(x) {
