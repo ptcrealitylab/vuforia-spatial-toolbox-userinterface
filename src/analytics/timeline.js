@@ -1,13 +1,13 @@
-const needleTipHeight = 12;
+const needleTopPad = 4;
 const needleTipWidth = 12;
-const needlePad = 4;
+const needlePad = 12;
 const needleWidth = 3;
 const needleDragWidth = 8;
 
 const rowPad = 4;
 const rowHeight = 16;
 const boardHeight = 6 * (rowPad + rowHeight) + rowPad;
-const boardStart = needleTipHeight + needlePad;
+const boardStart = needlePad + needleTopPad;
 
 const DragMode = {
     NONE: 'none',
@@ -27,7 +27,7 @@ export class Timeline {
         container.appendChild(this.canvas);
         this.poses = [];
         this.width = -1;
-        this.height = boardHeight + needleTipHeight + needlePad;
+        this.height = boardHeight + boardStart + needlePad;
         this.highlightRegion = null;
 
         this.dragMode = DragMode.NONE;
@@ -66,7 +66,7 @@ export class Timeline {
         this.gfx.clearRect(0, 0, this.width, this.height);
 
         this.gfx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-        this.gfx.fillRect(0, needleTipHeight, this.width, boardHeight);
+        this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
         this.drawPoses();
 
@@ -77,7 +77,7 @@ export class Timeline {
             this.gfx.moveTo(startX + needleWidth / 2, 0);
             this.gfx.lineTo(startX + needleWidth / 2, this.height);
             this.gfx.lineTo(startX - needleWidth / 2, this.height);
-            this.gfx.lineTo(startX - needleWidth / 2, boardStart - needlePad);
+            this.gfx.lineTo(startX - needleWidth / 2, needleTipWidth);
             this.gfx.lineTo(startX - needleWidth / 2 - needleTipWidth, 0);
             this.gfx.closePath();
             this.gfx.fill();
@@ -87,7 +87,7 @@ export class Timeline {
             this.gfx.moveTo(endX - needleWidth / 2, 0);
             this.gfx.lineTo(endX - needleWidth / 2, this.height);
             this.gfx.lineTo(endX + needleWidth / 2, this.height);
-            this.gfx.lineTo(endX + needleWidth / 2, boardStart - needlePad);
+            this.gfx.lineTo(endX + needleWidth / 2, needleTipWidth);
             this.gfx.lineTo(endX + needleWidth / 2 + needleTipWidth, 0);
             this.gfx.closePath();
             this.gfx.fill();
