@@ -107,6 +107,14 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     onPointerDown(e) {
+        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
+        if (intersects.length > 0 &&
+            this.comparer.selectionState === SelectionState.SECOND) {
+            this.comparer.selectionState = SelectionState.TIMELINE;
+            this.frozen = true;
+            return;
+        }
+
         const isHover = false;
         this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
     }
