@@ -12,8 +12,10 @@ import * as utils from './utils.js'
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
+    const SHOW_PLAYBACK = false;
 
     let myHumanPoseId = null;  // objectId
+
     let humanPoseObjects = {};
     let nameIdMap = {};
     let lastRenderTime = Date.now();
@@ -140,7 +142,9 @@ import * as utils from './utils.js'
                 humanPoseObjects.push(timeObjects[key]);
             }
             draw.renderHumanPoseObjects(humanPoseObjects, parseInt(key), true, null);
-            await sleep(10);
+            if (SHOW_PLAYBACK) {
+                await sleep(10);
+            }
         }
         inHistoryPlayback = false;
     }
