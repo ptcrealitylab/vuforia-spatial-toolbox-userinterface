@@ -121,10 +121,16 @@ export class Timeline {
         const timeMax = this.timeMin + this.widthMs;
 
         let baseFill = 'hsl(120, 80%, 50%)';
+        let baseFretFill = 'hsl(120, 100%, 66%)';
         let highlightFill = 'hsl(60, 80%, 50%)';
+        let highlightFretFill = 'hsl(60, 100%, 66%)';
+
+        let drawFrets = false && this.pixelsPerMs * 100 > 5;
+
         if (this.highlightRegion) {
             baseFill = 'hsl(120, 50%, 25%)';
         }
+
         let highlight = this.isHighlight(lastPoseTime);
         for (const pose of this.poses) {
             if (pose.time < this.timeMin) {
@@ -196,6 +202,29 @@ export class Timeline {
             endX - startX,
             rowHeight
         );
+
+
+        if (drawFrets) {
+            for (const pose of this.poses) {
+                if (pose.time < this.timeMin) {
+                    continue;
+                }
+                if (pose.time > this.timeMin + this.widthMs) {
+                    break;
+                }
+                highlight = this.isHighlight(pose.time);
+                this.gfx.fillStyle = highlight ?
+                    highlightFretFill :
+                    baseFretFill;
+
+                this.gfx.beginPath();
+                const x = this.timeToX(pose.time);
+                const y = rowY + rowHeight / 2;
+                this.gfx.arc(x, y, rowHeight / 5, 0, 2 * Math.PI);
+                this.gfx.closePath();
+                this.gfx.fill();
+            }
+        }
     }
 
     appendPose(pose) {
