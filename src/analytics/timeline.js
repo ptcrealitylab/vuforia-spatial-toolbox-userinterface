@@ -324,6 +324,21 @@ export class Timeline {
     }
 
     onWheel(event) {
+        this.updatePointer(event);
+
+        const timeBefore = this.xToTime(this.mouseX);
+
+        const factor = 1 + event.deltaY * -0.01;
+        this.pixelsPerMs *= factor;
+
+        // let timeCenter = this.timeMin + this.widthMs / 2;
+        this.widthMs = this.width / this.pixelsPerMs;
+        // this.timeMin = timeCenter - this.widthMs / 2;
+
+        // Do some math to keep timeBefore at the same x value
+        this.timeMin = timeBefore - this.mouseX / this.pixelsPerMs;
+
+        event.stopPropagation();
     }
 }
 
