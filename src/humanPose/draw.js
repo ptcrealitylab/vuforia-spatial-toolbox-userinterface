@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_CONNECTIONS} from './utils.js';
+import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo} from './utils.js';
 import {annotateHumanPoseRenderer} from './rebaScore.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
 
@@ -7,9 +7,10 @@ let poseRenderers = {};
 let humanPoseAnalyzer;
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
+const RENDER_CONFIDENCE_COLOR = false;
 
 /**
- * Renders COCO-pose keypoints
+ * Renders 3D skeleton
  */
 export class HumanPoseRenderer {
     /**
@@ -114,40 +115,9 @@ export class HumanPoseRenderer {
 
     /**
      * Updates bone (stick between joints) positions based on this.spheres'
-     * positions. Notably synthesizes a straight spine based on existing
-     * COCO keypoints
+     * positions. 
      */
     updateBonePositions() {
-        // Add synthetic joint positions expected by REBA
-        this.setJointPosition(JOINTS.HEAD, this.averageJointPositions([
-            JOINTS.LEFT_EAR,
-            JOINTS.RIGHT_EAR
-        ]));
-        this.setJointPosition(JOINTS.NECK, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-        ]));
-        this.setJointPosition(JOINTS.CHEST, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-        this.setJointPosition(JOINTS.NAVEL, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-        this.setJointPosition(JOINTS.PELVIS, this.averageJointPositions([
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-
 
         for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
             const boneIndex = this.bones[boneName];
@@ -177,7 +147,9 @@ export class HumanPoseRenderer {
             this.bonesMesh.setMatrixAt(boneIndex, mat);
         }
 
-        annotateHumanPoseRenderer(this);
+        if (!RENDER_CONFIDENCE_COLOR) {
+            annotateHumanPoseRenderer(this);
+        }
 
         this.spheresMesh.instanceMatrix.needsUpdate = true;
         this.spheresMesh.instanceColor.needsUpdate = true;
@@ -214,6 +186,25 @@ export class HumanPoseRenderer {
             this.bonesMesh.setColorAt(boneIndex, this.redColor);
             this.spheresMesh.setColorAt(jointIndex, this.redColor);
         }
+    }
+    /**
+     * @param {number} confidence in range [0,1]
+     */
+    setJointConfidenceColor(jointId, confidence) {
+        if (typeof this.spheres[jointId] === 'undefined') {
+            return;
+        }
+        const jointIndex = this.spheres[jointId];
+
+        let baseColorHSL = {};
+        this.baseColor.getHSL(baseColorHSL);
+
+        baseColorHSL.l = baseColorHSL.l * confidence;
+
+        let color = new THREE.Color();
+        color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
+
+        this.spheresMesh.setColorAt(jointIndex, color);
     }
 
     addToScene(container) {
@@ -649,7 +640,7 @@ function updateJoints(poseRenderer, poseObject) {
         groundPlaneRelativeMatrix.multiply(objectRootMatrix);
     }
 
-    for (let jointId of Object.values(JOINTS)) {
+    for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
@@ -662,6 +653,19 @@ function updateJoints(poseRenderer, poseObject) {
         jointPosition.setFromMatrixPosition(jointMatrixThree);
 
         poseRenderer.setJointPosition(jointId, jointPosition);
+
+        if (RENDER_CONFIDENCE_COLOR) {
+            let keys = getJointNodeInfo(poseObject, i);
+            // zero confidence if node's public data are not available 
+            let confidence = 0.0; 
+            if (keys) {
+                const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
+                if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) { 
+                    confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
+                }
+            }
+            poseRenderer.setJointConfidenceColor(jointId, confidence);
+        }
     }
 }
 

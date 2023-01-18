@@ -13,6 +13,7 @@ import * as utils from './utils.js'
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
 
+    let myHumanPoseId = null;  // objectId
     let humanPoseObjects = {};
     let nameIdMap = {};
     let lastRenderTime = Date.now();
@@ -25,8 +26,8 @@ import * as utils from './utils.js'
 
         loadHistory();
 
-        realityEditor.app.callbacks.subscribeToPoses((poseJoints) => {
-            let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints);
+        realityEditor.app.callbacks.subscribeToPoses((poseJoints, timestamp) => {
+            let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints, timestamp);
             let poseObjectName = utils.getPoseObjectName(pose);
 
             if (typeof nameIdMap[poseObjectName] === 'undefined') {
@@ -40,7 +41,7 @@ import * as utils from './utils.js'
         });
 
         network.onHumanPoseObjectDiscovered((object, objectKey) => {
-            handleDiscoveredObject(object, objectKey);
+            handleDiscoveredHumanPose(object, objectKey);
         });
 
         network.onHumanPoseObjectDeleted((objectKey) => {
@@ -155,11 +156,95 @@ import * as utils from './utils.js'
         return false;
     }
 
-    function tryUpdatingPoseObject(pose, humanPoseObject) {
-        // update the object position to be the average of the pose.joints
-        // update each of the tool's positions to be the position of the joint relative to the average
-        console.log('try updating pose object', pose, humanPoseObject);
+    /**
+     * @param {Array<{x: number, y: number, z: number, confidence: number}>} input joints
+     * @return {{x: number, y: number, z: number, confidence: number}} average attributes of all
+     *         input joints
+     */
+    function averageJoints(joints) {
+        let avg = { x: 0, y: 0, z: 0, confidence: 0 };
+        for (let joint of joints) {
+            avg.x += joint.x;
+            avg.y += joint.y;
+            avg.z += joint.z;
+            avg.confidence += joint.confidence;
+        }
+        avg.x /= joints.length;
+        avg.y /= joints.length;
+        avg.z /= joints.length;
+        avg.confidence /= joints.length;
+        return avg;
+    }
 
+    /**
+     * @param {Array<{x: number, y: number, z: number, confidence: number}>} all joints
+     * @param {Array<string>} selected joint names
+     * @return {Array<{x: number, y: number, z: number, confidence: number}>} selected joints
+     */
+    function extractJoints(joints, jointNames) {
+        let arr = [];
+        for (let name of jointNames) {
+            let index = Object.values(utils.JOINTS).indexOf(name);
+            arr.push(joints[index]);
+        }
+        return arr;
+    }
+    
+    /** Extends original tracked set of joints with derived synthetic joints 
+     * @param {Object} human pose - 17 -> 22 real joints 
+     */
+    function addSyntheticJoints(pose) {
+        
+        if (pose.joints.length <= 0) {
+            // if no pose is detected, cannot add
+            return; 
+        }
+
+        // head
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_EAR,
+            utils.JOINTS.RIGHT_EAR,
+        ])));
+        // neck
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+        ])));
+        // chest 
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+        ])));
+        // navel
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_SHOULDER,
+            utils.JOINTS.RIGHT_SHOULDER,
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+        ])));
+        // pelvis
+        pose.joints.push(averageJoints(extractJoints(pose.joints, [
+            utils.JOINTS.LEFT_HIP,
+            utils.JOINTS.RIGHT_HIP,
+        ])));
+    }
+
+    function updateObjectFromRawPose(humanPoseObject, pose) {
+
+        if (pose.joints.length <= 0) {
+            // if no pose is detected, don't update (even update timestamp)
+            return; 
+        }
+
+        // store timestamp of update in the object (this is capture time of the image used to compute the pose in this update)
+        humanPoseObject.lastUpdateDataTS = pose.timestamp;
+        
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(utils.JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
@@ -170,7 +255,6 @@ import * as utils from './utils.js'
                 return;
             }
             const SCALE = 1000;
-            // let jointFrame = humanPoseObject.frames[frameId];
             // set position of jointFrame
             let positionMatrix = [
                 1, 0, 0, 0,
@@ -178,9 +262,40 @@ import * as utils from './utils.js'
                 0, 0, 1, 0,
                 jointInfo.x * SCALE, jointInfo.y * SCALE, jointInfo.z * SCALE, 1,
             ];
+
+            // updating scene graph with new pose
             let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameId);
-            frameSceneNode.setLocalMatrix(positionMatrix); // this will broadcast it realtime, and sceneGraph will upload it every ~1 second for persistence
+            frameSceneNode.dontBroadcastNext = true; // this will prevent broadcast of matrix to remote servers in the function call below
+            frameSceneNode.setLocalMatrix(positionMatrix); 
+            
+            // updating a node data of tool/frame of a joint
+            let keys = utils.getJointNodeInfo(humanPoseObject, index);
+            if (keys) {
+                let node = realityEditor.getNode(keys.objectKey, keys.frameKey, keys.nodeKey);
+                if (node) {
+                    node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data] = { confidence: jointInfo.confidence };
+                }
+            }
         });
+
+    }
+
+    function tryUpdatingPoseObject(pose, humanPoseObject) {
+        
+        //console.log('try updating pose object', pose, humanPoseObject);
+
+        addSyntheticJoints(pose);
+
+        // update local instance of HumanPoseObject with new pose data 
+        updateObjectFromRawPose(humanPoseObject, pose);
+
+        // updating a 'transfer' node data of selected joint (the first one at the moment). 
+        // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers 
+        let keys = utils.getJointNodeInfo(humanPoseObject, 0);
+        if (keys) {
+            realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, pose);
+        }
+
     }
 
     let objectsInProgress = {};
@@ -195,9 +310,7 @@ import * as utils from './utils.js'
             network.addHumanPoseObject(worldObject.objectId, poseObjectName, (data) => {
                 console.log('added new human pose object', data);
                 nameIdMap[poseObjectName] = data.id;
-                // myAvatarId = data.id;
-                // connectionStatus.isMyAvatarCreated = true;
-                // refreshStatusUI();
+                myHumanPoseId = data.id;
                 delete objectsInProgress[poseObjectName];
 
             }, (err) => {
@@ -213,12 +326,42 @@ import * as utils from './utils.js'
     }
 
     // initialize the human pose object
-    function handleDiscoveredObject(object, objectKey) {
+    function handleDiscoveredHumanPose(object, objectKey) {
         if (!utils.isHumanPoseObject(object)) { return; }
         if (typeof humanPoseObjects[objectKey] !== 'undefined') { return; }
         humanPoseObjects[objectKey] = object; // keep track of which human pose objects we've processed so far
 
-        // TODO: subscribe to public data, etc
+
+        if (objectKey === myHumanPoseId) {
+            // no action for now
+        } else {
+            // subscribe to public data of a selected joint node in remote HumanPoseObject which transfers whole pose
+            let keys = utils.getJointNodeInfo(object, 0);
+            if (!keys) { return; }
+
+            let subscriptionCallback = (msgContent) => {
+                // update public data of node in local human pose object
+                let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
+                if (!node) { 
+                    console.warn('couldn\'t find the node ' + msgContent.node + ' which stores whole pose data');
+                    return; 
+                }
+                node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData] = msgContent.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData];
+
+                let object = realityEditor.getObject(msgContent.object)
+                if (!object) { 
+                    console.warn('couldn\'t find the human pose object ' + msgContent.object);
+                    return; 
+                }
+
+                // update local instance of HumanPoseObject with new pose data transferred through a selected node
+                updateObjectFromRawPose(object, node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData]);
+            }
+        
+            realityEditor.network.realtime.subscribeToPublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, (msg) => {
+                subscriptionCallback(JSON.parse(msg));
+            });
+        }
     }
 
     exports.initService = initService;
