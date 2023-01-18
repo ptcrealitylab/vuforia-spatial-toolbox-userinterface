@@ -206,12 +206,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             realityEditor.gui.threejsScene.addToScene(cursorGroup);
         }
 
-        // let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(relativeToWorldId);
         let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        // return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
-        let transformedMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, worldSceneNode, groundPlaneSceneNode);
-        realityEditor.gui.threejsScene.setMatrixFromArray(otherSpatialCursors[objectKey].mesh.matrix, transformedMatrix);
+        otherSpatialCursors[objectKey].mesh.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, worldSceneNode, groundPlaneSceneNode);
     }
     
     function addOtherSpatialCursor() {
