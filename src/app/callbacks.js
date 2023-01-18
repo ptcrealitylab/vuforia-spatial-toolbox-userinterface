@@ -61,8 +61,6 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
-    const skeletonDedupId = Math.floor(Math.random() * 10000);
-
     // other modules can subscribe to what's happening here
     let subscriptions = {
         onPoseReceived: []
