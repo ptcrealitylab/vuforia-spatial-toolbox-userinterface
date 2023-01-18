@@ -684,8 +684,8 @@ class TextureState {
         let targetToTargetBinding = new Map();
         targetToTargetBinding.set(gl.TEXTURE_2D, gl.TEXTURE_BINDING_2D);
         targetToTargetBinding.set(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_BINDING_CUBE_MAP);
-        // second check is here to support khronos's own debug layer
-        if (gl instanceof WebGL2RenderingContext || gl.hasOwnProperty("TEXTURE_3D")) {
+        // add "|| gl.hasOwnProperty("TEXTURE_3D")" here to support khronos's own debug layer
+        if (gl instanceof WebGL2RenderingContext) {
             targetToTargetBinding.set(gl.TEXTURE_3D, gl.TEXTURE_BINDING_3D);
             targetToTargetBinding.set(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_BINDING_2D_ARRAY);
         }
@@ -1316,10 +1316,12 @@ class DeviceDescription {
                     textureBinding.value.processOneCommand(command);
                 }
             } else if (command.name === "bindVertexArray") {
-                let parameter = this.parameters.get(this.gl.VERTEX_ARRAY_BINDING);
+                if (this.gl instanceof WebGL2RenderingContext) {
+                    let parameter = this.parameters.get(this.gl.VERTEX_ARRAY_BINDING);
                     if (parameter !== undefined) {
                         parameter.value = command.args[0];
                     }
+                }
             } else if(command.name === "clearColor") {
                 let parameter = this.parameters.get(this.gl.COLOR_CLEAR_VALUE);
                 if (parameter !== undefined) {
@@ -1559,4 +1561,5 @@ class DeviceDescription {
     }
 
     exports.GLState = GLState
+    exports.Handle = Handle
 })(realityEditor.gui.glState);

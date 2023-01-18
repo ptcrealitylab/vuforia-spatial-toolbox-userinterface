@@ -1,10 +1,10 @@
 createNameSpace("realityEditor.gui.glRenderer");
 
 /**
- * @typedef {WebGLRenderingContext | WebGL2RenderingContext} WebGL
- * @typedef {{}} GLState
+ * @typedef {import("./glState.js").GLState} GLState
+ * @typedef {import("./glState.js").WebGL} WebGL
+ * @typedef {import("./glState.js").Handle} Handle 
  * @typedef {*} HandleObj
- * @typedef {{handle: number}} Handle
  */
 
 class CommandId {
@@ -105,7 +105,7 @@ class CommandBufferManager {
 
     /**
      * 
-     * @returns the newest commandbuffer marked for rendering for which all resources have been loaded
+     * @returns {CommandBuffer} the newest commandbuffer marked for rendering for which all resources have been loaded
      */
     getRenderCommandBuffer() {
         // current code does not conform to the specs, let's process each buffer sequentially
@@ -135,7 +135,7 @@ class CommandBufferManager {
 
     /**
      * 
-     * @returns the next resource commandbuffer if it exists
+     * @returns {CommandBuffer | null} the next resource commandbuffer if it exists
      */
     getResourceCommandBuffer() {
         // current code does not conform to the specs, let's process each buffer sequentially
@@ -161,6 +161,9 @@ class CommandBufferManager {
      */
     let workerIds = {};
     let nextWorkerId = 1;
+    /**
+     * @type {Object.<string, WorkerGLProxy>}
+     */
     let toolIdToProxy = {};
 
     /**
@@ -365,7 +368,7 @@ class CommandBufferManager {
             // execute resources command buffer or rendering command buffer but never both during a frame
             let localCommandBuffer = this.buffer.getResourceCommandBuffer();
 
-            if ((localCommandBuffer !== null) && localCommandBuffer.commands.length !== 0) {
+            if ((localCommandBuffer !== null) && (localCommandBuffer.commands.length !== 0)) {
                 let commandId = 1;
                 for (let command of localCommandBuffer.commands) {
                     const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
@@ -576,6 +579,10 @@ class CommandBufferManager {
         return workerIds[toolId];
     }
 
+    /**
+     * 
+     * @param {string} toolId
+     */
     function addWebGlProxy(toolId) {
         if (defaultGLState === null) {
             console.error("webgl not initialized for tool", toolId);
