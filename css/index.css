@@ -1701,16 +1701,13 @@ Logic Interface CSS
     visibility: hidden;
 }
 
-.avatarBeamLabel {
+.avatarBeamLabel, .timelineBoardLabel {
     position: absolute;
-    display: none; /* hidden by default, need to overwrite this to display it */
-    pointer-events: none;
     color: white;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     font-size: 24px;
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: 22px;
-    width: 44px;
     height: 44px;
     text-align: center;
     vertical-align: middle;
@@ -1721,6 +1718,27 @@ Logic Interface CSS
     /* translateX and Y centers it when you set its left and top */
     /* in JS, we can adjust its size using scale (since it's centered) */
     transform: translateX(-50%) translateY(-50%) translateZ(3000px);
+}
+
+.avatarBeamLabel {
+    display: none; /* hidden by default, need to overwrite this to display it */
+    pointer-events: none;
+    color: white;
+    width: 44px;
+}
+
+.timelineBoardLabel {
+    width: auto;
+    padding: 0 14px;
+    font-size: 14px;
+    transform: translate3d(-50%, 0, 3000px);
+    background-color: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.timelineBoardLabel.shown {
+    opacity: 1;
 }
 
 .topLeftInfoText {

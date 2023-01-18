@@ -9,11 +9,71 @@ const rowHeight = 16;
 const boardHeight = 6 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
 
+const labelPad = 4;
+
 const DragMode = {
     NONE: 'none',
     SELECT: 'select',
     PAN: 'pan',
 };
+
+class DelayedSwitch {
+    constructor(delay) {
+        this.value = false;
+        this.delay = delay;
+        this.timeout = null;
+
+        this.turnOffImmediate = this.turnOffImmediate.bind(this);
+    }
+
+    get() {
+        return this.value;
+    }
+
+    turnOn() {
+        this.value = true;
+    }
+
+    turnOff() {
+        if (!this.value) {
+            return;
+        }
+
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+        }
+        this.timeout = setTimeout(this.turnOffImmediate, this.delay);
+    }
+
+    turnOffImmediate() {
+        this.value = false;
+    }
+}
+
+class TextLabel {
+    constructor(container) {
+        this.element = document.createElement('div');
+        this.element.classList.add('timelineBoardLabel');
+        container.appendChild(this.element);
+    }
+
+    show() {
+        this.element.classList.add('shown');
+    }
+
+    hide() {
+        this.element.classList.remove('shown');
+    }
+
+    setText(text) {
+        this.element.textContent = text;
+    }
+
+    moveTo(x, y) {
+        this.element.style.left = x + 'px';
+        this.element.style.bottom = y + 'px';
+    }
+}
 
 export class Timeline {
     constructor(container) {
@@ -33,6 +93,24 @@ export class Timeline {
         this.dragMode = DragMode.NONE;
         this.mouseX = -1;
         this.mouseY = -1;
+
+        this.showBoardLabels = new DelayedSwitch(3000);
+        this.boardLabelLeft = new TextLabel(container);
+        this.boardLabelRight = new TextLabel(container);
+        this.highlightLabel = new TextLabel(container);
+
+        this.dateFormat = new Intl.DateTimeFormat('default', {
+            dateStyle: 'short',
+            timeStyle: 'medium',
+            hour12: false,
+        });
+
+        this.timeFormat = new Intl.DateTimeFormat('default', {
+            timeStyle: 'medium',
+            hour12: false,
+        });
+
+        this.showBoardLabels.turnOn();
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -65,7 +143,7 @@ export class Timeline {
 
         this.gfx.clearRect(0, 0, this.width, this.height);
 
-        this.gfx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
         this.drawPoses();
@@ -92,6 +170,77 @@ export class Timeline {
             this.gfx.closePath();
             this.gfx.fill();
         }
+
+        this.updateBoardLabels();
+        this.updateHighlightLabel();
+    }
+
+    formatRangeToLabels(dateTimeFormat, dateStart, dateEnd) {
+        const parts = dateTimeFormat.formatRangeToParts(dateStart, dateEnd);
+        let startLabel = '';
+        let endLabel = '';
+        let started = false;
+        for (const part of parts) {
+            switch (part.source) {
+            case 'shared':
+                if (!started) {
+                    startLabel += part.value;
+                }
+                break;
+            case 'startRange':
+                startLabel += part.value;
+                started = true;
+                break;
+            case 'endRange':
+                endLabel += part.value;
+                break;
+            }
+        }
+        return {
+            startLabel,
+            endLabel,
+        };
+    }
+
+    updateBoardLabels() {
+        if (!this.showBoardLabels.get()) {
+            this.boardLabelLeft.hide();
+            this.boardLabelRight.hide();
+            return;
+        }
+
+        const {startLabel, endLabel} = this.formatRangeToLabels(
+            this.dateFormat,
+            new Date(this.timeMin),
+            new Date(this.timeMin + this.widthMs)
+        );
+        this.boardLabelLeft.setText(startLabel);
+        this.boardLabelRight.setText(endLabel);
+
+        this.boardLabelLeft.moveTo(0, this.height + labelPad - boardStart);
+        this.boardLabelRight.moveTo(this.width, this.height + labelPad - boardStart);
+
+        this.boardLabelLeft.show();
+        this.boardLabelRight.show();
+    }
+
+    updateHighlightLabel() {
+        if (!this.highlightRegion) {
+            this.highlightLabel.hide();
+            return;
+        }
+
+        const leftTime = this.highlightRegion.startTime;
+        const rightTime = this.highlightRegion.endTime;
+
+        const midTime = (leftTime + rightTime) / 2;
+        const range = this.timeFormat.formatRange(
+            new Date(leftTime),
+            new Date(rightTime),
+        );
+        this.highlightLabel.setText(range);
+        this.highlightLabel.moveTo(this.timeToX(midTime), this.height + labelPad);
+        this.highlightLabel.show();
     }
 
     timeToX(timeMs) {
