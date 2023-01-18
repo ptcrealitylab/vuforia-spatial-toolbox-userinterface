@@ -18,6 +18,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let indicator2;
     let overlapped = false;
 
+    // contains spatial cursors of other users – updated by their avatar's publicData
+    let otherSpatialCursors = {};
+
     let clock = new THREE.Clock();
     let uniforms = {
         'time': {value: 0},
@@ -193,13 +196,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
-    let otherSpatialCursors = {};
-
+    /**
+     * Moves the spatial cursor for this avatar to the specified position.
+     * Creates the spatial cursor if it doesn't exist yet.
+     * @param {string} objectKey
+     * @param {number[]} cursorMatrix
+     * @param {string} relativeToWorldId
+     */
     function renderOtherSpatialCursor(objectKey, cursorMatrix, relativeToWorldId) {
+        if (relativeToWorldId !== realityEditor.sceneGraph.getWorldId()) return; // ignore cursors in other worlds
+
         if (typeof otherSpatialCursors[objectKey] === 'undefined') {
             let cursorGroup = addOtherSpatialCursor();
             otherSpatialCursors[objectKey] = {
-                mesh: cursorGroup,
+                object3d: cursorGroup,
                 worldId: relativeToWorldId,
                 matrix: cursorMatrix
             }
@@ -208,9 +218,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(relativeToWorldId);
         let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        otherSpatialCursors[objectKey].mesh.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, worldSceneNode, groundPlaneSceneNode);
+
+        if (!worldSceneNode || !groundPlaneSceneNode) return;
+
+        otherSpatialCursors[objectKey].object3d.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, worldSceneNode, groundPlaneSceneNode);
     }
-    
+
+    /**
+     * Helper function to create and return the THREE.Object3D for another client's cursor
+     * @returns {Group}
+     */
     function addOtherSpatialCursor() {
         const geometryLength = 50;
         const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
@@ -227,6 +244,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         cursorGroup.matrixAutoUpdate = false;
 
         return cursorGroup;
+    }
+
+    function deleteOtherSpatialCursor(objectKey) {
+        if (typeof otherSpatialCursors[objectKey] !== 'undefined') {
+            realityEditor.gui.threejsScene.removeFromScene(otherSpatialCursors[objectKey].object3d);
+            delete otherSpatialCursors[objectKey];
+        }
     }
 
     function addSpatialCursor() {
@@ -411,4 +435,5 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
+    exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
 }(realityEditor.spatialCursor));

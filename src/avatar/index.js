@@ -124,6 +124,7 @@ createNameSpace("realityEditor.avatar");
             delete avatarUserProfiles[objectKey];
             draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarNames);
+            realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
@@ -226,21 +227,6 @@ createNameSpace("realityEditor.avatar");
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
         if (!avatarSceneNode || !cameraNode) { return; }
 
-        // isPointerDown = true;
-
-        // let touchState = {
-        //     isPointerDown: isPointerDown,
-        //     screenX: screenX,
-        //     screenY: screenY,
-        //     worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
-        //     rayDirection: getRayDirection(screenX, screenY),
-        //     timestamp: Date.now()
-        // }
-
-        // lastBeamOnTimestamp = Date.now();
-
-        // if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
-
         let spatialCursorMatrix = realityEditor.spatialCursor.getCursorRelativeToWorldObject();
         let worldId = realityEditor.sceneGraph.getWorldId();
         
@@ -253,8 +239,6 @@ createNameSpace("realityEditor.avatar");
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            // draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
-            // network.sendTouchState(info, touchState, { limitToFps: true });
             network.sendSpatialCursorState(info, cursorState, { limitToFps: true });
         }
 

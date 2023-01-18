@@ -191,13 +191,6 @@ import * as utils from './utils.js'
 
         let worldObject = realityEditor.worldObjects.getBestWorldObject(); // subscribeToPoses only triggers after we localize within a world
 
-        // if (worldObject.id === realityEditor.worldObjects.getLocalWorldId()) {
-        //     setTimeout(() => {
-        //         tryCreatingObjectFromPose();
-        //     }, 500);
-        //     return
-        // }
-
         realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, poseObjectName, () => {
             network.addHumanPoseObject(worldObject.objectId, poseObjectName, (data) => {
                 console.log('added new human pose object', data);
