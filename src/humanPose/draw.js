@@ -199,10 +199,10 @@ export class HumanPoseRenderer {
         let baseColorHSL = {};
         this.baseColor.getHSL(baseColorHSL);
 
-        baseColorHSL.l = baseColorHSL.l * confidence
+        baseColorHSL.l = baseColorHSL.l * confidence;
 
         let color = new THREE.Color();
-        color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l)
+        color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
 
         this.spheresMesh.setColorAt(jointIndex, color);
     }

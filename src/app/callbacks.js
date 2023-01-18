@@ -235,8 +235,8 @@ createNameSpace('realityEditor.app.callbacks');
     /**
      * Callback for realityEditor.app.getPosesStream
      * @param {Array<Object>} pose
-     * @param {Number} timestamp of the pose
-     * @param {Array<Number>} [width, height] of the image which the pose was computed from
+     * @param {number} timestamp of the pose (in miliseconds, but floating point number with nanosecond precision)
+     * @param {Array<number>} [width, height] of the image which the pose was computed from
      */
     function receivePoses(pose, timestamp, imageSize) {
 
@@ -324,7 +324,7 @@ createNameSpace('realityEditor.app.callbacks');
         if (USE_DEBUG_POSE) {
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
-            // NOTE: if no pose detected, do not. We may want to reconsider sending out this information (with a timestamp) to notify other servers/clients that body tracking is 'lost'.
+            // NOTE: if no pose detected, it does not send poses. We may want to reconsider sending out this information (with a timestamp) to notify other servers/clients that body tracking is 'lost'.
             if (pose.length > 0) {
                 subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
             }

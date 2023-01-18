@@ -157,7 +157,7 @@ import * as utils from './utils.js'
     }
 
     /**
-     * @param {Array<{x, y, z, confidence}>} input joints
+     * @param {Array<{x: number, y: number, z: number, confidence: number}>} input joints
      * @return {{x: number, y: number, z: number, confidence: number}} average attributes of all
      *         input joints
      */
@@ -177,9 +177,9 @@ import * as utils from './utils.js'
     }
 
     /**
-     * @param {Array<{x, y, z, confidence}>} all joints
-     * @param {Array<String>} selected joint names
-     * @return {Array<{x, y, z, confidence}>} selected joints
+     * @param {Array<{x: number, y: number, z: number, confidence: number}>} all joints
+     * @param {Array<string>} selected joint names
+     * @return {Array<{x: number, y: number, z: number, confidence: number}>} selected joints
      */
     function extractJoints(joints, jointNames) {
         let arr = [];
@@ -282,7 +282,7 @@ import * as utils from './utils.js'
 
     function tryUpdatingPoseObject(pose, humanPoseObject) {
         
-        console.log('try updating pose object', pose, humanPoseObject);
+        //console.log('try updating pose object', pose, humanPoseObject);
 
         addSyntheticJoints(pose);
 
@@ -346,7 +346,7 @@ import * as utils from './utils.js'
                     console.warn('couldn\'t find the node ' + msgContent.node + ' which stores whole pose data');
                     return; 
                 }
-                node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData] = msgContent.publicData.whole_pose;
+                node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData] = msgContent.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData];
 
                 let object = realityEditor.getObject(msgContent.object)
                 if (!object) { 
