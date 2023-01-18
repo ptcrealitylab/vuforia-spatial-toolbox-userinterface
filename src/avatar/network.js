@@ -111,6 +111,16 @@ createNameSpace("realityEditor.avatar.network");
             lastWritePublicDataTimestamp = Date.now();
         }
     }
+    
+    // write the cursorState to the avatar object's storage node
+    function sendSpatialCursorState(keys, cursorState, options) {
+        // let sendData = !(options && options.limitToFps) || !isTouchStateFpsLimited();
+        let sendData = true;
+        if (sendData) {
+            realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.cursorState, cursorState);
+            // lastWritePublicDataTimestamp = Date.now();
+        }
+    }
 
     /**
      * Helper function to provide insight into the fps limiter
@@ -186,6 +196,7 @@ createNameSpace("realityEditor.avatar.network");
     exports.realtimeSendAvatarPosition = realtimeSendAvatarPosition;
     exports.isTouchStateFpsLimited = isTouchStateFpsLimited;
     exports.sendTouchState = sendTouchState;
+    exports.sendSpatialCursorState = sendSpatialCursorState;
     exports.sendUserProfile = sendUserProfile;
     exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
     exports.addPendingAvatarInitialization = addPendingAvatarInitialization;

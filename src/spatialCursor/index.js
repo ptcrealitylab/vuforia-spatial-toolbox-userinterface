@@ -193,6 +193,45 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
+    let otherSpatialCursors = {};
+
+    function renderOtherSpatialCursor(objectKey, cursorMatrix, relativeToWorldId) {
+        if (typeof otherSpatialCursors[objectKey] === 'undefined') {
+            let cursorGroup = addOtherSpatialCursor();
+            otherSpatialCursors[objectKey] = {
+                mesh: cursorGroup,
+                worldId: relativeToWorldId,
+                matrix: cursorMatrix
+            }
+            realityEditor.gui.threejsScene.addToScene(cursorGroup);
+        }
+
+        // let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
+        let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(relativeToWorldId);
+        let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        // return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
+        let transformedMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, worldSceneNode, groundPlaneSceneNode);
+        realityEditor.gui.threejsScene.setMatrixFromArray(otherSpatialCursors[objectKey].mesh.matrix, transformedMatrix);
+    }
+    
+    function addOtherSpatialCursor() {
+        const geometryLength = 50;
+        const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
+        const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial);
+
+        const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
+        const material2 = new THREE.MeshBasicMaterial({color: new THREE.Color(0x006fff)});
+        const indicator2 = new THREE.Mesh(geometry2, material2);
+        
+        const cursorGroup = new THREE.Group();
+        cursorGroup.add(indicator1);
+        cursorGroup.add(indicator2);
+        
+        cursorGroup.matrixAutoUpdate = false;
+
+        return cursorGroup;
+    }
+
     function addSpatialCursor() {
         const geometryLength = 50;
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
@@ -369,8 +408,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.initService = initService;
+    exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
+    exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
 }(realityEditor.spatialCursor));

@@ -20,6 +20,7 @@ createNameSpace("realityEditor.avatar");
     let myAvatarObject = null;
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
     let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
+    let avatarCursorStates = {}; // data received from avatars' cursorState property in their storage node
     let avatarUserProfiles = {}; // data received from avatars' userProfile property in their storage node
     let connectedAvatarNames = {}; // similar to avatarObjects, but maps objectKey -> name or null
     let isPointerDown = false;
@@ -119,18 +120,21 @@ createNameSpace("realityEditor.avatar");
             delete avatarObjects[objectKey];
             delete connectedAvatarNames[objectKey];
             delete avatarTouchStates[objectKey];
+            delete avatarCursorStates[objectKey];
             delete avatarUserProfiles[objectKey];
             draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarNames);
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
-            draw.renderOtherAvatars(avatarTouchStates, avatarUserProfiles);
+            draw.renderOtherAvatars(avatarTouchStates, avatarUserProfiles, avatarCursorStates);
 
             if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
             try {
                 updateMyAvatar();
+                
+                sendMySpatialCursorPosition();
 
                 // send updated ray even if the touch doesn't move, because the camera might have moved
                 // Limit to 10 FPS because this is a bit CPU-intensive
@@ -216,6 +220,46 @@ createNameSpace("realityEditor.avatar");
 
         network.realtimeSendAvatarPosition(myAvatarObject, relativeMatrix);
     }
+    
+    function sendMySpatialCursorPosition() {
+        let avatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(myAvatarId);
+        let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
+        if (!avatarSceneNode || !cameraNode) { return; }
+
+        // isPointerDown = true;
+
+        // let touchState = {
+        //     isPointerDown: isPointerDown,
+        //     screenX: screenX,
+        //     screenY: screenY,
+        //     worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
+        //     rayDirection: getRayDirection(screenX, screenY),
+        //     timestamp: Date.now()
+        // }
+
+        // lastBeamOnTimestamp = Date.now();
+
+        // if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
+
+        let spatialCursorMatrix = realityEditor.spatialCursor.getCursorRelativeToWorldObject();
+        let worldId = realityEditor.sceneGraph.getWorldId();
+        
+        if (!spatialCursorMatrix || !worldId || worldId === realityEditor.worldObjects.getLocalWorldId()) return;
+        
+        let cursorState = {
+            matrix: spatialCursorMatrix,
+            worldId: worldId
+        }
+
+        let info = utils.getAvatarNodeInfo(myAvatarObject);
+        if (info) {
+            // draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
+            // network.sendTouchState(info, touchState, { limitToFps: true });
+            network.sendSpatialCursorState(info, cursorState, { limitToFps: true });
+        }
+
+        debugDataSent();
+    }
 
     // subscribe to the node's public data of a newly discovered avatar
     function onOtherAvatarInitialized(thatAvatarObject) {
@@ -228,6 +272,11 @@ createNameSpace("realityEditor.avatar");
 
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.touchState] = (msgContent) => {
             avatarTouchStates[msgContent.object] = msgContent.publicData.touchState;
+            debugDataReceived();
+        };
+        
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.cursorState] = (msgContent) => {
+            avatarCursorStates[msgContent.object] = msgContent.publicData.cursorState;
             debugDataReceived();
         };
 
