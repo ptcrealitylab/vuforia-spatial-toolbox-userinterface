@@ -5,6 +5,20 @@ import * as utils from './utils.js'
 // we will lazily instantiate a shared label that all SpaghettiMeshPaths can use
 let sharedMeasurementLabel = null;
 
+export function getMeasurementTextLabel(distanceMm, timeMs) {
+    // round time and distance to 1 decimal place
+    let distanceMeters = (distanceMm / 1000).toFixed(1);
+    let timeSeconds = (timeMs / 1000).toFixed(1);
+    let timeString = '';
+    if (timeSeconds > 0) {
+        timeString = ' traveled in ' + timeSeconds + 's';
+    } else {
+        timeString = ' traveled in < 1s';
+    }
+
+    return distanceMeters + 'm' + timeString;
+}
+
 class MeasurementLabel {
     constructor() {
         this.container = this.createTextLabel();
@@ -25,16 +39,7 @@ class MeasurementLabel {
     }
 
     updateTextLabel(distanceMm, timeMs) {
-        // round time and distance to 1 decimal place
-        let distanceMeters = (distanceMm / 1000).toFixed(1);
-        let timeSeconds = (timeMs / 1000).toFixed(1);
-        let timeString = '';
-        if (timeSeconds > 0) {
-            timeString = ' traveled in ' + timeSeconds + 's';
-        } else {
-            timeString = ' traveled in < 1s';
-        }
-        this.container.children[0].innerText = distanceMeters + 'm' + timeString;
+        this.container.children[0].innerText = getMeasurementTextLabel(distanceMm, timeMs);
     }
 
     createTextLabel(text, width = 240, fontSize = 18, scale = 1.33) {
@@ -275,7 +280,6 @@ export class SpaghettiMeshPath extends MeshPath {
     updateMeshWithComparer() {
         let comparer = this.comparer;
         let points = this.currentPoints;
-
 
         // revert to original state, and store indices of each vertex whose color changed
         let indicesToUpdate = this.comparer.restorePreviousColors();
