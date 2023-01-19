@@ -19,10 +19,12 @@ const svgNS = 'http://www.w3.org/2000/svg';
  */
 export class RegionCard {
     /**
+     * @param {Element} container
      * @param {Array<SpaghettiMeshPoint>} points - Each point should have x, y,
      *                                    z, color, overallRebaScore, timestamp
      */
-    constructor(points) {
+    constructor(container, points) {
+        this.container = container;
         this.points = points;
         this.element = document.createElement('div');
         this.dateTimeFormat = new Intl.DateTimeFormat('default', {
@@ -30,8 +32,22 @@ export class RegionCard {
             timeStyle: 'medium',
             hour12: false,
         });
+        this.onPointerOver = this.onPointerOver.bind(this);
+        this.onPointerOut = this.onPointerOut.bind(this);
 
         this.createCard();
+
+        this.element.addEventListener('pointerover', this.onPointerOver);
+        this.element.addEventListener('pointerout', this.onPointerOut);
+        this.container.appendChild(this.element);
+    }
+
+    onPointerOver() {
+        this.element.classList.remove('minimized');
+    }
+
+    onPointerOut() {
+        this.element.classList.add('minimized');
     }
 
     createCard() {
@@ -41,6 +57,7 @@ export class RegionCard {
         this.startTime = this.points[0].timestamp;
         this.endTime = this.points[this.points.length - 1].timestamp;
         this.element.classList.add('analytics-region-card');
+        this.element.classList.add('minimized');
 
         const dateTimeTitle = document.createElement('div');
         dateTimeTitle.classList.add('analytics-region-card-title');
@@ -175,5 +192,14 @@ export class RegionCard {
             minimum,
             maximum,
         };
+    }
+
+    moveTo(x, y) {
+        this.element.style.left = x + 'px';
+        this.element.style.bottom = y + 'px';
+    }
+
+    remove() {
+        this.container.removeChild(this.element);
     }
 }
