@@ -331,7 +331,9 @@ export class SpaghettiMeshPath extends MeshPath {
                 timeMs = Math.abs(firstTimestamp - secondTimestamp);
             }
             this.getMeasurementLabel().updateTextLabel(distanceMm, timeMs);
-            this.getMeasurementLabel().requestVisible(true, this.pathId);
+            if (!this.frozen) {
+                this.getMeasurementLabel().requestVisible(true, this.pathId);
+            }
         }
 
         // update the mesh buffer attributes to render the updated point colors
