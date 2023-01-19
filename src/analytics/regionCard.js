@@ -5,6 +5,9 @@ const rowHeight = 22;
 
 const svgNS = 'http://www.w3.org/2000/svg';
 
+const pinnedRegionCards = [];
+let pinnedRegionCardsContainer;
+
 /**
  * A Region Card contains a full summary of a given [start time, end time]
  * region on the timeline
@@ -32,14 +35,23 @@ export class RegionCard {
             timeStyle: 'medium',
             hour12: false,
         });
+        this.pinned = false;
         this.onPointerOver = this.onPointerOver.bind(this);
+        this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
 
         this.createCard();
 
         this.element.addEventListener('pointerover', this.onPointerOver);
+        this.element.addEventListener('pointerdown', this.onPointerDown);
         this.element.addEventListener('pointerout', this.onPointerOut);
         this.container.appendChild(this.element);
+
+        if (!pinnedRegionCardsContainer) {
+            pinnedRegionCardsContainer = document.createElement('div');
+            pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
+            document.body.appendChild(pinnedRegionCardsContainer);
+        }
     }
 
     onPointerOver() {
@@ -48,6 +60,49 @@ export class RegionCard {
 
     onPointerOut() {
         this.element.classList.add('minimized');
+    }
+
+    onPointerDown(event) {
+        if (!this.pinned) {
+            this.pin();
+            return;
+        }
+
+        realityEditor.analytics.setHighlightRegion({
+            startTime: this.startTime,
+            endTime: this.endTime,
+        });
+
+        event.stopPropagation();
+    }
+
+    pin() {
+        this.pinned = true;
+        const rect = this.element.getBoundingClientRect();
+
+        this.remove();
+        this.container = document.body;
+        this.container.appendChild(this.element);
+
+        this.element.style.bottom = 'auto';
+        this.moveTo(rect.left, rect.top);
+        this.element.classList.add('pinAnimation');
+        setTimeout(() => {
+            this.moveTo(35, 120 + (14 + 14 * 2 + 10) * pinnedRegionCards.length);
+            this.element.classList.add('minimized');
+        }, 0);
+
+        setTimeout(() => {
+            this.element.classList.remove('pinAnimation');
+            this.element.classList.add('pinned');
+            this.element.style.top = 'auto';
+            this.element.style.left = 'auto';
+            pinnedRegionCards.push(this);
+
+            this.remove();
+            this.container = pinnedRegionCardsContainer;
+            this.container.appendChild(this.element);
+        }, 750);
     }
 
     createCard() {
@@ -196,7 +251,11 @@ export class RegionCard {
 
     moveTo(x, y) {
         this.element.style.left = x + 'px';
-        this.element.style.bottom = y + 'px';
+        if (this.pinned) {
+            this.element.style.top = y + 'px';
+        } else {
+            this.element.style.bottom = y + 'px';
+        }
     }
 
     remove() {

@@ -193,7 +193,9 @@ export class Timeline {
     updateRegionCard() {
         if (!this.highlightRegion) {
             if (this.regionCard) {
-                this.regionCard.remove();
+                if (!this.regionCard.pinned) {
+                    this.regionCard.remove();
+                }
                 this.regionCard = null;
             }
             return;
@@ -205,13 +207,16 @@ export class Timeline {
         const midX = this.timeToX(midTime);
 
         let cacheKey = `${leftTime} ${rightTime} ${midX}`;
-        if (this.lastRegionCardCacheKey === cacheKey) {
+        if (this.lastRegionCardCacheKey === cacheKey &&
+            this.regionCard && !this.regionCard.element.classList.contains('pinned')) {
             return;
         }
         this.lastRegionCardCacheKey = cacheKey;
 
         if (this.regionCard) {
-            this.regionCard.remove();
+            if (!this.regionCard.pinned) {
+                this.regionCard.remove();
+            }
             this.regionCard = null;
         }
         this.regionCard = new RegionCard(this.container, getHistoryPointsInTimeInterval(leftTime, rightTime));

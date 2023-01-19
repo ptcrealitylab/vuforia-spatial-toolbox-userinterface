@@ -1829,7 +1829,6 @@ Logic Interface CSS
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     line-height: 22px;
     position: absolute;
-    bottom: 200px;
     left: 50%;
 
     border-radius: 22px;
@@ -1849,6 +1848,25 @@ Logic Interface CSS
     height: 14px;
     line-height: 14px;
     white-space: nowrap;
+}
+
+.analytics-region-card.pinAnimation {
+    transition: top 0.7s, left 0.7s;
+    transform: translateZ(3000px);
+}
+
+.analytics-region-card.pinned {
+    position: relative;
+    margin: 10px 0;
+    transform: translateZ(3000px);
+    width: fit-content;
+}
+
+.analytics-pinned-region-cards-container {
+    position: absolute;
+    top: 110px;
+    left: 35px;
+    padding: 0;
 }
 
 .analytics-region-card-title {
