@@ -1732,7 +1732,6 @@ Logic Interface CSS
     padding: 0 14px;
     font-size: 14px;
     transform: translate3d(-50%, 0, 3000px);
-    background-color: rgba(0, 0, 0, 0.3);
     opacity: 0;
     transition: opacity 0.5s;
 }
@@ -1809,7 +1808,7 @@ Logic Interface CSS
 
 #analytics-container {
     position: absolute;
-    bottom: 24px;
+    bottom: calc(30px + 68px + 30px - 12px);
     left: 50%;
     z-index: 10000;
     transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
