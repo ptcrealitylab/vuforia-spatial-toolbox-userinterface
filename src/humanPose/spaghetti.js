@@ -192,7 +192,10 @@ export class SpaghettiMeshPath extends MeshPath {
     
     setupPointerEvents() {
         document.addEventListener('pointerdown', (e) => {
-            if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            if (realityEditor.device.isMouseEventCameraControl(e)) {
+                this.getMeasurementLabel().requestVisible(false, this.pathId);
+                return;
+            }
             this.onPointerDown(e);
         });
         document.addEventListener('pointermove', (e) => {
