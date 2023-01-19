@@ -64,6 +64,7 @@ export class Timeline {
         this.height = boardHeight + boardStart + needlePad;
         this.highlightRegion = null;
         this.regionCard = null;
+        this.lastRegionCardCacheKey = '';
 
         this.dragMode = DragMode.NONE;
         this.mouseX = -1;
@@ -71,7 +72,6 @@ export class Timeline {
 
         this.boardLabelLeft = new TextLabel(container);
         this.boardLabelRight = new TextLabel(container);
-        this.highlightLabel = new TextLabel(container);
 
         this.dateFormat = new Intl.DateTimeFormat('default', {
             dateStyle: 'short',
@@ -144,7 +144,7 @@ export class Timeline {
         }
 
         this.updateBoardLabels();
-        this.updateHighlightLabel();
+        this.updateRegionCard();
     }
 
     formatRangeToLabels(dateTimeFormat, dateStart, dateEnd) {
@@ -190,29 +190,32 @@ export class Timeline {
         this.boardLabelRight.show();
     }
 
-    updateHighlightLabel() {
+    updateRegionCard() {
         if (!this.highlightRegion) {
-            this.highlightLabel.hide();
+            if (this.regionCard) {
+                this.regionCard.remove();
+                this.regionCard = null;
+            }
             return;
         }
 
         const leftTime = this.highlightRegion.startTime;
         const rightTime = this.highlightRegion.endTime;
 
-        if (this.regionCard) {
-            this.container.removeChild(this.regionCard.element);
+        let cacheKey = `${leftTime} ${rightTime}`;
+        if (this.lastRegionCardCacheKey === cacheKey) {
+            return;
         }
-        this.regionCard = new RegionCard(getHistoryPointsInTimeInterval(leftTime, rightTime));
-        this.container.appendChild(this.regionCard.element);
+        this.lastRegionCardCacheKey = cacheKey;
+
+        if (this.regionCard) {
+            this.regionCard.remove();
+            this.regionCard = null;
+        }
+        this.regionCard = new RegionCard(this.container, getHistoryPointsInTimeInterval(leftTime, rightTime));
 
         const midTime = (leftTime + rightTime) / 2;
-        const range = this.timeFormat.formatRange(
-            new Date(leftTime),
-            new Date(rightTime),
-        );
-        this.highlightLabel.setText(range);
-        this.highlightLabel.moveTo(this.timeToX(midTime), this.height + labelPad);
-        this.highlightLabel.show();
+        this.regionCard.moveTo(this.timeToX(midTime), this.height + labelPad);
     }
 
     timeToX(timeMs) {

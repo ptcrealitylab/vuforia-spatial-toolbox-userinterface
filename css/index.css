@@ -1835,16 +1835,20 @@ Logic Interface CSS
     border-radius: 22px;
     background-color: rgba(0, 0, 0, 0.7);
     padding: 14px;
+
+    z-index: 3000;
+    transform: translate3d(-50%, 0, 3000px);
 }
 
-.analytics-region-card.hidden > *:not(.analytics-region-card-title) {
+.analytics-region-card.minimized > *:not(.analytics-region-card-title) {
     display: none;
 }
 
-.analytics-region-card.hidden {
+.analytics-region-card.minimized {
     padding: 14px;
     height: 14px;
     line-height: 14px;
+    white-space: nowrap;
 }
 
 .analytics-region-card-title {

@@ -10,14 +10,17 @@ export class Analytics {
         this.timeline = new Timeline(this.container);
         this.draw = this.draw.bind(this);
         requestAnimationFrame(this.draw);
+        this.added = false;
     }
 
     add() {
         document.body.appendChild(this.container);
+        this.added = true;
     }
 
     remove() {
         document.body.removeChild(this.container);
+        this.added = false;
     }
 
     draw() {
