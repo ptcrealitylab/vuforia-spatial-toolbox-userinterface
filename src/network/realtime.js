@@ -567,7 +567,7 @@ createNameSpace("realityEditor.network.realtime");
 
         if (typeof objectSocketCache[objectKey] === 'undefined') {
             var object = realityEditor.getObject(objectKey);
-            var serverIP = object.ip;
+            var serverIP = "localhost";
             // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
             //     return null;
             // }
