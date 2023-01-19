@@ -336,15 +336,16 @@ export class HumanPoseAnalyzer {
             }
         }
 
-        let hueReba = this.getOverallRebaScoreHue(poseRenderer);
+        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
         let colorRGB = new THREE.Color();
-        colorRGB.setHSL(hueReba / 360, 0.8, 0.5);
+        colorRGB.setHSL(hueReba / 360, 0.8, 0.3);
 
         let nextHistoryPoint = {
             x: newPoint.x,
             y: newPoint.y,
             z: newPoint.z,
             color: [colorRGB.r * 255, colorRGB.g * 255, colorRGB.b * 255],
+            overallRebaScore: poseRenderer.overallRebaScore,
             timestamp,
         };
 
@@ -438,10 +439,41 @@ export class HumanPoseAnalyzer {
         }
     }
 
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     */
     setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
         for (let mesh of Object.values(this.historyMeshesAll)) {
             mesh.setTimeInterval(firstTimestamp, secondTimestamp);
         }
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     * @return {Array<SpaghettiMeshPathPoint>}
+     */
+    getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
+        // TODO: perf can be improved through creating historyPointsAll and
+        // binary search for indices
+        let allPoints = [];
+        for (const mesh of Object.values(this.historyMeshesAll)) {
+            for (const point of mesh.currentPoints) {
+                if (point.timestamp < firstTimestamp) {
+                    continue;
+                }
+                if (point.timestamp > secondTimestamp) {
+                    // Assume sorted
+                    break;
+                }
+                allPoints.push(point);
+            }
+        }
+        allPoints.sort((a, b) => {
+            return a.timestamp - b.timestamp;
+        });
+        return allPoints;
     }
 
     /**
@@ -696,6 +728,15 @@ function setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
 }
 
 /**
+ * @param {number} firstTimestamp - start of time interval in ms
+ * @param {number} secondTimestamp - end of time interval in ms
+ * @return {Array<SpaghettiMeshPathPoint>}
+ */
+function getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
+    return humanPoseAnalyzer.getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp);
+}
+
+/**
  * @param {boolean} visible
  */
 function setHistoryLinesVisible(visible) {
@@ -721,4 +762,5 @@ export {
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceCloneMaterial,
+    getHistoryPointsInTimeInterval,
 };

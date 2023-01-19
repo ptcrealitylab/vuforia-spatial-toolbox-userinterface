@@ -1,3 +1,8 @@
+import {RegionCard} from './regionCard.js';
+import {
+    getHistoryPointsInTimeInterval,
+} from '../humanPose/draw.js';
+
 const needleTopPad = 4;
 const needleTipWidth = 12;
 const needlePad = 12;
@@ -5,7 +10,7 @@ const needleWidth = 3;
 const needleDragWidth = 8;
 
 const rowPad = 4;
-const rowHeight = 16;
+const rowHeight = 10;
 const boardHeight = 6 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
 
@@ -16,39 +21,6 @@ const DragMode = {
     SELECT: 'select',
     PAN: 'pan',
 };
-
-class DelayedSwitch {
-    constructor(delay) {
-        this.value = false;
-        this.delay = delay;
-        this.timeout = null;
-
-        this.turnOffImmediate = this.turnOffImmediate.bind(this);
-    }
-
-    get() {
-        return this.value;
-    }
-
-    turnOn() {
-        this.value = true;
-    }
-
-    turnOff() {
-        if (!this.value) {
-            return;
-        }
-
-        if (this.timeout) {
-            clearTimeout(this.timeout);
-        }
-        this.timeout = setTimeout(this.turnOffImmediate, this.delay);
-    }
-
-    turnOffImmediate() {
-        this.value = false;
-    }
-}
 
 class TextLabel {
     constructor(container) {
@@ -77,6 +49,8 @@ class TextLabel {
 
 export class Timeline {
     constructor(container) {
+        this.container = container;
+
         this.canvas = document.createElement('canvas');
         this.canvas.classList.add('analytics-timeline');
         this.gfx = this.canvas.getContext('2d');
@@ -89,12 +63,12 @@ export class Timeline {
         this.width = -1;
         this.height = boardHeight + boardStart + needlePad;
         this.highlightRegion = null;
+        this.regionCard = null;
 
         this.dragMode = DragMode.NONE;
         this.mouseX = -1;
         this.mouseY = -1;
 
-        this.showBoardLabels = new DelayedSwitch(3000);
         this.boardLabelLeft = new TextLabel(container);
         this.boardLabelRight = new TextLabel(container);
         this.highlightLabel = new TextLabel(container);
@@ -109,8 +83,6 @@ export class Timeline {
             timeStyle: 'medium',
             hour12: false,
         });
-
-        this.showBoardLabels.turnOn();
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -203,12 +175,6 @@ export class Timeline {
     }
 
     updateBoardLabels() {
-        if (!this.showBoardLabels.get()) {
-            this.boardLabelLeft.hide();
-            this.boardLabelRight.hide();
-            return;
-        }
-
         const {startLabel, endLabel} = this.formatRangeToLabels(
             this.dateFormat,
             new Date(this.timeMin),
@@ -232,6 +198,12 @@ export class Timeline {
 
         const leftTime = this.highlightRegion.startTime;
         const rightTime = this.highlightRegion.endTime;
+
+        if (this.regionCard) {
+            this.container.removeChild(this.regionCard.element);
+        }
+        this.regionCard = new RegionCard(getHistoryPointsInTimeInterval(leftTime, rightTime));
+        this.container.appendChild(this.regionCard.element);
 
         const midTime = (leftTime + rightTime) / 2;
         const range = this.timeFormat.formatRange(

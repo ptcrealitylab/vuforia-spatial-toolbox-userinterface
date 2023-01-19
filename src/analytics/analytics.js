@@ -1,5 +1,7 @@
 import {Timeline} from './timeline.js';
-import {setHistoryTimeInterval} from '../humanPose/draw.js';
+import {
+    setHistoryTimeInterval,
+} from '../humanPose/draw.js';
 
 export class Analytics {
     constructor() {

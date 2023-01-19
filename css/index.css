@@ -1820,3 +1820,53 @@ Logic Interface CSS
 .analytics-timeline {
     width: 100%;
 }
+
+.analytics-region-card {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    font-size: 14px;
+    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    line-height: 22px;
+    position: absolute;
+    bottom: 200px;
+    left: 50%;
+
+    border-radius: 22px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 14px;
+}
+
+.analytics-region-card.hidden > *:not(.analytics-region-card-title) {
+    display: none;
+}
+
+.analytics-region-card.hidden {
+    padding: 14px;
+    height: 14px;
+    line-height: 14px;
+}
+
+.analytics-region-card-title {
+    grid-column-start: span 3;
+}
+
+.analytics-region-card-subtitle {
+    grid-column-start: span 3;
+    border-bottom: 1px solid #999;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.analytics-region-card-graph-section-title {
+    grid-column: 1;
+}
+
+.analytics-region-card-graph-section-sparkline {
+    grid-column-start: span 2;
+    stroke: white;
+    fill: none;
+}
+
+.analytics-region-card-graph-section-value {
+}
