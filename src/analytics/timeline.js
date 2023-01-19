@@ -201,8 +201,10 @@ export class Timeline {
 
         const leftTime = this.highlightRegion.startTime;
         const rightTime = this.highlightRegion.endTime;
+        const midTime = (leftTime + rightTime) / 2;
+        const midX = this.timeToX(midTime);
 
-        let cacheKey = `${leftTime} ${rightTime}`;
+        let cacheKey = `${leftTime} ${rightTime} ${midX}`;
         if (this.lastRegionCardCacheKey === cacheKey) {
             return;
         }
@@ -214,8 +216,7 @@ export class Timeline {
         }
         this.regionCard = new RegionCard(this.container, getHistoryPointsInTimeInterval(leftTime, rightTime));
 
-        const midTime = (leftTime + rightTime) / 2;
-        this.regionCard.moveTo(this.timeToX(midTime), this.height + labelPad);
+        this.regionCard.moveTo(midX, this.height + labelPad);
     }
 
     timeToX(timeMs) {
