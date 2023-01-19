@@ -1,6 +1,7 @@
 import {Timeline} from './timeline.js';
 import {
     setHistoryTimeInterval,
+    setHistoryLinesVisible,
 } from '../humanPose/draw.js';
 
 export class Analytics {
@@ -18,11 +19,13 @@ export class Analytics {
 
     add() {
         document.body.appendChild(this.container);
+        setHistoryLinesVisible(true);
         this.added = true;
     }
 
     remove() {
         document.body.removeChild(this.container);
+        setHistoryLinesVisible(false);
         this.added = false;
     }
 
