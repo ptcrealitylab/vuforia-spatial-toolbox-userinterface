@@ -243,7 +243,7 @@ export class Timeline {
 
         let baseFill = 'hsl(120, 80%, 50%)';
         let baseFretFill = 'hsl(120, 100%, 66%)';
-        let highlightFill = 'hsl(60, 80%, 50%)';
+        let highlightFill = 'hsl(60, 100%, 50%)';
         let highlightFretFill = 'hsl(60, 100%, 66%)';
 
         let drawFrets = false && this.pixelsPerMs * 100 > 5;
