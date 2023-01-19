@@ -7,7 +7,10 @@ export class Analytics {
     constructor() {
         this.container = document.createElement('div');
         this.container.id = 'analytics-container';
-        this.timeline = new Timeline(this.container);
+        this.timelineContainer = document.createElement('div');
+        this.timelineContainer.id = 'analytics-timeline-container';
+        this.container.appendChild(this.timelineContainer);
+        this.timeline = new Timeline(this.timelineContainer);
         this.draw = this.draw.bind(this);
         requestAnimationFrame(this.draw);
         this.added = false;
@@ -21,6 +24,14 @@ export class Analytics {
     remove() {
         document.body.removeChild(this.container);
         this.added = false;
+    }
+
+    toggle() {
+        if (this.added) {
+            this.remove();
+        } else {
+            this.add();
+        }
     }
 
     draw() {

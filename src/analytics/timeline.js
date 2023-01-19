@@ -102,6 +102,10 @@ export class Timeline {
     draw() {
         if (this.width < 0) {
             let rect = this.canvas.getBoundingClientRect();
+            if (rect.width <= 0) {
+                return;
+            }
+
             this.width = rect.width;
             this.widthMs = this.width / this.pixelsPerMs;
             this.canvas.width = this.width;
@@ -359,7 +363,7 @@ export class Timeline {
 
     appendPose(pose) {
         this.poses.push(pose);
-        if (this.timeMin < 0 && this.width > 0) {
+        if (this.timeMin < 0) {
             this.timeMin = pose.time - this.widthMs / 2;
         }
     }

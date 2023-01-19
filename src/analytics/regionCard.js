@@ -50,7 +50,8 @@ export class RegionCard {
         if (!pinnedRegionCardsContainer) {
             pinnedRegionCardsContainer = document.createElement('div');
             pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
-            document.body.appendChild(pinnedRegionCardsContainer);
+            const analyticsContainer = document.getElementById('analytics-container');
+            analyticsContainer.appendChild(pinnedRegionCardsContainer);
         }
     }
 
@@ -80,9 +81,7 @@ export class RegionCard {
         this.pinned = true;
         const rect = this.element.getBoundingClientRect();
 
-        this.remove();
-        this.container = document.body;
-        this.container.appendChild(this.element);
+        this.switchContainer(document.body);
 
         this.element.style.bottom = 'auto';
         this.moveTo(rect.left, rect.top);
@@ -99,9 +98,7 @@ export class RegionCard {
             this.element.style.left = 'auto';
             pinnedRegionCards.push(this);
 
-            this.remove();
-            this.container = pinnedRegionCardsContainer;
-            this.container.appendChild(this.element);
+            this.switchContainer(pinnedRegionCardsContainer);
         }, 750);
     }
 
@@ -260,5 +257,11 @@ export class RegionCard {
 
     remove() {
         this.container.removeChild(this.element);
+    }
+
+    switchContainer(newContainer) {
+        this.remove();
+        this.container = newContainer;
+        this.container.appendChild(this.element);
     }
 }
