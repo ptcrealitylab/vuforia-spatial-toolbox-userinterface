@@ -738,6 +738,9 @@ function getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
  * @param {boolean} visible
  */
 function setHistoryLinesVisible(visible) {
+    if (!humanPoseAnalyzer) {
+        return;
+    }
     humanPoseAnalyzer.setHistoryLinesVisible(visible);
 }
 
