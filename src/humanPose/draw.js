@@ -277,29 +277,27 @@ export class HumanPoseAnalyzer {
     }
 
     update() {
-        let firstTimestamp = -1;
-        let secondTimestamp = -1;
+        let minTimestamp = -1;
+        let maxTimestamp = -1;
         for (let spaghettiMesh of Object.values(this.historyMeshesAll)) {
             let comparer = spaghettiMesh.comparer;
             let points = spaghettiMesh.currentPoints;
-            if (!comparer.firstPointIndex) {
+            if (comparer.firstPointIndex === null) {
                 continue;
             }
-            firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            secondTimestamp = firstTimestamp + 1;
+            let firstTimestamp = points[comparer.firstPointIndex].timestamp;
+            let secondTimestamp = firstTimestamp + 1;
             if (comparer.secondPointIndex) {
                 secondTimestamp = points[comparer.secondPointIndex].timestamp;
             }
+            if (minTimestamp < 0) {
+                minTimestamp = firstTimestamp;
+            }
+            minTimestamp = Math.min(minTimestamp, firstTimestamp, secondTimestamp);
+            maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
         }
 
-        // Swap so the animation is always from low to high
-        if (firstTimestamp > secondTimestamp) {
-            let t = firstTimestamp;
-            firstTimestamp = secondTimestamp;
-            secondTimestamp = t;
-        }
-
-        this.setAnimation(firstTimestamp, secondTimestamp);
+        this.setAnimation(minTimestamp, maxTimestamp);
         this.updateAnimation();
 
         window.requestAnimationFrame(this.update);
