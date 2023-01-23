@@ -1734,6 +1734,7 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
     opacity: 0;
     transition: opacity 0.5s;
+    white-space: nowrap;
 }
 
 .timelineBoardLabel.shown {
