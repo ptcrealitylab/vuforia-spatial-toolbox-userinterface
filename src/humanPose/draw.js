@@ -658,6 +658,9 @@ function updateJointsHistorical(poseRenderer, poseObject) {
 
     for (let jointId of Object.values(JOINTS)) {
         let frame = poseObject.frames[poseObject.uuid + jointId];
+        if (!frame.ar.matrix) {
+            continue;
+        }
 
         // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let jointMatrixThree = new THREE.Matrix4();
