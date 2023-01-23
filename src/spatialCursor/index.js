@@ -234,7 +234,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial);
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
-        const material2 = new THREE.MeshBasicMaterial({color: new THREE.Color(0x006fff)});
+        const material2 = new THREE.MeshBasicMaterial({color: new THREE.Color(0x6f6f6f)});
         const indicator2 = new THREE.Mesh(geometry2, material2);
         
         const cursorGroup = new THREE.Group();
