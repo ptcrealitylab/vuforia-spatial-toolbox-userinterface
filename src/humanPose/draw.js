@@ -314,7 +314,7 @@ export class HumanPoseAnalyzer {
             this.historyCloneContainer.add(obj);
         }
 
-        let newPoint = poseRenderer.getJointPosition(JOINTS.HEAD).clone();
+        let newPoint = poseRenderer.getJointPosition(JOINTS.NOSE).clone();
         newPoint.y += 400;
 
         if (!this.historyMeshesAll.hasOwnProperty(poseRenderer.id)) {
