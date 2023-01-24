@@ -112,6 +112,10 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     onPointerDown(e) {
+        if (!this.horizontalMesh || !this.wallMesh) {
+            return;
+        }
+
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
         if (intersects.length > 0 &&
             this.comparer.selectionState === SelectionState.SECOND) {
