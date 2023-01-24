@@ -268,6 +268,7 @@ export class Timeline {
         let highlight = this.isHighlight(lastPoseTime);
         for (const pose of this.poses) {
             if (pose.time < this.timeMin) {
+                startSectionTime = pose.time;
                 lastPoseTime = pose.time;
                 continue;
             }
