@@ -564,7 +564,7 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
 
     if (!humanPoseAnalyzer) {
         const historyMeshContainer = new THREE.Group();
-        historyMeshContainer.visible = true;
+        historyMeshContainer.visible = false;
         if (container) {
             container.add(historyMeshContainer);
         } else {
