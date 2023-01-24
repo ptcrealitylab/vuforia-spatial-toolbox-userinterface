@@ -324,7 +324,7 @@ export class Timeline {
             lastPoseTime = timeMax;
         }
 
-        highlight = this.isHighlight(lastPoseTime);
+        highlight = this.isHighlight((startSectionTime + lastPoseTime) / 2);
         this.gfx.fillStyle =
             highlight ?
             highlightFill :
