@@ -158,10 +158,10 @@ function getDummyJointMatrix(jointId) {
             matrix.setPosition(0.3 * SCALE, -0.9 * SCALE, 0);
             return matrix;
         case JOINTS.LEFT_HIP:
-            matrix.setPosition(-0.175 * SCALE, -0.7 * SCALE, 0);
+            matrix.setPosition(-0.175 * SCALE, -0.85 * SCALE, 0);
             return matrix;
         case JOINTS.RIGHT_HIP:
-            matrix.setPosition(0.175 * SCALE, -0.7 * SCALE, 0);
+            matrix.setPosition(0.175 * SCALE, -0.85 * SCALE, 0);
             return matrix;
         case JOINTS.LEFT_KNEE:
             matrix.setPosition(-0.2 * SCALE, -1.15 * SCALE, 0);
@@ -187,7 +187,7 @@ function getDummyJointMatrix(jointId) {
             matrix.setPosition(0, -0.6 * SCALE, 0);
             return matrix;
         case JOINTS.PELVIS:
-            matrix.setPosition(0, -0.7 * SCALE, 0);
+            matrix.setPosition(0, -0.85 * SCALE, 0);
             return matrix;
         default:
             console.error(`Cannot create dummy joint for joint ${jointId}, not implemented`)
