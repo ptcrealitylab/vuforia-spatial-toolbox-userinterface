@@ -67,6 +67,7 @@ function calculateXAngle(skel, jointARaw, jointBRaw) {
     return angle;
 }
 
+
 function  calculateYAngle(skel, jointARaw, jointBRaw) {
     const jointA = jointToPoseNet(jointARaw);
     const jointB = jointToPoseNet(jointBRaw);
@@ -814,10 +815,10 @@ function annotateHumanPoseRenderer(humanPoseRenderer) {
     humanPoseRenderer.setOverallRebaScore(overallRebaCalculation(skel));
     for (let boneName in skel.angles) {
         let rebaColor = skel.angles[boneName][5];
-        humanPoseRenderer.setBoneRebaColor(boneName, rebaColor);
+        humanPoseRenderer.setBoneColor(boneName, rebaColor);
     }
 }
 
-export {
+export default {
     annotateHumanPoseRenderer,
 };
