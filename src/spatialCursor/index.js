@@ -8,6 +8,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let isCursorEnabled = true;
     let isUpdateLoopRunning = false;
+    
+    let screenX = 0, screenY = 0;
 
     let cachedWorldObject;
     let cachedOcclusionObject;
@@ -19,11 +21,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let clock = new THREE.Clock();
     let uniforms = {
+        'EPSILON': {value: Number.EPSILON},
         'time': {value: 0},
     };
     
+    window.addEventListener('mousemove', (e) => {
+        screenX = e.clientX;
+        screenY = e.clientY;
+    })
+    
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
-    const worldIntersectOffsetDist = 15;
+    const topCursorOffset = 15;
+    const bottomCursorOffset = 1;
     const indicatorAxis = new THREE.Vector3(0, 0, 1);
     // const normalCursorMaterial = new THREE.ShaderMaterial({
     //     vertexShader: realityEditor.spatialCursor.shader.vertexShader.vertexShaderCode,
@@ -33,19 +42,23 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     //     side: THREE.DoubleSide,
     // });
     const vertexShader = `
+    ${THREE.ShaderChunk.logdepthbuf_pars_vertex}
     varying vec2 vUv;
+    //uniform EPSILON;
     
     void main() {
+        ${THREE.ShaderChunk.logdepthbuf_vertex}
         vUv = uv;
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mvPosition;
     }
     `;
     const normalFragmentShader = `
-    uniform float time;
+    ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
     varying vec2 vUv;
     
     void main(void) {
+        ${THREE.ShaderChunk.logdepthbuf_fragment}
         vec2 position = -1.0 + 2.0 * vUv;
         vec2 origin = vec2(0.0);
         float color = distance(position, origin) > 0.9 || distance(position, origin) < 0.1 ? 1.0 : 0.0;
@@ -81,10 +94,70 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         fragmentShader: colorFragmentShader,
         uniforms: uniforms,
         transparent: true,
+        // todo: depthTest not showing any difference turned off / on
+        depthTest: false,
         side: THREE.DoubleSide,
     });
 
-    function initService() {
+
+    let color = 'rgb(0, 255, 255)', colorLighter = 'rgb(255, 255, 255)';
+    let finalColor = [{
+        color: new THREE.Color(color),
+        colorLighter: new THREE.Color(colorLighter)
+    }];
+    let uniforms2 = {
+        'EPSILON': {value: Number.EPSILON},
+        'avatarColor': {value: finalColor},
+    };
+    const testCursorFragmentShader = `
+    ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
+    varying vec2 vUv;
+    
+    // set up color uniforms
+    struct AvatarColor {
+        vec3 color;
+        vec3 colorLighter;
+    };
+    uniform AvatarColor avatarColor[1];
+    
+    void main(void) {
+        ${THREE.ShaderChunk.logdepthbuf_fragment}
+        vec3 color = avatarColor[0].color;
+        gl_FragColor = vec4(color, 0.5);
+    }
+    `;
+    const testCursorMaterial = new THREE.ShaderMaterial({
+        vertexShader: vertexShader,
+        fragmentShader: testCursorFragmentShader,
+        uniforms: uniforms2,
+        transparent: true,
+        opacity: 0.7,
+        blending: THREE.CustomBlending,
+        blendEquation: THREE.AddEquation,
+        blendSrc: THREE.SrcColorFactor,
+        blendDst: THREE.OneMinusSrcAlphaFactor,
+        side: THREE.DoubleSide,
+    });
+    // const testCursorMaterial = new THREE.ShaderMaterial({
+    //     vertexShader: vertexShader,
+    //     fragmentShader: testCursorFragmentShader,
+    //     uniforms: uniforms2,
+    //     transparent: true,
+    //     blending: THREE.AdditiveBlending,
+    //     side: THREE.DoubleSide,
+    // });
+
+    async function getMyAvatarColor() {
+        let myAvatarColor = await realityEditor.avatar.getMyAvatarColor();
+        color = `${myAvatarColor.color}`;
+        colorLighter = `${myAvatarColor.colorLighter}`;
+        finalColor[0] = {
+            color: new THREE.Color(color),
+            colorLighter: new THREE.Color(colorLighter)
+        };
+    }
+
+    async function initService() {
         onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
@@ -92,10 +165,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         
         addSpatialCursor();
         addTestSpatialCursor();
-        toggleDisplaySpatialCursor(false);
+        toggleDisplaySpatialCursor(true);
+
+        await getMyAvatarColor();
+        uniforms2['avatarColor'].value = finalColor;
 
         // begin update loop
-        update();
+        // update();
     }
 
     function update() {
@@ -106,15 +182,31 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         isUpdateLoopRunning = true;
 
         try {
-            let screenX = window.innerWidth / 2;
-            let screenY = window.innerHeight / 2;
-            worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
-            updateSpatialCursor();
-            updateTestSpatialCursor();
-            uniforms['time'].value = clock.getElapsedTime() * 10;
+            // for iPhone usage
+            if (!realityEditor.device.environment.isDesktop()) {
+                screenX = window.innerWidth / 2;
+                screenY = window.innerHeight / 2;
+                worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+                updateSpatialCursor();
+                updateTestSpatialCursor();
+                uniforms['time'].value = clock.getElapsedTime() * 10;
 
-            if (SNAP_CURSOR_TO_TOOLS) {
-                trySnappingCursorToTools();
+                if (SNAP_CURSOR_TO_TOOLS) {
+                    trySnappingCursorToTools();
+                }
+            } else {
+                // for desktop usage
+                if (screenX !== null && screenY !== null) {
+                    worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+                    // console.log(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z)
+                    updateSpatialCursor();
+                    updateTestSpatialCursor();
+                    uniforms['time'].value = clock.getElapsedTime() * 10;
+
+                    if (SNAP_CURSOR_TO_TOOLS) {
+                        trySnappingCursorToTools();
+                    }
+                }
             }
         } catch (e) {
             console.warn('error in spatialCursor', e);
@@ -123,6 +215,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function trySnappingCursorToTools() {
+        // todo Steve: when viewing the tool from different angles, the tool changes direction to face user, but
+        // todo Steve: the spatial cursor snaps doesn't change direction, should fix it, that would also affect the
+        // todo Steve: getToolDirection() function inside spatial search in remote operator
         // constantly check if the screen center overlaps any iframes
         let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
         // console.log(overlappingDivs);
@@ -135,32 +230,31 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             if (tool.fullScreen) {
                 overlapped = false;
             } else {
-                let position = getToolPosition(overlappingIframe.dataset.frameKey);
+                let position = realityEditor.gui.threejsScene.getToolPosition(overlappingIframe.dataset.frameKey);
                 indicator1.position.set(position.x, position.y, position.z);
-                indicator1.quaternion.setFromUnitVectors(indicatorAxis, getToolDirection(overlappingIframe.dataset.frameKey));
+                indicator1.quaternion.setFromUnitVectors(indicatorAxis, realityEditor.gui.threejsScene.getToolDirection(overlappingIframe.dataset.frameKey));
             }
         }
     }
 
+    const geometryLength = 50;
+    
     function addSpatialCursor() {
-        const geometryLength = 50;
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator1 = new THREE.Mesh(geometry, normalCursorMaterial);
         realityEditor.gui.threejsScene.addToScene(indicator1);
     }
     
     function addTestSpatialCursor() {
-        const geometryLength = 50;
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
-        const material = new THREE.MeshBasicMaterial({color: new THREE.Color(0x006fff)})
-        indicator2 = new THREE.Mesh(geometry, material);
+        indicator2 = new THREE.Mesh(geometry, testCursorMaterial);
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
     
     function updateSpatialCursor() {
         if (typeof worldIntersectPoint.point !== 'undefined') {
             indicator1.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
-            let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(worldIntersectOffsetDist);
+            let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(topCursorOffset);
             indicator1.position.add(offset);
             indicator1.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
         }
@@ -170,6 +264,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function updateTestSpatialCursor() {
         if (typeof worldIntersectPoint.point !== 'undefined') {
             indicator2.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
+            let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(bottomCursorOffset);
+            indicator2.position.add(offset);
             indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
         }
     }
@@ -234,22 +330,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             }
         }
         return worldIntersectPoint; // these are relative to the world object
-    }
-
-    // gets the position relative to groundplane (common coord system for threejsScene)
-    function getToolPosition(toolId) {
-        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
-        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
-    }
-
-    // gets the direction the tool is facing, within the coordinate system of the groundplane
-    function getToolDirection(toolId) {
-        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
-        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
-        let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
-        return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
     }
 
     function getCursorRelativeToWorldObject() {
