@@ -464,10 +464,25 @@ createNameSpace("realityEditor.avatar");
             draw.renderConnectionFeedback(false, connectionStatus.didCreationFail);
         }
     }
+    
+    function getMyAvatarColor() {
+        return new Promise((resolve) => {
+            let id = setInterval(() => {
+                if (myAvatarObject !== null) {
+                    clearInterval(id);
+                    resolve({
+                        color: utils.getColor(myAvatarObject),
+                        colorLighter: utils.getColorLighter(myAvatarObject)
+                    });
+                }
+            }, 100);
+        });
+    }
 
     exports.initService = initService;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.toggleDebugMode = toggleDebugMode;
+    exports.getMyAvatarColor = getMyAvatarColor;
 
 }(realityEditor.avatar));
