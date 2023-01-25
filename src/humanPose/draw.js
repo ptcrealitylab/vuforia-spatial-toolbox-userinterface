@@ -283,7 +283,7 @@ export class HumanPoseAnalyzer {
         this.lastDisplayedCloneIndex = 0;
         // TODO: ensure different joint selectors and acceleration mesh paths for different poseRenderer objects
         this.jointSelectorObj = null;
-        this.accelerationMeshPath = null;
+        this.accelerationMeshPath = null; // A standard MeshPath that gets colored according to the selected joint's acceleration values
 
         this.animationStart = -1;
         this.animationEnd = -1;
@@ -510,8 +510,6 @@ export class HumanPoseAnalyzer {
         let colorReba = new THREE.Color(); // overall color based on REBA score
         colorReba.setHSL(hueReba / 360, 1, 0.5);
         
-        console.log(`poseRenderer.maxAccelerationScore: ${poseRenderer.maxAccelerationScore}`);
-        console.log(`this.getMaxAccelerationScoreColor(poseRenderer.maxAccelerationScore): ${this.getMaxAccelerationScoreColor(poseRenderer.maxAccelerationScore)}`);
         let colorAcceleration = this.getMaxAccelerationScoreColor(poseRenderer.maxAccelerationScore); // overall color based on acceleration
         colorAcceleration.setHSL(colorAcceleration.getHSL({}).h, 1, 0.5);
 
@@ -533,8 +531,9 @@ export class HumanPoseAnalyzer {
                 for (let i = 0; i < attrReba.count; i++) {
                     colorReba.toArray(attrReba.array, i * 3);
                     colorRainbow.toArray(attrRainbow.array, i * 3);
-                    if (!obj.name === 'joints') {
-                        colorAcceleration.toArray(attrAcceleration.array, i * 3); // Set global acceleration color to bones, but leave joints as-is
+                    if (obj.name !== 'joints') {
+                        // colorAcceleration.toArray(attrAcceleration.array, i * 3); // Set global acceleration color to bones, but leave joints as-is
+                        greenColor.toArray(attrAcceleration.array, i * 3); // This is clearer, even if less information. Display global acceleration via history line instead
                     }
                 }
                 obj.__cloneColors = [

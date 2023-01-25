@@ -73,6 +73,12 @@ export class MeshPath extends THREE.Group
         this.resetPoints(); // removes the previous mesh from the scene and disposes of its geometry
         
         this.currentPoints = points;
+        this.currentPoints.forEach(point => {
+            // Convert THREE.Color colors into the correct format
+            if (point.color && point.color.isColor) {
+                point.color = [point.color.r * 255, point.color.g * 255, point.color.b * 255];
+            }
+        });
 
         if (points.length < 2) return;
 
