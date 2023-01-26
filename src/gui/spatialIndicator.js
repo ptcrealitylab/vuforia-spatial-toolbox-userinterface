@@ -1,5 +1,3 @@
-import {BufferGeometry} from "../../thirdPartyCode/three/three.module.js";
-
 createNameSpace("realityEditor.gui.spatialIndicator");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
@@ -140,18 +138,6 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         transparent: true,
         side: THREE.DoubleSide,
     });
-    
-    const innerMaterial = new THREE.ShaderMaterial({
-        vertexShader: vertexShader,
-        fragmentShader: innerFragmentShader,
-        uniforms: uniforms,
-        transparent: true,
-        blending: THREE.CustomBlending,
-        blendEquation: THREE.AddEquation,
-        blendSrc: THREE.SrcColorFactor,
-        blendDst: THREE.OneMinusSrcAlphaFactor,
-        side: THREE.DoubleSide,
-    })
 
     const Clamp = (x, low, high) => {
         return Math.min(Math.max(x, low), high);
@@ -166,35 +152,8 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
     }
 
     window.addEventListener('pointerdown', (e) => {
-        if (e.button === 0) handleMouseClick(e);
+        if (!realityEditor.device.isMouseEventCameraControl(e)) handleMouseClick(e);
     });
-
-    let cachedWorldObject;
-    let cachedOcclusionObject;
-    let occlusionDownloadInterval = null;
-    // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
-    function onLoadOcclusionObject(callback) {
-        occlusionDownloadInterval = setInterval(() => {
-            if (!cachedWorldObject) {
-                cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
-            }
-            if (!cachedWorldObject) {
-                return;
-            }
-            if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-                cachedWorldObject = null; // don't accept the local world object
-            }
-            if (cachedWorldObject && !cachedOcclusionObject) {
-                cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
-                if (cachedOcclusionObject) {
-                    // trigger the callback and clear the interval
-                    callback(cachedWorldObject, cachedOcclusionObject);
-                    clearInterval(occlusionDownloadInterval);
-                    occlusionDownloadInterval = null;
-                }
-            }
-        }, 1000);
-    }
 
     let worldIntersectPoint = {};
     function getRaycastCoordinates(screenX, screenY) {
@@ -248,7 +207,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         // if (!avatarActive) return;
         spatialIndicatorActivated = true;
         worldIntersectPoint = getRaycastCoordinates(e.clientX, e.clientY);
-        if (worldIntersectPoint) addSpatialIndicator();
+        if (worldIntersectPoint !== undefined) addSpatialIndicator();
     }
 
     const indicatorAxis = new THREE.Vector3(0, 1, 0);
@@ -263,24 +222,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
     let innerBottomHeight = 70;
     let innerTopHeight = 250;
     let innerHeightOffset = 50;
-    // const innerPositions = [
-    //     0, -innerBottomHeight, 0, // bottom, 0
-    //     0, 0, innerWidth, // middle front, 1
-    //     innerWidth, 0, 0, // middle right, 2
-    //     0, 0, -innerWidth, // middle back, 3
-    //     -innerWidth, 0, 0, // middle left, 4
-    //     0, innerTopHeight, 0 // top, 5
-    // ];
-    // const innerVertices = new Float32Array(innerPositions);
-    // const innerGeometry = new THREE.BufferGeometry();
-    // innerGeometry.setAttribute('position', new THREE.BufferAttribute(innerVertices, 3));
-    // innerGeometry.setIndex([
-    //     1, 0, 2, 2, 0, 3, 3, 0, 4, 4, 0, 1, // bottom square pyramid
-    //     5, 1, 2, 5, 2, 3, 5, 3, 4, 5, 4, 1, // top square pyramid
-    // ]);
-    // const innerMesh = new THREE.Mesh(innerGeometry, innerMaterial);
-    // innerMesh.position.set(0, innerBottomHeight + innerHeightOffset, 0);
-    // indicatorGroup.add(innerMesh);
+    
     function addSpatialIndicator() {
         console.info('should add a cylinder to the scene');
         // add an indicator group
@@ -321,8 +263,34 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         indicatorGroup.iclick = 0;
         indicatorList.push(indicatorGroup);
     }
+
+    let occlusionDownloadInterval = null;
+    let cachedOcclusionObject = null;
+    let cachedWorldObject = null;
+
+    function onLoadOcclusionObject(callback) {
+        occlusionDownloadInterval = setInterval(() => {
+            if (!cachedWorldObject) {
+                cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
+            }
+            if (!cachedWorldObject) {
+                return;
+            }
+            if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+                cachedWorldObject = null; // don't accept the local world object
+            }
+            if (cachedWorldObject && !cachedOcclusionObject) {
+                cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
+                if (cachedOcclusionObject) {
+                    // trigger the callback and clear the interval
+                    callback(cachedWorldObject, cachedOcclusionObject);
+                    clearInterval(occlusionDownloadInterval);
+                    occlusionDownloadInterval = null;
+                }
+            }
+        }, 1000);
+    }
     
-    let avatarActive = false;
     async function initService() {
         onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
@@ -354,7 +322,6 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         update();
 
         await getMyAvatarColor();
-        avatarActive = true;
         uniforms['avatarColor'].value = finalColor;
     }
     
