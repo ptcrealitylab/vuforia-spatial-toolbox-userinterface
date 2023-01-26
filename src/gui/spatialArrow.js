@@ -56,31 +56,31 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
-    const Clamp = (x, low, high) => {
+    const clamp = (x, low, high) => {
         return Math.min(Math.max(x, low), high);
     }
 
-    const Remap01 = (x, low, high) => {
-        return Clamp((x - low) / (high - low), 0, 1);
+    const remap01 = (x, low, high) => {
+        return clamp((x - low) / (high - low), 0, 1);
     }
 
-    const Remap = (x, low1, high1, low2, high2) => {
-        return low2 + (high2 - low2) * Remap01(x, low1, high1);
+    const remap = (x, low1, high1, low2, high2) => {
+        return low2 + (high2 - low2) * remap01(x, low1, high1);
     }
 
     let translateX = 0, translateY = 0;
 
-    function Translate(x, y) {
+    function translate(x, y) {
         translateX += x;
         translateY += y;
         ctx.translate(x, y);
     }
 
-    function Rotate(a) {
+    function rotate(a) {
         ctx.rotate(a);
     }
 
-    function Scale(x, y) {
+    function scale(x, y) {
         ctx.scale(x, y);
     }
 
@@ -89,10 +89,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     // draw an arrow at (x, y) center
-    function Arrow(x, y, rotation, scale, innerColor='rgb(0, 255, 255)', outerColor='rgb(255, 255, 255)') {
-        Translate(x, y);
-        Scale(scale, scale);
-        Rotate(rotation);
+    function Arrow(x, y, rotation, scaleFactor, innerColor='rgb(0, 255, 255)', outerColor='rgb(255, 255, 255)') {
+        translate(x, y);
+        scale(scaleFactor, scaleFactor);
+        rotate(rotation);
         
         // draw path
         let region = new Path2D();
@@ -108,14 +108,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         ctx.lineWidth = .4;
         ctx.stroke(region);
         
-        Rotate(-rotation);
-        Scale(1 / scale, 1 / scale);
-        Translate(-x, -y);
+        rotate(-rotation);
+        scale(1 / scaleFactor, 1 / scaleFactor);
+        translate(-x, -y);
     }
 
     function initCanvas() {
         // make (0, 0) the center of canvas
-        Translate(screenW / 2, screenH / 2);
+        translate(screenW / 2, screenH / 2);
         clear();
     }
     
@@ -125,16 +125,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicators = realityEditor.gui.threejsScene.getObjectsByName('cylinderIndicator');
     }
     
-    let worldPos = new THREE.Vector3();
-    let screenX, screenY;
-    let screenBorderFactor = 0.97;
-    let desX = 0, desY = 0;
-    let angle = 0;
-    let k;
-    
     let finalPosX = 0, finalPosY = 0;
     
     function determineObjectScreenPosition() {
+        
+        let worldPos = new THREE.Vector3();
+        let screenX, screenY;
+        let screenBorderFactor = 0.97;
+        let desX = 0, desY = 0;
+        let angle = 0;
+        let k;
+        
         indicators.forEach((indicator) => {
             indicator.getWorldPosition(worldPos);
             
@@ -145,8 +146,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 screenX = screenXY.x;
                 screenY = screenXY.y;
 
-                desX = Remap(screenX, 0, screenW, -screenW/2, screenW/2);
-                desY = Remap(screenY, 0, screenH, -screenH/2, screenH/2);
+                desX = remap(screenX, 0, screenW, -screenW/2, screenW/2);
+                desY = remap(screenY, 0, screenH, -screenH/2, screenH/2);
                 
                 angle = Math.atan2(desY, desX);
                 angle += Math.PI / 2;

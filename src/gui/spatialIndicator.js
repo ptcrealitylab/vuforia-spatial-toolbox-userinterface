@@ -52,7 +52,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         varying vec2 vUv;
         
         // draw a vertical line segment at p with width w and height h
-        float Line(vec2 uv, vec2 p, float w, float h) {
+        float line(vec2 uv, vec2 p, float w, float h) {
             uv -= p;
             // un-comment below line to find out what I did wrong
             // float horizontal = S(.01, 0., abs(length(uv.x - w / 2.)));
@@ -101,6 +101,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         }
     `;
 
+    // the amount variable always needs to be identical to the lines[] array in fragment shader
     const amount = 5;
     let lines = [];
 
@@ -123,16 +124,16 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         side: THREE.DoubleSide,
     });
 
-    const Clamp = (x, low, high) => {
+    const clamp = (x, low, high) => {
         return Math.min(Math.max(x, low), high);
     }
 
-    const Remap01 = (x, low, high) => {
-        return Clamp((x - low) / (high - low), 0, 1);
+    const remap01 = (x, low, high) => {
+        return clamp((x - low) / (high - low), 0, 1);
     }
 
-    const Remap = (x, low1, high1, low2, high2) => {
-        return low2 + (high2 - low2) * Remap01(x, low1, high1);
+    const remap = (x, low1, high1, low2, high2) => {
+        return low2 + (high2 - low2) * remap01(x, low1, high1);
     }
 
     window.addEventListener('pointerdown', (e) => {
@@ -196,7 +197,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
 
     const indicatorAxis = new THREE.Vector3(0, 1, 0);
     const indicatorHeight = 400;
-    const indicatorName = 'cylinderIndicator'
+    const indicatorName = 'cylinderIndicator';
     const iDuration = 5;
     const iAnimDuration = 1;
     const iScaleFactor = 1.1;
@@ -283,11 +284,11 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         
         // initialize 20 line data
         for (let i = 0; i < amount; i++) {
-            let width = Remap(Math.random(), 0, 1, .002, .006);
-            let height = Remap(Math.random(), 0, 1, .2, .4);
-            let x = Remap(Math.random(), 0, 1, width / 2, 1 - width / 2);
+            let width = remap(Math.random(), 0, 1, .002, .006);
+            let height = remap(Math.random(), 0, 1, .2, .4);
+            let x = remap(Math.random(), 0, 1, width / 2, 1 - width / 2);
             let y = 0;
-            let speed = Remap(Math.random(), 0, 1, 2, 6);
+            let speed = remap(Math.random(), 0, 1, 2, 6);
 
             lines.push({
                 width: width,
@@ -313,16 +314,15 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         if (!spatialIndicatorActivated) return;
         
         // change the Lines data here
-        lines.forEach(Line => {
-            if (Line.y >= 1) {
-                // console.info('generate a new line!');
-                Line.width = Remap(Math.random(), 0, 1, .004, .012);
-                Line.height = Remap(Math.random(), 0, 1, .2, .4);
-                Line.x = Remap(Math.random(), 0, 1, Line.width / 2, 1 - Line.width / 2);
-                Line.y = 0;
-                Line.speed = Remap(Math.random(), 0, 1, 2, 6);
+        lines.forEach(line => {
+            if (line.y >= 1) {
+                line.width = remap(Math.random(), 0, 1, .004, .012);
+                line.height = remap(Math.random(), 0, 1, .2, .4);
+                line.x = remap(Math.random(), 0, 1, line.width / 2, 1 - line.width / 2);
+                line.y = 0;
+                line.speed = remap(Math.random(), 0, 1, 2, 6);
             } else {
-                Line.y += .01 * Line.speed;
+                line.y += .01 * line.speed;
             }
         })
         
@@ -337,7 +337,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             let iTime = iClock.getElapsedTime();
             // translate up/down and rotate the inner cones
             let innerCone = item.children[0];
-            innerCone.position.y = Remap(Math.sin(iTime * 4), -1, 1, innerBottomHeight + innerHeightOffset + 60, innerBottomHeight + innerHeightOffset - 60);
+            innerCone.position.y = remap(Math.sin(iTime * 4), -1, 1, innerBottomHeight + innerHeightOffset + 60, innerBottomHeight + innerHeightOffset - 60);
             innerCone.rotation.y = iTime;
             // change the entire indicator group scale
             let y1 = Math.pow(iScaleFactor, iClick) * (-1 / iAnimDuration * (iTime - 0.3 * iClick) + (iDuration + iAnimDuration) / iAnimDuration);
