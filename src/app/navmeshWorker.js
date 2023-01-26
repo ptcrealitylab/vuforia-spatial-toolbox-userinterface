@@ -127,8 +127,10 @@ const addTopFlatTriangle = (array, v1, v2, v3, value, ignoreValue) => {
 const splitVertex = new THREE.Vector3();
 const addTriangle = (array, v1, v2, v3, value, ignoreValue) => {
   const minZVertex = [v2,v3].reduce((min, current) => current.z < min.z ? current : min, v1);
+  // todo: why using such a complicated function?
   const maxZVertex = [v1,v2,v3].filter(vertex => vertex != minZVertex).reduce((max, current) => current.z > max.z ? current : max, [v1,v2,v3].filter(vertex => vertex != minZVertex)[0]);
   const midZVertex = [v1,v2,v3].filter(vertex => vertex != minZVertex && vertex != maxZVertex)[0];
+  // todo: rasterization algorithm from http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
   if (midZVertex.z === maxZVertex.z) {
     addBottomFlatTriangle(array, minZVertex, midZVertex, maxZVertex, value, ignoreValue);
   } else if (midZVertex.z === minZVertex.z) {
@@ -178,8 +180,8 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
       expandedWallZArray.push(0);
       regionMapZArray.push(0);
     }
-    faceData.push(faceDataZArray);
-    outerHoles.push(outerHolesZArray);
+    faceData.push(faceDataZArray); // todo: [[0,0,0],[0,0,0],[0,0,0],[0,0,0],...], (xLength * zLength)个
+    outerHoles.push(outerHolesZArray); // todo: [0, 0, 0, 0, 0, ...], (xLength * zLength)个
     expandedWallMap.push(expandedWallZArray);
     regionMap.push(regionMapZArray);
   }
@@ -199,6 +201,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
       if (vertexIndex >= indexedFaceAttribute.count) {
         return false;
       }
+      // todo: not entirely sure what this means
       indexVector.fromBufferAttribute(indexedFaceAttribute, vertexIndex); // Gets indices of face vertices, not grouped by attribute so indexVector collects 3 at a time
       v1.fromBufferAttribute(positionAttribute, indexVector.x);
       v2.fromBufferAttribute(positionAttribute, indexVector.y);
@@ -233,14 +236,19 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     // Use the average height of the vertices to determine the height of the face
     const faceY = (vertexVector1.y + vertexVector2.y + vertexVector3.y)/3;
     
+    // todo: if floorDetectionRayDown ray hits a triangle
     if (floorDetectionRayDown.intersectTriangle(vertexVector1, vertexVector2, vertexVector3, false, floorDetectionResultDown)) {
       if (faceY > floorOffsetDown || floorOffsetDown > 0) {
+          // todo: again, BUT what if there's unwanted geometry below the floor? We might want a GUI to adjust a minYOffsetTop & minYOffsetBottom variable
+          // todo: Find the highest face below the origin to set as the floor height.
         floorOffsetDown = faceY; // Find the highest face below the origin to set as the floor height
       }
     }
     
     if (floorDetectionRayUp.intersectTriangle(vertexVector1, vertexVector2, vertexVector3, false, floorDetectionResultUp)) {
       if (faceY < floorOffsetUp || floorOffsetUp < 0) {
+          // todo: Find the highest face above the origin to set as the floor height
+          // todo: Wait why is floor height both below & above the origin?
         floorOffsetUp = faceY; // Find the lowest face above the origin to set as the floor height
       }
     }
@@ -250,6 +258,8 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     // pixels covered by that face to be considered walkable if no other
     // obstacles are found there, so we want addTriangle to mark it as occupied
     let ignoreWeight = false;
+    // todo: BUT what if there's unwanted geometry below the floor? We might want a GUI to adjust a minYOffsetTop & minYOffsetBottom variable
+      // todo: to clip out the unwanted geometry part out, in order to generate correct navmesh
     if (vertexVector1.y - minY < lowIgnoreHeight && vertexVector2.y - minY < lowIgnoreHeight && vertexVector3.y - minY < lowIgnoreHeight) {
       ignoreWeight = true;
     }
@@ -259,12 +269,15 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     
     // Converting positions to navmesh coordinates to allow for rasterization of face
     [vertexVector1, vertexVector2, vertexVector3].forEach(vertex => {
+        // todo: make vertex.x & vertex.z a percentage of navmesh's length & width
       vertex.x = Math.floor((vertex.x - minX) / (maxX - minX) * xLength);
       vertex.z = Math.floor((vertex.z - minZ) / (maxZ - minZ) * zLength); // Flip z-coordinate to ensure top-down view (rather than bottom-up)
     });
     const weight = 1;
     
     // Rasterize face data onto navmesh
+      // todo: except all the vertices w/ vertex.y (height) out of [minY, maxY] bound, add all other vertices to triangles
+      // todo: and in turn build the navmesh
     addTriangle(faceData, vertexVector1, vertexVector2, vertexVector3, weight, ignoreWeight);
   }
   
@@ -274,6 +287,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   mapGrid(faceData, value => [value[1] === 0 ? 0 : value[0] / value[1], value[2], 0]);
   
   // Pixels without obstacles but within the mesh are considered walkable, other pixels are not
+    // todo: IMPORTANT MILE STONE: Pixels without obstacles but within the mesh are considered walkable, other pixels are not
   const normalCutoff = 0.1;
   mapGrid(faceData, value => value[0] < normalCutoff ? [0, value[1], 0] : [value[0], 0, 0]);
   
@@ -425,6 +439,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     maxY: maxY,
     minZ: minZ,
     maxZ: maxZ,
-    floorOffset: floorOffset
+    floorOffset: floorOffset, 
+      heatmapResolution: heatmapResolution,
   }
 }
