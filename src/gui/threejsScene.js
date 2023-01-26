@@ -11,8 +11,51 @@ import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.modu
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS } from './ViewFrustum.js';
 
 (function(exports) {
+    
+    const vertexShader = `
+        varying vec3 vPositionW;
+        varying vec3 vNormalW;
+        
+        void main() {
+            vPositionW = vec3( vec4( position, 1.0 ) * modelMatrix);
+            vNormalW = normalize( vec3( vec4( normal, 0.0 ) * modelMatrix ) );
+            
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        }
+    `;
+    
+    const fragmentShader = `
+        varying vec3 vPositionW;
+        varying vec3 vNormalW;
+        
+        float Clamp(float x, float low, float high) {
+            return min(max(x, low), high);
+        }
+        
+        float Remap01(float x, float low, float high) {
+            return Clamp((x - low) / (high - low), 0., 1.);
+        }
+        
+        float Remap(float x, float low1, float high1, float low2, float high2) {
+            return low2 + (high2 - low2) * Remap01(x, low1, high1);
+        }
+        
+        void main() {
+            vec3 color = vec3(1., 1., 1.);
+            vec3 viewDirectionW = normalize(cameraPosition - vPositionW);
+            float fresnelTerm = dot(viewDirectionW, vNormalW);
+            float fresnel = 1. - fresnelTerm;
+            fresnel = Remap(fresnel, 0., 1., 0.7, 1.2);
+            fresnel = pow(fresnel, 3.);
+            
+            gl_FragColor = vec4( color * fresnel, 0.7);
+        }
+    `;
 
-    var camera, scene, renderer;
+    let camera, scene, renderer;
+    let minimapCamera;
+    let arrowMesh;
+    let isDesktop;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
     var aspectRatio = rendererWidth / rendererHeight;
@@ -55,6 +98,61 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
+        // minimapCamera = new THREE.PerspectiveCamera(70, aspectRatio, 0.01, 20000);
+        // minimapCamera.position.y = 1;
+        // minimapCamera.lookAt(0, 0, 0);
+        let amount = 5000;
+        let left = -amount, right = amount, top = amount * rendererHeight / rendererWidth, bottom = -amount * rendererHeight / rendererWidth;
+        // let left = -amount, right = amount, top = amount, bottom = -amount;
+        minimapCamera = new THREE.OrthographicCamera(left, right, top, bottom, 0.1, 20000);
+        minimapCamera.position.y = 10000;
+        minimapCamera.lookAt(-1000, 0, 100);
+        minimapCamera.matrixAutoUpdate = true;
+        scene.add(minimapCamera);
+
+        // add an arrow that indicates remote operator position in the minimap
+        const arrowPositions = [];
+        // arrow shape
+        arrowPositions.push(
+            0, 0, -3,
+            0, 0, 1,
+            -2, 0, 2,
+            0, 0, -3,
+            2, 0, 2,
+            0, 0, 1,
+        )
+        const arrowVertices = new Float32Array(arrowPositions);
+        const arrowGeometry = new THREE.BufferGeometry();
+        // itemSize = 3 because there are 3 values (components) per vertex
+        arrowGeometry.setAttribute('position', new THREE.BufferAttribute(arrowVertices, 3));
+        const arrowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            side: THREE.DoubleSide,
+        });
+        arrowMesh = new THREE.Mesh(arrowGeometry, arrowMaterial);
+        arrowMesh.scale.set(100, 100, 100);
+        arrowMesh.matrixAutoUpdate = true;
+        arrowMesh.layers.set(2);
+        scene.add(arrowMesh);
+        
+        // add the avatar head at (-500, 1000, -1000) to test out the fresnel shader effect
+        const gltfLoader = new GLTFLoader();
+        // '../../svg/meshes/head.gltf'
+        gltfLoader.load('./svg/meshes/head.gltf', (gltf) => {
+            let group = gltf.scene;
+            let object = group.children[0];
+            console.info(object);
+            object.material = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                transparent: true,
+                opacity: 0.7,
+                side: THREE.DoubleSide,
+            });
+            object.scale.set(1000, 1000, 1000);
+            scene.add(group);
+        });
+
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();
@@ -90,6 +188,23 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
         let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
         scene.environment = neutralEnvironment;
+        
+        isDesktop = realityEditor.device.environment.isDesktop();
+        // if do it here, spatial cursor disappears for some reason
+        // todo: ask James why he implemented the camera set layer in render()
+        // todo: figure out an alternative way to display multiple layers of objects in render() function
+        if (isDesktop) {
+            camera.layers.enable(0);
+            camera.layers.enable(1);
+            camera.layers.enable(3);
+
+            minimapCamera.layers.enable(0);
+            minimapCamera.layers.enable(1);
+            minimapCamera.layers.enable(2);
+        } else {
+            camera.layers.set(0);
+            minimapCamera.layers.set(0);
+        }
 
         renderScene(); // update loop
 
@@ -132,6 +247,20 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
         setMatrixFromArray(camera.matrix, matrix);
+        
+        let cameraPos = new THREE.Vector3();
+        camera.getWorldPosition(cameraPos);
+        
+        minimapCamera.position.set(cameraPos.x, 10000, cameraPos.z);
+        minimapCamera.lookAt(cameraPos.x, 0, cameraPos.z);
+        
+        // todo: set the position & rotation of remote operator icon
+        arrowMesh.position.set(cameraPos.x, 5000, cameraPos.z);
+        let cameraDir = new THREE.Vector3();
+        camera.getWorldDirection(cameraDir);
+        let angle = Math.atan2(-cameraDir.z, cameraDir.x);
+        angle -= Math.PI / 2;
+        arrowMesh.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
@@ -224,13 +353,34 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             renderer.clear();
-            if (hasGltfScene) {
-                camera.layers.set(1);
+            if (isDesktop) {
+                // renderer.setSize(rendererWidth, rendererHeight);
+                renderer.setViewport(0, 0, rendererWidth, rendererHeight);
+                renderer.setScissor(0, 0, rendererWidth, rendererHeight);
+                renderer.setScissorTest(true);
                 renderer.render(scene, camera);
+
                 renderer.clear(false, true, true);
+
+                // renderer.setSize(320, 180);
+                renderer.setViewport(20, 20, 180, 180);
+                renderer.setScissor(20, 20, 180, 180);
+                renderer.setScissorTest(true);
+                renderer.setClearColor(0x505050, 1);
+                // renderer.clear(false, true, true);
+                renderer.render(scene, minimapCamera);
+            } else {
+                renderer.render(scene, camera);
             }
-            camera.layers.set(0);
-            renderer.render(scene, camera);
+            
+            // James' original implementation
+            // if (hasGltfScene) {
+            //     camera.layers.enable(1);
+            //     renderer.render(scene, camera);
+            //     renderer.clear(false, true, true);
+            // }
+            // camera.layers.enable(0);
+            // renderer.render(scene, camera);
         }
 
         requestAnimationFrame(renderScene);
