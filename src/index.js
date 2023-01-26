@@ -123,6 +123,7 @@ var realityEditor = realityEditor || {
         threejsScene: {},
         spatialIndicator: {},
         spatialArrow: {},
+        focus: {},
         utilities: {}
     },
     network: {
