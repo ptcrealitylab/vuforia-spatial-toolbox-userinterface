@@ -101,22 +101,6 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         }
     `;
 
-    const innerFragmentShader = `
-    varying vec2 vUv;
-    
-    // set up color uniforms
-    struct AvatarColor {
-        vec3 color;
-        vec3 colorLighter;
-    };
-    uniform AvatarColor avatarColor[1];
-    
-    void main(void) {
-        vec3 color = avatarColor[0].color;
-        gl_FragColor = vec4(color, 0.5);
-    }
-    `;
-
     const amount = 5;
     let lines = [];
 
