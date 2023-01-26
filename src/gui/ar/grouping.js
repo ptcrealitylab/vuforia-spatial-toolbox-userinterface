@@ -276,7 +276,12 @@ createNameSpace("realityEditor.gui.ar.grouping");
                         groupedFrame.ar.x = 0;
                         groupedFrame.ar.y = 0;
                         groupedFrame.begin = [];
-                        groupedFrame.ar.matrix = [];
+                        groupedFrame.ar.matrix = [
+                            1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1,
+                        ];
                         
                     } else if (newVisualization === 'ar') {
 
@@ -284,7 +289,12 @@ createNameSpace("realityEditor.gui.ar.grouping");
 
                         // set to false so it definitely gets re-added and re-rendered
                         groupedFrame.visible = false;
-                        groupedFrame.ar.matrix = [];
+                        groupedFrame.ar.matrix = [
+                            1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1,
+                        ];
                         groupedFrame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
                         groupedFrame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
 

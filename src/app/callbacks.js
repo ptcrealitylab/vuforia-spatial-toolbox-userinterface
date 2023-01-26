@@ -61,8 +61,6 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
-    const skeletonDedupId = Math.floor(Math.random() * 10000);
-
     // other modules can subscribe to what's happening here
     let subscriptions = {
         onPoseReceived: []
@@ -234,29 +232,16 @@ createNameSpace('realityEditor.app.callbacks');
 
     /**
      * Callback for realityEditor.app.getPosesStream
-     * @param {Array<Object>} poses
+     * @param {Array<Object>} pose
+     * @param {number} timestamp of the pose (in miliseconds, but floating point number with nanosecond precision)
+     * @param {Array<number>} [width, height] of the image which the pose was computed from
      */
-    function receivePoses(poses, imageSize) {
-        if (!window.rzvIo) {
-            // window.rzvIo = io('http://jhobin0ml.local:31337');
-            // window.rzvIo = io('http://10.10.10.166:31337');
-            // window.rzvIo = io('http://192.168.0.106:31337');
-            // window.rzvIo = io('http://192.168.50.98:31337');
+    function receivePoses(pose, timestamp, imageSize) {
 
-            let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-            if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-                return;
-            }
-            const wsPort = 31337;
-            const url = `ws://${bestWorldObject.ip}:${wsPort}/`;
-            // const url = 'ws://10.10.10.166:31337/';
-            window.rzvIo = new WebSocket(url);
-        }
-
-        let coolerPoses = [];
+        let poseInWorld = [];
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (!worldObject) {
-            console.warn('okay I give up');
+            console.warn('Could not find world object.');
             return;
         }
         let worldObjectId = worldObject.objectId;
@@ -285,7 +270,7 @@ createNameSpace('realityEditor.app.callbacks');
         //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
         // }
 
-        for (let point of poses) {
+        for (let point of pose) {
             // place it in front of the camera, facing towards the camera
             // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
 
@@ -312,10 +297,11 @@ createNameSpace('realityEditor.app.callbacks');
             let worldX = mat[12];
             let worldY = mat[13];
             let worldZ = mat[14];
-            coolerPoses.push({
+            poseInWorld.push({
                 x: worldX / 1000,
                 y: worldY / 1000,
                 z: worldZ / 1000,
+                confidence: point.score,
             });
         }
 
@@ -329,29 +315,16 @@ createNameSpace('realityEditor.app.callbacks');
         sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
         sceneNode.updateWorldMatrix();
 
-        let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
-        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: coolerPoses}], camera: cameraMat};
-
-        // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
-        //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
-        //         window.lastPosesLen = coolerPoses.length;
-        //     }
-        if (window.rzvIo.readyState === WebSocket.OPEN) {
-            window.rzvIo.send(JSON.stringify(Object.assign({
-                command: '/update/humanPoses'
-            }, msg)));
-        }
-        // }
-
-        realityEditor.gui.poses.drawPoses(poses, imageSize);
+        realityEditor.gui.poses.drawPoses(pose, imageSize);
 
         const USE_DEBUG_POSE = false;
 
         if (USE_DEBUG_POSE) {
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
-            if (poses.length > 0) {
-                subscriptions.onPoseReceived.forEach(cb => cb(coolerPoses));
+            // NOTE: if no pose detected, it does not send poses. We may want to reconsider sending out this information (with a timestamp) to notify other servers/clients that body tracking is 'lost'.
+            if (pose.length > 0) {
+                subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
             }
         }
     }
