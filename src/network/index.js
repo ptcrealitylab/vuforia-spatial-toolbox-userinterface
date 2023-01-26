@@ -381,7 +381,12 @@ realityEditor.network.onNewObjectAdded = function(objectKey) {
     thisObject.integerVersion = parseInt(objects[objectKey].version.replace(/\./g, ""));
 
     if (typeof thisObject.matrix === 'undefined') {
-        thisObject.matrix = [];
+        thisObject.matrix = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+        ];
     }
 
     let isImageTarget = !(thisObject.isWorldObject || thisObject.type === 'world') &&

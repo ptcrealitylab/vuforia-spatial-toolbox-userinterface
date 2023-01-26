@@ -532,7 +532,12 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             thisFrame.ar.x = 0;
             thisFrame.ar.y = 0;
             thisFrame.begin = [];
-            thisFrame.ar.matrix = [];
+            thisFrame.ar.matrix = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1,
+            ];
             
             oldVisualizationPositionData = thisFrame.ar;
             

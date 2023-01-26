@@ -193,7 +193,12 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         //closestObject ? closestObject.averageScale : globalStates.defaultScale;
         addedLogic.screenZ = 1000;
         addedLogic.loaded = false;
-        addedLogic.matrix = [];
+        addedLogic.matrix = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+        ];
 
         // make sure that logic nodes only stick to 2.0 server version
         if(realityEditor.network.testVersion(closestObjectKey) > 165) {

@@ -1,5 +1,11 @@
 const HUMAN_POSE_ID_PREFIX = '_HUMAN_';
 
+const JOINT_NODE_NAME = 'storage';
+const JOINT_PUBLIC_DATA_KEYS = {
+    data: 'data',
+    transferData: 'whole_pose'
+};
+
 const JOINTS = {
     NOSE: 'nose',
     LEFT_EYE: 'left_eye',
@@ -31,8 +37,8 @@ const JOINT_CONNECTIONS = {
     elbowWristLeft: [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
     shoulderElbowLeft: [JOINTS.LEFT_ELBOW, JOINTS.LEFT_SHOULDER],
     shoulderSpan: [JOINTS.LEFT_SHOULDER, JOINTS.RIGHT_SHOULDER],
-    shoulderElbowRight: [JOINTS.RIGHT_SHOULDER, JOINTS.RIGHT_ELBOW],
-    elbowWristRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_WRIST],
+    shoulderElbowRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_SHOULDER],
+    elbowWristRight: [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_ELBOW],
     chestLeft: [JOINTS.LEFT_SHOULDER, JOINTS.LEFT_HIP], // 5
     hipSpan: [JOINTS.LEFT_HIP, JOINTS.RIGHT_HIP],
     chestRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_SHOULDER],
@@ -52,9 +58,10 @@ function isHumanPoseObject(object) {
     return object.type === 'human' || object.objectId.indexOf(HUMAN_POSE_ID_PREFIX) === 0;
 }
 
-function makePoseFromJoints(name, joints) {
+function makePoseFromJoints(name, joints, timestamp) {
     return {
         name: name,
+        timestamp: timestamp,
         joints: joints
     }
 }
@@ -94,13 +101,33 @@ function indexOfMin(arr) {
     return minIndex;
 }
 
+// returns the {objectKey, frameKey, nodeKey} address of the avatar storeData node on this avatar object
+function getJointNodeInfo(humanObject, jointIndex) {
+    if (!humanObject) { return null; }
+
+    let humanObjectKey = humanObject.objectId;
+    let jointName = Object.values(JOINTS)[jointIndex];
+    let humanFrameKey = Object.keys(humanObject.frames).find(name => name.includes(jointName));
+    if (!humanObject.frames || !humanFrameKey) { return null; }
+    let humanNodeKey = Object.keys(humanObject.frames[humanFrameKey].nodes).find(name => name.includes(JOINT_NODE_NAME));
+    if (!humanNodeKey) { return null; }
+    return {
+        objectKey: humanObjectKey,
+        frameKey: humanFrameKey,
+        nodeKey: humanNodeKey
+    }
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
+    JOINT_NODE_NAME,
+    JOINT_PUBLIC_DATA_KEYS,
     isHumanPoseObject,
     makePoseFromJoints,
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
-    indexOfMin
+    indexOfMin,
+    getJointNodeInfo
 };
