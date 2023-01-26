@@ -11,9 +11,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     
     let screenX = 0, screenY = 0;
 
-    let cachedWorldObject;
-    let cachedOcclusionObject;
     let occlusionDownloadInterval = null;
+    let cachedOcclusionObject = null;
+    let cachedWorldObject = null;
+    
     let worldIntersectPoint = {};
     let indicator1;
     let indicator2;
@@ -157,6 +158,29 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         };
     }
 
+    function onLoadOcclusionObject(callback) {
+        occlusionDownloadInterval = setInterval(() => {
+            if (!cachedWorldObject) {
+                cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
+            }
+            if (!cachedWorldObject) {
+                return;
+            }
+            if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
+                cachedWorldObject = null; // don't accept the local world object
+            }
+            if (cachedWorldObject && !cachedOcclusionObject) {
+                cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
+                if (cachedOcclusionObject) {
+                    // trigger the callback and clear the interval
+                    callback(cachedWorldObject, cachedOcclusionObject);
+                    clearInterval(occlusionDownloadInterval);
+                    occlusionDownloadInterval = null;
+                }
+            }
+        }, 1000);
+    }
+
     async function initService() {
         onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
@@ -182,10 +206,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         isUpdateLoopRunning = true;
 
         try {
-            // for iPhone usage
+            // for iPhone usage, keep spatial cursor at the center of the screen
             if (!realityEditor.device.environment.isDesktop()) {
                 screenX = window.innerWidth / 2;
                 screenY = window.innerHeight / 2;
+            }
+            
+            if (screenX !== null && screenY !== null) {
                 worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
                 updateSpatialCursor();
                 updateTestSpatialCursor();
@@ -193,19 +220,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
                 if (SNAP_CURSOR_TO_TOOLS) {
                     trySnappingCursorToTools();
-                }
-            } else {
-                // for desktop usage
-                if (screenX !== null && screenY !== null) {
-                    worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
-                    // console.log(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z)
-                    updateSpatialCursor();
-                    updateTestSpatialCursor();
-                    uniforms['time'].value = clock.getElapsedTime() * 10;
-
-                    if (SNAP_CURSOR_TO_TOOLS) {
-                        trySnappingCursorToTools();
-                    }
                 }
             }
         } catch (e) {
@@ -278,30 +292,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (isCursorEnabled && !isUpdateLoopRunning) {
             update(); // restart the update loop
         }
-    }
-
-    // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
-    function onLoadOcclusionObject(callback) {
-        occlusionDownloadInterval = setInterval(() => {
-            if (!cachedWorldObject) {
-                cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
-            }
-            if (!cachedWorldObject) {
-                return;
-            }
-            if (cachedWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-                cachedWorldObject = null; // don't accept the local world object
-            }
-            if (cachedWorldObject && !cachedOcclusionObject) {
-                cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
-                if (cachedOcclusionObject) {
-                    // trigger the callback and clear the interval
-                    callback(cachedWorldObject, cachedOcclusionObject);
-                    clearInterval(occlusionDownloadInterval);
-                    occlusionDownloadInterval = null;
-                }
-            }
-        }, 1000);
     }
 
     function getRaycastCoordinates(screenX, screenY) {
