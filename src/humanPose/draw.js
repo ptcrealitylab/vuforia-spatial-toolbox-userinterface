@@ -441,9 +441,39 @@ export class HumanPoseAnalyzer {
      * @param {number} firstTimestamp - start of time interval in ms
      * @param {number} secondTimestamp - end of time interval in ms
      */
-    setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
+    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
         for (let mesh of Object.values(this.historyMeshesAll)) {
-            mesh.setTimeInterval(firstTimestamp, secondTimestamp);
+            mesh.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
+        }
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     */
+    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
+                mesh.visible = false;
+                continue;
+            }
+            mesh.visible = true;
+            mesh.setDisplayTimeInterval(firstTimestamp, secondTimestamp);
+        }
+    }
+
+    /**
+     * @param {number} timestamp - time to hover in ms
+     */
+    setHoverTime(timestamp) {
+        if (timestamp < 0) {
+            return;
+        }
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
+                continue;
+            }
+            mesh.setHoverTime(timestamp);
         }
     }
 
@@ -724,8 +754,8 @@ function resetHistoryClones() {
  * @param {number} firstTimestamp - start of time interval in ms
  * @param {number} secondTimestamp - end of time interval in ms
  */
-function setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
-    humanPoseAnalyzer.setHistoryTimeInterval(firstTimestamp, secondTimestamp);
+function setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    humanPoseAnalyzer.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
 }
 
 /**
@@ -758,11 +788,28 @@ function advanceCloneMaterial() {
     humanPoseAnalyzer.advanceCloneMaterial();
 }
 
+/**
+ * @param {number} time - ms
+ */
+function setHoverTime(time) {
+    humanPoseAnalyzer.setHoverTime(time);
+}
+
+/**
+ * @param {number} startTime - ms
+ * @param {number} endTime - ms
+ */
+function setDisplayTimeInterval(startTime, endTime) {
+    humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
+}
+
 export {
     renderHumanPoseObjects,
     resetHistoryLines,
     resetHistoryClones,
-    setHistoryTimeInterval,
+    setHoverTime,
+    setHighlightTimeInterval,
+    setDisplayTimeInterval,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceCloneMaterial,

@@ -2,6 +2,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
 import * as utils from './utils.js'
 
+// Approximate milliseconds between points (10 fps)
+const POINT_RES_MS = 100;
+
 // we will lazily instantiate a shared label that all SpaghettiMeshPaths can use
 let sharedMeasurementLabel = null;
 
@@ -345,10 +348,36 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     /**
-     * @param {number} firstTimestamp - start of interval in ms
-     * @param {number} secondTimestamp - start of interval in ms or -1 for unspecified (hover mode)
+     * @param {number} timestamp - time that is hovered in ms
      */
-    setTimeInterval(firstTimestamp, secondTimestamp) {
+    setHoverTime(timestamp) {
+        let index = -1;
+        for (let i = 0; i < this.currentPoints.length; i++) {
+            let point = this.currentPoints[i];
+            if (Math.abs(point.timestamp - timestamp) < 0.9 * POINT_RES_MS) {
+                index = i;
+                break;
+            }
+            if (point.timestamp > timestamp) {
+                // Exit early if we will never find a matching point
+                break;
+            }
+        }
+
+        if (index < 0) {
+            return;
+        }
+
+        this.comparer.selectionState = SelectionState.FIRST;
+        this.comparer.setFirstPoint(index, true);
+        this.updateMeshWithComparer();
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of interval in ms
+     * @param {number} secondTimestamp - end of interval in ms
+     */
+    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
         let firstIndex = -1;
         let secondIndex = -1;
         for (let i = 0; i < this.currentPoints.length; i++) {
@@ -375,11 +404,64 @@ export class SpaghettiMeshPath extends MeshPath {
         this.updateMeshWithComparer();
     }
 
+    /**
+     * Limits currentPoints to a subset of allPoints based on firstTimestamp
+     * and secondTimestamp
+     *
+     * @param {number} firstTimestamp - start of interval in ms
+     * @param {number} secondTimestamp - end of interval in ms
+     */
+    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
+        let firstIndex = -1;
+        let secondIndex = -1;
+        for (let i = 0; i < this.allPoints.length; i++) {
+            let point = this.allPoints[i];
+            if (firstIndex < 0 && point.timestamp >= firstTimestamp) {
+                firstIndex = i;
+            }
+            if (secondIndex < 0 && point.timestamp >= secondTimestamp) {
+                secondIndex = i;
+                break;
+            }
+        }
+        if (firstIndex >= 0 && secondIndex < 0) {
+            secondIndex = this.allPoints.length - 1;
+        }
+        if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
+            return;
+        }
+
+        this.setPoints(this.allPoints.slice(firstIndex, secondIndex + 1));
+        this.comparer.reset();
+        this.updateMeshWithComparer();
+    }
+
+
     createCursor(radius = 50) {
         let cursorMesh = new THREE.Mesh(new THREE.SphereGeometry(radius,12,12), new THREE.MeshBasicMaterial({color:0xff0000})); // new THREE.MeshNormalMaterial());
         cursorMesh.visible = false;
         this.add(cursorMesh);
         return cursorMesh;
+    }
+
+    /**
+     * @return {number} start time of mesh path or -1 if zero-length
+     */
+    getStartTime() {
+        if (!this.currentPoints || this.currentPoints.length === 0) {
+            return -1;
+        }
+        return this.currentPoints[0].timestamp;
+    }
+
+    /**
+     * @return {number} end time of mesh path or -1 if zero-length
+     */
+    getEndTime() {
+        if (!this.currentPoints || this.currentPoints.length === 0) {
+            return -1;
+        }
+        return this.currentPoints[this.currentPoints.length - 1].timestamp;
     }
 }
 
