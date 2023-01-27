@@ -272,7 +272,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // todo Steve: getToolDirection() function inside spatial search in remote operator
         // constantly check if the screen center overlaps any iframes
         let overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(screenX, screenY);
-        // console.log(overlappingDivs);
         overlapped = overlappingDivs.some(element => {
             return element.tagName === 'IFRAME' && typeof element.dataset.objectKey !== 'undefined';
         });

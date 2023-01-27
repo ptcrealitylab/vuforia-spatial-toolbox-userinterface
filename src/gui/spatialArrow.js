@@ -11,7 +11,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let screenRatio;
 
     function initService() {
-        console.log('%c spatial arrow init!', 'color: green');
         addCanvas();
         resizeCanvas();
         initCanvas();
@@ -64,8 +63,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return clamp((x - low) / (high - low), 0, 1);
     }
 
-    const remap = (x, low1, high1, low2, high2) => {
-        return low2 + (high2 - low2) * remap01(x, low1, high1);
+    const remap = (x, lowIn, highIn, lowOut, highOut) => {
+        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
     }
 
     let translateX = 0, translateY = 0;
@@ -89,7 +88,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     // draw an arrow at (x, y) center
-    function Arrow(x, y, rotation, scaleFactor, innerColor='rgb(0, 255, 255)', outerColor='rgb(255, 255, 255)') {
+    function drawArrow(x, y, rotation, scaleFactor, innerColor='rgb(0, 255, 255)', outerColor='rgb(255, 255, 255)') {
         translate(x, y);
         scale(scaleFactor, scaleFactor);
         rotate(rotation);
@@ -140,7 +139,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             indicator.getWorldPosition(worldPos);
             
             // if the object is off screen, then reverse its original screen position, then add the indicator
-            if (!realityEditor.gui.threejsScene.isObjectOnScreen(worldPos)) {
+            if (!realityEditor.gui.threejsScene.isPointOnScreen(worldPos)) {
                 let screenXY = realityEditor.gui.threejsScene.getScreenXY(worldPos);
                 
                 screenX = screenXY.x;
@@ -203,7 +202,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 finalPosX *= screenBorderFactor;
                 finalPosY *= screenBorderFactor;
 
-                Arrow(finalPosX, finalPosY, angle, 5, indicator.avatarColor, indicator.avatarColorLighter);
+                drawArrow(finalPosX, finalPosY, angle, 5, indicator.avatarColor, indicator.avatarColorLighter);
             }
         })
     }

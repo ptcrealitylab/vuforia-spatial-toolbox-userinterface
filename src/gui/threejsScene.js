@@ -867,12 +867,12 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     };
 
     // source: https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
-    exports.isObjectOnScreen = function(objectPosition) {
+    exports.isPointOnScreen = function(pointPosition) {
         let frustum = new THREE.Frustum();
         let matrix = new THREE.Matrix4();
         matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(matrix);
-        if (frustum.containsPoint(objectPosition)) {
+        if (frustum.containsPoint(pointPosition)) {
             return true;
         } else {
             return false;

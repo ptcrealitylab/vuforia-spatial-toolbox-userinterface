@@ -132,8 +132,8 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         return clamp((x - low) / (high - low), 0, 1);
     }
 
-    const remap = (x, low1, high1, low2, high2) => {
-        return low2 + (high2 - low2) * remap01(x, low1, high1);
+    const remap = (x, lowIn, highIn, lowOut, highOut) => {
+        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
     }
 
     window.addEventListener('pointerdown', (e) => {
@@ -158,7 +158,6 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             if (raycastIntersects.length > 0) {
                 // if hit a cylinder indicator, then make the cylinders expand and last longer
                 if (raycastIntersects[0].object.parent.name === 'cylinderIndicator') {
-                    console.log('spatial cursor hit a cylinder indicator in the scene!');
                     raycastIntersects[0].object.parent.iclick++;
                     return;
                 }
