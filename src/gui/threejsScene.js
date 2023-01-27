@@ -254,6 +254,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const parentToCamera = parameters.parentToCamera;
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
+        const layer = parameters.layer;
         if (occluded) {
             const queue = [obj];
             while (queue.length > 0) {
@@ -280,6 +281,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             } else {
                 threejsContainerObj.add(obj);
             }
+        }
+        if (layer) {
+            obj.layers.set(layer);
         }
     }
 
@@ -526,6 +530,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         });
 
         //3. compute intersections
+        // add object layer to raycast layer mask
+        objectsToCheck.forEach(obj => {
+            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
+        });
         let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
         results.forEach(intersection => {
             intersection.rayDirection = raycaster.ray.direction;
@@ -554,6 +562,16 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
     function getObjectByName(name) {
         return scene.getObjectByName(name);
+    }
+    
+    // return all objects with the name
+    function getObjectsByName(name) {
+        if (name === undefined) return;
+        const objects = [];
+        scene.traverse((object) => {
+            if (object.name === name) objects.push(object);
+        })
+        return objects;
     }
 
     function getGroundPlaneCollider() {
@@ -848,6 +866,38 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         };
     };
 
+    // source: https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
+    exports.isPointOnScreen = function(pointPosition) {
+        let frustum = new THREE.Frustum();
+        let matrix = new THREE.Matrix4();
+        matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(matrix);
+        if (frustum.containsPoint(pointPosition)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // gets the position relative to groundplane (common coord system for threejsScene)
+    exports.getToolPosition = function(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        // console.log('%c debugging tool position', 'color: orange');
+        // console.log(realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode));
+        return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
+    }
+
+    // gets the direction the tool is facing, within the coordinate system of the groundplane
+    exports.getToolDirection = function(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
+        let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
+        // console.log(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
+        return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
+    }
+
     /**
      * @return {{
            camera: THREE.PerspectiveCamera,
@@ -875,6 +925,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.getRaycastIntersects = getRaycastIntersects;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
+    exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;

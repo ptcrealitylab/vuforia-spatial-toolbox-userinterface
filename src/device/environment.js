@@ -229,5 +229,7 @@ createNameSpace("realityEditor.device.environment");
     exports.getInitialPocketToolRotation = function() {
         return variables.initialPocketToolRotation;
     };
+    
+    exports.isDesktop = isDesktop;
 
 }(realityEditor.device.environment));
