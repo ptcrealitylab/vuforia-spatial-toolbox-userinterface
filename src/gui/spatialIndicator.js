@@ -137,7 +137,9 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
     }
 
     window.addEventListener('pointerdown', (e) => {
-        if (!realityEditor.device.isMouseEventCameraControl(e)) handleMouseClick(e);
+        if (realityEditor.device.isMouseEventCameraControl(e)) return;
+        if (!realityEditor.device.utilities.isEventHittingBackground(e)) return;
+        handleMouseClick(e);
     });
 
     let worldIntersectPoint = {};

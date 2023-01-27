@@ -31,6 +31,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         canvasContainer.style.position = 'absolute';
         canvasContainer.style.top = '0';
         canvasContainer.style.left = '0';
+        canvasContainer.style.pointerEvents = 'none';
         document.body.appendChild(canvasContainer);
 
         canvas = document.createElement('canvas');
